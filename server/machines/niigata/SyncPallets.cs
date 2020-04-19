@@ -160,12 +160,13 @@ namespace BlackMaple.FMSInsight.Niigata
             _icc.PerformAction(action);
           }
         } while (action != null);
+
+        if (raisePalletChanged)
+        {
+          OnPalletsChanged?.Invoke(cellSt);
+        }
       }
 
-      if (raisePalletChanged)
-      {
-        OnPalletsChanged?.Invoke(cellSt);
-      }
     }
 
     public void DecrementPlannedButNotStartedQty()
@@ -174,20 +175,31 @@ namespace BlackMaple.FMSInsight.Niigata
       // is deciding what to put onto a pallet
       lock (_changeLock)
       {
+        var jobs = _jobs.LoadUnarchivedJobs();
+        var cellSt = _createLog.BuildCellState(_icc.LoadNiigataStatus(), jobs);
+
         var decrs = new List<JobDB.NewDecrementQuantity>();
-        foreach (var j in _jobs.LoadUnarchivedJobs().Jobs)
+        foreach (var j in jobs.Jobs)
         {
           if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
-          var started = CountStartedOrInProcess(j);
-          var planned = Enumerable.Range(1, j.GetNumPaths(process: 1)).Sum(path => j.GetPlannedCyclesOnFirstProcess(path));
-          Log.Debug("Job {unique} part {part} has started {start} of planned {planned}", j.UniqueStr, j.PartName, started, planned);
-          if (started < planned)
+
+          int qtyToDecr = 0;
+          for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
+          {
+            if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
+            {
+              qtyToDecr += qty;
+            }
+          }
+
+          Log.Debug("Job {unique} part {part} calculated {qtyToDecr} to decrement", j.UniqueStr, j.PartName, qtyToDecr);
+          if (qtyToDecr > 0)
           {
             decrs.Add(new JobDB.NewDecrementQuantity()
             {
               JobUnique = j.UniqueStr,
               Part = j.PartName,
-              Quantity = planned - started
+              Quantity = qtyToDecr
             });
           }
         }
@@ -196,27 +208,12 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           _jobs.AddNewDecrement(decrs);
         }
-      }
-    }
 
-    private int CountStartedOrInProcess(JobPlan job)
-    {
-      var mats = new HashSet<long>();
-
-      foreach (var e in _log.GetLogForJobUnique(job.UniqueStr))
-      {
-        foreach (var mat in e.Material)
+        if (decrs.Count > 0 || cellSt.PalletStateUpdated)
         {
-          if (mat.JobUniqueStr == job.UniqueStr)
-          {
-            mats.Add(mat.MaterialID);
-          }
+          OnPalletsChanged?.Invoke(cellSt);
         }
       }
-
-      return mats.Count;
     }
-
-
   }
 }

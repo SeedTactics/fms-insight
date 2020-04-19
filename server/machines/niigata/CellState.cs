@@ -61,7 +61,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterial> QueuedMaterial { get; set; }
-    public Dictionary<string, int> JobQtyStarted { get; set; }
+    public Dictionary<(string uniq, int proc1path), int> JobQtyRemainingOnProc1 { get; set; }
     public Dictionary<(string progName, long revision), JobDB.ProgramRevision> ProgramNums { get; set; }
   }
 
@@ -189,7 +189,7 @@ namespace BlackMaple.FMSInsight.Niigata
         PalletStateUpdated = palletStateUpdated,
         Pallets = palsWithMat,
         QueuedMaterial = QueuedMaterial(new HashSet<long>(palsWithMat.SelectMany(p => p.Faces).SelectMany(p => p.Material).Select(m => m.MaterialID))),
-        JobQtyStarted = CountStartedMaterial(sch, palsWithMat),
+        JobQtyRemainingOnProc1 = CountRemainingQuantity(sch, palsWithMat),
         ProgramNums = programs
       };
     }
@@ -1010,31 +1010,53 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private Dictionary<string, int> CountStartedMaterial(PlannedSchedule schedule, IEnumerable<PalletAndMaterial> pals)
+    private Dictionary<(string uniq, int proc1path), int> CountRemainingQuantity(PlannedSchedule schedule, IEnumerable<PalletAndMaterial> pals)
     {
-      var cnts = new Dictionary<string, int>();
-      foreach (var uniq in schedule.Jobs.Select(j => j.UniqueStr))
+      var cnts = new Dictionary<(string uniq, int proc1path), int>();
+      foreach (var job in schedule.Jobs)
       {
-        var loadedCnt =
-          _log.GetLogForJobUnique(uniq)
-            .Where(e => (e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD") || e.LogType == LogType.MachineCycle)
-            .SelectMany(e => e.Material)
-            .Where(m => m.JobUniqueStr == uniq)
-            .Select(m => m.MaterialID)
-            .Distinct()
-            .Count();
+        if (_jobs.LoadDecrementsForJob(job.UniqueStr).Count == 0)
+        {
+          var loadedCnt =
+            _log.GetLogForJobUnique(job.UniqueStr)
+              .Where(e => (e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD") || e.LogType == LogType.MachineCycle)
+              .SelectMany(e => e.Material)
+              .Where(m => m.JobUniqueStr == job.UniqueStr)
+              .Select(m => m.MaterialID)
+              .Distinct()
+              .Select(m =>
+              {
+                var details = _log.GetMaterialDetails(m);
+                if (details != null && details.Paths != null && details.Paths.TryGetValue(1, out var path))
+                {
+                  return new { MatId = m, Path = path };
+                }
+                else
+                {
+                  return new { MatId = m, Path = 1 };
+                }
+              })
+              .GroupBy(m => m.Path)
+              .ToDictionary(g => g.Key, g => g.Count());
 
-        var loadingCnt =
-          pals
-            .SelectMany(p => p.Faces)
-            .SelectMany(f => f.Material)
-            .Where(m => m.JobUnique == uniq &&
-                        m.Action.Type == InProcessMaterialAction.ActionType.Loading &&
-                        m.Action.ProcessAfterLoad == 1
-            )
-            .Count();
+          var loadingCnt =
+            pals
+              .SelectMany(p => p.Faces)
+              .SelectMany(f => f.Material)
+              .Where(m => m.JobUnique == job.UniqueStr &&
+                          m.Action.Type == InProcessMaterialAction.ActionType.Loading &&
+                          m.Action.ProcessAfterLoad == 1
+              )
+              .GroupBy(m => m.Action.PathAfterLoad ?? 1)
+              .ToDictionary(g => g.Key, g => g.Count());
 
-        cnts.Add(uniq, loadedCnt + loadingCnt);
+          for (int path = 1; path <= job.GetNumPaths(process: 1); path += 1)
+          {
+            var started = loadedCnt.TryGetValue(path, out var cnt) ? cnt : 0;
+            var loading = loadingCnt.TryGetValue(path, out var cnt2) ? cnt2 : 0;
+            cnts.Add((uniq: job.UniqueStr, proc1path: path), job.GetPlannedCyclesOnFirstProcess(path) - started - loading);
+          }
+        }
       }
       return cnts;
     }

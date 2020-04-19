@@ -52,7 +52,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
     private Dictionary<int, List<(int face, string unique, int proc, int path)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path)>>(); // key is pallet
-    private Dictionary<string, int> _expectedJobStartedCount = new Dictionary<string, int>();
+    private Dictionary<(string uniq, int proc1path), int> _expectedJobRemainCount = new Dictionary<(string uniq, int proc1path), int>();
 
     public FakeIccDsl(int numPals, int numMachines)
     {
@@ -434,9 +434,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Jobs
-    public FakeIccDsl IncrJobStartedCnt(string unique, int cnt = 1)
+    public FakeIccDsl DecrJobRemainCnt(string unique, int path, int cnt = 1)
     {
-      _expectedJobStartedCount[unique] += cnt;
+      _expectedJobRemainCount[(uniq: unique, proc1path: path)] -= cnt;
       return this;
     }
     public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null)
@@ -460,10 +460,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.AddJobs(newJ, null);
       foreach (var j in jobs)
       {
-        _expectedJobStartedCount[j.UniqueStr] = 0;
+        for (int path = 1; path <= j.GetNumPaths(1); path++)
+        {
+          _expectedJobRemainCount[(uniq: j.UniqueStr, proc1path: path)] = j.GetPlannedCyclesOnFirstProcess(path);
+        }
       }
       return this;
 
+    }
+
+    public FakeIccDsl AddJobDecrement(string uniq)
+    {
+      var remaining = _expectedJobRemainCount.Where(k => k.Key.uniq == uniq).ToList();
+      _jobDB.AddNewDecrement(new[] {
+        new JobDB.NewDecrementQuantity() {
+        JobUnique = uniq,
+        Part = "part",
+        Quantity = remaining.Sum(k => k.Value)
+      }});
+      foreach (var k in remaining)
+      {
+        _expectedJobRemainCount.Remove(k.Key);
+      }
+      return this;
     }
 
     public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null)
@@ -696,7 +715,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       actualSt.QueuedMaterial.Should().BeEquivalentTo(_expectedMaterial.Values.Where(
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
       ));
-      actualSt.JobQtyStarted.Should().BeEquivalentTo(_expectedJobStartedCount);
+      actualSt.JobQtyRemainingOnProc1.Should().BeEquivalentTo(_expectedJobRemainCount);
     }
 
     public FakeIccDsl ExpectNoChanges()

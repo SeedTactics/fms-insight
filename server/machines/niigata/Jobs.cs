@@ -53,28 +53,44 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync = sy;
       _settings = st;
 
-      _sync.OnPalletsChanged += BuildCurrentStatus;
+      _sync.OnPalletsChanged += OnNewCellState;
     }
 
     public void Dispose()
     {
-      _sync.OnPalletsChanged -= BuildCurrentStatus;
+      _sync.OnPalletsChanged -= OnNewCellState;
     }
 
     #region Status
     public event NewCurrentStatus OnNewCurrentStatus;
     private object _curStLock = new object();
-    private CurrentStatus _lastStatus = new CurrentStatus();
+    private CellState _lastCellState = null;
+
+    private void OnNewCellState(CellState s)
+    {
+      lock (_curStLock)
+      {
+        _lastCellState = s;
+      }
+      OnNewCurrentStatus?.Invoke(BuildCurrentStatus(s));
+    }
 
     public CurrentStatus GetCurrentStatus()
     {
       lock (_curStLock)
       {
-        return _lastStatus;
+        if (_lastCellState == null)
+        {
+          return new CurrentStatus();
+        }
+        else
+        {
+          return BuildCurrentStatus(_lastCellState);
+        }
       }
     }
 
-    private void BuildCurrentStatus(CellState status)
+    private CurrentStatus BuildCurrentStatus(CellState status)
     {
       var curStatus = new CurrentStatus();
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -181,11 +197,8 @@ namespace BlackMaple.FMSInsight.Niigata
         curStatus.Alarms.Add("ICC has an alarm");
       }
 
-      lock (_curStLock)
-      {
-        _lastStatus = curStatus;
-      }
-      OnNewCurrentStatus?.Invoke(curStatus);
+      return curStatus;
+
     }
     #endregion
 
@@ -285,10 +298,16 @@ namespace BlackMaple.FMSInsight.Niigata
         throw new BadRequestException(string.Join(Environment.NewLine, errors));
       }
 
+      CellState curSt;
+      lock (_curStLock)
+      {
+        curSt = _lastCellState;
+      }
+
       var existingJobs = _jobs.LoadUnarchivedJobs();
       foreach (var j in existingJobs.Jobs)
       {
-        if (IsJobCompleted(j))
+        if (IsJobCompleted(j, curSt))
         {
           _jobs.ArchiveJob(j.UniqueStr);
         }
@@ -303,30 +322,34 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    private bool IsJobCompleted(JobPlan job)
+    private bool IsJobCompleted(JobPlan job, CellState st)
     {
-      var planned = Enumerable.Range(1, job.GetNumPaths(process: 1)).Sum(job.GetPlannedCyclesOnFirstProcess);
-      foreach (var decr in _jobs.LoadDecrementsForJob(job.UniqueStr))
-      {
-        planned -= decr.Quantity;
-      }
+      if (st == null) return false;
 
-      var evts = _log.GetLogForJobUnique(job.UniqueStr);
-      var completed = 0;
-      foreach (var e in evts)
+      for (int path = 1; path <= job.GetNumPaths(process: 1); path++)
       {
-        if (e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+        if (st.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: path), out var qty) && qty > 0)
         {
-          foreach (var mat in e.Material)
-          {
-            if (mat.JobUniqueStr == job.UniqueStr && mat.Process == mat.NumProcesses)
-            {
-              completed += 1;
-            }
-          }
+          return false;
         }
       }
-      return completed >= planned;
+
+      var matInProc =
+        st.Pallets
+        .SelectMany(p => p.Faces)
+        .SelectMany(f => f.Material)
+        .Concat(st.QueuedMaterial)
+        .Where(m => m.JobUnique == job.UniqueStr)
+        .Any();
+
+      if (matInProc)
+      {
+        return false;
+      }
+      else
+      {
+        return true;
+      }
     }
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)

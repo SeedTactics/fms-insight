@@ -119,12 +119,12 @@ namespace BlackMaple.FMSInsight.Niigata
       return
         cellSt.Schedule.Jobs
         .SelectMany(job => Enumerable.Range(1, job.NumProcesses).Select(proc => new { job, proc }))
-        .Where(j =>
-          j.proc > 1
-          ||
-          (cellSt.JobQtyStarted[j.job.UniqueStr] < Enumerable.Range(1, j.job.GetNumPaths(process: 1)).Sum(path => j.job.GetPlannedCyclesOnFirstProcess(path)))
-        )
         .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath { Job = j.job, Process = j.proc, Path = path }))
+        .Where(j =>
+          j.Process > 1
+          ||
+          (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.Job.UniqueStr, proc1path: j.Path), out int qty) && qty > 0)
+        )
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
         .Where(j => j.Job.PlannedPallets(j.Process, j.Path).Contains(pallet.ToString()))
         .OrderBy(j => j.Job.RouteStartingTimeUTC)

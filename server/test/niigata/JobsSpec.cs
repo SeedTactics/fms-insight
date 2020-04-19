@@ -349,25 +349,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void AddsBasicJobs()
     {
-      //add a completed job
+      //add some existing jobs
       var completedJob = new JobPlan("old", 2);
       completedJob.PartName = "oldpart";
-      completedJob.SetPlannedCyclesOnFirstProcess(1, 3);
-      // record 3 completed parts
-      for (int i = 0; i < 3; i++)
+      var toKeepJob = new JobPlan("tokeep", 1);
+      toKeepJob.PartName = "tokeep";
+      _jobDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = new List<JobPlan> { completedJob, toKeepJob } }, null);
+
+      _syncMock.OnPalletsChanged += Raise.Event<Action<CellState>>(new CellState()
       {
-        var mat = _logDB.AllocateMaterialID("old", "oldpart", 2);
-        _logDB.RecordSerialForMaterialID(mat, 1, "serial1");
-        _logDB.RecordUnloadEnd(
-          mats: new[] { new JobLogDB.EventLogMaterial() { MaterialID = mat, Process = 2, Face = "1" } },
-          pallet: "p1",
-          lulNum: i,
-          timeUTC: DateTime.UtcNow,
-          elapsed: TimeSpan.FromMinutes(i),
-          active: TimeSpan.FromHours(i)
-        );
-      }
-      _jobDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = new List<JobPlan> { completedJob } }, null);
+        Pallets = new List<PalletAndMaterial>(),
+        QueuedMaterial = new List<InProcessMaterial>(),
+        JobQtyRemainingOnProc1 = new Dictionary<(string uniq, int proc1path), int>() {
+          {(uniq: "old", proc1path: 1), 0},
+          {(uniq: "tokeep", proc1path: 1), 5}
+        }
+      });
 
       //some new jobs
       var newJob1 = new JobPlan("uu1", 2);
@@ -394,10 +391,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Jobs = new List<JobPlan> { newJob1, newJob2 }
       };
 
-
       _jobs.AddJobs(newJobs, null);
 
-      _jobDB.LoadUnarchivedJobs().Jobs.Should().BeEquivalentTo(new[] { newJob1, newJob2 });
+      _jobDB.LoadUnarchivedJobs().Jobs.Should().BeEquivalentTo(new[] { newJob1, newJob2, toKeepJob });
       _jobDB.LoadJob("old").Archived.Should().BeTrue();
 
       _syncMock.Received().JobsOrQueuesChanged();
