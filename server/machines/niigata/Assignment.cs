@@ -338,24 +338,50 @@ namespace BlackMaple.FMSInsight.Niigata
         // add all stops from machineStops tp machiningSteps
         foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
         {
-          var prog = progs[(stop.ProgramName, stop.ProgramRevision.Value)];
-          // check existing step
-          foreach (var existingStep in machiningSteps)
+          int? iccProgram = null;
+          if (stop.ProgramRevision.HasValue && progs.TryGetValue((stop.ProgramName, stop.ProgramRevision.Value), out var prog))
           {
-            if (existingStep.Machines.SequenceEqual(stop.Stations))
+            if (prog.CellControllerProgramName != null && int.TryParse(prog.CellControllerProgramName, out int p))
             {
-              existingStep.ProgramNumsToRun.Add(int.Parse(prog.CellControllerProgramName));
-              goto foundExisting;
+              iccProgram = p;
+            }
+            else
+            {
+              Log.Error("Unable to find program for job {uniq} part {part} program {name}", path.Job.UniqueStr, path.Job.PartName, stop.ProgramName);
             }
           }
-          // no existing step, add a new one
-          machiningSteps.Add(new MachiningStep()
+          else
           {
-            Machines = stop.Stations.ToList(),
-            ProgramNumsToRun = new List<int> { int.Parse(prog.CellControllerProgramName) }
-          });
+            if (int.TryParse(stop.ProgramName, out int p))
+            {
+              iccProgram = p;
+            }
+            else
+            {
+              Log.Error("Program for job {uniq} part {part} program {prog} is not an integer", path.Job.UniqueStr, path.Job.PartName, stop.ProgramName);
+            }
+          }
 
-        foundExisting:;
+          if (iccProgram.HasValue)
+          {
+            // check existing step
+            foreach (var existingStep in machiningSteps)
+            {
+              if (existingStep.Machines.SequenceEqual(stop.Stations))
+              {
+                existingStep.ProgramNumsToRun.Add(iccProgram.Value);
+                goto foundExisting;
+              }
+            }
+            // no existing step, add a new one
+            machiningSteps.Add(new MachiningStep()
+            {
+              Machines = stop.Stations.ToList(),
+              ProgramNumsToRun = new List<int> { iccProgram.Value }
+            });
+
+          foundExisting:;
+          }
 
         }
       }
@@ -449,7 +475,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, MachineFramework.JobDB.ProgramRevision prog)
     {
-      int progNum = Enumerable.Range(1000, 9999 - 1000).FirstOrDefault(p => !existing.ContainsKey(p));
+      int progNum = Enumerable.Range(2000, 9999 - 2000).FirstOrDefault(p => !existing.ContainsKey(p));
       return new NewProgram()
       {
         ProgramNum = progNum,

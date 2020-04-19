@@ -84,12 +84,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 5),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            progs: new[] { 1000 },
+            progs: new[] { 2000 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )})
         .MoveToBuffer(pal: 2, buff: 2)
@@ -103,7 +103,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             pal: 2,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            progs: new[] { 1000 },
+            progs: new[] { 2000 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
           )
         })
@@ -130,7 +130,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges()
         .MoveToMachine(pal: 1, mach: 3)
         .ExpectNoChanges()
-        .StartMachine(mach: 3, program: 1000)
+        .StartMachine(mach: 3, program: 2000)
         .UpdateExpectedMaterial(fstMats, im =>
           {
             im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -222,7 +222,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges()
         .SetBeforeMC(pal: 1)
         .MoveToMachine(pal: 1, mach: 6)
-        .StartMachine(mach: 6, program: 1000)
+        .StartMachine(mach: 6, program: 2000)
         .UpdateExpectedMaterial(sndMats, im =>
           {
             im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -308,32 +308,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 6),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            progs: new[] { 1000 },
+            progs: new[] { 2000 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
           )
         })
 
         //should set new route if loads, machines, or progs differ
-        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 100, 200 }, machs: new[] { 5, 6 }, progs: new[] { 1000 })
+        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 100, 200 }, machs: new[] { 5, 6 }, progs: new[] { 2000 })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
         })
-        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 500, 600 }, progs: new[] { 1000 })
+        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 500, 600 }, progs: new[] { 2000 })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
         })
         .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 12345 })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
         })
 
         // back to correct, just increment
-        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1000 })
+        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2000 })
         .DecrJobRemainCnt("uniq1", path: 1, cnt: -1) // the comment abc does not exist, so no material is marked to be loaded
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 1)
@@ -355,7 +355,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             pals: new[] { 1, 2 },
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            prog: "prog111",
+            prog: "345",
             progRev: null,
             loadMins: 8,
             unloadMins: 9,
@@ -364,8 +364,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             face: 1
           )
           .AddInsp(proc: 1, path: 1, inspTy: "InspTy", cntr: "Thecounter", max: 2)
-          },
-          new[] { (prog: "prog111", rev: 5L) }
+          }
         )
         .MoveToMachineQueue(pal: 2, mach: 3)
         .SetExpectedLoadCastings(new[] {
@@ -373,12 +372,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            progs: new[] { 1000 },
+            progs: new[] { 345 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )})
         .MoveToBuffer(pal: 2, buff: 2)
@@ -417,7 +415,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           new[] { (prog: "prog111", rev: 6L) }
         )
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 6)
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 6)
         });
 
       if (string.IsNullOrEmpty(casting))
@@ -445,7 +443,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 1000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2000 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
         })
         .MoveToLoad(pal: 1, lul: 3)
         .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
@@ -523,13 +521,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 5),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2001, name: "prog222", rev: 6),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            progs: new[] { 1000 },
+            progs: new[] { 2000 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
           )
         })
@@ -553,7 +551,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges()
         .MoveToMachine(pal: 1, mach: 6)
         .ExpectNoChanges()
-        .StartMachine(mach: 6, program: 1000)
+        .StartMachine(mach: 6, program: 2000)
         .UpdateExpectedMaterial(AAAproc1, im =>
           {
             im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -602,7 +600,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pal: 1,
               luls: new[] { 3, 4 },
               machs: new[] { 5, 6 },
-              progs: new[] { 1000, 1001 },
+              progs: new[] { 2000, 2001 },
               faces: new[] {
                 (face: 1, unique: "uniq1", proc: 1, path: 1),
                 (face: 2, unique: "uniq1", proc: 2, path: 1)
@@ -630,7 +628,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(2) // = 47min
         .MoveToMachine(pal: 1, mach: 5)
         .SetBeforeMC(pal: 1)
-        .StartMachine(mach: 5, program: 1000)
+        .StartMachine(mach: 5, program: 2000)
         .UpdateExpectedMaterial(BBBproc1, im =>
           {
             im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -641,7 +639,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         )
         .ExpectTransition(new[] { FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 5, program: "prog111", rev: 5, mat: BBBproc1) })
         .AdvanceMinutes(20) // = 67min
-        .StartMachine(mach: 5, program: 1001)
+        .StartMachine(mach: 5, program: 2001)
         .UpdateExpectedMaterial(BBBproc1, im =>
           {
             im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
@@ -731,7 +729,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         //a full cycle
         .MoveToMachine(pal: 1, mach: 6)
         .SetBeforeMC(pal: 1)
-        .StartMachine(mach: 6, program: 1001)
+        .StartMachine(mach: 6, program: 2001)
         .UpdateExpectedMaterial(BBBproc2, im =>
         {
           im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -743,7 +741,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog222", rev: 6, mat: BBBproc2)
         })
         .AdvanceMinutes(5) // = 112 min
-        .StartMachine(mach: 6, program: 1000)
+        .StartMachine(mach: 6, program: 2000)
         .UpdateExpectedMaterial(BBBproc2, im =>
           {
             im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
@@ -807,7 +805,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             pal: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            progs: new[] { 1001 },
+            progs: new[] { 2001 },
             faces: new[] {
               (face: 2, unique: "uniq1", proc: 2, path: 1)
             }
@@ -834,7 +832,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // a cycle with only proc2
         .MoveToMachine(pal: 1, mach: 5)
         .SetBeforeMC(pal: 1)
-        .StartMachine(mach: 5, program: 1001)
+        .StartMachine(mach: 5, program: 2001)
         .UpdateExpectedMaterial(CCCproc2, im =>
         {
           im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -904,7 +902,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           machs: new[] { 5, 6 },
           prog1: "prog111",
           prog1Rev: null,
-          prog2: "prog222",
+          prog2: "654",
           prog2Rev: null,
           loadMins1: 8,
           unloadMins1: 9,
@@ -917,7 +915,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         )},
         new[] {
           (prog: "prog111", rev: 5L),
-          (prog: "prog222", rev: 6L)
         }
       )
       .SetExpectedLoadCastings(new[] {
@@ -925,13 +922,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       })
       .DecrJobRemainCnt("uniq1", path: 1)
       .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
+        FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 5),
         FakeIccDsl.ExpectNewRoute(
           pal: 1,
           luls: new[] { 3, 4 },
           machs: new[] { 5, 6 },
-          progs: new[] { 1000 },
+          progs: new[] { 2000 },
           faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )
       })
@@ -953,7 +949,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .ExpectNoChanges()
       .SetBeforeMC(pal: 1)
       .MoveToMachine(pal: 1, mach: 6)
-      .StartMachine(mach: 6, program: 1000)
+      .StartMachine(mach: 6, program: 2000)
       .UpdateExpectedMaterial(AAAproc1, im =>
       {
         im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -1026,7 +1022,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           pal: 2,
           luls: new[] { 3, 4 },
           machs: new[] { 5, 6 },
-          progs: new[] { 1001 },
+          progs: new[] { 654 },
           faces: new[] { (face: 1, unique: "uniq1", proc: 2, path: 1) }
         )
       })
@@ -1068,24 +1064,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       // machine both pallets 1 and 2
       .MoveToMachine(pal: 2, mach: 6)
       .SetBeforeMC(pal: 2)
-      .StartMachine(mach: 6, program: 1001)
+      .StartMachine(mach: 6, program: 654)
       .UpdateExpectedMaterial(AAAproc2, im =>
       {
         im.Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Machining,
-          Program = "prog222 rev6",
+          Program = "654",
           ElapsedMachiningTime = TimeSpan.Zero,
           ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(10)
         };
       })
       .ExpectTransition(new[] {
-        FakeIccDsl.ExpectMachineBegin(pal: 2, machine: 6, program: "prog222", rev: 6, mat: AAAproc2)
+        FakeIccDsl.ExpectMachineBegin(pal: 2, machine: 6, program: "654", mat: AAAproc2)
       })
       .AdvanceMinutes(4) // = 38min
       .MoveToMachine(pal: 1, mach: 5)
       .SetBeforeMC(pal: 1)
-      .StartMachine(mach: 5, program: 1000)
+      .StartMachine(mach: 5, program: 2000)
       .UpdateExpectedMaterial(AAAproc2, im =>
       {
         im.Action.ElapsedMachiningTime = TimeSpan.FromMinutes(4);
@@ -1129,7 +1125,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         im.LastCompletedMachiningRouteStopIndex = 0;
       })
       .ExpectTransition(new[] {
-        FakeIccDsl.ExpectMachineEnd(pal: 2, mach: 6, program: "prog222", rev: 6, elapsedMin: 4 + 4 + 1, activeMin: 10, mats: AAAproc2)
+        FakeIccDsl.ExpectMachineEnd(pal: 2, mach: 6, program: "654", elapsedMin: 4 + 4 + 1, activeMin: 10, mats: AAAproc2)
       })
       .MoveToBuffer(pal: 1, buff: 1)
       .MoveToBuffer(pal: 2, buff: 2)
@@ -1233,7 +1229,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       // run machine cycles for both pallets
       .MoveToMachine(pal: 1, mach: 5)
       .SetBeforeMC(pal: 1)
-      .StartMachine(mach: 5, program: 1000)
+      .StartMachine(mach: 5, program: 2000)
       .UpdateExpectedMaterial(CCCproc1, im =>
       {
         im.Action = new InProcessMaterialAction()
@@ -1261,19 +1257,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .MoveToBuffer(pal: 1, buff: 1)
       .MoveToMachine(pal: 2, mach: 5)
       .SetBeforeMC(pal: 2)
-      .StartMachine(mach: 5, program: 1001)
+      .StartMachine(mach: 5, program: 654)
       .UpdateExpectedMaterial(BBBproc2, im =>
       {
         im.Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Machining,
-          Program = "prog222 rev6",
+          Program = "654",
           ElapsedMachiningTime = TimeSpan.Zero,
           ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(10)
         };
       })
       .ExpectTransition(new[] {
-        FakeIccDsl.ExpectMachineBegin(pal: 2, machine: 5, program: "prog222", rev: 6, mat: BBBproc2)
+        FakeIccDsl.ExpectMachineBegin(pal: 2, machine: 5, program: "654", mat: BBBproc2)
       })
       .AdvanceMinutes(2) // = 63 min
       .EndMachine(mach: 5)
@@ -1284,7 +1280,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         im.LastCompletedMachiningRouteStopIndex = 0;
       })
       .ExpectTransition(new[] {
-        FakeIccDsl.ExpectMachineEnd(pal: 2, mach: 5, program: "prog222", rev: 6, elapsedMin: 2, activeMin: 10, mats: BBBproc2)
+        FakeIccDsl.ExpectMachineEnd(pal: 2, mach: 5, program: "654", elapsedMin: 2, activeMin: 10, mats: BBBproc2)
       })
       .MoveToBuffer(pal: 2, buff: 2)
       .ExpectNoChanges()
@@ -1434,14 +1430,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       })
       .DecrJobRemainCnt("uniq1", path: 1)
       .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
-        FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
+        FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 5),
+        FakeIccDsl.ExpectAddNewProgram(progNum: 2001, name: "prog222", rev: 6),
         FakeIccDsl.ExpectNewRoute(
           pal: 1,
           luls: new[] { 3 },
           unloads: new[] { 4 },
           machs: new[] { 5, 6 },
-          progs: new[] { 1000 },
+          progs: new[] { 2000 },
           faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )
       })
@@ -1460,7 +1456,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       })
       .MoveToMachine(pal: 1, mach: 6)
       .SetBeforeMC(pal: 1)
-      .StartMachine(mach: 6, program: 1000)
+      .StartMachine(mach: 6, program: 2000)
       .UpdateExpectedMaterial(AAAproc1, im =>
       {
         im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -1529,7 +1525,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           luls: new[] { 4 },
           unloads: new[] { 5 },
           machs: new[] { 5, 6},
-          progs: new[] { 1001 },
+          progs: new[] { 2001 },
           faces: new[] { (face: 1, unique: "uniq1", proc: 2, path: 1)}
         )
       })
@@ -1629,15 +1625,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 5),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2001, name: "prog222", rev: 6),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             loads: new[] { 3, 4 },
             machs1: new[] { 5, 6 },
-            progs1: new[] { 1000 },
+            progs1: new[] { 2000 },
             machs2: new[] { 1, 2 },
-            progs2: new[] { 1001 },
+            progs2: new[] { 2001 },
             unloads: new[] { 3, 4 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
         )})
@@ -1658,7 +1654,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         .SetBeforeMC(pal: 1, machStepOffset: 0)
         .MoveToMachine(pal: 1, mach: 5)
-        .StartMachine(mach: 5, program: 1000)
+        .StartMachine(mach: 5, program: 2000)
         .UpdateExpectedMaterial(fstMats, im =>
         {
           im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -1691,7 +1687,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges()
         .MoveToMachine(pal: 1, mach: 2)
         .SetBeforeMC(pal: 1, machStepOffset: 1)
-        .StartMachine(mach: 2, program: 1001)
+        .StartMachine(mach: 2, program: 2001)
         .UpdateExpectedMaterial(fstMats, im =>
         {
           im.Action.Type = InProcessMaterialAction.ActionType.Machining;
@@ -1797,13 +1793,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1000, name: "prog111", rev: 5),
-          FakeIccDsl.ExpectAddNewProgram(progNum: 1001, name: "prog222", rev: 6),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2000, name: "prog111", rev: 5),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2001, name: "prog222", rev: 6),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
-            progs: new[] { 1000 },
+            progs: new[] { 2000 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
           )
         })

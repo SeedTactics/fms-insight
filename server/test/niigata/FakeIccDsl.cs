@@ -456,7 +456,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
             }).ToList()
       };
-      NiigataJobs.CheckJobs(newJ, _jobDB, _settings).Should().BeEmpty();
       _jobDB.AddJobs(newJ, null);
       foreach (var j in jobs)
       {
@@ -952,11 +951,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Pallet { get; set; }
       public int Machine { get; set; }
       public string Program { get; set; }
-      public long Revision { get; set; }
+      public long? Revision { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineBegin(int pal, int machine, string program, long rev, IEnumerable<LogMaterial> mat)
+    public static ExpectedChange ExpectMachineBegin(int pal, int machine, string program, IEnumerable<LogMaterial> mat, long? rev = null)
     {
       return new ExpectMachineBeginEvent()
       {
@@ -973,13 +972,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Pallet { get; set; }
       public int Machine { get; set; }
       public string Program { get; set; }
-      public long Revision { get; set; }
+      public long? Revision { get; set; }
       public int ElapsedMin { get; set; }
       public int ActiveMin { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineEnd(int pal, int mach, string program, long rev, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange ExpectMachineEnd(int pal, int mach, string program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats, long? rev = null)
     {
       return new ExpectMachineEndEvent()
       {
@@ -1370,7 +1369,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     result: "",
                     endOfRoute: false
                 );
-                newLog.ProgramDetails["ProgramRevision"] = machBegin.Revision.ToString();
+                if (machBegin.Revision.HasValue)
+                {
+                  newLog.ProgramDetails["ProgramRevision"] = machBegin.Revision.Value.ToString();
+                }
                 expectedLogs.Add(newLog);
               }
               break;
@@ -1392,7 +1394,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   elapsed: TimeSpan.FromMinutes(machEnd.ElapsedMin),
                   active: TimeSpan.FromMinutes(machEnd.ActiveMin)
                 );
-                newLog.ProgramDetails["ProgramRevision"] = machEnd.Revision.ToString();
+                if (machEnd.Revision.HasValue)
+                {
+                  newLog.ProgramDetails["ProgramRevision"] = machEnd.Revision.Value.ToString();
+                }
                 expectedLogs.Add(newLog);
               }
               break;

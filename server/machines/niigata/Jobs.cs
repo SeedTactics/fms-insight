@@ -208,10 +208,10 @@ namespace BlackMaple.FMSInsight.Niigata
       return CheckJobs(new NewJobs()
       {
         Jobs = newJobs.ToList()
-      }, _jobs, _settings);
+      });
     }
 
-    public static List<string> CheckJobs(NewJobs jobs, JobDB jobDB, FMSSettings fmsSettings)
+    public List<string> CheckJobs(NewJobs jobs)
     {
       var errors = new List<string>();
 
@@ -244,11 +244,11 @@ namespace BlackMaple.FMSInsight.Niigata
                 errors.Add("Part " + j.PartName + " has non-integer pallets");
               }
             }
-            if (!string.IsNullOrEmpty(j.GetInputQueue(proc, path)) && !fmsSettings.Queues.ContainsKey(j.GetInputQueue(proc, path)))
+            if (!string.IsNullOrEmpty(j.GetInputQueue(proc, path)) && !_settings.Queues.ContainsKey(j.GetInputQueue(proc, path)))
             {
               errors.Add(" Part " + j.PartName + " has an input queue " + j.GetInputQueue(proc, path) + " which is not configured as a local queue in FMS Insight.");
             }
-            if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path)) && !fmsSettings.Queues.ContainsKey(j.GetOutputQueue(proc, path)))
+            if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path)) && !_settings.Queues.ContainsKey(j.GetOutputQueue(proc, path)))
             {
               errors.Add(" Part " + j.PartName + " has an output queue " + j.GetOutputQueue(proc, path) + " which is not configured as a queue in FMS Insight.");
             }
@@ -265,21 +265,33 @@ namespace BlackMaple.FMSInsight.Niigata
               }
               if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
               {
-                var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
+                var existing = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
                 var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
                 if (!existing && !newProg)
                 {
                   errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
                 }
-
               }
               else
               {
-                var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
+                var existing = _jobs.LoadMostRecentProgram(stop.ProgramName) != null;
                 var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
                 if (!existing && !newProg)
                 {
-                  errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is not found");
+                  if (int.TryParse(stop.ProgramName, out int progNum))
+                  {
+                    lock (_curStLock)
+                    {
+                      if (!_lastCellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignPallets.IsInsightProgram(p)))
+                      {
+                        errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
+                      }
+                    }
+                  }
+                  else
+                  {
+                    errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor is an integer");
+                  }
                 }
               }
 
@@ -292,7 +304,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
-      var errors = CheckJobs(jobs, _jobs, _settings);
+      var errors = CheckJobs(jobs);
       if (errors.Any())
       {
         throw new BadRequestException(string.Join(Environment.NewLine, errors));
