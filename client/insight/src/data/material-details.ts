@@ -299,10 +299,10 @@ export function printLabel(matId: number, proc: number, loadStation: number): Pl
   };
 }
 
-export function removeFromQueue(mat: MaterialDetail): PledgeToPromise<Action> {
+export function removeFromQueue(mat: MaterialDetail, operator: string | null): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined),
+    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID, operator).then(() => undefined),
   };
 }
 
@@ -389,6 +389,7 @@ export interface AddExistingMaterialToQueueData {
   readonly materialId: number;
   readonly queue: string;
   readonly queuePosition: number;
+  readonly operator: string | null;
 }
 
 export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): PledgeToPromise<Action> {
@@ -399,7 +400,8 @@ export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): P
       new api.QueuePosition({
         queue: d.queue,
         position: d.queuePosition,
-      })
+      }),
+      d.operator
     ),
   };
 }
@@ -411,6 +413,7 @@ export interface AddNewMaterialToQueueData {
   readonly queue: string;
   readonly queuePosition: number;
   readonly serial?: string;
+  readonly operator: string | null;
 }
 
 export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
@@ -422,7 +425,8 @@ export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
       d.pathGroup,
       d.queue,
       d.queuePosition,
-      d.serial || ""
+      d.serial || "",
+      d.operator
     ),
   };
 }
@@ -433,6 +437,7 @@ export interface AddNewCastingToQueueData {
   readonly queue: string;
   readonly queuePosition: number;
   readonly serials?: ReadonlyArray<string>;
+  readonly operator: string | null;
 }
 
 export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
@@ -443,7 +448,8 @@ export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
       d.queue,
       d.queuePosition,
       [...(d.serials || [])],
-      d.quantity
+      d.quantity,
+      d.operator
     ),
   };
 }

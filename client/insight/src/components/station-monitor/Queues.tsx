@@ -266,6 +266,9 @@ const ConnectedEditNoteDialog = connect((s) => ({}), {
 interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
   readonly closeDialog: () => void;
+  readonly usingLabelPrinter: boolean;
+  readonly operator?: string;
+  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
 }
 
 const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
@@ -306,7 +309,8 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
           LazySeq.ofIterable(props.material || [])
             .take(removeCnt)
             .map((m) => m.materialID)
-            .toArray()
+            .toArray(),
+          props.operator || null
         ).finally(close);
       }
     } else {
@@ -347,6 +351,18 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
         ) : undefined}
       </DialogContent>
       <DialogActions>
+        {props.material && props.material.length > 0 && props.usingLabelPrinter ? (
+          <Button
+            color="primary"
+            onClick={() =>
+              props.material && props.material.length > 0
+                ? props.printLabel(props.material[0].materialID, 0, 0)
+                : void 0
+            }
+          >
+            Print Label
+          </Button>
+        ) : undefined}
         <Button color="primary" onClick={remove} disabled={loading || (showRemove && isNaN(removeCnt))}>
           {loading && showRemove
             ? "Removing..."
@@ -374,6 +390,9 @@ interface QueueProps {
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+  readonly usingLabelPrinter: boolean;
+  readonly operator?: string;
+  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
 }
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
@@ -405,6 +424,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 materialId: region.material[se.oldIndex].materialID,
                 queue: region.label,
                 queuePosition: se.newIndex,
+                operator: props.operator || null,
               })
             }
           >
@@ -453,7 +473,13 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedChooseSerialOrDirectJobDialog />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
-      <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} />
+      <MultiMaterialDialog
+        material={multiMaterialDialog}
+        closeDialog={closeMultiMatDialog}
+        usingLabelPrinter={props.usingLabelPrinter}
+        operator={props.operator}
+        printLabel={props.printLabel}
+      />
     </main>
   );
 });
@@ -474,6 +500,10 @@ const buildQueueData = createSelector(
 export default connect(
   (st: Store) => ({
     data: buildQueueData(st),
+    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current,
   }),
   {
     openAddToQueue: (queueName: string) =>
@@ -494,5 +524,6 @@ export default connect(
       },
       matDetails.addExistingMaterialToQueue(d),
     ],
+    printLabel: matDetails.printLabel,
   }
 )(Queues);

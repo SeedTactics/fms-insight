@@ -55,6 +55,7 @@ namespace DebugMachineWatchApiServer
           "../../../sample-instructions/"
       ));
       System.Environment.SetEnvironmentVariable("FMS__QuarantineQueue", "Initial Quarantine");
+      System.Environment.SetEnvironmentVariable("FMS__RequireOperatorNamePromptWhenAddingMaterial", "True");
       BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
       {
         var backend = new MockServerBackend();
@@ -62,7 +63,12 @@ namespace DebugMachineWatchApiServer
         {
           Backend = backend,
           Name = "mock",
-          Version = "1.2.3.4"
+          Version = "1.2.3.4",
+          UsingLabelPrinterForSerials = true,
+          PrintLabel = (matId, process, loadStation) =>
+          {
+            Serilog.Log.Information("Print label for {matId} {process} {loadStation}", matId, process, loadStation);
+          }
         };
 
       });

@@ -139,6 +139,7 @@ namespace BlackMaple.MachineFramework
       StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
       RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
+      RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
       QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
       AdditionalLogServers =
         fmsSection.GetValue<string>("AdditionalServersForLogs", "")
