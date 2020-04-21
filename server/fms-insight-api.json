@@ -463,6 +463,12 @@
               "type": "string"
             },
             "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
           }
         ],
         "responses": {
@@ -526,6 +532,12 @@
             "format": "int32",
             "default": 1,
             "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
           }
         ],
         "responses": {
@@ -594,6 +606,12 @@
               "type": "string"
             },
             "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
           }
         ],
         "responses": {
@@ -669,6 +687,12 @@
               "$ref": "#/definitions/QueuePosition"
             },
             "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
           }
         ],
         "responses": {
@@ -690,6 +714,12 @@
             "required": true,
             "format": "int64",
             "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
           }
         ],
         "responses": {
@@ -717,6 +747,12 @@
               "type": "integer",
               "format": "int64"
             }
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
           }
         ],
         "responses": {
@@ -1550,6 +1586,9 @@
         },
         "QuarantineQueue": {
           "type": "string"
+        },
+        "RequireOperatorNamePromptWhenAddingMaterial": {
+          "type": "boolean"
         }
       }
     },

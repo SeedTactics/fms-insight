@@ -278,7 +278,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial)
+    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName = null)
     {
       string casting = partName;
 
@@ -297,9 +297,9 @@ namespace MazakMachineInterface
         }
       }
 
-      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial });
+      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
     }
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName = null)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -328,14 +328,14 @@ namespace MazakMachineInterface
         }
         // the add to queue log entry will use the process, so later when we lookup the latest completed process
         // for the material in the queue, it will be correctly computed.
-        log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1);
+        log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
       }
 
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName = null)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -373,13 +373,13 @@ namespace MazakMachineInterface
       }
       // the add to queue log entry will use the process, so later when we lookup the latest completed process
       // for the material in the queue, it will be correctly computed.
-      log.RecordAddMaterialToQueue(matId, process, queue, position);
+      log.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
       log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void SetMaterialInQueue(long materialId, string queue, int position)
+    public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -395,16 +395,16 @@ namespace MazakMachineInterface
         .Select(m => m.Process)
         .DefaultIfEmpty(0)
         .Max();
-      log.RecordAddMaterialToQueue(materialId, proc, queue, position);
+      log.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
-    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
       foreach (var materialId in materialIds)
-        log.RecordRemoveMaterialFromAllQueues(materialId);
+        log.RecordRemoveMaterialFromAllQueues(materialId, operatorName);
       logReader.RecheckQueues();
       RaiseNewCurrentStatus(GetCurrentStatus());
     }

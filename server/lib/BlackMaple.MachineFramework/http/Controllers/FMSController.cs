@@ -54,6 +54,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public string OpenIDConnectClientId { get; set; }
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
     [DataMember] public string QuarantineQueue { get; set; }
+    [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
   }
 
   [ApiController]
@@ -85,7 +86,8 @@ namespace BlackMaple.MachineFramework.Controllers
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
         LocalhostOpenIDConnectAuthority = _serverSt.AuthAuthority,
         UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials,
-        QuarantineQueue = _cfg.QuarantineQueue
+        QuarantineQueue = _cfg.QuarantineQueue,
+        RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial
       };
     }
 

@@ -1012,14 +1012,14 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task AddUnallocatedCastingToQueueByPartAsync(string partName, string queue, int pos, string serial)
+        public System.Threading.Tasks.Task AddUnallocatedCastingToQueueByPartAsync(string partName, string queue, int pos, string serial, string operName)
         {
-            return AddUnallocatedCastingToQueueByPartAsync(partName, queue, pos, serial, System.Threading.CancellationToken.None);
+            return AddUnallocatedCastingToQueueByPartAsync(partName, queue, pos, serial, operName, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task AddUnallocatedCastingToQueueByPartAsync(string partName, string queue, int pos, string serial, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task AddUnallocatedCastingToQueueByPartAsync(string partName, string queue, int pos, string serial, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (pos == null)
                 throw new System.ArgumentNullException("pos");
@@ -1029,6 +1029,10 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Replace("{partName}", System.Uri.EscapeDataString(ConvertToString(partName, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append("queue=").Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Append("pos=").Append(System.Uri.EscapeDataString(ConvertToString(pos, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            if (operName != null) 
+            {
+                urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
             urlBuilder_.Length--;
     
             var client_ = _httpClient;
@@ -1083,14 +1087,14 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task AddUnallocatedCastingToQueueAsync(string castingName, string queue, int pos, System.Collections.Generic.IEnumerable<string> serials, int? qty)
+        public System.Threading.Tasks.Task AddUnallocatedCastingToQueueAsync(string castingName, string queue, int pos, System.Collections.Generic.IEnumerable<string> serials, int? qty, string operName)
         {
-            return AddUnallocatedCastingToQueueAsync(castingName, queue, pos, serials, qty, System.Threading.CancellationToken.None);
+            return AddUnallocatedCastingToQueueAsync(castingName, queue, pos, serials, qty, operName, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task AddUnallocatedCastingToQueueAsync(string castingName, string queue, int pos, System.Collections.Generic.IEnumerable<string> serials, int? qty, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task AddUnallocatedCastingToQueueAsync(string castingName, string queue, int pos, System.Collections.Generic.IEnumerable<string> serials, int? qty, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (pos == null)
                 throw new System.ArgumentNullException("pos");
@@ -1103,6 +1107,10 @@ namespace BlackMaple.FMSInsight.API
             if (qty != null) 
             {
                 urlBuilder_.Append("qty=").Append(System.Uri.EscapeDataString(ConvertToString(qty, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (operName != null) 
+            {
+                urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
     
@@ -1158,14 +1166,14 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string serial)
+        public System.Threading.Tasks.Task AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string serial, string operName)
         {
-            return AddUnprocessedMaterialToQueueAsync(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial, System.Threading.CancellationToken.None);
+            return AddUnprocessedMaterialToQueueAsync(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial, operName, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string serial, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string serial, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (lastCompletedProcess == null)
                 throw new System.ArgumentNullException("lastCompletedProcess");
@@ -1183,6 +1191,10 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append("pathGroup=").Append(System.Uri.EscapeDataString(ConvertToString(pathGroup, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append("queue=").Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Append("pos=").Append(System.Uri.EscapeDataString(ConvertToString(pos, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            if (operName != null) 
+            {
+                urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
             urlBuilder_.Length--;
     
             var client_ = _httpClient;
@@ -1302,21 +1314,26 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task SetMaterialInQueueAsync(long materialId, QueuePosition queue)
+        public System.Threading.Tasks.Task SetMaterialInQueueAsync(long materialId, QueuePosition queue, string operName)
         {
-            return SetMaterialInQueueAsync(materialId, queue, System.Threading.CancellationToken.None);
+            return SetMaterialInQueueAsync(materialId, queue, operName, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task SetMaterialInQueueAsync(long materialId, QueuePosition queue, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task SetMaterialInQueueAsync(long materialId, QueuePosition queue, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/queue");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/queue?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
+            if (operName != null) 
+            {
+                urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            urlBuilder_.Length--;
     
             var client_ = _httpClient;
             try
@@ -1370,21 +1387,26 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task RemoveMaterialFromAllQueuesAsync(long materialId)
+        public System.Threading.Tasks.Task RemoveMaterialFromAllQueuesAsync(long materialId, string operName)
         {
-            return RemoveMaterialFromAllQueuesAsync(materialId, System.Threading.CancellationToken.None);
+            return RemoveMaterialFromAllQueuesAsync(materialId, operName, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task RemoveMaterialFromAllQueuesAsync(long materialId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task RemoveMaterialFromAllQueuesAsync(long materialId, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/queue");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/queue?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
+            if (operName != null) 
+            {
+                urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            urlBuilder_.Length--;
     
             var client_ = _httpClient;
             try
@@ -1435,18 +1457,22 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task BulkRemoveMaterialFromQueuesAsync(System.Collections.Generic.IEnumerable<long> id)
+        public System.Threading.Tasks.Task BulkRemoveMaterialFromQueuesAsync(System.Collections.Generic.IEnumerable<long> id, string operName)
         {
-            return BulkRemoveMaterialFromQueuesAsync(id, System.Threading.CancellationToken.None);
+            return BulkRemoveMaterialFromQueuesAsync(id, operName, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task BulkRemoveMaterialFromQueuesAsync(System.Collections.Generic.IEnumerable<long> id, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task BulkRemoveMaterialFromQueuesAsync(System.Collections.Generic.IEnumerable<long> id, string operName, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material?");
             foreach (var item_ in id) { urlBuilder_.Append("id=").Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append("&"); }
+            if (operName != null) 
+            {
+                urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
             urlBuilder_.Length--;
     
             var client_ = _httpClient;
@@ -3143,6 +3169,9 @@ namespace BlackMaple.FMSInsight.API
     
         [Newtonsoft.Json.JsonProperty("QuarantineQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string QuarantineQueue { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("RequireOperatorNamePromptWhenAddingMaterial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     
         public string ToJson() 
         {
