@@ -98,8 +98,19 @@ const useTableStyles = makeStyles((theme) =>
     pathDetails: {
       maxWidth: "20em",
     },
+    highlightedRow: {
+      backgroundColor: "#81C784",
+    },
   })
 );
+
+const highlightedComments = [/\bhold\b/, /\bmissing\b/, /\bwait\b/, /\bwaiting\b/, /\bnone\b/];
+
+function highlightRow(j: Readonly<api.IInProcessJob>): boolean {
+  const comment = j.comment;
+  if (!comment || comment === "") return false;
+  return LazySeq.ofIterable(highlightedComments).anyMatch((r) => r.test(comment));
+}
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentJobs = useSelector((s) => s.Current.current_status.jobs);
@@ -132,7 +143,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
       </TableHead>
       <TableBody>
         {jobs.map((j, idx) => (
-          <TableRow key={idx}>
+          <TableRow key={idx} className={highlightRow(j.job) ? classes.highlightedRow : undefined}>
             <TableCell>
               <div className={classes.labelContainer}>
                 <div className={classes.identicon}>
