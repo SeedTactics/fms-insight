@@ -61,6 +61,7 @@ import { LogEntries } from "../LogEntry";
 import { connect, mkAC } from "../../store/store";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
+import { currentOperator } from "../../data/operators";
 
 /*
 function getPosition(el: Element) {
@@ -464,7 +465,7 @@ export function InstructionButton({
 
 interface NotesDialogBodyProps {
   mat: matDetails.MaterialDetail;
-  operator?: string;
+  operator: string | null;
   setNotesOpen: (o: boolean) => void;
   addNote: (matId: number, process: number, operator: string | null, notes: string) => void;
 }
@@ -490,7 +491,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
       <DialogActions>
         <Button
           onClick={() => {
-            props.addNote(props.mat.materialID, 0, props.operator || null, curNote);
+            props.addNote(props.mat.materialID, 0, props.operator, curNote);
             props.setNotesOpen(false);
             setCurNote("");
           }}
@@ -515,9 +516,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
 
 const ConnectedNotesDialogBody = connect(
   (st) => ({
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current,
+    operator: currentOperator(st),
   }),
   {
     addNote: matDetails.addNote,

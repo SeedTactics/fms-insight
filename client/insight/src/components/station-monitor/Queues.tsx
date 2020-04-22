@@ -78,6 +78,7 @@ import { QueueData, selectQueueData, extractJobRawMaterial, loadRawMaterialEvent
 import { LogEntries } from "../LogEntry";
 import { JobsBackend } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
+import { currentOperator } from "../../data/operators";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -267,7 +268,7 @@ interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
   readonly closeDialog: () => void;
   readonly usingLabelPrinter: boolean;
-  readonly operator?: string;
+  readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
@@ -310,7 +311,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
             .take(removeCnt)
             .map((m) => m.materialID)
             .toArray(),
-          props.operator || null
+          props.operator
         ).finally(close);
       }
     } else {
@@ -396,7 +397,7 @@ interface QueueProps {
   openAddToQueue: (queueName: string) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly usingLabelPrinter: boolean;
-  readonly operator?: string;
+  readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
@@ -429,7 +430,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 materialId: region.material[se.oldIndex].materialID,
                 queue: region.label,
                 queuePosition: se.newIndex,
-                operator: props.operator || null,
+                operator: props.operator,
               })
             }
           >
@@ -506,9 +507,7 @@ export default connect(
   (st: Store) => ({
     data: buildQueueData(st),
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current,
+    operator: currentOperator(st),
   }),
   {
     openAddToQueue: (queueName: string) =>

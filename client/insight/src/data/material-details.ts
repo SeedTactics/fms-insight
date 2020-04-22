@@ -240,7 +240,7 @@ export interface CompleteInspectionData {
   readonly mat: MaterialDetail;
   readonly inspType: string;
   readonly success: boolean;
-  readonly operator?: string;
+  readonly operator: string | null;
 }
 
 export function completeInspection({
@@ -271,7 +271,7 @@ export function completeInspection({
 
 export interface CompleteWashData {
   readonly mat: MaterialDetail;
-  readonly operator?: string;
+  readonly operator: string | null;
 }
 
 export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {

@@ -47,10 +47,11 @@ import * as matDetails from "../../data/material-details";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
+import { currentOperator } from "../../data/operators";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
-  readonly operator?: string;
+  readonly operator: string | null;
   readonly inspection_type: string;
   readonly quarantineQueue: string | null;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
@@ -74,11 +75,7 @@ function InspButtons(props: InspButtonsProps) {
   return (
     <>
       {props.display_material && props.display_material.partName !== "" ? (
-        <InstructionButton
-          material={props.display_material}
-          type={props.inspection_type}
-          operator={props.operator || null}
-        />
+        <InstructionButton material={props.display_material} type={props.inspection_type} operator={props.operator} />
       ) : undefined}
       {props.display_material && props.quarantineQueue !== null ? (
         <Tooltip title={"Move to " + props.quarantineQueue}>
@@ -110,7 +107,7 @@ function InspButtons(props: InspButtonsProps) {
 }
 
 interface InspDialogProps extends MaterialDialogProps {
-  readonly operator?: string;
+  readonly operator: string | null;
   readonly focusInspectionType: string;
   readonly quarantineQueue: string | null;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
@@ -173,9 +170,7 @@ const ConnectedInspDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
     focusInspectionType: st.Route.selected_insp_type || "",
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current,
+    operator: currentOperator(st),
     quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
   }),
   {

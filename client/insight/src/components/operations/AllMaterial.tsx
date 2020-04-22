@@ -51,6 +51,7 @@ import { LazySeq } from "../../data/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
 import { IInProcessMaterial } from "../../data/api";
 import { HashMap, Ordering } from "prelude-ts";
+import { currentOperator } from "../../data/operators";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
@@ -232,9 +233,7 @@ function AllMatDialog(props: AllMatDialogProps) {
 
 const ConnectedAllMatDialog = connect(
   (st) => ({
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub || null
-      : st.Operators.current || null,
+    operator: currentOperator(st),
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -367,9 +366,7 @@ export default connect(
   (st) => ({
     allBins: extractMaterialRegions(st),
     display_material: st.MaterialDetails.material,
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub || null
-      : st.Operators.current || null,
+    operator: currentOperator(st),
   }),
   {
     openMat: matDetails.openMaterialDialog,

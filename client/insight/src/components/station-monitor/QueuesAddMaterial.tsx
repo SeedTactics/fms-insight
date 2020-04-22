@@ -62,6 +62,7 @@ import { LazySeq } from "../../data/lazyseq";
 import { Tooltip } from "@material-ui/core";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
 import { HashSet } from "prelude-ts";
+import { currentOperator } from "../../data/operators";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -537,9 +538,7 @@ export const ConnectedMaterialDialog = connect(
     queueNames: st.Route.standalone_queues,
     quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub || null
-      : st.Operators.current || null,
+    operator: currentOperator(st),
     promptForOperator: st.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
   }),
   {
@@ -811,9 +810,7 @@ export const ConnectedAddCastingDialog = connect(
       [key: string]: Readonly<api.IInProcessJob>;
     },
     castingNames: s.Events.last30.sim_use.castingNames,
-    operator: s.ServerSettings.user
-      ? s.ServerSettings.user.profile.name || s.ServerSettings.user.profile.sub || null
-      : s.Operators.current || null,
+    operator: currentOperator(s),
     promptForOperator: s.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
   }),
   {
