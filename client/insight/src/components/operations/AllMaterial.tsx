@@ -51,7 +51,6 @@ import { LazySeq } from "../../data/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
 import { IInProcessMaterial } from "../../data/api";
 import { HashMap, Ordering } from "prelude-ts";
-import { currentOperator } from "../../data/operators";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
@@ -206,8 +205,7 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 interface AllMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
   readonly quarantineQueue: boolean;
-  readonly operator: string | null;
-  readonly removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) => void;
+  readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
   readonly onClose: () => void;
 }
 
@@ -221,7 +219,7 @@ function AllMatDialog(props: AllMatDialogProps) {
       buttons={
         <>
           {displayMat && props.quarantineQueue ? (
-            <Button color="primary" onClick={() => props.removeFromQueue(displayMat, props.operator || null)}>
+            <Button color="primary" onClick={() => props.removeFromQueue(displayMat)}>
               Remove From System
             </Button>
           ) : undefined}
@@ -231,26 +229,20 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
-const ConnectedAllMatDialog = connect(
-  (st) => ({
-    operator: currentOperator(st),
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-    removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) =>
-      [
-        matDetails.removeFromQueue(mat, operator),
-        { type: matDetails.ActionType.CloseMaterialDialog },
-        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
-      ] as AppActionBeforeMiddleware,
-  }
-)(AllMatDialog);
+const ConnectedAllMatDialog = connect((_) => ({}), {
+  onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+  removeFromQueue: (mat: matDetails.MaterialDetail) =>
+    [
+      matDetails.removeFromQueue(mat, null),
+      { type: matDetails.ActionType.CloseMaterialDialog },
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
+    ] as AppActionBeforeMiddleware,
+})(AllMatDialog);
 
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;
   readonly allBins: ReadonlyArray<MaterialBin>;
   readonly display_material: matDetails.MaterialDetail | null;
-  readonly operator: string | null;
   readonly openMat: (mat: MaterialSummary) => void;
   readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly moveMaterialBin: (curBinOrder: ReadonlyArray<MaterialBinId>, oldIdx: number, newIdx: number) => void;
@@ -269,7 +261,7 @@ function AllMaterial(props: AllMaterialProps) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
-      props.moveMaterialInQueue({ materialId, queue, queuePosition, operator: props.operator });
+      props.moveMaterialInQueue({ materialId, queue, queuePosition, operator: null });
     } else if (result.type === DragType.Queue) {
       props.moveMaterialBin(
         curBins.map((b) => b.binId),
@@ -366,7 +358,6 @@ export default connect(
   (st) => ({
     allBins: extractMaterialRegions(st),
     display_material: st.MaterialDetails.material,
-    operator: currentOperator(st),
   }),
   {
     openMat: matDetails.openMaterialDialog,
