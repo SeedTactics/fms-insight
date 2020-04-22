@@ -300,14 +300,16 @@ export function printLabel(
 ): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: FmsServerBackend.printLabel(matId, proc, loadStation, queue).then(() => undefined),
+    pledge: FmsServerBackend.printLabel(matId, proc, loadStation || undefined, queue || undefined).then(
+      () => undefined
+    ),
   };
 }
 
 export function removeFromQueue(mat: MaterialDetail, operator: string | null): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID, operator).then(() => undefined),
+    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID, operator || undefined).then(() => undefined),
   };
 }
 
@@ -345,7 +347,7 @@ export function addNote(
 ): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator),
+    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator || undefined),
   };
 }
 
@@ -406,7 +408,7 @@ export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): P
         queue: d.queue,
         position: d.queuePosition,
       }),
-      d.operator
+      d.operator || undefined
     ),
   };
 }
@@ -431,7 +433,7 @@ export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
       d.queue,
       d.queuePosition,
       d.serial || "",
-      d.operator
+      d.operator || undefined
     ),
   };
 }
@@ -454,7 +456,7 @@ export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
       d.queuePosition,
       [...(d.serials || [])],
       d.quantity,
-      d.operator
+      d.operator || undefined
     ),
   };
 }

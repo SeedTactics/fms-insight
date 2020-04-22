@@ -51,8 +51,11 @@ import DialogTitle from "@material-ui/core/DialogTitle";
 import DialogContent from "@material-ui/core/DialogContent";
 import TextField from "@material-ui/core/TextField";
 import DialogActions from "@material-ui/core/DialogActions";
+import Fab from "@material-ui/core/Fab";
 import IconButton from "@material-ui/core/IconButton";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import AddIcon from "@material-ui/icons/Add";
+import AssignIcon from "@material-ui/icons/AssignmentReturn";
 
 import {
   SortableInProcMaterial,
@@ -99,7 +102,7 @@ const useTableStyles = makeStyles((theme) =>
       maxWidth: "20em",
     },
     highlightedRow: {
-      backgroundColor: "#81C784",
+      backgroundColor: "#FF8A65",
     },
   })
 );
@@ -206,7 +209,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
           <TableRow>
             <TableCell colSpan={8} />
             <TableCell align="right">
-              <Button color="primary" variant="outlined" onClick={props.addCastings}>
+              <Button color="secondary" variant="outlined" onClick={props.addCastings}>
                 Add Raw Material
               </Button>
             </TableCell>
@@ -322,7 +325,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
             .take(removeCnt)
             .map((m) => m.materialID)
             .toArray(),
-          props.operator
+          props.operator || undefined
         ).finally(close);
       }
     } else {
@@ -395,6 +398,59 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   );
 });
 
+interface AddMaterialButtonsProps {
+  readonly label: string;
+  readonly rawMatQueue: boolean;
+  openAddToQueue(label: string): void;
+  openAddCasting(label: string): void;
+}
+
+const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
+  const currentJobs = useSelector((s) => s.Current.current_status.jobs);
+  const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
+  const bttnsToShow = React.useMemo(() => {
+    return {
+      hasCastings:
+        (props.rawMatQueue && hasOldCastings) ||
+        LazySeq.ofObject(currentJobs)
+          .flatMap(([, j]) => j.procsAndPaths[0]?.paths || [])
+          .anyMatch((p) => p.inputQueue === props.label && p.casting !== undefined && p.casting !== ""),
+      hasMatInput: LazySeq.ofObject(currentJobs)
+        .flatMap(([, j]) => j.procsAndPaths)
+        .flatMap((p) => p.paths)
+        .anyMatch((p) => p.inputQueue === props.label && (p.casting === undefined || p.casting === "")),
+    };
+  }, [hasOldCastings, currentJobs]);
+
+  return (
+    <>
+      {bttnsToShow.hasCastings ? (
+        <Tooltip title="Add Raw Material">
+          <Fab
+            color="secondary"
+            onClick={() => props.openAddCasting(props.label)}
+            size="large"
+            style={{ marginBottom: "-30px", zIndex: 1 }}
+          >
+            <AddIcon />
+          </Fab>
+        </Tooltip>
+      ) : undefined}
+      {bttnsToShow.hasMatInput ? (
+        <Tooltip title="Add Assigned Material">
+          <IconButton
+            onClick={() => props.openAddToQueue(props.label)}
+            size="medium"
+            style={{ marginBottom: "-20px", zIndex: 1 }}
+          >
+            <AssignIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      ) : undefined}
+    </>
+  );
+});
+
 const queueStyles = createStyles({
   mainScrollable: {
     padding: "8px",
@@ -433,7 +489,16 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             axis="xy"
             label={region.label}
             flexStart
-            onAddMaterial={region.free ? undefined : () => props.openAddToQueue(region.label)}
+            addMaterialButton={
+              region.free ? undefined : (
+                <AddMaterialButtons
+                  label={region.label}
+                  rawMatQueue={region.rawMaterialQueue}
+                  openAddToQueue={props.openAddToQueue}
+                  openAddCasting={setAddCastingQueue}
+                />
+              )
+            }
             distance={5}
             shouldCancelStart={() => false}
             onSortEnd={(se: SortEnd) =>

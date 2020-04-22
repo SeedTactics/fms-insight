@@ -41,9 +41,12 @@ export interface JobAPI {
   mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
   setJobComment(unique: string, comment: string): Promise<void>;
 
-  removeMaterialFromAllQueues(materialId: number, operatorName: string | null): Promise<void>;
-  bulkRemoveMaterialFromQueues(materialIds: ReadonlyArray<number> | null, operatorName: string | null): Promise<void>;
-  setMaterialInQueue(materialId: number, queue: api.QueuePosition, operatorName: string | null): Promise<void>;
+  removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
+  bulkRemoveMaterialFromQueues(
+    materialIds: ReadonlyArray<number> | null,
+    operatorName: string | undefined
+  ): Promise<void>;
+  setMaterialInQueue(materialId: number, queue: api.QueuePosition, operatorName: string | undefined): Promise<void>;
   addUnprocessedMaterialToQueue(
     jobUnique: string,
     lastCompletedProcess: number,
@@ -51,7 +54,7 @@ export interface JobAPI {
     queue: string,
     pos: number,
     serial: string,
-    operatorName: string | null
+    operatorName: string | undefined
   ): Promise<void>;
 
   addUnallocatedCastingToQueue(
@@ -60,20 +63,25 @@ export interface JobAPI {
     pos: number,
     serials: string[],
     qty: number,
-    operatrorName: string | null
+    operatrorName: string | undefined
   ): Promise<void>;
   addUnallocatedCastingToQueueByPart(
     partName: string,
     queue: string,
     pos: number,
     serial: string,
-    operatorName: string | null
+    operatorName: string | undefined
   ): Promise<void>;
 }
 
 export interface FmsAPI {
   fMSInformation(): Promise<Readonly<api.IFMSInfo>>;
-  printLabel(materialId: number, process: number, loadStation: number | null, queue: string | null): Promise<void>;
+  printLabel(
+    materialId: number,
+    process: number,
+    loadStation: number | undefined,
+    queue: string | undefined
+  ): Promise<void>;
 }
 
 export interface LogAPI {
@@ -116,7 +124,7 @@ export interface LogAPI {
     materialID: number,
     notes: string,
     process: number,
-    operatorName: string | null
+    operatorName: string | undefined
   ): Promise<Readonly<api.ILogEntry>>;
 }
 
@@ -188,15 +196,18 @@ function initMockBackend(data: Promise<MockData>) {
       // do nothing
       return Promise.resolve();
     },
-    removeMaterialFromAllQueues(_materialId: number, _operName: string | null): Promise<void> {
+    removeMaterialFromAllQueues(_materialId: number, _operName: string | undefined): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
-    bulkRemoveMaterialFromQueues(_materialIds: ReadonlyArray<number> | null, _operName: string | null): Promise<void> {
+    bulkRemoveMaterialFromQueues(
+      _materialIds: ReadonlyArray<number> | null,
+      _operName: string | undefined
+    ): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
-    setMaterialInQueue(_materialId: number, _queue: api.QueuePosition, _operName: string | null): Promise<void> {
+    setMaterialInQueue(_materialId: number, _queue: api.QueuePosition, _operName: string | undefined): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
@@ -207,7 +218,7 @@ function initMockBackend(data: Promise<MockData>) {
       _queue: string,
       _pos: number,
       _serial: string,
-      _operName: string | null
+      _operName: string | undefined
     ): Promise<void> {
       // do nothing
       return Promise.resolve();
@@ -218,7 +229,7 @@ function initMockBackend(data: Promise<MockData>) {
       _pos: number,
       _serials: string[],
       _qty: number,
-      _operName: string | null
+      _operName: string | undefined
     ): Promise<void> {
       // do nothing
       return Promise.resolve();
@@ -228,7 +239,7 @@ function initMockBackend(data: Promise<MockData>) {
       _queue: string,
       _pos: number,
       _serial: string,
-      _operName: string | null
+      _operName: string | undefined
     ): Promise<void> {
       // do nothing
       return Promise.resolve();
@@ -459,7 +470,7 @@ function initMockBackend(data: Promise<MockData>) {
         })
       );
     },
-    recordOperatorNotes(materialID: number, notes: string, process: number, operatorName: string | null) {
+    recordOperatorNotes(materialID: number, notes: string, process: number, operatorName: string | undefined) {
       const mat = new api.LogMaterial({
         id: materialID,
         uniq: "",
