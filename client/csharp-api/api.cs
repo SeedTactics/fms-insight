@@ -338,14 +338,14 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task PrintLabelAsync(long materialId, int? process, int? loadStation)
+        public System.Threading.Tasks.Task PrintLabelAsync(long materialId, int? process, int? loadStation, string queue)
         {
-            return PrintLabelAsync(materialId, process, loadStation, System.Threading.CancellationToken.None);
+            return PrintLabelAsync(materialId, process, loadStation, queue, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task PrintLabelAsync(long materialId, int? process, int? loadStation, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task PrintLabelAsync(long materialId, int? process, int? loadStation, string queue, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
@@ -360,6 +360,10 @@ namespace BlackMaple.FMSInsight.API
             if (loadStation != null) 
             {
                 urlBuilder_.Append("loadStation=").Append(System.Uri.EscapeDataString(ConvertToString(loadStation, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (queue != null) 
+            {
+                urlBuilder_.Append("queue=").Append(System.Uri.EscapeDataString(ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
     

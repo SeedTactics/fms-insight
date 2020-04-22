@@ -65,7 +65,7 @@ namespace DebugMachineWatchApiServer
           Name = "mock",
           Version = "1.2.3.4",
           UsingLabelPrinterForSerials = true,
-          PrintLabel = (matId, process, loadStation) =>
+          PrintLabel = (matId, process, loadStation, queue) =>
           {
             Serilog.Log.Information("Print label for {matId} {process} {loadStation}", matId, process, loadStation);
           }

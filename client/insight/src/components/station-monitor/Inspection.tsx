@@ -90,6 +90,7 @@ function InspButtons(props: InspButtonsProps) {
                     materialId: props.display_material.materialID,
                     queue: props.quarantineQueue,
                     queuePosition: 0,
+                    operator: props.operator || null,
                   })
                 : undefined
             }

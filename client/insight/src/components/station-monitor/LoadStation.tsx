@@ -289,7 +289,7 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openForceInspection: () => void;
   readonly usingLabelPrinter: boolean;
   readonly operator?: string;
-  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
@@ -343,7 +343,8 @@ function LoadMatDialog(props: LoadMatDialogProps) {
                     .maxOn((e) => e.proc)
                     .map((e) => e.proc)
                     .getOrElse(1),
-                  props.loadNum
+                  props.loadNum,
+                  null
                 )
               }
             >
@@ -421,6 +422,7 @@ const loadStyles = createStyles({
 interface LoadStationProps {
   readonly data: LoadStationAndQueueData;
   readonly dateOfCurrentStatus: Date;
+  readonly operator?: string;
   openMat: (m: Readonly<MaterialSummary>) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
@@ -485,6 +487,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                         materialId: mat.material[se.oldIndex].materialID,
                         queue: mat.label,
                         queuePosition: se.newIndex,
+                        operator: props.operator || null,
                       })
                     }
                   >
@@ -531,6 +534,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                         materialId: mat.material[se.oldIndex].materialID,
                         queue: mat.label,
                         queuePosition: se.newIndex,
+                        operator: props.operator || null,
                       })
                     }
                   >
@@ -597,6 +601,9 @@ export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
     dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC,
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
+      : st.Operators.current,
   }),
   {
     openMat: matDetails.openMaterialDialog,

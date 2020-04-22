@@ -205,7 +205,8 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 interface AllMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
   readonly quarantineQueue: boolean;
-  readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
+  readonly operator: string | null;
+  readonly removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) => void;
   readonly onClose: () => void;
 }
 
@@ -219,7 +220,7 @@ function AllMatDialog(props: AllMatDialogProps) {
       buttons={
         <>
           {displayMat && props.quarantineQueue ? (
-            <Button color="primary" onClick={() => props.removeFromQueue(displayMat)}>
+            <Button color="primary" onClick={() => props.removeFromQueue(displayMat, props.operator || null)}>
               Remove From System
             </Button>
           ) : undefined}
@@ -229,20 +230,28 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
-const ConnectedAllMatDialog = connect((st) => ({}), {
-  onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  removeFromQueue: (mat: matDetails.MaterialDetail) =>
-    [
-      matDetails.removeFromQueue(mat),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
-    ] as AppActionBeforeMiddleware,
-})(AllMatDialog);
+const ConnectedAllMatDialog = connect(
+  (st) => ({
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub || null
+      : st.Operators.current || null,
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) =>
+      [
+        matDetails.removeFromQueue(mat, operator),
+        { type: matDetails.ActionType.CloseMaterialDialog },
+        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
+      ] as AppActionBeforeMiddleware,
+  }
+)(AllMatDialog);
 
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;
   readonly allBins: ReadonlyArray<MaterialBin>;
   readonly display_material: matDetails.MaterialDetail | null;
+  readonly operator: string | null;
   readonly openMat: (mat: MaterialSummary) => void;
   readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly moveMaterialBin: (curBinOrder: ReadonlyArray<MaterialBinId>, oldIdx: number, newIdx: number) => void;
@@ -261,7 +270,7 @@ function AllMaterial(props: AllMaterialProps) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
-      props.moveMaterialInQueue({ materialId, queue, queuePosition });
+      props.moveMaterialInQueue({ materialId, queue, queuePosition, operator: props.operator });
     } else if (result.type === DragType.Queue) {
       props.moveMaterialBin(
         curBins.map((b) => b.binId),
@@ -358,6 +367,9 @@ export default connect(
   (st) => ({
     allBins: extractMaterialRegions(st),
     display_material: st.MaterialDetails.material,
+    operator: st.ServerSettings.user
+      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub || null
+      : st.Operators.current || null,
   }),
   {
     openMat: matDetails.openMaterialDialog,

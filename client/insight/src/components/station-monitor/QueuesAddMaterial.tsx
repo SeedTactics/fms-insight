@@ -71,7 +71,7 @@ interface ExistingMatInQueueDialogBodyProps {
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly usingLabelPrinter: boolean;
   readonly operator: string | null;
-  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
@@ -107,7 +107,12 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
                   .maxOn((e) => e.proc)
                   .map((e) => e.proc)
                   .getOrElse(1),
-                0
+                null,
+                LazySeq.ofIterable(props.display_material.events)
+                  .filter((e) => e.type === api.LogType.AddToQueue)
+                  .last()
+                  .map((e) => e.loc)
+                  .getOrNull()
               )
             }
           >
@@ -450,7 +455,7 @@ export interface QueueMatDialogProps {
   readonly removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) => void;
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly addNewAssigned: (d: matDetails.AddNewMaterialToQueueData) => void;
-  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 function QueueMatDialog(props: QueueMatDialogProps) {

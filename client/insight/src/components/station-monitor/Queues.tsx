@@ -268,7 +268,7 @@ interface MultiMaterialDialogProps {
   readonly closeDialog: () => void;
   readonly usingLabelPrinter: boolean;
   readonly operator?: string;
-  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
@@ -356,7 +356,12 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
             color="primary"
             onClick={() =>
               props.material && props.material.length > 0
-                ? props.printLabel(props.material[0].materialID, 0, 0)
+                ? props.printLabel(
+                    props.material[0].materialID,
+                    0,
+                    null,
+                    props.material[0].location.currentQueue || null
+                  )
                 : void 0
             }
           >
@@ -392,7 +397,7 @@ interface QueueProps {
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly usingLabelPrinter: boolean;
   readonly operator?: string;
-  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {

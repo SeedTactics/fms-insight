@@ -110,6 +110,7 @@ function WashDialog(props: WashDialogProps) {
                         materialId: props.display_material.materialID,
                         queue: quarantineQueue,
                         queuePosition: 0,
+                        operator: props.operator || null,
                       })
                     : undefined
                 }

@@ -292,10 +292,15 @@ export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
   };
 }
 
-export function printLabel(matId: number, proc: number, loadStation: number): PledgeToPromise<Action> {
+export function printLabel(
+  matId: number,
+  proc: number,
+  loadStation: number | null,
+  queue: string | null
+): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: FmsServerBackend.printLabel(matId, proc, loadStation).then(() => undefined),
+    pledge: FmsServerBackend.printLabel(matId, proc, loadStation, queue).then(() => undefined),
   };
 }
 

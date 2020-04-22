@@ -73,7 +73,7 @@ export interface JobAPI {
 
 export interface FmsAPI {
   fMSInformation(): Promise<Readonly<api.IFMSInfo>>;
-  printLabel(materialId: number, process: number, loadStation: number): Promise<void>;
+  printLabel(materialId: number, process: number, loadStation: number | null, queue: string | null): Promise<void>;
 }
 
 export interface LogAPI {

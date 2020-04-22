@@ -175,8 +175,13 @@
             "name": "loadStation",
             "in": "query",
             "format": "int32",
-            "default": 1,
-            "x-nullable": false
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "queue",
+            "in": "query",
+            "x-nullable": true
           }
         ],
         "responses": {

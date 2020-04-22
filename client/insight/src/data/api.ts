@@ -172,7 +172,7 @@ export class FmsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    printLabel(materialId: number, process: number | undefined, loadStation: number | undefined): Promise<void> {
+    printLabel(materialId: number, process: number | undefined, loadStation: number | null | undefined, queue: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/print-label/{materialId}?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -181,10 +181,10 @@ export class FmsClient {
             throw new Error("The parameter 'process' cannot be null.");
         else if (process !== undefined)
             url_ += "process=" + encodeURIComponent("" + process) + "&"; 
-        if (loadStation === null)
-            throw new Error("The parameter 'loadStation' cannot be null.");
-        else if (loadStation !== undefined)
+        if (loadStation !== undefined)
             url_ += "loadStation=" + encodeURIComponent("" + loadStation) + "&"; 
+        if (queue !== undefined)
+            url_ += "queue=" + encodeURIComponent("" + queue) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{

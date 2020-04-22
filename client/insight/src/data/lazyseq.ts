@@ -198,6 +198,14 @@ export class LazySeq<T> {
     }
   }
 
+  last(): Option<T> {
+    let last = Option.none<T>();
+    for (const x of this.iter) {
+      last = Option.some(x);
+    }
+    return last;
+  }
+
   length(): number {
     let cnt = 0;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
