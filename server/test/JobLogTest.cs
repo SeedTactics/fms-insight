@@ -883,8 +883,8 @@ namespace MachineWatchTest
 
       var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100, "", "", "");
       _jobLog.CreateMaterialID(100, "uniq100", "part100", 100);
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(otherQueueMat), "BBBB", 0, start.AddHours(-1))
-          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1)) });
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(otherQueueMat), "BBBB", 0, "theoper", start.AddHours(-1))
+          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1), "theoper") });
 
 
       var expectedLogs = new List<LogEntry>();
@@ -899,7 +899,7 @@ namespace MachineWatchTest
       _jobLog.CreateMaterialID(4, "uniq4", "part4", 44);
 
       // add via LogMaterial with position -1
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", -1, start)
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", -1, null, start)
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat1, 2, "AAAA", 0, start) });
       expectedLogs.Add(AddToQueueExpectedEntry(mat1, 2, "AAAA", 0, start));
 
@@ -909,7 +909,7 @@ namespace MachineWatchTest
           });
 
       //adding with LogMaterial with position -1 and existing queue
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat2), "AAAA", -1, start.AddMinutes(10))
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat2), "AAAA", -1, null, start.AddMinutes(10))
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat2, 3, "AAAA", 1, start.AddMinutes(10)) });
       expectedLogs.Add(AddToQueueExpectedEntry(mat2, 3, "AAAA", 1, start.AddMinutes(10)));
 
@@ -921,9 +921,9 @@ namespace MachineWatchTest
 
 
       //inserting into queue with LogMaterial
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, start.AddMinutes(20))
-          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20)) });
-      expectedLogs.Add(AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20)));
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, "opernnnn", start.AddMinutes(20))
+          .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20), "opernnnn") });
+      expectedLogs.Add(AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20), "opernnnn"));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
@@ -940,9 +940,9 @@ namespace MachineWatchTest
           });
 
       //removing from queue with LogMaterial
-      _jobLog.RecordRemoveMaterialFromAllQueues(JobLogDB.EventLogMaterial.FromLogMat(mat3), start.AddMinutes(30))
-          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30)) });
-      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30)));
+      _jobLog.RecordRemoveMaterialFromAllQueues(JobLogDB.EventLogMaterial.FromLogMat(mat3), "operyy", start.AddMinutes(30))
+          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30), "operyy") });
+      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, start.AddMinutes(30), "operyy"));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
@@ -952,7 +952,7 @@ namespace MachineWatchTest
 
 
       //add back in with matid only
-      _jobLog.RecordAddMaterialToQueue(mat3.MaterialID, mat3.Process, "AAAA", 2, start.AddMinutes(40))
+      _jobLog.RecordAddMaterialToQueue(mat3.MaterialID, mat3.Process, "AAAA", 2, null, start.AddMinutes(40))
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(40)) });
       expectedLogs.Add(AddToQueueExpectedEntry(mat3, 6, "AAAA", 2, start.AddMinutes(40)));
 
@@ -964,7 +964,7 @@ namespace MachineWatchTest
           });
 
       //move item backwards in queue
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", 1, start.AddMinutes(50))
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", 1, null, start.AddMinutes(50))
           .Should().BeEquivalentTo(new[] {
                     RemoveFromQueueExpectedEntry(mat1, 7, "AAAA", 0, start.AddMinutes(50)),
                     AddToQueueExpectedEntry(mat1, 8, "AAAA", 1, start.AddMinutes(50))
@@ -980,7 +980,7 @@ namespace MachineWatchTest
           });
 
       //move item forwards in queue
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, start.AddMinutes(55))
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, null, start.AddMinutes(55))
           .Should().BeEquivalentTo(new[] {
                     RemoveFromQueueExpectedEntry(mat3, 9, "AAAA", 2, start.AddMinutes(55)),
                     AddToQueueExpectedEntry(mat3, 10, "AAAA", 1, start.AddMinutes(55))
@@ -996,7 +996,7 @@ namespace MachineWatchTest
           });
 
       //add large position
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat4), "AAAA", 500, start.AddMinutes(58))
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat4), "AAAA", 500, null, start.AddMinutes(58))
           .Should().BeEquivalentTo(new[] {
                     AddToQueueExpectedEntry(mat4, 11, "AAAA", 3, start.AddMinutes(58))
           });
@@ -1011,7 +1011,7 @@ namespace MachineWatchTest
           });
 
       //removing from queue with matid
-      _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, start.AddMinutes(60))
+      _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, null, start.AddMinutes(60))
           .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat2, 12, "AAAA", 0, start.AddMinutes(60)) });
       expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2, 12, "AAAA", 0, start.AddMinutes(60)));
 
@@ -1043,9 +1043,9 @@ namespace MachineWatchTest
       _jobLog.CreateMaterialID(4, "uniq4", "part4", 47);
 
       // add two material into queue 1
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", -1, start);
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", -1, null, start);
       expectedLogs.Add(AddToQueueExpectedEntry(mat1, 1, "AAAA", 0, start));
-      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat2), "AAAA", -1, start);
+      _jobLog.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat2), "AAAA", -1, null, start);
       expectedLogs.Add(AddToQueueExpectedEntry(mat2, 2, "AAAA", 1, start));
 
       _jobLog.GetMaterialInQueue("AAAA")
@@ -1323,9 +1323,9 @@ namespace MachineWatchTest
       return otherLogs.Select(l => l.Counter).Max();
     }
 
-    private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC)
+    private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC, string operName = null)
     {
-      return new LogEntry(
+      var e = new LogEntry(
           cntr: cntr,
           mat: new[] { mat },
           pal: "",
@@ -1337,11 +1337,16 @@ namespace MachineWatchTest
           endTime: timeUTC,
           result: "",
           endOfRoute: false);
+      if (!string.IsNullOrEmpty(operName))
+      {
+        e.ProgramDetails.Add("operator", operName);
+      }
+      return e;
     }
 
-    private LogEntry RemoveFromQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC)
+    private LogEntry RemoveFromQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC, string operName = null)
     {
-      return new LogEntry(
+      var e = new LogEntry(
           cntr: cntr,
           mat: new[] { mat },
           pal: "",
@@ -1353,6 +1358,11 @@ namespace MachineWatchTest
           endTime: timeUTC,
           result: "",
           endOfRoute: false);
+      if (!string.IsNullOrEmpty(operName))
+      {
+        e.ProgramDetails.Add("operator", operName);
+      }
+      return e;
     }
 
     private Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)

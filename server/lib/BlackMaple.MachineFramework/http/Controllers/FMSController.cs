@@ -54,6 +54,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public string OpenIDConnectClientId { get; set; }
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
     [DataMember] public string QuarantineQueue { get; set; }
+    [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
   }
 
   [ApiController]
@@ -85,7 +86,8 @@ namespace BlackMaple.MachineFramework.Controllers
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
         LocalhostOpenIDConnectAuthority = _serverSt.AuthAuthority,
         UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials,
-        QuarantineQueue = _cfg.QuarantineQueue
+        QuarantineQueue = _cfg.QuarantineQueue,
+        RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial
       };
     }
 
@@ -209,11 +211,11 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("print-label/{materialId}"), Authorize]
     [ProducesResponseType(200)]
     [ProducesResponseType(400)]
-    public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1, [FromQuery] int loadStation = 1)
+    public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1, [FromQuery] int? loadStation = null, [FromQuery] string queue = null)
     {
       if (_impl != null && _impl.PrintLabel != null)
       {
-        _impl.PrintLabel(materialId, process, loadStation);
+        _impl.PrintLabel(materialId, process, loadStation, queue);
         return Ok();
       }
       else

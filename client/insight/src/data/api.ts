@@ -172,7 +172,7 @@ export class FmsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    printLabel(materialId: number, process: number | undefined, loadStation: number | undefined): Promise<void> {
+    printLabel(materialId: number, process: number | undefined, loadStation: number | null | undefined, queue: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/print-label/{materialId}?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -181,10 +181,10 @@ export class FmsClient {
             throw new Error("The parameter 'process' cannot be null.");
         else if (process !== undefined)
             url_ += "process=" + encodeURIComponent("" + process) + "&"; 
-        if (loadStation === null)
-            throw new Error("The parameter 'loadStation' cannot be null.");
-        else if (loadStation !== undefined)
+        if (loadStation !== undefined)
             url_ += "loadStation=" + encodeURIComponent("" + loadStation) + "&"; 
+        if (queue !== undefined)
+            url_ += "queue=" + encodeURIComponent("" + queue) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -497,7 +497,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    addUnallocatedCastingToQueueByPart(partName: string | null, queue: string | null, pos: number, serial: string): Promise<void> {
+    addUnallocatedCastingToQueueByPart(partName: string | null, queue: string | null, pos: number, serial: string, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/part/{partName}/casting?";
         if (partName === undefined || partName === null)
             throw new Error("The parameter 'partName' must be defined.");
@@ -510,6 +510,8 @@ export class JobsClient {
             throw new Error("The parameter 'pos' must be defined and cannot be null.");
         else
             url_ += "pos=" + encodeURIComponent("" + pos) + "&"; 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serial);
@@ -542,7 +544,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    addUnallocatedCastingToQueue(castingName: string | null, queue: string | null, pos: number, serials: string[], qty: number | undefined): Promise<void> {
+    addUnallocatedCastingToQueue(castingName: string | null, queue: string | null, pos: number, serials: string[], qty: number | undefined, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
         if (castingName === undefined || castingName === null)
             throw new Error("The parameter 'castingName' must be defined.");
@@ -559,6 +561,8 @@ export class JobsClient {
             throw new Error("The parameter 'qty' cannot be null.");
         else if (qty !== undefined)
             url_ += "qty=" + encodeURIComponent("" + qty) + "&"; 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serials);
@@ -591,7 +595,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, pathGroup: number, queue: string | null, pos: number, serial: string): Promise<void> {
+    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, pathGroup: number, queue: string | null, pos: number, serial: string, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -612,6 +616,8 @@ export class JobsClient {
             throw new Error("The parameter 'pos' must be defined and cannot be null.");
         else
             url_ += "pos=" + encodeURIComponent("" + pos) + "&"; 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serial);
@@ -681,11 +687,13 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    setMaterialInQueue(materialId: number, queue: QueuePosition): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
+    setMaterialInQueue(materialId: number, queue: QueuePosition, operName: string | null | undefined): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
         url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(queue);
@@ -718,11 +726,13 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    removeMaterialFromAllQueues(materialId: number): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue";
+    removeMaterialFromAllQueues(materialId: number, operName: string | null | undefined): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
         url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -751,12 +761,14 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    bulkRemoveMaterialFromQueues(id: number[] | null): Promise<void> {
+    bulkRemoveMaterialFromQueues(id: number[] | null, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material?";
         if (id === undefined)
             throw new Error("The parameter 'id' must be defined.");
         else
             id && id.forEach(item => { url_ += "id=" + encodeURIComponent("" + item) + "&"; });
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -1602,6 +1614,7 @@ export class FMSInfo implements IFMSInfo {
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials!: boolean;
     quarantineQueue?: string | undefined;
+    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -1628,6 +1641,7 @@ export class FMSInfo implements IFMSInfo {
             this.openIDConnectClientId = data["OpenIDConnectClientId"];
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
             this.quarantineQueue = data["QuarantineQueue"];
+            this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
         }
     }
 
@@ -1654,6 +1668,7 @@ export class FMSInfo implements IFMSInfo {
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
         data["QuarantineQueue"] = this.quarantineQueue;
+        data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         return data; 
     }
 }
@@ -1669,6 +1684,7 @@ export interface IFMSInfo {
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials: boolean;
     quarantineQueue?: string | undefined;
+    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
 }
 
 export class HistoricData implements IHistoricData {

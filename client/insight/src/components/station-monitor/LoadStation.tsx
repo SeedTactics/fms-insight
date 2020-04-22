@@ -68,6 +68,7 @@ import { SortEnd } from "react-sortable-hoc";
 import { HashMap } from "prelude-ts";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
+import { currentOperator } from "../../data/operators";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -288,8 +289,8 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
   readonly usingLabelPrinter: boolean;
-  readonly operator?: string;
-  readonly printLabel: (matId: number, proc: number, loadStation: number) => void;
+  readonly operator: string | null;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
@@ -325,7 +326,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
             <InstructionButton
               material={props.display_material}
               type={instructionType(props.display_material)}
-              operator={props.operator || null}
+              operator={props.operator}
             />
           ) : undefined}
           <Button color="primary" onClick={props.openSetSerial}>
@@ -343,7 +344,8 @@ function LoadMatDialog(props: LoadMatDialogProps) {
                     .maxOn((e) => e.proc)
                     .map((e) => e.proc)
                     .getOrElse(1),
-                  props.loadNum
+                  props.loadNum,
+                  null
                 )
               }
             >
@@ -366,9 +368,7 @@ const ConnectedMaterialDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current,
+    operator: currentOperator(st),
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -421,6 +421,7 @@ const loadStyles = createStyles({
 interface LoadStationProps {
   readonly data: LoadStationAndQueueData;
   readonly dateOfCurrentStatus: Date;
+  readonly operator: string | null;
   openMat: (m: Readonly<MaterialSummary>) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
@@ -485,6 +486,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                         materialId: mat.material[se.oldIndex].materialID,
                         queue: mat.label,
                         queuePosition: se.newIndex,
+                        operator: props.operator,
                       })
                     }
                   >
@@ -531,6 +533,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                         materialId: mat.material[se.oldIndex].materialID,
                         queue: mat.label,
                         queuePosition: se.newIndex,
+                        operator: props.operator,
                       })
                     }
                   >
@@ -597,6 +600,7 @@ export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
     dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC,
+    operator: currentOperator(st),
   }),
   {
     openMat: matDetails.openMaterialDialog,

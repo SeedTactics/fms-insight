@@ -167,6 +167,11 @@ export function extractJobRawMaterial(
   mats: Iterable<Readonly<api.IInProcessMaterial>>
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
+    .filter(
+      ([, j]) =>
+        LazySeq.ofIterable(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumOn((x) => x) <
+        LazySeq.ofIterable(j.cyclesOnFirstProcess).sumOn((x) => x)
+    )
     .flatMap(([, j]) =>
       j.procsAndPaths[0].paths
         .filter((p) => p.inputQueue == queue)

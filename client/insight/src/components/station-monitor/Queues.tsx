@@ -51,8 +51,11 @@ import DialogTitle from "@material-ui/core/DialogTitle";
 import DialogContent from "@material-ui/core/DialogContent";
 import TextField from "@material-ui/core/TextField";
 import DialogActions from "@material-ui/core/DialogActions";
+import Fab from "@material-ui/core/Fab";
 import IconButton from "@material-ui/core/IconButton";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import AddIcon from "@material-ui/icons/Add";
+import AssignIcon from "@material-ui/icons/AssignmentReturn";
 
 import {
   SortableInProcMaterial,
@@ -78,6 +81,7 @@ import { QueueData, selectQueueData, extractJobRawMaterial, loadRawMaterialEvent
 import { LogEntries } from "../LogEntry";
 import { JobsBackend } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
+import { currentOperator } from "../../data/operators";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -97,8 +101,19 @@ const useTableStyles = makeStyles((theme) =>
     pathDetails: {
       maxWidth: "20em",
     },
+    highlightedRow: {
+      backgroundColor: "#FF8A65",
+    },
   })
 );
+
+const highlightedComments = [/\bhold\b/, /\bmissing\b/, /\bwait\b/, /\bwaiting\b/, /\bnone\b/];
+
+function highlightRow(j: Readonly<api.IInProcessJob>): boolean {
+  const comment = j.comment;
+  if (!comment || comment === "") return false;
+  return LazySeq.ofIterable(highlightedComments).anyMatch((r) => r.test(comment));
+}
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentJobs = useSelector((s) => s.Current.current_status.jobs);
@@ -110,7 +125,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     mats,
   ]);
   const hasCastings = React.useMemo(() => {
-    return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName);
+    return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName) >= 0;
   }, [hasOldCastings, jobs]);
   const classes = useTableStyles();
 
@@ -131,7 +146,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
       </TableHead>
       <TableBody>
         {jobs.map((j, idx) => (
-          <TableRow key={idx}>
+          <TableRow key={idx} className={highlightRow(j.job) ? classes.highlightedRow : undefined}>
             <TableCell>
               <div className={classes.labelContainer}>
                 <div className={classes.identicon}>
@@ -194,7 +209,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
           <TableRow>
             <TableCell colSpan={8} />
             <TableCell align="right">
-              <Button color="primary" variant="outlined" onClick={props.addCastings}>
+              <Button color="secondary" variant="outlined" onClick={props.addCastings}>
                 Add Raw Material
               </Button>
             </TableCell>
@@ -266,6 +281,9 @@ const ConnectedEditNoteDialog = connect((s) => ({}), {
 interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
   readonly closeDialog: () => void;
+  readonly usingLabelPrinter: boolean;
+  readonly operator: string | null;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
@@ -306,7 +324,8 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
           LazySeq.ofIterable(props.material || [])
             .take(removeCnt)
             .map((m) => m.materialID)
-            .toArray()
+            .toArray(),
+          props.operator || undefined
         ).finally(close);
       }
     } else {
@@ -347,6 +366,23 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
         ) : undefined}
       </DialogContent>
       <DialogActions>
+        {props.material && props.material.length > 0 && props.usingLabelPrinter ? (
+          <Button
+            color="primary"
+            onClick={() =>
+              props.material && props.material.length > 0
+                ? props.printLabel(
+                    props.material[0].materialID,
+                    0,
+                    null,
+                    props.material[0].location.currentQueue || null
+                  )
+                : void 0
+            }
+          >
+            Print Label
+          </Button>
+        ) : undefined}
         <Button color="primary" onClick={remove} disabled={loading || (showRemove && isNaN(removeCnt))}>
           {loading && showRemove
             ? "Removing..."
@@ -362,6 +398,59 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   );
 });
 
+interface AddMaterialButtonsProps {
+  readonly label: string;
+  readonly rawMatQueue: boolean;
+  openAddToQueue(label: string): void;
+  openAddCasting(label: string): void;
+}
+
+const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
+  const currentJobs = useSelector((s) => s.Current.current_status.jobs);
+  const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
+  const bttnsToShow = React.useMemo(() => {
+    return {
+      hasCastings:
+        (props.rawMatQueue && hasOldCastings) ||
+        LazySeq.ofObject(currentJobs)
+          .flatMap(([, j]) => j.procsAndPaths[0]?.paths || [])
+          .anyMatch((p) => p.inputQueue === props.label && p.casting !== undefined && p.casting !== ""),
+      hasMatInput: LazySeq.ofObject(currentJobs)
+        .flatMap(([, j]) => j.procsAndPaths)
+        .flatMap((p) => p.paths)
+        .anyMatch((p) => p.inputQueue === props.label && (p.casting === undefined || p.casting === "")),
+    };
+  }, [hasOldCastings, currentJobs]);
+
+  return (
+    <>
+      {bttnsToShow.hasCastings ? (
+        <Tooltip title="Add Raw Material">
+          <Fab
+            color="secondary"
+            onClick={() => props.openAddCasting(props.label)}
+            size="large"
+            style={{ marginBottom: "-30px", zIndex: 1 }}
+          >
+            <AddIcon />
+          </Fab>
+        </Tooltip>
+      ) : undefined}
+      {bttnsToShow.hasMatInput ? (
+        <Tooltip title="Add Assigned Material">
+          <IconButton
+            onClick={() => props.openAddToQueue(props.label)}
+            size="medium"
+            style={{ marginBottom: "-20px", zIndex: 1 }}
+          >
+            <AssignIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      ) : undefined}
+    </>
+  );
+});
+
 const queueStyles = createStyles({
   mainScrollable: {
     padding: "8px",
@@ -374,6 +463,9 @@ interface QueueProps {
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+  readonly usingLabelPrinter: boolean;
+  readonly operator: string | null;
+  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
@@ -397,7 +489,16 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             axis="xy"
             label={region.label}
             flexStart
-            onAddMaterial={region.free ? undefined : () => props.openAddToQueue(region.label)}
+            addMaterialButton={
+              region.free ? undefined : (
+                <AddMaterialButtons
+                  label={region.label}
+                  rawMatQueue={region.rawMaterialQueue}
+                  openAddToQueue={props.openAddToQueue}
+                  openAddCasting={setAddCastingQueue}
+                />
+              )
+            }
             distance={5}
             shouldCancelStart={() => false}
             onSortEnd={(se: SortEnd) =>
@@ -405,6 +506,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 materialId: region.material[se.oldIndex].materialID,
                 queue: region.label,
                 queuePosition: se.newIndex,
+                operator: props.operator,
               })
             }
           >
@@ -453,7 +555,13 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedChooseSerialOrDirectJobDialog />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
-      <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} />
+      <MultiMaterialDialog
+        material={multiMaterialDialog}
+        closeDialog={closeMultiMatDialog}
+        usingLabelPrinter={props.usingLabelPrinter}
+        operator={props.operator}
+        printLabel={props.printLabel}
+      />
     </main>
   );
 });
@@ -474,6 +582,8 @@ const buildQueueData = createSelector(
 export default connect(
   (st: Store) => ({
     data: buildQueueData(st),
+    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
+    operator: currentOperator(st),
   }),
   {
     openAddToQueue: (queueName: string) =>
@@ -494,5 +604,6 @@ export default connect(
       },
       matDetails.addExistingMaterialToQueue(d),
     ],
+    printLabel: matDetails.printLabel,
   }
 )(Queues);

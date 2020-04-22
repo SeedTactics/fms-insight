@@ -55,6 +55,7 @@ namespace DebugMachineWatchApiServer
           "../../../sample-instructions/"
       ));
       System.Environment.SetEnvironmentVariable("FMS__QuarantineQueue", "Initial Quarantine");
+      System.Environment.SetEnvironmentVariable("FMS__RequireOperatorNamePromptWhenAddingMaterial", "True");
       BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
       {
         var backend = new MockServerBackend();
@@ -62,7 +63,12 @@ namespace DebugMachineWatchApiServer
         {
           Backend = backend,
           Name = "mock",
-          Version = "1.2.3.4"
+          Version = "1.2.3.4",
+          UsingLabelPrinterForSerials = true,
+          PrintLabel = (matId, process, loadStation, queue) =>
+          {
+            Serilog.Log.Information("Print label for {matId} {process} {loadStation}", matId, process, loadStation);
+          }
         };
 
       });
@@ -196,14 +202,14 @@ namespace DebugMachineWatchApiServer
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
-    public void AddUnallocatedPartToQueue(string part, string queue, int position, string serial)
+    public void AddUnallocatedPartToQueue(string part, string queue, int position, string serial, string operatorName = null)
     {
-      Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {position} {serial}", part, queue, position, serial);
+      Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {position} {serial} {oper}", part, queue, position, serial, operatorName);
     }
 
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serials)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serials, string operatorName = null)
     {
-      Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials}", casting, qty, queue, position, serials);
+      Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials} {oper}", casting, qty, queue, position, serials, operatorName);
       for (int i = 0; i < qty; i++)
       {
         CurrentStatus.Material.Add(new InProcessMaterial()
@@ -229,10 +235,10 @@ namespace DebugMachineWatchApiServer
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial, string operatorName = null)
     {
-      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {pathGroup} {queue} {position} {serial}",
-        jobUnique, lastCompletedProcess, pathGroup, queue, position, serial);
+      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {pathGroup} {queue} {position} {serial} {oper}",
+        jobUnique, lastCompletedProcess, pathGroup, queue, position, serial, operatorName);
 
       var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
       CurrentStatus.Material.Add(new InProcessMaterial()
@@ -256,9 +262,9 @@ namespace DebugMachineWatchApiServer
       });
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
-    public void SetMaterialInQueue(long materialId, string queue, int position)
+    public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null)
     {
-      Serilog.Log.Information("SetMaterialInQueue {matId} {queue} {position}", materialId, queue, position);
+      Serilog.Log.Information("SetMaterialInQueue {matId} {queue} {position} {oper}", materialId, queue, position, operatorName);
 
       var toMove = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue);
       if (toMove == null) return;
@@ -294,9 +300,9 @@ namespace DebugMachineWatchApiServer
 
       OnNewStatus(CurrentStatus);
     }
-    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null)
     {
-      Serilog.Log.Information("RemoveMaterialFromAllQueues {@matId}", materialIds);
+      Serilog.Log.Information("RemoveMaterialFromAllQueues {@matId} {oper}", materialIds, operatorName);
 
       foreach (var materialId in materialIds)
       {
