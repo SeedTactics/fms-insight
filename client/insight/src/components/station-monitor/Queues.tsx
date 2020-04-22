@@ -125,7 +125,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     mats,
   ]);
   const hasCastings = React.useMemo(() => {
-    return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName);
+    return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName) >= 0;
   }, [hasOldCastings, jobs]);
   const classes = useTableStyles();
 
