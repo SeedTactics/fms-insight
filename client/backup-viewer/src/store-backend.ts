@@ -55,7 +55,7 @@ export const ServerBackend = {
 };
 
 export const JobsBackend = {
-  history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {
+  history(): Promise<Readonly<api.IHistoricData>> {
     return Promise.resolve({ jobs: {}, stationUse: [] });
   },
   currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
@@ -68,60 +68,37 @@ export const JobsBackend = {
       timeOfCurrentStatusUTC: new Date(),
     });
   },
-  mostRecentUnfilledWorkordersForPart(
-    part: string
-  ): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
+  mostRecentUnfilledWorkordersForPart(): Promise<
+    ReadonlyArray<Readonly<api.IPartWorkorder>>
+  > {
     return Promise.resolve([]);
   },
-  setJobComment(_uniq: string, _comment: string): Promise<void> {
+  setJobComment(): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
 
-  removeMaterialFromAllQueues(materialId: number): Promise<void> {
+  removeMaterialFromAllQueues(): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
-  bulkRemoveMaterialFromQueues(
-    _materialIds: ReadonlyArray<number> | null
-  ): Promise<void> {
+  bulkRemoveMaterialFromQueues(): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
-  setMaterialInQueue(
-    materialId: number,
-    queue: api.QueuePosition
-  ): Promise<void> {
+  setMaterialInQueue(): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
-  addUnprocessedMaterialToQueue(
-    jobUnique: string,
-    lastCompletedProcess: number,
-    path: number,
-    queue: string,
-    pos: number,
-    serial: string
-  ): Promise<void> {
+  addUnprocessedMaterialToQueue(): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
-  addUnallocatedCastingToQueue(
-    casting: string,
-    queue: string,
-    pos: number,
-    serials: string[],
-    qty: number | undefined
-  ): Promise<void> {
+  addUnallocatedCastingToQueue(): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
-  addUnallocatedCastingToQueueByPart(
-    partName: string,
-    queue: string,
-    pos: number,
-    serial: string
-  ): Promise<void> {
+  addUnallocatedCastingToQueueByPart(): Promise<void> {
     // do nothing
     return Promise.resolve();
   },
@@ -140,7 +117,7 @@ export const LogBackend = {
   },
 
   recent(
-    lastSeenCounter: number
+    _lastSeenCounter: number
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
     return Promise.reject("not implemented");
   },
@@ -177,63 +154,29 @@ export const LogBackend = {
     );
     return entries.map(api.LogEntry.fromJS);
   },
-  getWorkorders(
-    ids: string[]
-  ): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
+  getWorkorders(): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
     return Promise.resolve([]);
   },
 
-  setInspectionDecision(
-    materialID: number,
-    inspType: string,
-    inspect: boolean,
-    process: number,
-    jobUnique?: string,
-    partName?: string
-  ): Promise<Readonly<api.ILogEntry>> {
+  setInspectionDecision(): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
   },
 
-  recordInspectionCompleted(
-    insp: api.NewInspectionCompleted,
-    jobUnique?: string,
-    partName?: string
-  ): Promise<Readonly<api.ILogEntry>> {
+  recordInspectionCompleted(): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
   },
 
-  recordWashCompleted(
-    insp: api.NewWash,
-    jobUnique?: string,
-    partName?: string
-  ): Promise<Readonly<api.ILogEntry>> {
+  recordWashCompleted(): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
   },
 
-  setWorkorder(
-    materialID: number,
-    workorder: string,
-    process: number,
-    jobUnique?: string,
-    partName?: string
-  ): Promise<Readonly<api.ILogEntry>> {
+  setWorkorder(): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
   },
-  setSerial(
-    materialID: number,
-    serial: string,
-    process: number,
-    jobUnique?: string,
-    partName?: string
-  ): Promise<Readonly<api.ILogEntry>> {
+  setSerial(): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
   },
-  recordOperatorNotes(
-    materialID: number,
-    notes: string,
-    process: number,
-    operatorName: string | null
-  ): Promise<Readonly<api.ILogEntry>> {
+  recordOperatorNotes(): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");
   },
 };
