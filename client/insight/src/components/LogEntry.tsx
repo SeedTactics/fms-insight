@@ -339,8 +339,9 @@ export const LogEntry = React.memo(
                   props.setDetail(props.entry.counter === props.detailLogCounter ? null : props.entry.counter);
                   event.stopPropagation();
                 }}
+                size="small"
               >
-                <ChevronRightIcon />
+                <ChevronRightIcon fontSize="inherit" />
               </IconButton>
             ) : undefined}
           </TableCell>
