@@ -198,6 +198,8 @@ namespace MazakMachineInterface
       {
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
+
+      RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
     public void RecopyJobsToSystem()
