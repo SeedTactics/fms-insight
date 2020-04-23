@@ -125,6 +125,7 @@ namespace MazakMachineInterface
       public JobPlan Job { get; set; }
       public bool LowerPriorityScheduleMatchingCastingSkipped { get; set; }
       public Dictionary<int, ScheduleWithQueuesProcess> Procs { get; set; }
+      public int? NewPriority { get; set; }
     }
 
     private IEnumerable<ScheduleWithQueues> LoadSchedules(MazakSchedulesAndLoadActions mazakData)
@@ -181,6 +182,7 @@ namespace MazakMachineInterface
           Job = job,
           LowerPriorityScheduleMatchingCastingSkipped = skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
+          NewPriority = null
         };
         bool missingProc = false;
         for (int proc = 1; proc <= job.NumProcesses; proc++)
@@ -322,6 +324,15 @@ namespace MazakMachineInterface
               Log.Error("Did not allocate {toAdd} parts from queue! {sch}, {queue}", toAdd, sch, unassignedCastings);
             }
             schProc1.TargetMaterialCount = allocated.Count;
+
+            // if another schedule with a later priority is currently running, adding material to this
+            // schedule will interrupt that one.  Instead, increase priority
+            if (IsLaterPriorityCurrentlyRunning(sch, allSchs))
+            {
+              sch.NewPriority =
+                allSchs.Where(s => s.SchRow.DueDate == sch.SchRow.DueDate).Max(s => s.SchRow.Priority)
+                + 1;
+            }
           }
 
           if (toAdd > 0 && _waitForAllCastings && unassignedCastings < toAdd)
@@ -346,6 +357,11 @@ namespace MazakMachineInterface
         var newSch = sch.SchRow.Clone();
         newSch.Command = MazakWriteCommand.ScheduleMaterialEdit;
         newSchs.Add(newSch);
+
+        if (sch.NewPriority.HasValue)
+        {
+          newSch.Priority = sch.NewPriority.Value;
+        }
 
         foreach (var newProc in newSch.Processes)
         {
@@ -419,5 +435,42 @@ namespace MazakMachineInterface
       }
       return cnt;
     }
+
+    private static bool IsLaterPriorityCurrentlyRunning(ScheduleWithQueues currentSch, IEnumerable<ScheduleWithQueues> allSchedules)
+    {
+      var usedFixtureFaces = new HashSet<(string fixture, int face)>();
+      var usedPallets = new HashSet<string>();
+      foreach (var proc in currentSch.Procs)
+      {
+        var (plannedFix, plannedFace) = currentSch.Job.PlannedFixture(proc.Key, proc.Value.Path);
+        if (string.IsNullOrEmpty(plannedFix))
+        {
+          foreach (var p in currentSch.Job.PlannedPallets(proc.Key, proc.Value.Path))
+          {
+            usedPallets.Add(p);
+          }
+        }
+        else
+        {
+          usedFixtureFaces.Add((fixture: plannedFix, face: plannedFace));
+        }
+      }
+
+
+      return
+        allSchedules
+        .Any(s =>
+          (s.SchRow.DueDate > currentSch.SchRow.DueDate || (s.SchRow.DueDate == currentSch.SchRow.DueDate && s.SchRow.Priority > currentSch.SchRow.Priority))
+          &&
+          s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)
+          &&
+          s.Procs.Any(p =>
+            usedFixtureFaces.Contains(s.Job.PlannedFixture(p.Key, p.Value.Path))
+            ||
+            s.Job.PlannedPallets(p.Key, p.Value.Path).Any(usedPallets.Contains)
+          )
+        );
+    }
+
   }
 }
