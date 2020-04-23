@@ -125,6 +125,7 @@ namespace MazakMachineInterface
       public JobPlan Job { get; set; }
       public bool LowerPriorityScheduleMatchingCastingSkipped { get; set; }
       public Dictionary<int, ScheduleWithQueuesProcess> Procs { get; set; }
+      public DateTime? NewDueDate { get; set; }
       public int? NewPriority { get; set; }
     }
 
@@ -182,6 +183,7 @@ namespace MazakMachineInterface
           Job = job,
           LowerPriorityScheduleMatchingCastingSkipped = skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
+          NewDueDate = null,
           NewPriority = null
         };
         bool missingProc = false;
@@ -327,10 +329,15 @@ namespace MazakMachineInterface
 
             // if another schedule with a later priority is currently running, adding material to this
             // schedule will interrupt that one.  Instead, increase priority
-            if (IsLaterPriorityCurrentlyRunning(sch, allSchs))
+            var dueDateOfRunningSch = IsLaterPriorityCurrentlyRunning(sch, allSchs);
+            if (dueDateOfRunningSch.HasValue)
             {
+              if (sch.SchRow.DueDate != dueDateOfRunningSch.Value)
+              {
+                sch.NewDueDate = dueDateOfRunningSch.Value;
+              }
               sch.NewPriority =
-                allSchs.Where(s => s.SchRow.DueDate == sch.SchRow.DueDate).Max(s => s.SchRow.Priority)
+                allSchs.Where(s => s.SchRow.DueDate == dueDateOfRunningSch.Value).Max(s => s.SchRow.Priority)
                 + 1;
             }
           }
@@ -358,6 +365,10 @@ namespace MazakMachineInterface
         newSch.Command = MazakWriteCommand.ScheduleMaterialEdit;
         newSchs.Add(newSch);
 
+        if (sch.NewDueDate.HasValue)
+        {
+          newSch.DueDate = sch.NewDueDate.Value;
+        }
         if (sch.NewPriority.HasValue)
         {
           newSch.Priority = sch.NewPriority.Value;
@@ -436,7 +447,7 @@ namespace MazakMachineInterface
       return cnt;
     }
 
-    private static bool IsLaterPriorityCurrentlyRunning(ScheduleWithQueues currentSch, IEnumerable<ScheduleWithQueues> allSchedules)
+    private static DateTime? IsLaterPriorityCurrentlyRunning(ScheduleWithQueues currentSch, IEnumerable<ScheduleWithQueues> allSchedules)
     {
       var usedFixtureFaces = new HashSet<(string fixture, int face)>();
       var usedPallets = new HashSet<string>();
@@ -459,7 +470,7 @@ namespace MazakMachineInterface
 
       return
         allSchedules
-        .Any(s =>
+        .LastOrDefault(s =>
           (s.SchRow.DueDate > currentSch.SchRow.DueDate || (s.SchRow.DueDate == currentSch.SchRow.DueDate && s.SchRow.Priority > currentSch.SchRow.Priority))
           &&
           s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)
@@ -469,7 +480,8 @@ namespace MazakMachineInterface
             ||
             s.Job.PlannedPallets(p.Key, p.Value.Path).Any(usedPallets.Contains)
           )
-        );
+        )
+        ?.SchRow.DueDate;
     }
 
   }

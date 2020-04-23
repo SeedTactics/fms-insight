@@ -91,7 +91,7 @@ namespace MachineWatchTest
       trans.Should().BeNull();
     }
 
-    private MazakScheduleRow AddSchedule(TestMazakData read, int schId, string unique, string part, int pri, int numProc, int complete, int plan, IEnumerable<int> paths = null)
+    private MazakScheduleRow AddSchedule(TestMazakData read, int schId, string unique, string part, int pri, int numProc, int complete, int plan, IEnumerable<int> paths = null, DateTime? dueDate = null)
     {
       if (paths == null)
         paths = Enumerable.Repeat(1, numProc);
@@ -99,7 +99,7 @@ namespace MachineWatchTest
       {
         Comment = MazakPart.CreateComment(unique, paths, false),
         CompleteQuantity = complete,
-        DueDate = DateTime.Today,
+        DueDate = dueDate ?? DateTime.Today,
         FixForMachine = 1,
         HoldMode = 0,
         MissingFixture = 0,
@@ -1126,7 +1126,9 @@ namespace MachineWatchTest
       //     24 - 10 - 6 - 3 - 3 = 2 remaining
       var schRow1 = AddSchedule(read,
         schId: 10, unique: "uuuu", part: "pppp", numProc: 2, pri: 10, plan: 24, complete: 10,
-        paths: new[] { 1, 2 }); // paths are twisted
+        paths: new[] { 1, 2 }, // paths are twisted
+        dueDate: new DateTime(2020, 04, 23)
+      );
       AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 6, fixQty: 2);
       AddScheduleProcess(schRow1, proc: 2, matQty: 3, exeQty: 3);
 
@@ -1142,7 +1144,9 @@ namespace MachineWatchTest
       //   - thus 20 - 5 - 2 - 3 - 6 = 4 not yet assigned
       var schRow2 = AddSchedule(read,
         schId: 11, unique: "uuuu", part: "pppp", numProc: 2, pri: 8, plan: 20, complete: 5,
-        paths: new[] { 2, 1 }); // paths are twisted
+        paths: new[] { 2, 1 }, // paths are twisted
+        dueDate: new DateTime(2020, 04, 22)
+      );
       AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 2, fixQty: 2);
       AddScheduleProcess(schRow2, proc: 2, matQty: 6, exeQty: 3);
 
