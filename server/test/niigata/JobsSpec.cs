@@ -451,7 +451,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void UnallocatedQueues()
     {
       //add a casting
-      _jobs.AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" });
+      _jobs.AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, "theoper");
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -479,7 +479,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
-      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 });
+      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
       _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
             { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = ""}
@@ -499,7 +499,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
 
       //add an allocated material
-      _jobs.AddUnprocessedMaterialToQueue("uuu1", process: 1, pathGroup: 60, queue: "q1", position: 0, serial: "aaa");
+      _jobs.AddUnprocessedMaterialToQueue("uuu1", process: 1, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper");
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -519,14 +519,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.ClearReceivedCalls();
 
       //remove it
-      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 });
+      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 }, "myoper");
       _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
       //add it back in
-      _jobs.SetMaterialInQueue(1, "q1", 0);
+      _jobs.SetMaterialInQueue(1, "q1", 0, "theoper");
       _logDB.GetMaterialInQueue("q1").Should().BeEquivalentTo(new[] {
           new JobLogDB.QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1"}

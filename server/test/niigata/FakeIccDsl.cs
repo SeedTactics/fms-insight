@@ -315,6 +315,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         },
         queue,
         -1,
+        "theoperator",
         _status.TimeOfStatusUTC
       );
       _expectedMaterial[matId] = new InProcessMaterial()

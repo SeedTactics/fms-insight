@@ -384,7 +384,7 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Queues
-    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial)
+    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -408,10 +408,10 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial });
+      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
     }
 
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial)
+    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -439,13 +439,13 @@ namespace BlackMaple.FMSInsight.Niigata
             },
             serial[i]);
         }
-        _log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1);
+        _log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
       }
       _sync.JobsOrQueuesChanged();
 
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -482,12 +482,12 @@ namespace BlackMaple.FMSInsight.Niigata
           },
           serial);
       }
-      _log.RecordAddMaterialToQueue(matId, process, queue, position);
+      _log.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
       _log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       _sync.JobsOrQueuesChanged();
     }
 
-    public void SetMaterialInQueue(long materialId, string queue, int position)
+    public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -503,15 +503,15 @@ namespace BlackMaple.FMSInsight.Niigata
         .Select(m => m.Process)
         .DefaultIfEmpty(0)
         .Max();
-      _log.RecordAddMaterialToQueue(materialId, proc, queue, position);
+      _log.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
       _sync.JobsOrQueuesChanged();
     }
 
-    public void RemoveMaterialFromAllQueues(IList<long> materialIds)
+    public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
       foreach (var materialId in materialIds)
-        _log.RecordRemoveMaterialFromAllQueues(materialId);
+        _log.RecordRemoveMaterialFromAllQueues(materialId, operatorName);
       _sync.JobsOrQueuesChanged();
     }
     #endregion
