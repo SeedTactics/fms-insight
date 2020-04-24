@@ -34,7 +34,8 @@ import * as React from "react";
 import Table from "@material-ui/core/Table";
 import { HashMap, ToOrderable } from "prelude-ts";
 
-import { PartCycleData, format_cycle_inspection } from "../../data/events.cycles";
+import { PartCycleData } from "../../data/events.cycles";
+import { format_cycle_inspection } from "../../data/results.cycles";
 import { LazySeq } from "../../data/lazyseq";
 import {
   Column,

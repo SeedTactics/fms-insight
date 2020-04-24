@@ -77,18 +77,10 @@ export interface LogEntryProps extends WithStyles<typeof logStyles> {
 function logType(entry: api.ILogEntry): string {
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:
-      if (entry.result === "LOAD") {
-        if (entry.startofcycle) {
-          return "Start Load";
-        } else {
-          return "End Load";
-        }
+      if (entry.startofcycle) {
+        return "Start " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase();
       } else {
-        if (entry.startofcycle) {
-          return "Start Unload";
-        } else {
-          return "End Unload";
-        }
+        return "End " + entry.result.charAt(0).toUpperCase() + entry.result.substring(1).toLowerCase();
       }
 
     case api.LogType.MachineCycle:
