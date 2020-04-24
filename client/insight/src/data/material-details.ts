@@ -240,7 +240,7 @@ export interface CompleteInspectionData {
   readonly mat: MaterialDetail;
   readonly inspType: string;
   readonly success: boolean;
-  readonly operator?: string;
+  readonly operator: string | null;
 }
 
 export function completeInspection({
@@ -271,7 +271,7 @@ export function completeInspection({
 
 export interface CompleteWashData {
   readonly mat: MaterialDetail;
-  readonly operator?: string;
+  readonly operator: string | null;
 }
 
 export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
@@ -292,17 +292,24 @@ export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
   };
 }
 
-export function printLabel(matId: number, proc: number, loadStation: number): PledgeToPromise<Action> {
+export function printLabel(
+  matId: number,
+  proc: number,
+  loadStation: number | null,
+  queue: string | null
+): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: FmsServerBackend.printLabel(matId, proc, loadStation).then(() => undefined),
+    pledge: FmsServerBackend.printLabel(matId, proc, loadStation || undefined, queue || undefined).then(
+      () => undefined
+    ),
   };
 }
 
-export function removeFromQueue(mat: MaterialDetail): PledgeToPromise<Action> {
+export function removeFromQueue(mat: MaterialDetail, operator: string | null): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID).then(() => undefined),
+    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID, operator || undefined).then(() => undefined),
   };
 }
 
@@ -340,7 +347,7 @@ export function addNote(
 ): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator),
+    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator || undefined),
   };
 }
 
@@ -389,6 +396,7 @@ export interface AddExistingMaterialToQueueData {
   readonly materialId: number;
   readonly queue: string;
   readonly queuePosition: number;
+  readonly operator: string | null;
 }
 
 export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): PledgeToPromise<Action> {
@@ -399,7 +407,8 @@ export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): P
       new api.QueuePosition({
         queue: d.queue,
         position: d.queuePosition,
-      })
+      }),
+      d.operator || undefined
     ),
   };
 }
@@ -411,6 +420,7 @@ export interface AddNewMaterialToQueueData {
   readonly queue: string;
   readonly queuePosition: number;
   readonly serial?: string;
+  readonly operator: string | null;
 }
 
 export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
@@ -422,7 +432,8 @@ export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
       d.pathGroup,
       d.queue,
       d.queuePosition,
-      d.serial || ""
+      d.serial || "",
+      d.operator || undefined
     ),
   };
 }
@@ -433,6 +444,7 @@ export interface AddNewCastingToQueueData {
   readonly queue: string;
   readonly queuePosition: number;
   readonly serials?: ReadonlyArray<string>;
+  readonly operator: string | null;
 }
 
 export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
@@ -443,7 +455,8 @@ export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
       d.queue,
       d.queuePosition,
       [...(d.serials || [])],
-      d.quantity
+      d.quantity,
+      d.operator || undefined
     ),
   };
 }

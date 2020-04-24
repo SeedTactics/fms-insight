@@ -229,11 +229,11 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
-const ConnectedAllMatDialog = connect((st) => ({}), {
+const ConnectedAllMatDialog = connect((_) => ({}), {
   onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
   removeFromQueue: (mat: matDetails.MaterialDetail) =>
     [
-      matDetails.removeFromQueue(mat),
+      matDetails.removeFromQueue(mat, null),
       { type: matDetails.ActionType.CloseMaterialDialog },
       { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
     ] as AppActionBeforeMiddleware,
@@ -261,7 +261,7 @@ function AllMaterial(props: AllMaterialProps) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
-      props.moveMaterialInQueue({ materialId, queue, queuePosition });
+      props.moveMaterialInQueue({ materialId, queue, queuePosition, operator: null });
     } else if (result.type === DragType.Queue) {
       props.moveMaterialBin(
         curBins.map((b) => b.binId),

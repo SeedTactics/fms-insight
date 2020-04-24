@@ -48,8 +48,6 @@ import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import AddIcon from "@material-ui/icons/AddBox";
-import IconButton from "@material-ui/core/IconButton";
 import DragIndicator from "@material-ui/icons/DragIndicator";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
@@ -61,6 +59,7 @@ import { LogEntries } from "../LogEntry";
 import { connect, mkAC } from "../../store/store";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
+import { currentOperator } from "../../data/operators";
 
 /*
 function getPosition(el: Element) {
@@ -464,7 +463,7 @@ export function InstructionButton({
 
 interface NotesDialogBodyProps {
   mat: matDetails.MaterialDetail;
-  operator?: string;
+  operator: string | null;
   setNotesOpen: (o: boolean) => void;
   addNote: (matId: number, process: number, operator: string | null, notes: string) => void;
 }
@@ -490,7 +489,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
       <DialogActions>
         <Button
           onClick={() => {
-            props.addNote(props.mat.materialID, 0, props.operator || null, curNote);
+            props.addNote(props.mat.materialID, 0, props.operator, curNote);
             props.setNotesOpen(false);
             setCurNote("");
           }}
@@ -515,9 +514,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
 
 const ConnectedNotesDialogBody = connect(
   (st) => ({
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current,
+    operator: currentOperator(st),
   }),
   {
     addNote: matDetails.addNote,
@@ -604,11 +601,6 @@ const whiteboardRegionStyle = createStyles({
     fontSize: "small",
     flexGrow: 1,
   },
-  addButton: {
-    color: "rgba(0,0,0,0.5)",
-    height: "0.7em",
-    width: "0.7em",
-  },
   contentContainer: {
     width: "100%",
     display: "flex",
@@ -632,7 +624,7 @@ export interface WhiteboardRegionProps {
   readonly borderLeft?: boolean;
   readonly borderBottom?: boolean;
   readonly borderRight?: boolean;
-  readonly onAddMaterial?: () => void;
+  readonly addMaterialButton?: JSX.Element;
 }
 
 const WhiteboardRegionWithStyle = withStyles(whiteboardRegionStyle)(
@@ -655,14 +647,10 @@ const WhiteboardRegionWithStyle = withStyles(whiteboardRegionStyle)(
     }
     return (
       <div className={mainClasses.join(" ")}>
-        {props.label !== "" || props.onAddMaterial ? (
+        {props.label !== "" || props.addMaterialButton ? (
           <div className={props.classes.labelContainer}>
             <span className={props.classes.label}>{props.label}</span>
-            {props.onAddMaterial ? (
-              <IconButton onClick={props.onAddMaterial} className={props.classes.addButton}>
-                <AddIcon className={props.classes.addButton} />
-              </IconButton>
-            ) : undefined}
+            {props.addMaterialButton}
           </div>
         ) : undefined}
         <div className={props.classes.contentContainer} style={{ justifyContent }}>

@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { HashSet } from "prelude-ts";
+import * as serverSettings from "./server-settings";
 
 export enum ActionType {
   SetOperator = "Operators_SetOperator",
@@ -45,6 +46,15 @@ export type Action =
 export interface State {
   readonly operators: HashSet<string>;
   readonly current?: string;
+}
+
+export function currentOperator(st: {
+  readonly Operators: State;
+  readonly ServerSettings: serverSettings.State;
+}): string | null {
+  return st.ServerSettings.user
+    ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub || null
+    : st.Operators.current || null;
 }
 
 export const initial = {

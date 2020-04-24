@@ -49,9 +49,10 @@ import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/eve
 import Tooltip from "@material-ui/core/Tooltip";
 import { HashMap } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
+import { currentOperator } from "../../data/operators";
 
 interface WashDialogProps extends MaterialDialogProps {
-  readonly operator?: string;
+  readonly operator: string | null;
   readonly fmsInfo?: Readonly<api.IFMSInfo>;
   readonly completeWash: (mat: matDetails.CompleteWashData) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
@@ -98,7 +99,7 @@ function WashDialog(props: WashDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton material={props.display_material} type="wash" operator={props.operator || null} />
+            <InstructionButton material={props.display_material} type="wash" operator={props.operator} />
           ) : undefined}
           {props.display_material && quarantineQueue !== null ? (
             <Tooltip title={"Move to " + quarantineQueue}>
@@ -110,6 +111,7 @@ function WashDialog(props: WashDialogProps) {
                         materialId: props.display_material.materialID,
                         queue: quarantineQueue,
                         queuePosition: 0,
+                        operator: props.operator,
                       })
                     : undefined
                 }
@@ -143,9 +145,7 @@ function WashDialog(props: WashDialogProps) {
 const ConnectedWashDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
-    operator: st.ServerSettings.user
-      ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub
-      : st.Operators.current,
+    operator: currentOperator(st),
     fmsInfo: st.ServerSettings.fmsInfo,
   }),
   {

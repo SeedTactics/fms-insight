@@ -1866,7 +1866,7 @@ namespace BlackMaple.MachineFramework
       };
       return AddEntryInTransaction(trans =>
           mats
-          .SelectMany(mat => RemoveFromAllQueues(trans, mat, timeUTC))
+          .SelectMany(mat => RemoveFromAllQueues(trans, mat, operatorName: null, timeUTC: timeUTC))
           .Concat(new[] {
                     AddLogEntry(trans, log, foreignId, originalMessage)
           })
@@ -1934,7 +1934,7 @@ namespace BlackMaple.MachineFramework
           {
             if (unloadIntoQueues.ContainsKey(mat.MaterialID))
             {
-              msgs.AddRange(AddToQueue(trans, mat, unloadIntoQueues[mat.MaterialID], -1, timeUTC));
+              msgs.AddRange(AddToQueue(trans, mat, unloadIntoQueues[mat.MaterialID], -1, operatorName: null, timeUTC: timeUTC));
             }
           }
         }
@@ -2222,35 +2222,35 @@ namespace BlackMaple.MachineFramework
     }
 
     public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
-        EventLogMaterial mat, string queue, int position, DateTime? timeUTC = null)
+        EventLogMaterial mat, string queue, int position, string operatorName = null, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
-          AddToQueue(trans, mat, queue, position, timeUTC ?? DateTime.UtcNow)
+          AddToQueue(trans, mat, queue, position, operatorName, timeUTC ?? DateTime.UtcNow)
       );
     }
 
     public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
-        long matID, int process, string queue, int position, DateTime? timeUTC = null)
+        long matID, int process, string queue, int position, string operatorName = null, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
-          AddToQueue(trans, matID, process, queue, position, timeUTC ?? DateTime.UtcNow)
+          AddToQueue(trans, matID, process, queue, position, operatorName, timeUTC ?? DateTime.UtcNow)
       );
     }
 
 
     public IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(
-        EventLogMaterial mat, DateTime? timeUTC = null)
+        EventLogMaterial mat, string operatorName = null, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
-          RemoveFromAllQueues(trans, mat, timeUTC ?? DateTime.UtcNow)
+          RemoveFromAllQueues(trans, mat, operatorName, timeUTC ?? DateTime.UtcNow)
       );
     }
 
     public IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(
-        long matID, DateTime? timeUTC = null)
+        long matID, string operatorName = null, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
-          RemoveFromAllQueues(trans, matID, timeUTC ?? DateTime.UtcNow)
+          RemoveFromAllQueues(trans, matID, operatorName, timeUTC ?? DateTime.UtcNow)
       );
     }
 
@@ -2548,7 +2548,7 @@ namespace BlackMaple.MachineFramework
 
     #region Queues
 
-    private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, DateTime timeUTC)
+    private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC)
     {
       var mat = new EventLogMaterial()
       {
@@ -2557,14 +2557,14 @@ namespace BlackMaple.MachineFramework
         Face = ""
       };
 
-      return AddToQueue(trans, mat, queue, position, timeUTC);
+      return AddToQueue(trans, mat, queue, position, operatorName, timeUTC);
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, DateTime timeUTC)
+    private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC)
     {
       var ret = new List<MachineWatchInterface.LogEntry>();
 
-      ret.AddRange(RemoveFromAllQueues(trans, mat, timeUTC));
+      ret.AddRange(RemoveFromAllQueues(trans, mat, operatorName, timeUTC));
 
       using (var cmd = _connection.CreateCommand())
       {
@@ -2617,14 +2617,17 @@ namespace BlackMaple.MachineFramework
         Result = "",
         EndOfRoute = false
       };
+      if (!string.IsNullOrEmpty(operatorName))
+      {
+        log.ProgramDetails["operator"] = operatorName;
+      }
 
       ret.Add(AddLogEntry(trans, log, null, null));
-
 
       return ret;
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, DateTime timeUTC)
+    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, string operatorName, DateTime timeUTC)
     {
       var mat = new EventLogMaterial()
       {
@@ -2633,10 +2636,10 @@ namespace BlackMaple.MachineFramework
         Face = ""
       };
 
-      return RemoveFromAllQueues(trans, mat, timeUTC);
+      return RemoveFromAllQueues(trans, mat, operatorName, timeUTC);
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, EventLogMaterial mat, DateTime timeUTC)
+    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, EventLogMaterial mat, string operatorName, DateTime timeUTC)
     {
       using (var findCmd = _connection.CreateCommand())
       using (var updatePosCmd = _connection.CreateCommand())
@@ -2679,6 +2682,10 @@ namespace BlackMaple.MachineFramework
               Result = "",
               EndOfRoute = false
             };
+            if (!string.IsNullOrEmpty(operatorName))
+            {
+              log.ProgramDetails["operator"] = operatorName;
+            }
 
             logs.Add(AddLogEntry(trans, log, null, null));
 
@@ -3233,7 +3240,7 @@ namespace BlackMaple.MachineFramework
 
                     foreach (var logMat in mat[key])
                     {
-                      newEvts.AddRange(RemoveFromAllQueues(trans, logMat, timeUTC.AddSeconds(1)));
+                      newEvts.AddRange(RemoveFromAllQueues(trans, logMat, operatorName: null, timeUTC: timeUTC.AddSeconds(1)));
                     }
 
                   }

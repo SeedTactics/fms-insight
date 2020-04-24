@@ -91,7 +91,7 @@ namespace MachineWatchTest
       trans.Should().BeNull();
     }
 
-    private MazakScheduleRow AddSchedule(TestMazakData read, int schId, string unique, string part, int pri, int numProc, int complete, int plan, IEnumerable<int> paths = null)
+    private MazakScheduleRow AddSchedule(TestMazakData read, int schId, string unique, string part, int pri, int numProc, int complete, int plan, IEnumerable<int> paths = null, DateTime? dueDate = null)
     {
       if (paths == null)
         paths = Enumerable.Repeat(1, numProc);
@@ -99,7 +99,7 @@ namespace MachineWatchTest
       {
         Comment = MazakPart.CreateComment(unique, paths, false),
         CompleteQuantity = complete,
-        DueDate = DateTime.UtcNow.AddHours(pri),
+        DueDate = dueDate ?? DateTime.Today,
         FixForMachine = 1,
         HoldMode = 0,
         MissingFixture = 0,
@@ -185,6 +185,7 @@ namespace MachineWatchTest
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Id.Should().Be(10);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(2);
       trans.Schedules[0].Processes[0].ProcessNumber.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(2); // set the 2 material
@@ -245,6 +246,7 @@ namespace MachineWatchTest
       trans = queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(2);
       trans.Schedules[0].Processes[0].ProcessNumber.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(2);
@@ -299,6 +301,7 @@ namespace MachineWatchTest
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Id.Should().Be(10);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(2);
       trans.Schedules[0].Processes[0].ProcessNumber.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(1); // set the material back to 1
@@ -372,6 +375,7 @@ namespace MachineWatchTest
       _logDB.GetMaterialDetails(mat1).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Id.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(1); // set the material
@@ -446,6 +450,7 @@ namespace MachineWatchTest
       _logDB.GetMaterialDetails(mat3).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Id.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(2); // set the material
@@ -511,6 +516,7 @@ namespace MachineWatchTest
           });
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Id.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(2); // set the 2 already allocated
@@ -589,6 +595,7 @@ namespace MachineWatchTest
       var trans = queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Id.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(0); // clear the material
@@ -650,7 +657,7 @@ namespace MachineWatchTest
               });
     }
 
-    private void CreateMultiPathJob(string casting = "mycasting")
+    private void CreateMultiPathJob(string casting = "mycasting", bool matchingPallets = false, bool matchingFixtures = false)
     {
       var j = new JobPlan("uuuu", 2, new[] { 2, 2 });
       j.PartName = "pppp";
@@ -660,6 +667,14 @@ namespace MachineWatchTest
       j.SetPathGroup(2, 2, 1);
       j.AddProcessOnPallet(1, 1, "1");
       j.AddProcessOnPallet(2, 2, "2");
+      if (matchingPallets)
+      {
+        j.AddProcessOnPallet(1, 1, "3");
+      }
+      if (matchingFixtures)
+      {
+        j.SetFixtureFace(1, 1, "fixA", 10);
+      }
       j.SetInputQueue(1, 1, "castingQ");
       j.SetInputQueue(2, 2, "transQ");
       if (!string.IsNullOrEmpty(casting))
@@ -672,6 +687,10 @@ namespace MachineWatchTest
       j.AddProcessOnPallet(2, 1, "4");
       j.SetInputQueue(1, 2, "castingQ");
       j.SetInputQueue(2, 1, "transQ");
+      if (matchingFixtures)
+      {
+        j.SetFixtureFace(1, 2, "fixA", 10);
+      }
       if (!string.IsNullOrEmpty(casting))
         j.SetCasting(2, casting);
       _jobDB.AddJobs(new NewJobs()
@@ -740,6 +759,7 @@ namespace MachineWatchTest
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
+      trans.Schedules[0].Priority.Should().Be(10);
       var path1Rows = trans.Schedules[0].Processes;
       path1Rows.Count().Should().Be(2);
       path1Rows[0].ProcessNumber.Should().Be(1);
@@ -749,6 +769,7 @@ namespace MachineWatchTest
       path1Rows[1].MazakScheduleRowId.Should().Be(10);
       path1Rows[1].ProcessMaterialQuantity.Should().Be(1 + 5);
 
+      trans.Schedules[1].Priority.Should().Be(10);
       var path2Rows = trans.Schedules[1].Processes;
       path2Rows.Count().Should().Be(2);
       path2Rows[0].ProcessNumber.Should().Be(1);
@@ -822,6 +843,7 @@ namespace MachineWatchTest
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
+      trans.Schedules[0].Priority.Should().Be(10);
       var path1Rows = trans.Schedules[0].Processes;
       path1Rows.Count().Should().Be(2);
       path1Rows[0].MazakScheduleRowId.Should().Be(10);
@@ -831,6 +853,7 @@ namespace MachineWatchTest
       path1Rows[1].MazakScheduleRowId.Should().Be(10);
       path1Rows[1].ProcessMaterialQuantity.Should().Be(7); // unchanged
 
+      trans.Schedules[1].Priority.Should().Be(10);
       var path2Rows = trans.Schedules[1].Processes;
       path2Rows.Count().Should().Be(2);
       path2Rows[0].MazakScheduleRowId.Should().Be(11);
@@ -923,6 +946,7 @@ namespace MachineWatchTest
       _logDB.GetMaterialDetails(mat2).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 2 } });
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(8);
       var path2Rows = trans.Schedules[0].Processes;
       path2Rows.Count().Should().Be(2);
       path2Rows[0].MazakScheduleRowId.Should().Be(11);
@@ -957,6 +981,7 @@ namespace MachineWatchTest
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
+      trans.Schedules[0].Priority.Should().Be(8);
       var path1Rows = trans.Schedules[1].Processes;
       path1Rows.Count().Should().Be(2);
       path1Rows[0].MazakScheduleRowId.Should().Be(10);
@@ -966,6 +991,7 @@ namespace MachineWatchTest
       path1Rows[1].MazakScheduleRowId.Should().Be(10);
       path1Rows[1].ProcessMaterialQuantity.Should().Be(3); // unchanged
 
+      trans.Schedules[1].Priority.Should().Be(10);
       path2Rows = trans.Schedules[0].Processes;
       path2Rows.Count().Should().Be(2);
       path2Rows[0].MazakScheduleRowId.Should().Be(11);
@@ -1071,6 +1097,77 @@ namespace MachineWatchTest
       _logDB.GetMaterialDetails(mat4).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 2 } });
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(8); // the schedules use different pallets, so priority should not be increased
+      var path2Rows = trans.Schedules[0].Processes;
+      path2Rows.Count().Should().Be(2);
+      path2Rows[0].MazakScheduleRowId.Should().Be(11);
+      path2Rows[0].ProcessNumber.Should().Be(1);
+      path2Rows[0].ProcessMaterialQuantity.Should().Be(4); // new parts
+      path2Rows[1].ProcessNumber.Should().Be(2);
+      path2Rows[1].MazakScheduleRowId.Should().Be(11);
+      path2Rows[1].ProcessMaterialQuantity.Should().Be(6); // unchanged
+    }
+
+    [Theory]
+    [InlineData(null, true, false)]
+    [InlineData(null, false, true)]
+    [InlineData("mycasting", true, false)]
+    [InlineData("mycasting", false, true)]
+    public void AdjustsPriorityWhenAddingCastings(string casting, bool matchPallet, bool matchFixture)
+    {
+      var queues = new MazakQueues(_logDB, _jobDB, null, waitForAllCastings: true);
+      var read = new TestMazakData();
+
+      // path 1-2
+      //   - plan 24
+      //   - complete 10
+      //   - proc1: 6 in execution, 0 material in mazak
+      //   - proc2: 3 in execution, 3 material in mazak
+      //     24 - 10 - 6 - 3 - 3 = 2 remaining
+      var schRow1 = AddSchedule(read,
+        schId: 10, unique: "uuuu", part: "pppp", numProc: 2, pri: 10, plan: 24, complete: 10,
+        paths: new[] { 1, 2 }, // paths are twisted
+        dueDate: new DateTime(2020, 04, 23)
+      );
+      AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 6, fixQty: 2);
+      AddScheduleProcess(schRow1, proc: 2, matQty: 3, exeQty: 3);
+
+      var proc2path2 = Enumerable.Range(0, 3).Select(i =>
+        AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+      ).ToList();
+
+      //path 2-1
+      //   - plan 20
+      //   - complete 5
+      //   - proc1: 2 in execution, 0 material in mazak
+      //   - proc2: 3 in execution, 6 material in mazak
+      //   - thus 20 - 5 - 2 - 3 - 6 = 4 not yet assigned
+      var schRow2 = AddSchedule(read,
+        schId: 11, unique: "uuuu", part: "pppp", numProc: 2, pri: 8, plan: 20, complete: 5,
+        paths: new[] { 2, 1 }, // paths are twisted
+        dueDate: new DateTime(2020, 04, 22)
+      );
+      AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 2, fixQty: 2);
+      AddScheduleProcess(schRow2, proc: 2, matQty: 6, exeQty: 3);
+
+      var proc2path1 = Enumerable.Range(0, 6).Select(i =>
+        AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 2, queue: "transQ")
+      ).ToList();
+
+      CreateMultiPathJob(casting, matchPallet, matchFixture);
+      if (casting == null) casting = "pppp";
+
+      var mat1 = AddCasting(casting, "castingQ");
+      var mat2 = AddCasting(casting, "castingQ");
+      var mat3 = AddCasting(casting, "castingQ");
+      var mat4 = AddCasting(casting, "castingQ");
+      var mat5 = AddCasting(casting, "castingQ");
+
+      var trans = queues.CalculateScheduleChanges(read.ToData());
+
+      trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(11); // schedule has priority increased from 8 to 11
+
       var path2Rows = trans.Schedules[0].Processes;
       path2Rows.Count().Should().Be(2);
       path2Rows[0].MazakScheduleRowId.Should().Be(11);
@@ -1114,6 +1211,7 @@ namespace MachineWatchTest
       trans = queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Id.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessNumber.Should().Be(1);
@@ -1156,6 +1254,7 @@ namespace MachineWatchTest
       trans = queues.CalculateScheduleChanges(read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(10);
       trans.Schedules[0].Id.Should().Be(10);
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessNumber.Should().Be(1);
@@ -1228,6 +1327,7 @@ namespace MachineWatchTest
                   });
 
       trans.Schedules.Count.Should().Be(1);
+      trans.Schedules[0].Priority.Should().Be(8);
       trans.Schedules[0].Id.Should().Be(11);
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(1);

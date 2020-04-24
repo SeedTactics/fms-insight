@@ -70,25 +70,33 @@ namespace BlackMaple.MachineWatchInterface
     /// Add new raw material for part.  The part material has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial);
+    void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName = null);
 
     /// Add new castings.  The casting has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial);
+    void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName = null);
 
     /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
     /// and is passed only if the material has already been marked with a serial.
     /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
-    void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial);
+    void AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      int lastCompletedProcess,
+      int pathGroup,
+      string queue,
+      int position,
+      string serial,
+      string operatorName = null
+    );
 
     /// Add material into a queue or just into free material if the queue name is the empty string.
     /// The material will be inserted into the given position, bumping any later material to a
     /// larger position.  If the material is currently in another queue or a different position,
     /// it will be removed and placed in the given position.
-    void SetMaterialInQueue(long materialId, string queue, int position);
+    void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null);
 
-    void RemoveMaterialFromAllQueues(IList<long> materialIds);
+    void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
 
     event NewCurrentStatus OnNewCurrentStatus;
   }

@@ -110,29 +110,29 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("part/{partName}/casting")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnallocatedCastingToQueueByPart(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    public void AddUnallocatedCastingToQueueByPart(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial, [FromQuery] string operName = null)
     {
       if (string.IsNullOrEmpty(partName))
         throw new BadRequestException("Part name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      _control.AddUnallocatedPartToQueue(partName, queue, pos, serial);
+      _control.AddUnallocatedPartToQueue(partName, queue, pos, serial, operName);
     }
 
     [HttpPost("casting/{castingName}")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] List<string> serials, [FromQuery] int qty = 1)
+    public void AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] List<string> serials, [FromQuery] int qty = 1, [FromQuery] string operName = null)
     {
       if (string.IsNullOrEmpty(castingName))
         throw new BadRequestException("Casting name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      _control.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials);
+      _control.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials, operName);
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]
     [ProducesResponseType(typeof(void), 200)]
-    public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] int pathGroup, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial)
+    public void AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] int pathGroup, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial, [FromQuery] string operName = null)
     {
       if (string.IsNullOrEmpty(jobUnique))
         throw new BadRequestException("Job unique must be non-empty");
@@ -140,7 +140,7 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Queue must be non-empty");
       if (lastCompletedProcess < 0) lastCompletedProcess = 0;
       if (pathGroup < 0) pathGroup = 0;
-      _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial);
+      _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial, operName);
     }
 
     [HttpPut("job/{jobUnique}/comment")]
@@ -152,26 +152,26 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPut("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
-    public void SetMaterialInQueue(long materialId, [FromBody] QueuePosition queue)
+    public void SetMaterialInQueue(long materialId, [FromBody] QueuePosition queue, [FromQuery] string operName = null)
     {
       if (string.IsNullOrEmpty(queue.Queue))
         throw new BadRequestException("Queue name must be non-empty");
-      _control.SetMaterialInQueue(materialId, queue.Queue, queue.Position);
+      _control.SetMaterialInQueue(materialId, queue.Queue, queue.Position, operName);
     }
 
     [HttpDelete("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
-    public void RemoveMaterialFromAllQueues(long materialId)
+    public void RemoveMaterialFromAllQueues(long materialId, [FromQuery] string operName = null)
     {
-      _control.RemoveMaterialFromAllQueues(new[] { materialId });
+      _control.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
     }
 
     [HttpDelete("material")]
     [ProducesResponseType(typeof(void), 200)]
-    public void BulkRemoveMaterialFromQueues([FromQuery] List<long> id)
+    public void BulkRemoveMaterialFromQueues([FromQuery] List<long> id, [FromQuery] string operName = null)
     {
       if (id == null || id.Count == 0) return;
-      _control.RemoveMaterialFromAllQueues(id);
+      _control.RemoveMaterialFromAllQueues(id, operName);
     }
 
     [HttpDelete("planned-cycles")]

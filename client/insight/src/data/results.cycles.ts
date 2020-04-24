@@ -36,11 +36,10 @@ import {
   PartCycleData,
   stat_name_and_num,
   part_and_proc,
-  format_cycle_inspection,
-  statistical_times_for_cycle,
   isOutlier,
   EstimatedCycleTimes,
   splitElapsedLoadTimeAmongCycles,
+  PartAndStationOperation,
 } from "./events.cycles";
 import { LazySeq } from "./lazyseq";
 import * as api from "./api";
@@ -119,7 +118,7 @@ export function outlierMachineCycles(
       .filter((e) => !e.isLabor && e.x >= start && e.x <= end)
       .filter((cycle) => {
         if (cycle.material.length === 0) return false;
-        const stats = statistical_times_for_cycle(cycle.part, cycle.process, cycle.stationGroup, estimated);
+        const stats = estimated.get(PartAndStationOperation.ofPartCycle(cycle));
         return stats.isSome() && isOutlier(stats.get(), cycle.y / cycle.material.length);
       })
       .groupBy((e) => part_and_proc(e.part, e.process))
@@ -149,7 +148,7 @@ export function outlierLoadCycles(
         // another cycle arrives it will be recaluclated.  Thus showing stale data isn't a huge problem.
         if (Math.abs(differenceInSeconds(now, e.cycle.x)) < 15) return false;
 
-        const stats = statistical_times_for_cycle(e.cycle.part, e.cycle.process, e.cycle.stationGroup, estimated);
+        const stats = estimated.get(PartAndStationOperation.ofPartCycle(e.cycle));
         return stats.isSome() && isOutlier(stats.get(), e.elapsedForSingleMaterialMinutes);
       })
       .map((e) => e.cycle)
@@ -174,6 +173,21 @@ export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date):
 // --------------------------------------------------------------------------------
 // Clipboard
 // --------------------------------------------------------------------------------
+
+export function format_cycle_inspection(c: PartCycleData): string {
+  const ret = [];
+  const names = c.signaledInspections.addAll(c.completedInspections.keySet());
+  for (const name of names.toArray({ sortOn: (x) => x })) {
+    const completed = c.completedInspections.get(name);
+    if (completed.isSome()) {
+      const success = completed.get();
+      ret.push(name + "[" + (success ? "success" : "failed") + "]");
+    } else {
+      ret.push(name);
+    }
+  }
+  return ret.join(", ");
+}
 
 export function buildCycleTable(
   cycles: FilteredStationCycles,
