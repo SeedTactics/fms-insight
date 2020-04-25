@@ -62,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _icc = icc;
       _assign = assign;
       _createLog = create;
+      _icc.NewCurrentStatus += NewCurrentStatus;
       if (startThread)
       {
         _thread = new Thread(new ThreadStart(Thread));
@@ -73,10 +74,12 @@ namespace BlackMaple.FMSInsight.Niigata
     private System.Threading.Thread _thread;
     private AutoResetEvent _shutdown = new AutoResetEvent(false);
     private AutoResetEvent _recheck = new AutoResetEvent(false);
+    private ManualResetEvent _newCurStatus = new ManualResetEvent(false);
     private object _changeLock = new object();
 
     public void Dispose()
     {
+      _icc.NewCurrentStatus -= NewCurrentStatus;
       _shutdown.Set();
       if (_thread != null && !_thread.Join(TimeSpan.FromSeconds(15)))
         _thread.Abort();
@@ -85,6 +88,11 @@ namespace BlackMaple.FMSInsight.Niigata
     public void JobsOrQueuesChanged()
     {
       _recheck.Set();
+    }
+
+    private void NewCurrentStatus()
+    {
+      _newCurStatus.Set();
     }
 
     private void Thread()
@@ -96,7 +104,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           var sleepTime = TimeSpan.FromMinutes(1);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
-          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _recheck }, sleepTime, false);
+          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _recheck, _newCurStatus }, sleepTime, false);
           if (ret == 0)
           {
             Log.Debug("Thread shutdown");
@@ -105,6 +113,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
           try
           {
+            if (ret == 2)
+            {
+              // new current status events come in batches when many tables are changed simultaniously, so wait briefly
+              // so we only recalculate once
+              System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(100));
+            }
             SynchronizePallets(raisePalletChanged: ret == 1);
           }
           catch (Exception ex)
@@ -140,7 +154,7 @@ namespace BlackMaple.FMSInsight.Niigata
         NiigataAction action = null;
         do
         {
-
+          _newCurStatus.Reset();
           status = _icc.LoadNiigataStatus();
           var jobs = _jobs.LoadUnarchivedJobs();
 

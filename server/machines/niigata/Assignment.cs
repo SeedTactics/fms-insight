@@ -308,9 +308,9 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else
       {
-        long proposalId = DateTime.UtcNow.Ticks;
-        newMaster.Comment = proposalId.ToString();
-        _recordFaces.Save(newMaster.PalletNum, proposalId.ToString(), nowUtc, newPaths.Select(path =>
+        string uuid = Guid.NewGuid().ToString();
+        newMaster.Comment = uuid;
+        _recordFaces.Save(newMaster.PalletNum, uuid, nowUtc, newPaths.Select(path =>
           new AssignedJobAndPathForFace()
           {
             Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,
@@ -321,7 +321,6 @@ namespace BlackMaple.FMSInsight.Niigata
         ));
         return new NewPalletRoute()
         {
-          ProposalID = proposalId,
           NewMaster = newMaster
         };
       }

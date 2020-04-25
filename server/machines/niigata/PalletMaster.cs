@@ -239,7 +239,6 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public class NewPalletRoute : NiigataAction
   {
-    public long ProposalID { get; set; }
     public PalletMaster NewMaster { get; set; }
   }
 
@@ -273,5 +272,6 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     NiigataStatus LoadNiigataStatus();
     void PerformAction(NiigataAction a);
+    event Action NewCurrentStatus;
   }
 }

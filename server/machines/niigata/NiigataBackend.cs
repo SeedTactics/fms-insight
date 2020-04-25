@@ -89,6 +89,7 @@ namespace BlackMaple.FMSInsight.Niigata
       NiigataJobs = null;
       if (SyncPallets != null) SyncPallets.Dispose();
       SyncPallets = null;
+      if (NiigataICC != null) NiigataICC.Dispose();
       if (_log != null) _log.Close();
       _log = null;
       if (_jobs != null) _jobs.Close();

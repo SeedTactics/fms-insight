@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Linq;
+using System.Threading;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using Npgsql;
@@ -46,19 +47,161 @@ namespace BlackMaple.FMSInsight.Niigata
   //     supposed to be the specific mc that needs replacmenet?
 
 
-  public class NiigataICC : INiigataCommunication
+  // This class is not thread-safe, and assumes loading status
+  // and sending actions happens on a single thread (the syncpallets thread).
+  public class NiigataICC : INiigataCommunication, IDisposable
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataICC>();
     private JobDB _jobs;
     private string _programDir;
     private string _connStr;
+    private Thread _thread;
+    private Random _rng = new Random();
+
+    public event Action NewCurrentStatus;
 
     public NiigataICC(JobDB j, string progDir, string connectionStr)
     {
       _jobs = j;
       _programDir = progDir;
       _connStr = connectionStr;
+      _thread = new Thread(NotifyThread);
+      _thread.Start();
     }
 
+    #region Notify Thread
+    public void Dispose()
+    {
+      if (_thread != null)
+      {
+        _thread.Abort();
+        _thread.Join();
+      }
+    }
+    private void NotifyThread()
+    {
+      try
+      {
+        int failedCount = 0;
+        while (true)
+        {
+          Log.Debug("Opening connection to PostgreSQL");
+
+          bool openSuccess = false;
+          try
+          {
+            ListenForNotifications(out openSuccess);
+          }
+          catch (ThreadAbortException)
+          {
+            throw;
+          }
+          catch (Exception ex)
+          {
+            Log.Error(ex, "Error listening for notifications");
+          }
+
+          if (openSuccess)
+          {
+            failedCount = 0;
+          }
+          else
+          {
+            failedCount += 1;
+          }
+
+          // exponential backoff
+          Thread.Sleep(
+            TimeSpan.FromMilliseconds(
+              Math.Max(
+                Math.Pow(2, failedCount) + _rng.Next(1, 1000),
+                32 * 1000 // 32 seconds max
+              )
+            )
+          );
+        }
+      }
+      catch (ThreadAbortException)
+      {
+        Log.Debug("Shutting down notification thread");
+      }
+      catch (Exception ex)
+      {
+        Log.Fatal(ex, "Unknown error in notifcation thread");
+      }
+    }
+
+    private HashSet<string> statusTables = new HashSet<string>(new[] {
+      "status_icc",
+      "status_load_station",
+      "status_mc",
+      "status_pallet_route",
+      "tracking",
+      "status_pallet_route_step_station",
+      "status_pallet_route_step_program",
+      "status_pallet_route_step",
+      "status_program",
+      "status_program_tool"
+    });
+
+    private void ListenForNotifications(out bool openSuccess)
+    {
+      openSuccess = false;
+      using (var conn = new NpgsqlConnection(_connStr + ";Keepalive = 30"))
+      {
+        conn.Open();
+        openSuccess = true;
+        conn.Notification += (sender, args) =>
+        {
+          Log.Debug("PostgreSQL Notification {channel}: {payload}", args.Channel, args.Payload);
+          if (statusTables.Contains(args.Channel))
+          {
+            NewCurrentStatus?.Invoke();
+          }
+          else if (args.Channel == "proposal_pallet_route" && args.Payload == "UPDATE")
+          {
+            _proposalRouteChanged.Set();
+          }
+          else if (args.Channel == "change_request_pallette_route" && args.Payload == "UPDATE")
+          {
+            _proposalPalletChanged.Set();
+          }
+          else if (args.Channel == "register_program" && args.Payload == "UPDATE")
+          {
+            _programRegistered.Set();
+          }
+        };
+        conn.StateChange += (sender, args) =>
+        {
+          if (args.CurrentState == System.Data.ConnectionState.Closed || args.CurrentState == System.Data.ConnectionState.Broken)
+          {
+            throw new Exception("Connection to PostgreSQL closed");
+          }
+        };
+        using (var cmd = new NpgsqlCommand())
+        {
+          foreach (var table in statusTables)
+          {
+            cmd.CommandText = "LISTEN " + table;
+            cmd.ExecuteNonQuery();
+          }
+          cmd.CommandText = "LISTEN proposal_pallet_route";
+          cmd.ExecuteNonQuery();
+          cmd.CommandText = "LISTEN change_request_pallete_route";
+          cmd.ExecuteNonQuery();
+          cmd.CommandText = "LISTEN register_program";
+        }
+        NewCurrentStatus?.Invoke();
+        while (true)
+        {
+          conn.Wait();
+        }
+      }
+
+    }
+    #endregion
+
+    #region Loading
     private class StatusIcc
     {
       public int Mode { get; set; }
@@ -109,6 +252,7 @@ namespace BlackMaple.FMSInsight.Niigata
         conn.Open();
         using (var trans = conn.BeginTransaction())
         {
+          CheckProposalTables(conn, trans);
 
           var status = conn.QueryFirst<NiigataStatus>(
             $@"SELECT mode AS {nameof(NiigataStatus.Mode)},
@@ -327,25 +471,124 @@ namespace BlackMaple.FMSInsight.Niigata
           return Enumerable.Empty<int>();
       }
     }
+    #endregion
 
-    public void PerformAction(NiigataAction a)
+    #region Actions
+
+    private long NewId()
     {
-      switch (a)
+      byte[] buff = new byte[8];
+      _rng.NextBytes(buff);
+      return BitConverter.ToInt64(buff, 0);
+    }
+
+    private AutoResetEvent _proposalRouteChanged = new AutoResetEvent(false);
+    private AutoResetEvent _proposalPalletChanged = new AutoResetEvent(false);
+    private AutoResetEvent _programRegistered = new AutoResetEvent(false);
+
+    private class ChangeResponse
+    {
+      public bool? Success { get; set; }
+      public string Error { get; set; }
+    }
+
+    private void WaitForCompletion(AutoResetEvent evt, object request, Func<ChangeResponse> check, Action clear)
+    {
+      do
       {
-        case NewPalletRoute newRoute:
-          using (var conn = new NpgsqlConnection(_connStr))
+        if (!evt.WaitOne(TimeSpan.FromSeconds(10)))
+        {
+          // timeout
+          Log.Debug("Change request timeout {@request}", request);
+          throw new Exception("Timeout waiting for Niigata ICC to process change request");
+        }
+        else
+        {
+          // event was signaled, check table
+          var ret = check();
+          if (ret.Success.HasValue)
           {
-            conn.Open();
-            using (var trans = conn.BeginTransaction())
+            try
             {
+              clear();
+            }
+            catch (Exception ex)
+            {
+              Log.Error(ex, "Unable to clear Niigata ICC request tables");
+            }
+            if (ret.Success.Value)
+            {
+              return;
+            }
+            else
+            {
+              Log.Debug("Niigata icc returned error {err} for {@request}", ret.Error, request);
+              throw new Exception("Niigata ICC returned error " + ret.Error);
+            }
+          }
+          // if ret.Success is NULL, ICC is not yet done, loop keep waiting
+        }
+      } while (true);
+    }
 
-              var palParams = new DynamicParameters();
-              palParams.Add("ProposalId", newRoute.ProposalID);
-              palParams.Add("Delete", false);
-              palParams.AddDynamicParams(newRoute.NewMaster);
+    private void CheckProposalTables(NpgsqlConnection conn, NpgsqlTransaction trans)
+    {
+      // during normal operation, all proposal tables should be empty since we wait for
+      // a response.  But just in case, check and delete here.
 
-              conn.Execute(
-                $@"INSERT INTO proposal_pallet_route(
+      // first, check any non-completed
+      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM proposal_pallet_route WHERE Success IS NULL", transaction: trans) > 0)
+      {
+        throw new Exception("Niigata ICC has not processed the change to the pallet master");
+      }
+      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM change_request_pallette_route WHERE Success IS NULL", transaction: trans) > 0)
+      {
+        throw new Exception("Niigata ICC has not processed the change to the pallet status");
+      }
+      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM register_program WHERE Success IS NULL", transaction: trans) > 0)
+      {
+        throw new Exception("Niigata ICC has not processed the new program");
+      }
+
+      // now log any errors
+      foreach (var ret in conn.Query("SELECT * FROM proposal_pallet_route WHERE Success = False", transaction: trans))
+      {
+        Log.Error("Niigata ICC returned error for changing pallet master: {@row}", ret);
+      }
+      foreach (var ret in conn.Query("SELECT * FROM change_request_pallette_route WHERE Success = False", transaction: trans))
+      {
+        Log.Error("Niigata ICC returned error for changing pallet status: {@row}", ret);
+      }
+      foreach (var ret in conn.Query("SELECT * FROM register_program_tool WHERE Success = False", transaction: trans))
+      {
+        Log.Error("Niigata ICC returned error for registering program: {@row}", ret);
+      }
+
+      // delete everything
+      conn.Execute("DELETE FROM proposal_pallet_route", transaction: trans);
+      conn.Execute("DELETE FROM proposal_pallet_route_step", transaction: trans);
+      conn.Execute("DELETE FROM proposal_pallet_route_step_program", transaction: trans);
+      conn.Execute("DELETE FROM proposal_pallet_route_step_station", transaction: trans);
+      conn.Execute("DELETE FROM change_request_pallette_route", transaction: trans);
+      conn.Execute("DELETE FROM register_program", transaction: trans);
+      conn.Execute("DELETE FROM register_program_tool", transaction: trans);
+    }
+
+    private void SetRoute(NewPalletRoute newRoute)
+    {
+      long ProposalId = NewId();
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        using (var trans = conn.BeginTransaction())
+        {
+          var palParams = new DynamicParameters();
+          palParams.Add("ProposalId", ProposalId);
+          palParams.Add("Delete", false);
+          palParams.AddDynamicParams(newRoute.NewMaster);
+
+          conn.Execute(
+            $@"INSERT INTO proposal_pallet_route(
                     proposal_id,
                     pallet_no,
                     comment,
@@ -369,82 +612,82 @@ namespace BlackMaple.FMSInsight.Niigata
                     @Delete
                   )
                 ",
-                param: palParams,
-                transaction: trans
-              );
+            param: palParams,
+            transaction: trans
+          );
 
-              conn.Execute(
-                $@"INSERT INTO proposal_pallet_route_step(
+          conn.Execute(
+            $@"INSERT INTO proposal_pallet_route_step(
                     proposal_id,
                     route_no,
                     route_type,
                     completed_part_count,
                     washing_pattern
                   ) VALUES (
-                    ProposalId,
-                    RouteNo,
-                    RouteType,
-                    CompletedCount,
-                    WashingPattern
+                    @ProposalId,
+                    @RouteNo,
+                    @RouteType,
+                    @CompletedCount,
+                    @WashingPattern
                   )",
-                  transaction: trans,
-                  param: newRoute.NewMaster.Routes.Select((step, idx) =>
-                  {
-                    switch (step)
+              transaction: trans,
+              param: newRoute.NewMaster.Routes.Select((step, idx) =>
+              {
+                switch (step)
+                {
+                  case LoadStep load:
+                    return new
                     {
-                      case LoadStep load:
-                        return new
-                        {
-                          ProposalId = newRoute.ProposalID,
-                          RouteNo = idx + 1,
-                          RouteType = StatusRouteStep.RouteTypeE.Load,
-                          CompletedCount = 0,
-                          WashingPattern = 0
-                        };
-                      case UnloadStep unload:
-                        return new
-                        {
-                          ProposalId = newRoute.ProposalID,
-                          RouteNo = idx + 1,
-                          RouteType = StatusRouteStep.RouteTypeE.Unload,
-                          CompletedCount = unload.CompletedPartCount,
-                          WashingPattern = 0
-                        };
-                      case ReclampStep reclamp:
-                        return new
-                        {
-                          ProposalId = newRoute.ProposalID,
-                          RouteNo = idx + 1,
-                          RouteType = StatusRouteStep.RouteTypeE.Reclamp,
-                          CompletedCount = 0,
-                          WashingPattern = 0
-                        };
-                      case MachiningStep machine:
-                        return new
-                        {
-                          ProposalId = newRoute.ProposalID,
-                          RouteNo = idx + 1,
-                          RouteType = StatusRouteStep.RouteTypeE.Machine,
-                          CompletedCount = 0,
-                          WashingPattern = 0
-                        };
-                      case WashStep wash:
-                        return new
-                        {
-                          ProposalId = newRoute.ProposalID,
-                          RouteNo = idx + 1,
-                          RouteType = StatusRouteStep.RouteTypeE.Machine,
-                          CompletedCount = 0,
-                          WashingPattern = wash.WashingPattern
-                        };
-                      default:
-                        throw new Exception("Unknown route step");
-                    }
-                  })
-              );
+                      ProposalId,
+                      RouteNo = idx + 1,
+                      RouteType = StatusRouteStep.RouteTypeE.Load,
+                      CompletedCount = 0,
+                      WashingPattern = 0
+                    };
+                  case UnloadStep unload:
+                    return new
+                    {
+                      ProposalId,
+                      RouteNo = idx + 1,
+                      RouteType = StatusRouteStep.RouteTypeE.Unload,
+                      CompletedCount = unload.CompletedPartCount,
+                      WashingPattern = 0
+                    };
+                  case ReclampStep reclamp:
+                    return new
+                    {
+                      ProposalId,
+                      RouteNo = idx + 1,
+                      RouteType = StatusRouteStep.RouteTypeE.Reclamp,
+                      CompletedCount = 0,
+                      WashingPattern = 0
+                    };
+                  case MachiningStep machine:
+                    return new
+                    {
+                      ProposalId,
+                      RouteNo = idx + 1,
+                      RouteType = StatusRouteStep.RouteTypeE.Machine,
+                      CompletedCount = 0,
+                      WashingPattern = 0
+                    };
+                  case WashStep wash:
+                    return new
+                    {
+                      ProposalId,
+                      RouteNo = idx + 1,
+                      RouteType = StatusRouteStep.RouteTypeE.Machine,
+                      CompletedCount = 0,
+                      WashingPattern = wash.WashingPattern
+                    };
+                  default:
+                    throw new Exception("Unknown route step");
+                }
+              })
+          );
 
-              conn.Execute(
-                $@"INSERT INTO proposal_route_step_station(
+          conn.Execute(
+            $@"INSERT INTO proposal_route_step_station(
                     proposal_id,
                     route_no,
                     station_no
@@ -454,22 +697,22 @@ namespace BlackMaple.FMSInsight.Niigata
                     @StationNo
                   )
                 ",
-                transaction: trans,
-                param:
-                  newRoute.NewMaster.Routes
-                  .SelectMany((step, idx) =>
-                    StepToStations(step)
-                    .Select(stat => new
-                    {
-                      PropsoalId = newRoute.ProposalID,
-                      RouteNo = idx + 1,
-                      StationNo = stat
-                    })
-                  )
-              );
+            transaction: trans,
+            param:
+              newRoute.NewMaster.Routes
+              .SelectMany((step, idx) =>
+                StepToStations(step)
+                .Select(stat => new
+                {
+                  ProposalId,
+                  RouteNo = idx + 1,
+                  StationNo = stat
+                })
+              )
+          );
 
-              conn.Execute(
-                $@"INSERT INTO proposal_route_step_program(
+          conn.Execute(
+            $@"INSERT INTO proposal_route_step_program(
                     proposal_id,
                     route_no,
                     program_order,
@@ -481,38 +724,58 @@ namespace BlackMaple.FMSInsight.Niigata
                     @ProgramNum
                   )
                 ",
-                transaction: trans,
-                param:
-                  newRoute.NewMaster.Routes
-                  .SelectMany((step, stepIdx) =>
-                    StepToPrograms(step)
-                    .Select((prog, progIdx) => new
-                    {
-                      PropsoalId = newRoute.ProposalID,
-                      RouteNo = stepIdx + 1,
-                      ProgramOrder = progIdx + 1,
-                      ProgramNum = prog
-                    })
-                  )
-              );
+            transaction: trans,
+            param:
+              newRoute.NewMaster.Routes
+              .SelectMany((step, stepIdx) =>
+                StepToPrograms(step)
+                .Select((prog, progIdx) => new
+                {
+                  ProposalId,
+                  RouteNo = stepIdx + 1,
+                  ProgramOrder = progIdx + 1,
+                  ProgramNum = prog
+                })
+              )
+          );
 
-              trans.Commit();
-            }
-          }
-          break;
+          trans.Commit();
+        }
 
-        case UpdatePalletQuantities update:
-          using (var conn = new NpgsqlConnection(_connStr))
+        WaitForCompletion(_proposalRouteChanged, newRoute,
+          () => conn.QueryFirst<ChangeResponse>(
+            "SELECT Success, Error FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }
+          ),
+          () =>
           {
-            conn.Open();
             using (var trans = conn.BeginTransaction())
             {
-              var updateParams = new DynamicParameters();
-              updateParams.Add("ChangeId", 10000); // TODO: fix me
-              updateParams.AddDynamicParams(update);
+              conn.Execute("DELETE FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
+              conn.Execute("DELETE FROM proposal_pallet_route_step WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
+              conn.Execute("DELETE FROM proposal_pallet_route_step_station WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
+              conn.Execute("DELETE FROM proposal_pallet_route_step_program WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
+              trans.Commit();
+            }
 
-              conn.Execute(
-                $@"INSERT INTO change_request_palette_route(
+          }
+        );
+      }
+    }
+
+    private void UpdatePallet(UpdatePalletQuantities update)
+    {
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        var ChangeId = NewId();
+        using (var trans = conn.BeginTransaction())
+        {
+          var updateParams = new DynamicParameters();
+          updateParams.Add("ChangeId", ChangeId);
+          updateParams.AddDynamicParams(update);
+
+          conn.Execute(
+            $@"INSERT INTO change_request_palette_route(
                     change_id,
                     pallet_no,
                     remaining_palette_cycle,
@@ -530,36 +793,44 @@ namespace BlackMaple.FMSInsight.Niigata
                     @{nameof(UpdatePalletQuantities.LongToolMachine)}
                   )
                 ",
-                param: updateParams,
-                transaction: trans
-              );
-              trans.Commit();
-            }
-          }
-          break;
+            param: updateParams,
+            transaction: trans
+          );
+          trans.Commit();
+        }
 
-        case NewProgram add:
-          // it is possible that a program was deleted from the ICC but the server crashed/stopped before setting the cell controller program null
-          // in the job database.  The Assignment code guarantees that a new program number it picks does not exist in the icc so if it exists
-          // in the database, it is old leftover from a failed delete and should be cleared.
-          var oldProg = _jobs.ProgramFromCellControllerProgram(add.ProgramNum.ToString());
-          if (oldProg != null)
-          {
-            _jobs.SetCellControllerProgramForProgram(oldProg.ProgramName, oldProg.Revision, null);
-          }
+        WaitForCompletion(_proposalPalletChanged, update,
+          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM change_request_pallette_route WHERE change_id = @ChangeId", new { ChangeId }),
+          () => conn.Execute("DELETE FROM change_request_pallette_route WHERE change_id = @ChangeId", new { ChangeId })
+        );
+      }
+    }
 
-          // write (or overwrite) the file to disk
-          var progCt = _jobs.LoadProgramContent(add.ProgramName, add.ProgramRevision);
-          var fullPath = System.IO.Path.Combine(_programDir, add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA");
-          System.IO.File.WriteAllText(fullPath, progCt);
+    private void AddProgram(NewProgram add)
+    {
 
-          using (var conn = new NpgsqlConnection(_connStr))
-          {
-            conn.Open();
-            using (var trans = conn.BeginTransaction())
-            {
-              conn.Execute(
-                $@"INSERT INTO register_program(
+      // it is possible that a program was deleted from the ICC but the server crashed/stopped before setting the cell controller program null
+      // in the job database.  The Assignment code guarantees that a new program number it picks does not exist in the icc so if it exists
+      // in the database, it is old leftover from a failed delete and should be cleared.
+      var oldProg = _jobs.ProgramFromCellControllerProgram(add.ProgramNum.ToString());
+      if (oldProg != null)
+      {
+        _jobs.SetCellControllerProgramForProgram(oldProg.ProgramName, oldProg.Revision, null);
+      }
+
+      // write (or overwrite) the file to disk
+      var progCt = _jobs.LoadProgramContent(add.ProgramName, add.ProgramRevision);
+      var fullPath = System.IO.Path.Combine(_programDir, add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA");
+      System.IO.File.WriteAllText(fullPath, progCt);
+
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        var RegId = NewId();
+        using (var trans = conn.BeginTransaction())
+        {
+          conn.Execute(
+            $@"INSERT INTO register_program(
                     registration_id,
                     file_name,
                     o_no,
@@ -575,20 +846,20 @@ namespace BlackMaple.FMSInsight.Niigata
                     @Overwrite
                   )
                   ",
-                param: new
-                {
-                  RegId = 100,
-                  FileName = fullPath,
-                  ProgNum = add.ProgramNum,
-                  Comment = add.IccProgramComment,
-                  WorkTime = 0,
-                  Overwrite = true
-                },
-                transaction: trans
-              );
+            param: new
+            {
+              RegId = RegId,
+              FileName = fullPath,
+              ProgNum = add.ProgramNum,
+              Comment = add.IccProgramComment,
+              WorkTime = 0,
+              Overwrite = true
+            },
+            transaction: trans
+          );
 
-              conn.Execute(
-                $@"INSERT INTO register_program_tool(
+          conn.Execute(
+            $@"INSERT INTO register_program_tool(
                     registration_id,
                     tool_no
                   ) VALUES (
@@ -596,33 +867,67 @@ namespace BlackMaple.FMSInsight.Niigata
                     @ToolNo
                   )
                 ",
-                param: add.Tools.Select(t => new
-                {
-                  RegId = 100,
-                  ToolNo = t
-                }),
-                transaction: trans
-              );
+            param: add.Tools.Select(t => new
+            {
+              RegId = RegId,
+              ToolNo = t
+            }),
+            transaction: trans
+          );
 
+          trans.Commit();
+        }
+
+        WaitForCompletion(_programRegistered, add,
+          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM register_program WHERE registration_id = @RegId", new { RegId }),
+          () =>
+          {
+            using (var trans = conn.BeginTransaction())
+            {
+              conn.Execute("DELETE FROM register_program WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+              conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
               trans.Commit();
             }
           }
+        );
+      }
 
-          // if we crash at this point, the icc will have the program but it won't be recorded into the job database.  The next time
-          // Insight starts, it will add another program with a new ICC number (but identical file).  The old program will eventually be
-          // cleaned up since it isn't in use.
-          _jobs.SetCellControllerProgramForProgram(add.ProgramName, add.ProgramRevision, add.ProgramNum.ToString());
+      // if we crash at this point, the icc will have the program but it won't be recorded into the job database.  The next time
+      // Insight starts, it will add another program with a new ICC number (but identical file).  The old program will eventually be
+      // cleaned up since it isn't in use.
+      _jobs.SetCellControllerProgramForProgram(add.ProgramName, add.ProgramRevision, add.ProgramNum.ToString());
+    }
+
+    private void DeleteProgram(DeleteProgram delete)
+    {
+      // TODO: send to ICC
+
+      // if we crash after deleting from the icc but before clearing the cell controller program, the above NewProgram check will
+      // clear it later.
+      _jobs.SetCellControllerProgramForProgram(delete.ProgramName, delete.ProgramRevision, null);
+    }
+
+    public void PerformAction(NiigataAction a)
+    {
+      switch (a)
+      {
+        case NewPalletRoute newRoute:
+          SetRoute(newRoute);
+          break;
+
+        case UpdatePalletQuantities update:
+          UpdatePallet(update);
+          break;
+
+        case NewProgram add:
+          AddProgram(add);
           break;
 
         case DeleteProgram delete:
-          // TODO: send to icc
-
-          // if we crash after deleting from the icc but before clearing the cell controller program, the above NewProgram check will
-          // clear it later.
-          _jobs.SetCellControllerProgramForProgram(delete.ProgramName, delete.ProgramRevision, null);
+          DeleteProgram(delete);
           break;
       }
-      throw new NotImplementedException();
     }
+    #endregion
   }
 }

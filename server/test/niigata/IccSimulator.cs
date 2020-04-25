@@ -54,6 +54,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public NiigataStatus LoadNiigataStatus() => _status;
 
     public event Action<NewProgram> OnNewProgram;
+    public event Action NewCurrentStatus;
 
     public void PerformAction(NiigataAction a)
     {
@@ -83,6 +84,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
           break;
       }
+      NewCurrentStatus?.Invoke();
     }
 
     public IccSimulator(int numPals, int numMachines, int numLoads)
@@ -610,6 +612,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var t = transitions.OrderBy(e => e.Time).First();
         _status.TimeOfStatusUTC = t.Time;
         t.UpdateStatus();
+        NewCurrentStatus?.Invoke();
         return true;
       }
       else

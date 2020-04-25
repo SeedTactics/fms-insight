@@ -1110,7 +1110,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             NewMaster = expectedNewRoute.ExpectedMaster
           }, options => options
-              .Excluding(e => e.ProposalID)
               .Excluding(e => e.NewMaster.Comment)
               .RespectingRuntimeTypes()
           );
