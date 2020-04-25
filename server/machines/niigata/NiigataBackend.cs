@@ -47,7 +47,11 @@ namespace BlackMaple.FMSInsight.Niigata
     private JobLogDB _log;
     private JobDB _jobs;
 
-    public NiigataBackend(IConfigurationSection config, FMSSettings cfg)
+    public NiigataBackend(
+      IConfigurationSection config,
+      FMSSettings cfg,
+      Func<JobLogDB, IRecordFacesForPallet, IAssignPallets> customAssignment = null
+    )
     {
       try
       {
@@ -73,7 +77,16 @@ namespace BlackMaple.FMSInsight.Niigata
         NiigataICC = new NiigataICC(_jobs, programDir, connStr);
         var recordFaces = new RecordFacesForPallet(_log);
         var createLog = new CreateCellState(_log, _jobs, recordFaces, cfg);
-        var assign = new AssignPallets(recordFaces);
+
+        IAssignPallets assign;
+        if (customAssignment != null)
+        {
+          assign = customAssignment(_log, recordFaces);
+        }
+        else
+        {
+          assign = new AssignPallets(recordFaces);
+        }
         SyncPallets = new SyncPallets(_jobs, _log, NiigataICC, assign, createLog);
         NiigataJobs = new NiigataJobs(_jobs, _log, cfg, SyncPallets);
       }
