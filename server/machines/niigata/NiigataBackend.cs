@@ -43,9 +43,13 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NiigataBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
+    private NiigataICC _icc;
+    private NiigataJobs _jobControl;
+    private SyncPallets _sync;
 
-    private JobLogDB _log;
-    private JobDB _jobs;
+    public JobLogDB LogDB { get; private set; }
+    public JobDB JobDB { get; private set; }
+    public ISyncPallets SyncPallets => _sync;
 
     public NiigataBackend(
       IConfigurationSection config,
@@ -56,13 +60,13 @@ namespace BlackMaple.FMSInsight.Niigata
       try
       {
         Log.Information("Starting niigata backend");
-        _log = new JobLogDB(cfg);
-        _log.Open(
+        LogDB = new JobLogDB(cfg);
+        LogDB.Open(
             System.IO.Path.Combine(cfg.DataDirectory, "log.db"),
             startingSerial: cfg.StartingSerial
         );
-        _jobs = new JobDB();
-        _jobs.Open(
+        JobDB = new JobDB();
+        JobDB.Open(
           System.IO.Path.Combine(cfg.DataDirectory, "jobs.db")
         );
 
@@ -74,21 +78,21 @@ namespace BlackMaple.FMSInsight.Niigata
 
         var connStr = config.GetValue<string>("Connection String");
 
-        NiigataICC = new NiigataICC(_jobs, programDir, connStr);
-        var recordFaces = new RecordFacesForPallet(_log);
-        var createLog = new CreateCellState(_log, _jobs, recordFaces, cfg);
+        _icc = new NiigataICC(JobDB, programDir, connStr);
+        var recordFaces = new RecordFacesForPallet(LogDB);
+        var createLog = new CreateCellState(LogDB, JobDB, recordFaces, cfg);
 
         IAssignPallets assign;
         if (customAssignment != null)
         {
-          assign = customAssignment(_log, recordFaces);
+          assign = customAssignment(LogDB, recordFaces);
         }
         else
         {
           assign = new AssignPallets(recordFaces);
         }
-        SyncPallets = new SyncPallets(_jobs, _log, NiigataICC, assign, createLog);
-        NiigataJobs = new NiigataJobs(_jobs, _log, cfg, SyncPallets);
+        _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
+        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, SyncPallets);
       }
       catch (Exception ex)
       {
@@ -98,25 +102,26 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void Dispose()
     {
-      if (NiigataJobs != null) NiigataJobs.Dispose();
-      NiigataJobs = null;
-      if (SyncPallets != null) SyncPallets.Dispose();
-      SyncPallets = null;
-      if (NiigataICC != null) NiigataICC.Dispose();
-      if (_log != null) _log.Close();
-      _log = null;
-      if (_jobs != null) _jobs.Close();
-      _jobs = null;
+      if (_jobControl != null) _jobControl.Dispose();
+      _jobControl = null;
+      if (SyncPallets != null) _sync.Dispose();
+      _sync = null;
+      if (_icc != null) _icc.Dispose();
+      _icc = null;
+      if (LogDB != null) LogDB.Close();
+      LogDB = null;
+      if (JobDB != null) JobDB.Close();
+      JobDB = null;
     }
 
     public IInspectionControl InspectionControl()
     {
-      return _log;
+      return LogDB;
     }
 
     public IJobDatabase JobDatabase()
     {
-      return _jobs;
+      return JobDB;
     }
 
     public IOldJobDecrement OldJobDecrement()
@@ -126,17 +131,13 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IJobControl JobControl()
     {
-      return NiigataJobs;
+      return _jobControl;
     }
 
     public ILogDatabase LogDatabase()
     {
-      return _log;
+      return LogDB;
     }
-
-    public NiigataJobs NiigataJobs { get; private set; }
-    public SyncPallets SyncPallets { get; private set; }
-    public NiigataICC NiigataICC { get; }
   }
 
   public static class NiigataProgram
