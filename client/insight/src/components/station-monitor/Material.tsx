@@ -95,7 +95,12 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePall
       switch (mat.location.type) {
         case api.LocType.OnPallet:
           if (displaySinglePallet === undefined || displaySinglePallet === mat.location.pallet) {
-            return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
+            if (mat.action.loadOntoFace === undefined || mat.action.loadOntoFace === mat.location.face) {
+              // material is not moving, just having some manual work done on it
+              return undefined;
+            } else {
+              return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
+            }
           } else {
             return undefined;
           }

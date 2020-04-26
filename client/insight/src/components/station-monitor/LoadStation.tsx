@@ -77,7 +77,12 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
   let matTime: JSX.Element | undefined;
   switch (mat.action.type) {
     case api.ActionType.Loading:
-      matStatus = " (loading)";
+      if (
+        (mat.action.loadOntoPallet !== undefined && mat.action.loadOntoPallet !== mat.location.pallet) ||
+        (mat.action.loadOntoFace !== undefined && mat.action.loadOntoFace !== mat.location.face)
+      ) {
+        matStatus = " (loading)";
+      }
       break;
     case api.ActionType.UnloadToCompletedMaterial:
     case api.ActionType.UnloadToInProcess:
@@ -193,6 +198,20 @@ const palletStyles = createStyles({
   },
 });
 
+function showArrow(m: Readonly<api.IInProcessMaterial>): boolean {
+  if (
+    m.action.type === api.ActionType.Loading &&
+    m.location.type === api.LocType.OnPallet &&
+    (m.action.loadOntoPallet === undefined || m.action.loadOntoPallet === m.location.pallet) &&
+    (m.action.loadOntoFace === undefined || m.action.loadOntoFace === m.location.face)
+  ) {
+    // an operation at the loadstation which is not moving the material
+    return false;
+  } else {
+    return true;
+  }
+}
+
 const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & WithStyles<typeof palletStyles>) => {
   let palletClass: string;
   let statStatusClass: string;
@@ -218,7 +237,11 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
         <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace}>
           <WhiteboardRegion label={""} spaceAround>
             {(mat || []).map((m, idx) => (
-              <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} action={m.action}>
+              <MoveMaterialArrowNode
+                key={idx}
+                type={MoveMaterialNodeKindType.Material}
+                action={showArrow(m) ? m.action : null}
+              >
                 <InProcMaterial mat={m} onOpen={props.openMat} />
               </MoveMaterialArrowNode>
             ))}
@@ -237,7 +260,11 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
               <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={face}>
                 <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
                   {data.map((m, idx) => (
-                    <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} action={m.action}>
+                    <MoveMaterialArrowNode
+                      key={idx}
+                      type={MoveMaterialNodeKindType.Material}
+                      action={showArrow(m) ? m.action : null}
+                    >
                       <InProcMaterial mat={m} onOpen={props.openMat} />
                     </MoveMaterialArrowNode>
                   ))}
