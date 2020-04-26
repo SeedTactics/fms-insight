@@ -107,7 +107,12 @@ function palletMaterial(
     let matTime: JSX.Element | undefined;
     switch (mat.action.type) {
       case api.ActionType.Loading:
-        matStatus = " (loading)";
+        if (
+          (mat.action.loadOntoPallet !== undefined && mat.action.loadOntoPallet !== mat.location.pallet) ||
+          (mat.action.loadOntoFace !== undefined && mat.action.loadOntoFace !== mat.location.face)
+        ) {
+          matStatus = " (loading)";
+        }
         break;
       case api.ActionType.UnloadToCompletedMaterial:
       case api.ActionType.UnloadToInProcess:
