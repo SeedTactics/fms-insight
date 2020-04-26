@@ -112,7 +112,6 @@ namespace BlackMaple.FMSInsight.Niigata
           }
 
           var sleepTime = TimeSpan.FromMinutes(5);
-          Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
           var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _recheck, _newCurStatus }, sleepTime, false);
           if (ret == 0)
           {
@@ -121,12 +120,14 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           else if (ret == 1)
           {
+            Log.Debug("Recalculating cell state due to job changes");
             // recheck and guarantee pallet changed event even if nothing changed
             raisePalletChanged = true;
           }
           else if (ret == 2)
           {
             // reload status from Niigata ICC
+            Log.Debug("Reloading status from ICC");
             raisePalletChanged = false;
             // new current status events come in batches when many tables are changed simultaniously, so wait briefly
             // so we only recalculate once
@@ -134,6 +135,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           else
           {
+            Log.Debug("Timeout, rechecking cell state");
             // timeout
             raisePalletChanged = false;
           }
