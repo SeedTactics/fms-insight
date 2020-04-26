@@ -55,7 +55,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private IAssignPallets _assign;
     private IBuildCellState _createLog;
 
-    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create, bool startThread = true)
+    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create)
     {
       _jobs = jobs;
       _log = log;
@@ -63,11 +63,12 @@ namespace BlackMaple.FMSInsight.Niigata
       _assign = assign;
       _createLog = create;
       _icc.NewCurrentStatus += NewCurrentStatus;
-      if (startThread)
-      {
-        _thread = new Thread(new ThreadStart(Thread));
-        _thread.Start();
-      }
+      _thread = new Thread(new ThreadStart(Thread));
+    }
+
+    public void StartThread()
+    {
+      _thread.Start();
     }
 
     #region Thread and Messages
@@ -81,7 +82,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       _icc.NewCurrentStatus -= NewCurrentStatus;
       _shutdown.Set();
-      if (_thread != null && !_thread.Join(TimeSpan.FromSeconds(15)))
+      if (_thread != null && _thread.IsAlive && !_thread.Join(TimeSpan.FromSeconds(15)))
         _thread.Abort();
     }
 
@@ -97,7 +98,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void Thread()
     {
-      bool raisePalletChanged = false;
+      bool raisePalletChanged = true; // very first run should raise new pallet state
       while (true)
       {
         try
@@ -128,10 +129,10 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             // reload status from Niigata ICC
             Log.Debug("Reloading status from ICC");
-            raisePalletChanged = false;
+            raisePalletChanged = true;
             // new current status events come in batches when many tables are changed simultaniously, so wait briefly
             // so we only recalculate once
-            System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(100));
+            System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(500));
           }
           else
           {

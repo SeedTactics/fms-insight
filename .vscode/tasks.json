@@ -45,6 +45,16 @@
       "problemMatcher": "$msCompile"
     },
     {
+      "label": "niigata:build",
+      "command": "dotnet build server/machines/niigata/niigata.csproj",
+      "group": "build",
+      "type": "shell",
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
       "label": "insight:check",
       "type": "shell",
       "command": "${workspaceFolder}/client/insight/node_modules/.bin/tsc",

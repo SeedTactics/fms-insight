@@ -178,7 +178,7 @@ namespace BlackMaple.FMSInsight.Niigata
             throw new Exception("Connection to PostgreSQL closed");
           }
         };
-        using (var cmd = new NpgsqlCommand())
+        using (var cmd = conn.CreateCommand())
         {
           foreach (var table in statusTables)
           {
@@ -190,6 +190,7 @@ namespace BlackMaple.FMSInsight.Niigata
           cmd.CommandText = "LISTEN change_request_pallete_route";
           cmd.ExecuteNonQuery();
           cmd.CommandText = "LISTEN register_program";
+          cmd.ExecuteNonQuery();
         }
         NewCurrentStatus?.Invoke();
         while (true)
@@ -541,7 +542,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         throw new Exception("Niigata ICC has not processed the change to the pallet master");
       }
-      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM change_request_pallette_route WHERE Success IS NULL", transaction: trans) > 0)
+      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM change_request_palette_route WHERE Success IS NULL", transaction: trans) > 0)
       {
         throw new Exception("Niigata ICC has not processed the change to the pallet status");
       }
@@ -555,11 +556,11 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         Log.Error("Niigata ICC returned error for changing pallet master: {@row}", ret);
       }
-      foreach (var ret in conn.Query("SELECT * FROM change_request_pallette_route WHERE Success = False", transaction: trans))
+      foreach (var ret in conn.Query("SELECT * FROM change_request_palette_route WHERE Success = False", transaction: trans))
       {
         Log.Error("Niigata ICC returned error for changing pallet status: {@row}", ret);
       }
-      foreach (var ret in conn.Query("SELECT * FROM register_program_tool WHERE Success = False", transaction: trans))
+      foreach (var ret in conn.Query("SELECT * FROM register_program WHERE Success = False", transaction: trans))
       {
         Log.Error("Niigata ICC returned error for registering program: {@row}", ret);
       }
@@ -569,7 +570,7 @@ namespace BlackMaple.FMSInsight.Niigata
       conn.Execute("DELETE FROM proposal_pallet_route_step", transaction: trans);
       conn.Execute("DELETE FROM proposal_pallet_route_step_program", transaction: trans);
       conn.Execute("DELETE FROM proposal_pallet_route_step_station", transaction: trans);
-      conn.Execute("DELETE FROM change_request_pallette_route", transaction: trans);
+      conn.Execute("DELETE FROM change_request_palette_route", transaction: trans);
       conn.Execute("DELETE FROM register_program", transaction: trans);
       conn.Execute("DELETE FROM register_program_tool", transaction: trans);
     }
@@ -687,7 +688,7 @@ namespace BlackMaple.FMSInsight.Niigata
           );
 
           conn.Execute(
-            $@"INSERT INTO proposal_route_step_station(
+            $@"INSERT INTO proposal_pallet_route_step_station(
                     proposal_id,
                     route_no,
                     station_no
@@ -712,7 +713,7 @@ namespace BlackMaple.FMSInsight.Niigata
           );
 
           conn.Execute(
-            $@"INSERT INTO proposal_route_step_program(
+            $@"INSERT INTO proposal_pallet_route_step_program(
                     proposal_id,
                     route_no,
                     program_order,
@@ -782,7 +783,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     priority,
                     no_work,
                     pallet_skip,
-                    long_tool_replacement_mc,
+                    long_tool_replacement_mc
                   ) VALUES (
                     @ChangeId,
                     @{nameof(UpdatePalletQuantities.Pallet)},
@@ -800,8 +801,8 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         WaitForCompletion(_proposalPalletChanged, update,
-          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM change_request_pallette_route WHERE change_id = @ChangeId", new { ChangeId }),
-          () => conn.Execute("DELETE FROM change_request_pallette_route WHERE change_id = @ChangeId", new { ChangeId })
+          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM change_request_palette_route WHERE change_id = @ChangeId", new { ChangeId }),
+          () => conn.Execute("DELETE FROM change_request_palette_route WHERE change_id = @ChangeId", new { ChangeId })
         );
       }
     }

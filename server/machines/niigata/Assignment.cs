@@ -308,9 +308,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else
       {
-        string uuid = Guid.NewGuid().ToString();
-        newMaster.Comment = uuid;
-        _recordFaces.Save(newMaster.PalletNum, uuid, nowUtc, newPaths.Select(path =>
+        newMaster.Comment = _recordFaces.Save(newMaster.PalletNum, nowUtc, newPaths.Select(path =>
           new AssignedJobAndPathForFace()
           {
             Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,

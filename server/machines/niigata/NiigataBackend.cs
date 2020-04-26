@@ -62,12 +62,12 @@ namespace BlackMaple.FMSInsight.Niigata
         Log.Information("Starting niigata backend");
         LogDB = new JobLogDB(cfg);
         LogDB.Open(
-            System.IO.Path.Combine(cfg.DataDirectory, "log.db"),
+            System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
             startingSerial: cfg.StartingSerial
         );
         JobDB = new JobDB();
         JobDB.Open(
-          System.IO.Path.Combine(cfg.DataDirectory, "jobs.db")
+          System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
         );
 
         var programDir = config.GetValue<string>("Program Directory");
@@ -92,7 +92,8 @@ namespace BlackMaple.FMSInsight.Niigata
           assign = new AssignPallets(recordFaces);
         }
         _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
-        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, SyncPallets);
+        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync);
+        _sync.StartThread();
       }
       catch (Exception ex)
       {

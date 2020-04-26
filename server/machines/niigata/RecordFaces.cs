@@ -54,7 +54,8 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface IRecordFacesForPallet
   {
     IEnumerable<AssignedJobAndPathForFace> Load(string palComment);
-    void Save(int pal, string palComment, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths);
+    // returns the new pallet comment
+    string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths);
   }
 
   public class RecordFacesForPallet : IRecordFacesForPallet
@@ -67,6 +68,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IEnumerable<AssignedJobAndPathForFace> Load(string palComment)
     {
+      if (!System.Guid.TryParse(palComment, out var ignored))
+      {
+        return Enumerable.Empty<AssignedJobAndPathForFace>();
+      }
       var msg = _log.OriginalMessageByForeignID("faces:" + palComment);
       if (string.IsNullOrEmpty(msg))
       {
@@ -81,8 +86,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public void Save(int pal, string palComment, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths)
+    public string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths)
     {
+      // comments can be 32 characters, and a guid is 32 exactly without dashes
+      string palComment = System.Guid.NewGuid().ToString().Replace("-", "");
       string json;
       var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(List<AssignedJobAndPathForFace>));
       using (var ms = new System.IO.MemoryStream())
@@ -101,6 +108,8 @@ namespace BlackMaple.FMSInsight.Niigata
         originalMessage: json,
         timeUTC: nowUtc
       );
+
+      return palComment;
     }
   }
 }
