@@ -97,12 +97,21 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void Thread()
     {
+      bool raisePalletChanged = false;
       while (true)
       {
         try
         {
+          try
+          {
+            SynchronizePallets(raisePalletChanged);
+          }
+          catch (Exception ex)
+          {
+            Log.Error(ex, "Error syncing pallets");
+          }
 
-          var sleepTime = TimeSpan.FromMinutes(1);
+          var sleepTime = TimeSpan.FromMinutes(5);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
           var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _recheck, _newCurStatus }, sleepTime, false);
           if (ret == 0)
@@ -110,26 +119,28 @@ namespace BlackMaple.FMSInsight.Niigata
             Log.Debug("Thread shutdown");
             return;
           }
-
-          try
+          else if (ret == 1)
           {
-            if (ret == 2)
-            {
-              // new current status events come in batches when many tables are changed simultaniously, so wait briefly
-              // so we only recalculate once
-              System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(100));
-            }
-            SynchronizePallets(raisePalletChanged: ret == 1);
+            // recheck and guarantee pallet changed event even if nothing changed
+            raisePalletChanged = true;
           }
-          catch (Exception ex)
+          else if (ret == 2)
           {
-            Log.Error(ex, "Error syncing pallets");
+            // reload status from Niigata ICC
+            raisePalletChanged = false;
+            // new current status events come in batches when many tables are changed simultaniously, so wait briefly
+            // so we only recalculate once
+            System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(100));
           }
-
+          else
+          {
+            // timeout
+            raisePalletChanged = false;
+          }
         }
         catch (Exception ex)
         {
-          Log.Error(ex, "Unexpected error during thread processing");
+          Log.Fatal(ex, "Unexpected error during thread processing");
         }
       }
     }
