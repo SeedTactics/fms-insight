@@ -45,13 +45,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private JobLogDB _log;
     private FMSSettings _settings;
     private ISyncPallets _sync;
+    private readonly HashSet<string> _reclampGroupNames;
 
-    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy)
+    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy, HashSet<string> reclampGroupNames)
     {
       _jobs = j;
       _log = l;
       _sync = sy;
       _settings = st;
+      _reclampGroupNames = reclampGroupNames;
 
       _sync.OnPalletsChanged += OnNewCellState;
     }
@@ -255,42 +257,52 @@ namespace BlackMaple.FMSInsight.Niigata
 
             foreach (var stop in j.GetMachiningStop(proc, path))
             {
-              if (string.IsNullOrEmpty(stop.ProgramName))
+              if (_reclampGroupNames != null && _reclampGroupNames.Contains(stop.StationGroup))
               {
-                errors.Add("Part " + j.PartName + " has no assigned program");
-              }
-              if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value < 0)
-              {
-                errors.Add("Part " + j.PartName + " is not allowed to have negative revision");
-              }
-              if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
-              {
-                var existing = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
-                var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
-                if (!existing && !newProg)
+                if (!stop.Stations.Any())
                 {
-                  errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
+                  errors.Add("Part " + j.PartName + " does not have any assigned load stations for intermediate load stop");
                 }
               }
               else
               {
-                var existing = _jobs.LoadMostRecentProgram(stop.ProgramName) != null;
-                var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
-                if (!existing && !newProg)
+                if (string.IsNullOrEmpty(stop.ProgramName))
                 {
-                  if (int.TryParse(stop.ProgramName, out int progNum))
+                  errors.Add("Part " + j.PartName + " has no assigned program");
+                }
+                if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value < 0)
+                {
+                  errors.Add("Part " + j.PartName + " is not allowed to have negative revision");
+                }
+                if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
+                {
+                  var existing = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
+                  var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
+                  if (!existing && !newProg)
                   {
-                    lock (_curStLock)
+                    errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
+                  }
+                }
+                else
+                {
+                  var existing = _jobs.LoadMostRecentProgram(stop.ProgramName) != null;
+                  var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
+                  if (!existing && !newProg)
+                  {
+                    if (int.TryParse(stop.ProgramName, out int progNum))
                     {
-                      if (!_lastCellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignPallets.IsInsightProgram(p)))
+                      lock (_curStLock)
                       {
-                        errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
+                        if (!_lastCellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignPallets.IsInsightProgram(p)))
+                        {
+                          errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
+                        }
                       }
                     }
-                  }
-                  else
-                  {
-                    errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor is an integer");
+                    else
+                    {
+                      errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor is an integer");
+                    }
                   }
                 }
               }

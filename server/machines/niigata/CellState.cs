@@ -145,6 +145,7 @@ namespace BlackMaple.FMSInsight.Niigata
           EnsureAllMachineEnds(palAndMat, step.ProgramNumsToRun, pal.Log, status.TimeOfStatusUTC, ref palletStateUpdated);
           palsWithMat.Add(palAndMat);
         }
+        // TODO: Reclamp!
       }
 
       // next, go through pallets currently being loaded
@@ -236,8 +237,7 @@ namespace BlackMaple.FMSInsight.Niigata
             var completedMachineSteps =
               pallet.Master.Routes
               .Take(pallet.Tracking.BeforeCurrentStep ? pallet.Tracking.CurrentStepNum - 1 : pallet.Tracking.CurrentStepNum)
-              .Where(r => r is MachiningStep)
-              .Cast<MachiningStep>()
+              .Where(r => r is MachiningStep || r is ReclampStep)
               .Count();
 
             if (completedMachineSteps > 0)

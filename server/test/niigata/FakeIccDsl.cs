@@ -77,7 +77,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var record = new RecordFacesForPallet(_logDB);
 
-      _assign = new AssignPallets(record);
+      _assign = new AssignPallets(record, null);
       _createLog = new CreateCellState(_logDB, _jobDB, record, _settings);
 
       _status = new NiigataStatus();

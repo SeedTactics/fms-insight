@@ -75,7 +75,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var record = new RecordFacesForPallet(_logDB);
 
-      _assign = new AssignPallets(record);
+      _assign = new AssignPallets(record, null);
       _createLog = new CreateCellState(_logDB, _jobDB, record, _settings);
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);

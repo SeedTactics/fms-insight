@@ -46,11 +46,13 @@ namespace BlackMaple.FMSInsight.Niigata
   public class AssignPallets : IAssignPallets
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignPallets>();
-    private IRecordFacesForPallet _recordFaces;
+    private readonly IRecordFacesForPallet _recordFaces;
+    private readonly HashSet<string> _reclampGroupNames;
 
-    public AssignPallets(IRecordFacesForPallet r)
+    public AssignPallets(IRecordFacesForPallet r, HashSet<string> reclampGroupNames)
     {
       _recordFaces = r;
+      _reclampGroupNames = reclampGroupNames;
     }
 
     public NiigataAction NewPalletChange(CellState cellSt)
@@ -322,19 +324,23 @@ namespace BlackMaple.FMSInsight.Niigata
           NewMaster = newMaster
         };
       }
-
     }
 
-    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths, IReadOnlyDictionary<(string progNum, long revision), MachineFramework.JobDB.ProgramRevision> progs)
+    private List<RouteStep> MiddleStepsForPath(JobPath path, IReadOnlyDictionary<(string progNum, long revision), MachineFramework.JobDB.ProgramRevision> progs)
     {
-      var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
-
-      var machiningSteps = new List<MachiningStep>();
-      foreach (var path in orderedPaths)
+      var steps = new List<RouteStep>();
+      foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
       {
-        // add all stops from machineStops tp machiningSteps
-        foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
+        if (_reclampGroupNames != null && _reclampGroupNames.Contains(stop.StationGroup))
         {
+          steps.Add(new ReclampStep()
+          {
+            Reclamp = stop.Stations.ToList()
+          });
+        }
+        else
+        {
+
           int? iccProgram = null;
           if (stop.ProgramRevision.HasValue && progs.TryGetValue((stop.ProgramName, stop.ProgramRevision.Value), out var prog))
           {
@@ -361,25 +367,82 @@ namespace BlackMaple.FMSInsight.Niigata
 
           if (iccProgram.HasValue)
           {
-            // check existing step
-            foreach (var existingStep in machiningSteps)
-            {
-              if (existingStep.Machines.SequenceEqual(stop.Stations))
-              {
-                existingStep.ProgramNumsToRun.Add(iccProgram.Value);
-                goto foundExisting;
-              }
-            }
-            // no existing step, add a new one
-            machiningSteps.Add(new MachiningStep()
+            steps.Add(new MachiningStep()
             {
               Machines = stop.Stations.ToList(),
               ProgramNumsToRun = new List<int> { iccProgram.Value }
             });
-
-          foundExisting:;
           }
+        }
+      }
+      return steps;
+    }
 
+    private void MergeSteps(List<RouteStep> steps, IEnumerable<RouteStep> newSteps)
+    {
+      var idx = 0;
+      foreach (var newStep in newSteps)
+      {
+        while (idx < steps.Count)
+        {
+          var curStep = steps[idx];
+          // check if newStep matches
+          if (curStep is ReclampStep && newStep is ReclampStep)
+          {
+            if (((ReclampStep)curStep).Reclamp.SequenceEqual(((ReclampStep)newStep).Reclamp))
+            {
+              break;
+            }
+            else
+            {
+              idx += 1;
+            }
+          }
+          else if (curStep is MachiningStep && newStep is MachiningStep)
+          {
+            if (((MachiningStep)curStep).Machines.SequenceEqual(((MachiningStep)newStep).Machines))
+            {
+              foreach (var prog in ((MachiningStep)newStep).ProgramNumsToRun)
+              {
+                ((MachiningStep)curStep).ProgramNumsToRun.Add(prog);
+              }
+              break;
+            }
+            else
+            {
+              idx += 1;
+            }
+          }
+          else
+          {
+            idx += 1;
+          }
+        }
+
+        if (idx == steps.Count)
+        {
+          steps.Add(newStep);
+          idx += 1;
+        }
+      }
+
+    }
+
+    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths, IReadOnlyDictionary<(string progNum, long revision), MachineFramework.JobDB.ProgramRevision> progs)
+    {
+      var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
+
+      List<RouteStep> middleSteps = null;
+      foreach (var path in orderedPaths)
+      {
+        var newSteps = MiddleStepsForPath(path, progs);
+        if (middleSteps == null || middleSteps.Count == 0)
+        {
+          middleSteps = newSteps;
+        }
+        else
+        {
+          MergeSteps(middleSteps, newSteps);
         }
       }
 
@@ -396,7 +459,7 @@ namespace BlackMaple.FMSInsight.Niigata
         ForLongToolMaintenance = false,
         Routes =
           (new RouteStep[] { new LoadStep() { LoadStations = firstPath.Job.LoadStations(firstPath.Process, firstPath.Path).ToList() } })
-          .Concat(machiningSteps)
+          .Concat(middleSteps)
           .Concat(new[] {
             new UnloadStep()
             {
@@ -424,6 +487,10 @@ namespace BlackMaple.FMSInsight.Niigata
           var nM = (MachiningStep)newPal.Routes[i];
           if (!eM.Machines.SequenceEqual(nM.Machines)) return false;
           if (!eM.ProgramNumsToRun.SequenceEqual(nM.ProgramNumsToRun)) return false;
+        }
+        else if (existing.Routes[i] is ReclampStep && newPal.Routes[i] is ReclampStep)
+        {
+          if (!((ReclampStep)existing.Routes[i]).Reclamp.SequenceEqual(((ReclampStep)newPal.Routes[i]).Reclamp)) return false;
         }
         else if (existing.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
         {

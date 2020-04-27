@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
@@ -50,11 +51,12 @@ namespace BlackMaple.FMSInsight.Niigata
     public JobLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
     public ISyncPallets SyncPallets => _sync;
+    public HashSet<string> ReclampGroupNames { get; }
 
     public NiigataBackend(
       IConfigurationSection config,
       FMSSettings cfg,
-      Func<JobLogDB, IRecordFacesForPallet, IAssignPallets> customAssignment = null
+      Func<JobLogDB, IRecordFacesForPallet, HashSet<string>, IAssignPallets> customAssignment = null
     )
     {
       try
@@ -76,6 +78,9 @@ namespace BlackMaple.FMSInsight.Niigata
           Log.Error("Program directory {dir} does not exist", programDir);
         }
 
+        var reclampNames = config.GetValue<string>("Reclamp Group Names");
+        ReclampGroupNames = string.IsNullOrEmpty(reclampNames) ? null : new HashSet<string>(reclampNames.Split(',').Select(s => s.Trim()));
+
         var connStr = config.GetValue<string>("Connection String");
 
         _icc = new NiigataICC(JobDB, programDir, connStr);
@@ -85,14 +90,14 @@ namespace BlackMaple.FMSInsight.Niigata
         IAssignPallets assign;
         if (customAssignment != null)
         {
-          assign = customAssignment(LogDB, recordFaces);
+          assign = customAssignment(LogDB, recordFaces, ReclampGroupNames);
         }
         else
         {
-          assign = new AssignPallets(recordFaces);
+          assign = new AssignPallets(recordFaces, ReclampGroupNames);
         }
         _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
-        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync);
+        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync, ReclampGroupNames);
         _sync.StartThread();
       }
       catch (Exception ex)
