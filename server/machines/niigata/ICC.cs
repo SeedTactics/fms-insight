@@ -40,13 +40,6 @@ using Dapper;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-
-  // NOTES:
-  //   - no program delete? only overwrite?
-  //   - change_request_palette_route has a value long_tool_replacement_mc, is that
-  //     supposed to be the specific mc that needs replacmenet?
-
-
   // This class is not thread-safe, and assumes loading status
   // and sending actions happens on a single thread (the syncpallets thread).
   public class NiigataICC : INiigataCommunication, IDisposable
