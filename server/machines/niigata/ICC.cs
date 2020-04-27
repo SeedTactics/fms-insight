@@ -478,9 +478,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private long NewId()
     {
-      byte[] buff = new byte[8];
-      _rng.NextBytes(buff);
-      return BitConverter.ToInt64(buff, 0);
+      // ICC only supports 32-bit change ids, even though the field is 64-bit
+      //byte[] buff = new byte[8];
+      //_rng.NextBytes(buff);
+      //return BitConverter.ToInt64(buff, 0);
+      return _rng.Next();
     }
 
     private AutoResetEvent _proposalRouteChanged = new AutoResetEvent(false);
