@@ -233,7 +233,7 @@ namespace BlackMaple.MachineWatchInterface
     }
   }
 
-  [DataContract]
+  [DataContract, Serializable]
   public class MaterialDetails
   {
     [DataMember(IsRequired = true)] public long MaterialID { get; set; }
@@ -245,7 +245,7 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public Dictionary<int, int> Paths { get; set; } // key is process, value is path
   }
 
-  [DataContract]
+  [DataContract, Serializable]
   public class ToolUse
   {
     [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; set; }
@@ -254,7 +254,7 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   // stored serialized in json format in the details for inspection logs.
-  [DataContract]
+  [DataContract, Serializable]
   public class MaterialProcessActualPath
   {
     [DataContract]
