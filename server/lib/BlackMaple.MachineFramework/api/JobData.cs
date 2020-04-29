@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -403,7 +403,7 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   [Serializable, DataContract]
-  public class JobPlan
+  public partial class JobPlan
   {
     public string UniqueStr
     {
