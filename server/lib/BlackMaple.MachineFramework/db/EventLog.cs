@@ -1943,6 +1943,70 @@ namespace BlackMaple.MachineFramework
       });
     }
 
+    public MachineWatchInterface.LogEntry RecordManualWorkAtLULStart(
+        IEnumerable<EventLogMaterial> mats,
+        string pallet,
+        int lulNum,
+        DateTime timeUTC,
+        string operationName,
+        string foreignId = null,
+        string originalMessage = null
+    )
+    {
+      if (operationName == "LOAD" || operationName == "UNLOAD")
+      {
+        throw new ArgumentException("ManualWorkAtLUL operation cannot be LOAD or UNLOAD", "operationName");
+      }
+      var log = new NewEventLogEntry()
+      {
+        Material = mats,
+        Pallet = pallet,
+        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LocationName = "L/U",
+        LocationNum = lulNum,
+        Program = operationName,
+        StartOfCycle = true,
+        EndTimeUTC = timeUTC,
+        Result = operationName,
+        EndOfRoute = false
+      };
+      return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+    }
+
+    public MachineWatchInterface.LogEntry RecordManualWorkAtLULEnd(
+        IEnumerable<EventLogMaterial> mats,
+        string pallet,
+        int lulNum,
+        DateTime timeUTC,
+        TimeSpan elapsed,
+        TimeSpan active,
+        string operationName,
+        string foreignId = null,
+        string originalMessage = null
+    )
+    {
+      if (operationName == "LOAD" || operationName == "UNLOAD")
+      {
+        throw new ArgumentException("ManualWorkAtLUL operation cannot be LOAD or UNLOAD", "operationName");
+      }
+      var log = new NewEventLogEntry()
+      {
+        Material = mats,
+        Pallet = pallet,
+        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LocationName = "L/U",
+        LocationNum = lulNum,
+        Program = operationName,
+        StartOfCycle = false,
+        EndTimeUTC = timeUTC,
+        ElapsedTime = elapsed,
+        ActiveOperationTime = active,
+        Result = operationName,
+        EndOfRoute = false
+      };
+      return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+    }
+
     public MachineWatchInterface.LogEntry RecordMachineStart(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
