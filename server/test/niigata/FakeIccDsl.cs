@@ -78,7 +78,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var record = new RecordFacesForPallet(_logDB);
 
       _assign = new AssignPallets(record, null);
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings);
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, new HashSet<string>());
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);

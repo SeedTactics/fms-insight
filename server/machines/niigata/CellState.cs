@@ -80,13 +80,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private IRecordFacesForPallet _recordFaces;
     private FMSSettings _settings;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
+    private HashSet<string> _reclampGroupNames;
 
-    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s)
+    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s, HashSet<string> reclampGrpNames)
     {
       _log = l;
       _jobs = jobs;
       _recordFaces = r;
       _settings = s;
+      _reclampGroupNames = reclampGrpNames;
     }
 
     public CellState BuildCellState(NiigataStatus status, PlannedSchedule sch)
@@ -739,17 +741,84 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private IReadOnlyList<StopAndStep> MatchStopsAndSteps(PalletAndMaterial pallet, PalletFace face)
     {
-      /*
-          if (ss.IccStepNum < pallet.Status.Tracking.CurrentStepNum ||
-             (ss.IccStepNum == pallet.Status.Tracking.CurrentStepNum && !pallet.Status.Tracking.BeforeCurrentStep))
-          {
-          }
-          else if (ss.IccStepNum == pallet.Status.Tracking.CurrentStepNum && pallet.Status.Tracking.BeforeCurrentStep)
-          {
+      var ret = new List<StopAndStep>();
 
+      int stepIdx = 0;
+
+      foreach (var stop in face.Job.GetMachiningStop(face.Process, face.Path))
+      {
+        // find out if job stop is machine or reclamp and which program
+        string iccMachineProg = null;
+        bool isReclamp = false;
+        if (_reclampGroupNames.Contains(stop.StationGroup))
+        {
+          isReclamp = true;
+        }
+        else
+        {
+          if (stop.ProgramRevision.HasValue)
+          {
+            iccMachineProg = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value)?.CellControllerProgramName;
           }
-          */
-      return new List<StopAndStep>();
+          else
+          {
+            iccMachineProg = stop.ProgramName;
+          }
+        }
+
+
+        // advance the pallet steps until we find a match
+        RouteStep step;
+        while (stepIdx < pallet.Status.Master.Routes.Count)
+        {
+          step = pallet.Status.Master.Routes[stepIdx];
+
+          switch (step)
+          {
+            case MachiningStep machStep:
+              if (!string.IsNullOrEmpty(iccMachineProg)
+                  && stop.Stations.All(s => machStep.Machines.Contains(s))
+                  && machStep.ProgramNumsToRun.Select(p => p.ToString()).Contains(iccMachineProg)
+                 )
+              {
+                goto matchingStep;
+              }
+              break;
+
+            case ReclampStep reclampStep:
+              if (isReclamp && stop.Stations.All(s => reclampStep.Reclamp.Contains(s)))
+              {
+                goto matchingStep;
+              }
+              break;
+          }
+
+          stepIdx += 1;
+        }
+
+        Log.Warning("Unable to match job stops to route steps for {@pallet} and {@face}", pallet, face);
+        return ret;
+
+      matchingStep:;
+
+        // add the matching stop and step
+        ret.Add(new StopAndStep()
+        {
+          JobStop = stop,
+          IccStepNum = stepIdx + 1,
+          StopCompleted =
+            (stepIdx + 1 < pallet.Status.Tracking.CurrentStepNum)
+            ||
+            (stepIdx + 1 == pallet.Status.Tracking.CurrentStepNum && !pallet.Status.Tracking.BeforeCurrentStep)
+        });
+
+        if (stepIdx + 1 == pallet.Status.Tracking.CurrentStepNum)
+        {
+          break;
+        }
+
+      }
+      return ret;
     }
 
     private void RecordPalletAtMachine(PalletAndMaterial pallet, PalletFace face, StopAndStep ss, LogEntry machineStart, LogEntry machineEnd, DateTime nowUtc, ref bool palletStateUpdated)
