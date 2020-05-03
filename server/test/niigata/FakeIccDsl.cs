@@ -163,7 +163,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       p.Master.NoWork = true;
       p.Tracking.CurrentStepNum = 1;
       p.Tracking.CurrentControlNum = 2;
-      _expectedFaces[pal].Clear();
       return this;
     }
 

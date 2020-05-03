@@ -3670,13 +3670,13 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    public void MakeInspectionDecisions(
+    public IEnumerable<MachineWatchInterface.LogEntry> MakeInspectionDecisions(
         long matID,
         int process,
         IEnumerable<MachineWatchInterface.PathInspection> inspections,
         DateTime? mutcNow = null)
     {
-      AddEntryInTransaction(trans =>
+      return AddEntryInTransaction(trans =>
           MakeInspectionDecisions(trans, matID, process, inspections, mutcNow)
       );
     }
