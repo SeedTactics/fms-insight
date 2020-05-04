@@ -154,14 +154,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           CurStation = NiigataStationNum.Machine(3),
         },
-        Faces = new List<PalletFace> {
+        CurrentOrLoadingFaces = new List<PalletFace> {
           new PalletFace() {
             Job = j,
             Process = 1,
             Path = 1,
             Face = 1,
-            Material = new List<InProcessMaterial> {
-              new InProcessMaterial() {
+          }
+        },
+        Material = new List<InProcessMaterialAndJob> {
+            new InProcessMaterialAndJob() {
+              Job = j,
+              Mat = new InProcessMaterial() {
                 MaterialID = mat2,
                 JobUnique = "u1",
                 PartName = "p1",
@@ -178,9 +182,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Type = InProcessMaterialAction.ActionType.Waiting
                 }
               }
-            },
-          }
-        }
+            }
+        },
       };
       var pal2 = new PalletAndMaterial()
       {
@@ -198,37 +201,41 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           CurStation = NiigataStationNum.LoadStation(2)
         },
-        Faces = new List<PalletFace> {
+        CurrentOrLoadingFaces = new List<PalletFace> {
           new PalletFace() {
             Job = j,
             Process = 2,
             Path = 5,
             Face = 1,
-            Material = new List<InProcessMaterial> {
-              new InProcessMaterial() {
-                MaterialID = mat3,
-                JobUnique = "u2",
-                PartName = "p2",
-                Process = 2,
-                Path = 5,
-                Serial = "serial3",
-                WorkorderId = null,
-                SignaledInspections = new List<string>(),
-                Location = new InProcessMaterialLocation() {
-                  Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = "2"
-                },
-                Action = new InProcessMaterialAction() {
-                  Type = InProcessMaterialAction.ActionType.Loading,
-                  LoadOntoFace = 1,
-                  LoadOntoPallet = "2",
-                  ProcessAfterLoad = 2,
-                  PathAfterLoad = 1
-                }
-              }
-            },
           }
-        }
+        },
+        Material = new List<InProcessMaterialAndJob> {
+          new InProcessMaterialAndJob() {
+            Job = j,
+            Mat =
+            new InProcessMaterial() {
+              MaterialID = mat3,
+              JobUnique = "u2",
+              PartName = "p2",
+              Process = 2,
+              Path = 5,
+              Serial = "serial3",
+              WorkorderId = null,
+              SignaledInspections = new List<string>(),
+              Location = new InProcessMaterialLocation() {
+                Type = InProcessMaterialLocation.LocType.OnPallet,
+                Pallet = "2"
+              },
+              Action = new InProcessMaterialAction() {
+                Type = InProcessMaterialAction.ActionType.Loading,
+                LoadOntoFace = 1,
+                LoadOntoPallet = "2",
+                ProcessAfterLoad = 2,
+                PathAfterLoad = 1
+              }
+            }
+          }
+        },
       };
 
       var queuedMat = new InProcessMaterial
@@ -299,8 +306,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       expectedJob2.SetPrecedence(1, 1, 0); // has first precedence
       expectedSt.Jobs.Add("u3", expectedJob3);
 
-      expectedSt.Material.Add(pal1.Faces[0].Material[0]);
-      expectedSt.Material.Add(pal2.Faces[0].Material[0]);
+      expectedSt.Material.Add(pal1.Material[0].Mat);
+      expectedSt.Material.Add(pal2.Material[0].Mat);
       expectedSt.Material.Add(queuedMat);
       expectedSt.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
       {

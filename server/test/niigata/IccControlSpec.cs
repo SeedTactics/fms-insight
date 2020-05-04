@@ -338,6 +338,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // back to correct, just increment
         .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2000 })
         .DecrJobRemainCnt("uniq1", path: 1, cnt: -1) // the comment abc does not exist, so no material is marked to be loaded
+        .ClearExpectedLoadCastings()
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 1)
         })
@@ -1823,6 +1824,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     [Fact(Skip = "Pending")]
     public void MultipleProcsMultiplePathsSamePallet()
+    {
+
+    }
+
+    [Fact(Skip = "Pending")]
+    public void SwitchPartName()
     {
 
     }

@@ -689,27 +689,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var current = actualSt.Pallets[palNum - 1];
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
-        current.Faces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
+        current.CurrentOrLoadingFaces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
           new PalletFace()
           {
             Job = _jobDB.LoadJob(face.unique),
             Process = face.proc,
             Path = face.path,
             Face = face.face,
-            Material = _expectedMaterial.Values.Concat(_expectedLoadCastings).Where(m =>
+          }
+        ));
+        current.Material.Select(m => m.Mat).Should().BeEquivalentTo(
+          _expectedMaterial.Values.Concat(_expectedLoadCastings).Where(m =>
             {
               if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
               {
-                return m.Action.LoadOntoPallet == palNum.ToString() && m.Action.LoadOntoFace == face.face;
+                return m.Action.LoadOntoPallet == palNum.ToString();
               }
               else if (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
               {
-                return m.Location.Pallet == palNum.ToString() && m.Location.Face == face.face;
+                return m.Location.Pallet == palNum.ToString();
               }
               return false;
-            }).ToList()
-          }
-        ));
+            })
+        );
       }
       actualSt.QueuedMaterial.Should().BeEquivalentTo(_expectedMaterial.Values.Where(
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting

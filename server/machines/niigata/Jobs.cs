@@ -163,14 +163,14 @@ namespace BlackMaple.FMSInsight.Niigata
           FixtureOnPallet = "",
           OnHold = pal.Status.Master.Skip,
           CurrentPalletLocation = pal.Status.CurStation.Location,
-          NumFaces = pal.Faces.Count > 0 ? pal.Faces.Max(x => x.Face) : 0
+          NumFaces = pal.Material.Count > 0 ? pal.Material.Max(m => m.Mat.Location.Face ?? 1) : 0
         });
       }
 
       // material on pallets
-      foreach (var mat in status.Pallets.SelectMany(p => p.Faces).SelectMany(f => f.Material))
+      foreach (var mat in status.Pallets.SelectMany(pal => pal.Material))
       {
-        curStatus.Material.Add(mat);
+        curStatus.Material.Add(mat.Mat);
       }
 
       // queued mats
@@ -360,8 +360,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var matInProc =
         st.Pallets
-        .SelectMany(p => p.Faces)
-        .SelectMany(f => f.Material)
+        .SelectMany(p => p.Material)
+        .Select(f => f.Mat)
         .Concat(st.QueuedMaterial)
         .Where(m => m.JobUnique == job.UniqueStr)
         .Any();

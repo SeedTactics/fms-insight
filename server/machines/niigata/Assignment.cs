@@ -76,9 +76,9 @@ namespace BlackMaple.FMSInsight.Niigata
         if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
         if (!(pal.Status.Tracking.BeforeCurrentStep && pal.Status.CurrentStep is UnloadStep)) continue;
-        if (pal.Faces.SelectMany(ms => ms.Material).Any(m => m.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
+        if (pal.Material.Any(m => m.Mat.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
 
-        var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Faces.SelectMany(ms => ms.Material).ToList(), queuedMats: cellSt.QueuedMaterial);
+        var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material.Select(ms => ms.Mat).ToList(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
           return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
@@ -91,7 +91,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
         if (!pal.Status.Master.NoWork) continue;
-        if (pal.Faces.Any())
+        if (pal.Material.Any())
         {
           Log.Error("State mismatch! no work on pallet but it has material {@pal}", pal);
           continue;
