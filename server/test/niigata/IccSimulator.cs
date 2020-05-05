@@ -650,7 +650,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         }));
         output.AppendLine();
-        output.AppendLine();
       }
 
       foreach (var m in _status.Machines.Keys.OrderBy(x => x))

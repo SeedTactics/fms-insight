@@ -50,8 +50,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private CreateCellState _createLog;
     private IccSimulator _sim;
     private SyncPallets _sync;
-
     private Xunit.Abstractions.ITestOutputHelper _output;
+    private bool _debugLogEnabled = false;
 
     public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
     {
@@ -125,9 +125,74 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           break;
         }
-        //_output.WriteLine(_sim.DebugPrintStatus());
+        if (_debugLogEnabled)
+        {
+          if (newLogs.Any())
+          {
+            _output.WriteLine("");
+            _output.WriteLine("*************** Events *********************************");
+            _output.WriteLine("Events: ");
+            WriteLogs(newLogs);
+          }
+          _output.WriteLine("");
+          _output.WriteLine("--------------- Status ---------------------------------");
+          _output.WriteLine(_sim.DebugPrintStatus());
+        }
       }
       return logs;
+    }
+
+    private void WriteLogs(IEnumerable<MachineWatchInterface.LogEntry> es)
+    {
+      var output = new System.Text.StringBuilder();
+      foreach (var e in es)
+      {
+        Action writeMat = () => output.AppendJoin(',', e.Material.Select(m => m.PartName + "-" + m.Process.ToString() + "[" + m.MaterialID.ToString() + "]"));
+        switch (e.LogType)
+        {
+          case MachineWatchInterface.LogType.LoadUnloadCycle:
+            if (e.StartOfCycle)
+            {
+              output.AppendFormat("{0}-Start on {1} at L/U{2} for ", e.Result, e.Pallet, e.LocationNum);
+              writeMat();
+              output.AppendLine();
+            }
+            else
+            {
+              output.AppendFormat("{0}-End on {1} at L/U{2} for ", e.Result, e.Pallet, e.LocationNum);
+              writeMat();
+              output.AppendLine();
+            }
+            break;
+
+          case MachineWatchInterface.LogType.MachineCycle:
+            if (e.StartOfCycle)
+            {
+              output.AppendFormat("Machine-Start on {0} at MC{1} of {2} for ", e.Pallet, e.LocationNum, e.Program);
+              writeMat();
+              output.AppendLine();
+            }
+            else
+            {
+              output.AppendFormat("Machine-End on {0} at MC{1} of {2} for ", e.Pallet, e.LocationNum, e.Program);
+              writeMat();
+              output.AppendLine();
+            }
+            break;
+
+          case MachineWatchInterface.LogType.PartMark:
+            output.AppendFormat("Assign {0} to ", e.Result);
+            writeMat();
+            output.AppendLine();
+            break;
+
+          case MachineWatchInterface.LogType.PalletCycle:
+            output.AppendFormat("Pallet cycle for {0}", e.Pallet);
+            output.AppendLine();
+            break;
+        }
+      }
+      _output.WriteLine(output.ToString());
     }
 
     private void AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs)
@@ -236,5 +301,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         CheckSingleMaterial(m, m.Key, "uniq1", "part1", 1);
       }
     }
+
+    [Fact(Skip = "Pending")]
+    public void MultpleProcsMultiplePathsSeparatePallets()
+    {
+
+    }
+
+    [Fact(Skip = "Pending")]
+    public void MultipleProcsMultiplePathsSamePallet()
+    {
+
+    }
+
   }
 }
