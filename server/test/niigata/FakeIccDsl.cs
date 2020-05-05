@@ -77,8 +77,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var record = new RecordFacesForPallet(_logDB);
 
-      _assign = new AssignPallets(record, null);
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, new HashSet<string>());
+      _assign = new AssignPallets(record, new HashSet<string>() { "TestReclamp" });
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, new HashSet<string>() { "TestReclamp" });
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
@@ -205,6 +205,54 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           else
           {
             machStepOffset -= 1;
+          }
+        }
+        step += 1;
+      }
+      p.Tracking.CurrentStepNum = step;
+      p.Tracking.CurrentControlNum = step * 2;
+      return this;
+    }
+
+    public FakeIccDsl SetBeforeReclamp(int pal, int reclampStepOffset = 0)
+    {
+      var p = _status.Pallets[pal - 1];
+      var step = 1;
+      foreach (var s in p.Master.Routes)
+      {
+        if (s is ReclampStep)
+        {
+          if (reclampStepOffset == 0)
+          {
+            break;
+          }
+          else
+          {
+            reclampStepOffset -= 1;
+          }
+        }
+        step += 1;
+      }
+      p.Tracking.CurrentStepNum = step;
+      p.Tracking.CurrentControlNum = step * 2 - 1;
+      return this;
+    }
+
+    public FakeIccDsl SetAfterReclamp(int pal, int reclampStepOffset = 0)
+    {
+      var p = _status.Pallets[pal - 1];
+      var step = 1;
+      foreach (var s in p.Master.Routes)
+      {
+        if (s is ReclampStep)
+        {
+          if (reclampStepOffset == 0)
+          {
+            break;
+          }
+          else
+          {
+            reclampStepOffset -= 1;
           }
         }
         step += 1;
@@ -523,7 +571,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int loadMins, int machMins1, int machMins2, int unloadMins, string fixture, int face, string queue = null)
+    public static JobPlan CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int[] reclamp, int loadMins, int machMins1, int machMins2, int reclampMins, int unloadMins, string fixture, int face, string queue = null)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
@@ -557,6 +605,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         s.Stations.Add(m);
       }
       j.AddMachiningStop(1, 1, s);
+
+      if (reclamp.Any())
+      {
+        s = new JobMachiningStop("TestReclamp");
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(reclampMins);
+        foreach (var m in reclamp)
+        {
+          s.Stations.Add(m);
+        }
+        j.AddMachiningStop(1, 1, s);
+      }
 
       foreach (var p in pals)
       {
@@ -703,7 +762,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
               {
-                return m.Action.LoadOntoPallet == palNum.ToString();
+                if (string.IsNullOrEmpty(m.Action.LoadOntoPallet))
+                {
+                  return m.Location.Pallet == palNum.ToString();
+                }
+                else
+                {
+                  return m.Action.LoadOntoPallet == palNum.ToString();
+                }
               }
               else if (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
               {
@@ -900,7 +966,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] unloads, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] reclamp, int[] unloads, IEnumerable<(int face, string unique, int proc, int path)> faces)
     {
       return new ExpectNewRouteChange()
       {
@@ -925,6 +991,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new MachiningStep() {
               Machines = machs2.ToList(),
               ProgramNumsToRun = progs2.ToList()
+            },
+            new ReclampStep() {
+              Reclamp = reclamp.ToList()
             },
             new UnloadStep() {
               UnloadStations = unloads.ToList(),
@@ -988,6 +1057,44 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Machine = mach,
         Program = program,
         Revision = rev,
+        ElapsedMin = elapsedMin,
+        ActiveMin = activeMin,
+        Material = mats
+      };
+    }
+
+    private class ExpectReclampBeginEvent : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public int LoadStation { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectReclampBegin(int pal, int lul, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectReclampBeginEvent()
+      {
+        Pallet = pal,
+        LoadStation = lul,
+        Material = mats
+      };
+    }
+
+    private class ExpectReclampEndEvent : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public int LoadStation { get; set; }
+      public int ElapsedMin { get; set; }
+      public int ActiveMin { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectReclampEnd(int pal, int lul, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectReclampEndEvent()
+      {
+        Pallet = pal,
+        LoadStation = lul,
         ElapsedMin = elapsedMin,
         ActiveMin = activeMin,
         Material = mats
@@ -1400,6 +1507,44 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   newLog.ProgramDetails["ProgramRevision"] = machEnd.Revision.Value.ToString();
                 }
                 expectedLogs.Add(newLog);
+              }
+              break;
+
+            case ExpectReclampBeginEvent reclampBegin:
+              {
+                expectedLogs.Add(new LogEntry(
+                    cntr: -1,
+                    mat: reclampBegin.Material,
+                    pal: reclampBegin.Pallet.ToString(),
+                    ty: LogType.LoadUnloadCycle,
+                    locName: "L/U",
+                    locNum: reclampBegin.LoadStation,
+                    prog: "TestReclamp",
+                    start: true,
+                    endTime: _status.TimeOfStatusUTC,
+                    result: "TestReclamp",
+                    endOfRoute: false
+                ));
+              }
+              break;
+
+            case ExpectReclampEndEvent reclampEnd:
+              {
+                expectedLogs.Add(new LogEntry(
+                    cntr: -1,
+                    mat: reclampEnd.Material,
+                    pal: reclampEnd.Pallet.ToString(),
+                    ty: LogType.LoadUnloadCycle,
+                    locName: "L/U",
+                    locNum: reclampEnd.LoadStation,
+                    prog: "TestReclamp",
+                    start: false,
+                    endTime: _status.TimeOfStatusUTC,
+                    result: "TestReclamp",
+                    endOfRoute: false,
+                    elapsed: TimeSpan.FromMinutes(reclampEnd.ElapsedMin),
+                    active: TimeSpan.FromMinutes(reclampEnd.ActiveMin)
+                ));
               }
               break;
 
