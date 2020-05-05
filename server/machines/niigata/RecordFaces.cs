@@ -68,11 +68,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IEnumerable<AssignedJobAndPathForFace> Load(string palComment)
     {
-      if (!System.Guid.TryParse(palComment, out var ignored))
+      if (palComment == null || !palComment.StartsWith("Insight:"))
       {
         return Enumerable.Empty<AssignedJobAndPathForFace>();
       }
-      var msg = _log.OriginalMessageByForeignID("faces:" + palComment);
+      var msg = _log.OriginalMessageByForeignID("faces:" + palComment.Substring(8)); // substring 8 removes Insight: prefix
       if (string.IsNullOrEmpty(msg))
       {
         Serilog.Log.Error("Unable to find faces for pallet comment {comment}", palComment);
@@ -88,8 +88,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths)
     {
-      // comments can be 32 characters, and a guid is 32 exactly without dashes
-      string palComment = System.Guid.NewGuid().ToString().Replace("-", "");
+      // comments can be 32 characters. A base64 guid is 22 characters to which we add "Insight:" 8 characters
+      var guid64 = Convert.ToBase64String(System.Guid.NewGuid().ToByteArray()).Replace("/", "_").Replace("+", "-").Substring(0, 22);
       string json;
       var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(List<AssignedJobAndPathForFace>));
       using (var ms = new System.IO.MemoryStream())
@@ -104,12 +104,12 @@ namespace BlackMaple.FMSInsight.Niigata
         program: "Assign",
         result: "New Niigata Route",
         pallet: pal.ToString(),
-        foreignId: "faces:" + palComment,
+        foreignId: "faces:" + guid64,
         originalMessage: json,
         timeUTC: nowUtc
       );
 
-      return palComment;
+      return "Insight:" + guid64;
     }
   }
 }
