@@ -179,7 +179,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new MaterialProcessActualPath() {
               Process = 1, Pallet = "1", LoadStation = 1, UnloadStation = -1, Stops = new List<MaterialProcessActualPath.Stop> {
                 new MaterialProcessActualPath.Stop() {
-                  StationName = "MC", StationNum = 3
+                  StationName = "TestMC", StationNum = 103
                 }
               }
             }
@@ -264,7 +264,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
            new MaterialProcessActualPath() {
              Process = 1, Pallet = "1", LoadStation = 4, UnloadStation = -1, Stops = new List<MaterialProcessActualPath.Stop> {
                new MaterialProcessActualPath.Stop() {
-                 StationName = "MC", StationNum = 6
+                 StationName = "TestMC", StationNum = 106
                }
              }
            }

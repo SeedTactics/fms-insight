@@ -45,15 +45,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private JobLogDB _log;
     private FMSSettings _settings;
     private ISyncPallets _sync;
-    private readonly HashSet<string> _reclampGroupNames;
+    private readonly NiigataStationNames _statNames;
 
-    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy, HashSet<string> reclampGroupNames)
+    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames)
     {
       _jobs = j;
       _log = l;
       _sync = sy;
       _settings = st;
-      _reclampGroupNames = reclampGroupNames;
+      _statNames = statNames;
 
       _sync.OnPalletsChanged += OnNewCellState;
     }
@@ -257,7 +257,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
             foreach (var stop in j.GetMachiningStop(proc, path))
             {
-              if (_reclampGroupNames != null && _reclampGroupNames.Contains(stop.StationGroup))
+              if (_statNames != null && _statNames.ReclampGroupNames.Contains(stop.StationGroup))
               {
                 if (!stop.Stations.Any())
                 {

@@ -76,7 +76,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var record = new RecordFacesForPallet(_logDB);
 
       _assign = new AssignPallets(record, null);
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, new HashSet<string>());
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, null);
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);
       _sync = new SyncPallets(_jobDB, _logDB, _sim, _assign, _createLog);
@@ -270,27 +270,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void OneProcJob()
     {
-      AddJobs(new[] {
-        FakeIccDsl.CreateOneProcOnePathJob(
-            unique: "uniq1",
-            part: "part1",
-            qty: 3,
-            priority: 5,
-            partsPerPal: 1,
-            pals: new[] { 1, 2 },
-            luls: new[] { 1, 2 },
-            machs: new[] { 5, 6 },
-            prog: "prog111",
-            progRev: null,
-            loadMins: 8,
-            unloadMins: 9,
-            machMins: 14,
-            fixture: "fix1",
-            face: 1
-        )
-      }, new[] {
-        (prog: "prog111", rev: 5L)
-      });
+      var j = new JobPlan("uniq1", 1);
+      j.PartName = "part1";
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
+      j.AddLoadStation(1, 1, statNum: 1);
+      j.AddUnloadStation(1, 1, statNum: 1);
+      j.AddLoadStation(1, 1, statNum: 2);
+      j.AddUnloadStation(1, 1, statNum: 2);
+      j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(8));
+      j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(9));
+      j.SetPartsPerPallet(1, 1, partsPerPallet: 1);
+
+      var s = new JobMachiningStop("MC");
+      s.ProgramName = "prog111";
+      s.ProgramRevision = null;
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(14);
+      s.Stations.Add(5);
+      s.Stations.Add(6);
+      j.AddMachiningStop(1, 1, s);
+      j.AddProcessOnPallet(1, 1, "1");
+      j.AddProcessOnPallet(1, 1, "2");
+      j.SetFixtureFace(1, 1, "fix1", 1);
+
+      AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L) });
 
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);

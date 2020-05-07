@@ -47,12 +47,12 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignPallets>();
     private readonly IRecordFacesForPallet _recordFaces;
-    private readonly HashSet<string> _reclampGroupNames;
+    private readonly NiigataStationNames _statNames;
 
-    public AssignPallets(IRecordFacesForPallet r, HashSet<string> reclampGroupNames)
+    public AssignPallets(IRecordFacesForPallet r, NiigataStationNames n)
     {
       _recordFaces = r;
-      _reclampGroupNames = reclampGroupNames;
+      _statNames = n;
     }
 
     public NiigataAction NewPalletChange(CellState cellSt)
@@ -331,7 +331,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var steps = new List<RouteStep>();
       foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
       {
-        if (_reclampGroupNames != null && _reclampGroupNames.Contains(stop.StationGroup))
+        if (_statNames != null && _statNames.ReclampGroupNames.Contains(stop.StationGroup))
         {
           steps.Add(new ReclampStep()
           {
@@ -369,7 +369,17 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             steps.Add(new MachiningStep()
             {
-              Machines = stop.Stations.ToList(),
+              Machines = stop.Stations.Select(s =>
+              {
+                if (_statNames != null)
+                {
+                  return _statNames.JobMachToIcc(stop.StationGroup, s);
+                }
+                else
+                {
+                  return s;
+                }
+              }).ToList(),
               ProgramNumsToRun = new List<int> { iccProgram.Value }
             });
           }

@@ -36,15 +36,38 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
+  public class NiigataStationNames
+  {
+    public HashSet<string> ReclampGroupNames { get; set; }
+    public IReadOnlyDictionary<int, (string group, int num)> IccMachineToJobMachNames { get; set; }
+    public int JobMachToIcc(string group, int num)
+    {
+      foreach (var x in IccMachineToJobMachNames)
+      {
+        if (x.Value.group == group && x.Value.num == num)
+        {
+          return x.Key;
+        }
+      }
+      return num;
+    }
+  }
+
+
   public class NiigataStationNum
   {
     public int StatNum { get; }
-    public NiigataStationNum(int n) => StatNum = n;
-    public static NiigataStationNum LoadStation(int i) => new NiigataStationNum(900 + i);
-    public static NiigataStationNum Machine(int i) => new NiigataStationNum(800 + i);
-    public static NiigataStationNum MachineQueue(int i) => new NiigataStationNum(830 + i);
-    public static NiigataStationNum Buffer(int i) => new NiigataStationNum(i);
-    public static NiigataStationNum Cart() => new NiigataStationNum(990);
+    private readonly NiigataStationNames _statNames;
+    public NiigataStationNum(int n, NiigataStationNames names)
+    {
+      StatNum = n;
+      _statNames = names;
+    }
+    public static NiigataStationNum LoadStation(int i) => new NiigataStationNum(900 + i, null);
+    public static NiigataStationNum Machine(int i, NiigataStationNames names) => new NiigataStationNum(800 + i, names);
+    public static NiigataStationNum MachineQueue(int i, NiigataStationNames names) => new NiigataStationNum(830 + i, names);
+    public static NiigataStationNum Buffer(int i) => new NiigataStationNum(i, null);
+    public static NiigataStationNum Cart() => new NiigataStationNum(990, null);
     public PalletLocation Location
     {
       get
@@ -55,11 +78,27 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (StatNum >= 801 && StatNum <= 821)
         {
-          return new PalletLocation(PalletLocationEnum.Machine, "MC", StatNum - 800);
+          var iccMc = StatNum - 800;
+          if (_statNames != null && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc))
+          {
+            return new PalletLocation(PalletLocationEnum.Machine, jobMc.group, jobMc.num);
+          }
+          else
+          {
+            return new PalletLocation(PalletLocationEnum.Machine, "MC", iccMc);
+          }
         }
         else if (StatNum >= 831 && StatNum <= 851)
         {
-          return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", StatNum - 830);
+          var iccMc = StatNum - 830;
+          if (_statNames != null && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc))
+          {
+            return new PalletLocation(PalletLocationEnum.MachineQueue, jobMc.group, jobMc.num);
+          }
+          else
+          {
+            return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", iccMc);
+          }
         }
         else if (StatNum >= 861 && StatNum <= 881)
         {

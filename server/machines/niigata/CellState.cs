@@ -86,15 +86,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private IRecordFacesForPallet _recordFaces;
     private FMSSettings _settings;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
-    private HashSet<string> _reclampGroupNames;
+    private NiigataStationNames _stationNames;
 
-    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s, HashSet<string> reclampGrpNames)
+    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s, NiigataStationNames n)
     {
       _log = l;
       _jobs = jobs;
       _recordFaces = r;
       _settings = s;
-      _reclampGroupNames = reclampGrpNames;
+      _stationNames = n;
     }
 
     public CellState BuildCellState(NiigataStatus status, PlannedSchedule sch)
@@ -222,7 +222,12 @@ namespace BlackMaple.FMSInsight.Niigata
       MachineStatus machStatus = null;
       if (pallet.CurStation.Location.Location == PalletLocationEnum.Machine)
       {
-        machines.TryGetValue(pallet.CurStation.Location.Num, out machStatus);
+        var iccMc = pallet.CurStation.Location.Num;
+        if (_stationNames != null)
+        {
+          iccMc = _stationNames.JobMachToIcc(pallet.CurStation.Location.StationGroup, pallet.CurStation.Location.Num);
+        }
+        machines.TryGetValue(iccMc, out machStatus);
       }
 
 
@@ -785,7 +790,7 @@ namespace BlackMaple.FMSInsight.Niigata
               }
               else
               {
-                if (pallet.Status.CurStation.Location.Location == PalletLocationEnum.Machine && step.Machines.Contains(pallet.Status.CurStation.Location.Num))
+                if (pallet.Status.CurStation.Location.Location == PalletLocationEnum.Machine && ss.JobStop.Stations.Contains(pallet.Status.CurStation.Location.Num))
                 {
                   RecordPalletAtMachine(pallet, face, matOnFace, ss, machStart, machEnd, nowUtc, ref palletStateUpdated);
                 }
@@ -850,7 +855,7 @@ namespace BlackMaple.FMSInsight.Niigata
         // find out if job stop is machine or reclamp and which program
         string iccMachineProg = null;
         bool isReclamp = false;
-        if (_reclampGroupNames.Contains(stop.StationGroup))
+        if (_stationNames != null && _stationNames.ReclampGroupNames.Contains(stop.StationGroup))
         {
           isReclamp = true;
         }
@@ -877,7 +882,15 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             case MachiningStep machStep:
               if (!string.IsNullOrEmpty(iccMachineProg)
-                  && stop.Stations.All(s => machStep.Machines.Contains(s))
+                  && stop.Stations.All(s =>
+                  {
+                    var iccMcNum = s;
+                    if (_stationNames != null)
+                    {
+                      iccMcNum = _stationNames.JobMachToIcc(stop.StationGroup, s);
+                    }
+                    return machStep.Machines.Contains(iccMcNum);
+                  })
                   && machStep.ProgramNumsToRun.Select(p => p.ToString()).Contains(iccMachineProg)
                  )
               {
@@ -1019,6 +1032,14 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         statName = ss.JobStop.StationGroup;
         statNum = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
+        if (_stationNames != null && _stationNames.IccMachineToJobMachNames.TryGetValue(statNum, out var jobMc))
+        {
+          if (statName != jobMc.group)
+          {
+            Log.Warning("Mismatched machine group name for {iccMcNum} between job stop {@stop} and {@names}", statNum, ss, _stationNames);
+          }
+          statNum = jobMc.num;
+        }
       }
       else
       {

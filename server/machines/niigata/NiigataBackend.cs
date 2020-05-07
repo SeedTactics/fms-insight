@@ -41,6 +41,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
+
   public class NiigataBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
@@ -51,12 +52,12 @@ namespace BlackMaple.FMSInsight.Niigata
     public JobLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
     public ISyncPallets SyncPallets => _sync;
-    public HashSet<string> ReclampGroupNames { get; }
+    public NiigataStationNames StationNames { get; }
 
     public NiigataBackend(
       IConfigurationSection config,
       FMSSettings cfg,
-      Func<JobLogDB, IRecordFacesForPallet, HashSet<string>, IAssignPallets> customAssignment = null
+      Func<JobLogDB, IRecordFacesForPallet, NiigataStationNames, IAssignPallets> customAssignment = null
     )
     {
       try
@@ -79,25 +80,46 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         var reclampNames = config.GetValue<string>("Reclamp Group Names");
-        ReclampGroupNames = string.IsNullOrEmpty(reclampNames) ? null : new HashSet<string>(reclampNames.Split(',').Select(s => s.Trim()));
+        var machineNames = config.GetValue<string>("Machine Names");
+        StationNames = new NiigataStationNames()
+        {
+          ReclampGroupNames = string.IsNullOrEmpty(reclampNames) ? null : new HashSet<string>(reclampNames.Split(',').Select(s => s.Trim())),
+          IccMachineToJobMachNames = string.IsNullOrEmpty(machineNames)
+            ? new Dictionary<int, (string group, int num)>()
+            : machineNames.Split(',').Select((machineName, idx) =>
+            {
+              var lastNumIdx = machineName.LastIndexOfAny(new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' });
+              if (lastNumIdx >= 0 && int.TryParse(machineName.Substring(lastNumIdx), out var num))
+              {
+                return new { iccMc = idx + 1, group = machineName.Substring(0, lastNumIdx), num = num };
+              }
+              else
+              {
+                return null;
+              }
+            })
+            .Where(x => x != null)
+            .ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
+        };
+        Log.Debug("Using station names {@names}", StationNames);
 
         var connStr = config.GetValue<string>("Connection String");
 
-        _icc = new NiigataICC(JobDB, programDir, connStr);
+        _icc = new NiigataICC(JobDB, programDir, connStr, StationNames);
         var recordFaces = new RecordFacesForPallet(LogDB);
-        var createLog = new CreateCellState(LogDB, JobDB, recordFaces, cfg, ReclampGroupNames);
+        var createLog = new CreateCellState(LogDB, JobDB, recordFaces, cfg, StationNames);
 
         IAssignPallets assign;
         if (customAssignment != null)
         {
-          assign = customAssignment(LogDB, recordFaces, ReclampGroupNames);
+          assign = customAssignment(LogDB, recordFaces, StationNames);
         }
         else
         {
-          assign = new AssignPallets(recordFaces, ReclampGroupNames);
+          assign = new AssignPallets(recordFaces, StationNames);
         }
         _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
-        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync, ReclampGroupNames);
+        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync, StationNames);
         _sync.StartThread();
       }
       catch (Exception ex)

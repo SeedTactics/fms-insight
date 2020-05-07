@@ -152,7 +152,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             Alarm = false
           },
-          CurStation = NiigataStationNum.Machine(3),
+          CurStation = NiigataStationNum.Machine(3, null),
         },
         CurrentOrLoadingFaces = new List<PalletFace> {
           new PalletFace() {

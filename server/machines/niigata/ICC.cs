@@ -46,6 +46,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataICC>();
     private JobDB _jobs;
+    private NiigataStationNames _statNames;
     private string _programDir;
     private string _connStr;
     private Thread _thread;
@@ -53,11 +54,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public event Action NewCurrentStatus;
 
-    public NiigataICC(JobDB j, string progDir, string connectionStr)
+    public NiigataICC(JobDB j, string progDir, string connectionStr, NiigataStationNames statNames)
     {
       _jobs = j;
       _programDir = progDir;
       _connStr = connectionStr;
+      _statNames = statNames;
       _thread = new Thread(NotifyThread);
       _thread.Start();
     }
@@ -303,7 +305,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   Master = master,
                   Tracking = tracking,
-                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1)
+                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1, _statNames)
                 },
                 splitOn: $"{nameof(TrackingInfo.RouteInvalid)},{nameof(CurrentStationNum.StationNum)}",
                 transaction: trans

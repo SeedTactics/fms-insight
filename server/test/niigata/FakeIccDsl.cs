@@ -48,6 +48,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private CreateCellState _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
+    private NiigataStationNames _statNames;
 
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
@@ -77,8 +78,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var record = new RecordFacesForPallet(_logDB);
 
-      _assign = new AssignPallets(record, new HashSet<string>() { "TestReclamp" });
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, new HashSet<string>() { "TestReclamp" });
+      _statNames = new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames =
+          Enumerable.Range(1, numMachines)
+          .ToDictionary(mc => mc, mc => (group: "TestMC", num: 100 + mc))
+      };
+
+      _assign = new AssignPallets(record, _statNames);
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, _statNames);
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
@@ -126,12 +135,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
     public FakeIccDsl MoveToMachineQueue(int pal, int mach)
     {
-      _status.Pallets[pal - 1].CurStation = NiigataStationNum.MachineQueue(mach);
+      _status.Pallets[pal - 1].CurStation = NiigataStationNum.MachineQueue(mach, _statNames);
       return this;
     }
     public FakeIccDsl MoveToMachine(int pal, int mach)
     {
-      _status.Pallets[pal - 1].CurStation = NiigataStationNum.Machine(mach);
+      _status.Pallets[pal - 1].CurStation = NiigataStationNum.Machine(mach, _statNames);
       return this;
     }
 
@@ -552,13 +561,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(loadMins));
       j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
       j.SetPartsPerPallet(1, 1, partsPerPal);
-      var s = new JobMachiningStop("MC");
+      var s = new JobMachiningStop("TestMC");
       s.ProgramName = prog;
       s.ProgramRevision = progRev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
       foreach (var m in machs)
       {
-        s.Stations.Add(m);
+        s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(1, 1, s);
       foreach (var p in pals)
@@ -592,23 +601,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
       j.SetPartsPerPallet(1, 1, partsPerPal);
 
-      var s = new JobMachiningStop("MC");
+      var s = new JobMachiningStop("TestMC");
       s.ProgramName = prog1;
       s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs1)
       {
-        s.Stations.Add(m);
+        s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(1, 1, s);
 
-      s = new JobMachiningStop("MC");
+      s = new JobMachiningStop("TestMC");
       s.ProgramName = prog2;
       s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs2)
       {
-        s.Stations.Add(m);
+        s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(1, 1, s);
 
@@ -654,22 +663,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(2, 1, TimeSpan.FromMinutes(unloadMins2));
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
-      var s = new JobMachiningStop("MC");
+      var s = new JobMachiningStop("TestMC");
       s.ProgramName = prog1;
       s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs)
       {
-        s.Stations.Add(m);
+        s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(1, 1, s);
-      s = new JobMachiningStop("MC");
+      s = new JobMachiningStop("TestMC");
       s.ProgramName = prog2;
       s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs)
       {
-        s.Stations.Add(m);
+        s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(2, 1, s);
       foreach (var p in pals)
@@ -710,22 +719,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(2, 1, TimeSpan.FromMinutes(unloadMins2));
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
-      var s = new JobMachiningStop("MC");
+      var s = new JobMachiningStop("TestMC");
       s.ProgramName = prog1;
       s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
       foreach (var m in machs)
       {
-        s.Stations.Add(m);
+        s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(1, 1, s);
-      s = new JobMachiningStop("MC");
+      s = new JobMachiningStop("TestMC");
       s.ProgramName = prog2;
       s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
       foreach (var m in machs)
       {
-        s.Stations.Add(m);
+        s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(2, 1, s);
       foreach (var p in pals1)
@@ -1481,8 +1490,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     mat: machBegin.Material,
                     pal: machBegin.Pallet.ToString(),
                     ty: LogType.MachineCycle,
-                    locName: "MC",
-                    locNum: machBegin.Machine,
+                    locName: "TestMC",
+                    locNum: 100 + machBegin.Machine,
                     prog: machBegin.Program,
                     start: true,
                     endTime: _status.TimeOfStatusUTC,
@@ -1504,8 +1513,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   mat: machEnd.Material,
                   pal: machEnd.Pallet.ToString(),
                   ty: LogType.MachineCycle,
-                  locName: "MC",
-                  locNum: machEnd.Machine,
+                  locName: "TestMC",
+                  locNum: 100 + machEnd.Machine,
                   prog: machEnd.Program,
                   start: false,
                   endTime: _status.TimeOfStatusUTC,
