@@ -163,7 +163,9 @@ function display(props: LogEntryProps): JSX.Element {
       return (
         <span>
           {displayMat(entry.material)} on <span className={props.classes.pallet}>pallet {entry.pal}</span> at{" "}
-          <span className={props.classes.machine}>machine {entry.locnum.toString()}</span>
+          <span className={props.classes.machine}>
+            {entry.loc} {entry.locnum.toString()}
+          </span>
           {entry.program && entry.program !== "" ? <span> with program {entry.program}</span> : undefined}
         </span>
       );
