@@ -1008,6 +1008,24 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Recording machine end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, machStart);
       palletStateUpdated = true;
 
+      string statName;
+      int statNum;
+      if (machStart != null)
+      {
+        statName = machStart.LocationName;
+        statNum = machStart.LocationNum;
+      }
+      else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
+      {
+        statName = ss.JobStop.StationGroup;
+        statNum = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
+      }
+      else
+      {
+        statName = ss.JobStop.StationGroup;
+        statNum = 0;
+      }
+
       _log.RecordMachineEnd(
         mats: matOnFace.Select(m => new JobLogDB.EventLogMaterial()
         {
@@ -1016,8 +1034,8 @@ namespace BlackMaple.FMSInsight.Niigata
           Face = face.Face.ToString()
         }),
         pallet: pallet.Status.Master.PalletNum.ToString(),
-        statName: machStart != null ? machStart.LocationName : pallet.Status.CurStation.Location.StationGroup,
-        statNum: machStart != null ? machStart.LocationNum : pallet.Status.CurStation.Location.Num,
+        statName: statName,
+        statNum: statNum,
         program: ss.JobStop.ProgramName,
         result: "",
         timeUTC: nowUtc,
@@ -1075,6 +1093,20 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Recording machine end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, reclampStart);
       palletStateUpdated = true;
 
+      int statNum;
+      if (reclampStart != null)
+      {
+        statNum = reclampStart.LocationNum;
+      }
+      else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
+      {
+        statNum = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
+      }
+      else
+      {
+        statNum = 0;
+      }
+
       _log.RecordManualWorkAtLULEnd(
         mats: matOnFace.Select(m => new JobLogDB.EventLogMaterial()
         {
@@ -1083,7 +1115,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Face = face.Face.ToString()
         }),
         pallet: pallet.Status.Master.PalletNum.ToString(),
-        lulNum: reclampStart != null ? reclampStart.LocationNum : pallet.Status.CurStation.Location.Num,
+        lulNum: statNum,
         operationName: ss.JobStop.StationGroup,
         timeUTC: nowUtc,
         elapsed: reclampStart != null ? nowUtc.Subtract(reclampStart.EndTimeUTC) : TimeSpan.Zero, // TODO: lookup start from SQL?

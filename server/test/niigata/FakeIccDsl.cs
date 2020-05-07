@@ -214,6 +214,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl SetExecutedStationNum(int pal, IEnumerable<int> nums)
+    {
+      _status.Pallets[pal - 1].Tracking.ExecutedStationNumber = nums.ToList();
+      return this;
+    }
+
     public FakeIccDsl SetBeforeReclamp(int pal, int reclampStepOffset = 0)
     {
       var p = _status.Pallets[pal - 1];
@@ -824,10 +830,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Path { get; set; }
       public int ElapsedMin { get; set; }
       public int ActiveMins { get; set; }
+      public Action<InProcessMaterial> MatAdjust { get; set; }
       public List<LogMaterial> OutMaterial { get; set; }
     }
 
-    public static ExpectedChange LoadCastingToFace(int pal, int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats)
+    public static ExpectedChange LoadCastingToFace(int pal, int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats, Action<InProcessMaterial> adj = null)
     {
       var e = new ExpectedLoadCastingEvt()
       {
@@ -839,6 +846,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Path = path,
         ElapsedMin = elapsedMin,
         ActiveMins = activeMins,
+        MatAdjust = adj,
         OutMaterial = new List<LogMaterial>(),
       };
       mats = e.OutMaterial;
@@ -1383,6 +1391,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     Type = InProcessMaterialAction.ActionType.Waiting
                   }
                 };
+                if (load.MatAdjust != null)
+                {
+                  load.MatAdjust(_expectedMaterial[m.MaterialID]);
+                }
               }
 
               break;
