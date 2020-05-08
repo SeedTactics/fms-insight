@@ -159,40 +159,30 @@ namespace MazakMachineInterface
 
     private class FixWork
     {
+      public int OperationID { get; set; }
       public int a9_prcnum { get; set; }
       public string a9_ptnam { get; set; }
       public int a9_fixqty { get; set; }
-      public string a6_pos { get; set; }
       public string a1_schcom { get; set; }
     }
 
     private IEnumerable<LoadAction> LoadActions(SqlConnection conn)
     {
-      var qry =
-        "SELECT a9_prcnum, a9_ptnam, a9_fixqty, a6_pos, a1_schcom " +
-          "FROM A9_FixWork " +
-          "LEFT OUTER JOIN M4_PalletData ON M4_PalletData.PalletDataID = a9_PalletDataID_ra " +
-          "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = m4_pltnum " +
-          "LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
+      var qry = "SELECT OperationID, a9_prcnum, a9_ptnam, a9_fixqty, a1_schcom " +
+                   " FROM A9_FixWork " +
+                   " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
       var ret = new List<LoadAction>();
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<FixWork>(qry))
       {
         Log.Debug("Received load action {@action}", e);
-        if (string.IsNullOrEmpty(e.a9_ptnam) || string.IsNullOrEmpty(e.a6_pos))
-          continue;
-
-        int stat;
-        if (e.a6_pos.StartsWith("LS"))
+        if (string.IsNullOrEmpty(e.a9_ptnam))
         {
-          if (!int.TryParse(e.a6_pos.Substring(2, 2), out stat))
-            continue;
-        }
-        else
-        {
+          Log.Warning("Load operation has no part name {@load}", e);
           continue;
         }
 
+        int stat = e.OperationID;
         string part = e.a9_ptnam;
         string comment = e.a1_schcom;
         int idx = part.IndexOf(':');
@@ -205,45 +195,36 @@ namespace MazakMachineInterface
 
         ret.Add(new LoadAction(true, stat, part, comment, proc, qty));
       }
-      Log.Debug("Parsed load actions to {@actions}", ret);
+      Log.Debug("Parsed load {@actions}", ret);
       return ret;
     }
 
     private class RemoveWork
     {
+      public int OperationID { get; set; }
       public int a8_prcnum { get; set; }
       public string a8_ptnam { get; set; }
       public int a8_fixqty { get; set; }
-      public string a6_pos { get; set; }
       public string a1_schcom { get; set; }
     }
 
     private IEnumerable<LoadAction> RemoveActions(SqlConnection conn)
     {
-      var qry =
-        "SELECT a8_prcnum,a8_ptnam,a8_fixqty,a6_pos,a1_schcom " +
-          "FROM A8_RemoveWork " +
-          "LEFT OUTER JOIN A3_PalletStatus ON A3_PalletStatus.PalletID = a8_1 " +
-          "LEFT OUTER JOIN A6_PositionData ON a6_pltnum = a3_pltnum " +
-          "LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
+      var qry = "SELECT OperationID,a8_prcnum,a8_ptnam,a8_fixqty,a1_schcom " +
+          " FROM A8_RemoveWork " +
+          " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
       var ret = new List<LoadAction>();
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<RemoveWork>(qry))
       {
         Log.Debug("Received remove work {@action}", e);
-        if (string.IsNullOrEmpty(e.a8_ptnam) || string.IsNullOrEmpty(e.a6_pos)) continue;
-
-        int stat;
-        if (e.a6_pos.StartsWith("LS"))
+        if (string.IsNullOrEmpty(e.a8_ptnam))
         {
-          if (!int.TryParse(e.a6_pos.Substring(2, 2), out stat))
-            continue;
-        }
-        else
-        {
+          Log.Warning("Load operation has no part name {@load}", e);
           continue;
         }
 
+        int stat = e.OperationID;
         string part = e.a8_ptnam;
         string comment = e.a1_schcom;
         int idx = part.IndexOf(':');
