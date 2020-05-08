@@ -1943,6 +1943,70 @@ namespace BlackMaple.MachineFramework
       });
     }
 
+    public MachineWatchInterface.LogEntry RecordManualWorkAtLULStart(
+        IEnumerable<EventLogMaterial> mats,
+        string pallet,
+        int lulNum,
+        DateTime timeUTC,
+        string operationName,
+        string foreignId = null,
+        string originalMessage = null
+    )
+    {
+      if (operationName == "LOAD" || operationName == "UNLOAD")
+      {
+        throw new ArgumentException("ManualWorkAtLUL operation cannot be LOAD or UNLOAD", "operationName");
+      }
+      var log = new NewEventLogEntry()
+      {
+        Material = mats,
+        Pallet = pallet,
+        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LocationName = "L/U",
+        LocationNum = lulNum,
+        Program = operationName,
+        StartOfCycle = true,
+        EndTimeUTC = timeUTC,
+        Result = operationName,
+        EndOfRoute = false
+      };
+      return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+    }
+
+    public MachineWatchInterface.LogEntry RecordManualWorkAtLULEnd(
+        IEnumerable<EventLogMaterial> mats,
+        string pallet,
+        int lulNum,
+        DateTime timeUTC,
+        TimeSpan elapsed,
+        TimeSpan active,
+        string operationName,
+        string foreignId = null,
+        string originalMessage = null
+    )
+    {
+      if (operationName == "LOAD" || operationName == "UNLOAD")
+      {
+        throw new ArgumentException("ManualWorkAtLUL operation cannot be LOAD or UNLOAD", "operationName");
+      }
+      var log = new NewEventLogEntry()
+      {
+        Material = mats,
+        Pallet = pallet,
+        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LocationName = "L/U",
+        LocationNum = lulNum,
+        Program = operationName,
+        StartOfCycle = false,
+        EndTimeUTC = timeUTC,
+        ElapsedTime = elapsed,
+        ActiveOperationTime = active,
+        Result = operationName,
+        EndOfRoute = false
+      };
+      return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+    }
+
     public MachineWatchInterface.LogEntry RecordMachineStart(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
@@ -1950,6 +2014,7 @@ namespace BlackMaple.MachineFramework
         int statNum,
         string program,
         DateTime timeUTC,
+        IDictionary<string, string> extraData = null,
         IEnumerable<ToolPocketSnapshot> pockets = null,
         string foreignId = null,
         string originalMessage = null
@@ -1969,6 +2034,11 @@ namespace BlackMaple.MachineFramework
         EndOfRoute = false,
         ToolPockets = pockets
       };
+      if (extraData != null)
+      {
+        foreach (var k in extraData)
+          log.ProgramDetails[k.Key] = k.Value;
+      }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
@@ -3600,13 +3670,13 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    public void MakeInspectionDecisions(
+    public IEnumerable<MachineWatchInterface.LogEntry> MakeInspectionDecisions(
         long matID,
         int process,
         IEnumerable<MachineWatchInterface.PathInspection> inspections,
         DateTime? mutcNow = null)
     {
-      AddEntryInTransaction(trans =>
+      return AddEntryInTransaction(trans =>
           MakeInspectionDecisions(trans, matID, process, inspections, mutcNow)
       );
     }

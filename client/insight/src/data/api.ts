@@ -1615,6 +1615,7 @@ export class FMSInfo implements IFMSInfo {
     usingLabelPrinterForSerials!: boolean;
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
+    allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -1642,6 +1643,7 @@ export class FMSInfo implements IFMSInfo {
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
             this.quarantineQueue = data["QuarantineQueue"];
             this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
+            this.allowAddRawMaterialForNonRunningJobs = data["AllowAddRawMaterialForNonRunningJobs"];
         }
     }
 
@@ -1669,6 +1671,7 @@ export class FMSInfo implements IFMSInfo {
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
         data["QuarantineQueue"] = this.quarantineQueue;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
+        data["AllowAddRawMaterialForNonRunningJobs"] = this.allowAddRawMaterialForNonRunningJobs;
         return data; 
     }
 }
@@ -1685,6 +1688,7 @@ export interface IFMSInfo {
     usingLabelPrinterForSerials: boolean;
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
+    allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
 }
 
 export class HistoricData implements IHistoricData {

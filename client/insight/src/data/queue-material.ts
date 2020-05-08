@@ -222,6 +222,7 @@ export function extractJobRawMaterial(
           };
         })
     )
+    .filter((x) => x.plannedQty - x.startedQty - x.assignedRaw !== 0)
     .sortOn((x) => {
       const prec = x.job.precedence?.[0]?.[x.proc1Path];
       if (!prec || prec < 0) return Number.MAX_SAFE_INTEGER;
