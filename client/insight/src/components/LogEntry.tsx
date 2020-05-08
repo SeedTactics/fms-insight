@@ -85,9 +85,9 @@ function logType(entry: api.ILogEntry): string {
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
-        return "Cycle Start";
+        return "Start Cycle";
       } else {
-        return "Cycle End";
+        return "End Cycle";
       }
 
     case api.LogType.PartMark:

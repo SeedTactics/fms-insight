@@ -55,6 +55,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
     [DataMember] public string QuarantineQueue { get; set; }
     [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
+    [DataMember] public bool? AllowAddRawMaterialForNonRunningJobs { get; set; }
   }
 
   [ApiController]
@@ -87,7 +88,8 @@ namespace BlackMaple.MachineFramework.Controllers
         LocalhostOpenIDConnectAuthority = _serverSt.AuthAuthority,
         UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials,
         QuarantineQueue = _cfg.QuarantineQueue,
-        RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial
+        RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
+        AllowAddRawMaterialForNonRunningJobs = _cfg.AllowAddRawMaterialForNonRunningJobs
       };
     }
 

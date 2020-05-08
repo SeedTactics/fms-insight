@@ -672,6 +672,7 @@ interface AddCastingProps {
   readonly castingNames: HashSet<string>;
   readonly operator: string | null;
   readonly promptForOperator: boolean;
+  readonly allowAddWithoutJob: boolean;
   readonly addNewCasting: (c: matDetails.AddNewCastingToQueueData) => void;
   readonly closeDialog: () => void;
 }
@@ -686,7 +687,9 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
         .flatMap(([, j]) => j.procsAndPaths[0].paths)
         .filter((p) => p.casting !== undefined && p.casting !== "")
         .map((p) => ({ casting: p.casting as string, cnt: 1 }))
-        .appendAll(LazySeq.ofIterable(props.castingNames).map((c) => ({ casting: c, cnt: 0 })))
+        .appendAll(
+          props.allowAddWithoutJob ? LazySeq.ofIterable(props.castingNames).map((c) => ({ casting: c, cnt: 0 })) : []
+        )
         .toMap(
           (c) => [c.casting, c.cnt],
           (q1, q2) => q1 + q2
@@ -812,6 +815,7 @@ export const ConnectedAddCastingDialog = connect(
     castingNames: s.Events.last30.sim_use.castingNames,
     operator: currentOperator(s),
     promptForOperator: s.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
+    allowAddWithoutJob: s.ServerSettings.fmsInfo?.allowAddRawMaterialForNonRunningJobs ?? false,
   }),
   {
     addNewCasting: matDetails.addNewCastingToQueue,
