@@ -85,9 +85,9 @@ function logType(entry: api.ILogEntry): string {
 
     case api.LogType.MachineCycle:
       if (entry.startofcycle) {
-        return "Cycle Start";
+        return "Start Cycle";
       } else {
-        return "Cycle End";
+        return "End Cycle";
       }
 
     case api.LogType.PartMark:
@@ -163,7 +163,9 @@ function display(props: LogEntryProps): JSX.Element {
       return (
         <span>
           {displayMat(entry.material)} on <span className={props.classes.pallet}>pallet {entry.pal}</span> at{" "}
-          <span className={props.classes.machine}>machine {entry.locnum.toString()}</span>
+          <span className={props.classes.machine}>
+            {entry.loc} {entry.locnum.toString()}
+          </span>
           {entry.program && entry.program !== "" ? <span> with program {entry.program}</span> : undefined}
         </span>
       );
