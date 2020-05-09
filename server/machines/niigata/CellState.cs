@@ -389,7 +389,7 @@ namespace BlackMaple.FMSInsight.Niigata
         else
         {
           // first check mat on pal
-          foreach (var mat in unusedMatsOnPal.Values.Select(m => m.Mat))
+          foreach (var mat in unusedMatsOnPal.Values.ToList().Select(m => m.Mat))
           {
             if (mat.JobUnique == face.Job.UniqueStr
               && mat.Process + 1 == face.Process
@@ -602,7 +602,10 @@ namespace BlackMaple.FMSInsight.Niigata
         AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc);
       }
 
-      EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, ref palletStateUpdated);
+      if (!pallet.Status.Master.NoWork)
+      {
+        EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, ref palletStateUpdated);
+      }
     }
 
     private void CurrentlyLoadingPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, ref bool palletStateUpdated)
@@ -1224,7 +1227,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           var loadedCnt =
             _log.GetLogForJobUnique(job.UniqueStr)
-              .Where(e => (e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD") || e.LogType == LogType.MachineCycle)
+              .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD")
               .SelectMany(e => e.Material)
               .Where(m => m.JobUniqueStr == job.UniqueStr)
               .Select(m => m.MaterialID)

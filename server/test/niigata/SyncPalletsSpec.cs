@@ -218,13 +218,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
-    private void CheckSingleMaterial(IEnumerable<LogEntry> logs, long matId, string uniq, string part, int numProc)
+    private void CheckSingleMaterial(IEnumerable<LogEntry> logs,
+        long matId, string uniq, string part, int numProc, int[][] pals, string queue = null
+    )
     {
       logs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
 
       var expected = new List<Action<LogEntry>>();
-      for (int proc = 1; proc <= numProc; proc++)
+      for (int procNum = 1; procNum <= numProc; procNum++)
       {
+        int proc = procNum; // so lambdas capture constant proc
         if (proc == 1)
         {
           expected.Add(mark =>
@@ -236,8 +239,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           );
         }
 
+        if (proc > 1 && queue != null)
+        {
+          expected.Add(e =>
+          {
+            e.LogType.Should().Be(LogType.RemoveFromQueue);
+            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LocationName.Should().Be(queue);
+          });
+        }
+
         expected.Add(e =>
         {
+          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
           e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
           e.LogType.Should().Be(LogType.LoadUnloadCycle);
           e.StartOfCycle.Should().BeFalse();
@@ -245,18 +259,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
         expected.Add(e =>
         {
+          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
           e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
           e.LogType.Should().Be(LogType.MachineCycle);
           e.StartOfCycle.Should().BeTrue();
         });
         expected.Add(e =>
         {
+          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
           e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
           e.LogType.Should().Be(LogType.MachineCycle);
           e.StartOfCycle.Should().BeFalse();
         });
+
+        if (proc < numProc && queue != null)
+        {
+          expected.Add(e =>
+          {
+            e.LogType.Should().Be(LogType.AddToQueue);
+            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LocationName.Should().Be(queue);
+          });
+        }
+
         expected.Add(e =>
         {
+          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
           e.LogType.Should().Be(LogType.LoadUnloadCycle);
           e.StartOfCycle.Should().BeFalse();
           e.Result.Should().Be("UNLOAD");
@@ -266,6 +294,59 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       logs.Should().SatisfyRespectively(expected);
     }
 
+    private void SetPath(
+      JobPlan j,
+      int proc,
+      int path,
+      int group,
+      int[] pals,
+      string fixture,
+      int face,
+      int[] loads,
+      int loadMins,
+      int[] machines,
+      int machMins,
+      string program,
+      int[] unloads,
+      int unloadMins,
+      int partsPerPal = 1,
+      string outQueue = null,
+      string inQueue = null
+    )
+    {
+      j.SetPathGroup(proc, path, group);
+      foreach (var pal in pals)
+      {
+        j.AddProcessOnPallet(proc, path, pal.ToString());
+      }
+      j.SetFixtureFace(proc, path, fixture, face);
+      foreach (var lul in loads)
+      {
+        j.AddLoadStation(proc, path, lul);
+      }
+      j.SetExpectedLoadTime(proc, path, TimeSpan.FromMinutes(loadMins));
+
+      var s = new JobMachiningStop("MC");
+      s.ProgramName = program;
+      s.ProgramRevision = null;
+      s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
+      foreach (var m in machines)
+      {
+        s.Stations.Add(m);
+      }
+      j.AddMachiningStop(proc, path, s);
+
+      foreach (var lul in unloads)
+      {
+        j.AddUnloadStation(proc, path, lul);
+      }
+      j.SetExpectedUnloadTime(proc, path, TimeSpan.FromMinutes(unloadMins));
+
+      j.SetPartsPerPallet(proc, path, partsPerPal);
+      j.SetOutputQueue(proc, path, outQueue);
+      j.SetInputQueue(proc, path, inQueue);
+    }
+
 
     [Fact]
     public void OneProcJob()
@@ -273,24 +354,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j = new JobPlan("uniq1", 1);
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
-      j.AddLoadStation(1, 1, statNum: 1);
-      j.AddUnloadStation(1, 1, statNum: 1);
-      j.AddLoadStation(1, 1, statNum: 2);
-      j.AddUnloadStation(1, 1, statNum: 2);
-      j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(8));
-      j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(9));
-      j.SetPartsPerPallet(1, 1, partsPerPallet: 1);
-
-      var s = new JobMachiningStop("MC");
-      s.ProgramName = "prog111";
-      s.ProgramRevision = null;
-      s.ExpectedCycleTime = TimeSpan.FromMinutes(14);
-      s.Stations.Add(5);
-      s.Stations.Add(6);
-      j.AddMachiningStop(1, 1, s);
-      j.AddProcessOnPallet(1, 1, "1");
-      j.AddProcessOnPallet(1, 1, "2");
-      j.SetFixtureFace(1, 1, "fix1", 1);
+      SetPath(j,
+        proc: 1,
+        path: 1,
+        group: 0,
+        pals: new[] { 1, 2 },
+        fixture: "fix1",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 8,
+        machines: new[] { 5, 6 },
+        machMins: 14,
+        program: "prog111",
+        unloads: new[] { 1 },
+        unloadMins: 5
+      );
 
       AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L) });
 
@@ -300,19 +378,227 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       byMat.Count.Should().Be(3);
       foreach (var m in byMat)
       {
-        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 1);
+        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 1, pals: new[] { new[] { 1, 2 } });
       }
     }
 
-    [Fact(Skip = "Pending")]
+    [Fact]
     public void MultpleProcsMultiplePathsSeparatePallets()
     {
+      var j = new JobPlan("uniq1", 2, new[] { 2, 2 });
+      j.PartName = "part1";
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
+      j.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 4);
+
+      // path 1, group 0 on pallets 1, 2, 3, 4
+      SetPath(j,
+        proc: 1,
+        path: 1,
+        group: 0,
+        pals: new[] { 1, 2 },
+        fixture: "fix1",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 8,
+        machines: new[] { 5, 6 },
+        machMins: 14,
+        program: "1111",
+        unloads: new[] { 1 },
+        unloadMins: 5,
+        outQueue: "transQ"
+      );
+      SetPath(j,
+        proc: 2,
+        path: 1,
+        group: 0,
+        pals: new[] { 3, 4 },
+        fixture: "fix2",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 3,
+        machines: new[] { 1, 2 },
+        machMins: 19,
+        program: "2222",
+        unloads: new[] { 1 },
+        unloadMins: 6,
+        inQueue: "transQ"
+      );
+
+      // path 2, group 1 on pallets 5, 6, 7, 8
+      SetPath(j,
+        proc: 1,
+        path: 2,
+        group: 1,
+        pals: new[] { 5, 6 },
+        fixture: "fix1",
+        face: 1,
+        loads: new[] { 2 },
+        loadMins: 7,
+        machines: new[] { 3, 4 },
+        machMins: 12,
+        program: "3333",
+        unloads: new[] { 2 },
+        unloadMins: 4,
+        outQueue: "transQ"
+      );
+      SetPath(j,
+        proc: 2,
+        path: 2,
+        group: 1,
+        pals: new[] { 7, 8 },
+        fixture: "fix2",
+        face: 1,
+        loads: new[] { 2 },
+        loadMins: 3,
+        machines: new[] { 1, 2 },
+        machMins: 16,
+        program: "4444",
+        unloads: new[] { 2 },
+        unloadMins: 3,
+        inQueue: "transQ"
+      );
+
+
+      AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
+
+      var logs = Run();
+      var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
+      byMat.Count.Should().Be(7);
+
+      var byPath = byMat.ToLookup(mat => (new[] { "1", "2" }).Contains(mat.Skip(1).First().Pallet));
+      byPath[true].Count().Should().Be(3); // true is pallets 1 or 2, path 1
+      byPath[false].Count().Should().Be(4); // false is pallets 5 or 6, path 2
+
+      foreach (var path in byPath)
+      {
+        foreach (var m in path)
+        {
+          CheckSingleMaterial(
+            logs: m,
+            matId: m.Key,
+            uniq: "uniq1",
+            part: "part1",
+            numProc: 2,
+            queue: "transQ",
+            pals:
+              path.Key
+                ? new[] { new[] { 1, 2 }, new[] { 3, 4 } }
+                : new[] { new[] { 5, 6 }, new[] { 7, 8 } }
+          );
+        }
+      }
 
     }
 
-    [Fact(Skip = "Pending")]
+    [Fact]
     public void MultipleProcsMultiplePathsSamePallet()
     {
+      var j = new JobPlan("uniq1", 2, new[] { 2, 2 });
+      j.PartName = "part1";
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
+      j.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 6);
+
+      // path 1, group 0 on pallets 1, 2
+      SetPath(j,
+        proc: 1,
+        path: 1,
+        group: 0,
+        pals: new[] { 1, 2 },
+        fixture: "fix1",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 8,
+        machines: new[] { 5, 6 },
+        machMins: 14,
+        program: "1111",
+        unloads: new[] { 1 },
+        unloadMins: 5,
+        partsPerPal: 2
+      );
+      SetPath(j,
+        proc: 2,
+        path: 1,
+        group: 0,
+        pals: new[] { 1, 2 },
+        fixture: "fix1",
+        face: 2,
+        loads: new[] { 1 },
+        loadMins: 3,
+        machines: new[] { 5, 6 },
+        machMins: 19,
+        program: "2222",
+        unloads: new[] { 1 },
+        unloadMins: 6,
+        partsPerPal: 2
+      );
+
+      // path 2, group 1 on pallets 3, 4
+      SetPath(j,
+        proc: 1,
+        path: 2,
+        group: 1,
+        pals: new[] { 3, 4 },
+        fixture: "fix1",
+        face: 1,
+        loads: new[] { 2 },
+        loadMins: 7,
+        machines: new[] { 5, 6 },
+        machMins: 12,
+        program: "3333",
+        unloads: new[] { 2 },
+        unloadMins: 4,
+        partsPerPal: 2
+      );
+      SetPath(j,
+        proc: 2,
+        path: 2,
+        group: 1,
+        pals: new[] { 3, 4 },
+        fixture: "fix1",
+        face: 2,
+        loads: new[] { 2 },
+        loadMins: 3,
+        machines: new[] { 5, 6 },
+        machMins: 16,
+        program: "4444",
+        unloads: new[] { 2 },
+        unloadMins: 3,
+        partsPerPal: 2
+      );
+
+
+      AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
+
+      var logs = Run();
+
+      var matIds = logs.SelectMany(e => e.Material).Select(m => m.MaterialID).ToHashSet();
+      matIds.Count.Should().Be(14);
+
+      var byPath =
+        matIds
+          .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
+          .ToLookup(mat => (new[] { "1", "2" }).Contains(mat.logs.Skip(1).First().Pallet));
+      byPath[true].Count().Should().Be(8); // true is pallets 1 or 2, path 1
+      byPath[false].Count().Should().Be(6); // false is pallets 3 or 4, path 2
+
+      foreach (var path in byPath)
+      {
+        foreach (var m in path)
+        {
+          CheckSingleMaterial(
+            logs: m.logs,
+            matId: m.matId,
+            uniq: "uniq1",
+            part: "part1",
+            numProc: 2,
+            pals:
+              path.Key
+                ? new[] { new[] { 1, 2 }, new[] { 1, 2 } }
+                : new[] { new[] { 3, 4 }, new[] { 3, 4 } }
+          );
+        }
+      }
+
 
     }
 

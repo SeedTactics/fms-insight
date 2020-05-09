@@ -189,7 +189,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               });
             }
             // if in the buffer, add transition to put on cart
-            else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            else if (beforeStep && !pal.Master.NoWork && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
               var lul = openLoads.FirstOrDefault(load.LoadStations.Contains);
               if (!cartInUse && lul > 0)
@@ -204,6 +204,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   }
                 });
               }
+            }
+            // if in the buffer with no work, do nothing
+            else if (beforeStep && pal.Master.NoWork && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            {
+              // do nothing
             }
             // if on the cart, add transition to drop off
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
@@ -238,8 +243,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = () =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
-                    pal.CurStation = NiigataStationNum.Cart();
                     _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
+                    pal.CurStation = NiigataStationNum.Cart();
                   }
                 });
               }
@@ -578,6 +583,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = () =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
+                    _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
                     pal.CurStation = NiigataStationNum.Cart();
                   }
                 });
@@ -592,6 +598,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 {
                   _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
                   pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
+                  pal.Tracking.CurrentStepNum = 1;
+                  pal.Tracking.CurrentControlNum = 1;
                 }
               });
             }
@@ -664,6 +672,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           output.AppendFormat("Mach {0} off", m);
           output.AppendLine();
         }
+      }
+      foreach (var l in _status.LoadStations.OrderBy(x => x.Key))
+      {
+        if (l.Value.PalletExists)
+        {
+          output.AppendFormat("Load {0}: has pallet", l.Key);
+        }
+        else
+        {
+          output.AppendFormat("Load {0}: empty", l.Key);
+        }
+        output.AppendLine();
       }
 
       return output.ToString();
