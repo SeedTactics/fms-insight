@@ -87,14 +87,16 @@ namespace BlackMaple.FMSInsight.Niigata
     private FMSSettings _settings;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
     private NiigataStationNames _stationNames;
+    private ICncMachineConnection _machConnection;
 
-    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s, NiigataStationNames n)
+    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
     {
       _log = l;
       _jobs = jobs;
       _recordFaces = r;
       _settings = s;
       _stationNames = n;
+      _machConnection = machConn;
     }
 
     public CellState BuildCellState(NiigataStatus status, PlannedSchedule sch)
@@ -1049,6 +1051,8 @@ namespace BlackMaple.FMSInsight.Niigata
         statName = ss.JobStop.StationGroup;
         statNum = 0;
       }
+
+      _machConnection.ToolsForMachine(statNum);
 
       _log.RecordMachineEnd(
         mats: matOnFace.Select(m => new JobLogDB.EventLogMaterial()

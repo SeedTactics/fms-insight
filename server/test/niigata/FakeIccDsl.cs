@@ -86,8 +86,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           .ToDictionary(mc => mc, mc => (group: "TestMC", num: 100 + mc))
       };
 
+      var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
+
       _assign = new AssignPallets(record, _statNames);
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, _statNames);
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, _statNames, machConn);
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);

@@ -53,11 +53,12 @@ namespace BlackMaple.FMSInsight.Niigata
     public JobDB JobDB { get; private set; }
     public ISyncPallets SyncPallets => _sync;
     public NiigataStationNames StationNames { get; }
+    public ICncMachineConnection MachineConnection { get; }
 
     public NiigataBackend(
       IConfigurationSection config,
       FMSSettings cfg,
-      Func<JobLogDB, IRecordFacesForPallet, NiigataStationNames, IAssignPallets> customAssignment = null
+      Func<JobLogDB, IRecordFacesForPallet, NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null
     )
     {
       try
@@ -103,16 +104,19 @@ namespace BlackMaple.FMSInsight.Niigata
         };
         Log.Debug("Using station names {@names}", StationNames);
 
+        var machineIps = config.GetValue<string>("Machine IP Addresses");
+        MachineConnection = new CncMachineConnection(machineIps.Split(",").Select(s => s.Trim()));
+
         var connStr = config.GetValue<string>("Connection String");
 
         _icc = new NiigataICC(JobDB, programDir, connStr, StationNames);
         var recordFaces = new RecordFacesForPallet(LogDB);
-        var createLog = new CreateCellState(LogDB, JobDB, recordFaces, cfg, StationNames);
+        var createLog = new CreateCellState(LogDB, JobDB, recordFaces, cfg, StationNames, MachineConnection);
 
         IAssignPallets assign;
         if (customAssignment != null)
         {
-          assign = customAssignment(LogDB, recordFaces, StationNames);
+          assign = customAssignment(LogDB, recordFaces, StationNames, MachineConnection);
         }
         else
         {

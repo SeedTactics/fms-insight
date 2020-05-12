@@ -75,8 +75,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var record = new RecordFacesForPallet(_logDB);
 
+      var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
+
       _assign = new AssignPallets(record, null);
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, null);
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, null, machConn);
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);
       _sync = new SyncPallets(_jobDB, _logDB, _sim, _assign, _createLog);
