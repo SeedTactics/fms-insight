@@ -104,6 +104,9 @@ const useTableStyles = makeStyles((theme) =>
     highlightedRow: {
       backgroundColor: "#FF8A65",
     },
+    noncompletedRow: {
+      backgroundColor: "#E0E0E0",
+    },
   })
 );
 
@@ -146,7 +149,16 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
       </TableHead>
       <TableBody>
         {jobs.map((j, idx) => (
-          <TableRow key={idx} className={highlightRow(j.job) ? classes.highlightedRow : undefined}>
+          <TableRow
+            key={idx}
+            className={
+              highlightRow(j.job)
+                ? classes.highlightedRow
+                : j.plannedQty - j.startedQty - j.assignedRaw > 0
+                ? classes.noncompletedRow
+                : undefined
+            }
+          >
             <TableCell>
               <div className={classes.labelContainer}>
                 <div className={classes.identicon}>
