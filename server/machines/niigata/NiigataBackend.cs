@@ -58,6 +58,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataBackend(
       IConfigurationSection config,
       FMSSettings cfg,
+      bool startSyncThread,
       Func<JobLogDB, IRecordFacesForPallet, NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null
     )
     {
@@ -120,16 +121,24 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          assign = new AssignPallets(recordFaces, StationNames);
+          assign = new AssignNewRoutesOnPallets(recordFaces, StationNames);
         }
         _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
         _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync, StationNames);
-        _sync.StartThread();
+        if (startSyncThread)
+        {
+          StartSyncThread();
+        }
       }
       catch (Exception ex)
       {
         Log.Error(ex, "Unhandled exception when initializing niigata backend");
       }
+    }
+
+    public void StartSyncThread()
+    {
+      _sync.StartThread();
     }
 
     public void Dispose()
@@ -184,7 +193,7 @@ namespace BlackMaple.FMSInsight.Niigata
       Program.Run(useService, (cfg, fmsSt) =>
         new FMSImplementation()
         {
-          Backend = new NiigataBackend(cfg.GetSection("Niigata"), fmsSt),
+          Backend = new NiigataBackend(cfg.GetSection("Niigata"), fmsSt, startSyncThread: true),
           Name = "Niigata",
           Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
         });

@@ -293,7 +293,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     {
                       lock (_curStLock)
                       {
-                        if (!_lastCellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignPallets.IsInsightProgram(p)))
+                        if (!_lastCellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
                         {
                           errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
                         }

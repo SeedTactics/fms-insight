@@ -43,13 +43,31 @@ namespace BlackMaple.FMSInsight.Niigata
     NiigataAction NewPalletChange(CellState materialStatus);
   }
 
-  public class AssignPallets : IAssignPallets
+  public class MultiPalletAssign : IAssignPallets
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignPallets>();
+    private readonly IEnumerable<IAssignPallets> _assignments;
+    public MultiPalletAssign(IEnumerable<IAssignPallets> a) => _assignments = a;
+    public NiigataAction NewPalletChange(CellState materialStatus)
+    {
+      foreach (var a in _assignments)
+      {
+        var action = a.NewPalletChange(materialStatus);
+        if (action != null)
+        {
+          return action;
+        }
+      }
+      return null;
+    }
+  }
+
+  public class AssignNewRoutesOnPallets : IAssignPallets
+  {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignNewRoutesOnPallets>();
     private readonly IRecordFacesForPallet _recordFaces;
     private readonly NiigataStationNames _statNames;
 
-    public AssignPallets(IRecordFacesForPallet r, NiigataStationNames n)
+    public AssignNewRoutesOnPallets(IRecordFacesForPallet r, NiigataStationNames n)
     {
       _recordFaces = r;
       _statNames = n;
