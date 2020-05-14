@@ -1745,7 +1745,7 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife) VALUES ($cntr,$pocket,$tool,$use,$life)";
+        cmd.CommandText = "INSERT OR REPLACE INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife) VALUES ($cntr,$pocket,$tool,$use,$life)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("pocket", SqliteType.Integer);
         cmd.Parameters.Add("tool", SqliteType.Text);

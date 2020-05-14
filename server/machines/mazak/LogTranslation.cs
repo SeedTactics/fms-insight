@@ -118,6 +118,11 @@ namespace MazakMachineInterface
           // There should never be any pending loads since the pallet movement event should have fired.
           // Just in case, we check for pending loads here
           cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
+          IEnumerable<JobLogDB.ToolPocketSnapshot> pockets = null;
+          if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
+          {
+            pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
+          }
 
           _log.RecordMachineStart(
             mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
@@ -126,7 +131,7 @@ namespace MazakMachineInterface
             statNum: e.StationNumber,
             program: e.Program,
             timeUTC: e.TimeUTC,
-            pockets: ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools),
+            pockets: pockets,
             foreignId: e.ForeignID);
 
           break;
@@ -676,6 +681,16 @@ namespace MazakMachineInterface
           CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
           ToolLife = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
         })
+        .GroupBy(t => t.PocketNumber)
+        .Select(t =>
+        {
+          if (t.Count() > 1)
+          {
+            Log.Warning("Duplicate tools in the same pocket at machine {machine}! {@tools}", machine, t);
+          }
+          return t.FirstOrDefault();
+        })
+        .Where(t => t != null)
         .ToList();
     }
 

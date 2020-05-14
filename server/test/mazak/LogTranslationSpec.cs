@@ -1326,7 +1326,7 @@ namespace MachineWatchTest
     [Fact]
     public void Tools()
     {
-      var t = DateTime.UtcNow.AddHours(-5);
+      var t = DateTime.UtcNow;
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
 
