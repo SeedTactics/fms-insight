@@ -46,7 +46,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private FMSSettings _settings;
     private JobLogDB _logDB;
     private JobDB _jobDB;
-    private AssignPallets _assign;
+    private AssignNewRoutesOnPallets _assign;
     private CreateCellState _createLog;
     private IccSimulator _sim;
     private SyncPallets _sync;
@@ -77,7 +77,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
-      _assign = new AssignPallets(record, null);
+      _assign = new AssignNewRoutesOnPallets(record, null);
       _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, null, machConn);
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);

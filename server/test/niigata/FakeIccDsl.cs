@@ -44,7 +44,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
   {
     private JobLogDB _logDB;
     private JobDB _jobDB;
-    private AssignPallets _assign;
+    private AssignNewRoutesOnPallets _assign;
     private CreateCellState _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
@@ -88,7 +88,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
-      _assign = new AssignPallets(record, _statNames);
+      _assign = new AssignNewRoutesOnPallets(record, _statNames);
       _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, _statNames, machConn);
 
       _status = new NiigataStatus();
