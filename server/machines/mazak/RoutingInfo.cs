@@ -280,7 +280,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName = null)
     {
       string casting = partName;
 
@@ -299,18 +299,21 @@ namespace MazakMachineInterface
         }
       }
 
-      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
+      var mats = AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
+      return mats.FirstOrDefault();
     }
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName = null)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName = null)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
 
+      var matIds = new HashSet<long>();
       for (int i = 0; i < qty; i++)
       {
         var matId = log.AllocateMaterialIDForCasting(casting);
+        matIds.Add(matId);
 
         Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
                   "Assigned matId {matId}",
@@ -334,10 +337,14 @@ namespace MazakMachineInterface
       }
 
       logReader.RecheckQueues();
-      RaiseNewCurrentStatus(GetCurrentStatus());
+
+      var newSt = GetCurrentStatus();
+      RaiseNewCurrentStatus(newSt);
+
+      return newSt.Material.Where(m => matIds.Contains(m.MaterialID)).ToList();
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName = null)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -377,8 +384,12 @@ namespace MazakMachineInterface
       // for the material in the queue, it will be correctly computed.
       log.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
       log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
+
       logReader.RecheckQueues();
-      RaiseNewCurrentStatus(GetCurrentStatus());
+
+      var st = GetCurrentStatus();
+      RaiseNewCurrentStatus(st);
+      return st.Material.FirstOrDefault(m => m.MaterialID == matId);
     }
 
     public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null)
