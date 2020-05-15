@@ -55,7 +55,7 @@ export interface JobAPI {
     pos: number,
     serial: string,
     operatorName: string | undefined
-  ): Promise<void>;
+  ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
 
   addUnallocatedCastingToQueue(
     castingName: string,
@@ -64,14 +64,14 @@ export interface JobAPI {
     serials: string[],
     qty: number,
     operatrorName: string | undefined
-  ): Promise<void>;
+  ): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>>;
   addUnallocatedCastingToQueueByPart(
     partName: string,
     queue: string,
     pos: number,
     serial: string,
     operatorName: string | undefined
-  ): Promise<void>;
+  ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
 }
 
 export interface FmsAPI {
@@ -219,9 +219,9 @@ function initMockBackend(data: Promise<MockData>) {
       _pos: number,
       _serial: string,
       _operName: string | undefined
-    ): Promise<void> {
+    ): Promise<Readonly<api.IInProcessMaterial> | undefined> {
       // do nothing
-      return Promise.resolve();
+      return Promise.resolve(undefined);
     },
     addUnallocatedCastingToQueue(
       _casting: string,
@@ -230,9 +230,9 @@ function initMockBackend(data: Promise<MockData>) {
       _serials: string[],
       _qty: number,
       _operName: string | undefined
-    ): Promise<void> {
+    ): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>> {
       // do nothing
-      return Promise.resolve();
+      return Promise.resolve([]);
     },
     addUnallocatedCastingToQueueByPart(
       _partName: string,
@@ -240,9 +240,9 @@ function initMockBackend(data: Promise<MockData>) {
       _pos: number,
       _serial: string,
       _operName: string | undefined
-    ): Promise<void> {
+    ): Promise<Readonly<api.IInProcessMaterial> | undefined> {
       // do nothing
-      return Promise.resolve();
+      return Promise.resolve(undefined);
     },
   };
 

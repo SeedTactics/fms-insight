@@ -1619,6 +1619,9 @@
         "UsingLabelPrinterForSerials": {
           "type": "boolean"
         },
+        "UseClientPrinterForLabels": {
+          "type": "boolean"
+        },
         "QuarantineQueue": {
           "type": "string"
         },

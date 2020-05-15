@@ -1629,6 +1629,7 @@ export class FMSInfo implements IFMSInfo {
     localhostOpenIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials!: boolean;
+    useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
@@ -1657,6 +1658,7 @@ export class FMSInfo implements IFMSInfo {
             this.localhostOpenIDConnectAuthority = data["LocalhostOpenIDConnectAuthority"];
             this.openIDConnectClientId = data["OpenIDConnectClientId"];
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
+            this.useClientPrinterForLabels = data["UseClientPrinterForLabels"];
             this.quarantineQueue = data["QuarantineQueue"];
             this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowAddRawMaterialForNonRunningJobs = data["AllowAddRawMaterialForNonRunningJobs"];
@@ -1685,6 +1687,7 @@ export class FMSInfo implements IFMSInfo {
         data["LocalhostOpenIDConnectAuthority"] = this.localhostOpenIDConnectAuthority;
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
+        data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
         data["QuarantineQueue"] = this.quarantineQueue;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowAddRawMaterialForNonRunningJobs"] = this.allowAddRawMaterialForNonRunningJobs;
@@ -1702,6 +1705,7 @@ export interface IFMSInfo {
     localhostOpenIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials: boolean;
+    useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
