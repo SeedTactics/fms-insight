@@ -72,7 +72,6 @@ export interface PrintMaterial {
 
 export interface PrintedLabelProps {
   readonly material: ReadonlyArray<PrintMaterial> | null;
-  readonly date: Date;
   readonly materialName?: string | null;
   readonly operator?: string | null;
 }
@@ -149,7 +148,7 @@ export function PrintedLabel(props: PrintedLabelProps) {
       </div>
       <div style={{ marginTop: "4em", display: "flex", justifyContent: "space-around" }}>
         {props.operator ? <p>{props.operator}</p> : undefined}
-        <p>{props.date.toString()}</p>
+        <p>{new Date().toString()}</p>
       </div>
     </div>
   );

@@ -441,6 +441,8 @@ export function addNewMaterialToQueue(
     ).then((m) => {
       if (onNewMaterial && m) {
         onNewMaterial(m);
+      } else if (onError) {
+        onError("No material returned");
       }
     }, onError),
   };

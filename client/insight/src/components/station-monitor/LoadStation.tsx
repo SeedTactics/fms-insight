@@ -372,7 +372,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
                 />
                 <div style={{ display: "none" }}>
                   <div ref={printRef}>
-                    <PrintedLabel material={displayMat ? [displayMat] : []} date={new Date()} />
+                    <PrintedLabel material={displayMat ? [displayMat] : []} />
                   </div>
                 </div>
               </>

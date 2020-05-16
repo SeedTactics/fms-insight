@@ -391,7 +391,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
               />
               <div style={{ display: "none" }}>
                 <div ref={printRef}>
-                  <PrintedLabel material={props.material || []} date={new Date()} />
+                  <PrintedLabel material={props.material || []} />
                 </div>
               </div>
             </>

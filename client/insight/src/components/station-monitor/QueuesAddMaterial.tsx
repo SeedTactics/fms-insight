@@ -110,7 +110,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
               />
               <div style={{ display: "none" }}>
                 <div ref={printRef}>
-                  <PrintedLabel material={props.display_material ? [props.display_material] : []} date={new Date()} />
+                  <PrintedLabel material={props.display_material ? [props.display_material] : []} />
                 </div>
               </div>
             </>
@@ -711,7 +711,6 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
   const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(
     null
   );
-  const [printDate, setPrintDate] = React.useState<Date>(new Date());
   const printRef = React.useRef(null);
   const [adding, setAdding] = React.useState<boolean>(false);
   const castings: ReadonlyArray<[string, number]> = React.useMemo(
@@ -781,7 +780,6 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
           },
           (mats) => {
             setMaterialToPrint(mats);
-            setPrintDate(new Date());
             resolve();
           },
           (reason) => {
@@ -896,12 +894,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
       </Dialog>
       <div style={{ display: "none" }}>
         <div ref={printRef}>
-          <PrintedLabel
-            date={printDate}
-            materialName={selectedCasting}
-            material={materialToPrint}
-            operator={enteredOperator}
-          />
+          <PrintedLabel materialName={selectedCasting} material={materialToPrint} operator={enteredOperator} />
         </div>
       </div>
     </>
