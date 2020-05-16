@@ -751,19 +751,15 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
   function add() {
     if (props.queue !== null && selectedCasting !== null && !isNaN(qty)) {
-      setAdding(true);
-      props.addNewCasting(
-        {
-          casting: selectedCasting,
-          quantity: qty,
-          queue: props.queue,
-          queuePosition: -1,
-          operator: props.promptForOperator ? enteredOperator : props.operator,
-        },
-        () => close(),
-        () => close()
-      );
+      props.addNewCasting({
+        casting: selectedCasting,
+        quantity: qty,
+        queue: props.queue,
+        queuePosition: -1,
+        operator: props.promptForOperator ? enteredOperator : props.operator,
+      });
     }
+    close();
   }
 
   function addAndPrint(): Promise<void> {
@@ -795,7 +791,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
   return (
     <>
-      <Dialog open={props.queue !== null} onClose={close}>
+      <Dialog open={props.queue !== null} onClose={() => (adding && props.printOnAdd ? undefined : close())}>
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
           <FormControl>
@@ -887,7 +883,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
               Add to {props.queue}
             </Button>
           )}
-          <Button color="primary" onClick={close}>
+          <Button color="primary" disabled={adding && props.printOnAdd} onClick={close}>
             Cancel
           </Button>
         </DialogActions>
