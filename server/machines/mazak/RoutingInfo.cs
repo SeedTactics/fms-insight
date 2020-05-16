@@ -247,7 +247,7 @@ namespace MazakMachineInterface
       {
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
-      logReader.RecheckQueues();
+      logReader.RecheckQueues(wait: false);
       return jobDB.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
     }
     public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
@@ -264,7 +264,7 @@ namespace MazakMachineInterface
       {
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
-      logReader.RecheckQueues();
+      logReader.RecheckQueues(wait: false);
       return jobDB.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
     }
 
@@ -336,7 +336,7 @@ namespace MazakMachineInterface
         log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
       }
 
-      logReader.RecheckQueues();
+      logReader.RecheckQueues(wait: true);
 
       var newSt = GetCurrentStatus();
       RaiseNewCurrentStatus(newSt);
@@ -385,7 +385,7 @@ namespace MazakMachineInterface
       log.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
       log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
 
-      logReader.RecheckQueues();
+      logReader.RecheckQueues(wait: true);
 
       var st = GetCurrentStatus();
       RaiseNewCurrentStatus(st);
@@ -409,7 +409,7 @@ namespace MazakMachineInterface
         .DefaultIfEmpty(0)
         .Max();
       log.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
-      logReader.RecheckQueues();
+      logReader.RecheckQueues(wait: true);
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 
@@ -418,7 +418,7 @@ namespace MazakMachineInterface
       Log.Debug("Removing {@matId} from all queues", materialIds);
       foreach (var materialId in materialIds)
         log.RecordRemoveMaterialFromAllQueues(materialId, operatorName);
-      logReader.RecheckQueues();
+      logReader.RecheckQueues(wait: true);
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
     #endregion
