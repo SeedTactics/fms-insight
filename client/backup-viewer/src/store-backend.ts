@@ -90,17 +90,23 @@ export const JobsBackend = {
     // do nothing
     return Promise.resolve();
   },
-  addUnprocessedMaterialToQueue(): Promise<void> {
+  addUnprocessedMaterialToQueue(): Promise<
+    Readonly<api.IInProcessMaterial> | undefined
+  > {
     // do nothing
-    return Promise.resolve();
+    return Promise.resolve(undefined);
   },
-  addUnallocatedCastingToQueue(): Promise<void> {
+  addUnallocatedCastingToQueue(): Promise<
+    ReadonlyArray<Readonly<api.IInProcessMaterial>>
+  > {
     // do nothing
-    return Promise.resolve();
+    return Promise.resolve([]);
   },
-  addUnallocatedCastingToQueueByPart(): Promise<void> {
+  addUnallocatedCastingToQueueByPart(): Promise<
+    Readonly<api.IInProcessMaterial> | undefined
+  > {
     // do nothing
-    return Promise.resolve();
+    return Promise.resolve(undefined);
   },
 };
 

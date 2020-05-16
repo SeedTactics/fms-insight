@@ -48,9 +48,11 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Collapse from "@material-ui/core/Collapse";
+import CircularProgress from "@material-ui/core/CircularProgress";
 import TextField from "@material-ui/core/TextField";
 import { makeStyles } from "@material-ui/core/styles";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import ReactToPrint from "react-to-print";
 import clsx from "clsx";
 
 import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material";
@@ -63,6 +65,7 @@ import { Tooltip } from "@material-ui/core";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
 import { HashSet } from "prelude-ts";
 import { currentOperator } from "../../data/operators";
+import { PrintedLabel } from "./PrintedLabel";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -71,12 +74,14 @@ interface ExistingMatInQueueDialogBodyProps {
   readonly removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) => void;
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly usingLabelPrinter: boolean;
+  readonly printFromClient: boolean;
   readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
   const quarantineQueue = props.quarantineQueue;
+  const printRef = React.useRef(null);
   const allowRemove = React.useMemo(() => {
     let currentlyLoading = false;
     for (const e of props.display_material.events) {
@@ -97,28 +102,42 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
       </DialogContent>
       <DialogActions>
         {props.display_material && matId && props.usingLabelPrinter ? (
-          <Button
-            color="primary"
-            onClick={() =>
-              props.printLabel(
-                props.display_material.materialID,
-                LazySeq.ofIterable(props.display_material.events)
-                  .flatMap((e) => e.material)
-                  .filter((e) => e.id === matId)
-                  .maxOn((e) => e.proc)
-                  .map((e) => e.proc)
-                  .getOrElse(1),
-                null,
-                LazySeq.ofIterable(props.display_material.events)
-                  .filter((e) => e.type === api.LogType.AddToQueue)
-                  .last()
-                  .map((e) => e.loc)
-                  .getOrNull()
-              )
-            }
-          >
-            Print Label
-          </Button>
+          props.printFromClient ? (
+            <>
+              <ReactToPrint
+                content={() => printRef.current}
+                trigger={() => <Button color="primary">Print Label</Button>}
+              />
+              <div style={{ display: "none" }}>
+                <div ref={printRef}>
+                  <PrintedLabel material={props.display_material ? [props.display_material] : []} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <Button
+              color="primary"
+              onClick={() =>
+                props.printLabel(
+                  props.display_material.materialID,
+                  LazySeq.ofIterable(props.display_material.events)
+                    .flatMap((e) => e.material)
+                    .filter((e) => e.id === matId)
+                    .maxOn((e) => e.proc)
+                    .map((e) => e.proc)
+                    .getOrElse(1),
+                  null,
+                  LazySeq.ofIterable(props.display_material.events)
+                    .filter((e) => e.type === api.LogType.AddToQueue)
+                    .last()
+                    .map((e) => e.loc)
+                    .getOrNull()
+                )
+              }
+            >
+              Print Label
+            </Button>
+          )
         ) : undefined}
         {allowRemove ? (
           quarantineQueue === null ? (
@@ -449,6 +468,7 @@ export interface QueueMatDialogProps {
   readonly queueNames: ReadonlyArray<string>;
   readonly quarantineQueue: string | null;
   readonly usingLabelPrinter: boolean;
+  readonly printFromClient: boolean;
   readonly operator: string | null;
   readonly promptForOperator: boolean;
 
@@ -475,6 +495,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
           addExistingMat={props.addExistingMat}
           operator={props.operator}
           usingLabelPrinter={props.usingLabelPrinter}
+          printFromClient={props.printFromClient}
           printLabel={props.printLabel}
         />
       );
@@ -538,6 +559,7 @@ export const ConnectedMaterialDialog = connect(
     queueNames: st.Route.standalone_queues,
     quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
+    printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
     operator: currentOperator(st),
     promptForOperator: st.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
   }),
@@ -673,7 +695,12 @@ interface AddCastingProps {
   readonly operator: string | null;
   readonly promptForOperator: boolean;
   readonly allowAddWithoutJob: boolean;
-  readonly addNewCasting: (c: matDetails.AddNewCastingToQueueData) => void;
+  readonly printOnAdd: boolean;
+  readonly addNewCasting: (
+    c: matDetails.AddNewCastingToQueueData,
+    onAddNew?: (mats: ReadonlyArray<Readonly<api.IInProcessMaterial>>) => void,
+    onError?: (reason: any) => void
+  ) => void;
   readonly closeDialog: () => void;
 }
 
@@ -681,6 +708,11 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
   const [qty, setQty] = React.useState<number>(1);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
+  const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(
+    null
+  );
+  const printRef = React.useRef(null);
+  const [adding, setAdding] = React.useState<boolean>(false);
   const castings: ReadonlyArray<[string, number]> = React.useMemo(
     () =>
       LazySeq.ofObject(props.jobs)
@@ -712,6 +744,8 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
     props.closeDialog();
     setSelectedCasting(null);
     setEnteredOperator(null);
+    setMaterialToPrint(null);
+    setAdding(false);
     setQty(1);
   }
 
@@ -728,82 +762,138 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
     close();
   }
 
+  function addAndPrint(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (props.queue !== null && selectedCasting !== null && !isNaN(qty)) {
+        setAdding(true);
+        props.addNewCasting(
+          {
+            casting: selectedCasting,
+            quantity: qty,
+            queue: props.queue,
+            queuePosition: -1,
+            operator: props.promptForOperator ? enteredOperator : props.operator,
+          },
+          (mats) => {
+            setMaterialToPrint(mats);
+            resolve();
+          },
+          (reason) => {
+            close();
+            reject(reason);
+          }
+        );
+      } else {
+        close();
+      }
+    });
+  }
+
   return (
-    <Dialog open={props.queue !== null} onClose={close}>
-      <DialogTitle>Add Raw Material</DialogTitle>
-      <DialogContent>
-        <FormControl>
-          <InputLabel id="select-casting-label">Raw Material</InputLabel>
-          <Select
-            style={{ minWidth: "15em" }}
-            labelId="select-casting-label"
-            value={selectedCasting || ""}
-            onChange={(e) => setSelectedCasting(e.target.value as string)}
-            renderValue={
-              selectedCasting === null
-                ? undefined
-                : () => (
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <div style={{ marginRight: "0.5em" }}>
-                        <PartIdenticon part={selectedCasting} />
+    <>
+      <Dialog open={props.queue !== null} onClose={() => (adding && props.printOnAdd ? undefined : close())}>
+        <DialogTitle>Add Raw Material</DialogTitle>
+        <DialogContent>
+          <FormControl>
+            <InputLabel id="select-casting-label">Raw Material</InputLabel>
+            <Select
+              style={{ minWidth: "15em" }}
+              labelId="select-casting-label"
+              value={selectedCasting || ""}
+              onChange={(e) => setSelectedCasting(e.target.value as string)}
+              renderValue={
+                selectedCasting === null
+                  ? undefined
+                  : () => (
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <div style={{ marginRight: "0.5em" }}>
+                          <PartIdenticon part={selectedCasting} />
+                        </div>
+                        <div>{selectedCasting}</div>
                       </div>
-                      <div>{selectedCasting}</div>
-                    </div>
-                  )
-            }
-          >
-            {castings.map(([casting, jobCnt], idx) => (
-              <MenuItem key={idx} value={casting}>
-                <ListItemIcon>
-                  <PartIdenticon part={casting} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={casting}
-                  secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
-                />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <div style={{ marginTop: "3em", marginBottom: "2em" }}>
-          <TextField
-            fullWidth
-            type="number"
-            label="Quantity"
-            inputProps={{ min: "1" }}
-            value={isNaN(qty) ? "" : qty}
-            onChange={(e) => setQty(parseInt(e.target.value))}
-          />
-        </div>
-        {props.promptForOperator ? (
-          <div style={{ marginBottom: "2em" }}>
+                    )
+              }
+            >
+              {castings.map(([casting, jobCnt], idx) => (
+                <MenuItem key={idx} value={casting}>
+                  <ListItemIcon>
+                    <PartIdenticon part={casting} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={casting}
+                    secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
+                  />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <div style={{ marginTop: "3em", marginBottom: "2em" }}>
             <TextField
-              style={{ marginTop: "1em" }}
               fullWidth
-              label="Operator"
-              value={enteredOperator || ""}
-              onChange={(e) => setEnteredOperator(e.target.value)}
+              type="number"
+              label="Quantity"
+              inputProps={{ min: "1" }}
+              value={isNaN(qty) ? "" : qty}
+              onChange={(e) => setQty(parseInt(e.target.value))}
             />
           </div>
-        ) : undefined}
-      </DialogContent>
-      <DialogActions>
-        <Button
-          color="primary"
-          disabled={
-            selectedCasting === null ||
-            isNaN(qty) ||
-            (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
-          }
-          onClick={add}
-        >
-          Add to {props.queue}
-        </Button>
-        <Button color="primary" onClick={close}>
-          Cancel
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {props.promptForOperator ? (
+            <div style={{ marginBottom: "2em" }}>
+              <TextField
+                style={{ marginTop: "1em" }}
+                fullWidth
+                label="Operator"
+                value={enteredOperator || ""}
+                onChange={(e) => setEnteredOperator(e.target.value)}
+              />
+            </div>
+          ) : undefined}
+        </DialogContent>
+        <DialogActions>
+          {props.printOnAdd ? (
+            <ReactToPrint
+              onBeforeGetContent={addAndPrint}
+              onAfterPrint={close}
+              content={() => printRef.current}
+              trigger={() => (
+                <Button
+                  color="primary"
+                  disabled={
+                    selectedCasting === null ||
+                    adding ||
+                    isNaN(qty) ||
+                    (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
+                  }
+                >
+                  {adding ? <CircularProgress size={10} /> : undefined}
+                  Add to {props.queue}
+                </Button>
+              )}
+            />
+          ) : (
+            <Button
+              color="primary"
+              disabled={
+                selectedCasting === null ||
+                isNaN(qty) ||
+                (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
+              }
+              onClick={add}
+            >
+              Add to {props.queue}
+            </Button>
+          )}
+          <Button color="primary" disabled={adding && props.printOnAdd} onClick={close}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <div style={{ display: "none" }}>
+        <div ref={printRef}>
+          <PrintedLabel materialName={selectedCasting} material={materialToPrint} operator={enteredOperator} />
+        </div>
+      </div>
+    </>
   );
 });
 
@@ -816,6 +906,9 @@ export const ConnectedAddCastingDialog = connect(
     operator: currentOperator(s),
     promptForOperator: s.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
     allowAddWithoutJob: s.ServerSettings.fmsInfo?.allowAddRawMaterialForNonRunningJobs ?? false,
+    printOnAdd:
+      (s.ServerSettings.fmsInfo?.usingLabelPrinterForSerials ?? false) &&
+      (s.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false),
   }),
   {
     addNewCasting: matDetails.addNewCastingToQueue,

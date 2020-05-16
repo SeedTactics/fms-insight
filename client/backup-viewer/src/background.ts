@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { BackgroundResponse } from "./ipc";
 import { ipcRenderer, IpcRendererEvent } from "electron";
 import * as sqlite from "sqlite";
+import * as sqlite3 from "sqlite3";
 import { ILogEntry, LogType, IToolUse } from "../../insight/.build/data/api";
 import { duration } from "moment";
 
@@ -43,7 +44,7 @@ ipcRenderer.on("open-file", (_: IpcRendererEvent, path: string) => {
   dbP = (async function () {
     let db: sqlite.Database | undefined;
     try {
-      db = await sqlite.open(path);
+      db = await sqlite.open({ filename: path, driver: sqlite3.Database });
     } catch {
       throw "The file is not a FMS Insight database";
     }

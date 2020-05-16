@@ -497,7 +497,7 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    addUnallocatedCastingToQueueByPart(partName: string | null, queue: string | null, pos: number, serial: string, operName: string | null | undefined): Promise<void> {
+    addUnallocatedCastingToQueueByPart(partName: string | null, queue: string | null, pos: number, serial: string, operName: string | null | undefined): Promise<InProcessMaterial> {
         let url_ = this.baseUrl + "/api/v1/jobs/part/{partName}/casting?";
         if (partName === undefined || partName === null)
             throw new Error("The parameter 'partName' must be defined.");
@@ -521,6 +521,7 @@ export class JobsClient {
             method: "POST",
             headers: {
                 "Content-Type": "application/json", 
+                "Accept": "application/json"
             }
         };
 
@@ -529,22 +530,25 @@ export class JobsClient {
         });
     }
 
-    protected processAddUnallocatedCastingToQueueByPart(response: Response): Promise<void> {
+    protected processAddUnallocatedCastingToQueueByPart(response: Response): Promise<InProcessMaterial> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            return;
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 ? InProcessMaterial.fromJS(resultData200) : new InProcessMaterial();
+            return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(<any>null);
+        return Promise.resolve<InProcessMaterial>(<any>null);
     }
 
-    addUnallocatedCastingToQueue(castingName: string | null, queue: string | null, pos: number, serials: string[], qty: number | undefined, operName: string | null | undefined): Promise<void> {
+    addUnallocatedCastingToQueue(castingName: string | null, queue: string | null, pos: number, serials: string[], qty: number | undefined, operName: string | null | undefined): Promise<InProcessMaterial[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
         if (castingName === undefined || castingName === null)
             throw new Error("The parameter 'castingName' must be defined.");
@@ -572,6 +576,7 @@ export class JobsClient {
             method: "POST",
             headers: {
                 "Content-Type": "application/json", 
+                "Accept": "application/json"
             }
         };
 
@@ -580,22 +585,29 @@ export class JobsClient {
         });
     }
 
-    protected processAddUnallocatedCastingToQueue(response: Response): Promise<void> {
+    protected processAddUnallocatedCastingToQueue(response: Response): Promise<InProcessMaterial[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            return;
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (resultData200 && resultData200.constructor === Array) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(InProcessMaterial.fromJS(item));
+            }
+            return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(<any>null);
+        return Promise.resolve<InProcessMaterial[]>(<any>null);
     }
 
-    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, pathGroup: number, queue: string | null, pos: number, serial: string, operName: string | null | undefined): Promise<void> {
+    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, pathGroup: number, queue: string | null, pos: number, serial: string, operName: string | null | undefined): Promise<InProcessMaterial> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -627,6 +639,7 @@ export class JobsClient {
             method: "POST",
             headers: {
                 "Content-Type": "application/json", 
+                "Accept": "application/json"
             }
         };
 
@@ -635,19 +648,22 @@ export class JobsClient {
         });
     }
 
-    protected processAddUnprocessedMaterialToQueue(response: Response): Promise<void> {
+    protected processAddUnprocessedMaterialToQueue(response: Response): Promise<InProcessMaterial> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            return;
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 ? InProcessMaterial.fromJS(resultData200) : new InProcessMaterial();
+            return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(<any>null);
+        return Promise.resolve<InProcessMaterial>(<any>null);
     }
 
     setJobComment(jobUnique: string | null, comment: string): Promise<void> {
@@ -1613,6 +1629,7 @@ export class FMSInfo implements IFMSInfo {
     localhostOpenIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials!: boolean;
+    useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
@@ -1641,6 +1658,7 @@ export class FMSInfo implements IFMSInfo {
             this.localhostOpenIDConnectAuthority = data["LocalhostOpenIDConnectAuthority"];
             this.openIDConnectClientId = data["OpenIDConnectClientId"];
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
+            this.useClientPrinterForLabels = data["UseClientPrinterForLabels"];
             this.quarantineQueue = data["QuarantineQueue"];
             this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowAddRawMaterialForNonRunningJobs = data["AllowAddRawMaterialForNonRunningJobs"];
@@ -1669,6 +1687,7 @@ export class FMSInfo implements IFMSInfo {
         data["LocalhostOpenIDConnectAuthority"] = this.localhostOpenIDConnectAuthority;
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
+        data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
         data["QuarantineQueue"] = this.quarantineQueue;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowAddRawMaterialForNonRunningJobs"] = this.allowAddRawMaterialForNonRunningJobs;
@@ -1686,6 +1705,7 @@ export interface IFMSInfo {
     localhostOpenIDConnectAuthority?: string | undefined;
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials: boolean;
+    useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;

@@ -423,7 +423,11 @@ export interface AddNewMaterialToQueueData {
   readonly operator: string | null;
 }
 
-export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
+export function addNewMaterialToQueue(
+  d: AddNewMaterialToQueueData,
+  onNewMaterial?: (mat: Readonly<api.IInProcessMaterial>) => void,
+  onError?: (reason: any) => void
+) {
   return {
     type: ActionType.AddNewMaterialToQueue,
     pledge: JobsBackend.addUnprocessedMaterialToQueue(
@@ -434,7 +438,13 @@ export function addNewMaterialToQueue(d: AddNewMaterialToQueueData) {
       d.queuePosition,
       d.serial || "",
       d.operator || undefined
-    ),
+    ).then((m) => {
+      if (onNewMaterial && m) {
+        onNewMaterial(m);
+      } else if (onError) {
+        onError("No material returned");
+      }
+    }, onError),
   };
 }
 
@@ -447,7 +457,11 @@ export interface AddNewCastingToQueueData {
   readonly operator: string | null;
 }
 
-export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
+export function addNewCastingToQueue(
+  d: AddNewCastingToQueueData,
+  onNewMaterial?: (mats: ReadonlyArray<Readonly<api.IInProcessMaterial>>) => void,
+  onError?: (reason: any) => void
+) {
   return {
     type: ActionType.AddNewMaterialToQueue,
     pledge: JobsBackend.addUnallocatedCastingToQueue(
@@ -457,7 +471,9 @@ export function addNewCastingToQueue(d: AddNewCastingToQueueData) {
       [...(d.serials || [])],
       d.quantity,
       d.operator || undefined
-    ),
+    ).then((ms) => {
+      if (onNewMaterial) onNewMaterial(ms);
+    }, onError),
   };
 }
 

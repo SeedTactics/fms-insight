@@ -69,6 +69,8 @@ import { HashMap } from "prelude-ts";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
+import { PrintedLabel } from "./PrintedLabel";
+import ReactToPrint from "react-to-print";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -240,7 +242,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
               <MoveMaterialArrowNode
                 key={idx}
                 type={MoveMaterialNodeKindType.Material}
-                action={showArrow(m) ? m.action : null}
+                material={showArrow(m) ? m : null}
               >
                 <InProcMaterial mat={m} onOpen={props.openMat} />
               </MoveMaterialArrowNode>
@@ -263,7 +265,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
                     <MoveMaterialArrowNode
                       key={idx}
                       type={MoveMaterialNodeKindType.Material}
-                      action={showArrow(m) ? m.action : null}
+                      material={showArrow(m) ? m : null}
                     >
                       <InProcMaterial mat={m} onOpen={props.openMat} />
                     </MoveMaterialArrowNode>
@@ -281,7 +283,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
     <>
       <WhiteboardRegion label="Raw Material" spaceAround>
         {props.data.freeLoadingMaterial.map((m, idx) => (
-          <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} action={m.action}>
+          <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} material={m}>
             <InProcMaterial mat={m} onOpen={props.openMat} />
           </MoveMaterialArrowNode>
         ))}
@@ -316,6 +318,7 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
   readonly usingLabelPrinter: boolean;
+  readonly printFromClient: boolean;
   readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
@@ -335,6 +338,7 @@ function instructionType(mat: matDetails.MaterialDetail): string {
 }
 
 function LoadMatDialog(props: LoadMatDialogProps) {
+  const printRef = React.useRef(null);
   function openAssignWorkorder() {
     if (!props.display_material) {
       return;
@@ -360,24 +364,38 @@ function LoadMatDialog(props: LoadMatDialogProps) {
             {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
           </Button>
           {displayMat && props.usingLabelPrinter ? (
-            <Button
-              color="primary"
-              onClick={() =>
-                props.printLabel(
-                  displayMat.materialID,
-                  LazySeq.ofIterable(displayMat.events)
-                    .flatMap((e) => e.material)
-                    .filter((e) => e.id === displayMat.materialID)
-                    .maxOn((e) => e.proc)
-                    .map((e) => e.proc)
-                    .getOrElse(1),
-                  props.loadNum,
-                  null
-                )
-              }
-            >
-              Print Label
-            </Button>
+            props.printFromClient ? (
+              <>
+                <ReactToPrint
+                  content={() => printRef.current}
+                  trigger={() => <Button color="primary">Print Label</Button>}
+                />
+                <div style={{ display: "none" }}>
+                  <div ref={printRef}>
+                    <PrintedLabel material={displayMat ? [displayMat] : []} />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <Button
+                color="primary"
+                onClick={() =>
+                  props.printLabel(
+                    displayMat.materialID,
+                    LazySeq.ofIterable(displayMat.events)
+                      .flatMap((e) => e.material)
+                      .filter((e) => e.id === displayMat.materialID)
+                      .maxOn((e) => e.proc)
+                      .map((e) => e.proc)
+                      .getOrElse(1),
+                    props.loadNum,
+                    null
+                  )
+                }
+              >
+                Print Label
+              </Button>
+            )
           ) : undefined}
           <Button color="primary" onClick={props.openForceInspection}>
             Signal Inspection
@@ -395,6 +413,7 @@ const ConnectedMaterialDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
+    printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
     operator: currentOperator(st),
   }),
   {
@@ -521,9 +540,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       <MoveMaterialArrowNode
                         key={matIdx}
                         type={MoveMaterialNodeKindType.Material}
-                        action={
-                          props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m.action : null
-                        }
+                        material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
                       >
                         <SortableInProcMaterial
                           index={matIdx}
@@ -568,9 +585,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       <MoveMaterialArrowNode
                         key={matIdx}
                         type={MoveMaterialNodeKindType.Material}
-                        action={
-                          props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m.action : null
-                        }
+                        material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
                       >
                         <SortableInProcMaterial
                           index={matIdx}
