@@ -48,6 +48,7 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Collapse from "@material-ui/core/Collapse";
+import CircularProgress from "@material-ui/core/CircularProgress";
 import TextField from "@material-ui/core/TextField";
 import { makeStyles } from "@material-ui/core/styles";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
@@ -712,6 +713,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
   );
   const [printDate, setPrintDate] = React.useState<Date>(new Date());
   const printRef = React.useRef(null);
+  const [adding, setAdding] = React.useState<boolean>(false);
   const castings: ReadonlyArray<[string, number]> = React.useMemo(
     () =>
       LazySeq.ofObject(props.jobs)
@@ -744,25 +746,31 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
     setSelectedCasting(null);
     setEnteredOperator(null);
     setMaterialToPrint(null);
+    setAdding(false);
     setQty(1);
   }
 
   function add() {
     if (props.queue !== null && selectedCasting !== null && !isNaN(qty)) {
-      props.addNewCasting({
-        casting: selectedCasting,
-        quantity: qty,
-        queue: props.queue,
-        queuePosition: -1,
-        operator: props.promptForOperator ? enteredOperator : props.operator,
-      });
+      setAdding(true);
+      props.addNewCasting(
+        {
+          casting: selectedCasting,
+          quantity: qty,
+          queue: props.queue,
+          queuePosition: -1,
+          operator: props.promptForOperator ? enteredOperator : props.operator,
+        },
+        () => close(),
+        () => close()
+      );
     }
-    close();
   }
 
   function addAndPrint(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (props.queue !== null && selectedCasting !== null && !isNaN(qty)) {
+        setAdding(true);
         props.addNewCasting(
           {
             casting: selectedCasting,
@@ -858,10 +866,12 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
                   color="primary"
                   disabled={
                     selectedCasting === null ||
+                    adding ||
                     isNaN(qty) ||
                     (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
                   }
                 >
+                  {adding ? <CircularProgress size={10} /> : undefined}
                   Add to {props.queue}
                 </Button>
               )}

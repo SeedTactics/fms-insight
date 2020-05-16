@@ -95,7 +95,10 @@ export function PrintedLabel(props: PrintedLabelProps) {
   }
   return (
     <div>
-      <div style={{ marginTop: "4em", display: "flex", justifyContent: "space-around" }}>
+      <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
+        <h3>SeedTactic: FMS Insight</h3>
+      </div>
+      <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
         <Barcode text={props.materialName ?? props.material[0].partName} />
         {props.material.length >= 2 ? <Barcode text={props.material.length.toString()} /> : undefined}
       </div>
