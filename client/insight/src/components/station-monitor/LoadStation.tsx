@@ -242,7 +242,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
               <MoveMaterialArrowNode
                 key={idx}
                 type={MoveMaterialNodeKindType.Material}
-                action={showArrow(m) ? m.action : null}
+                material={showArrow(m) ? m : null}
               >
                 <InProcMaterial mat={m} onOpen={props.openMat} />
               </MoveMaterialArrowNode>
@@ -265,7 +265,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
                     <MoveMaterialArrowNode
                       key={idx}
                       type={MoveMaterialNodeKindType.Material}
-                      action={showArrow(m) ? m.action : null}
+                      material={showArrow(m) ? m : null}
                     >
                       <InProcMaterial mat={m} onOpen={props.openMat} />
                     </MoveMaterialArrowNode>
@@ -283,7 +283,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
     <>
       <WhiteboardRegion label="Raw Material" spaceAround>
         {props.data.freeLoadingMaterial.map((m, idx) => (
-          <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} action={m.action}>
+          <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} material={m}>
             <InProcMaterial mat={m} onOpen={props.openMat} />
           </MoveMaterialArrowNode>
         ))}
@@ -540,9 +540,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       <MoveMaterialArrowNode
                         key={matIdx}
                         type={MoveMaterialNodeKindType.Material}
-                        action={
-                          props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m.action : null
-                        }
+                        material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
                       >
                         <SortableInProcMaterial
                           index={matIdx}
@@ -587,9 +585,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       <MoveMaterialArrowNode
                         key={matIdx}
                         type={MoveMaterialNodeKindType.Material}
-                        action={
-                          props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m.action : null
-                        }
+                        material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
                       >
                         <SortableInProcMaterial
                           index={matIdx}

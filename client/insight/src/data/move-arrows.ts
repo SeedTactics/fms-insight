@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { HashMap, fieldsHashCode, Vector, Option } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
 
 export class MoveMaterialIdentifier {
   public static allocateNodeId: () => MoveMaterialIdentifier = (function () {
@@ -67,7 +66,7 @@ export enum MoveMaterialNodeKindType {
 export type MoveMaterialNodeKind =
   | {
       readonly type: MoveMaterialNodeKindType.Material;
-      readonly action: Readonly<api.IInProcessMaterialAction> | null;
+      readonly material: Readonly<api.IInProcessMaterial> | null;
     }
   | { readonly type: MoveMaterialNodeKindType.FreeMaterialZone }
   | { readonly type: MoveMaterialNodeKindType.CompletedMaterialZone }
@@ -100,7 +99,7 @@ interface MoveMaterialByKind {
   readonly faces: HashMap<number, ClientRect>;
   readonly queues: HashMap<string, ClientRect>;
 
-  readonly material: Vector<[ClientRect, Readonly<api.IInProcessMaterialAction>]>;
+  readonly material: Vector<[ClientRect, Readonly<api.IInProcessMaterial>]>;
 }
 
 function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialByKind {
@@ -108,7 +107,7 @@ function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialBy
     {
       faces: HashMap.empty<number, ClientRect>(),
       queues: HashMap.empty<string, ClientRect>(),
-      material: Vector.empty<[ClientRect, Readonly<api.IInProcessMaterialAction>]>(),
+      material: Vector.empty<[ClientRect, Readonly<api.IInProcessMaterial>]>(),
     } as MoveMaterialByKind,
     (acc, [key, kind]) => {
       const nodeM = data.nodes.get(key);
@@ -126,8 +125,8 @@ function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialBy
         case MoveMaterialNodeKindType.QueueZone:
           return { ...acc, queues: acc.queues.put(kind.queue, node) };
         case MoveMaterialNodeKindType.Material:
-          if (kind.action) {
-            return { ...acc, material: acc.material.append([node, kind.action]) };
+          if (kind.material) {
+            return { ...acc, material: acc.material.append([node, kind.material]) };
           } else {
             return acc;
           }
@@ -146,67 +145,84 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
     return [];
   }
 
-  return byKind.material
-    .transform(LazySeq.ofIterable)
-    .map((value) => {
-      const rect = value[0];
-      const action = value[1];
-      switch (action.type) {
-        case api.ActionType.UnloadToCompletedMaterial:
-          return {
-            fromX: rect.left,
-            fromY: rect.top + rect.height / 2,
-            toX: rect.left,
-            toY: byKind.completedMaterial
-              ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
-              : container.bottom - 10,
-            curveDirection: 1,
-          } as MoveMaterialArrow;
-        case api.ActionType.UnloadToInProcess: {
-          let dest: Option<ClientRect>;
-          if (action.unloadIntoQueue) {
-            dest = byKind.queues.get(action.unloadIntoQueue);
-          } else {
-            dest = Option.ofNullable(byKind.freeMaterial);
-          }
-          return {
-            fromX: rect.right,
-            fromY: rect.top + rect.height / 2,
-            toX: dest.isSome() ? dest.get().left - 5 : container.right - 2,
-            toY: dest.isSome() ? dest.get().top + dest.get().height / 2 : rect.top + rect.height / 2,
-            curveDirection: 1,
-          } as MoveMaterialArrow;
+  const arrows: Array<MoveMaterialArrow> = [];
+
+  const faceDestUsed = new Map<number, number>();
+  const queueDestUsed = new Map<string, number>();
+  let lastFreeUsed = 0;
+
+  for (const [rect, mat] of byKind.material.sortOn(
+    ([rect]) => rect.left,
+    ([rect]) => rect.top
+  )) {
+    switch (mat.action.type) {
+      case api.ActionType.UnloadToCompletedMaterial:
+        arrows.push({
+          fromX: rect.left,
+          fromY: rect.top + rect.height / 2,
+          toX: rect.left,
+          toY: byKind.completedMaterial
+            ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
+            : container.bottom - 10,
+          curveDirection: 1,
+        });
+        break;
+      case api.ActionType.UnloadToInProcess: {
+        let dest: Option<ClientRect>;
+        let lastSlotUsed: number;
+        if (mat.action.unloadIntoQueue) {
+          dest = byKind.queues.get(mat.action.unloadIntoQueue);
+          lastSlotUsed = queueDestUsed.get(mat.action.unloadIntoQueue) ?? 0;
+          queueDestUsed.set(mat.action.unloadIntoQueue, lastSlotUsed + 1);
+        } else {
+          dest = Option.ofNullable(byKind.freeMaterial);
+          lastSlotUsed = lastFreeUsed;
+          lastFreeUsed += 1;
         }
-        case api.ActionType.Loading:
-          if (action.loadOntoFace) {
-            const face = byKind.faces.get(action.loadOntoFace);
-            if (face.isSome()) {
-              const fromQueue = rect.left > face.get().right;
-              return {
+        arrows.push({
+          fromX: rect.right,
+          fromY: rect.top + rect.height / 2,
+          toX: dest.isSome() ? dest.get().left - 5 : container.right - 2,
+          toY: dest.isSome() ? dest.get().top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
+          curveDirection: 1,
+        });
+        break;
+      }
+      case api.ActionType.Loading:
+        if (mat.action.loadOntoFace) {
+          const face = byKind.faces.get(mat.action.loadOntoFace);
+          if (face.isSome()) {
+            const fromQueue = rect.left > face.get().right;
+            if (fromQueue) {
+              const faceSpotsUsed = faceDestUsed.get(mat.action.loadOntoFace) ?? 0;
+              faceDestUsed.set(mat.action.loadOntoFace, faceSpotsUsed + 1);
+              arrows.push({
                 fromX: rect.left,
                 fromY: rect.top + rect.height / 2,
-                toX: fromQueue ? face.get().right - 10 : rect.left,
+                toX: face.get().right - 10,
+                toY: face.get().top + 20 * (faceSpotsUsed + 1),
+                curveDirection: 1,
+              });
+            } else {
+              arrows.push({
+                fromX: rect.left,
+                fromY: rect.top + rect.height / 2,
+                toX: rect.left,
                 toY: face.get().top + 10,
                 curveDirection: 1,
-              } as MoveMaterialArrow;
+              });
             }
           }
-          break;
-      }
-      return null;
-    })
-    .mapOption((arr) => {
-      if (arr) {
-        return Option.some({
-          fromX: arr.fromX - container.left,
-          fromY: arr.fromY - container.top,
-          toX: arr.toX - container.left,
-          toY: arr.toY - container.top,
-          curveDirection: arr.curveDirection,
-        });
-      } else {
-        return Option.none<MoveMaterialArrow>();
-      }
-    })
-    .toArray();
+        }
+        break;
+    }
+  }
+
+  return arrows.map((arr) => ({
+    fromX: arr.fromX - container.left,
+    fromY: arr.fromY - container.top,
+    toX: arr.toX - container.left,
+    toY: arr.toY - container.top,
+    curveDirection: arr.curveDirection,
+  }));
 }
