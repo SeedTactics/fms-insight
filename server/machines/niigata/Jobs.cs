@@ -396,7 +396,7 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Queues
-    public void AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
+    public InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -420,10 +420,12 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
+      return
+        AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName)
+        .FirstOrDefault();
     }
 
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -431,6 +433,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // num proc will be set later once it is allocated to a specific job
+      var mats = new List<InProcessMaterial>();
       for (int i = 0; i < qty; i++)
       {
         var matId = _log.AllocateMaterialIDForCasting(casting);
@@ -451,13 +454,33 @@ namespace BlackMaple.FMSInsight.Niigata
             },
             serial[i]);
         }
-        _log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
+        var logEvt = _log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
+        mats.Add(new InProcessMaterial()
+        {
+          MaterialID = matId,
+          JobUnique = null,
+          PartName = casting,
+          Process = 0,
+          Path = 1,
+          Serial = i < serial.Count ? serial[i] : null,
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = queue,
+            QueuePosition = logEvt.LastOrDefault()?.LocationNum
+          },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting
+          }
+        });
       }
       _sync.JobsOrQueuesChanged();
 
+      return mats;
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -494,9 +517,29 @@ namespace BlackMaple.FMSInsight.Niigata
           },
           serial);
       }
-      _log.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
+      var logEvt = _log.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
       _log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       _sync.JobsOrQueuesChanged();
+
+      return new InProcessMaterial()
+      {
+        MaterialID = matId,
+        JobUnique = jobUnique,
+        PartName = job.PartName,
+        Process = process,
+        Path = path.Value,
+        Serial = serial,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = queue,
+          QueuePosition = logEvt.LastOrDefault()?.LocationNum
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      };
     }
 
     public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
