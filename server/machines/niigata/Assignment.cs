@@ -181,7 +181,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private (bool, HashSet<long>) CheckMaterialForPathExists(HashSet<long> currentlyLoading, IReadOnlyDictionary<long, InProcessMaterial> unusedMatsOnPal, JobPath path, IEnumerable<InProcessMaterial> queuedMats)
     {
-      // This logic must be identical to the eventual assignment in CreateCellState.MaterialToLoadOnFace
+      // This logic must be identical to the eventual assignment in CreateCellState.MaterialToLoadOnFace and SizedQueues.AvailablePalletForPickup
 
       var (fixture, faceNum) = path.Job.PlannedFixture(path.Process, path.Path);
 
