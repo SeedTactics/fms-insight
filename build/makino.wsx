@@ -26,6 +26,7 @@
     <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
     <InstallExecuteSequence>
       <DeleteServices>NOT UPGRADINGPRODUCTCODE</DeleteServices>
+      <InstallServices>NOT WIX_UPGRADE_DETECTED</InstallServices>
     </InstallExecuteSequence>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>

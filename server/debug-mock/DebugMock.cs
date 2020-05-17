@@ -202,17 +202,19 @@ namespace DebugMachineWatchApiServer
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
-    public void AddUnallocatedPartToQueue(string part, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnallocatedPartToQueue(string part, string queue, int position, string serial, string operatorName = null)
     {
       Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {position} {serial} {oper}", part, queue, position, serial, operatorName);
+      return null;
     }
 
-    public void AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serials, string operatorName = null)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serials, string operatorName = null)
     {
       Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials} {oper}", casting, qty, queue, position, serials, operatorName);
+      var ret = new List<InProcessMaterial>();
       for (int i = 0; i < qty; i++)
       {
-        CurrentStatus.Material.Add(new InProcessMaterial()
+        var m = new InProcessMaterial()
         {
           MaterialID = -500,
           JobUnique = null,
@@ -230,18 +232,21 @@ namespace DebugMachineWatchApiServer
           {
             Type = InProcessMaterialAction.ActionType.Waiting
           }
-        });
+        };
+        CurrentStatus.Material.Add(m);
+        ret.Add(m);
       }
       OnNewCurrentStatus?.Invoke(CurrentStatus);
+      return ret;
     }
 
-    public void AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial, string operatorName = null)
     {
       Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {pathGroup} {queue} {position} {serial} {oper}",
         jobUnique, lastCompletedProcess, pathGroup, queue, position, serial, operatorName);
 
       var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
-      CurrentStatus.Material.Add(new InProcessMaterial()
+      var m = new InProcessMaterial()
       {
         MaterialID = -500,
         JobUnique = jobUnique,
@@ -259,8 +264,10 @@ namespace DebugMachineWatchApiServer
         {
           Type = InProcessMaterialAction.ActionType.Waiting
         }
-      });
+      };
+      CurrentStatus.Material.Add(m);
       OnNewCurrentStatus?.Invoke(CurrentStatus);
+      return m;
     }
     public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null)
     {

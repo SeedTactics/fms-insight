@@ -86,7 +86,7 @@ namespace MazakMachineInterface
   public delegate void NewEntriesDel();
   public interface IMazakLogReader : INotifyMazakLogEvent
   {
-    void RecheckQueues();
+    void RecheckQueues(bool wait);
     void Halt();
     event NewEntriesDel NewEntries;
   }
@@ -137,7 +137,7 @@ namespace MazakMachineInterface
       _timer.Stop();
     }
 
-    public void RecheckQueues()
+    public void RecheckQueues(bool wait)
     {
       //do nothing, wait for 1 minute timeout
     }
@@ -335,6 +335,7 @@ namespace MazakMachineInterface
     private AutoResetEvent _shutdown;
     private AutoResetEvent _newLogFile;
     private AutoResetEvent _recheckQueues;
+    private ManualResetEvent _processLogComplete;
 
     private Thread _thread;
     private FileSystemWatcher _watcher;
@@ -359,6 +360,7 @@ namespace MazakMachineInterface
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
       _recheckQueues = new AutoResetEvent(false);
+      _processLogComplete = new ManualResetEvent(false);
       if (System.IO.Directory.Exists(path))
       {
         _thread = new Thread(new ThreadStart(ThreadFunc));
@@ -431,6 +433,10 @@ namespace MazakMachineInterface
         {
           Log.Error(ex, "Error during log data processing");
         }
+        finally
+        {
+          _processLogComplete.Set();
+        }
       }
     }
 
@@ -444,9 +450,18 @@ namespace MazakMachineInterface
         _thread.Abort();
     }
 
-    public void RecheckQueues()
+    public void RecheckQueues(bool wait)
     {
-      _recheckQueues.Set();
+      if (wait)
+      {
+        _processLogComplete.Reset();
+        _recheckQueues.Set();
+        _processLogComplete.WaitOne(TimeSpan.FromSeconds(20));
+      }
+      else
+      {
+        _recheckQueues.Set();
+      }
     }
 
 

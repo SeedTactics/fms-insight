@@ -36,7 +36,7 @@ const {
   Menu,
   ipcMain,
   shell,
-  dialog
+  dialog,
 } = require("electron");
 
 app.on("web-contents-created", (_, contents) => {
@@ -58,8 +58,8 @@ app.on("ready", () => {
   const background = new BrowserWindow({
     show: false,
     webPreferences: {
-      nodeIntegration: true
-    }
+      nodeIntegration: true,
+    },
   });
   background.loadFile("dist/background.html");
   //background.webContents.openDevTools();
@@ -72,8 +72,8 @@ app.on("ready", () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
-      preload: __dirname + "/preload.js"
-    }
+      preload: __dirname + "/preload.js",
+    },
   });
   mainWindow.maximize();
   mainWindow.loadFile("dist/renderer.html");
@@ -92,18 +92,16 @@ app.on("ready", () => {
     );
   });
   ipcMain.on("open-file", (_, arg) => {
-    dialog.showOpenDialog(
-      mainWindow,
-      {
+    dialog
+      .showOpenDialog(mainWindow, {
         title: "Open Backup Database File",
-        properties: ["openFile"]
-      },
-      paths => {
-        if (paths && paths.length > 0) {
-          background.webContents.send("open-file", paths[0]);
-          mainWindow.webContents.send("file-opened", paths[0]);
+        properties: ["openFile"],
+      })
+      .then((paths) => {
+        if (!paths.canceled && paths.filePaths.length > 0) {
+          background.webContents.send("open-file", paths.filePaths[0]);
+          mainWindow.webContents.send("file-opened", paths.filePaths[0]);
         }
-      }
-    );
+      });
   });
 });

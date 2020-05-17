@@ -437,6 +437,11 @@
           "text/json",
           "application/*+json"
         ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
         "parameters": [
           {
             "type": "string",
@@ -478,7 +483,11 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/InProcessMaterial"
+            }
           }
         }
       }
@@ -494,6 +503,11 @@
           "application/json",
           "text/json",
           "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
         ],
         "parameters": [
           {
@@ -547,7 +561,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/InProcessMaterial"
+              }
+            }
           }
         }
       }
@@ -563,6 +584,11 @@
           "application/json",
           "text/json",
           "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
         ],
         "parameters": [
           {
@@ -621,7 +647,11 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/InProcessMaterial"
+            }
           }
         }
       }
@@ -1587,6 +1617,9 @@
           "type": "string"
         },
         "UsingLabelPrinterForSerials": {
+          "type": "boolean"
+        },
+        "UseClientPrinterForLabels": {
           "type": "boolean"
         },
         "QuarantineQueue": {

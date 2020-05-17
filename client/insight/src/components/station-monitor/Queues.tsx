@@ -82,6 +82,8 @@ import { LogEntries } from "../LogEntry";
 import { JobsBackend } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
+import ReactToPrint from "react-to-print";
+import { PrintedLabel } from "./PrintedLabel";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -294,6 +296,7 @@ interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
   readonly closeDialog: () => void;
   readonly usingLabelPrinter: boolean;
+  readonly printFromClient: boolean;
   readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
@@ -303,6 +306,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
   const [showRemove, setShowRemove] = React.useState(false);
   const [removeCnt, setRemoveCnt] = React.useState<number>(NaN);
+  const printRef = React.useRef(null);
 
   React.useEffect(() => {
     if (props.material === null) return;
@@ -379,21 +383,35 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
       </DialogContent>
       <DialogActions>
         {props.material && props.material.length > 0 && props.usingLabelPrinter ? (
-          <Button
-            color="primary"
-            onClick={() =>
-              props.material && props.material.length > 0
-                ? props.printLabel(
-                    props.material[0].materialID,
-                    0,
-                    null,
-                    props.material[0].location.currentQueue || null
-                  )
-                : void 0
-            }
-          >
-            Print Label
-          </Button>
+          props.printFromClient ? (
+            <>
+              <ReactToPrint
+                content={() => printRef.current}
+                trigger={() => <Button color="primary">Print Label</Button>}
+              />
+              <div style={{ display: "none" }}>
+                <div ref={printRef}>
+                  <PrintedLabel material={props.material || []} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <Button
+              color="primary"
+              onClick={() =>
+                props.material && props.material.length > 0
+                  ? props.printLabel(
+                      props.material[0].materialID,
+                      0,
+                      null,
+                      props.material[0].location.currentQueue || null
+                    )
+                  : void 0
+              }
+            >
+              Print Label
+            </Button>
+          )
         ) : undefined}
         <Button color="primary" onClick={remove} disabled={loading || (showRemove && isNaN(removeCnt))}>
           {loading && showRemove
@@ -476,6 +494,7 @@ interface QueueProps {
   openAddToQueue: (queueName: string) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly usingLabelPrinter: boolean;
+  readonly printFromClient: boolean;
   readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
@@ -571,6 +590,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
         material={multiMaterialDialog}
         closeDialog={closeMultiMatDialog}
         usingLabelPrinter={props.usingLabelPrinter}
+        printFromClient={props.printFromClient}
         operator={props.operator}
         printLabel={props.printLabel}
       />
@@ -595,6 +615,7 @@ export default connect(
   (st: Store) => ({
     data: buildQueueData(st),
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
+    printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
     operator: currentOperator(st),
   }),
   {
