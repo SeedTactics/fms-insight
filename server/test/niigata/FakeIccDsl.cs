@@ -44,7 +44,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
   {
     private JobLogDB _logDB;
     private JobDB _jobDB;
-    private AssignNewRoutesOnPallets _assign;
+    private IAssignPallets _assign;
     private CreateCellState _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
@@ -88,7 +88,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
-      _assign = new AssignNewRoutesOnPallets(record, _statNames);
+      _assign = new MultiPalletAssign(new IAssignPallets[] {
+        new AssignNewRoutesOnPallets(record, _statNames),
+        new SizedQueues(new Dictionary<string, QueueSize>() {
+          {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
+        })
+      });
       _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, _statNames, machConn);
 
       _status = new NiigataStatus();
@@ -1036,6 +1041,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return new ExpectRouteIncrementChange() { Pallet = pal, NewCycleCount = newCycleCnt, Faces = faces };
     }
 
+    private class ExpectPalHold : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public bool Hold { get; set; }
+    }
+
+    public static ExpectedChange ExpectPalletHold(int pal, bool hold)
+    {
+      return new ExpectPalHold() { Pallet = pal, Hold = hold };
+    }
+
     private class ExpectMachineBeginEvent : ExpectedChange
     {
       public int Pallet { get; set; }
@@ -1228,6 +1244,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
         var expectDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
+        var expectHold = (ExpectPalHold)expectedChanges.FirstOrDefault(e => e is ExpectPalHold);
 
         if (expectedNewRoute != null)
         {
@@ -1286,6 +1303,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           var action = _assign.NewPalletChange(cellSt);
           action.Should().BeEquivalentTo<DeleteProgram>(expectDelete.Expected);
           _status.Programs.Remove(expectDelete.Expected.ProgramNum);
+        }
+        else if (expectHold != null)
+        {
+          _status.Pallets[expectHold.Pallet - 1].Master.Skip.Should().Be(!expectHold.Hold);
+          var action = _assign.NewPalletChange(cellSt);
+          action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
+          {
+            Pallet = expectHold.Pallet,
+            Priority = _status.Pallets[expectHold.Pallet - 1].Master.Priority,
+            Cycles = _status.Pallets[expectHold.Pallet - 1].Master.RemainingPalletCycles,
+            NoWork = false,
+            Skip = expectHold.Hold,
+            LongToolMachine = 0
+          });
+          _status.Pallets[expectHold.Pallet - 1].Master.Skip = expectHold.Hold;
         }
         else
         {

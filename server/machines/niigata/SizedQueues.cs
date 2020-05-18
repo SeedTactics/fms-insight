@@ -45,7 +45,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private readonly IReadOnlyDictionary<string, MachineWatchInterface.QueueSize> _queueSizes;
     public SizedQueues(IReadOnlyDictionary<string, MachineWatchInterface.QueueSize> queues)
     {
-      if (queues.Values.Any(q => q.MaxSizeBeforeStopUnloading.HasValue && q.MaxSizeBeforeStopUnloading.Value > 0))
+      if (queues != null && queues.Values.Any(q => q.MaxSizeBeforeStopUnloading.HasValue && q.MaxSizeBeforeStopUnloading.Value > 0))
       {
         _queueSizes = queues;
       }
@@ -69,9 +69,9 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(pal =>
           pal.Material.Count > 0
           &&
-          pal.Material.Any(m => sizedQueues.Contains(m.Job.GetOutputQueue(m.Mat.Process, m.Mat.Path)))
+          pal.Material.Any(m => m.Mat.Process >= 1 && sizedQueues.Contains(m.Job.GetOutputQueue(m.Mat.Process, m.Mat.Path)))
         )
-        .OrderBy(pal => pal.Material.Min(m => m.Job.GetSimulatedStartingTimeUTC(m.Mat.Process, m.Mat.Path)))
+        .OrderBy(pal => pal.Material.Min(m => m.Mat.Process >= 1 ? m.Job.GetSimulatedStartingTimeUTC(m.Mat.Process, m.Mat.Path) : DateTime.MaxValue))
         .ToList();
 
 
@@ -101,7 +101,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       // everything currently executing on the second-to-last-stop is marked as on-hold
       var curRouteIdx = pal.Status.Tracking.CurrentStepNum - 1;
-      if (curRouteIdx == pal.Status.Master.Routes.Count - 2)
+      if (curRouteIdx == pal.Status.Master.Routes.Count - 2 && pal.Status.Tracking.BeforeCurrentStep)
       {
         switch (pal.Status.CurrentStep)
         {
@@ -130,7 +130,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (curRouteIdx == pal.Status.Master.Routes.Count - 1)
       {
-        return pal.Status.Tracking.BeforeCurrentStep;
+        return pal.Status.Tracking.BeforeCurrentStep && pal.Status.CurStation.Location.Location == PalletLocationEnum.Buffer;
       }
       else
       {
@@ -164,18 +164,40 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // also take out anything on a pallet currently unloading or moving to be unloaded.
-      foreach (var pal in palsToCheck)
+      foreach (var pal in palsToCheck.Where(p => !p.Status.Master.Skip))
       {
-        if (!pal.Status.Master.Skip && IsPalletReadyToUnload(pal))
+        var curRouteIdx = pal.Status.Tracking.CurrentStepNum - 1;
+        if (curRouteIdx == pal.Status.Master.Routes.Count - 2 && !pal.Status.Tracking.BeforeCurrentStep)
         {
+          // after final step, take out everything
+          // this accounts for any unheld pallet currently rotating out of the machine
           foreach (var mat in pal.Material)
           {
-            var queue = mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path);
-            if (!string.IsNullOrEmpty(queue) && remain.ContainsKey(queue))
+            if (mat.Mat.Process >= 1)
             {
-              remain[queue] -= 1;
+              var queue = mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path);
+              if (!string.IsNullOrEmpty(queue) && remain.ContainsKey(queue))
+              {
+                remain[queue] -= 1;
+              }
             }
           }
+        }
+        else
+        {
+          // take out anything being unloaded
+          foreach (var mat in pal.Material)
+          {
+            if (mat.Mat.Action.Type == InProcessMaterialAction.ActionType.UnloadToInProcess)
+            {
+              var queue = mat.Mat.Action.UnloadIntoQueue;
+              if (!string.IsNullOrEmpty(queue) && remain.ContainsKey(queue))
+              {
+                remain[queue] -= 1;
+              }
+            }
+          }
+
         }
       }
 
@@ -184,7 +206,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private bool IsAvailableSpaceForPallet(CellState cellState, PalletAndMaterial pallet, IReadOnlyDictionary<string, int> remainingQueuePos)
     {
-      foreach (var matGroup in pallet.Material.GroupBy(mat => mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path)))
+      foreach (var matGroup in pallet.Material.GroupBy(mat => mat.Mat.Process >= 1 ? mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path) : null))
       {
         if (matGroup.Key != null && remainingQueuePos.TryGetValue(matGroup.Key, out var remain))
         {
@@ -214,6 +236,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return mats.All(mat =>
       {
         if (mat.Mat.Process == mat.Job.NumProcesses) return true;
+        if (mat.Mat.Process < 1) return true;
 
         // search for an available pallet to pickup this material
         int nextProc = mat.Mat.Process + 1;
