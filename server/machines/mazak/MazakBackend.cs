@@ -291,7 +291,16 @@ namespace MazakMachineInterface
 
     private void OnNewLogEntries()
     {
-      routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
+      var st = routing.GetCurrentStatus();
+      if (st.Material.Any(m =>
+        m.Action.Type == InProcessMaterialAction.ActionType.Loading
+        || m.Action.Type == InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+        || m.Action.Type == InProcessMaterialAction.ActionType.UnloadToInProcess
+      ))
+      {
+        Log.Debug("Current status with load/unload {@status}", st);
+      }
+      routing.RaiseNewCurrentStatus(st);
     }
 
     private MazakDbType DetectMazakType(IConfigurationSection cfg, string localDbPath)

@@ -368,6 +368,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
               <>
                 <ReactToPrint
                   content={() => printRef.current}
+                  copyStyles={false}
                   trigger={() => <Button color="primary">Print Label</Button>}
                 />
                 <div style={{ display: "none" }}>

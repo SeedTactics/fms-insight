@@ -408,6 +408,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
               <ReactToPrint
                 content={() => printRef.current}
                 trigger={() => <Button color="primary">Print Label</Button>}
+                copyStyles={false}
               />
               <div style={{ display: "none" }}>
                 <div ref={printRef}>

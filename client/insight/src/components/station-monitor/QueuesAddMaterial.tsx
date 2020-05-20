@@ -106,6 +106,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
             <>
               <ReactToPrint
                 content={() => printRef.current}
+                copyStyles={false}
                 trigger={() => <Button color="primary">Print Label</Button>}
               />
               <div style={{ display: "none" }}>
@@ -854,6 +855,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
             <ReactToPrint
               onBeforeGetContent={addAndPrint}
               onAfterPrint={close}
+              copyStyles={false}
               content={() => printRef.current}
               trigger={() => (
                 <Button
