@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import JsBarcode from "jsbarcode";
 import { LazySeq } from "../../data/lazyseq";
+import { format } from "date-fns";
 
 interface BarcodeProps {
   readonly text: string;
@@ -95,7 +96,10 @@ export function PrintedLabel(props: PrintedLabelProps) {
   return (
     <div>
       <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
-        <h3>SeedTactic: FMS Insight</h3>
+        <h2>SeedTactic: FMS Insight</h2>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <p style={{ fontSize: "x-large" }}>{format(new Date(), "eeee MMMM d, yyyy HH:mm:ss")}</p>
       </div>
       <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
         <Barcode text={props.materialName ?? props.material[0].partName} />
@@ -113,10 +117,10 @@ export function PrintedLabel(props: PrintedLabelProps) {
       ) : undefined}
       <div style={{ marginTop: "2em", marginLeft: "4em", marginRight: "4em" }}>
         {assignments.length === 0 ? (
-          <h2>Not currently assigned to any jobs</h2>
+          <p style={{ fontSize: "x-large" }}>Not currently assigned to any jobs</p>
         ) : props.materialName ? (
           <>
-            <h2>Assigned To</h2>
+            <p style={{ fontSize: "x-large" }}>Assigned To</p>
             {assignments.map(([uniq, part], idx) => (
               <div key={idx} style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}>
                 <Barcode text={part.part} />
@@ -127,16 +131,16 @@ export function PrintedLabel(props: PrintedLabelProps) {
           </>
         ) : assignments.length === 1 ? (
           <div style={{ marginTop: "1em", display: "flex", justifyContent: "space-around" }}>
-            <h3>
+            <p style={{ fontSize: "x-large" }}>
               <span>Assigned to {assignments[0][0]}</span>
               {assignments[0][1].length > 1 ? (
                 <span style={{ marginLeft: "1em" }}>x{assignments[0][1].length}</span>
               ) : undefined}
-            </h3>
+            </p>
           </div>
         ) : (
           <>
-            <h2>Assigned To</h2>
+            <p style={{ fontSize: "x-large" }}>Assigned To</p>
             {assignments.map(([uniq, part], idx) => (
               <h3 key={idx} style={{ marginTop: "1em", marginLeft: "2em" }}>
                 <span>{uniq}</span>
@@ -146,9 +150,8 @@ export function PrintedLabel(props: PrintedLabelProps) {
           </>
         )}
       </div>
-      <div style={{ marginTop: "4em", display: "flex", justifyContent: "space-around" }}>
-        {props.operator ? <p>{props.operator}</p> : undefined}
-        <p>{new Date().toString()}</p>
+      <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
+        {props.operator ? <p style={{ fontSize: "x-large" }}>{props.operator}</p> : undefined}
       </div>
     </div>
   );

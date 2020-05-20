@@ -135,7 +135,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const classes = useTableStyles();
 
   return (
-    <Table style={{ margin: "1em 5em 0 5em" }} size="small">
+    <Table size="small">
       <TableHead>
         <TableRow>
           <TableCell>Job</TableCell>
@@ -306,6 +306,8 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
   const [showRemove, setShowRemove] = React.useState(false);
   const [removeCnt, setRemoveCnt] = React.useState<number>(NaN);
+  const [lastOperator, setLastOperator] = React.useState<string | undefined>(undefined);
+  const jobs = useSelector((s) => s.Current.current_status.jobs);
   const printRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -316,6 +318,13 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
       .then((events) => {
         if (isSubscribed) {
           setEvents(events);
+          setLastOperator(
+            LazySeq.ofIterable(events)
+              .filter((e) => e.type === api.LogType.AddToQueue && e.details?.["operator"] !== undefined)
+              .last()
+              .map((e) => e.details?.["operator"] ?? undefined)
+              .getOrUndefined()
+          );
         }
       })
       .finally(() => setLoading(false));
@@ -323,6 +332,17 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
       isSubscribed = false;
     };
   }, [props.material]);
+
+  const rawMatName = React.useMemo(() => {
+    if (!props.material || props.material.length === 0) return undefined;
+    const uniq = props.material[0].jobUnique;
+    if (!uniq || uniq === "" || !jobs[uniq]) return undefined;
+    return LazySeq.ofIterable(jobs[uniq].procsAndPaths[0].paths)
+      .filter((p) => p.casting !== undefined && p.casting !== "")
+      .head()
+      .map((p) => p.casting)
+      .getOrUndefined();
+  }, [props.material, jobs]);
 
   function close() {
     props.closeDialog();
@@ -391,7 +411,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
               />
               <div style={{ display: "none" }}>
                 <div ref={printRef}>
-                  <PrintedLabel material={props.material || []} />
+                  <PrintedLabel materialName={rawMatName} material={props.material || []} operator={lastOperator} />
                 </div>
               </div>
             </>
@@ -573,11 +593,13 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 )
               : undefined}
             {region.rawMaterialQueue ? (
-              <RawMaterialJobTable
-                queue={region.label}
-                addCastings={() => setAddCastingQueue(region.label)}
-                editNote={setChangeNoteForJob}
-              />
+              <div style={{ margin: "1em 5em 0 5em", width: "100%" }}>
+                <RawMaterialJobTable
+                  queue={region.label}
+                  addCastings={() => setAddCastingQueue(region.label)}
+                  editNote={setChangeNoteForJob}
+                />
+              </div>
             ) : undefined}
           </SortableWhiteboardRegion>
         </div>
