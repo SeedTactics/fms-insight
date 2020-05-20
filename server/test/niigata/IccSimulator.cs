@@ -43,6 +43,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private readonly TimeSpan RotarySwapTime = TimeSpan.FromSeconds(10);
     private readonly TimeSpan CartTravelTime = TimeSpan.FromMinutes(1);
     private readonly TimeSpan LoadTime = TimeSpan.FromMinutes(5);
+    private readonly TimeSpan ReclampTime = TimeSpan.FromMinutes(4);
 
     private NiigataStatus _status;
 
@@ -167,7 +168,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       foreach (var pal in _status.Pallets)
       {
         if (pal.Master.Routes.Count == 0) continue;
-        if (pal.Master.Skip) continue;
         bool beforeStep = pal.Tracking.BeforeCurrentStep;
 
         // switch on current step
@@ -189,7 +189,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               });
             }
             // if in the buffer, add transition to put on cart
-            else if (beforeStep && !pal.Master.NoWork && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            else if (beforeStep && !pal.Master.NoWork && !pal.Master.Skip && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
               var lul = openLoads.FirstOrDefault(load.LoadStations.Contains);
               if (!cartInUse && lul > 0)
@@ -206,7 +206,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               }
             }
             // if in the buffer with no work, do nothing
-            else if (beforeStep && pal.Master.NoWork && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            else if (beforeStep && (pal.Master.NoWork || pal.Master.Skip) && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
               // do nothing
             }
@@ -255,7 +255,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               var nextStep = (MachiningStep)pal.Master.Routes[pal.Tracking.CurrentStepNum - 1 + 1];
               var mach = openMach.FirstOrDefault(nextStep.Machines.Contains);
-              if (mach > 0)
+              if (mach > 0 && !pal.Master.Skip)
               {
                 transitions.Add(new NextTransition()
                 {
@@ -297,7 +297,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
               var mc = openMach.FirstOrDefault(mach.Machines.Contains);
-              if (mc > 0)
+              if (mc > 0 && !pal.Master.Skip)
               {
                 transitions.Add(new NextTransition()
                 {
@@ -473,7 +473,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 toLoad = openLoads.FirstOrDefault(((UnloadStep)next).UnloadStations.Contains);
               }
-              if (toLoad > 0)
+              if (toLoad > 0 && !pal.Master.Skip)
               {
                 transitions.Add(new NextTransition()
                 {
@@ -484,6 +484,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     pal.CurStation = NiigataStationNum.LoadStation(toLoad);
                     pal.Tracking.CurrentStepNum += 1;
                     pal.Tracking.CurrentControlNum += 1;
+                    _status.LoadStations[toLoad].PalletExists = true;
                   }
                 });
               }
@@ -506,6 +507,99 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             else
             {
               throw new Exception("Invalid MachiningStep state");
+            }
+            break;
+
+          // ---------------------------------------- Reclamp Step ---------------------------------
+          case ReclampStep reclamp:
+            // if currently at load, add transition to finish reclamp step
+            if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
+            {
+              transitions.Add(new NextTransition()
+              {
+                Time = _lastPalTransition[pal.Master.PalletNum].Add(ReclampTime),
+                UpdateStatus = () =>
+                {
+                  _lastPalTransition[pal.Master.PalletNum] += ReclampTime;
+                  pal.Tracking.CurrentControlNum += 1;
+                }
+              });
+
+            }
+            // if in buffer, add transition to put on cart
+            else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+            {
+              var lul = openLoads.FirstOrDefault(reclamp.Reclamp.Contains);
+              if (!cartInUse && !pal.Master.Skip && !pal.Master.NoWork && lul > 0)
+              {
+                transitions.Add(new NextTransition()
+                {
+                  Time = _status.TimeOfStatusUTC,
+                  UpdateStatus = () =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
+                    pal.CurStation = NiigataStationNum.Cart();
+                  }
+                });
+              }
+            }
+            // if on cart, add transition to dropoff
+            else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
+            {
+              var lul = openLoads.FirstOrDefault(reclamp.Reclamp.Contains);
+              if (lul > 0)
+              {
+                transitions.Add(new NextTransition()
+                {
+                  Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
+                  UpdateStatus = () =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
+                    pal.CurStation = NiigataStationNum.LoadStation(lul);
+                    _status.LoadStations[lul].PalletExists = true;
+                  }
+                });
+              }
+              else
+              {
+                throw new Exception("Before-Reclamp pallet put on cart without open load");
+              }
+            }
+            // after reclamp, move to cart
+            else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
+            {
+              if (!cartInUse)
+              {
+                transitions.Add(new NextTransition()
+                {
+                  Time = _status.TimeOfStatusUTC,
+                  UpdateStatus = () =>
+                  {
+                    _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
+                    _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
+                    pal.CurStation = NiigataStationNum.Cart();
+                  }
+                });
+              }
+            }
+            // if on cart, move to buffer
+            else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
+            {
+              transitions.Add(new NextTransition()
+              {
+                Time = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime),
+                UpdateStatus = () =>
+                {
+                  _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
+                  pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
+                  pal.Tracking.CurrentControlNum += 1;
+                  pal.Tracking.CurrentStepNum += 1;
+                }
+              });
+            }
+            else
+            {
+              throw new Exception("Invalid Reclamp state");
             }
             break;
 
@@ -538,7 +632,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
               var lul = openLoads.FirstOrDefault(unload.UnloadStations.Contains);
-              if (!cartInUse && lul > 0)
+              if (!cartInUse && !pal.Master.Skip && lul > 0)
               {
                 transitions.Add(new NextTransition()
                 {
@@ -653,6 +747,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               return before + "UL[" + string.Join(',', load.UnloadStations) + "]" + after;
             case MachiningStep mach:
               return before + "MC[" + string.Join(',', mach.Machines) + "][" + string.Join(',', mach.ProgramNumsToRun) + "]" + after;
+            case ReclampStep reclamp:
+              return before + "RC[" + string.Join(',', reclamp.Reclamp) + "]" + after;
             default:
               return before + "ZZ" + after;
           }

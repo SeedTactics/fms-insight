@@ -46,7 +46,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private FMSSettings _settings;
     private JobLogDB _logDB;
     private JobDB _jobDB;
-    private AssignNewRoutesOnPallets _assign;
+    private IAssignPallets _assign;
     private CreateCellState _createLog;
     private IccSimulator _sim;
     private SyncPallets _sync;
@@ -77,8 +77,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
-      _assign = new AssignNewRoutesOnPallets(record, null);
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, null, machConn);
+      var statNames = new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      };
+
+      _assign = new MultiPalletAssign(new IAssignPallets[] {
+        new AssignNewRoutesOnPallets(record, statNames),
+        new SizedQueues(new Dictionary<string, QueueSize>() {
+          {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
+        })
+      });
+      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, statNames, machConn);
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);
       _sync = new SyncPallets(_jobDB, _logDB, _sim, _assign, _createLog);
@@ -221,7 +232,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     private void CheckSingleMaterial(IEnumerable<LogEntry> logs,
-        long matId, string uniq, string part, int numProc, int[][] pals, string queue = null
+        long matId, string uniq, string part, int numProc, int[][] pals, string queue = null, bool[] reclamp = null
     )
     {
       logs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
@@ -274,6 +285,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           e.StartOfCycle.Should().BeFalse();
         });
 
+        if (reclamp != null && reclamp[proc - 1])
+        {
+          expected.Add(e =>
+          {
+            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.Should().Be(LogType.LoadUnloadCycle);
+            e.Program.Should().Be("TestReclamp");
+            e.Result.Should().Be("TestReclamp");
+            e.StartOfCycle.Should().BeTrue();
+          });
+          expected.Add(e =>
+          {
+            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.Should().Be(LogType.LoadUnloadCycle);
+            e.Program.Should().Be("TestReclamp");
+            e.Result.Should().Be("TestReclamp");
+            e.StartOfCycle.Should().BeFalse();
+          });
+        }
+
         if (proc < numProc && queue != null)
         {
           expected.Add(e =>
@@ -296,6 +329,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       logs.Should().SatisfyRespectively(expected);
     }
 
+    private void CheckMaxQueueSize(IEnumerable<LogEntry> logs, string queue, int expectedMax)
+    {
+      int cnt = 0;
+      int max = 0;
+
+      foreach (var e in logs)
+      {
+        if (e.LogType == LogType.AddToQueue && e.LocationName == queue)
+        {
+          cnt += 1;
+          max = Math.Max(cnt, max);
+        }
+        else if (e.LogType == LogType.RemoveFromQueue && e.LocationName == queue)
+        {
+          cnt -= 1;
+        }
+      }
+
+      cnt.Should().Be(0);
+      max.Should().Be(expectedMax);
+    }
+
     private void SetPath(
       JobPlan j,
       int proc,
@@ -313,7 +368,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int unloadMins,
       int partsPerPal = 1,
       string outQueue = null,
-      string inQueue = null
+      string inQueue = null,
+      int[] reclamp = null,
+      int? reclampMins = null
     )
     {
       j.SetPathGroup(proc, path, group);
@@ -337,6 +394,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         s.Stations.Add(m);
       }
       j.AddMachiningStop(proc, path, s);
+
+      if (reclamp != null && reclampMins.HasValue)
+      {
+        s = new JobMachiningStop("TestReclamp");
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(reclampMins.Value);
+        foreach (var r in reclamp)
+        {
+          s.Stations.Add(r);
+        }
+        j.AddMachiningStop(proc, path, s);
+      }
 
       foreach (var lul in unloads)
       {
@@ -602,6 +670,127 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
 
 
+    }
+
+    [Fact]
+    public void SizedQueue()
+    {
+      var j = new JobPlan("uniq1", 2);
+      j.PartName = "part1";
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
+
+      // process 1 on 4 pallets with short times
+      SetPath(j,
+        proc: 1,
+        path: 1,
+        group: 0,
+        pals: new[] { 1, 2, 3, 4 },
+        fixture: "fix1",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 2,
+        machines: new[] { 1, 2, 3, 4, 5, 6 },
+        machMins: 5,
+        program: "1111",
+        unloads: new[] { 1 },
+        unloadMins: 3,
+        outQueue: "sizedQ"
+      );
+
+      //process 2 on only 2 pallets with longer times
+      SetPath(j,
+        proc: 2,
+        path: 1,
+        group: 0,
+        pals: new[] { 5, 6 },
+        fixture: "fix2",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 3,
+        machines: new[] { 1, 2, 3, 4, 5, 6 },
+        machMins: 20,
+        program: "2222",
+        unloads: new[] { 1 },
+        unloadMins: 4,
+        inQueue: "sizedQ"
+      );
+
+
+      AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
+
+      var logs = Run();
+      var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
+
+      byMat.Count.Should().Be(8);
+      foreach (var m in byMat)
+      {
+        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 2, pals: new[] { new[] { 1, 2, 3, 4 }, new[] { 5, 6 } }, queue: "sizedQ");
+      }
+
+      CheckMaxQueueSize(logs, "sizedQ", 1);
+    }
+
+    [Fact]
+    public void SizedQueueWithReclamp()
+    {
+      var j = new JobPlan("uniq1", 2);
+      j.PartName = "part1";
+      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 4);
+
+      // process 1 on 4 pallets with short times
+      SetPath(j,
+        proc: 1,
+        path: 1,
+        group: 0,
+        pals: new[] { 1, 2, 3, 4 },
+        fixture: "fix1",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 2,
+        machines: new[] { 1, 2, 3, 4, 5, 6 },
+        machMins: 5,
+        program: "1111",
+        reclamp: new[] { 2 },
+        reclampMins: 3,
+        unloads: new[] { 1 },
+        unloadMins: 3,
+        outQueue: "sizedQ"
+      );
+
+      //process 2 on only 2 pallets with longer times
+      SetPath(j,
+        proc: 2,
+        path: 1,
+        group: 0,
+        pals: new[] { 5, 6 },
+        fixture: "fix2",
+        face: 1,
+        loads: new[] { 1 },
+        loadMins: 3,
+        machines: new[] { 1, 2, 3, 4, 5, 6 },
+        machMins: 20,
+        program: "2222",
+        unloads: new[] { 1 },
+        unloadMins: 4,
+        inQueue: "sizedQ"
+      );
+
+
+      AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
+
+      var logs = Run();
+      var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
+
+      byMat.Count.Should().Be(4);
+      foreach (var m in byMat)
+      {
+        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 2,
+          pals: new[] { new[] { 1, 2, 3, 4 }, new[] { 5, 6 } },
+          queue: "sizedQ",
+          reclamp: new[] { true, false });
+      }
+
+      CheckMaxQueueSize(logs, "sizedQ", 1);
     }
 
   }
