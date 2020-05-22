@@ -318,6 +318,20 @@ namespace MachineWatchTest
       logs.Add(unloadEndActualCycle.First());
       logsForMat2.Add(unloadEndActualCycle.First());
 
+      var newRawLog = _jobLog.RawAddLogEntries(new[] {
+        new JobLogDB.NewEventLogEntry() {
+          Material = Enumerable.Empty<JobLogDB.EventLogMaterial>(),
+          LogType = LogType.GeneralMessage,
+          EndTimeUTC = start.AddHours(6.8),
+          LocationName = "CustomMsg",
+          LocationNum = 1234,
+          Pallet = "",
+          Program = "",
+          Result = "My Message"
+        }
+      });
+      logs.AddRange(newRawLog);
+
 
       // ----- check loading of logs -----
 
@@ -337,7 +351,7 @@ namespace MachineWatchTest
       otherLogs = _jobLog.GetLog(unloadStartActualCycle.Counter);
       CheckLog(logs, otherLogs, start.AddHours(6.5));
 
-      otherLogs = _jobLog.GetLog(unloadEndActualCycle.First().Counter);
+      otherLogs = _jobLog.GetLog(newRawLog.First().Counter);
       Assert.Equal(0, otherLogs.Count);
 
       foreach (var c in logs)

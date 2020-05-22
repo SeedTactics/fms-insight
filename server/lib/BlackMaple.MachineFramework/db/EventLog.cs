@@ -2364,6 +2364,11 @@ namespace BlackMaple.MachineFramework
         extraData: extra
       );
     }
+
+    public IEnumerable<MachineWatchInterface.LogEntry> RawAddLogEntries(IEnumerable<NewEventLogEntry> logs, string foreignId = null, string origMessage = null)
+    {
+      return AddEntryInTransaction(trans => logs.Select(e => AddLogEntry(trans, e, foreignId, origMessage)).ToList(), foreignId);
+    }
     #endregion
 
     #region Material IDs
