@@ -146,6 +146,7 @@ namespace MachineWatchTest
     [InlineData("multiface-inital-load")]
     [InlineData("multiface-transfer-faces")]
     [InlineData("multiface-transfer-faces-and-unload")]
+    [InlineData("multiface-transfer-user-jobs")]
     [InlineData("pathgroups-load")]
     public void StatusSnapshot(string scenario)
     {
