@@ -72,3 +72,5 @@ jobs:
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\mazak\bin\Release\*.nupkg
       - name: Publish Makino
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
+      - name: Publish Niigata
+        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
