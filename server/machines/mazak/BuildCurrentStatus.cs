@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -46,9 +46,7 @@ namespace MazakMachineInterface
     public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
-      Dictionary<string, int> uniqueToMaxPath;
-      Dictionary<string, int> uniqueToMaxProcess;
-      CalculateMaxProcAndPath(mazakData, out uniqueToMaxPath, out uniqueToMaxProcess);
+      CalculateMaxProcAndPath(mazakData, out var uniqueToMaxPath, out var uniqueToMaxProcess, out var partNameToNumProc);
 
       var currentLoads = new List<LoadAction>(mazakData.LoadActions);
 
@@ -287,8 +285,7 @@ namespace MazakMachineInterface
           {
             var start = FindLoadStartFromOldCycles(oldCycles);
             var elapsedLoad = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null;
-            AddLoads(log, currentLoads, status.Pallet, palLoc, elapsedLoad, curStatus);
-            AddUnloads(log, currentLoads, status, elapsedLoad, oldCycles, curStatus);
+            AddRemainingLoadsAndUnloads(log, currentLoads, status, palLoc, elapsedLoad, curStatus, oldCycles, partNameToNumProc);
           }
         }
       }
@@ -367,12 +364,16 @@ namespace MazakMachineInterface
 
     private static void CalculateMaxProcAndPath(MazakSchedulesPartsPallets mazakData,
                                                out Dictionary<string, int> uniqueToMaxProc1Path,
-                                               out Dictionary<string, int> uniqueToMaxProcess)
+                                               out Dictionary<string, int> uniqueToMaxProcess,
+                                               out Dictionary<string, int> partNameToNumProc)
     {
       uniqueToMaxProc1Path = new Dictionary<string, int>();
       uniqueToMaxProcess = new Dictionary<string, int>();
+      partNameToNumProc = new Dictionary<string, int>();
       foreach (var partRow in mazakData.Parts)
       {
+        partNameToNumProc[MazakPart.ExtractPartNameFromMazakPartName(partRow.PartName)] = partRow.Processes.Count();
+
         if (MazakPart.IsSailPart(partRow.PartName) && !string.IsNullOrEmpty(partRow.Comment))
         {
           string jobUnique = "";
@@ -599,11 +600,119 @@ namespace MazakMachineInterface
       return null;
     }
 
-    private static void AddLoads(JobLogDB log, IEnumerable<LoadAction> currentLoads, string pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus)
+    private static void AddRemainingLoadsAndUnloads(JobLogDB log, List<LoadAction> currentActions, PalletStatus pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
     {
       var queuedMats = new Dictionary<(string uniq, int proc, int path), List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
-      foreach (var operation in currentLoads)
+
+      // loads from raw material or a queue have not yet been processed.
+      // for unloads, occasionally a palsubstatus row doesn't exist so the unload must be processed here.
+      // also, if the unload is from a user-entered schedule (not one of our jobs), it also will not yet have been processed.
+
+      // first do the unloads
+      foreach (var unload in currentActions.ToList())
+      {
+        if (unload.LoadEvent) continue;
+        if (unload.LoadStation != pallet.CurrentPalletLocation.Num) continue;
+
+        var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, unload.Unique, unload.Process));
+        curStatus.Jobs.TryGetValue(unload.Unique, out InProcessJob job);
+
+        InProcessMaterialAction action = null;
+        if (job == null)
+        {
+          // if user-entered schedule, check for loading of next process
+          foreach (var loadAct in currentActions)
+          {
+            if (loadAct.LoadEvent
+                && loadAct.LoadStation == unload.LoadStation
+                && loadAct.Qty == unload.Qty
+                && loadAct.Part == unload.Part
+                && loadAct.Process == unload.Process + 1
+            )
+            {
+              action = new InProcessMaterialAction()
+              {
+                Type = InProcessMaterialAction.ActionType.Loading,
+                LoadOntoPallet = pallet.Pallet,
+                LoadOntoFace = loadAct.Process,
+                ProcessAfterLoad = loadAct.Process,
+                PathAfterLoad = 1,
+                ElapsedLoadUnloadTime = elapsedLoadTime
+              };
+              currentActions.Remove(loadAct);
+              break;
+            }
+          }
+        }
+
+        if (action == null)
+        {
+          // no load found, just unload it
+          action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+            ElapsedLoadUnloadTime = elapsedLoadTime
+          };
+          if (job != null)
+          {
+            if (unload.Process < job.NumProcesses)
+              action.Type = InProcessMaterialAction.ActionType.UnloadToInProcess;
+            var queue = job.GetOutputQueue(process: unload.Process, path: unload.Path);
+            if (!string.IsNullOrEmpty(queue))
+            {
+              action.UnloadIntoQueue = queue;
+            }
+          }
+          else
+          {
+            if (partNameToNumProc.TryGetValue(unload.Part, out var numProc))
+            {
+              if (unload.Process < numProc)
+              {
+                action.Type = InProcessMaterialAction.ActionType.UnloadToInProcess;
+              }
+            }
+          }
+        }
+
+        for (int i = 0; i < unload.Qty; i += 1)
+        {
+          string face = unload.Process.ToString();
+          long matID = -1;
+          if (matIDs.Count > 0)
+            matID = matIDs.Dequeue();
+
+          var matDetails = log.GetMaterialDetails(matID);
+          var inProcMat = new InProcessMaterial()
+          {
+            MaterialID = matID,
+            JobUnique = unload.Unique,
+            PartName = unload.Part,
+            Process = unload.Process,
+            Path = unload.Path,
+            Serial = matDetails?.Serial,
+            WorkorderId = matDetails?.Workorder,
+            SignaledInspections =
+                          log.LookupInspectionDecisions(matID)
+                          .Where(x => x.Inspect)
+                          .Select(x => x.InspType)
+                          .ToList(),
+            Location = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.OnPallet,
+              Pallet = pallet.Pallet,
+              Face = unload.Process
+            },
+            Action = action
+          };
+          curStatus.Material.Add(inProcMat);
+        }
+      }
+
+
+      // now remaining loads
+      foreach (var operation in currentActions)
       {
         if (!operation.LoadEvent || operation.LoadStation != palLoc.Num) continue;
         for (int i = 0; i < operation.Qty; i++)
@@ -667,7 +776,7 @@ namespace MazakMachineInterface
             Action = new InProcessMaterialAction()
             {
               Type = InProcessMaterialAction.ActionType.Loading,
-              LoadOntoPallet = pallet,
+              LoadOntoPallet = pallet.Pallet,
               LoadOntoFace = operation.Process,
               ProcessAfterLoad = operation.Process,
               PathAfterLoad = operation.Path,
@@ -675,70 +784,6 @@ namespace MazakMachineInterface
             }
           };
           curStatus.Material.Add(inProcMat);
-        }
-      }
-    }
-
-    private static void AddUnloads(JobLogDB log, IEnumerable<LoadAction> currentActions, PalletStatus pallet, TimeSpan? elapsedLoadTime, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, CurrentStatus status)
-    {
-      // For some reason, sometimes parts to unload don't show up in PalletSubStatus table.
-      // So create them here if that happens
-
-      foreach (var unload in currentActions)
-      {
-        if (unload.LoadEvent)
-          continue;
-        if (unload.LoadStation != pallet.CurrentPalletLocation.Num)
-          continue;
-
-        var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, unload.Unique, unload.Process));
-        status.Jobs.TryGetValue(unload.Unique, out InProcessJob job);
-
-        for (int i = 0; i < unload.Qty; i += 1)
-        {
-          string face = unload.Process.ToString();
-          long matID = -1;
-          if (matIDs.Count > 0)
-            matID = matIDs.Dequeue();
-
-          var matDetails = log.GetMaterialDetails(matID);
-          var inProcMat = new InProcessMaterial()
-          {
-            MaterialID = matID,
-            JobUnique = unload.Unique,
-            PartName = unload.Part,
-            Process = unload.Process,
-            Path = unload.Path,
-            Serial = matDetails?.Serial,
-            WorkorderId = matDetails?.Workorder,
-            SignaledInspections =
-                          log.LookupInspectionDecisions(matID)
-                          .Where(x => x.Inspect)
-                          .Select(x => x.InspType)
-                          .ToList(),
-            Location = new InProcessMaterialLocation()
-            {
-              Type = InProcessMaterialLocation.LocType.OnPallet,
-              Pallet = pallet.Pallet,
-              Face = unload.Process
-            },
-            Action = new InProcessMaterialAction()
-            {
-              Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
-              ElapsedLoadUnloadTime = elapsedLoadTime
-            }
-          };
-          if (job != null)
-          {
-            if (unload.Process == job.NumProcesses)
-              inProcMat.Action.Type = InProcessMaterialAction.ActionType.UnloadToInProcess;
-            var queue = job.GetOutputQueue(process: unload.Process, path: unload.Path);
-            if (!string.IsNullOrEmpty(queue))
-            {
-              inProcMat.Action.UnloadIntoQueue = queue;
-            }
-          }
-          status.Material.Add(inProcMat);
         }
       }
     }
