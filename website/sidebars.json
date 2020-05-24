@@ -25,6 +25,6 @@
       "client-flexibility-analysis",
       "client-backup-viewer"
     ],
-    "Integrations": ["mazak", "makino"]
+    "Integrations": ["mazak", "makino", "niigata"]
   }
 }
