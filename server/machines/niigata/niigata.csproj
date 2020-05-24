@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>BlackMaple.FMSInsight.Makino</AssemblyName>
-    <PackageId>BlackMaple.FMSInsight.Makino</PackageId>
+    <AssemblyName>BlackMaple.FMSInsight.Niigata</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.Niigata</PackageId>
     <OutputType>Exe</OutputType>
 
-    <Title>SeedTactics FMS Insight Makino Backend</Title>
+    <Title>Niigata backend for FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
     <Copyright>Black Maple Software, LLC</Copyright>
@@ -15,10 +15,8 @@
 
       It provides a server which stores a log of all events and stores a log of planned jobs, a server which translates incomming planned jobs into jobs in the cell controller, a REST-like HTTP API which allows other programs to view the events and create planned jobs, and an HTML client which displays a dashboard, station monitor, and data analysis based on the log of events, planned jobs, and current cell status.
 
-      This package contains the backend to interface with the Makino Cell Controller.
+      This package contains the backend to interface with the Niigata ICC Cell Controller.
     </Description>
-
-    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
 
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
@@ -41,25 +39,9 @@
   </Choose>
 
   <ItemGroup>
-    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.4" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Dapper" Version="2.0.*" />
+    <PackageReference Include="Npgsql" Version="4.1.*" />
+    <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
-
-  <Choose>
-      <When Condition="$(TargetFramework) == 'net461'">
-          <ItemGroup>
-            <Reference Include="System" />
-            <Reference Include="System.Data.DataSetExtensions" />
-            <Reference Include="System.Data" />
-          </ItemGroup>
-      </When>
-
-      <When Condition="$(TargetFramework) == 'netcoreapp2.1'">
-          <ItemGroup>
-            <PackageReference Include="System.Data.SqlClient" Version="4.6.0"/>
-            <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.5.0"/>
-          </ItemGroup>
-      </When>
-  </Choose>
 </Project>

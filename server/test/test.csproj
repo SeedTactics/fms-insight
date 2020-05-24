@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <ProjectReference Include="../machines/mazak/mazak.csproj" />
+    <ProjectReference Include="../machines/niigata/niigata.csproj" />
     <None Update="log.v17.db" CopyToOutputDirectory="Always"/>
     <None Update="job.v16.db" CopyToOutputDirectory="Always"/>
   </ItemGroup>
@@ -22,7 +23,7 @@
     <PackageReference Include="System.Reflection" Version="*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="*" />
 
-    <PackageReference Include="FluentAssertions" Version="5.6.*"/>
+    <PackageReference Include="FluentAssertions" Version="5.9.*"/>
     <PackageReference Include="AutoFixture" Version="4.*"/>
     <PackageReference Include="NSubstitute" Version="4.*"/>
   </ItemGroup>
