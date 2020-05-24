@@ -85,7 +85,9 @@ namespace BlackMaple.FMSInsight.Niigata
         var machineNames = config.GetValue<string>("Machine Names");
         StationNames = new NiigataStationNames()
         {
-          ReclampGroupNames = string.IsNullOrEmpty(reclampNames) ? null : new HashSet<string>(reclampNames.Split(',').Select(s => s.Trim())),
+          ReclampGroupNames = new HashSet<string>(
+            string.IsNullOrEmpty(reclampNames) ? Enumerable.Empty<string>() : reclampNames.Split(',').Select(s => s.Trim())
+          ),
           IccMachineToJobMachNames = string.IsNullOrEmpty(machineNames)
             ? new Dictionary<int, (string group, int num)>()
             : machineNames.Split(',').Select((machineName, idx) =>
@@ -106,7 +108,9 @@ namespace BlackMaple.FMSInsight.Niigata
         Log.Debug("Using station names {@names}", StationNames);
 
         var machineIps = config.GetValue<string>("Machine IP Addresses");
-        MachineConnection = new CncMachineConnection(machineIps.Split(",").Select(s => s.Trim()));
+        MachineConnection = new CncMachineConnection(
+          string.IsNullOrEmpty(machineIps) ? Enumerable.Empty<string>() : machineIps.Split(",").Select(s => s.Trim())
+        );
 
         var connStr = config.GetValue<string>("Connection String");
 
@@ -121,7 +125,10 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          assign = new AssignNewRoutesOnPallets(recordFaces, StationNames);
+          assign = new MultiPalletAssign(new IAssignPallets[] {
+            new AssignNewRoutesOnPallets(recordFaces, StationNames),
+            new SizedQueues(cfg.Queues)
+          });
         }
         _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
         _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync, StationNames);

@@ -157,7 +157,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             _proposalRouteChanged.Set();
           }
-          else if (args.Channel == "change_request_pallette_route" && args.Payload == "UPDATE")
+          else if (args.Channel == "change_request_palette_route" && args.Payload == "UPDATE")
           {
             _proposalPalletChanged.Set();
           }
@@ -182,7 +182,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           cmd.CommandText = "LISTEN proposal_pallet_route";
           cmd.ExecuteNonQuery();
-          cmd.CommandText = "LISTEN change_request_pallete_route";
+          cmd.CommandText = "LISTEN change_request_palette_route";
           cmd.ExecuteNonQuery();
           cmd.CommandText = "LISTEN register_program";
           cmd.ExecuteNonQuery();
