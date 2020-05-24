@@ -59,10 +59,11 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (_queueSizes == null) return null;
 
-      var sizedQueues = _queueSizes
+      var sizedQueues = new HashSet<string>(
+        _queueSizes
         .Where(q => q.Value.MaxSizeBeforeStopUnloading.HasValue && q.Value.MaxSizeBeforeStopUnloading.Value > 0)
         .Select(q => q.Key)
-        .ToHashSet();
+      );
 
       var palletsToCheckForHold =
         cellState.Pallets
@@ -228,10 +229,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private bool AvailablePalletForPickup(CellState cellState, IEnumerable<InProcessMaterialAndJob> mats, string queue)
     {
-      var availPallets = cellState.Pallets
+      var availPallets = new HashSet<string>(
+        cellState.Pallets
         .Where(pal => pal.Status.Master.NoWork)
         .Select(pal => pal.Status.Master.PalletNum.ToString())
-        .ToHashSet();
+      );
 
       return mats.All(mat =>
       {
@@ -246,7 +248,7 @@ namespace BlackMaple.FMSInsight.Niigata
           if (
               mat.Job.GetPathGroup(nextProc, path) == group
            && mat.Job.GetInputQueue(nextProc, path) == queue
-           && mat.Job.PlannedPallets(nextProc, path).Any(availPallets.Contains)
+           && mat.Job.PlannedPallets(nextProc, path).Any(p => availPallets.Contains(p))
           )
           {
             return true;

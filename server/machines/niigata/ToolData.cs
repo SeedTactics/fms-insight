@@ -125,10 +125,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       public byte ReadByte() => _reader.ReadByte();
-      public short ReadInt16() => BitConverter.ToInt16(ReadAndConvert(sizeof(short)));
-      public ushort ReadUInt16() => BitConverter.ToUInt16(ReadAndConvert(sizeof(ushort)));
-      public int ReadInt32() => BitConverter.ToUInt16(ReadAndConvert(sizeof(int)));
-      public uint ReadUInt32() => BitConverter.ToUInt16(ReadAndConvert(sizeof(uint)));
+      public short ReadInt16() => BitConverter.ToInt16(ReadAndConvert(sizeof(short)), 0);
+      public ushort ReadUInt16() => BitConverter.ToUInt16(ReadAndConvert(sizeof(ushort)), 0);
+      public int ReadInt32() => BitConverter.ToUInt16(ReadAndConvert(sizeof(int)), 0);
+      public uint ReadUInt32() => BitConverter.ToUInt16(ReadAndConvert(sizeof(uint)), 0);
     }
 
   }

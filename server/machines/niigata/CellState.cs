@@ -707,7 +707,7 @@ namespace BlackMaple.FMSInsight.Niigata
           lulNum: loadBegin.LocationNum,
           timeUTC: nowUtc,
           elapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-          active: job.GetExpectedUnloadTime(proc, path) * face.Count(),
+          active: TimeSpan.FromTicks(job.GetExpectedUnloadTime(proc, path).Ticks * face.Count()),
           unloadIntoQueues: queues
         );
       }
@@ -743,7 +743,7 @@ namespace BlackMaple.FMSInsight.Niigata
             lulNum: loadBegin.LocationNum,
             timeUTC: nowUtc.AddSeconds(1),
             elapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-            active: job.GetExpectedLoadTime(proc, path) * face.Count()
+            active: TimeSpan.FromTicks(job.GetExpectedLoadTime(proc, path).Ticks * face.Count())
           ));
         }
 

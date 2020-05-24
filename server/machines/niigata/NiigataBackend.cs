@@ -109,7 +109,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         var machineIps = config.GetValue<string>("Machine IP Addresses");
         MachineConnection = new CncMachineConnection(
-          string.IsNullOrEmpty(machineIps) ? Enumerable.Empty<string>() : machineIps.Split(",").Select(s => s.Trim())
+          string.IsNullOrEmpty(machineIps) ? Enumerable.Empty<string>() : machineIps.Split(',').Select(s => s.Trim())
         );
 
         var connStr = config.GetValue<string>("Connection String");
