@@ -2,11 +2,11 @@ name: CI
 
 on:
   push:
-    branches:
-      - "**"
     tags-ignore:
       - "v*"
       - "insightapi-*"
+    branches-ignore:
+      - master
 
 jobs:
   server:

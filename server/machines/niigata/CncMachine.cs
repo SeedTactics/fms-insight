@@ -135,13 +135,17 @@ namespace BlackMaple.FMSInsight.Niigata
     private static System.Net.IPEndPoint CreateIPEndPoint(string endPoint)
     {
       string[] ep = endPoint.Split(':');
-      if (ep.Length < 2) throw new FormatException("Printer IPAddressAndPort requires port");
       System.Net.IPAddress ip;
+      int port;
       if (ep.Length > 2)
       {
         if (!System.Net.IPAddress.TryParse(string.Join(":", ep, 0, ep.Length - 1), out ip))
         {
           throw new FormatException("Invalid ip-adress");
+        }
+        if (!int.TryParse(ep[ep.Length - 1], out port))
+        {
+          throw new FormatException("Invalid port");
         }
       }
       else
@@ -150,10 +154,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           throw new FormatException("Invalid ip-adress");
         }
-      }
-      if (!int.TryParse(ep[ep.Length - 1], out int port))
-      {
-        throw new FormatException("Invalid port");
+        port = 8193;
       }
       return new System.Net.IPEndPoint(ip, port);
     }
