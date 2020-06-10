@@ -1204,7 +1204,7 @@ namespace MachineWatchTest
       read.LoadActions.Add(action);
 
       var trans = queues.CalculateScheduleChanges(read.ToData());
-      trans.Should().BeNull();
+      trans.Schedules.Should().BeEmpty();
 
       read.LoadActions.Clear();
 
@@ -1243,7 +1243,7 @@ namespace MachineWatchTest
       _logDB.AddPendingLoad("pal1", "pppp:10:1,unused", load: 5, elapsed: TimeSpan.FromMinutes(2), active: TimeSpan.FromMinutes(3), foreignID: null);
 
       var trans = queues.CalculateScheduleChanges(read.ToData());
-      trans.Should().BeNull();
+      trans.Schedules.Should().BeEmpty();
 
       _logDB.CompletePalletCycle("pal1", DateTime.UtcNow, "",
         new Dictionary<string, IEnumerable<JobLogDB.EventLogMaterial>>() {
@@ -1266,14 +1266,14 @@ namespace MachineWatchTest
     [InlineData("mycasting")]
     public void AllocateToMultipleSchedulesByPriority(string casting)
     {
-      var queues = new MazakQueues(_logDB, _jobDB, null, waitForAllCastings: false);
+      var queues = new MazakQueues(_logDB, _jobDB, null, waitForAllCastings: true);
       var read = new TestMazakData();
       var schRow1 = AddSchedule(read, schId: 10, unique: "uuu1", part: "pppp", numProc: 1, pri: 10, plan: 15, complete: 0);
       AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 0);
 
       //sch2 has lower priority so should be allocated to first
       var schRow2 = AddSchedule(read, schId: 11, unique: "uuu2", part: "pppp", numProc: 1, pri: 8, plan: 50, complete: 40);
-      AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 5);
+      AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 9);
 
       var j1 = new JobPlan("uuu1", 1);
       j1.PartName = "pppp";
