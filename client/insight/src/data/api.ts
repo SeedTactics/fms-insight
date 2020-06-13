@@ -1633,6 +1633,7 @@ export class FMSInfo implements IFMSInfo {
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
+    allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -1662,6 +1663,7 @@ export class FMSInfo implements IFMSInfo {
             this.quarantineQueue = data["QuarantineQueue"];
             this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowAddRawMaterialForNonRunningJobs = data["AllowAddRawMaterialForNonRunningJobs"];
+            this.allowEditJobPlanQuantityFromQueuesPage = data["AllowEditJobPlanQuantityFromQueuesPage"];
         }
     }
 
@@ -1691,6 +1693,7 @@ export class FMSInfo implements IFMSInfo {
         data["QuarantineQueue"] = this.quarantineQueue;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowAddRawMaterialForNonRunningJobs"] = this.allowAddRawMaterialForNonRunningJobs;
+        data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         return data; 
     }
 }
@@ -1709,6 +1712,7 @@ export interface IFMSInfo {
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
+    allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 }
 
 export class HistoricData implements IHistoricData {

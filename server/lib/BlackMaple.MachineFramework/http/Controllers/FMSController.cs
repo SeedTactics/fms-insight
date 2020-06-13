@@ -57,6 +57,9 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public string QuarantineQueue { get; set; }
     [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     [DataMember] public bool? AllowAddRawMaterialForNonRunningJobs { get; set; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string AllowEditJobPlanQuantityFromQueuesPage { get; set; }
   }
 
   [ApiController]
@@ -91,7 +94,8 @@ namespace BlackMaple.MachineFramework.Controllers
         UseClientPrinterForLabels = _impl.PrintLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
-        AllowAddRawMaterialForNonRunningJobs = _cfg.AllowAddRawMaterialForNonRunningJobs
+        AllowAddRawMaterialForNonRunningJobs = _cfg.AllowAddRawMaterialForNonRunningJobs,
+        AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage
       };
     }
 

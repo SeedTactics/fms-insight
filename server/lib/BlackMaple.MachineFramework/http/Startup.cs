@@ -100,6 +100,13 @@ namespace BlackMaple.MachineFramework
           {
             options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
           })
+          .ConfigureApplicationPartManager(am =>
+          {
+            if (_fmsImpl.ExtraApplicationParts != null)
+            {
+              foreach (var p in _fmsImpl.ExtraApplicationParts) am.ApplicationParts.Add(p);
+            }
+          })
           .AddApiExplorer()
           .AddFormatterMappings()
           .AddJsonFormatters()

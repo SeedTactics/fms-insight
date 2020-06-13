@@ -63,6 +63,8 @@ namespace BlackMaple.MachineFramework
     public CustomizeInstructionPath InstructionPath { get; set; } = null;
     public bool UsingLabelPrinterForSerials { get; set; } = false;
     public PrintLabelForMaterial PrintLabel { get; set; } = null;
+    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
+    public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
   }
 
 }
