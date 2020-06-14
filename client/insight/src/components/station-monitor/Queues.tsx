@@ -350,7 +350,7 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
     }
     setRunning(true);
     try {
-      await fetch(BackendUrl + props.allowEditJobPlanQuantityFromQueuesPage, {
+      await fetch((BackendUrl ?? "") + props.allowEditJobPlanQuantityFromQueuesPage, {
         method: "PUT",
         headers: new Headers({
           "Content-Type": "application/json",

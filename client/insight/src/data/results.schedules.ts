@@ -92,9 +92,9 @@ export function buildScheduledJobs(
     if (job) {
       const plannedQty = LazySeq.ofIterable(curJob.cyclesOnFirstProcess).sumOn((c) => c);
       const startedQty = LazySeq.ofIterable(curJob.completed?.[0] ?? []).sumOn((c) => c);
-      job.remainingQty += plannedQty - startedQty;
+      job.remainingQty = plannedQty - startedQty;
       if (plannedQty < job.scheduledQty) {
-        job.decrementedQty += job.scheduledQty - plannedQty;
+        job.decrementedQty = job.scheduledQty - plannedQty;
       }
     }
   }
