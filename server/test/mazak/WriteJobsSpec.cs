@@ -323,12 +323,25 @@ namespace MachineWatchTest
     [Fact]
     public void BasicCreate()
     {
+      var completedJob = new JobPlan("uniq1", 1);
+      completedJob.PartName = "part1";
+      completedJob.SetPlannedCyclesOnFirstProcess(1, 15);
+      var inProcJob = new JobPlan("uniq2", 1);
+      inProcJob.PartName = "part2";
+      inProcJob.SetPlannedCyclesOnFirstProcess(1, 15);
+      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { completedJob, inProcJob } }, null);
+
+      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+        new[] { "uniq1", "uniq2" }
+      );
+
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
       _writeJobs.AddJobs(newJobs, null);
+
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
@@ -338,11 +351,32 @@ namespace MachineWatchTest
 
       var start = newJobs.Jobs.First().RouteStartingTimeUTC;
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+
+      // uniq1 was archived
+      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+        new[] { "uniq2", "aaa-schId1234", "bbb-schId1234", "ccc-schId1234" }
+      );
+
+      // without any decrements
+      _jobDB.LoadDecrementsForJob("uniq1").Should().BeEmpty();
     }
 
     [Fact]
     public void MultiPathGroups()
     {
+      // mazak has 15 planned quantity, set job to have 20
+      var completedJob = new JobPlan("uniq1", 1);
+      completedJob.PartName = "part1";
+      completedJob.SetPlannedCyclesOnFirstProcess(1, 20);
+      var inProcJob = new JobPlan("uniq2", 1);
+      inProcJob.PartName = "part2";
+      inProcJob.SetPlannedCyclesOnFirstProcess(1, 20);
+      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { completedJob, inProcJob } }, null);
+
+      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+        new[] { "uniq1", "uniq2" }
+      );
+
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "sample-newjobs", "path-groups.json")),
@@ -356,6 +390,23 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
+
+      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+        new[] { "uniq2", "part1-schId1234", "part2-schId1234", "part3-schId1234" }
+      );
+
+      // should have a decrement of 20 - 15
+      _jobDB.LoadDecrementsForJob("uniq1").Should().BeEquivalentTo(
+        new[] {new DecrementQuantity()
+        {
+          DecrementId = 0,
+          TimeUTC = DateTime.UtcNow,
+          Quantity = 5
+        }},
+        options => options
+          .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 20000)) // 20 secs
+          .WhenTypeIs<DateTime>()
+      );
     }
 
     [Fact]

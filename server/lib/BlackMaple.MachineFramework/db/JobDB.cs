@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -1991,7 +1991,7 @@ namespace BlackMaple.MachineFramework
         var trans = _connection.BeginTransaction();
         try
         {
-          ArchiveJob(trans, UniqueStr);
+          ArchiveJobs(trans, new[] { UniqueStr });
           trans.Commit();
         }
         catch
@@ -2002,14 +2002,40 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void ArchiveJob(IDbTransaction trans, string UniqueStr)
+    public void ArchiveJobs(IEnumerable<string> uniqueStrs, IEnumerable<NewDecrementQuantity> newDecrements = null, DateTime? nowUTC = null)
+    {
+      lock (_lock)
+      {
+        var trans = _connection.BeginTransaction();
+        try
+        {
+          ArchiveJobs(trans, uniqueStrs);
+          if (newDecrements != null)
+          {
+            AddNewDecrement(trans, newDecrements, nowUTC);
+          }
+          trans.Commit();
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      }
+    }
+
+    private void ArchiveJobs(IDbTransaction trans, IEnumerable<string> uniqs)
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
         ((IDbCommand)cmd).Transaction = trans;
         cmd.CommandText = "UPDATE jobs SET Archived = 1 WHERE UniqueStr = $uniq";
-        cmd.ExecuteNonQuery();
+        var param = cmd.Parameters.Add("uniq", SqliteType.Text);
+        foreach (var uniqStr in uniqs)
+        {
+          param.Value = uniqStr;
+          cmd.ExecuteNonQuery();
+        }
       }
     }
 
@@ -2129,50 +2155,55 @@ namespace BlackMaple.MachineFramework
     {
       lock (_lock)
       {
-        var now = nowUTC ?? DateTime.UtcNow;
         var trans = _connection.BeginTransaction();
         try
         {
-          long decrementId = 0;
-          using (var cmd = _connection.CreateCommand())
-          {
-            cmd.Transaction = trans;
-            cmd.CommandText = "SELECT MAX(DecrementId) FROM decrements";
-            var lastDecId = cmd.ExecuteScalar();
-            if (lastDecId != null && lastDecId != DBNull.Value)
-            {
-              decrementId = Convert.ToInt64(lastDecId) + 1;
-            }
-          }
-
-          using (var cmd = _connection.CreateCommand())
-          {
-            cmd.Transaction = trans;
-
-            cmd.CommandText = "INSERT INTO decrements(DecrementId,JobUnique,TimeUTC,Part,Quantity) VALUES ($id,$uniq,$now,$part,$qty)";
-            cmd.Parameters.Add("id", SqliteType.Integer);
-            cmd.Parameters.Add("uniq", SqliteType.Text);
-            cmd.Parameters.Add("now", SqliteType.Integer);
-            cmd.Parameters.Add("part", SqliteType.Text);
-            cmd.Parameters.Add("qty", SqliteType.Integer);
-
-            foreach (var q in counts)
-            {
-              cmd.Parameters[0].Value = decrementId;
-              cmd.Parameters[1].Value = q.JobUnique;
-              cmd.Parameters[2].Value = now.Ticks;
-              cmd.Parameters[3].Value = q.Part;
-              cmd.Parameters[4].Value = q.Quantity;
-              cmd.ExecuteNonQuery();
-            }
-
-            trans.Commit();
-          }
+          AddNewDecrement(trans, counts, nowUTC);
+          trans.Commit();
         }
         catch
         {
           trans.Rollback();
           throw;
+        }
+      }
+
+    }
+
+    private void AddNewDecrement(IDbTransaction trans, IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null)
+    {
+      var now = nowUTC ?? DateTime.UtcNow;
+      long decrementId = 0;
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+        cmd.CommandText = "SELECT MAX(DecrementId) FROM decrements";
+        var lastDecId = cmd.ExecuteScalar();
+        if (lastDecId != null && lastDecId != DBNull.Value)
+        {
+          decrementId = Convert.ToInt64(lastDecId) + 1;
+        }
+      }
+
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText = "INSERT INTO decrements(DecrementId,JobUnique,TimeUTC,Part,Quantity) VALUES ($id,$uniq,$now,$part,$qty)";
+        cmd.Parameters.Add("id", SqliteType.Integer);
+        cmd.Parameters.Add("uniq", SqliteType.Text);
+        cmd.Parameters.Add("now", SqliteType.Integer);
+        cmd.Parameters.Add("part", SqliteType.Text);
+        cmd.Parameters.Add("qty", SqliteType.Integer);
+
+        foreach (var q in counts)
+        {
+          cmd.Parameters[0].Value = decrementId;
+          cmd.Parameters[1].Value = q.JobUnique;
+          cmd.Parameters[2].Value = now.Ticks;
+          cmd.Parameters[3].Value = q.Part;
+          cmd.Parameters[4].Value = q.Quantity;
+          cmd.ExecuteNonQuery();
         }
       }
     }

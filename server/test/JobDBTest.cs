@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -607,6 +607,23 @@ namespace MachineWatchTest
       job2.Archived = true;
       CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts, unfilledWorks);
       CheckJobsDate(job1, job2, null);
+
+      //Archive job1
+      var archiveTime = DateTime.UtcNow;
+      _jobDB.ArchiveJobs(new[] { job1.UniqueStr }, new[] { new JobDB.NewDecrementQuantity() {
+        JobUnique = job1.UniqueStr,
+        Part = job1.PartName,
+        Quantity = 50
+      }}, archiveTime);
+      job1.Archived = true;
+      _jobDB.LoadJob(job1.UniqueStr).Archived.Should().BeTrue();
+      _jobDB.LoadDecrementsForJob(job1.UniqueStr).Should().BeEquivalentTo(new[] {
+        new DecrementQuantity() {
+          DecrementId = 0,
+          TimeUTC = archiveTime,
+          Quantity = 50
+        }
+      });
     }
 
     [Fact]
