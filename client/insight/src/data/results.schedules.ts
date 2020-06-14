@@ -95,7 +95,8 @@ export function buildScheduledJobs(
   }
 
   const sorted = Array.from(result.values()).sort((j1, j2) => {
-    const timeDiff = j1.startingTime.getTime() - j2.startingTime.getTime();
+    // sort starting time high to low, then by part
+    const timeDiff = j2.startingTime.getTime() - j1.startingTime.getTime();
     if (timeDiff == 0) {
       return j1.partName.localeCompare(j2.partName);
     } else {
