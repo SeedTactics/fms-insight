@@ -1414,7 +1414,7 @@ namespace BlackMaple.MachineWatchInterface
     public HistoricJob(JobPlan job) : base(job) { }
     private HistoricJob() { } //for json deserialization
 
-    [DataMember(Name = "Decrements", IsRequired = false)] public IReadOnlyList<DecrementQuantity> Decrements { get; set; }
+    [DataMember(Name = "Decrements", IsRequired = false)] public List<DecrementQuantity> Decrements { get; set; }
   }
 
   [Serializable, DataContract]
