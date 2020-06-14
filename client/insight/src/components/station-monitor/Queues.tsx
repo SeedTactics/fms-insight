@@ -71,6 +71,7 @@ import * as guiState from "../../data/gui-state";
 import * as currentSt from "../../data/current-status";
 import { Store, connect, AppActionBeforeMiddleware, useSelector, DispatchAction, mkAC } from "../../store/store";
 import * as matDetails from "../../data/material-details";
+import * as events from "../../data/events";
 import { MaterialSummary } from "../../data/events.matsummary";
 import {
   ConnectedMaterialDialog,
@@ -254,7 +255,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
 }
 
 interface EditNoteDialogProps {
-  readonly job: Readonly<api.IInProcessJob> | null;
+  readonly job: { readonly unique: string; readonly partName: string; readonly comment?: string | null } | null;
   readonly closeDialog: () => void;
   readonly saveNote: (uniq: string, comment: string) => void;
 }
@@ -314,8 +315,11 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
   );
 });
 
-const ConnectedEditNoteDialog = connect((s) => ({}), {
-  saveNote: currentSt.setJobComment,
+export const ConnectedEditNoteDialog = connect((s) => ({}), {
+  saveNote: (uniq: string, comment: string) => [
+    currentSt.setJobComment(uniq, comment),
+    { type: events.ActionType.SetJobComment, uniq: uniq, comment: comment },
+  ],
 })(EditNoteDialog);
 
 interface EditJobPlanQtyProps {
