@@ -14,7 +14,7 @@ jobs:
       # Setup
       # ----------------------------------------------------------
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
@@ -24,6 +24,10 @@ jobs:
       - name: Calculate Version
         shell: pwsh
         run: |
+          # GitVersion doesn't like detached heads
+          #https://github.com/actions/checkout/issues/6
+          git branch --track master remotes/origin/master
+          git checkout ($Env:GITHUB_REF.Substring(11))
           $ver = (dotnet gitversion server) | ConvertFrom-Json
           Write-Host ("::set-env name=SEMVER::" + $ver.SemVer)
 
