@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { wait, render, cleanup } from "@testing-library/react";
+import { render, cleanup, waitFor } from "@testing-library/react";
 afterEach(cleanup);
 import "@testing-library/jest-dom/extend-expect";
 import { differenceInSeconds, addDays } from "date-fns";
@@ -106,7 +106,7 @@ it("renders the app shell", async () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(loadMockData(offsetSeconds));
 
-  await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
+  await waitFor(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
   expect(result.queryByTestId("mock-component-Dashboard")).not.toBeInTheDocument();
   expect(result.queryByTestId("mock-component-StationMonitor")).not.toBeInTheDocument();
