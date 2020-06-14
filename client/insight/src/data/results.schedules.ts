@@ -42,6 +42,7 @@ const copy = require("copy-to-clipboard");
 export interface ScheduledJobDisplay extends ScheduledJob {
   readonly completedQty: number;
   readonly inProcessQty: number;
+  readonly remainingQty: number;
   readonly darkRow: boolean;
 }
 
@@ -60,7 +61,7 @@ export function buildScheduledJobs(
 
   for (const [uniq, job] of schJobs) {
     if (job.startingTime >= start && job.startingTime <= end) {
-      result.set(uniq, { ...job, completedQty: 0, inProcessQty: 0, darkRow: false });
+      result.set(uniq, { ...job, completedQty: 0, inProcessQty: 0, darkRow: false, remainingQty: 0 });
     }
   }
 
@@ -88,9 +89,13 @@ export function buildScheduledJobs(
 
   for (const [uniq, curJob] of LazySeq.ofObject(currentSt.jobs)) {
     const job = result.get(uniq);
-    const plannedQty = LazySeq.ofIterable(curJob.cyclesOnFirstProcess).sumOn((c) => c);
-    if (job && plannedQty < job.scheduledQty) {
-      job.decrementedQty += job.scheduledQty - plannedQty;
+    if (job) {
+      const plannedQty = LazySeq.ofIterable(curJob.cyclesOnFirstProcess).sumOn((c) => c);
+      const startedQty = LazySeq.ofIterable(curJob.completed?.[0] ?? []).sumOn((c) => c);
+      job.remainingQty += plannedQty - startedQty;
+      if (plannedQty < job.scheduledQty) {
+        job.decrementedQty += job.scheduledQty - plannedQty;
+      }
     }
   }
 

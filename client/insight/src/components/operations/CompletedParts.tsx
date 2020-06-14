@@ -115,6 +115,7 @@ function JobsTable(props: JobsTableProps) {
               <TableCell align="right">Removed</TableCell>
               <TableCell align="right">Completed</TableCell>
               <TableCell align="right">In Process</TableCell>
+              <TableCell align="right">Remaining To Run</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -162,6 +163,7 @@ function JobsTable(props: JobsTableProps) {
                 </TableCell>
                 <TableCell align="right">{job.completedQty}</TableCell>
                 <TableCell align="right">{job.inProcessQty}</TableCell>
+                <TableCell align="right">{job.remainingQty}</TableCell>
               </TableRow>
             ))}
           </TableBody>
