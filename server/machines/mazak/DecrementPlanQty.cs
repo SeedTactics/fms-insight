@@ -205,7 +205,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private int CountCompletedOrMachiningStarted(MazakScheduleRow sch)
+    public static int CountCompletedOrMachiningStarted(MazakScheduleRow sch)
     {
       var cnt = sch.CompleteQuantity;
       foreach (var schProcRow in sch.Processes)
