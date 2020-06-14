@@ -1400,9 +1400,27 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   [Serializable, DataContract]
+  public class DecrementQuantity
+  {
+    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
+    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
+    [DataMember(IsRequired = true)] public int Quantity { get; set; }
+  }
+
+  [Serializable, DataContract]
+  public class HistoricJob : JobPlan
+  {
+    public HistoricJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths) { }
+    public HistoricJob(JobPlan job) : base(job) { }
+    private HistoricJob() { } //for json deserialization
+
+    [DataMember(Name = "Decrements", IsRequired = false)] public List<DecrementQuantity> Decrements { get; set; }
+  }
+
+  [Serializable, DataContract]
   public struct HistoricData
   {
-    [DataMember(IsRequired = true)] public IDictionary<string, JobPlan> Jobs;
+    [DataMember(IsRequired = true)] public IDictionary<string, HistoricJob> Jobs;
     [DataMember(IsRequired = true)] public ICollection<SimulatedStationUtilization> StationUse;
   }
 

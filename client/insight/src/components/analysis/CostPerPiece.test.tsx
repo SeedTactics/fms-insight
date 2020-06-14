@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { render, cleanup, fireEvent, wait, within } from "@testing-library/react";
+import { render, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
 afterEach(cleanup);
 import { Simulate } from "react-dom/test-utils";
 import "@testing-library/jest-dom/extend-expect";
@@ -53,18 +53,18 @@ it("renders the cost/piece page", async () => {
     </store.Provider>
   );
 
-  expect(result.getByTestId("part-cost-table").querySelector("tbody")).toBeEmpty();
+  expect(result.getByTestId("part-cost-table").querySelector("tbody")).toBeEmptyDOMElement();
 
   // now go to July 2018 which has the test store data
   fireEvent.click(result.getByTestId("open-month-select"));
-  await wait(() => expect(result.queryByTestId("select-month-dialog-choose-month")).toBeInTheDocument());
+  await waitFor(() => expect(result.queryByTestId("select-month-dialog-choose-month")).toBeInTheDocument());
   // go to 2018
   let curYear = new Date().getFullYear();
   while (curYear > 2018) {
     fireEvent.click(result.getByTestId("select-month-dialog-previous-year"));
     curYear -= 1;
   }
-  await wait(() => {
+  await waitFor(() => {
     const curYearElem = result.queryByTestId("select-month-dialog-current-year");
     if (curYearElem) {
       expect(curYearElem.innerHTML).toBe("2018");
@@ -73,9 +73,9 @@ it("renders the cost/piece page", async () => {
     }
   });
   fireEvent.click(within(result.getByTestId("select-month-dialog-choose-month")).getByText("Jul"));
-  await wait(() => expect(result.queryByTestId("select-month-dialog-current-year")).not.toBeInTheDocument());
+  await waitFor(() => expect(result.queryByTestId("select-month-dialog-current-year")).not.toBeInTheDocument());
   fireEvent.click(result.getByLabelText("Select Month"));
-  await wait(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
+  await waitFor(() => expect(result.queryByTestId("loading-icon")).not.toBeInTheDocument());
 
   // add cost inputs
   const numOper = result.getByLabelText("Number of Operators") as HTMLInputElement;

@@ -40,6 +40,7 @@ import * as cycles from "./events.cycles";
 import * as matsummary from "./events.matsummary";
 import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
+import * as schJobs from "./events.scheduledjobs";
 import { JobsBackend, LogBackend } from "./backend";
 
 export enum AnalysisPeriod {
@@ -58,6 +59,7 @@ export interface Last30Days {
   readonly inspection: inspection.InspectionState;
 
   readonly mat_summary: matsummary.MatSummaryState;
+  readonly scheduled_jobs: schJobs.ScheduledJobsState;
 }
 
 export interface AnalysisMonth {
@@ -102,6 +104,7 @@ export const initial: State = {
     mat_summary: matsummary.initial,
     sim_use: simuse.initial,
     inspection: inspection.initial,
+    scheduled_jobs: schJobs.initial,
   },
 
   selected_month: emptyAnalysisMonth,
@@ -116,6 +119,7 @@ export enum ActionType {
   LoadSpecificMonthJobHistory = "Events_LoadSpecificMonthJobHistory",
   ReceiveNewLogEntries = "Events_NewLogEntries",
   ReceiveNewJobs = "Events_ReceiveNewJobs",
+  SetJobComment = "Events_SetJobComment",
 }
 
 export type Action =
@@ -150,7 +154,8 @@ export type Action =
       type: ActionType.ReceiveNewJobs;
       now: Date;
       jobs: Readonly<api.IHistoricData>;
-    };
+    }
+  | { type: ActionType.SetJobComment; uniq: string; comment: string };
 
 type ABF = ActionBeforeMiddleware<Action>;
 
@@ -189,7 +194,7 @@ export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>)
 }
 
 export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ABF {
-  const jobs: { [key: string]: api.JobPlan } = {};
+  const jobs: { [key: string]: api.HistoricJob } = {};
   newJobs.jobs.forEach((j) => {
     jobs[j.unique] = j;
   });
@@ -308,6 +313,11 @@ function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last
       { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
       jobs,
       s.sim_use
+    ),
+    scheduled_jobs: schJobs.process_scheduled_jobs(
+      { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
+      jobs,
+      s.scheduled_jobs
     ),
   });
 }
@@ -440,6 +450,12 @@ export function reducer(s: State | undefined, a: Action): State {
 
     case ActionType.SetAnalysisMonth:
       return { ...s, analysis_period_month: a.month };
+
+    case ActionType.SetJobComment:
+      return {
+        ...s,
+        last30: { ...s.last30, scheduled_jobs: schJobs.set_job_comment(s.last30.scheduled_jobs, a.uniq, a.comment) },
+      };
 
     default:
       return s;

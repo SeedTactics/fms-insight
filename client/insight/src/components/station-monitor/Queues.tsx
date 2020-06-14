@@ -69,17 +69,24 @@ import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
 import * as currentSt from "../../data/current-status";
-import { Store, connect, AppActionBeforeMiddleware, useSelector } from "../../store/store";
+import { Store, connect, AppActionBeforeMiddleware, useSelector, DispatchAction, mkAC } from "../../store/store";
 import * as matDetails from "../../data/material-details";
+import * as events from "../../data/events";
 import { MaterialSummary } from "../../data/events.matsummary";
 import {
   ConnectedMaterialDialog,
   ConnectedChooseSerialOrDirectJobDialog,
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
-import { QueueData, selectQueueData, extractJobRawMaterial, loadRawMaterialEvents } from "../../data/queue-material";
+import {
+  QueueData,
+  selectQueueData,
+  extractJobRawMaterial,
+  loadRawMaterialEvents,
+  JobRawMaterialData,
+} from "../../data/queue-material";
 import { LogEntries } from "../LogEntry";
-import { JobsBackend } from "../../data/backend";
+import { JobsBackend, BackendUrl } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import ReactToPrint from "react-to-print";
@@ -89,6 +96,7 @@ interface RawMaterialJobTableProps {
   readonly queue: string;
   readonly addCastings: () => void;
   readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
+  readonly editQty: (job: JobRawMaterialData) => void;
 }
 
 const useTableStyles = makeStyles((theme) =>
@@ -133,6 +141,9 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName) >= 0;
   }, [hasOldCastings, jobs]);
   const classes = useTableStyles();
+  const allowEditQty = useSelector(
+    (s) => (s.ServerSettings.fmsInfo?.allowEditJobPlanQuantityFromQueuesPage ?? null) !== null
+  );
 
   return (
     <Table size="small">
@@ -202,7 +213,16 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
                 </IconButton>
               </Tooltip>
             </TableCell>
-            <TableCell align="right">{j.plannedQty}</TableCell>
+            <TableCell align="right">
+              {j.plannedQty}
+              {allowEditQty ? (
+                <Tooltip title="Edit">
+                  <IconButton size="small" onClick={() => props.editQty(j)}>
+                    <EditIcon />
+                  </IconButton>
+                </Tooltip>
+              ) : undefined}
+            </TableCell>
             <TableCell align="right">{j.startedQty}</TableCell>
             <TableCell align="right">{j.assignedRaw}</TableCell>
             <TableCell align="right">
@@ -235,7 +255,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
 }
 
 interface EditNoteDialogProps {
-  readonly job: Readonly<api.IInProcessJob> | null;
+  readonly job: { readonly unique: string; readonly partName: string; readonly comment?: string | null } | null;
   readonly closeDialog: () => void;
   readonly saveNote: (uniq: string, comment: string) => void;
 }
@@ -258,7 +278,14 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
     <Dialog open={props.job !== null} onClose={close}>
       {props.job !== null ? (
         <>
-          <DialogTitle>Edit Note For {props.job.unique}</DialogTitle>
+          <DialogTitle>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <PartIdenticon part={props.job.partName} size={40} />
+              </div>
+              <div style={{ marginLeft: "1em", flexGrow: 1 }}>Edit Note For {props.job.unique}</div>
+            </div>
+          </DialogTitle>
           <DialogContent>
             <TextField
               variant="outlined"
@@ -288,9 +315,109 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
   );
 });
 
-const ConnectedEditNoteDialog = connect((s) => ({}), {
-  saveNote: currentSt.setJobComment,
+export const ConnectedEditNoteDialog = connect((s) => ({}), {
+  saveNote: (uniq: string, comment: string) => [
+    currentSt.setJobComment(uniq, comment),
+    { type: events.ActionType.SetJobComment, uniq: uniq, comment: comment },
+  ],
 })(EditNoteDialog);
+
+interface EditJobPlanQtyProps {
+  readonly allowEditJobPlanQuantityFromQueuesPage: string | null;
+  readonly job: JobRawMaterialData | null;
+  readonly closeDialog: () => void;
+  readonly setJobQty: DispatchAction<currentSt.ActionType.SetJobPlannedQty>;
+}
+
+const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: EditJobPlanQtyProps) {
+  const [running, setRunning] = React.useState(false);
+  const [newQty, setNewQty] = React.useState<number | null>(null);
+
+  function close() {
+    if (running) return;
+    props.closeDialog();
+    setNewQty(null);
+  }
+
+  async function setQty() {
+    if (
+      props.allowEditJobPlanQuantityFromQueuesPage === null ||
+      props.job === null ||
+      newQty == null ||
+      isNaN(newQty)
+    ) {
+      return;
+    }
+    setRunning(true);
+    try {
+      await fetch(BackendUrl + props.allowEditJobPlanQuantityFromQueuesPage, {
+        method: "PUT",
+        headers: new Headers({
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          Unique: props.job.job.unique,
+          Proc1Path: props.job.proc1Path + 1,
+          Quantity: newQty,
+        }),
+      });
+      props.setJobQty({ uniq: props.job.job.unique, proc1path: props.job.proc1Path + 1, qty: newQty });
+      props.closeDialog();
+      setNewQty(null);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <Dialog open={props.allowEditJobPlanQuantityFromQueuesPage != null && props.job !== null} onClose={close}>
+      {props.job !== null ? (
+        <>
+          <DialogTitle>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <PartIdenticon part={props.job.job.partName} size={40} />
+              </div>
+              <div style={{ marginLeft: "1em", flexGrow: 1 }}>Edit Planned Quantity For {props.job.job.unique}</div>
+            </div>
+          </DialogTitle>
+          <DialogContent>
+            <p>
+              {props.job.plannedQty} currently planned, {props.job.startedQty} started
+            </p>
+            <TextField
+              variant="outlined"
+              fullWidth
+              autoFocus
+              inputProps={{ style: { textAlign: "right" }, min: props.job.startedQty }}
+              type="number"
+              value={newQty === null ? "" : newQty}
+              onChange={(e) => setNewQty(parseInt(e.target.value))}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button color="primary" disabled={running || newQty === null || isNaN(newQty)} onClick={setQty}>
+              {running ? <CircularProgress size={10} /> : undefined}
+              Set Quantity
+            </Button>
+            <Button color="primary" disabled={running} onClick={close}>
+              Cancel
+            </Button>
+          </DialogActions>
+        </>
+      ) : undefined}
+    </Dialog>
+  );
+});
+
+const ConnectedEditJobPlanQtyDialog = connect(
+  (s) => ({
+    allowEditJobPlanQuantityFromQueuesPage: s.ServerSettings.fmsInfo?.allowEditJobPlanQuantityFromQueuesPage ?? null,
+  }),
+  {
+    setJobQty: mkAC(currentSt.ActionType.SetJobPlannedQty),
+  }
+)(EditJobPlanQtyDialog);
 
 interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
@@ -528,6 +655,8 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   const closeAddCastingDialog = React.useCallback(() => setAddCastingQueue(null), []);
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
+  const [editQtyForJob, setEditQtyForJob] = React.useState<JobRawMaterialData | null>(null);
+  const closeEditJobQtyDialog = React.useCallback(() => setEditQtyForJob(null), []);
   const [multiMaterialDialog, setMultiMaterialDialog] = React.useState<ReadonlyArray<
     Readonly<api.IInProcessMaterial>
   > | null>(null);
@@ -599,6 +728,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                   queue={region.label}
                   addCastings={() => setAddCastingQueue(region.label)}
                   editNote={setChangeNoteForJob}
+                  editQty={setEditQtyForJob}
                 />
               </div>
             ) : undefined}
@@ -609,6 +739,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedChooseSerialOrDirectJobDialog />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
+      <ConnectedEditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog
         material={multiMaterialDialog}
         closeDialog={closeMultiMatDialog}

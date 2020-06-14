@@ -38,41 +38,64 @@ import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
 import ImportExport from "@material-ui/icons/ImportExport";
 import ExtensionIcon from "@material-ui/icons/Extension";
+import EditIcon from "@material-ui/icons/Edit";
+import Typography from "@material-ui/core/Typography";
 import Table from "@material-ui/core/Table";
 import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableBody from "@material-ui/core/TableBody";
-import {
-  CompletedPartSeries,
-  buildCompletedPartSeries,
-  copyCompletedPartsToClipboard,
-} from "../../data/results.completed-parts";
 import { connect } from "../../store/store";
 import { createSelector } from "reselect";
 import { Last30Days } from "../../data/events";
 import { addDays, startOfToday } from "date-fns";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
+import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
+import { ICurrentStatus } from "../../data/api";
+import { PartIdenticon } from "../station-monitor/Material";
+import { makeStyles, createStyles } from "@material-ui/core/styles";
+import { ConnectedEditNoteDialog } from "../station-monitor/Queues";
 
-interface CompletedPartsTableProps {
-  readonly series: ReadonlyArray<CompletedPartSeries>;
+interface JobsTableProps {
+  readonly jobs: ReadonlyArray<ScheduledJobDisplay>;
+  readonly showMaterial: boolean;
 }
 
-function CompletedPartsTable(props: CompletedPartsTableProps) {
-  const days = props.series.length > 0 ? props.series[0].days.map((p) => p.day) : [];
+const useTableStyles = makeStyles((theme) =>
+  createStyles({
+    labelContainer: {
+      display: "flex",
+      alignItems: "center",
+    },
+    identicon: {
+      marginRight: "0.2em",
+    },
+    pathDetails: {
+      maxWidth: "20em",
+    },
+    darkRow: {
+      backgroundColor: "#E0E0E0",
+    },
+    highlightedCell: {
+      backgroundColor: "#FF8A65",
+    },
+  })
+);
+
+function JobsTable(props: JobsTableProps) {
+  const classes = useTableStyles();
+  const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
   return (
     <Card raised>
       <CardHeader
         title={
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <ExtensionIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Completed Parts</div>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Scheduled Parts</div>
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyCompletedPartsToClipboard(props.series)}
+                onClick={() => copyScheduledJobsToClipboard(props.jobs, props.showMaterial)}
               >
                 <ImportExport />
               </IconButton>
@@ -84,51 +107,99 @@ function CompletedPartsTable(props: CompletedPartsTableProps) {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Date</TableCell>
               <TableCell>Part</TableCell>
-              {days.map((d, idx) => (
-                <TableCell key={idx}>{d.toLocaleDateString()}</TableCell>
-              ))}
+              {props.showMaterial ? <TableCell>Material</TableCell> : undefined}
+              <TableCell>Note</TableCell>
+              <TableCell align="right">Scheduled</TableCell>
+              <TableCell align="right">Removed</TableCell>
+              <TableCell align="right">Completed</TableCell>
+              <TableCell align="right">In Process</TableCell>
+              <TableCell align="right">Remaining To Run</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {props.series.map((part, partIdx) => (
-              <TableRow key={partIdx}>
-                <TableCell>{part.part}</TableCell>
-                {part.days.map((day, dayIdx) => (
-                  <TableCell key={dayIdx}>{day.actual.toFixed(0) + " / " + day.planned.toFixed(0)}</TableCell>
-                ))}
+            {props.jobs.map((job, jobIdx) => (
+              <TableRow key={jobIdx} className={job.darkRow ? classes.darkRow : undefined}>
+                <TableCell>{job.startingTime.toLocaleString()}</TableCell>
+                <TableCell>
+                  <div className={classes.labelContainer}>
+                    <div className={classes.identicon}>
+                      <PartIdenticon part={job.partName} size={25} />
+                    </div>
+                    <div>
+                      <Typography variant="body2" component="span" display="block">
+                        {job.partName}
+                      </Typography>
+                    </div>
+                  </div>
+                </TableCell>
+                {props.showMaterial ? (
+                  <TableCell>
+                    {job.casting ? (
+                      <div className={classes.labelContainer}>
+                        <div className={classes.identicon}>
+                          <PartIdenticon part={job.casting} size={25} />
+                        </div>
+                        <Typography variant="body2" display="block">
+                          {job.casting}
+                        </Typography>
+                      </div>
+                    ) : undefined}
+                  </TableCell>
+                ) : undefined}
+                <TableCell>
+                  {job.comment}
+
+                  <Tooltip title="Edit">
+                    <IconButton size="small" onClick={() => setCurEditNoteJob(job)}>
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+                <TableCell align="right">{job.scheduledQty}</TableCell>
+                <TableCell align="right" className={job.decrementedQty > 0 ? classes.highlightedCell : undefined}>
+                  {job.decrementedQty}
+                </TableCell>
+                <TableCell align="right">{job.completedQty}</TableCell>
+                <TableCell align="right">{job.inProcessQty}</TableCell>
+                <TableCell align="right">{job.remainingQty}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        <ConnectedEditNoteDialog job={curEditNoteJob} closeDialog={() => setCurEditNoteJob(null)} />
       </CardContent>
     </Card>
   );
 }
 
-const completedPartsSelector = createSelector(
-  (last30: Last30Days, _: Date) => last30.cycles.part_cycles,
-  (last30: Last30Days, _: Date) => last30.sim_use.production,
-  (_: Last30Days, today: Date) => today,
-  (cycles, sim, today): ReadonlyArray<CompletedPartSeries> => {
+const scheduledJobsSelector = createSelector(
+  (last30: Last30Days, _s: Readonly<ICurrentStatus>, _: Date) => last30.cycles.part_cycles,
+  (last30: Last30Days, _s: Readonly<ICurrentStatus>, _: Date) => last30.scheduled_jobs.jobs,
+  (_: Last30Days, st: Readonly<ICurrentStatus>, _d: Date) => st,
+  (_: Last30Days, _s: Readonly<ICurrentStatus>, today: Date) => today,
+  (cycles, jobs, st, today): ReadonlyArray<ScheduledJobDisplay> => {
     const start = addDays(today, -6);
     const end = addDays(today, 1);
-    return buildCompletedPartSeries(start, end, cycles, sim);
+    return buildScheduledJobs(start, end, cycles, jobs, st);
   }
 );
 
-const ConnectedPartsTable = connect((st) => ({
-  series: completedPartsSelector(st.Events.last30, startOfToday()),
-}))(CompletedPartsTable);
+const ConnectedJobsTable = connect((st) => ({
+  jobs: scheduledJobsSelector(st.Events.last30, st.Current.current_status, startOfToday()),
+  showMaterial: st.Events.last30.scheduled_jobs.someJobHasCasting,
+}))(JobsTable);
 
 export function CompletedParts() {
+  React.useEffect(() => {
+    document.title = "Scheduled Jobs - FMS Insight";
+  }, []);
   return (
-    <DocumentTitle title="Completed Parts - FMS Insight">
-      <main style={{ padding: "24px" }}>
-        <div data-testid="completed-parts">
-          <ConnectedPartsTable />
-        </div>
-      </main>
-    </DocumentTitle>
+    <main style={{ padding: "24px" }}>
+      <div data-testid="scheduled-jobs">
+        <ConnectedJobsTable />
+      </div>
+    </main>
   );
 }

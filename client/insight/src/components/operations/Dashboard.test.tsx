@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { render, cleanup, waitForElement } from "@testing-library/react";
+import { render, cleanup, waitFor } from "@testing-library/react";
 afterEach(cleanup);
 import "@testing-library/jest-dom/extend-expect";
 
@@ -56,7 +56,7 @@ it("renders the dashboard", async () => {
     </store.Provider>
   );
 
-  await waitForElement(() => result.container.querySelector("div.rv-xy-plot svg"));
+  await waitFor(() => result.container.querySelector("div.rv-xy-plot svg"));
   expect(result.container.querySelector("div.rv-xy-plot")).toMatchSnapshot("current jobs plot");
   expect(result.getByTestId("stationoee-container")).toMatchSnapshot("station oee");
 });

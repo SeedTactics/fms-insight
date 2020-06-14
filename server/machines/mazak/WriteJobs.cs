@@ -220,6 +220,8 @@ namespace MazakMachineInterface
       }
       Log.Debug("Creating new schedule with UID {uid}", UID);
 
+      ArchiveOldJobs(mazakData);
+
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
         writeDb.Save(transSet, "Update schedules");
@@ -292,7 +294,6 @@ namespace MazakMachineInterface
     {
       foreach (var j in newJ.Jobs)
       {
-        j.Archived = true;
         j.JobCopiedToSystem = false;
       }
       jobDB.AddJobs(newJ, null);
@@ -317,6 +318,64 @@ namespace MazakMachineInterface
       }
     foundGroup:;
 
+    }
+
+    private void ArchiveOldJobs(MazakSchedules schedules)
+    {
+      var current = new HashSet<string>();
+      var completed = new Dictionary<(string uniq, int proc1path), int>();
+      foreach (var sch in schedules.Schedules)
+      {
+        if (!MazakPart.IsSailPart(sch.PartName)) continue;
+        if (string.IsNullOrEmpty(sch.Comment)) continue;
+        MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
+
+        if (sch.PlanQuantity == sch.CompleteQuantity)
+        {
+          completed[(uniq: unique, proc1path: procToPath.PathForProc(1))] = sch.PlanQuantity;
+        }
+        else
+        {
+          current.Add(unique);
+        }
+      }
+
+      var unarchived = jobDB.LoadUnarchivedJobs();
+
+      var toArchive = unarchived.Jobs.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
+
+      var newDecrs = unarchived.Jobs.Select(j =>
+      {
+        int toDecr = 0;
+        for (int path = 1; path <= j.GetNumPaths(process: 1); path += 1)
+        {
+          if (completed.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var compCnt))
+          {
+            if (compCnt < j.GetPlannedCyclesOnFirstProcess(path))
+            {
+              toDecr += j.GetPlannedCyclesOnFirstProcess(path) - compCnt;
+            }
+          }
+        }
+        if (toDecr > 0)
+        {
+          return new JobDB.NewDecrementQuantity()
+          {
+            JobUnique = j.UniqueStr,
+            Part = j.PartName,
+            Quantity = toDecr
+          };
+        }
+        else
+        {
+          return null;
+        }
+      }).Where(n => n != null);
+
+      if (toArchive.Any())
+      {
+        jobDB.ArchiveJobs(toArchive, newDecrs);
+      }
     }
   }
 }

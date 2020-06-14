@@ -60,6 +60,7 @@ export enum ActionType {
   ReceiveNewLogEntry = "Events_NewLogEntry",
   ReorderQueuedMaterial = "CurStatus_ReorderQueuedMaterial",
   SetJobComment = "CurStatus_SetJobComment",
+  SetJobPlannedQty = "CurStatus_SetJobPlannedQty",
 }
 
 export type Action =
@@ -78,7 +79,8 @@ export type Action =
       queue: string;
       newIdx: number;
     }
-  | { type: ActionType.SetJobComment; uniq: string; comment: string; pledge: Pledge<void> };
+  | { type: ActionType.SetJobComment; uniq: string; comment: string; pledge: Pledge<void> }
+  | { type: ActionType.SetJobPlannedQty; uniq: string; proc1path: number; qty: number };
 
 type ABF = ActionBeforeMiddleware<Action>;
 
@@ -283,6 +285,17 @@ export function reducer(s: State, a: Action): State {
         case PledgeStatus.Completed:
           return { ...s, loading: false };
       }
+
+    case ActionType.SetJobPlannedQty: {
+      const oldJob = s.current_status.jobs[a.uniq];
+      if (oldJob) {
+        var newJob = new api.InProcessJob(oldJob);
+        newJob.cyclesOnFirstProcess[a.proc1path - 1] = a.qty;
+        return { ...s, current_status: { ...s.current_status, jobs: { ...s.current_status.jobs, [a.uniq]: newJob } } };
+      } else {
+        return s;
+      }
+    }
 
     default:
       return s;

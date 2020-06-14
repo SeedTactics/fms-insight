@@ -1549,6 +1549,10 @@ Object {
       "type": "InspectionResult",
     },
   ],
+  "scheduled_jobs": Object {
+    "jobs": Map {},
+    "someJobHasCasting": false,
+  },
   "sim_use": Object {
     "castingNames": Array [],
     "production": Array [],
@@ -2489,6 +2493,10 @@ Object {
       "type": "InspectionResult",
     },
   ],
+  "scheduled_jobs": Object {
+    "jobs": Map {},
+    "someJobHasCasting": false,
+  },
   "sim_use": Object {
     "castingNames": Array [],
     "production": Array [],
@@ -3411,6 +3419,10 @@ Object {
       "type": "InspectionResult",
     },
   ],
+  "scheduled_jobs": Object {
+    "jobs": Map {},
+    "someJobHasCasting": false,
+  },
   "sim_use": Object {
     "castingNames": Array [],
     "production": Array [],
@@ -4350,6 +4362,10 @@ Object {
       "type": "InspectionResult",
     },
   ],
+  "scheduled_jobs": Object {
+    "jobs": Map {},
+    "someJobHasCasting": false,
+  },
   "sim_use": Object {
     "castingNames": Array [],
     "production": Array [],

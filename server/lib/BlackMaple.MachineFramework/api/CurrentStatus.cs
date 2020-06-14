@@ -198,14 +198,6 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public decimal? PercentMoveCompleted { get; set; }
   }
 
-  [Serializable, DataContract]
-  public class InProcessJobDecrement
-  {
-    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
-    [DataMember(IsRequired = true)] public int Quantity { get; set; }
-  }
-
   [SerializableAttribute, DataContract]
   public class InProcessJob : JobPlan
   {
@@ -276,12 +268,12 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
-    public IList<InProcessJobDecrement> Decrements
+    public IList<DecrementQuantity> Decrements
     {
       get
       {
         if (_decrements == null)
-          _decrements = new List<InProcessJobDecrement>();
+          _decrements = new List<DecrementQuantity>();
         return _decrements;
       }
     }
@@ -307,7 +299,7 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(Name = "Completed", IsRequired = false)] private int[][] _completed;
 
-    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private List<InProcessJobDecrement> _decrements;
+    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private List<DecrementQuantity> _decrements;
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.

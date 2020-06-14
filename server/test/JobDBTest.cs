@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -607,6 +607,23 @@ namespace MachineWatchTest
       job2.Archived = true;
       CheckJobs(job1, null, null, job2.ScheduleId, theExtraParts, unfilledWorks);
       CheckJobsDate(job1, job2, null);
+
+      //Archive job1
+      var archiveTime = DateTime.UtcNow;
+      _jobDB.ArchiveJobs(new[] { job1.UniqueStr }, new[] { new JobDB.NewDecrementQuantity() {
+        JobUnique = job1.UniqueStr,
+        Part = job1.PartName,
+        Quantity = 50
+      }}, archiveTime);
+      job1.Archived = true;
+      _jobDB.LoadJob(job1.UniqueStr).Archived.Should().BeTrue();
+      _jobDB.LoadDecrementsForJob(job1.UniqueStr).Should().BeEquivalentTo(new[] {
+        new DecrementQuantity() {
+          DecrementId = 0,
+          TimeUTC = archiveTime,
+          Quantity = 50
+        }
+      });
     }
 
     [Fact]
@@ -668,6 +685,23 @@ namespace MachineWatchTest
       _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs
         .Should().BeEmpty();
 
+      var history = _jobDB.LoadJobHistory(dtime, dtime.AddMinutes(10));
+      history.Jobs.Keys.Should().BeEquivalentTo(new[] { "uniq1", "uniq2" });
+      history.Jobs["uniq1"].Decrements.Should().BeEquivalentTo(new[] {
+        new DecrementQuantity() {
+          DecrementId = 0,
+          TimeUTC = time1,
+          Quantity = 53
+        }
+      });
+      history.Jobs["uniq2"].Decrements.Should().BeEquivalentTo(new[] {
+        new DecrementQuantity() {
+          DecrementId = 0,
+          TimeUTC = time1,
+          Quantity = 821
+        }
+      });
+
       //now second decrement
       var time2 = DateTime.UtcNow.AddHours(-1);
       _jobDB.AddNewDecrement(new[] {
@@ -709,10 +743,10 @@ namespace MachineWatchTest
       _jobDB.LoadDecrementQuantitiesAfter(time2.AddMinutes(30)).Should().BeEmpty();
 
       _jobDB.LoadDecrementsForJob("uniq1").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0, TimeUTC = time1, Quantity = 53
         },
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 1, TimeUTC = time2, Quantity = 26
         }
       });
@@ -721,6 +755,33 @@ namespace MachineWatchTest
         .Should().BeEquivalentTo(new[] { "uniq1" });
       _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs
         .Should().BeEmpty();
+
+      history = _jobDB.LoadJobHistory(dtime, dtime.AddMinutes(10));
+      history.Jobs.Keys.Should().BeEquivalentTo(new[] { "uniq1", "uniq2" });
+      history.Jobs["uniq1"].Decrements.Should().BeEquivalentTo(new[] {
+        new DecrementQuantity() {
+          DecrementId = 0,
+          TimeUTC = time1,
+          Quantity = 53
+        },
+        new DecrementQuantity() {
+          DecrementId = 1,
+          TimeUTC = time2,
+          Quantity = 26
+        }
+      });
+      history.Jobs["uniq2"].Decrements.Should().BeEquivalentTo(new[] {
+        new DecrementQuantity() {
+          DecrementId = 0,
+          TimeUTC = time1,
+          Quantity = 821
+        },
+        new DecrementQuantity() {
+          DecrementId = 1,
+          TimeUTC = time2,
+          Quantity = 44
+        }
+      });
     }
 
     [Fact]
@@ -1027,12 +1088,15 @@ namespace MachineWatchTest
       {
         justJob1_3.Jobs.Count.Should().Be(1);
         CheckJobEqual(job1, justJob1_3.Jobs[job1.UniqueStr], true);
+        justJob1_3.Jobs[job1.UniqueStr].Decrements.Should().BeEmpty();
       }
       else
       {
         justJob1_3.Jobs.Count.Should().Be(2);
         CheckJobEqual(job1, justJob1_3.Jobs[job1.UniqueStr], true);
         CheckJobEqual(job3, justJob1_3.Jobs[job3.UniqueStr], true);
+        justJob1_3.Jobs[job1.UniqueStr].Decrements.Should().BeEmpty();
+        justJob1_3.Jobs[job3.UniqueStr].Decrements.Should().BeEmpty();
       }
 
       //overlap the end of job1

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,19 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, addHours, differenceInMinutes, addMinutes, differenceInSeconds } from "date-fns";
+import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
 
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
-import {
-  binCyclesByDayAndPart,
-  buildCompletedPartsTable,
-  buildCompletedPartSeries,
-  buildCompletedPartsHeatmapTable,
-} from "./results.completed-parts";
-import { loadMockData } from "../mock-data/load";
+import { binCyclesByDayAndPart, buildCompletedPartsHeatmapTable } from "./results.completed-parts";
 import { LazySeq } from "./lazyseq";
 
 it("bins actual cycles by day", () => {
@@ -85,38 +79,4 @@ it("bins actual cycles by day", () => {
   byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
-});
-
-it("build completed series", async () => {
-  const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-  const today = new Date(2018, 7, 6);
-  const todayChicago = new Date(Date.UTC(2018, 7, 6, 5, 0, 0)); // America/Chicago time during DST
-  const zoneOffset = differenceInMinutes(todayChicago, today);
-  const offsetSeconds = differenceInSeconds(addDays(today, -28), jan18);
-  const data = loadMockData(offsetSeconds);
-  const evts = await data.events;
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: today,
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts,
-    },
-  });
-
-  const origSeries = buildCompletedPartSeries(
-    addDays(today, -6),
-    today,
-    st.last30.cycles.part_cycles,
-    st.last30.sim_use.production
-  );
-  const adjustedSeries = origSeries.map((s) => ({
-    ...s,
-    days: s.days.map((d) => ({ ...d, day: addMinutes(d.day, zoneOffset) })),
-  }));
-  expect(adjustedSeries).toMatchSnapshot("completed part series");
-
-  const table = document.createElement("div");
-  table.innerHTML = buildCompletedPartsTable(origSeries);
-  expect(table).toMatchSnapshot("clipboard table");
 });

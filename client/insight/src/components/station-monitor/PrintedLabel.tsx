@@ -35,6 +35,7 @@ import * as React from "react";
 import JsBarcode from "jsbarcode";
 import { LazySeq } from "../../data/lazyseq";
 import { format } from "date-fns";
+import { useSelector } from "../../store/store";
 
 interface BarcodeProps {
   readonly text: string;
@@ -88,6 +89,18 @@ export function PrintedLabel(props: PrintedLabelProps) {
         .sortOn(([_, p]) => p.part)
         .toArray(),
     [props.material]
+  );
+
+  const allJobs = useSelector((s) => s.Current.current_status.jobs);
+
+  const notes = React.useMemo(
+    () =>
+      LazySeq.ofIterable(props.material || [])
+        .map((m) => (m.jobUnique ? allJobs[m.jobUnique] : undefined))
+        .toSet((j) => j?.comment ?? "")
+        .filter((n) => n !== "")
+        .toArray({ sortOn: (n) => n }),
+    [props.material, allJobs]
   );
 
   if (!props.material || props.material.length === 0) {
@@ -150,6 +163,15 @@ export function PrintedLabel(props: PrintedLabelProps) {
           </>
         )}
       </div>
+      {notes.length > 0 ? (
+        <div style={{ marginTop: "2em" }}>
+          {notes.map((n, idx) => (
+            <p key={idx} style={{ fontSize: "x-large", textAlign: "center" }}>
+              {n}
+            </p>
+          ))}
+        </div>
+      ) : undefined}
       <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
         {props.operator ? <p style={{ fontSize: "x-large" }}>{props.operator}</p> : undefined}
       </div>

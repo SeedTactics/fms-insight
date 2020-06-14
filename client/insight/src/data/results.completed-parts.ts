@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { SimPartCompleted } from "./events.simuse";
-import { startOfDay, addDays } from "date-fns";
+import { startOfDay } from "date-fns";
 import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { PartCycleData, part_and_proc } from "./events.cycles";
@@ -104,59 +104,6 @@ export function binSimProductionByDayAndPart(
 }
 
 // --------------------------------------------------------------------------------
-// Combined
-// --------------------------------------------------------------------------------
-
-export interface CompletedPartEntry {
-  readonly day: Date;
-  readonly actual: number;
-  readonly planned: number;
-}
-
-export interface CompletedPartSeries {
-  readonly part: string;
-  readonly days: ReadonlyArray<CompletedPartEntry>;
-}
-
-export function buildCompletedPartSeries(
-  start: Date,
-  end: Date,
-  cycles: Iterable<PartCycleData>,
-  sim: Iterable<SimPartCompleted>
-): ReadonlyArray<CompletedPartSeries> {
-  const filteredCycles = LazySeq.ofIterable(cycles).filter((e) => e.x >= start && e.x <= end);
-  const actualBins = binCyclesByDayAndPart(filteredCycles);
-  const filteredStatUse = LazySeq.ofIterable(sim).filter((e) => e.completeTime >= start && e.completeTime <= end);
-  const plannedBins = binSimProductionByDayAndPart(filteredStatUse);
-
-  const series: Array<CompletedPartSeries> = [];
-  const partNames = actualBins
-    .keySet()
-    .addAll(plannedBins.keySet())
-    .map((e) => e.part)
-    .toArray({ sortOn: (x) => x });
-
-  for (const part of partNames) {
-    const days: Array<CompletedPartEntry> = [];
-    for (let d = start; d < end; d = addDays(d, 1)) {
-      const dAndPart = new DayAndPart(d, part);
-      const actual = actualBins.get(dAndPart);
-      const planned = plannedBins.get(dAndPart);
-      days.push({
-        actual: actual.map((v) => v.count).getOrElse(0),
-        planned: planned.map((v) => v.count).getOrElse(0),
-        day: d,
-      });
-    }
-    series.push({
-      part: part,
-      days: days,
-    });
-  }
-  return series;
-}
-
-// --------------------------------------------------------------------------------
 // Clipboard
 // --------------------------------------------------------------------------------
 
@@ -224,31 +171,4 @@ export function copyCompletedPartsHeatmapToClipboard(
   points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
 ): void {
   copy(buildCompletedPartsHeatmapTable(points));
-}
-export function buildCompletedPartsTable(series: ReadonlyArray<CompletedPartSeries>) {
-  const days = series.length > 0 ? series[0].days.map((p) => p.day) : [];
-
-  let table = "<table>\n<thead><tr>";
-  table += "<th>Part</th>";
-  for (const d of days) {
-    table += "<th>" + d.toLocaleDateString() + " Actual</th>";
-    table += "<th>" + d.toLocaleDateString() + " Planned</th>";
-  }
-  table += "</tr></thead>\n<tbody>\n";
-
-  for (const s of series) {
-    table += "<tr><td>" + s.part + "</td>";
-    for (const day of s.days) {
-      table += "<td>" + day.actual.toFixed(0) + "</td>";
-      table += "<td>" + day.planned.toFixed(0) + "</td>";
-    }
-    table += "</tr>\n";
-  }
-
-  table += "</tbody>\n</table>";
-  return table;
-}
-
-export function copyCompletedPartsToClipboard(series: ReadonlyArray<CompletedPartSeries>): void {
-  copy(buildCompletedPartsTable(series));
 }
