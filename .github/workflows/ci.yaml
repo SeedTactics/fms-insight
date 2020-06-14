@@ -12,10 +12,10 @@ jobs:
   server:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: "3.1.103"
+          dotnet-version: "3.1.x"
 
       - name: Server TestSuite
         run: |
@@ -34,10 +34,10 @@ jobs:
   client:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: "10.x"
+          node-version: "14"
 
       - name: Install client deps
         run: yarn --cwd client/insight install --frozen-lockfile

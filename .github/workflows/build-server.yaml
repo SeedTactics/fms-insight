@@ -14,25 +14,16 @@ jobs:
       # Setup
       # ----------------------------------------------------------
 
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: "10.x"
-
-      # https://github.com/actions/setup-dotnet/issues/29
-      #- uses: actions/setup-dotnet@v1.2.0
-      #  with:
-      #    dotnet-version: "3.0.100"
+          node-version: "14"
 
       - name: Install GitVersion
         run: dotnet tool install -g GitVersion.Tool
       - name: Calculate Version
         shell: pwsh
         run: |
-          # GitVersion doesn't like detached heads
-          #https://github.com/actions/checkout/issues/6
-          git branch --track master remotes/origin/master
-          git checkout ($Env:GITHUB_REF.Substring(11))
           $ver = (dotnet gitversion server) | ConvertFrom-Json
           Write-Host ("::set-env name=SEMVER::" + $ver.SemVer)
 

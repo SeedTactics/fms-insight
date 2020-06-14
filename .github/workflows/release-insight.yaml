@@ -13,10 +13,10 @@ jobs:
       # Setup
       # ----------------------------------------------------------
 
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: "10.x"
+          node-version: "14"
 
       # ----------------------------------------------------------
       # Test and Build
@@ -52,7 +52,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@master
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -62,7 +62,7 @@ jobs:
           prerelease: false
 
       - name: Upload Mazak
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -72,7 +72,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload Makino
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -96,7 +96,7 @@ jobs:
         run: ./server/reverse-proxy/build.ps1 -Version $ENV:GITHUB_REF.Substring(11)
 
       - name: Upload reverse proxy
-        uses: actions/upload-release-asset@v1.0.1
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
