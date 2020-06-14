@@ -707,7 +707,7 @@ interface AddCastingProps {
 
 const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingProps) {
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
-  const [qty, setQty] = React.useState<number>(1);
+  const [qty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
   const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(
     null
@@ -747,11 +747,11 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
     setEnteredOperator(null);
     setMaterialToPrint(null);
     setAdding(false);
-    setQty(1);
+    setQty(null);
   }
 
   function add() {
-    if (props.queue !== null && selectedCasting !== null && !isNaN(qty)) {
+    if (props.queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
       props.addNewCasting({
         casting: selectedCasting,
         quantity: qty,
@@ -765,7 +765,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
   function addAndPrint(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (props.queue !== null && selectedCasting !== null && !isNaN(qty)) {
+      if (props.queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
         setAdding(true);
         props.addNewCasting(
           {
@@ -834,7 +834,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
               type="number"
               label="Quantity"
               inputProps={{ min: "1" }}
-              value={isNaN(qty) ? "" : qty}
+              value={qty === null || isNaN(qty) ? "" : qty}
               onChange={(e) => setQty(parseInt(e.target.value))}
             />
           </div>
@@ -863,6 +863,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
                   disabled={
                     selectedCasting === null ||
                     adding ||
+                    qty === null ||
                     isNaN(qty) ||
                     (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
                   }
@@ -877,6 +878,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
               color="primary"
               disabled={
                 selectedCasting === null ||
+                qty === null ||
                 isNaN(qty) ||
                 (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
               }
