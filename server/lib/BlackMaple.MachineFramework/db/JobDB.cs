@@ -1112,7 +1112,7 @@ namespace BlackMaple.MachineFramework
       lock (_lock)
       {
         var ret = default(BlackMaple.MachineWatchInterface.HistoricData);
-        ret.Jobs = new Dictionary<string, MachineWatchInterface.JobPlan>();
+        ret.Jobs = new Dictionary<string, MachineWatchInterface.HistoricJob>();
         ret.StationUse = new List<MachineWatchInterface.SimulatedStationUtilization>();
 
         var trans = _connection.BeginTransaction();
@@ -1121,7 +1121,11 @@ namespace BlackMaple.MachineFramework
           jobCmd.Transaction = trans;
           simCmd.Transaction = trans;
 
-          ret.Jobs = LoadJobsHelper(jobCmd, trans).ToDictionary(j => j.UniqueStr, j => j);
+          ret.Jobs = LoadJobsHelper(jobCmd, trans).ToDictionary(j => j.UniqueStr, j => new MachineWatchInterface.HistoricJob(j));
+          foreach (var j in ret.Jobs)
+          {
+            j.Value.Decrements = LoadDecrementsForJob(trans, j.Key);
+          }
           ret.StationUse = LoadSimulatedStationUse(simCmd, trans);
 
           trans.Commit();
@@ -2173,27 +2177,33 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.InProcessJobDecrement> LoadDecrementsForJob(string unique)
+    public List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(string unique)
     {
       lock (_lock)
       {
-        using (var cmd = _connection.CreateCommand())
+        return LoadDecrementsForJob(trans: null, unique: unique);
+      }
+    }
+
+    private List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(IDbTransaction trans, string unique)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+        cmd.CommandText = "SELECT DecrementId,TimeUTC,Quantity FROM decrements WHERE JobUnique = $uniq";
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+        var ret = new List<MachineWatchInterface.DecrementQuantity>();
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.CommandText = "SELECT DecrementId,TimeUTC,Quantity FROM decrements WHERE JobUnique = $uniq";
-          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-          var ret = new List<MachineWatchInterface.InProcessJobDecrement>();
-          using (var reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
-            {
-              var j = new MachineWatchInterface.InProcessJobDecrement();
-              j.DecrementId = reader.GetInt64(0);
-              j.TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
-              j.Quantity = reader.GetInt32(2);
-              ret.Add(j);
-            }
-            return ret;
+            var j = new MachineWatchInterface.DecrementQuantity();
+            j.DecrementId = reader.GetInt64(0);
+            j.TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
+            j.Quantity = reader.GetInt32(2);
+            ret.Add(j);
           }
+          return ret;
         }
       }
     }

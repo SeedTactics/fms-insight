@@ -127,7 +127,7 @@ namespace MachineWatchTest
       sch.Processes.Should().BeEmpty();
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0,
           TimeUTC = now,
           Quantity = 50 - 35
@@ -222,7 +222,7 @@ namespace MachineWatchTest
 
       _write.Schedules.Should().BeNull();
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0,
           TimeUTC = now,
           Quantity = 3
@@ -301,7 +301,7 @@ namespace MachineWatchTest
       _write.Schedules[0].PlanQuantity.Should().Be(36);
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0,
           TimeUTC = now,
           Quantity = 50 - 36
@@ -351,7 +351,7 @@ namespace MachineWatchTest
       _write.Schedules.Should().BeNull();
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0,
           TimeUTC = now,
           Quantity = 50 - 35
@@ -443,7 +443,7 @@ namespace MachineWatchTest
       _write.Schedules[1].PlanQuantity.Should().Be(25 - 13);
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0,
           TimeUTC = now,
           Quantity = 10 + 13
@@ -511,14 +511,14 @@ namespace MachineWatchTest
       sch.Processes.Should().BeEmpty();
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0,
           TimeUTC = now,
           Quantity = 50 - 35
         }
       });
       _jobDB.LoadDecrementsForJob("vvvv").Should().BeEquivalentTo(new[] {
-        new InProcessJobDecrement() {
+        new DecrementQuantity() {
           DecrementId = 0,
           TimeUTC = now,
           Quantity = 4 + 7

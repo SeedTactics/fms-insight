@@ -1716,7 +1716,7 @@ export interface IFMSInfo {
 }
 
 export class HistoricData implements IHistoricData {
-    jobs!: { [key: string] : JobPlan; };
+    jobs!: { [key: string] : HistoricJob; };
     stationUse!: SimulatedStationUtilization[];
 
     constructor(data?: IHistoricData) {
@@ -1738,7 +1738,7 @@ export class HistoricData implements IHistoricData {
                 this.jobs = {} as any;
                 for (let key in data["Jobs"]) {
                     if (data["Jobs"].hasOwnProperty(key))
-                        this.jobs![key] = data["Jobs"][key] ? JobPlan.fromJS(data["Jobs"][key]) : new JobPlan();
+                        this.jobs![key] = data["Jobs"][key] ? HistoricJob.fromJS(data["Jobs"][key]) : new HistoricJob();
                 }
             }
             if (data["StationUse"] && data["StationUse"].constructor === Array) {
@@ -1775,7 +1775,7 @@ export class HistoricData implements IHistoricData {
 }
 
 export interface IHistoricData {
-    jobs: { [key: string] : JobPlan; };
+    jobs: { [key: string] : HistoricJob; };
     stationUse: SimulatedStationUtilization[];
 }
 
@@ -1893,6 +1893,91 @@ export interface IJobPlan {
     holdEntireJob?: JobHoldPattern | undefined;
     cyclesOnFirstProcess: number[];
     procsAndPaths: ProcessInfo[];
+}
+
+export class HistoricJob extends JobPlan implements IHistoricJob {
+    decrements?: DecrementQuantity[] | undefined;
+
+    constructor(data?: IHistoricJob) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
+        if (data) {
+            if (data["Decrements"] && data["Decrements"].constructor === Array) {
+                this.decrements = [] as any;
+                for (let item of data["Decrements"])
+                    this.decrements!.push(DecrementQuantity.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): HistoricJob {
+        data = typeof data === 'object' ? data : {};
+        let result = new HistoricJob();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (this.decrements && this.decrements.constructor === Array) {
+            data["Decrements"] = [];
+            for (let item of this.decrements)
+                data["Decrements"].push(item.toJSON());
+        }
+        super.toJSON(data);
+        return data; 
+    }
+}
+
+export interface IHistoricJob extends IJobPlan {
+    decrements?: DecrementQuantity[] | undefined;
+}
+
+export class DecrementQuantity implements IDecrementQuantity {
+    decrementId!: number;
+    timeUTC!: Date;
+    quantity!: number;
+
+    constructor(data?: IDecrementQuantity) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.decrementId = data["DecrementId"];
+            this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
+            this.quantity = data["Quantity"];
+        }
+    }
+
+    static fromJS(data: any): DecrementQuantity {
+        data = typeof data === 'object' ? data : {};
+        let result = new DecrementQuantity();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["DecrementId"] = this.decrementId;
+        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+        data["Quantity"] = this.quantity;
+        return data; 
+    }
+}
+
+export interface IDecrementQuantity {
+    decrementId: number;
+    timeUTC: Date;
+    quantity: number;
 }
 
 export class JobHoldPattern implements IJobHoldPattern {
@@ -2651,7 +2736,7 @@ export interface ICurrentStatus {
 
 export class InProcessJob extends JobPlan implements IInProcessJob {
     completed?: number[][] | undefined;
-    decrements?: InProcessJobDecrement[] | undefined;
+    decrements?: DecrementQuantity[] | undefined;
     precedence?: number[][] | undefined;
 
     constructor(data?: IInProcessJob) {
@@ -2669,7 +2754,7 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
             if (data["Decrements"] && data["Decrements"].constructor === Array) {
                 this.decrements = [] as any;
                 for (let item of data["Decrements"])
-                    this.decrements!.push(InProcessJobDecrement.fromJS(item));
+                    this.decrements!.push(DecrementQuantity.fromJS(item));
             }
             if (data["Precedence"] && data["Precedence"].constructor === Array) {
                 this.precedence = [] as any;
@@ -2710,52 +2795,8 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
 
 export interface IInProcessJob extends IJobPlan {
     completed?: number[][] | undefined;
-    decrements?: InProcessJobDecrement[] | undefined;
+    decrements?: DecrementQuantity[] | undefined;
     precedence?: number[][] | undefined;
-}
-
-export class InProcessJobDecrement implements IInProcessJobDecrement {
-    decrementId!: number;
-    timeUTC!: Date;
-    quantity!: number;
-
-    constructor(data?: IInProcessJobDecrement) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.decrementId = data["DecrementId"];
-            this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
-            this.quantity = data["Quantity"];
-        }
-    }
-
-    static fromJS(data: any): InProcessJobDecrement {
-        data = typeof data === 'object' ? data : {};
-        let result = new InProcessJobDecrement();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["DecrementId"] = this.decrementId;
-        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["Quantity"] = this.quantity;
-        return data; 
-    }
-}
-
-export interface IInProcessJobDecrement {
-    decrementId: number;
-    timeUTC: Date;
-    quantity: number;
 }
 
 export class PalletStatus implements IPalletStatus {

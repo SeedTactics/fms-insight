@@ -289,7 +289,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var expectedSt = new CurrentStatus();
       var expectedJob = new InProcessJob(j);
       expectedJob.SetCompleted(1, 1, 1);
-      expectedJob.Decrements.Add(new InProcessJobDecrement()
+      expectedJob.Decrements.Add(new DecrementQuantity()
       {
         DecrementId = 0,
         TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),

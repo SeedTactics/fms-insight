@@ -1647,7 +1647,7 @@
         "Jobs": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/JobPlan"
+            "$ref": "#/definitions/HistoricJob"
           }
         },
         "StationUse": {
@@ -1655,6 +1655,48 @@
           "items": {
             "$ref": "#/definitions/SimulatedStationUtilization"
           }
+        }
+      }
+    },
+    "HistoricJob": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/JobPlan"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "Decrements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DecrementQuantity"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DecrementQuantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "DecrementId",
+        "TimeUTC",
+        "Quantity"
+      ],
+      "properties": {
+        "DecrementId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "TimeUTC": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "Quantity": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -2147,7 +2189,7 @@
             "Decrements": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/InProcessJobDecrement"
+                "$ref": "#/definitions/DecrementQuantity"
               }
             },
             "Precedence": {
@@ -2163,29 +2205,6 @@
           }
         }
       ]
-    },
-    "InProcessJobDecrement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "DecrementId",
-        "TimeUTC",
-        "Quantity"
-      ],
-      "properties": {
-        "DecrementId": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "TimeUTC": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "Quantity": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
     },
     "PalletStatus": {
       "type": "object",
