@@ -456,7 +456,7 @@ namespace MazakMachineInterface
       {
         _processLogComplete.Reset();
         _recheckQueues.Set();
-        _processLogComplete.WaitOne(TimeSpan.FromSeconds(20));
+        _processLogComplete.WaitOne(TimeSpan.FromSeconds(60));
       }
       else
       {
