@@ -181,7 +181,9 @@ namespace MazakMachineInterface
           SchRow = schRow,
           Unique = unique,
           Job = job,
-          LowerPriorityScheduleMatchingCastingSkipped = skippedCastings.Contains(casting),
+          // when we are waiting for all castings to assign, we can assume that any running schedule
+          // has all of its material so no need to prevent assignment.
+          LowerPriorityScheduleMatchingCastingSkipped = !_waitForAllCastings && skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
           NewDueDate = null,
           NewPriority = null
