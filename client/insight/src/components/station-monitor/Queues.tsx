@@ -539,7 +539,12 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
               />
               <div style={{ display: "none" }}>
                 <div ref={printRef}>
-                  <PrintedLabel materialName={rawMatName} material={props.material || []} operator={lastOperator} />
+                  <PrintedLabel
+                    materialName={rawMatName}
+                    material={props.material || []}
+                    operator={lastOperator}
+                    oneJobPerPage={false}
+                  />
                 </div>
               </div>
             </>

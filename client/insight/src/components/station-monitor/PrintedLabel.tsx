@@ -76,9 +76,130 @@ export interface PrintedLabelProps {
   readonly material: ReadonlyArray<PrintMaterial> | null;
   readonly materialName?: string | null;
   readonly operator?: string | null;
+  readonly oneJobPerPage: boolean;
 }
 
-export function PrintedLabel(props: PrintedLabelProps) {
+export interface SinglePageProps {
+  readonly partName: string;
+  readonly materialName: string | null | undefined;
+  readonly count: number;
+  readonly uniq: string | null;
+  readonly note: string | null | undefined;
+  readonly operator: string | null | undefined;
+  readonly serial1: string | undefined;
+  readonly serial2: string | undefined;
+}
+
+function SinglePage(props: SinglePageProps) {
+  return (
+    <div>
+      <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
+        <h2>SeedTactic: FMS Insight</h2>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <p style={{ fontSize: "x-large" }}>{format(new Date(), "eeee MMMM d, yyyy HH:mm:ss")}</p>
+      </div>
+      <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
+        <Barcode text={props.materialName ?? props.partName} />
+        {props.count >= 2 ? <Barcode text={props.count.toString()} /> : undefined}
+      </div>
+      {props.serial1 && props.serial1 !== "" ? (
+        <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
+          <Barcode text={props.serial1} />
+          {props.serial2 && props.serial2 !== "" ? <Barcode text={props.serial2 || ""} /> : undefined}
+        </div>
+      ) : undefined}
+      <div style={{ marginTop: "2em", marginLeft: "4em", marginRight: "4em" }}>
+        {props.uniq === null || props.uniq === "" ? (
+          <p style={{ fontSize: "x-large" }}>Not currently assigned to any jobs</p>
+        ) : (
+          <>
+            <p style={{ fontSize: "x-large" }}>Assigned To</p>
+            <div style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}>
+              <Barcode text={props.partName} />
+              <h3 style={{ marginLeft: "4em" }}>assigned to {props.uniq}</h3>
+            </div>
+          </>
+        )}
+      </div>
+      {props.note ? (
+        <div style={{ marginTop: "2em" }}>
+          <p style={{ fontSize: "x-large", textAlign: "center" }}>{props.note}</p>
+        </div>
+      ) : undefined}
+      <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
+        {props.operator ? <p style={{ fontSize: "x-large" }}>{props.operator}</p> : undefined}
+      </div>
+    </div>
+  );
+}
+
+function tuple<T extends any[]>(...data: T) {
+  return data;
+}
+
+function OneJobPerPage(props: PrintedLabelProps) {
+  const allJobs = useSelector((s) => s.Current.current_status.jobs);
+
+  const assignments = React.useMemo(
+    () =>
+      LazySeq.ofIterable(props.material || [])
+        .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
+        .groupBy((m) => m.jobUnique)
+        .map((uniq: string, mats) =>
+          tuple(uniq, {
+            length: mats.length(),
+            part: mats.head().getOrThrow().partName,
+            comment: allJobs[uniq]?.comment,
+            serial1: mats.head().getOrNull()?.serial,
+            serial2: mats.last().getOrNull()?.serial,
+          })
+        )
+        .toVector()
+        .sortOn(([_, p]) => p.part)
+        .toArray(),
+    [props.material, allJobs]
+  );
+
+  if (!props.material || props.material.length === 0) {
+    return <div />;
+  } else if (assignments.length === 0) {
+    return (
+      <SinglePage
+        partName={props.material[0].partName}
+        materialName={props.materialName}
+        count={props.material.length}
+        uniq={null}
+        note={null}
+        operator={props.operator}
+        serial1={props.material[0].serial}
+        serial2={props.material[props.material.length - 1]?.serial}
+      />
+    );
+  } else {
+    return (
+      <div>
+        {assignments.map(([uniq, a], idx) => (
+          <React.Fragment key={idx}>
+            <SinglePage
+              partName={a.part}
+              materialName={props.materialName}
+              count={a.length}
+              uniq={uniq}
+              note={a.comment}
+              operator={props.operator}
+              serial1={a.serial1}
+              serial2={a.serial2}
+            />
+            {idx < assignments.length - 1 ? <div style={{ pageBreakAfter: "always" }} /> : undefined}
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  }
+}
+
+function CombinedToOnePage(props: PrintedLabelProps) {
   const assignments = React.useMemo(
     () =>
       LazySeq.ofIterable(props.material || [])
@@ -177,4 +298,12 @@ export function PrintedLabel(props: PrintedLabelProps) {
       </div>
     </div>
   );
+}
+
+export function PrintedLabel(props: PrintedLabelProps) {
+  if (props.oneJobPerPage) {
+    return <OneJobPerPage {...props} />;
+  } else {
+    return <CombinedToOnePage {...props} />;
+  }
 }

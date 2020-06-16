@@ -111,7 +111,10 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
               />
               <div style={{ display: "none" }}>
                 <div ref={printRef}>
-                  <PrintedLabel material={props.display_material ? [props.display_material] : []} />
+                  <PrintedLabel
+                    material={props.display_material ? [props.display_material] : []}
+                    oneJobPerPage={false}
+                  />
                 </div>
               </div>
             </>
@@ -894,7 +897,12 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
       </Dialog>
       <div style={{ display: "none" }}>
         <div ref={printRef}>
-          <PrintedLabel materialName={selectedCasting} material={materialToPrint} operator={enteredOperator} />
+          <PrintedLabel
+            materialName={selectedCasting}
+            material={materialToPrint}
+            operator={enteredOperator}
+            oneJobPerPage={true}
+          />
         </div>
       </div>
     </>

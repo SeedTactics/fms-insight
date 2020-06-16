@@ -373,7 +373,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
                 />
                 <div style={{ display: "none" }}>
                   <div ref={printRef}>
-                    <PrintedLabel material={displayMat ? [displayMat] : []} />
+                    <PrintedLabel material={displayMat ? [displayMat] : []} oneJobPerPage={false} />
                   </div>
                 </div>
               </>
