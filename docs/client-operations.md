@@ -113,12 +113,29 @@ and filterable chart of recent machine cycles.
 
 ![Screenshot of machine cycles](assets/insight-machine-cycle-graph.png)
 
-# Completed Parts
+# Schedules
 
-The _Completed Parts_ tab shows the supervisor an overview of the scheduled and actual parts produced in the past 7 days.
-In each table cell, the actual parts are listed first followed by a slash and then the scheduled parts.
+The _Schedules_ tab shows the supervisor an overview of the scheduled and actual parts produced in the past 7 days.
+The table lists all the jobs downloaded from the past seven days together with the quantities of parts in various
+stages.
 
-![Screenshot of Completed Parts](assets/insight-completed-parts.png)
+![Screenshot of Scheduled Parts](assets/insight-scheduled-parts.png)
+
+- The _Note_ column allows the user to enter a note for each schedule (does not impact the production in any way,
+  just useful as a comment field).
+- The _Scheduled_ column shows the original quantity of parts downloaded into the cell controller as part of the job.
+- The _Removed_ column shows the count of planned parts that have been removed from the cell controller by an operator
+  after the job was downloaded.
+- The _Completed_ column shows the count of parts that have been logged to be completed.
+- The _In Process_ column shows the count of material currently on pallets or inside in-process queues.
+- The _Remaining To Run_ column shows the quantity of parts that the cell controller is currently configured
+  to produce.
+
+Note that in an ideal situation these numbers add up properly (scheduled = completed + in-process + remaining),
+this does not need to be the case. If parts are scrapped, an operator or supervisor edits the schedules in the
+cell controller, or other unplanned changes are made, the quantity of parts in these columns is updated to
+reflect the current sitation on the shop floor. Thus, this table can be used to provide an overview of the
+actual operations as compared to the original planned schedule.
 
 # Material
 
