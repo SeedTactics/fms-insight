@@ -335,7 +335,7 @@ namespace MazakMachineInterface
     private AutoResetEvent _shutdown;
     private AutoResetEvent _newLogFile;
     private AutoResetEvent _recheckQueues;
-    private ManualResetEvent _processLogComplete;
+    private ManualResetEvent _recheckQueuesComplete;
 
     private Thread _thread;
     private FileSystemWatcher _watcher;
@@ -360,7 +360,7 @@ namespace MazakMachineInterface
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
       _recheckQueues = new AutoResetEvent(false);
-      _processLogComplete = new ManualResetEvent(false);
+      _recheckQueuesComplete = new ManualResetEvent(false);
       if (System.IO.Directory.Exists(path))
       {
         _thread = new Thread(new ThreadStart(ThreadFunc));
@@ -393,6 +393,7 @@ namespace MazakMachineInterface
             Log.Debug("Thread shutdown");
             return;
           }
+          bool recheckingQueues = ret == 2;
 
           Thread.Sleep(TimeSpan.FromSeconds(1));
 
@@ -428,14 +429,15 @@ namespace MazakMachineInterface
             NewEntries?.Invoke();
           }
 
+          if (recheckingQueues)
+          {
+            _recheckQueuesComplete.Set();
+          }
+
         }
         catch (Exception ex)
         {
           Log.Error(ex, "Error during log data processing");
-        }
-        finally
-        {
-          _processLogComplete.Set();
         }
       }
     }
@@ -454,9 +456,9 @@ namespace MazakMachineInterface
     {
       if (wait)
       {
-        _processLogComplete.Reset();
+        _recheckQueuesComplete.Reset();
         _recheckQueues.Set();
-        _processLogComplete.WaitOne(TimeSpan.FromSeconds(60));
+        _recheckQueuesComplete.WaitOne(TimeSpan.FromSeconds(60));
       }
       else
       {
