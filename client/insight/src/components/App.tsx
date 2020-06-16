@@ -125,7 +125,7 @@ function OperationsTabs(p: HeaderNavProps) {
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
-      <Tab label="Completed Parts" value={routes.RouteLocation.Operations_CompletedParts} />
+      <Tab label="Schedules" value={routes.RouteLocation.Operations_CompletedParts} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
     </Tabs>
   );
