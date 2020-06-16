@@ -68,7 +68,7 @@ export function buildScheduledJobs(
   for (const cycle of filteredCycles) {
     if (cycle.completed) {
       for (const mat of cycle.material) {
-        if (mat.uniq) {
+        if (mat.uniq && mat.proc === mat.numproc) {
           const job = result.get(mat.uniq);
           if (job) {
             job.completedQty += 1;
@@ -91,8 +91,8 @@ export function buildScheduledJobs(
     const job = result.get(uniq);
     if (job) {
       const plannedQty = LazySeq.ofIterable(curJob.cyclesOnFirstProcess).sumOn((c) => c);
-      const startedQty = LazySeq.ofIterable(curJob.completed?.[0] ?? []).sumOn((c) => c);
-      job.remainingQty = plannedQty - startedQty;
+      const completedQty = LazySeq.ofIterable(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumOn((c) => c);
+      job.remainingQty = plannedQty - job.inProcessQty - completedQty;
       if (plannedQty < job.scheduledQty) {
         job.decrementedQty = job.scheduledQty - plannedQty;
       }
