@@ -47,7 +47,7 @@ namespace MachineWatchTest
 {
   public class BuildCurrentStatusSpec : IDisposable
   {
-    private JobLogDB _emptyLog;
+    private JobLogDB _memoryLog;
     private JobDB _jobDB;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
@@ -59,8 +59,8 @@ namespace MachineWatchTest
     {
       var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       logConn.Open();
-      _emptyLog = new JobLogDB(new FMSSettings(), logConn);
-      _emptyLog.CreateTables(firstSerialOnEmpty: null);
+      _memoryLog = new JobLogDB(new FMSSettings(), logConn);
+      _memoryLog.CreateTables(firstSerialOnEmpty: null);
 
       var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       jobConn.Open();
@@ -89,7 +89,7 @@ namespace MachineWatchTest
 
     public void Dispose()
     {
-      _emptyLog.Close();
+      _memoryLog.Close();
       _jobDB.Close();
     }
 
@@ -192,7 +192,7 @@ namespace MachineWatchTest
           jsonSettings
       );
 
-      var logDb = _emptyLog;
+      var logDb = _memoryLog;
       bool close = false;
       var existingLogPath =
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
@@ -229,5 +229,41 @@ namespace MachineWatchTest
         options.Excluding(c => c.TimeOfCurrentStatusUTC)
       );
     }
+
+    [Fact]
+    public void PendingLoad()
+    {
+      NewJobs newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(newJobs, null);
+
+      var allData = JsonConvert.DeserializeObject<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.data.json")),
+          jsonSettings
+      );
+
+      _memoryLog.AddPendingLoad("1", "thekey", 1, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), "foreignid");
+
+      var matId = _memoryLog.AllocateMaterialID("aaa-schId1234", "aaa", 2);
+      _memoryLog.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1);
+
+      var status = BuildCurrentStatus.Build(_jobDB, _memoryLog, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
+          new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
+
+      var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.status.json")),
+          jsonSettings
+      );
+
+      status.Should().BeEquivalentTo(expectedStatus, options =>
+        options.Excluding(c => c.TimeOfCurrentStatusUTC)
+      );
+    }
+
   }
 }

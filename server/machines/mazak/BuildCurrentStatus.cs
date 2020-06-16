@@ -167,6 +167,7 @@ namespace MazakMachineInterface
           curStatus.Pallets.Add(status.Pallet, status);
 
           var oldCycles = log.CurrentPalletLog(palName);
+          var pending = log.PendingLoads(palName);
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -183,7 +184,7 @@ namespace MazakMachineInterface
             var job = jobsBySchID[palSub.ScheduleID];
             var procToPath = pathBySchID[palSub.ScheduleID];
 
-            var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, job.UniqueStr, palSub.PartProcessNumber));
+            var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, pending.Count > 0, job, palSub.PartProcessNumber, procToPath.PathForProc(palSub.PartProcessNumber), log));
 
             for (int i = 1; i <= palSub.FixQuantity; i++)
             {
@@ -615,7 +616,6 @@ namespace MazakMachineInterface
         if (unload.LoadEvent) continue;
         if (unload.LoadStation != pallet.CurrentPalletLocation.Num) continue;
 
-        var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, unload.Unique, unload.Process));
         curStatus.Jobs.TryGetValue(unload.Unique, out InProcessJob job);
 
         InProcessMaterialAction action = null;
@@ -676,6 +676,7 @@ namespace MazakMachineInterface
           }
         }
 
+        var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, false, job, unload.Process, unload.Path, log));
         for (int i = 0; i < unload.Qty; i += 1)
         {
           string face = unload.Process.ToString();
@@ -788,22 +789,55 @@ namespace MazakMachineInterface
       }
     }
 
-    private static IEnumerable<long> FindMatIDsFromOldCycles(IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, string unique, int proc)
+    private static IEnumerable<long> FindMatIDsFromOldCycles(
+      IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, bool hasPendingLoads, JobPlan job, int proc, int path, JobLogDB log
+    )
     {
-      var ret = new Dictionary<long, bool>();
+      IEnumerable<long> ret;
 
-      foreach (var s in oldCycles)
+      if (hasPendingLoads)
       {
-        foreach (LogMaterial mat in s.Material)
+        // there is a brief period between when Mazak ends the load/unload operation and thus updates
+        // the palletsubstatus and load action rows, but before the pallet cycle completes.  During
+        // this time, we need to take into account the material as it will exist once the
+        // pending operations are completed.
+
+        if (!string.IsNullOrEmpty(job.GetInputQueue(proc, path)))
         {
-          if (mat.MaterialID >= 0 && mat.JobUniqueStr == unique && mat.Process == proc)
-          {
-            ret[mat.MaterialID] = true;
-          }
+          var qs = MazakQueues.QueuedMaterialForLoading(job, log.GetMaterialInQueue(job.GetInputQueue(proc, path)), proc, path, log);
+          ret = qs.Select(m => m.MaterialID).ToList();
         }
+        else if (proc == 1)
+        {
+          // create new material
+          ret = Enumerable.Empty<long>();
+        }
+        else
+        {
+          // search on pallet for previous process
+          ret = oldCycles
+            .SelectMany(c => c.Material)
+            .Where(m => m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc - 1)
+            .Select(m => m.MaterialID)
+            .Distinct()
+            .OrderBy(m => m)
+            .ToList();
+        }
+
+      }
+      else
+      {
+        // no pending loads, search on pallet for current process
+        ret = oldCycles
+          .SelectMany(c => c.Material)
+          .Where(m => m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc)
+          .Select(m => m.MaterialID)
+          .Distinct()
+          .OrderBy(m => m)
+          .ToList();
       }
 
-      return ret.Keys;
+      return ret;
     }
 
     private static BlackMaple.MachineWatchInterface.LogEntry FindMachineStartFromOldCycles(IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, long matId)
