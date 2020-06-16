@@ -3,7 +3,7 @@ name: build-server
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -26,7 +26,7 @@ jobs:
         run: |
           # GitVersion doesn't like detached heads
           #https://github.com/actions/checkout/issues/6
-          git branch --track master remotes/origin/master
+          git branch --track main remotes/origin/main
           git checkout ($Env:GITHUB_REF.Substring(11))
           $ver = (dotnet gitversion server) | ConvertFrom-Json
           Write-Host ("::set-env name=SEMVER::" + $ver.SemVer)
