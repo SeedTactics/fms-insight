@@ -123,7 +123,7 @@ namespace MazakMachineInterface
       public MazakScheduleRow SchRow { get; set; }
       public string Unique { get; set; }
       public JobPlan Job { get; set; }
-      public bool CurrentlyAtLoadStation { get; set; }
+      public bool LowerPriorityScheduleMatchingCastingSkipped { get; set; }
       public Dictionary<int, ScheduleWithQueuesProcess> Procs { get; set; }
       public DateTime? NewDueDate { get; set; }
       public int? NewPriority { get; set; }
@@ -134,6 +134,7 @@ namespace MazakMachineInterface
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
       var pending = _log.AllPendingLoads();
+      var skippedCastings = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
         if (!MazakPart.IsSailPart(schRow.PartName)) continue;
@@ -156,6 +157,7 @@ namespace MazakMachineInterface
           if (action.Unique == job.UniqueStr && action.Path == procToPath.PathForProc(action.Process))
           {
             foundJobAtLoad = true;
+            skippedCastings.Add(casting);
             log.Debug("Not editing queued material because {uniq} is in the process of being loaded or unload with action {@action}", job.UniqueStr, action);
             break;
           }
@@ -165,11 +167,13 @@ namespace MazakMachineInterface
           var s = pendingLoad.Key.Split(',');
           if (schRow.PartName == s[0])
           {
+            skippedCastings.Add(casting);
             foundJobAtLoad = true;
             log.Debug("Not editing queued material because found a pending load {@pendingLoad}", pendingLoad);
             break;
           }
         }
+        if (foundJobAtLoad) continue;
 
         // start building the schedule
         var sch = new ScheduleWithQueues()
@@ -177,7 +181,7 @@ namespace MazakMachineInterface
           SchRow = schRow,
           Unique = unique,
           Job = job,
-          CurrentlyAtLoadStation = foundJobAtLoad,
+          LowerPriorityScheduleMatchingCastingSkipped = skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
           NewDueDate = null,
           NewPriority = null
@@ -281,7 +285,7 @@ namespace MazakMachineInterface
     {
       var schsToAssign =
         allSchs
-        .Where(s => !string.IsNullOrEmpty(s.Procs[1].InputQueue))
+        .Where(s => !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue))
         .OrderBy(s => s.SchRow.DueDate).ThenBy(s => s.SchRow.Priority);
 
       var skippedCastings = new HashSet<string>();
@@ -289,10 +293,10 @@ namespace MazakMachineInterface
       foreach (var sch in schsToAssign)
       {
         var schProc1 = sch.Procs[1];
-        if (skippedCastings.Contains(schProc1.Casting)) continue;
-
         var started = CountCompletedOrMachiningStarted(sch);
         var curCastings = (schProc1.TargetMaterialCount ?? schProc1.SchProcRow.ProcessMaterialQuantity);
+
+        if (skippedCastings.Contains(schProc1.Casting)) continue;
 
         if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
         {
@@ -307,7 +311,7 @@ namespace MazakMachineInterface
             ? sch.SchRow.PlanQuantity - started - curCastings
             : schProc1.SchProcRow.FixQuantity - curCastings;
 
-          if (toAdd > 0 && !sch.CurrentlyAtLoadStation && unassignedCastings >= toAdd)
+          if (toAdd > 0 && unassignedCastings >= toAdd)
           {
             var allocated = _log.AllocateCastingsInQueue(
               queue: schProc1.InputQueue,
@@ -337,10 +341,12 @@ namespace MazakMachineInterface
                 + 1;
             }
           }
-          else if (toAdd > 0 && _waitForAllCastings)
+
+          if (toAdd > 0 && _waitForAllCastings && unassignedCastings < toAdd)
           {
-            // if we tried to add but didn't have enough or can't currently, dont let schedules with higher priority
-            // snatch up these castings.  If the user wants to run it, they can edit priority in mazak.
+            // if we tried to add but didn't have enough, dont let schedules with higher priority
+            // snatch up these castings.  If the user wants to run it, they can edit priority
+            // in mazak.
             skippedCastings.Add(schProc1.Casting);
           }
         }
@@ -350,7 +356,7 @@ namespace MazakMachineInterface
     private MazakWriteData UpdateMazakMaterialCounts(IEnumerable<ScheduleWithQueues> schs)
     {
       var newSchs = new List<MazakScheduleRow>();
-      foreach (var sch in schs.Where(s => !s.CurrentlyAtLoadStation))
+      foreach (var sch in schs)
       {
         if (!sch.Procs.Values.Any(p => p.TargetMaterialCount.HasValue)) continue;
         log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.Id, sch.Unique, sch);
