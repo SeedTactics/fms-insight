@@ -793,7 +793,11 @@ namespace MazakMachineInterface
       IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, bool hasPendingLoads, JobPlan job, int proc, int path, JobLogDB log
     )
     {
-      IEnumerable<long> ret;
+
+      if (job == null)
+      {
+        return Enumerable.Empty<long>();
+      }
 
       if (hasPendingLoads)
       {
@@ -805,19 +809,19 @@ namespace MazakMachineInterface
         if (!string.IsNullOrEmpty(job.GetInputQueue(proc, path)))
         {
           var qs = MazakQueues.QueuedMaterialForLoading(job, log.GetMaterialInQueue(job.GetInputQueue(proc, path)), proc, path, log);
-          ret = qs.Select(m => m.MaterialID).ToList();
+          return qs.Select(m => m.MaterialID).ToList();
         }
         else if (proc == 1)
         {
           // create new material
-          ret = Enumerable.Empty<long>();
+          return Enumerable.Empty<long>();
         }
         else
         {
           // search on pallet for previous process
-          ret = oldCycles
-            .SelectMany(c => c.Material)
-            .Where(m => m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc - 1)
+          return oldCycles
+            .SelectMany(c => c.Material ?? Enumerable.Empty<LogMaterial>())
+            .Where(m => m != null && m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc - 1)
             .Select(m => m.MaterialID)
             .Distinct()
             .OrderBy(m => m)
@@ -828,16 +832,14 @@ namespace MazakMachineInterface
       else
       {
         // no pending loads, search on pallet for current process
-        ret = oldCycles
-          .SelectMany(c => c.Material)
-          .Where(m => m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc)
+        return oldCycles
+          .SelectMany(c => c.Material ?? Enumerable.Empty<LogMaterial>())
+          .Where(m => m != null && m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc)
           .Select(m => m.MaterialID)
           .Distinct()
           .OrderBy(m => m)
           .ToList();
       }
-
-      return ret;
     }
 
     private static BlackMaple.MachineWatchInterface.LogEntry FindMachineStartFromOldCycles(IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, long matId)
