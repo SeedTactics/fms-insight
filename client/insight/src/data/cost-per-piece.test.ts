@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -35,185 +35,32 @@ import * as ccp from "./cost-per-piece";
 import * as cycles from "./events.cycles";
 import { loadMockData } from "../mock-data/load";
 
-it("loads the initial state", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const s = ccp.reducer(undefined as any, undefined as any);
-  expect(s).toBe(ccp.initial);
-});
-
-it("sets machine costs", () => {
-  let s = ccp.reducer(ccp.initial, {
-    type: ccp.ActionType.SetMachineCostPerYear,
-    group: "g1",
-    cost: 12,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      machineCostPerYear: {
-        g1: 12,
-      },
-    },
-  });
-
-  s = ccp.reducer(s, {
-    type: ccp.ActionType.SetMachineCostPerYear,
-    group: "g2",
-    cost: 44,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      machineCostPerYear: {
-        g1: 12,
-        g2: 44,
-      },
-    },
-  });
-
-  s = ccp.reducer(s, {
-    type: ccp.ActionType.SetMachineCostPerYear,
-    group: "g2",
-    cost: 150,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      machineCostPerYear: {
-        g1: 12,
-        g2: 150,
-      },
-    },
-  });
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
-    ...ccp.initial.input,
-    machineCostPerYear: {
-      g1: 12,
-      g2: 150,
-    },
-  });
-});
-
-it("sets part material cost", () => {
-  let s = ccp.reducer(ccp.initial, {
-    type: ccp.ActionType.SetPartMaterialCost,
-    part: "p1",
-    cost: 52,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      partMaterialCost: {
-        p1: 52,
-      },
-    },
-  });
-
-  s = ccp.reducer(s, {
-    type: ccp.ActionType.SetPartMaterialCost,
-    part: "p2",
-    cost: 2,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      partMaterialCost: {
-        p1: 52,
-        p2: 2,
-      },
-    },
-  });
-
-  s = ccp.reducer(s, {
-    type: ccp.ActionType.SetPartMaterialCost,
-    part: "p2",
-    cost: 63,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      partMaterialCost: {
-        p1: 52,
-        p2: 63,
-      },
-    },
-  });
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
-    ...ccp.initial.input,
-    partMaterialCost: {
-      p1: 52,
-      p2: 63,
-    },
-  });
-});
-
-it("sets the number of operators", () => {
-  const s = ccp.reducer(ccp.initial, {
-    type: ccp.ActionType.SetNumOperators,
-    numOpers: 12,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      numOperators: 12,
-    },
-  });
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
-    ...ccp.initial.input,
-    numOperators: 12,
-  });
-});
-
-it("sets the operator cost per hour", () => {
-  const s = ccp.reducer(ccp.initial, {
-    type: ccp.ActionType.SetOperatorCostPerHour,
-    cost: 67,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      operatorCostPerHour: 67,
-    },
-  });
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
-    ...ccp.initial.input,
-    operatorCostPerHour: 67,
-  });
-});
-
-it("sets the automation cost per year", () => {
-  const s = ccp.reducer(ccp.initial, {
-    type: ccp.ActionType.SetAutomationCost,
-    cost: 123456,
-  });
-  expect(s).toEqual({
-    input: {
-      ...ccp.initial.input,
-      automationCostPerYear: 123456,
-    },
-  });
-  expect(JSON.parse(localStorage.getItem("cost-per-piece") || "")).toEqual({
-    ...ccp.initial.input,
-    automationCostPerYear: 123456,
-  });
-});
-
 it("computes part costs", async () => {
   const data = loadMockData(30 * 24 * 60 * 60);
   const evts = await data.events;
   const cycleState = cycles.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, true, cycles.initial);
-  const costInput: ccp.CostInput = {
-    machineCostPerYear: {
-      Machine: 1234,
-    },
-    partMaterialCost: {
-      aaa: 15,
-      bbb: 19,
-    },
-    numOperators: 2,
-    automationCostPerYear: 10000,
-    operatorCostPerHour: 5432,
+  const machineCostPerYear = {
+    Machine: 1234,
   };
+  const partMaterialCost = {
+    aaa: 15,
+    bbb: 19,
+  };
+  const totalLaborCost = 2 * 5432 * 30 * 24;
+  const automationCostPerYear = 10000;
 
-  expect(ccp.compute_monthly_cost(costInput, cycleState.part_cycles)).toMatchSnapshot("cost calcs");
+  const costs = ccp.compute_monthly_cost(
+    machineCostPerYear,
+    partMaterialCost,
+    automationCostPerYear,
+    totalLaborCost,
+    cycleState.part_cycles,
+    null
+  );
+
+  expect(costs).toMatchSnapshot("cost calcs");
+
+  const costtable = document.createElement("div");
+  costtable.innerHTML = ccp.buildCostPerPieceTable(costs, partMaterialCost);
+  expect(costtable).toMatchSnapshot("cost clipboard table");
 });

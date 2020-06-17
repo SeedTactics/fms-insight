@@ -39,7 +39,6 @@ import * as operators from "../data/operators";
 import * as paths from "../data/path-lookup";
 import * as serverSettings from "../data/server-settings";
 import * as allMatBins from "../data/all-material-bins";
-import * as ccp from "../data/cost-per-piece";
 import * as websocket from "./websocket";
 import { initBarcodeListener } from "./barcode";
 
@@ -88,7 +87,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       Websocket: websocket.reducer,
       Operators: operators.reducer,
       ServerSettings: serverSettings.reducer,
-      CostPerPiece: ccp.reducer,
       location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
     },
     middleware,

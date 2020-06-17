@@ -22,6 +22,7 @@
     "date-fns": "^2.14.0",
     "jdenticon": "^2.0.0",
     "jsbarcode": "^3.11.0",
+    "localforage": "^1.7.4",
     "moment": "^2.26.0",
     "oidc-client": "^1.5.3-beta.1",
     "prelude-ts": "^1.0.0",
