@@ -177,10 +177,12 @@ quoting work, and other management decisions, we suggest that you [export the
 workorder data](workorder-report.md) to your ERP and implement a cost report
 in your ERP taking into account all factors.
 
-Cost/piece is not a great metric for improving the cell's operations since
+Cost/piece is not a great metric to use initially when searching for techniques
+to improve the cell's operation, since
 focusing only on cost/piece risks introducing quality problems and OEE
-reduction when shared costs are not correctly accounted. Instead, the
-efficiency tab should be used to improve the system.
+reduction. Instead, cost/piece is a great metric to use after-the-fact to determine
+if an implemented change in production operations has had a meaningful impact on
+cost/piece.
 
 ## Calculations
 
@@ -221,24 +223,15 @@ calculation of machine utilization gives `(1200 + 1000) / (24*30*4) = 76%` use. 
 divides the 24% of the time the machine is not in use among aaa and bbb based on their percentages
 of planned use. Attempting to identify OEE problems are better addressed using the efficiency tab.
 
-## Cost Inputs
-
-In the top card labeled "Cost Inputs", enter the number of operators assigned
-to the cell and their total hourly rate. FMS Insight will multiply the number
-of operators times the cost per hour times the total month time to obtain a
-total cost of labor for the cell. Next, enter the cost per year of each individual
-station; that is, in the machine row, enter the cost of a single machine. FMS Insight
-will multiply this cost by the number of machines and divide it by 12 to obtain a total
-cost of the station.
-
 ## Part Cost/Piece
 
-![Screenshot of part cost/piece page](assets/insight-part-cost.jpg)
+![Screenshot of part cost/piece page](assets/insight-part-cost.png)
 
-The card labeled "Part Cost/Piece" then shows the results of the cost
-calculations. FMS Insight takes the total labor and station costs calculated
+The card labeled "Part Cost/Piece" shows the results of the cost
+calculations, based on the values entered in the "Cost Inputs" card.
+FMS Insight takes the total labor and station costs calculated
 for the whole month and then divides it among the parts weighted by their use
-of the labor or station. For example, when dividing up machining cost, FMS
+of the resource. For example, when dividing up machining cost, FMS
 Insight will sum up the expected machine cycle time for all part cycles that
 were produced during the month, and then sum up the expected machine cycle
 time for part `aaa`. Dividing these two quantities, FMS Insight obtains a
@@ -255,3 +248,5 @@ to the load station). Next, for each part, FMS Insight sums up the number of pal
 for this part. Dividing these two, we obtain a percentage of the pallet cycles used for
 a specific part. The total automation cost is then divided up among the parts based on
 their percentage use of all the pallet cycles.
+
+The data can be copied to the clipboard via the two-arrow-icon button in the top right.

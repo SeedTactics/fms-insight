@@ -74,10 +74,10 @@ class Button extends React.Component {
 }
 
 Button.defaultProps = {
-  target: "_self"
+  target: "_self",
 };
 
-const SplashContainer = props => (
+const SplashContainer = (props) => (
   <div className="homeContainer">
     <div className="homeSplashFade">
       <div className="wrapper homeWrapper">{props.children}</div>
@@ -85,14 +85,14 @@ const SplashContainer = props => (
   </div>
 );
 
-const ProjectTitle = props => (
+const ProjectTitle = (props) => (
   <h2 className="projectTitle">
     {siteConfig.title}
     <small>{siteConfig.tagline}</small>
   </h2>
 );
 
-const PromoSection = props => (
+const PromoSection = (props) => (
   <div className="section promoSection">
     <div className="promoRow">
       <div className="pluginRowBlock">{props.children}</div>
@@ -120,7 +120,7 @@ class HomeSplash extends React.Component {
   }
 }
 
-const Block = props => (
+const Block = (props) => (
   <Container
     padding={["bottom", "top"]}
     id={props.id}
@@ -134,7 +134,7 @@ const Block = props => (
   </Container>
 );
 
-const Features = props => (
+const Features = (props) => (
   <Block layout="fourColumn">
     {[
       {
@@ -143,7 +143,7 @@ const Features = props => (
           "and planned jobs, and then view efficiency and cost/piece reports to improve productivity.",
         image: imgUrl("assessment.svg"),
         imageAlign: "top",
-        title: "Data Analytics"
+        title: "Data Analytics",
       },
       {
         content:
@@ -151,7 +151,7 @@ const Features = props => (
           " on the factory floor.",
         image: imgUrl("search.svg"),
         imageAlign: "top",
-        title: "Station Monitoring"
+        title: "Station Monitoring",
       },
       {
         content:
@@ -159,13 +159,13 @@ const Features = props => (
           " sytem and back again.",
         image: imgUrl("label.svg"),
         imageAlign: "top",
-        title: "Part Tracking"
-      }
+        title: "Part Tracking",
+      },
     ]}
   </Block>
 );
 
-const FeatureCallout = props => (
+const FeatureCallout = (props) => (
   <div
     className="productShowcaseSection paddingBottom"
     style={{ textAlign: "center" }}
@@ -188,7 +188,7 @@ const traits = [
       "Each page displays information about the cell targeted at the specific user; for example, the operator page shows " +
       "the load and unload instructions for the current pallet.",
     image: screenshotUrl("insight-loadstation-small.jpg"),
-    title: "Broadcast Info Throughout the Factory"
+    title: "Broadcast Info Throughout the Factory",
   },
   {
     content:
@@ -196,7 +196,7 @@ const traits = [
       "what part type to load, what part type to unload, serial assignment, inspection decisions, " +
       "load instructions, and workorder assignment.",
     image: imgUrl("load-station.jpg"),
-    title: "Load/Unload Instructions"
+    title: "Load/Unload Instructions",
   },
   {
     content:
@@ -204,7 +204,7 @@ const traits = [
       "FMS Insight can then track material throughout the entire process and display " +
       "historical data about a specific serial.",
     image: screenshotUrl("insight-inspection-sankey-only.jpg"),
-    title: "Serial Tracking"
+    title: "Serial Tracking",
   },
   {
     content:
@@ -214,7 +214,7 @@ const traits = [
       "and date/time of the part being inspected.  Finally, quality engineers can view recent failed inspections and " +
       "lookup failed serials.",
     image: screenshotUrl("insight-inspection-details.jpg"),
-    title: "Inspections and Quality"
+    title: "Inspections and Quality",
   },
   {
     content:
@@ -222,7 +222,7 @@ const traits = [
       "The dashboard shows the progress on the current jobs, recent statistical outlier load and machine events, machine and labor " +
       "OEE for the previous week, and more.",
     image: screenshotUrl("insight-dashboard-jobs.jpg"),
-    title: "Supervisor Dashboard"
+    title: "Supervisor Dashboard",
   },
   {
     content:
@@ -230,15 +230,15 @@ const traits = [
       "the efficiency of the cell.  These reports have been built up over decades of expierence to highlight the " +
       "places where small changes to pallet or machine assignments can lead to large performance improvements",
     image: screenshotUrl("insight-station-cycle-graph-only.jpg"),
-    title: "Efficiency Improvement"
+    title: "Efficiency Improvement",
   },
   {
     content:
       "Using the event log, FMS Insight provides a monthly cost/piece report showing a breakdown of the " +
       "machining and labor cost for each part.  The cost/piece can be used to validate that iterative operational changes " +
       "are actually improvements, helps plan future capital investments, and assists ordering and sales quote future work.",
-    image: screenshotUrl("insight-part-cost.jpg"),
-    title: "Cost/Piece"
+    image: screenshotUrl("insight-part-cost.png"),
+    title: "Cost/Piece",
   },
   {
     content:
@@ -247,7 +247,7 @@ const traits = [
       "If serials/barcodes are used, the individual serials are tracked in the workorder to allow ERP cost calculations at " +
       "the workorder level.",
     image: screenshotUrl("insight-wash-screen.jpg"),
-    title: "Workorder Assignment"
+    title: "Workorder Assignment",
   },
   {
     content:
@@ -255,7 +255,7 @@ const traits = [
       "This is helpful when material enters and leaves the automated handling system, such as between part processes or " +
       "if parts are transfered from a lathe cell to a horizontal cell.",
     image: screenshotUrl("insight-all-material.jpg"),
-    title: "In-Process Material Tracking"
+    title: "In-Process Material Tracking",
   },
   {
     content:
@@ -265,11 +265,11 @@ const traits = [
       "data in the cell controller.  The API uses JSON and a REST-like HTTP interface, and is described fully as an " +
       "OpenAPI specification.",
     image: screenshotUrl("insight-swagger.jpg"),
-    title: "Cell Control Data"
-  }
+    title: "Cell Control Data",
+  },
 ];
 
-const Traits = props => (
+const Traits = (props) => (
   <div>
     {traits.map((t, idx) => (
       <Block
@@ -282,20 +282,20 @@ const Traits = props => (
             content: t.content,
             image: t.image,
             title: t.title,
-            imageAlign: idx % 2 === 0 ? "right" : "left"
-          }
+            imageAlign: idx % 2 === 0 ? "right" : "left",
+          },
         ]}
       </Block>
     ))}
   </div>
 );
 
-const Showcase = props => {
+const Showcase = (props) => {
   if ((siteConfig.users || []).length === 0) {
     return null;
   }
   const showcase = siteConfig.users
-    .filter(user => {
+    .filter((user) => {
       return user.pinned;
     })
     .map((user, i) => {

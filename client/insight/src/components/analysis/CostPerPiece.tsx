@@ -44,6 +44,7 @@ import TableRow from "@material-ui/core/TableRow";
 import TextField from "@material-ui/core/TextField";
 import MoneyIcon from "@material-ui/icons/AttachMoney";
 import ImportExport from "@material-ui/icons/ImportExport";
+import { makeStyles, createStyles } from "@material-ui/core/styles";
 import { PartCycleData } from "../../data/events.cycles";
 import BuildIcon from "@material-ui/icons/Build";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
@@ -53,7 +54,6 @@ import * as localForage from "localforage";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import {
   MachineCostPerYear,
-  PartMaterialCost,
   PartCost,
   compute_monthly_cost,
   copyCostPerPieceToClipboard,
@@ -61,6 +61,8 @@ import {
 import { format } from "date-fns";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
+import { PartIdenticon } from "../station-monitor/Material";
+import Typography from "@material-ui/core/Typography";
 
 interface Last30LaborCost {
   readonly numOperators: number | null;
@@ -74,14 +76,6 @@ async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
 
 async function saveMachineCostPerYear(m: MachineCostPerYear): Promise<void> {
   await localForage.setItem("MachineCostPerYear", m);
-}
-
-async function loadPartMatCost(): Promise<PartMaterialCost> {
-  return (await localForage.getItem("PartMaterialCost")) ?? {};
-}
-
-async function savePartMatCost(m: PartMaterialCost): Promise<void> {
-  await localForage.setItem("PartMaterialCost", m);
 }
 
 async function loadAutomationCostPerYear(): Promise<number | null> {
@@ -130,7 +124,7 @@ function Last30LaborCostInput(props: Last30LaborCostProps) {
         label="Number of Operators"
         inputProps={{ min: 0 }}
         variant="outlined"
-        value={numOper === null ? props.input.numOperators : isNaN(numOper) ? "" : numOper}
+        value={numOper ? (isNaN(numOper) ? "" : numOper) : props.input.numOperators ?? ""}
         onChange={(e) => setNumOper(parseInt(e.target.value))}
         onBlur={() => {
           if (numOper != null) {
@@ -148,7 +142,7 @@ function Last30LaborCostInput(props: Last30LaborCostProps) {
         label="Cost per operator per hour"
         inputProps={{ min: 0 }}
         variant="outlined"
-        value={perHour === null ? props.input.averageWagePerHour : isNaN(perHour) ? "" : perHour}
+        value={perHour ? (isNaN(perHour) ? "" : perHour) : props.input.averageWagePerHour ?? ""}
         onChange={(e) => setPerHour(parseFloat(e.target.value))}
         onBlur={() => {
           if (perHour != null) {
@@ -166,7 +160,7 @@ function Last30LaborCostInput(props: Last30LaborCostProps) {
         style={{ marginTop: "1.5em" }}
         inputProps={{ min: 0, max: 24 }}
         variant="outlined"
-        value={hoursPerDay === null ? props.input.hoursPerDay : isNaN(hoursPerDay) ? "" : hoursPerDay}
+        value={hoursPerDay ? (isNaN(hoursPerDay) ? "" : hoursPerDay) : props.input.hoursPerDay}
         onChange={(e) => setHoursPerDay(parseFloat(e.target.value))}
         onBlur={() => {
           if (hoursPerDay != null && !isNaN(hoursPerDay)) {
@@ -284,47 +278,26 @@ function StationCostInputs(props: StationCostInputProps) {
   );
 }
 
-interface PartMatCostProps {
-  readonly partName: string;
-  readonly partMaterialCosts: PartMaterialCost;
-  readonly setPartMatCost: (c: PartMaterialCost) => void;
-}
-
-function PartMatCostInput(props: PartMatCostProps) {
-  const [cost, setCost] = React.useState<number | null>(null);
-
-  return (
-    <TextField
-      type="number"
-      inputProps={{ min: 0 }}
-      value={cost === null ? props.partMaterialCosts[props.partName] ?? "" : isNaN(cost) ? "" : cost}
-      onChange={(e) => setCost(parseFloat(e.target.value))}
-      onBlur={() => {
-        if (cost != null) {
-          const newCost = { ...props.partMaterialCosts };
-          if (isNaN(cost)) {
-            delete newCost[props.partName];
-          } else {
-            newCost[props.partName] = cost;
-          }
-          savePartMatCost(newCost);
-          props.setPartMatCost(newCost);
-        }
-        setCost(null);
-      }}
-    />
-  );
-}
+const useTableStyles = makeStyles((theme) =>
+  createStyles({
+    labelContainer: {
+      display: "flex",
+      alignItems: "center",
+    },
+    identicon: {
+      marginRight: "0.2em",
+    },
+  })
+);
 
 interface CostPerPieceOutputProps {
-  readonly partMaterialCosts: PartMaterialCost;
-  readonly setPartMatCost: (c: PartMaterialCost) => void;
-
   readonly costs: ReadonlyArray<PartCost>;
 }
 
 function CostOutputCard(props: CostPerPieceOutputProps) {
+  const classes = useTableStyles();
   const format = Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
   return (
@@ -338,7 +311,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyCostPerPieceToClipboard(props.costs, props.partMaterialCosts)}
+                onClick={() => copyCostPerPieceToClipboard(props.costs)}
               >
                 <ImportExport />
               </IconButton>
@@ -351,11 +324,11 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
           <TableHead>
             <TableRow>
               <TableCell>Part</TableCell>
-              <TableCell>Material Cost</TableCell>
-              <TableCell>Machine Cost</TableCell>
-              <TableCell>Labor Cost</TableCell>
-              <TableCell>Automation Cost</TableCell>
-              <TableCell>Total</TableCell>
+              <TableCell align="right">Completed Quantity</TableCell>
+              <TableCell align="right">Machine Cost</TableCell>
+              <TableCell align="right">Labor Cost</TableCell>
+              <TableCell align="right">Automation Cost</TableCell>
+              <TableCell align="right">Total</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -364,28 +337,36 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
               .transform((x) => LazySeq.ofIterable(x))
               .map((c, idx) => (
                 <TableRow key={idx}>
-                  <TableCell>{c.part}</TableCell>
                   <TableCell>
-                    <PartMatCostInput
-                      partMaterialCosts={props.partMaterialCosts}
-                      setPartMatCost={props.setPartMatCost}
-                      partName={c.part}
-                    />
+                    <div className={classes.labelContainer}>
+                      <div className={classes.identicon}>
+                        <PartIdenticon part={c.part} size={25} />
+                      </div>
+                      <div>
+                        <Typography variant="body2" component="span" display="block">
+                          {c.part}
+                        </Typography>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>{c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0}</TableCell>
-                  <TableCell>{c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0}</TableCell>
-                  <TableCell>
+                  <TableCell align="right">{c.parts_completed}</TableCell>
+                  <TableCell align="right">
+                    {c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0}
+                  </TableCell>
+                  <TableCell align="right">
+                    {c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0}
+                  </TableCell>
+                  <TableCell align="right">
                     {c.parts_completed > 0 ? format.format(c.automation_cost / c.parts_completed) : 0}
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="right">
                     {c.parts_completed > 0
                       ? format.format(
-                          (props.partMaterialCosts[c.part] || 0) +
-                            c.machine_cost / c.parts_completed +
+                          c.machine_cost / c.parts_completed +
                             c.labor_cost / c.parts_completed +
                             c.automation_cost / c.parts_completed
                         )
-                      : format.format(props.partMaterialCosts[c.part] || 0)}
+                      : ""}
                   </TableCell>
                 </TableRow>
               ))}
@@ -434,7 +415,6 @@ function CostPerPiecePage(props: CostPerPieceProps) {
   });
   const [curMonthLaborCost, setCurMonthLaborCost] = React.useState<number | null | "LOADING">(null);
   const [automationCostPerYear, setAutomationCostPerYear] = React.useState<number | null>(null);
-  const [partMatCosts, setPartMatCost] = React.useState<PartMaterialCost>({});
 
   React.useEffect(() => {
     (async () => {
@@ -444,7 +424,6 @@ function CostPerPiecePage(props: CostPerPieceProps) {
           loadMachineCostPerYear().then(setMachineCostPerYear),
           loadLast30LaborCost().then(setLast30LaborCost),
           loadAutomationCostPerYear().then(setAutomationCostPerYear),
-          loadPartMatCost().then(setPartMatCost),
         ]);
       } finally {
         setLoading(false);
@@ -472,17 +451,9 @@ function CostPerPiecePage(props: CostPerPieceProps) {
       totalLaborCost =
         (last30LaborCost.averageWagePerHour ?? 0) * last30LaborCost.hoursPerDay * (last30LaborCost.numOperators ?? 0);
     }
-    return compute_monthly_cost(
-      machineCostPerYear,
-      partMatCosts,
-      automationCostPerYear,
-      totalLaborCost,
-      props.cycles,
-      props.month
-    );
+    return compute_monthly_cost(machineCostPerYear, automationCostPerYear, totalLaborCost, props.cycles, props.month);
   }, [
     machineCostPerYear,
-    partMatCosts,
     automationCostPerYear,
     props.cycles,
     props.month,
@@ -525,7 +496,7 @@ function CostPerPiecePage(props: CostPerPieceProps) {
           </div>
         </CostInputCard>
       </div>
-      <CostOutputCard partMaterialCosts={partMatCosts} setPartMatCost={setPartMatCost} costs={computedCosts} />
+      <CostOutputCard costs={computedCosts} />
     </>
   );
 }

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { PartCycleData } from "./events.cycles";
 import { getDaysInMonth } from "date-fns";
-import { HashMap, Vector, HasEquals } from "prelude-ts";
+import { Vector, HasEquals } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
@@ -50,16 +50,12 @@ export interface PartCost {
 
   // split of yearly automation cost over all use
   readonly automation_cost: number;
-
-  readonly material_cost: number;
 }
 
 export type MachineCostPerYear = { readonly [stationGroup: string]: number };
-export type PartMaterialCost = { readonly [partName: string]: number };
 
 export function compute_monthly_cost(
   machineCostPerYear: MachineCostPerYear,
-  partMaterialCost: PartMaterialCost,
   automationCostPerYear: number | null,
   totalLaborCostForPeriod: number,
   cycles: Vector<PartCycleData>,
@@ -67,17 +63,30 @@ export function compute_monthly_cost(
 ): ReadonlyArray<PartCost> {
   const days = month ? getDaysInMonth(month) : 30;
 
-  const totalStatUseMinutes: HashMap<string, number> = LazySeq.ofIterable(cycles).toMap(
-    (c) => [c.stationGroup, c.activeMinutes],
-    (a1, a2) => a1 + a2
-  );
+  let totalPalletCycles = 0;
+  const totalStatUseMinutes = new Map<string, number>();
+  const stationCount = new Map<string, Set<number>>();
 
-  const totalPalletCycles = LazySeq.ofIterable(cycles).sumOn((v) => (v.completed ? 1 : 0));
+  for (const c of cycles) {
+    if (c.completed) {
+      totalPalletCycles += 1;
+    }
+    totalStatUseMinutes.set(c.stationGroup, c.activeMinutes + (totalStatUseMinutes.get(c.stationGroup) ?? 0));
+    const s = stationCount.get(c.stationGroup);
+    if (s) {
+      s.add(c.stationNumber);
+    } else {
+      stationCount.set(
+        c.stationGroup,
+        new Set<number>([c.stationNumber])
+      );
+    }
+  }
 
   const autoCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
 
   return Array.from(
-    LazySeq.ofIterable(cycles)
+    cycles
       .groupBy((c) => c.part)
       .map((partName, forPart) => [
         partName as string & HasEquals,
@@ -85,7 +94,9 @@ export function compute_monthly_cost(
           part: partName,
           parts_completed: LazySeq.ofIterable(forPart)
             .filter((c) => c.completed)
-            .sumOn((c) => c.material.length),
+            .flatMap((c) => c.material)
+            .filter((m) => m.proc === m.numproc)
+            .length(),
           machine_cost: LazySeq.ofIterable(forPart)
             .filter((c) => !c.isLabor)
             .toMap(
@@ -93,8 +104,9 @@ export function compute_monthly_cost(
               (a1, a2) => a1 + a2
             )
             .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
-              const totalUse = totalStatUseMinutes.get(statGroup).getOrElse(1);
-              const totalMachineCost = ((machineCostPerYear[statGroup] || 0) * days) / 365;
+              const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
+              const numMachines = stationCount.get(statGroup)?.size ?? 0;
+              const totalMachineCost = ((machineCostPerYear[statGroup] ?? 0) * numMachines * days) / 365;
               return x + (minutes / totalUse) * totalMachineCost;
             }),
           labor_cost: LazySeq.ofIterable(forPart)
@@ -104,23 +116,22 @@ export function compute_monthly_cost(
               (a1, a2) => a1 + a2
             )
             .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
-              const total = totalStatUseMinutes.get(statGroup).getOrElse(1);
+              const total = totalStatUseMinutes.get(statGroup) ?? 1;
               return x + (minutes / total) * totalLaborCostForPeriod;
             }),
           automation_cost: automationCostPerYear
             ? (cycles.sumOn((v) => (v.completed ? 1 : 0)) / totalPalletCycles) * autoCostForPeriod
             : 0,
-          material_cost: partMaterialCost[partName] || 0,
         },
       ])
       .valueIterable()
   );
 }
 
-export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>, partMatCost: PartMaterialCost) {
+export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>) {
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";
-  table += "<th>Material Cost</th>";
+  table += "<th>Completed Quantity</th>";
   table += "<th>Machine Cost</th>";
   table += "<th>Labor Cost</th>";
   table += "<th>Automation Cost</th>";
@@ -134,7 +145,7 @@ export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>, partMatCo
 
   for (const c of rows) {
     table += "<tr><td>" + c.part + "</td>";
-    table += "<td>" + (partMatCost[c.part] ?? "") + "</td>";
+    table += "<td>" + c.parts_completed.toString() + "</td>";
     table += "<td>" + (c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0) + "</td>";
     table += "<td>" + (c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0) + "</td>";
     table += "<td>" + (c.parts_completed > 0 ? format.format(c.automation_cost / c.parts_completed) : 0) + "</td>";
@@ -142,12 +153,11 @@ export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>, partMatCo
       "<td>" +
       (c.parts_completed > 0
         ? format.format(
-            (partMatCost[c.part] || 0) +
-              c.machine_cost / c.parts_completed +
+            c.machine_cost / c.parts_completed +
               c.labor_cost / c.parts_completed +
               c.automation_cost / c.parts_completed
           )
-        : format.format(partMatCost[c.part] || 0)) +
+        : "") +
       "</td>";
     table += "</tr>\n";
   }
@@ -156,6 +166,6 @@ export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>, partMatCo
   return table;
 }
 
-export function copyCostPerPieceToClipboard(costs: ReadonlyArray<PartCost>, partMatCost: PartMaterialCost): void {
-  copy(buildCostPerPieceTable(costs, partMatCost));
+export function copyCostPerPieceToClipboard(costs: ReadonlyArray<PartCost>): void {
+  copy(buildCostPerPieceTable(costs));
 }
