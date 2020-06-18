@@ -42,16 +42,11 @@ it("computes part costs", async () => {
   const machineCostPerYear = {
     Machine: 1234,
   };
-  const partMaterialCost = {
-    aaa: 15,
-    bbb: 19,
-  };
   const totalLaborCost = 2 * 5432 * 30 * 24;
   const automationCostPerYear = 10000;
 
   const costs = ccp.compute_monthly_cost(
     machineCostPerYear,
-    partMaterialCost,
     automationCostPerYear,
     totalLaborCost,
     cycleState.part_cycles,
@@ -61,6 +56,6 @@ it("computes part costs", async () => {
   expect(costs).toMatchSnapshot("cost calcs");
 
   const costtable = document.createElement("div");
-  costtable.innerHTML = ccp.buildCostPerPieceTable(costs, partMaterialCost);
+  costtable.innerHTML = ccp.buildCostPerPieceTable(costs);
   expect(costtable).toMatchSnapshot("cost clipboard table");
 });

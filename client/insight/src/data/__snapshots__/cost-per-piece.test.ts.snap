@@ -5,48 +5,42 @@ Array [
   Object {
     "automation_cost": 821.917808219178,
     "labor_cost": 1398286.2736752501,
-    "machine_cost": 8.23832397733757,
-    "material_cost": 15,
+    "machine_cost": 32.95329590935028,
     "part": "aaa",
-    "parts_completed": 836,
+    "parts_completed": 414,
   },
   Object {
     "automation_cost": 821.917808219178,
     "labor_cost": 1606364.5882102575,
-    "machine_cost": 10.534265220277643,
-    "material_cost": 19,
+    "machine_cost": 42.13706088111057,
     "part": "bbb",
-    "parts_completed": 962,
+    "parts_completed": 480,
   },
   Object {
     "automation_cost": 821.917808219178,
     "labor_cost": 1629669.3594381784,
-    "machine_cost": 24.565572274392604,
-    "material_cost": 0,
+    "machine_cost": 98.26228909757042,
     "part": "ccc",
-    "parts_completed": 976,
+    "parts_completed": 491,
   },
   Object {
     "automation_cost": 821.917808219178,
     "labor_cost": 1100318.1272611192,
-    "machine_cost": 10.461154749527376,
-    "material_cost": 0,
+    "machine_cost": 41.8446189981095,
     "part": "xxx",
     "parts_completed": 658,
   },
   Object {
     "automation_cost": 821.917808219178,
     "labor_cost": 1408274.0327729303,
-    "machine_cost": 19.16311717802037,
-    "material_cost": 0,
+    "machine_cost": 76.65246871208149,
     "part": "yyy",
     "parts_completed": 844,
   },
   Object {
     "automation_cost": 821.917808219178,
     "labor_cost": 679167.6186422643,
-    "machine_cost": 28.46222413469101,
-    "material_cost": 0,
+    "machine_cost": 113.84889653876404,
     "part": "zzz",
     "parts_completed": 407,
   },
@@ -64,7 +58,7 @@ exports[`computes part costs: cost clipboard table 1`] = `
           Part
         </th>
         <th>
-          Material Cost
+          Completed Quantity
         </th>
         <th>
           Machine Cost
@@ -90,19 +84,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           aaa
         </td>
         <td>
-          15
+          414
         </td>
         <td>
-          0
+          0.1
         </td>
         <td>
-          1,672.6
+          3,377.5
         </td>
         <td>
-          1
+          2
         </td>
         <td>
-          1,688.6
+          3,379.6
         </td>
       </tr>
       
@@ -112,19 +106,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           bbb
         </td>
         <td>
-          19
+          480
         </td>
         <td>
-          0
+          0.1
         </td>
         <td>
-          1,669.8
+          3,346.6
         </td>
         <td>
-          0.9
+          1.7
         </td>
         <td>
-          1,689.7
+          3,348.4
         </td>
       </tr>
       
@@ -133,18 +127,20 @@ exports[`computes part costs: cost clipboard table 1`] = `
         <td>
           ccc
         </td>
-        <td />
         <td>
-          0
+          491
         </td>
         <td>
-          1,669.7
+          0.2
         </td>
         <td>
-          0.8
+          3,319.1
         </td>
         <td>
-          1,670.6
+          1.7
+        </td>
+        <td>
+          3,321
         </td>
       </tr>
       
@@ -153,9 +149,11 @@ exports[`computes part costs: cost clipboard table 1`] = `
         <td>
           xxx
         </td>
-        <td />
         <td>
-          0
+          658
+        </td>
+        <td>
+          0.1
         </td>
         <td>
           1,672.2
@@ -173,9 +171,11 @@ exports[`computes part costs: cost clipboard table 1`] = `
         <td>
           yyy
         </td>
-        <td />
         <td>
-          0
+          844
+        </td>
+        <td>
+          0.1
         </td>
         <td>
           1,668.6
@@ -193,9 +193,11 @@ exports[`computes part costs: cost clipboard table 1`] = `
         <td>
           zzz
         </td>
-        <td />
         <td>
-          0.1
+          407
+        </td>
+        <td>
+          0.3
         </td>
         <td>
           1,668.7
@@ -204,7 +206,7 @@ exports[`computes part costs: cost clipboard table 1`] = `
           2
         </td>
         <td>
-          1,670.8
+          1,671
         </td>
       </tr>
       
