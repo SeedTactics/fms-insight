@@ -142,6 +142,24 @@ export function setOtherLogBackends(servers: ReadonlyArray<string>) {
   OtherLogBackends = servers.map((s) => new api.LogClient(s));
 }
 
+export function instructionUrl(
+  partName: string,
+  type: string,
+  matId: number,
+  proc: number | null,
+  operator: string | null
+): string {
+  return (
+    "/api/v1/fms/find-instructions/" +
+    encodeURIComponent(partName) +
+    "?type=" +
+    encodeURIComponent(type) +
+    ("&materialID=" + matId.toString()) +
+    (proc ? "&process=" + proc.toString() : "") +
+    (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "")
+  );
+}
+
 export function setUserToken(u: User) {
   const token = u.access_token || u.id_token;
   function fetch(url: RequestInfo, init?: RequestInit) {

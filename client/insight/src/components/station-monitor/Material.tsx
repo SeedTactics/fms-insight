@@ -60,6 +60,7 @@ import { connect, mkAC } from "../../store/store";
 import { inproc_mat_to_summary, MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
+import { instructionUrl } from "../../data/backend";
 
 /*
 function getPosition(el: Element) {
@@ -449,18 +450,9 @@ export function InstructionButton({
     .filter((e) => e.id === material.materialID)
     .maxOn((e) => e.proc)
     .map((e) => e.proc);
-  const instrQuery =
-    "?type=" +
-    encodeURIComponent(type) +
-    ("&materialID=" + material.materialID.toString()) +
-    (maxProc !== undefined ? "&process=" + maxProc.getOrElse(1).toString() : "") +
-    (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "");
+  const url = instructionUrl(material.partName, type, material.materialID, maxProc.getOrNull(), operator);
   return (
-    <Button
-      href={"/api/v1/fms/find-instructions/" + encodeURIComponent(material.partName) + instrQuery}
-      target="bms-instructions"
-      color="primary"
-    >
+    <Button href={url} target="bms-instructions" color="primary">
       Instructions
     </Button>
   );

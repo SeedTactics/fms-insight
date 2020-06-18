@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -39,6 +39,7 @@ import { createSelector } from "reselect";
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 import Button from "@material-ui/core/Button";
 import Hidden from "@material-ui/core/Hidden";
+import FolderOpenIcon from "@material-ui/icons/FolderOpen";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
 import { duration } from "moment";
@@ -65,12 +66,15 @@ import SelectInspTypeDialog from "./SelectInspType";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
-import { HashMap } from "prelude-ts";
+import { HashMap, Option } from "prelude-ts";
 import { MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import ReactToPrint from "react-to-print";
+import { instructionUrl } from "../../data/backend";
+import Tooltip from "@material-ui/core/Tooltip";
+import Fab from "@material-ui/core/Fab";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -158,6 +162,59 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
     </dl>
   );
 });
+
+function MultiInstructionButton({
+  loadData,
+  operator,
+}: {
+  readonly loadData: LoadStationAndQueueData;
+  readonly operator: string | null;
+}) {
+  const urls = React.useMemo(
+    () =>
+      LazySeq.ofIterable(loadData.face.valueIterable())
+        .append(loadData.freeLoadingMaterial)
+        .append(loadData.free ?? [])
+        .appendAll(loadData.queues.valueIterable())
+        .flatMap((x) => x)
+        .mapOption((mat) => {
+          if (mat.action.type === api.ActionType.Loading && mat.location.type === api.LocType.OnPallet) {
+            return Option.some(instructionUrl(mat.partName, "unload", mat.materialID, mat.process, operator));
+          } else if (mat.action.type === api.ActionType.Loading) {
+            return Option.some(
+              instructionUrl(mat.partName, "load", mat.materialID, mat.action.processAfterLoad ?? mat.process, operator)
+            );
+          } else if (
+            mat.action.type === api.ActionType.UnloadToCompletedMaterial ||
+            mat.action.type === api.ActionType.UnloadToInProcess
+          ) {
+            return Option.some(instructionUrl(mat.partName, "unload", mat.materialID, mat.process, operator));
+          } else {
+            return Option.none<string>();
+          }
+        })
+        .toArray(),
+    [loadData]
+  );
+
+  if (urls.length === 0) {
+    return <div />;
+  }
+
+  function open() {
+    for (const url of urls) {
+      window.open(url, "_blank");
+    }
+  }
+
+  return (
+    <Tooltip title="Open All Instructions">
+      <Fab onClick={open} color="secondary">
+        <FolderOpenIcon />
+      </Fab>
+    </Tooltip>
+  );
+}
 
 const palletStyles = createStyles({
   palletContainerFill: {
@@ -441,7 +498,7 @@ const ConnectedMaterialDialog = connect(
 
 const loadStyles = createStyles({
   mainFillViewport: {
-    height: "calc(100vh - 64px - 2.5em)",
+    height: "calc(100vh - 64px - 1em)",
     display: "flex",
     padding: "8px",
     width: "100%",
@@ -455,6 +512,7 @@ const loadStyles = createStyles({
     flexGrow: 1,
     display: "flex",
     flexDirection: "column" as "column",
+    position: "relative",
   },
   queueCol: {
     width: "16em",
@@ -462,6 +520,16 @@ const loadStyles = createStyles({
     display: "flex",
     flexDirection: "column" as "column",
     borderLeft: "1px solid rgba(0, 0, 0, 0.12)",
+  },
+  fabFillViewport: {
+    position: "absolute",
+    bottom: "0px",
+    right: "5px",
+  },
+  fabScrollFixed: {
+    position: "fixed",
+    bottom: "5px",
+    right: "5px",
   },
 });
 
@@ -510,6 +578,9 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
         >
           <div className={props.classes.palCol}>
             <PalletColumn {...palProps} />
+            <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
+              <MultiInstructionButton loadData={props.data} operator={props.operator} />
+            </div>
           </div>
           {col1.length() === 0 ? undefined : (
             <div className={props.classes.queueCol}>
