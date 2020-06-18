@@ -58,15 +58,17 @@ import { CompletedDataPoint, jobsToPoints, DataPoints } from "../../data/job-bul
 
 interface PlotProps {
   readonly cnt: number;
+  readonly longestPartName: number;
   readonly children: (JSX.Element | undefined)[];
 }
 
-function FillViewportPlot({ children }: PlotProps) {
+function FillViewportPlot({ longestPartName, children }: PlotProps) {
+  const margin = Math.min(100, longestPartName > 6 ? (longestPartName - 6) * 6 + 60 : 60);
   return (
     <div style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
       <div style={{ flexGrow: 1, position: "relative" }}>
         <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}>
-          <FlexibleXYPlot margin={{ left: 70, right: 10, top: 10, bottom: 40 }} yType="ordinal">
+          <FlexibleXYPlot margin={{ left: margin, right: 10, top: 10, bottom: 40 }} yType="ordinal">
             {children}
           </FlexibleXYPlot>
         </div>
@@ -76,10 +78,11 @@ function FillViewportPlot({ children }: PlotProps) {
   );
 }
 
-function ScrollablePlot({ children, cnt }: PlotProps) {
+function ScrollablePlot({ children, cnt, longestPartName }: PlotProps) {
+  const margin = Math.min(100, longestPartName > 6 ? (longestPartName - 6) * 6 + 60 : 60);
   return (
     <div>
-      <FlexibleWidthXYPlot height={cnt * 40} margin={{ left: 70, right: 10, top: 10, bottom: 40 }} yType="ordinal">
+      <FlexibleWidthXYPlot height={cnt * 40} margin={{ left: margin, right: 10, top: 10, bottom: 40 }} yType="ordinal">
         {children}
       </FlexibleWidthXYPlot>
       <div style={{ textAlign: "center" }}>Machine Hours</div>
@@ -114,7 +117,7 @@ function format_tick(p: CompletedDataPoint) {
     <tspan>
       <tspan>{p.part}</tspan>
       <tspan x={0} dy="1.2em">
-        {p.completedCount} / {p.totalCount}
+        {p.totalCount > 100 ? `${p.completedCount}/${p.totalCount}` : `${p.completedCount} / ${p.totalCount}`}
       </tspan>
     </tspan>
   );
@@ -134,7 +137,7 @@ class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
   render() {
     const Plot = this.props.fillViewport ? FillViewportPlot : ScrollablePlot;
     return (
-      <Plot cnt={this.props.completedData.length}>
+      <Plot cnt={this.props.completedData.length} longestPartName={this.props.longestPartName}>
         <XAxis />
         <YAxis tickFormat={(y: number, i: number) => format_tick(this.props.completedData[i])} />
         <HorizontalGridLines />

@@ -71,6 +71,7 @@ export interface CompletedDataPoint extends DataPoint {
 export interface DataPoints {
   readonly completedData: ReadonlyArray<CompletedDataPoint>;
   readonly planData: ReadonlyArray<{ x: number; y: number }>;
+  readonly longestPartName: number;
 }
 
 function vectorRange(start: number, count: number): Vector<number> {
@@ -92,5 +93,9 @@ export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): 
     .zipWithIndex()
     .map(([pt, i]) => ({ x: pt.totalPlan, y: i }))
     .toArray();
-  return { completedData, planData };
+  const longestPartName = points
+    .maxOn((p) => p.part.length)
+    .map((p) => p.part.length)
+    .getOrElse(1);
+  return { completedData, planData, longestPartName };
 }
