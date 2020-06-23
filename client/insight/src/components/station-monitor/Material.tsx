@@ -440,17 +440,19 @@ export function InstructionButton({
   material,
   type,
   operator,
+  pallet,
 }: {
   readonly material: matDetails.MaterialDetail;
   readonly type: string;
   readonly operator: string | null;
+  readonly pallet: string | null;
 }) {
   const maxProc = LazySeq.ofIterable(material.events)
     .flatMap((e) => e.material)
     .filter((e) => e.id === material.materialID)
     .maxOn((e) => e.proc)
     .map((e) => e.proc);
-  const url = instructionUrl(material.partName, type, material.materialID, maxProc.getOrNull(), operator);
+  const url = instructionUrl(material.partName, type, material.materialID, pallet, maxProc.getOrNull(), operator);
   return (
     <Button href={url} target="bms-instructions" color="primary">
       Instructions

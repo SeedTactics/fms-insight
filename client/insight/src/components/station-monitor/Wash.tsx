@@ -99,7 +99,7 @@ function WashDialog(props: WashDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton material={props.display_material} type="wash" operator={props.operator} />
+            <InstructionButton material={props.display_material} type="wash" operator={props.operator} pallet={null} />
           ) : undefined}
           {props.display_material && quarantineQueue !== null ? (
             <Tooltip title={"Move to " + quarantineQueue}>

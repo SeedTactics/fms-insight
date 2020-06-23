@@ -146,6 +146,7 @@ export function instructionUrl(
   partName: string,
   type: string,
   matId: number,
+  pallet: string | null,
   proc: number | null,
   operator: string | null
 ): string {
@@ -156,7 +157,8 @@ export function instructionUrl(
     encodeURIComponent(type) +
     ("&materialID=" + matId.toString()) +
     (proc ? "&process=" + proc.toString() : "") +
-    (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "")
+    (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "") +
+    (pallet ? "&pallet=" + encodeURIComponent(pallet) : "")
   );
 }
 

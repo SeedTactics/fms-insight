@@ -142,13 +142,15 @@ namespace BlackMaple.MachineFramework.Controllers
                                          [FromQuery] string type,
                                          [FromQuery] int? process = null,
                                          [FromQuery] long? materialID = null,
-                                         [FromQuery] string operatorName = null)
+                                         [FromQuery] string operatorName = null,
+                                         [FromQuery] string pallet = null
+                                         )
     {
       try
       {
         if (_impl != null && _impl.InstructionPath != null)
         {
-          var path = _impl.InstructionPath(part, process, type, materialID, operatorName);
+          var path = _impl.InstructionPath(part, process, type, materialID, operatorName, pallet);
           if (string.IsNullOrEmpty(path))
           {
             return NotFound(

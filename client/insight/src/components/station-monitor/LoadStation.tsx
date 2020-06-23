@@ -170,32 +170,54 @@ function MultiInstructionButton({
   readonly loadData: LoadStationAndQueueData;
   readonly operator: string | null;
 }) {
-  const urls = React.useMemo(
-    () =>
-      LazySeq.ofIterable(loadData.face.valueIterable())
+  const urls = React.useMemo(() => {
+    const pal = loadData.pallet;
+    if (pal) {
+      return LazySeq.ofIterable(loadData.face.valueIterable())
         .append(loadData.freeLoadingMaterial)
         .append(loadData.free ?? [])
         .appendAll(loadData.queues.valueIterable())
         .flatMap((x) => x)
         .mapOption((mat) => {
-          if (mat.action.type === api.ActionType.Loading && mat.location.type === api.LocType.OnPallet) {
-            return Option.some(instructionUrl(mat.partName, "unload", mat.materialID, mat.process, operator));
-          } else if (mat.action.type === api.ActionType.Loading) {
+          if (
+            mat.action.type === api.ActionType.Loading &&
+            mat.action.loadOntoPallet === pal.pallet &&
+            mat.location.type === api.LocType.OnPallet &&
+            mat.location.pallet === pal.pallet
+          ) {
+            // transfer, but use unload type
             return Option.some(
-              instructionUrl(mat.partName, "load", mat.materialID, mat.action.processAfterLoad ?? mat.process, operator)
+              instructionUrl(mat.partName, "unload", mat.materialID, pal.pallet, mat.process, operator)
+            );
+          } else if (mat.action.type === api.ActionType.Loading && mat.action.loadOntoPallet === pal.pallet) {
+            return Option.some(
+              instructionUrl(
+                mat.partName,
+                "load",
+                mat.materialID,
+                pal.pallet,
+                mat.action.processAfterLoad ?? mat.process,
+                operator
+              )
             );
           } else if (
-            mat.action.type === api.ActionType.UnloadToCompletedMaterial ||
-            mat.action.type === api.ActionType.UnloadToInProcess
+            mat.location.type === api.LocType.OnPallet &&
+            mat.location.pallet === pal.pallet &&
+            (mat.action.type === api.ActionType.UnloadToCompletedMaterial ||
+              mat.action.type === api.ActionType.UnloadToInProcess)
           ) {
-            return Option.some(instructionUrl(mat.partName, "unload", mat.materialID, mat.process, operator));
+            return Option.some(
+              instructionUrl(mat.partName, "unload", mat.materialID, pal.pallet, mat.process, operator)
+            );
           } else {
             return Option.none<string>();
           }
         })
-        .toArray(),
-    [loadData]
-  );
+        .toArray();
+    } else {
+      return [];
+    }
+  }, [loadData]);
 
   if (urls.length === 0) {
     return <div />;
@@ -371,6 +393,7 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
 
 interface LoadMatDialogProps extends MaterialDialogProps {
   readonly loadNum: number;
+  readonly pallet: string | null;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
@@ -415,6 +438,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
               material={props.display_material}
               type={instructionType(props.display_material)}
               operator={props.operator}
+              pallet={props.pallet}
             />
           ) : undefined}
           <Button color="primary" onClick={props.openSetSerial}>
@@ -675,7 +699,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
           <SelectWorkorderDialog />
           <SetSerialDialog />
           <SelectInspTypeDialog />
-          <ConnectedMaterialDialog loadNum={props.data.loadNum} />
+          <ConnectedMaterialDialog loadNum={props.data.loadNum} pallet={props.data.pallet?.pallet ?? null} />
         </main>
       </MoveMaterialArrowContainer>
     </DocumentTitle>

@@ -75,7 +75,12 @@ function InspButtons(props: InspButtonsProps) {
   return (
     <>
       {props.display_material && props.display_material.partName !== "" ? (
-        <InstructionButton material={props.display_material} type={props.inspection_type} operator={props.operator} />
+        <InstructionButton
+          material={props.display_material}
+          type={props.inspection_type}
+          operator={props.operator}
+          pallet={null}
+        />
       ) : undefined}
       {props.display_material && props.quarantineQueue !== null ? (
         <Tooltip title={"Move to " + props.quarantineQueue}>
