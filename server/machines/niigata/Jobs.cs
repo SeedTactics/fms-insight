@@ -179,6 +179,63 @@ namespace BlackMaple.FMSInsight.Niigata
         curStatus.Material.Add(mat);
       }
 
+      // tool loads/unloads
+      foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance))
+      {
+        switch (pal.Status.CurrentStep)
+        {
+          case LoadStep load:
+            if (pal.Status.Tracking.BeforeCurrentStep)
+            {
+              curStatus.Material.Add(new InProcessMaterial()
+              {
+                MaterialID = -1,
+                JobUnique = null,
+                PartName = "LongTool",
+                Process = 1,
+                Path = 1,
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.Free,
+                },
+                Action = new InProcessMaterialAction()
+                {
+                  Type = InProcessMaterialAction.ActionType.Loading,
+                  LoadOntoPallet = pal.Status.Master.PalletNum.ToString(),
+                  LoadOntoFace = 1,
+                  ProcessAfterLoad = 1,
+                  PathAfterLoad = 1
+                }
+              });
+            }
+            break;
+          case UnloadStep unload:
+            if (pal.Status.Tracking.BeforeCurrentStep)
+            {
+              curStatus.Material.Add(new InProcessMaterial()
+              {
+                MaterialID = -1,
+                JobUnique = null,
+                PartName = "LongTool",
+                Process = 1,
+                Path = 1,
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  Pallet = pal.Status.Master.PalletNum.ToString(),
+                  Face = 1
+                },
+                Action = new InProcessMaterialAction()
+                {
+                  Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+                }
+              });
+            }
+            break;
+        }
+
+      }
+
       //alarms
       foreach (var pal in status.Pallets)
       {
