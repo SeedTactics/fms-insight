@@ -210,6 +210,113 @@ namespace MachineWatchTest
       logsForMat2.Add(loadEndActualCycle.First());
       _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).Should().BeEmpty();
 
+      var arriveStocker = _jobLog.RecordPalletArriveStocker(
+        mats: new[] { mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
+        pallet: "bbbb",
+        stockerNum: 23,
+        timeUTC: start.AddHours(4)
+      );
+      arriveStocker.Should().BeEquivalentTo(
+        new LogEntry(
+          -1,
+          mat: new[] { mat2 },
+          pal: "bbbb",
+          ty: LogType.PalletInStocker,
+          locName: "Stocker",
+          locNum: 23,
+          prog: "Arrive",
+          start: true,
+          endTime: start.AddHours(4),
+          result: "",
+          endOfRoute: false
+        ),
+        options => options.Excluding(l => l.Counter)
+      );
+      logs.Add(arriveStocker);
+      logsForMat2.Add(arriveStocker);
+
+      var departStocker = _jobLog.RecordPalletDepartStocker(
+        mats: new[] { mat2, mat15 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
+        pallet: "cccc",
+        stockerNum: 34,
+        timeUTC: start.AddHours(4).AddMinutes(10),
+        elapsed: TimeSpan.FromMinutes(10)
+      );
+      departStocker.Should().BeEquivalentTo(
+        new LogEntry(
+          -1,
+          mat: new[] { mat2, mat15 },
+          pal: "cccc",
+          ty: LogType.PalletInStocker,
+          locName: "Stocker",
+          locNum: 34,
+          prog: "Depart",
+          start: false,
+          endTime: start.AddHours(4).AddMinutes(10),
+          result: "",
+          elapsed: TimeSpan.FromMinutes(10),
+          active: TimeSpan.Zero,
+          endOfRoute: false
+        ),
+        options => options.Excluding(l => l.Counter)
+      );
+      logs.Add(departStocker);
+      logsForMat2.Add(departStocker);
+
+      var arriveInbound = _jobLog.RecordPalletArriveRotaryInbound(
+        mats: new[] { mat15 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
+        pallet: "bbbb",
+        statName: "thestat",
+        statNum: 77,
+        timeUTC: start.AddHours(4).AddMinutes(20)
+      );
+      arriveInbound.Should().BeEquivalentTo(
+        new LogEntry(
+          -1,
+          mat: new[] { mat15 },
+          pal: "bbbb",
+          ty: LogType.PalletOnRotaryInbound,
+          locName: "thestat",
+          locNum: 77,
+          prog: "Arrive",
+          start: true,
+          endTime: start.AddHours(4).AddMinutes(20),
+          result: "",
+          endOfRoute: false
+        ),
+        options => options.Excluding(l => l.Counter)
+      );
+      logs.Add(arriveInbound);
+
+      var departInbound = _jobLog.RecordPalletDepartRotaryInbound(
+        mats: new[] { mat15 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
+        pallet: "dddd",
+        statName: "thestat2",
+        statNum: 88,
+        rotatingIntoMachine: true,
+        timeUTC: start.AddHours(4).AddMinutes(45),
+        elapsed: TimeSpan.FromMinutes(25)
+      );
+      departInbound.Should().BeEquivalentTo(
+        new LogEntry(
+          -1,
+          mat: new[] { mat15 },
+          pal: "dddd",
+          ty: LogType.PalletOnRotaryInbound,
+          locName: "thestat2",
+          locNum: 88,
+          prog: "RotatingIntoMachine",
+          start: false,
+          endTime: start.AddHours(4).AddMinutes(45),
+          result: "",
+          elapsed: TimeSpan.FromMinutes(25),
+          active: TimeSpan.Zero,
+          endOfRoute: false
+        ),
+        options => options.Excluding(l => l.Counter)
+      );
+      logs.Add(departInbound);
+
       var machineStartPockets = new List<JobLogDB.ToolPocketSnapshot> {
         new JobLogDB.ToolPocketSnapshot() {
           PocketNumber = 10, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
@@ -346,7 +453,7 @@ namespace MachineWatchTest
       CheckLog(logs, otherLogs, start.AddHours(5));
 
       otherLogs = _jobLog.GetLog(loadEndActualCycle.First().Counter);
-      CheckLog(logs, otherLogs, start.AddHours(5));
+      CheckLog(logs, otherLogs, start.AddHours(4));
 
       otherLogs = _jobLog.GetLog(unloadStartActualCycle.Counter);
       CheckLog(logs, otherLogs, start.AddHours(6.5));
