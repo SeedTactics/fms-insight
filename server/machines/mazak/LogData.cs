@@ -49,7 +49,7 @@ namespace MazakMachineInterface
     UnloadEnd = 512,
 
     PalletMoving = 301,
-    //PalletMoveComplete = 302,
+    PalletMoveComplete = 302,
 
     StartRotatePalletIntoMachine = 431,
     //EndRotatePalletIntoMachine = 432,

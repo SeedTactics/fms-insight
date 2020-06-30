@@ -213,14 +213,89 @@ namespace MazakMachineInterface
 
           break;
 
-        case LogCode.PalletMoving:
+        case LogCode.StartRotatePalletIntoMachine:
+          _log.RecordPalletDepartRotaryInbound(
+            mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+            pallet: e.Pallet.ToString(),
+            statName: _machGroupName.MachineGroupName,
+            statNum: e.StationNumber,
+            timeUTC: e.TimeUTC,
+            rotatingIntoMachine: true,
+            elapsed: CalculateElapsed(e, cycle, LogType.PalletOnRotaryInbound, e.StationNumber),
+            foreignId: e.ForeignID
+          );
+          break;
 
+        case LogCode.PalletMoving:
           if (e.FromPosition != null && e.FromPosition.StartsWith("LS"))
           {
             CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, true, cycle);
           }
-
+          // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx, and Mxx3 is outbound at machine xx
+          else if (e.TargetPosition != null && e.TargetPosition.StartsWith('M') && e.TargetPosition.Length == 4 && e.TargetPosition.EndsWith('1'))
+          {
+            // moving from inbound
+            if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
+            {
+              _log.RecordPalletDepartRotaryInbound(
+                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                pallet: e.Pallet.ToString(),
+                statName: _machGroupName.MachineGroupName,
+                statNum: mcNum,
+                rotatingIntoMachine: false,
+                timeUTC: e.TimeUTC,
+                elapsed: CalculateElapsed(e, cycle, LogType.PalletOnRotaryInbound, mcNum),
+                foreignId: e.ForeignID
+              );
+            }
+          }
+          else if (e.FromPosition != null && e.FromPosition.StartsWith("S") && e.TargetPosition != "STA")
+          {
+            if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
+            {
+              _log.RecordPalletDepartStocker(
+                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                pallet: e.Pallet.ToString(),
+                stockerNum: stockerNum,
+                timeUTC: e.TimeUTC,
+                elapsed: CalculateElapsed(e, cycle, LogType.PalletInStocker, stockerNum),
+                foreignId: e.ForeignID
+              );
+            }
+          }
           break;
+
+        case LogCode.PalletMoveComplete:
+          // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx, and Mxx3 is outbound at machine xx
+          if (e.TargetPosition != null && e.TargetPosition.StartsWith('M') && e.TargetPosition.Length == 4 && e.TargetPosition.EndsWith('1'))
+          {
+            if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
+            {
+              _log.RecordPalletArriveRotaryInbound(
+                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                pallet: e.Pallet.ToString(),
+                statName: _machGroupName.MachineGroupName,
+                statNum: mcNum,
+                timeUTC: e.TimeUTC,
+                foreignId: e.ForeignID
+              );
+            }
+          }
+          else if (e.TargetPosition != null && e.TargetPosition.StartsWith("S") && e.TargetPosition != "STA")
+          {
+            if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
+            {
+              _log.RecordPalletArriveStocker(
+                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                pallet: e.Pallet.ToString(),
+                stockerNum: stockerNum,
+                timeUTC: e.TimeUTC,
+                foreignId: e.ForeignID
+              );
+            }
+          }
+          break;
+
       }
 
       _onMazakLog(e);
@@ -580,20 +655,19 @@ namespace MazakMachineInterface
           switch (e.Code)
           {
             case LogCode.LoadEnd:
-              if (ev.StartOfCycle == true && ev.Result == "LOAD")
-                return e.TimeUTC.Subtract(ev.EndTimeUTC);
-              break;
-
-            case LogCode.MachineCycleEnd:
-              if (ev.StartOfCycle)
+              if (ev.StartOfCycle && ev.Result == "LOAD")
                 return e.TimeUTC.Subtract(ev.EndTimeUTC);
               break;
 
             case LogCode.UnloadEnd:
-              if (ev.StartOfCycle == true && ev.Result == "UNLOAD")
+              if (ev.StartOfCycle && ev.Result == "UNLOAD")
                 return e.TimeUTC.Subtract(ev.EndTimeUTC);
               break;
 
+            default:
+              if (ev.StartOfCycle)
+                return e.TimeUTC.Subtract(ev.EndTimeUTC);
+              break;
           }
         }
       }
