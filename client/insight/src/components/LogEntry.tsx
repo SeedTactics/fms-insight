@@ -119,20 +119,10 @@ function logType(entry: api.ILogEntry): string {
       return "Queue";
 
     case api.LogType.PalletInStocker:
-      if (entry.startofcycle) {
-        return "Arrive Stocker";
-      } else {
-        return "Depart Stocker";
-      }
+      return "Stocker";
 
     case api.LogType.PalletOnRotaryInbound:
-      if (entry.startofcycle) {
-        return "Rotary Queue";
-      } else if (entry.result === "RotateIntoWorktable") {
-        return "Rotate Into Worktable";
-      } else {
-        return "Leave Machine";
-      }
+      return "Rotary";
 
     default:
       return "Message";
@@ -271,21 +261,50 @@ function display(props: LogEntryProps): JSX.Element {
       );
 
     case api.LogType.PalletInStocker:
-      return (
-        <span>
-          <span className={props.classes.pallet}>Pallet {entry.pal}</span> at stocker {entry.locnum}
-        </span>
-      );
+      if (entry.startofcycle) {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> arrived at stocker {entry.locnum}
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> departed stocker {entry.locnum}
+          </span>
+        );
+      }
 
     case api.LogType.PalletOnRotaryInbound:
-      return (
-        <span>
-          <span className={props.classes.pallet}>Pallet {entry.pal}</span> at{" "}
-          <span className={props.classes.machine}>
-            {entry.loc} {entry.locnum.toString()}
+      if (entry.startofcycle) {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> arrived at{" "}
+            <span className={props.classes.machine}>
+              {entry.loc} {entry.locnum.toString()}
+            </span>
           </span>
-        </span>
-      );
+        );
+      } else if (entry.result == "RotateIntoWorktable") {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> rotated into{" "}
+            <span className={props.classes.machine}>
+              {entry.loc} {entry.locnum.toString()}
+            </span>{" "}
+            worktable
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> left{" "}
+            <span className={props.classes.machine}>
+              {entry.loc} {entry.locnum.toString()}
+            </span>
+          </span>
+        );
+      }
 
     default:
       return <span>{entry.result}</span>;
