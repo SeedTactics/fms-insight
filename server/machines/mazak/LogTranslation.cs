@@ -232,7 +232,7 @@ namespace MazakMachineInterface
             cycle = CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, true, cycle);
           }
           // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx
-          else if (e.FromPosition != null && e.FromPosition.StartsWith('M') && e.FromPosition.Length == 4 && e.FromPosition.EndsWith('1'))
+          else if (e.FromPosition != null && e.FromPosition.StartsWith("M") && e.FromPosition.Length == 4 && e.FromPosition.EndsWith("1"))
           {
             if (LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum))
             {
@@ -267,7 +267,7 @@ namespace MazakMachineInterface
 
         case LogCode.PalletMoveComplete:
           // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx
-          if (e.TargetPosition != null && e.TargetPosition.StartsWith('M') && e.TargetPosition.Length == 4 && e.TargetPosition.EndsWith('1'))
+          if (e.TargetPosition != null && e.TargetPosition.StartsWith("M") && e.TargetPosition.Length == 4 && e.TargetPosition.EndsWith("1"))
           {
             if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
             {
