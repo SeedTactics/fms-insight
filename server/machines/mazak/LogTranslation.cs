@@ -215,7 +215,7 @@ namespace MazakMachineInterface
 
         case LogCode.StartRotatePalletIntoMachine:
           _log.RecordPalletDepartRotaryInbound(
-            mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+            mats: GetAllMaterialOnPallet(cycle).Select(JobLogDB.EventLogMaterial.FromLogMat),
             pallet: e.Pallet.ToString(),
             statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
@@ -229,16 +229,15 @@ namespace MazakMachineInterface
         case LogCode.PalletMoving:
           if (e.FromPosition != null && e.FromPosition.StartsWith("LS"))
           {
-            CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, true, cycle);
+            cycle = CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, true, cycle);
           }
-          // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx, and Mxx3 is outbound at machine xx
-          else if (e.TargetPosition != null && e.TargetPosition.StartsWith('M') && e.TargetPosition.Length == 4 && e.TargetPosition.EndsWith('1'))
+          // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx
+          else if (e.FromPosition != null && e.FromPosition.StartsWith('M') && e.FromPosition.Length == 4 && e.FromPosition.EndsWith('1'))
           {
-            // moving from inbound
-            if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
+            if (LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum))
             {
               _log.RecordPalletDepartRotaryInbound(
-                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                mats: GetAllMaterialOnPallet(cycle).Select(JobLogDB.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
@@ -249,12 +248,12 @@ namespace MazakMachineInterface
               );
             }
           }
-          else if (e.FromPosition != null && e.FromPosition.StartsWith("S") && e.TargetPosition != "STA")
+          else if (e.FromPosition != null && e.FromPosition.StartsWith("S") && e.FromPosition != "STA")
           {
-            if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
+            if (int.TryParse(e.FromPosition.Substring(1), out var stockerNum))
             {
               _log.RecordPalletDepartStocker(
-                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                mats: GetAllMaterialOnPallet(cycle).Select(JobLogDB.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
@@ -266,13 +265,13 @@ namespace MazakMachineInterface
           break;
 
         case LogCode.PalletMoveComplete:
-          // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx, and Mxx3 is outbound at machine xx
+          // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx
           if (e.TargetPosition != null && e.TargetPosition.StartsWith('M') && e.TargetPosition.Length == 4 && e.TargetPosition.EndsWith('1'))
           {
             if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
             {
               _log.RecordPalletArriveRotaryInbound(
-                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                mats: GetAllMaterialOnPallet(cycle).Select(JobLogDB.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
@@ -286,7 +285,7 @@ namespace MazakMachineInterface
             if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
             {
               _log.RecordPalletArriveStocker(
-                mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
+                mats: GetAllMaterialOnPallet(cycle).Select(JobLogDB.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
@@ -312,6 +311,16 @@ namespace MazakMachineInterface
       var ret = new List<JobLogDB.EventLogMaterial>();
       ret.Add(new JobLogDB.EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
       return ret;
+    }
+
+    private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
+    {
+      return oldEvents
+        .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
+        .SelectMany(e => e.Material)
+        .GroupBy(m => m.MaterialID)
+        .Select(ms => ms.First())
+        .ToList();
     }
 
     private struct LogMaterialAndPath
@@ -640,6 +649,27 @@ namespace MazakMachineInterface
     #endregion
 
     #region Elapsed
+    private static bool LastEventWasRotaryDropoff(IList<MWI.LogEntry> oldEvents)
+    {
+      var lastWasDropoff = false;
+      foreach (var e in oldEvents)
+      {
+        if (e.LogType == LogType.PalletOnRotaryInbound && e.StartOfCycle)
+        {
+          lastWasDropoff = true;
+        }
+        else if (e.LogType == LogType.PalletOnRotaryInbound && !e.StartOfCycle)
+        {
+          lastWasDropoff = false;
+        }
+        else if (e.LogType == LogType.MachineCycle)
+        {
+          lastWasDropoff = false;
+        }
+      }
+      return lastWasDropoff;
+    }
+
     private static MWI.LogEntry FindMachineStart(LogEntry e, IList<MWI.LogEntry> oldEvents, int statNum)
     {
       return oldEvents.LastOrDefault(old => old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum);

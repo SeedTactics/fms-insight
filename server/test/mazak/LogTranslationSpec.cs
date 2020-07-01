@@ -575,6 +575,241 @@ namespace MachineWatchTest
         ));
     }
 
+    protected void StockerStart(TestMaterial mat, int offset, int stocker)
+    {
+      StockerStart(new[] { mat }, offset, stocker);
+    }
+    protected void StockerStart(IEnumerable<TestMaterial> mats, int offset, int stocker)
+    {
+      var e2 = new MazakMachineInterface.LogEntry()
+      {
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
+        Code = LogCode.PalletMoveComplete,
+        ForeignID = "",
+        Pallet = mats.First().Pallet,
+        TargetPosition = "S" + stocker.ToString().PadLeft(3, '0'),
+        FromPosition = "",
+      };
+
+      HandleEvent(e2);
+
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
+          pal: mats.First().Pallet.ToString(),
+          ty: BlackMaple.MachineWatchInterface.LogType.PalletInStocker,
+          locName: "Stocker",
+          locNum: stocker,
+          prog: "Arrive",
+          start: true,
+          endTime: e2.TimeUTC,
+          result: "",
+          endOfRoute: false
+      ));
+    }
+
+    protected void StockerEnd(TestMaterial mat, int offset, int stocker, int elapMin)
+    {
+      StockerEnd(new[] { mat }, offset, stocker, elapMin);
+    }
+    protected void StockerEnd(IEnumerable<TestMaterial> mats, int offset, int stocker, int elapMin)
+    {
+      var e2 = new MazakMachineInterface.LogEntry()
+      {
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
+        Code = LogCode.PalletMoving,
+        ForeignID = "",
+        Pallet = mats.First().Pallet,
+        FromPosition = "S" + stocker.ToString().PadLeft(3, '0'),
+        TargetPosition = "",
+      };
+
+      HandleEvent(e2);
+
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
+          pal: mats.First().Pallet.ToString(),
+          ty: BlackMaple.MachineWatchInterface.LogType.PalletInStocker,
+          locName: "Stocker",
+          locNum: stocker,
+          prog: "Depart",
+          start: false,
+          endTime: e2.TimeUTC,
+          result: "",
+          endOfRoute: false,
+          elapsed: TimeSpan.FromMinutes(elapMin),
+          active: TimeSpan.Zero
+      ));
+    }
+
+    protected void RotaryQueueStart(TestMaterial mat, int offset, int mc)
+    {
+      RotaryQueueStart(new[] { mat }, offset, mc);
+    }
+    protected void RotaryQueueStart(IEnumerable<TestMaterial> mats, int offset, int mc)
+    {
+      var e2 = new MazakMachineInterface.LogEntry()
+      {
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
+        Code = LogCode.PalletMoveComplete,
+        ForeignID = "",
+        Pallet = mats.First().Pallet,
+        TargetPosition = "M" + mc.ToString().PadLeft(2, '0') + "1",
+        FromPosition = "",
+      };
+
+      HandleEvent(e2);
+
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
+          pal: mats.First().Pallet.ToString(),
+          ty: BlackMaple.MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          locName: "machinespec",
+          locNum: mc,
+          prog: "Arrive",
+          start: true,
+          endTime: e2.TimeUTC,
+          result: "",
+          endOfRoute: false
+      ));
+    }
+
+    protected void RotateIntoMachine(TestMaterial mat, int offset, int mc, int elapMin)
+    {
+      RotateIntoMachine(new[] { mat }, offset, mc, elapMin);
+    }
+    protected void RotateIntoMachine(IEnumerable<TestMaterial> mats, int offset, int mc, int elapMin)
+    {
+      var e2 = new MazakMachineInterface.LogEntry()
+      {
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
+        Code = LogCode.StartRotatePalletIntoMachine,
+        StationNumber = mc,
+        ForeignID = "",
+        Pallet = mats.First().Pallet,
+      };
+
+      HandleEvent(e2);
+
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
+          pal: mats.First().Pallet.ToString(),
+          ty: BlackMaple.MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          locName: "machinespec",
+          locNum: mc,
+          prog: "RotatingIntoMachine",
+          start: false,
+          endTime: e2.TimeUTC,
+          result: "",
+          endOfRoute: false,
+          elapsed: TimeSpan.FromMinutes(elapMin),
+          active: TimeSpan.Zero
+      ));
+    }
+
+    protected void MoveFromInboundRotaryTable(TestMaterial mat, int offset, int mc, int elapMin)
+    {
+      MoveFromInboundRotaryTable(new[] { mat }, offset, mc, elapMin);
+    }
+    protected void MoveFromInboundRotaryTable(IEnumerable<TestMaterial> mats, int offset, int mc, int elapMin)
+    {
+      var e2 = new MazakMachineInterface.LogEntry()
+      {
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
+        Code = LogCode.PalletMoving,
+        ForeignID = "",
+        FromPosition = "M" + mc.ToString().PadLeft(2, '0') + "1",
+        Pallet = mats.First().Pallet,
+      };
+
+      HandleEvent(e2);
+
+      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+          cntr: -1,
+          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
+          pal: mats.First().Pallet.ToString(),
+          ty: BlackMaple.MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          locName: "machinespec",
+          locNum: mc,
+          prog: "Depart",
+          start: false,
+          endTime: e2.TimeUTC,
+          result: "",
+          endOfRoute: false,
+          elapsed: TimeSpan.FromMinutes(elapMin),
+          active: TimeSpan.Zero
+      ));
+    }
+
+    protected void MoveFromOutboundRotaryTable(TestMaterial mat, int offset, int mc)
+    {
+      MoveFromOutboundRotaryTable(new[] { mat }, offset, mc);
+    }
+    protected void MoveFromOutboundRotaryTable(IEnumerable<TestMaterial> mats, int offset, int mc)
+    {
+      // event is the same when moving from inbound or outbound either case
+      var e2 = new MazakMachineInterface.LogEntry()
+      {
+        TimeUTC = mats.First().EventStartTime.AddMinutes(offset),
+        Code = LogCode.PalletMoving,
+        ForeignID = "",
+        FromPosition = "M" + mc.ToString().PadLeft(2, '0') + "1",
+        Pallet = mats.First().Pallet,
+      };
+
+      HandleEvent(e2);
+
+      // event should be ignored, so no expected event is added
+    }
+
     protected void ExpectAddToQueue(TestMaterial mat, int offset, string queue, int pos)
     {
       ExpectAddToQueue(new[] { mat }, offset, queue, pos);
@@ -1373,6 +1608,70 @@ namespace MachineWatchTest
           }
         },
       });
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Fact]
+    public void StockerAndRotaryTable()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+
+      var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
+
+      LoadStart(p, offset: 0, load: 5);
+      LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
+      MovePallet(t, offset: 3, load: 1, pal: 7, elapMin: 0);
+
+      StockerStart(p, offset: 4, stocker: 7);
+      StockerEnd(p, offset: 6, stocker: 7, elapMin: 2);
+
+      RotaryQueueStart(p, offset: 7, mc: 2);
+      RotateIntoMachine(p, offset: 10, mc: 2, elapMin: 3);
+
+      MachStart(p, offset: 11, mach: 2);
+      MachEnd(p, offset: 20, mach: 2, elapMin: 9);
+
+      MoveFromOutboundRotaryTable(p, offset: 21, mc: 2);
+
+      UnloadStart(p, offset: 22, load: 1);
+      UnloadEnd(p, offset: 23, load: 1, elapMin: 1);
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      jobLog.GetMaterialDetails(p.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = p.MaterialID,
+        JobUnique = "unique",
+        PartName = "part1",
+        NumProcesses = 1,
+        Serial = FMSSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
+        Workorder = null,
+        Paths = new Dictionary<int, int> { { 1, 1 } }
+      });
+
+    }
+
+    [Fact]
+    public void LeaveInboundRotary()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
+
+      var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
+
+      LoadStart(p, offset: 0, load: 5);
+      LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
+      MovePallet(t, offset: 3, load: 1, pal: 7, elapMin: 0);
+
+      RotaryQueueStart(p, offset: 7, mc: 2);
+      MoveFromInboundRotaryTable(p, offset: 13, mc: 2, elapMin: 6);
+
+      StockerStart(p, offset: 15, stocker: 3);
+      StockerEnd(p, offset: 19, stocker: 3, elapMin: 4);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
