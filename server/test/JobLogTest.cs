@@ -214,6 +214,7 @@ namespace MachineWatchTest
         mats: new[] { mat2 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
         pallet: "bbbb",
         stockerNum: 23,
+        waitForMachine: true,
         timeUTC: start.AddHours(4)
       );
       arriveStocker.Should().BeEquivalentTo(
@@ -227,7 +228,7 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: start.AddHours(4),
-          result: "",
+          result: "WaitForMachine",
           endOfRoute: false
         ),
         options => options.Excluding(l => l.Counter)
@@ -239,6 +240,7 @@ namespace MachineWatchTest
         mats: new[] { mat2, mat15 }.Select(JobLogDB.EventLogMaterial.FromLogMat),
         pallet: "cccc",
         stockerNum: 34,
+        waitForMachine: true,
         timeUTC: start.AddHours(4).AddMinutes(10),
         elapsed: TimeSpan.FromMinutes(10)
       );
@@ -253,7 +255,7 @@ namespace MachineWatchTest
           prog: "Depart",
           start: false,
           endTime: start.AddHours(4).AddMinutes(10),
-          result: "",
+          result: "WaitForMachine",
           elapsed: TimeSpan.FromMinutes(10),
           active: TimeSpan.Zero,
           endOfRoute: false
@@ -281,7 +283,7 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: start.AddHours(4).AddMinutes(20),
-          result: "",
+          result: "Arrive",
           endOfRoute: false
         ),
         options => options.Excluding(l => l.Counter)
@@ -293,7 +295,7 @@ namespace MachineWatchTest
         pallet: "dddd",
         statName: "thestat2",
         statNum: 88,
-        rotatingIntoMachine: true,
+        rotateIntoWorktable: true,
         timeUTC: start.AddHours(4).AddMinutes(45),
         elapsed: TimeSpan.FromMinutes(25)
       );
@@ -305,10 +307,10 @@ namespace MachineWatchTest
           ty: LogType.PalletOnRotaryInbound,
           locName: "thestat2",
           locNum: 88,
-          prog: "RotatingIntoMachine",
+          prog: "Depart",
+          result: "RotateIntoWorktable",
           start: false,
           endTime: start.AddHours(4).AddMinutes(45),
-          result: "",
           elapsed: TimeSpan.FromMinutes(25),
           active: TimeSpan.Zero,
           endOfRoute: false

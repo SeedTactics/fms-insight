@@ -220,7 +220,7 @@ namespace MazakMachineInterface
             statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
             timeUTC: e.TimeUTC,
-            rotatingIntoMachine: true,
+            rotateIntoWorktable: true,
             elapsed: CalculateElapsed(e, cycle, LogType.PalletOnRotaryInbound, e.StationNumber),
             foreignId: e.ForeignID
           );
@@ -241,7 +241,7 @@ namespace MazakMachineInterface
                 pallet: e.Pallet.ToString(),
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
-                rotatingIntoMachine: false,
+                rotateIntoWorktable: false,
                 timeUTC: e.TimeUTC,
                 elapsed: CalculateElapsed(e, cycle, LogType.PalletOnRotaryInbound, mcNum),
                 foreignId: e.ForeignID
@@ -257,6 +257,7 @@ namespace MazakMachineInterface
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
+                waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
                 elapsed: CalculateElapsed(e, cycle, LogType.PalletInStocker, stockerNum),
                 foreignId: e.ForeignID
               );
@@ -288,6 +289,7 @@ namespace MazakMachineInterface
                 mats: GetAllMaterialOnPallet(cycle).Select(JobLogDB.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
+                waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
                 timeUTC: e.TimeUTC,
                 foreignId: e.ForeignID
               );

@@ -575,11 +575,11 @@ namespace MachineWatchTest
         ));
     }
 
-    protected void StockerStart(TestMaterial mat, int offset, int stocker)
+    protected void StockerStart(TestMaterial mat, int offset, int stocker, bool waitForMachine)
     {
-      StockerStart(new[] { mat }, offset, stocker);
+      StockerStart(new[] { mat }, offset, stocker, waitForMachine);
     }
-    protected void StockerStart(IEnumerable<TestMaterial> mats, int offset, int stocker)
+    protected void StockerStart(IEnumerable<TestMaterial> mats, int offset, int stocker, bool waitForMachine)
     {
       var e2 = new MazakMachineInterface.LogEntry()
       {
@@ -612,16 +612,16 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: e2.TimeUTC,
-          result: "",
+          result: waitForMachine ? "WaitForMachine" : "WaitForUnload",
           endOfRoute: false
       ));
     }
 
-    protected void StockerEnd(TestMaterial mat, int offset, int stocker, int elapMin)
+    protected void StockerEnd(TestMaterial mat, int offset, int stocker, int elapMin, bool waitForMachine)
     {
-      StockerEnd(new[] { mat }, offset, stocker, elapMin);
+      StockerEnd(new[] { mat }, offset, stocker, elapMin, waitForMachine);
     }
-    protected void StockerEnd(IEnumerable<TestMaterial> mats, int offset, int stocker, int elapMin)
+    protected void StockerEnd(IEnumerable<TestMaterial> mats, int offset, int stocker, int elapMin, bool waitForMachine)
     {
       var e2 = new MazakMachineInterface.LogEntry()
       {
@@ -654,7 +654,7 @@ namespace MachineWatchTest
           prog: "Depart",
           start: false,
           endTime: e2.TimeUTC,
-          result: "",
+          result: waitForMachine ? "WaitForMachine" : "WaitForUnload",
           endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
@@ -698,16 +698,16 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: e2.TimeUTC,
-          result: "",
+          result: "Arrive",
           endOfRoute: false
       ));
     }
 
-    protected void RotateIntoMachine(TestMaterial mat, int offset, int mc, int elapMin)
+    protected void RotateIntoWorktable(TestMaterial mat, int offset, int mc, int elapMin)
     {
-      RotateIntoMachine(new[] { mat }, offset, mc, elapMin);
+      RotateIntoWorktable(new[] { mat }, offset, mc, elapMin);
     }
-    protected void RotateIntoMachine(IEnumerable<TestMaterial> mats, int offset, int mc, int elapMin)
+    protected void RotateIntoWorktable(IEnumerable<TestMaterial> mats, int offset, int mc, int elapMin)
     {
       var e2 = new MazakMachineInterface.LogEntry()
       {
@@ -736,10 +736,10 @@ namespace MachineWatchTest
           ty: BlackMaple.MachineWatchInterface.LogType.PalletOnRotaryInbound,
           locName: "machinespec",
           locNum: mc,
-          prog: "RotatingIntoMachine",
+          prog: "Depart",
+          result: "RotateIntoWorktable",
           start: false,
           endTime: e2.TimeUTC,
-          result: "",
           endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
@@ -782,7 +782,7 @@ namespace MachineWatchTest
           prog: "Depart",
           start: false,
           endTime: e2.TimeUTC,
-          result: "",
+          result: "LeaveMachine",
           endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
@@ -1625,11 +1625,11 @@ namespace MachineWatchTest
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
       MovePallet(t, offset: 3, load: 1, pal: 7, elapMin: 0);
 
-      StockerStart(p, offset: 4, stocker: 7);
-      StockerEnd(p, offset: 6, stocker: 7, elapMin: 2);
+      StockerStart(p, offset: 4, stocker: 7, waitForMachine: true);
+      StockerEnd(p, offset: 6, stocker: 7, elapMin: 2, waitForMachine: true);
 
       RotaryQueueStart(p, offset: 7, mc: 2);
-      RotateIntoMachine(p, offset: 10, mc: 2, elapMin: 3);
+      RotateIntoWorktable(p, offset: 10, mc: 2, elapMin: 3);
 
       MachStart(p, offset: 11, mach: 2);
       MachEnd(p, offset: 20, mach: 2, elapMin: 9);
@@ -1670,8 +1670,14 @@ namespace MachineWatchTest
       RotaryQueueStart(p, offset: 7, mc: 2);
       MoveFromInboundRotaryTable(p, offset: 13, mc: 2, elapMin: 6);
 
-      StockerStart(p, offset: 15, stocker: 3);
-      StockerEnd(p, offset: 19, stocker: 3, elapMin: 4);
+      RotaryQueueStart(p, offset: 15, mc: 3);
+      RotateIntoWorktable(p, offset: 16, mc: 3, elapMin: 1);
+
+      MachStart(p, offset: 20, mach: 3);
+      MachEnd(p, offset: 30, mach: 3, elapMin: 10);
+
+      StockerStart(p, offset: 35, stocker: 3, waitForMachine: false);
+      StockerEnd(p, offset: 37, stocker: 3, elapMin: 2, waitForMachine: false);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }

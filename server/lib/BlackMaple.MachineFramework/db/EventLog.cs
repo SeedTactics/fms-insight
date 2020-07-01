@@ -2110,7 +2110,7 @@ namespace BlackMaple.MachineFramework
           Program = "Arrive",
           StartOfCycle = true,
           EndTimeUTC = timeUTC,
-          Result = "",
+          Result = "Arrive",
           EndOfRoute = false,
         },
         foreignId, originalMessage
@@ -2125,7 +2125,7 @@ namespace BlackMaple.MachineFramework
       int statNum,
       DateTime timeUTC,
       TimeSpan elapsed,
-      bool rotatingIntoMachine,
+      bool rotateIntoWorktable,
       string foreignId = null,
       string originalMessage = null
     )
@@ -2139,10 +2139,10 @@ namespace BlackMaple.MachineFramework
           LogType = MachineWatchInterface.LogType.PalletOnRotaryInbound,
           LocationName = statName,
           LocationNum = statNum,
-          Program = rotatingIntoMachine ? "RotatingIntoMachine" : "Depart",
+          Program = "Depart",
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
-          Result = "",
+          Result = rotateIntoWorktable ? "RotateIntoWorktable" : "LeaveMachine",
           ElapsedTime = elapsed,
           EndOfRoute = false,
         },
@@ -2156,6 +2156,7 @@ namespace BlackMaple.MachineFramework
       string pallet,
       int stockerNum,
       DateTime timeUTC,
+      bool waitForMachine,
       string foreignId = null,
       string originalMessage = null
     )
@@ -2172,7 +2173,7 @@ namespace BlackMaple.MachineFramework
           Program = "Arrive",
           StartOfCycle = true,
           EndTimeUTC = timeUTC,
-          Result = "",
+          Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
           EndOfRoute = false,
         },
         foreignId, originalMessage
@@ -2185,6 +2186,7 @@ namespace BlackMaple.MachineFramework
       string pallet,
       int stockerNum,
       DateTime timeUTC,
+      bool waitForMachine,
       TimeSpan elapsed,
       string foreignId = null,
       string originalMessage = null
@@ -2202,7 +2204,7 @@ namespace BlackMaple.MachineFramework
           Program = "Depart",
           StartOfCycle = false,
           EndTimeUTC = timeUTC,
-          Result = "",
+          Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
           ElapsedTime = elapsed,
           EndOfRoute = false,
         },
