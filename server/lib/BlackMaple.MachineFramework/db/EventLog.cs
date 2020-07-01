@@ -2088,6 +2088,131 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
+    public MachineWatchInterface.LogEntry RecordPalletArriveRotaryInbound(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(trans,
+        new NewEventLogEntry()
+        {
+          Material = mats,
+          Pallet = pallet,
+          LogType = MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          LocationName = statName,
+          LocationNum = statNum,
+          Program = "Arrive",
+          StartOfCycle = true,
+          EndTimeUTC = timeUTC,
+          Result = "Arrive",
+          EndOfRoute = false,
+        },
+        foreignId, originalMessage
+        )
+      );
+    }
+
+    public MachineWatchInterface.LogEntry RecordPalletDepartRotaryInbound(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      bool rotateIntoWorktable,
+      string foreignId = null,
+      string originalMessage = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(trans,
+        new NewEventLogEntry()
+        {
+          Material = mats,
+          Pallet = pallet,
+          LogType = MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          LocationName = statName,
+          LocationNum = statNum,
+          Program = "Depart",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC,
+          Result = rotateIntoWorktable ? "RotateIntoWorktable" : "LeaveMachine",
+          ElapsedTime = elapsed,
+          EndOfRoute = false,
+        },
+        foreignId, originalMessage
+        )
+      );
+    }
+
+    public MachineWatchInterface.LogEntry RecordPalletArriveStocker(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int stockerNum,
+      DateTime timeUTC,
+      bool waitForMachine,
+      string foreignId = null,
+      string originalMessage = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(trans,
+        new NewEventLogEntry()
+        {
+          Material = mats,
+          Pallet = pallet,
+          LogType = MachineWatchInterface.LogType.PalletInStocker,
+          LocationName = "Stocker",
+          LocationNum = stockerNum,
+          Program = "Arrive",
+          StartOfCycle = true,
+          EndTimeUTC = timeUTC,
+          Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
+          EndOfRoute = false,
+        },
+        foreignId, originalMessage
+        )
+      );
+    }
+
+    public MachineWatchInterface.LogEntry RecordPalletDepartStocker(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int stockerNum,
+      DateTime timeUTC,
+      bool waitForMachine,
+      TimeSpan elapsed,
+      string foreignId = null,
+      string originalMessage = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(trans,
+        new NewEventLogEntry()
+        {
+          Material = mats,
+          Pallet = pallet,
+          LogType = MachineWatchInterface.LogType.PalletInStocker,
+          LocationName = "Stocker",
+          LocationNum = stockerNum,
+          Program = "Depart",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC,
+          Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
+          ElapsedTime = elapsed,
+          EndOfRoute = false,
+        },
+        foreignId, originalMessage
+        )
+      );
+    }
+
     public MachineWatchInterface.LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial)
     {
       var mat = new EventLogMaterial() { MaterialID = materialID, Process = proc, Face = "" };

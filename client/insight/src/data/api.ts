@@ -125,7 +125,7 @@ export class FmsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    findInstructions(part: string | null, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined): Promise<void> {
+    findInstructions(part: string | null, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined, pallet: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/find-instructions/{part}?";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
@@ -140,6 +140,8 @@ export class FmsClient {
             url_ += "materialID=" + encodeURIComponent("" + materialID) + "&"; 
         if (operatorName !== undefined)
             url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&"; 
+        if (pallet !== undefined)
+            url_ += "pallet=" + encodeURIComponent("" + pallet) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ = <RequestInit>{
@@ -3649,6 +3651,8 @@ export enum LogType {
     AddToQueue = "AddToQueue", 
     RemoveFromQueue = "RemoveFromQueue", 
     InspectionForce = "InspectionForce", 
+    PalletOnRotaryInbound = "PalletOnRotaryInbound", 
+    PalletInStocker = "PalletInStocker", 
 }
 
 export class ToolUse implements IToolUse {

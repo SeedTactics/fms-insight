@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -97,6 +97,8 @@ namespace BlackMaple.MachineWatchInterface
     [EnumMember] AddToQueue = 105,
     [EnumMember] RemoveFromQueue = 106,
     [EnumMember] InspectionForce = 107,
+    [EnumMember] PalletOnRotaryInbound = 108,
+    [EnumMember] PalletInStocker = 110,
   }
 
   [Serializable, DataContract, KnownType(typeof(MaterialProcessActualPath))]

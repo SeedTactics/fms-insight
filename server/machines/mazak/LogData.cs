@@ -49,13 +49,19 @@ namespace MazakMachineInterface
     UnloadEnd = 512,
 
     PalletMoving = 301,
-    //PalletMoveComplete = 302,
+    PalletMoveComplete = 302,
 
-    StartRotatePalletIntoMachine = 431,
-    //EndRotatePalletIntoMachine = 432,
+    // 431 and 432 are used when rotating something into machine, no matter if a
+    // different pallet is rotating out or not.
+    StartRotatePalletIntoMachine = 431, // event has pallet moving into machine
+    //EndRotatePalletIntoMachine = 432, // event has pallet moving out of machine if it exists, otherwise pallet = 0
 
-    StartRotatePalletOutOfMachine = 433,
-    //EndRotatePalletOutOfMachine = 434,
+    // 433 and 434 are only used if nothing is being sent in.
+    StartRotatePalletOutOfMachine = 433, // event has pallet moving out of machine
+    //EndRotatePalletOutOfMachine = 434, // event also has pallet moving out of machine
+
+    //StartOffsetProgram = 435,
+    //EndOffsetProgram = 436
   }
 
   public class LogEntry

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -117,6 +117,12 @@ function logType(entry: api.ILogEntry): string {
 
     case api.LogType.RemoveFromQueue:
       return "Queue";
+
+    case api.LogType.PalletInStocker:
+      return "Stocker";
+
+    case api.LogType.PalletOnRotaryInbound:
+      return "Rotary";
 
     default:
       return "Message";
@@ -253,6 +259,52 @@ function display(props: LogEntryProps): JSX.Element {
           {displayQueueMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
         </span>
       );
+
+    case api.LogType.PalletInStocker:
+      if (entry.startofcycle) {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> arrived at stocker {entry.locnum}
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> departed stocker {entry.locnum}
+          </span>
+        );
+      }
+
+    case api.LogType.PalletOnRotaryInbound:
+      if (entry.startofcycle) {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> arrived at{" "}
+            <span className={props.classes.machine}>
+              {entry.loc} {entry.locnum.toString()}
+            </span>
+          </span>
+        );
+      } else if (entry.result == "RotateIntoWorktable") {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> rotated into{" "}
+            <span className={props.classes.machine}>
+              {entry.loc} {entry.locnum.toString()}
+            </span>{" "}
+            worktable
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            <span className={props.classes.pallet}>Pallet {entry.pal}</span> left{" "}
+            <span className={props.classes.machine}>
+              {entry.loc} {entry.locnum.toString()}
+            </span>
+          </span>
+        );
+      }
 
     default:
       return <span>{entry.result}</span>;
