@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -117,6 +117,22 @@ function logType(entry: api.ILogEntry): string {
 
     case api.LogType.RemoveFromQueue:
       return "Queue";
+
+    case api.LogType.PalletInStocker:
+      if (entry.startofcycle) {
+        return "Arrive Stocker";
+      } else {
+        return "Depart Stocker";
+      }
+
+    case api.LogType.PalletOnRotaryInbound:
+      if (entry.startofcycle) {
+        return "Rotary Queue";
+      } else if (entry.result === "RotateIntoWorktable") {
+        return "Rotate Into Worktable";
+      } else {
+        return "Leave Machine";
+      }
 
     default:
       return "Message";
@@ -251,6 +267,23 @@ function display(props: LogEntryProps): JSX.Element {
       return (
         <span>
           {displayQueueMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
+        </span>
+      );
+
+    case api.LogType.PalletInStocker:
+      return (
+        <span>
+          <span className={props.classes.pallet}>Pallet {entry.pal}</span> at stocker {entry.locnum}
+        </span>
+      );
+
+    case api.LogType.PalletOnRotaryInbound:
+      return (
+        <span>
+          <span className={props.classes.pallet}>Pallet {entry.pal}</span> at{" "}
+          <span className={props.classes.machine}>
+            {entry.loc} {entry.locnum.toString()}
+          </span>
         </span>
       );
 
