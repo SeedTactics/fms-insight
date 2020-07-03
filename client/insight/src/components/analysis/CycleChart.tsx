@@ -330,15 +330,17 @@ export const CycleChart = withStyles(cycleChartStyles)(
                 }}
               />
             ) : undefined}
-            {seriesNames.map((series, idx) => (
-              <MarkSeries
-                key={series}
-                color={seriesColor(idx, seriesNames.length)}
-                data={this.props.points.get(series).getOrElse([])}
-                onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
-                {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
-              />
-            ))}
+            {seriesNames
+              .map((series, idx) => ({ series, color: seriesColor(idx, seriesNames.length) }))
+              .filter((s) => !this.state.disabled_series[s.series])
+              .map((s) => (
+                <MarkSeries
+                  key={s.series}
+                  color={s.color}
+                  data={this.props.points.get(s.series).getOrElse([])}
+                  onValueClick={this.setTooltip(s.series)}
+                />
+              ))}
             {this.state.tooltip === undefined ? undefined : (
               <Hint value={this.state.tooltip} format={this.formatHint} />
             )}

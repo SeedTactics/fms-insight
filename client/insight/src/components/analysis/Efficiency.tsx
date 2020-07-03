@@ -36,7 +36,7 @@ import BasketIcon from "@material-ui/icons/ShoppingBasket";
 import { addMonths, addDays, startOfToday } from "date-fns";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
-import { HashMap } from "prelude-ts";
+import { HashMap, Vector } from "prelude-ts";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
 import Select from "@material-ui/core/Select";
@@ -53,7 +53,7 @@ import { connect, mkAC, DispatchAction, useSelector } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import { InspectionSankey } from "./InspectionSankey";
-import { PartCycleData, CycleData, CycleState } from "../../data/events.cycles";
+import { PartCycleData, CycleData, CycleState, part_and_proc, PartAndStationOperation } from "../../data/events.cycles";
 import {
   filterStationCycles,
   FilterAnyMachineKey,
@@ -104,12 +104,26 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
     return ret;
   }
 
+  // filter/display state
+  const [showGraph, setShowGraph] = React.useState(true);
+  const [selectedPart, setSelectedPart] = React.useState<string>();
+  const [selectedMachine, setSelectedMachine] = React.useState<string>(FilterAnyMachineKey);
+  const [selectedOperation, setSelectedOperation] = React.useState<number>();
+  const [selectedPallet, setSelectedPallet] = React.useState<string>();
+  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
+
+  // values which user can select to be filtered on
   const allParts = useSelector((st) =>
     st.Events.analysis_period === AnalysisPeriod.Last30Days
       ? st.Events.last30.cycles.part_and_proc_names
       : st.Events.selected_month.cycles.part_and_proc_names
   );
-  const stationNames = useSelector((st) =>
+  const machineGroups = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.machine_groups
+      : st.Events.selected_month.cycles.machine_groups
+  );
+  const machineNames = useSelector((st) =>
     st.Events.analysis_period === AnalysisPeriod.Last30Days
       ? st.Events.last30.cycles.machine_names
       : st.Events.selected_month.cycles.machine_names
@@ -119,13 +133,28 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
       ? st.Events.last30.cycles.pallet_names
       : st.Events.selected_month.cycles.pallet_names
   );
+  const estimatedCycleTimes = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.estimatedCycleTimes
+      : st.Events.selected_month.cycles.estimatedCycleTimes
+  );
+  const operationNames = React.useMemo(
+    () =>
+      selectedPart
+        ? LazySeq.ofIterable(estimatedCycleTimes)
+            .filter(([k]) => part_and_proc(k.part, k.proc) === selectedPart && machineGroups.contains(k.statGroup))
+            .map(([k]) => k)
+            .toVector()
+            .sortOn(
+              (k) => k.statGroup,
+              (k) => k.operation
+            )
+        : Vector.empty<PartAndStationOperation>(),
+    [selectedPart, estimatedCycleTimes, machineGroups]
+  );
+  const curOperation = selectedOperation ? operationNames.get(selectedOperation).getOrNull() : null;
 
-  const [showGraph, setShowGraph] = React.useState(true);
-  const [selectedPart, setSelectedPart] = React.useState<string>();
-  const [selectedStation, setSelectedStation] = React.useState<string>(FilterAnyMachineKey);
-  const [selectedPallet, setSelectedPallet] = React.useState<string>();
-  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
-
+  // calculate points
   const analysisPeriod = useSelector((s) => s.Events.analysis_period);
   const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
   const defaultDateRange =
@@ -138,12 +167,20 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
       : s.Events.selected_month.cycles.part_cycles
   );
   const points = React.useMemo(() => {
-    if (selectedPart || selectedPallet || selectedStation !== FilterAnyMachineKey) {
-      return filterStationCycles(cycles, undefined, selectedPart, selectedPallet, selectedStation);
+    if (selectedPart) {
+      if (curOperation) {
+        return filterStationCycles(cycles, undefined, undefined, undefined, undefined, curOperation);
+      } else {
+        return filterStationCycles(cycles, undefined, selectedPart, selectedPallet, FilterAnyMachineKey);
+      }
     } else {
-      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
+      if (selectedPallet || selectedMachine !== FilterAnyMachineKey) {
+        return filterStationCycles(cycles, undefined, undefined, selectedPallet, selectedMachine);
+      } else {
+        return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
+      }
     }
-  }, [selectedPart, selectedPallet, selectedStation, cycles]);
+  }, [selectedPart, selectedPallet, selectedMachine, curOperation, cycles]);
 
   return (
     <Card raised>
@@ -182,7 +219,10 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={selectedPart || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPart(e.target.value === "" ? undefined : (e.target.value as string))}
+              onChange={(e) => {
+                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as string));
+                setSelectedOperation(undefined);
+              }}
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
@@ -200,20 +240,42 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
               name="Station-Cycles-cycle-chart-station-select"
               autoWidth
               displayEmpty
-              value={selectedStation}
+              value={selectedPart ? selectedOperation ?? 0 : selectedMachine}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedStation(e.target.value as string)}
+              onChange={(e) => {
+                if (selectedPart) {
+                  setSelectedOperation(e.target.value as number);
+                } else {
+                  setSelectedMachine(e.target.value as string);
+                }
+              }}
             >
-              <MenuItem value={FilterAnyMachineKey}>
-                <em>Any Machine</em>
-              </MenuItem>
-              {stationNames.toArray({ sortOn: (x) => x }).map((n) => (
-                <MenuItem key={n} value={n}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ marginRight: "1em" }}>{n}</span>
-                  </div>
-                </MenuItem>
-              ))}
+              {selectedPart ? (
+                operationNames.length() === 0 ? (
+                  <MenuItem value={0}>
+                    <em>Any Operation</em>
+                  </MenuItem>
+                ) : (
+                  LazySeq.ofIterable(operationNames).map((oper, idx) => (
+                    <MenuItem key={idx} value={idx}>
+                      {oper.statGroup} {oper.operation}
+                    </MenuItem>
+                  ))
+                )
+              ) : (
+                [
+                  <MenuItem key={-1} value={FilterAnyMachineKey}>
+                    <em>Any Machine</em>
+                  </MenuItem>,
+                  machineNames.toArray({ sortOn: (x) => x }).map((n) => (
+                    <MenuItem key={n} value={n}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span style={{ marginRight: "1em" }}>{n}</span>
+                      </div>
+                    </MenuItem>
+                  )),
+                ]
+              )}
             </Select>
             <Select
               name="Station-Cycles-cycle-chart-station-pallet"

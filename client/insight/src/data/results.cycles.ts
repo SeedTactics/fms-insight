@@ -61,7 +61,8 @@ export function filterStationCycles(
   zoom: { start: Date; end: Date } | undefined,
   partAndProc?: string,
   pallet?: string,
-  station?: string
+  station?: string,
+  operation?: PartAndStationOperation
 ): FilteredStationCycles {
   const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
   const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
@@ -88,6 +89,10 @@ export function filterStationCycles(
             return false;
           }
         } else if (station && stat_name_and_num(e.stationGroup, e.stationNumber) !== station) {
+          return false;
+        }
+
+        if (operation && !operation.equals(PartAndStationOperation.ofPartCycle(e))) {
           return false;
         }
 
