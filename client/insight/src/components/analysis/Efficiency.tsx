@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -46,13 +46,11 @@ import CardContent from "@material-ui/core/CardContent";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
-import { SelectableHeatChart, HeatChartPoint } from "./HeatChart";
-import { Store, connect, mkAC, DispatchAction } from "../../store/store";
+import { SelectableHeatChart } from "./HeatChart";
+import { Store, connect, mkAC, DispatchAction, useSelector } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import { InspectionSankey } from "./InspectionSankey";
@@ -72,7 +70,6 @@ import { binCyclesByDayAndStat, binSimStationUseByDayAndStat, copyOeeHeatmapToCl
 import {
   binCyclesByDayAndPart,
   binSimProductionByDayAndPart,
-  PartsCompletedSummary,
   copyCompletedPartsHeatmapToClipboard,
 } from "../../data/results.completed-parts";
 import { SimUseState } from "../../data/events.simuse";
@@ -424,230 +421,171 @@ const ConnectedPalletCycleChart = connect(
 // --------------------------------------------------------------------------------
 
 interface HeatmapProps {
-  readonly planned_or_actual: guiState.PlannedOrActual;
-  readonly setType: (p: guiState.PlannedOrActual) => void;
-  readonly points: ReadonlyArray<HeatChartPoint>;
   readonly allowSetType: boolean;
 }
 
+type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
+
+function stationOeeStandardPoints(cycles: CycleState, extractValue: (c: PartCycleData) => number) {
+  const pts = binCyclesByDayAndStat(cycles.part_cycles, extractValue);
+  return LazySeq.ofIterable(pts)
+    .map(([dayAndStat, val]) => {
+      const pct = val / (24 * 60);
+      return {
+        x: dayAndStat.day,
+        y: dayAndStat.station,
+        color: pct,
+        label: (pct * 100).toFixed(1) + "%",
+      };
+    })
+    .toArray()
+    .sort((p1, p2) => {
+      const cmp = p1.x.getTime() - p2.x.getTime();
+      if (cmp === 0) {
+        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+      } else {
+        return cmp;
+      }
+    });
+}
+
+function stationOeePlannedPoints(sim: SimUseState) {
+  const pts = binSimStationUseByDayAndStat(sim.station_use, (c) => c.utilizationTime - c.plannedDownTime);
+  return LazySeq.ofIterable(pts)
+    .map(([dayAndStat, val]) => {
+      const pct = val / (24 * 60);
+      return {
+        x: dayAndStat.day,
+        y: dayAndStat.station,
+        color: pct,
+        label: (pct * 100).toFixed(1) + "%",
+      };
+    })
+    .toArray()
+    .sort((p1, p2) => {
+      const cmp = p1.x.getTime() - p2.x.getTime();
+      if (cmp === 0) {
+        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+      } else {
+        return cmp;
+      }
+    });
+}
+
 function StationOeeHeatmap(props: HeatmapProps) {
+  const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
+  const data = useSelector((s) =>
+    s.Events.analysis_period === AnalysisPeriod.Last30Days ? s.Events.last30 : s.Events.selected_month
+  );
+  const points = React.useMemo(() => {
+    if (selected === "Standard OEE") {
+      return stationOeeStandardPoints(data.cycles, (c) => c.activeMinutes);
+    } else if (selected === "Occupied") {
+      return stationOeeStandardPoints(data.cycles, (c) => c.y);
+    } else {
+      return stationOeePlannedPoints(data.sim_use);
+    }
+  }, [selected, data]);
+
   return (
-    <SelectableHeatChart
-      card_label="Station OEE"
+    <SelectableHeatChart<StationOeeHeatmapTypes>
+      card_label="Station Use"
       y_title="Station"
-      label_title="OEE"
+      label_title={selected === "Occupied" ? "Occupied" : "OEE"}
       icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
-      planned_or_actual={props.planned_or_actual}
-      points={props.points}
-      onExport={() => copyOeeHeatmapToClipboard("Station", props.points)}
-      setType={props.allowSetType ? props.setType : undefined}
+      cur_selected={selected}
+      options={["Standard OEE", "Occupied", "Planned OEE"]}
+      setSelected={props.allowSetType ? setSelected : undefined}
+      points={points}
+      onExport={() => copyOeeHeatmapToClipboard("Station", points)}
     />
   );
 }
-
-const stationOeeActualPointsSelector = createSelector(
-  (cycles: CycleState) => cycles.part_cycles,
-  (cycles) => {
-    const pts = binCyclesByDayAndStat(cycles, (c) => c.activeMinutes);
-    return LazySeq.ofIterable(pts)
-      .map(([dayAndStat, val]) => {
-        const pct = val / (24 * 60);
-        return {
-          x: dayAndStat.day,
-          y: dayAndStat.station,
-          color: pct,
-          label: (pct * 100).toFixed(1) + "%",
-        };
-      })
-      .toArray()
-      .sort((p1, p2) => {
-        const cmp = p1.x.getTime() - p2.x.getTime();
-        if (cmp === 0) {
-          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-        } else {
-          return cmp;
-        }
-      });
-  }
-);
-
-const stationOeePlannedPointsSelector = createSelector(
-  (sim: SimUseState) => sim.station_use,
-  (statUse) => {
-    const pts = binSimStationUseByDayAndStat(statUse, (c) => c.utilizationTime - c.plannedDownTime);
-    return LazySeq.ofIterable(pts)
-      .map(([dayAndStat, val]) => {
-        const pct = val / (24 * 60);
-        return {
-          x: dayAndStat.day,
-          y: dayAndStat.station,
-          color: pct,
-          label: (pct * 100).toFixed(1) + "%",
-        };
-      })
-      .toArray()
-      .sort((p1, p2) => {
-        const cmp = p1.x.getTime() - p2.x.getTime();
-        if (cmp === 0) {
-          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-        } else {
-          return cmp;
-        }
-      });
-  }
-);
-
-function stationOeePoints(st: Store) {
-  let cycles: CycleState;
-  let sim: SimUseState;
-  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
-    cycles = st.Events.last30.cycles;
-    sim = st.Events.last30.sim_use;
-  } else {
-    cycles = st.Events.selected_month.cycles;
-    sim = st.Events.selected_month.sim_use;
-  }
-
-  switch (st.Gui.station_oee_heatmap_type) {
-    case guiState.PlannedOrActual.Actual:
-      return stationOeeActualPointsSelector(cycles);
-    case guiState.PlannedOrActual.Planned:
-      return stationOeePlannedPointsSelector(sim);
-    case guiState.PlannedOrActual.PlannedMinusActual:
-      return [];
-  }
-}
-
-const ConnectedStationOeeHeatmap = connect(
-  (st: Store) => {
-    return {
-      planned_or_actual: st.Gui.station_oee_heatmap_type,
-      points: stationOeePoints(st),
-    };
-  },
-  {
-    setType: (p: guiState.PlannedOrActual) => ({
-      type: guiState.ActionType.SetStationOeeHeatmapType,
-      ty: p,
-    }),
-  }
-)(StationOeeHeatmap);
 
 // --------------------------------------------------------------------------------
 // Completed Heatmap
 // --------------------------------------------------------------------------------
 
 interface CompletedHeatmapProps {
-  readonly planned_or_actual: guiState.PlannedOrActual;
-  readonly setType: (p: guiState.PlannedOrActual) => void;
-  readonly points: ReadonlyArray<HeatChartPoint & PartsCompletedSummary>;
   readonly allowSetType: boolean;
 }
 
+type CompletedPartsHeatmapTypes = "Planned" | "Completed";
+
+function partsCompletedPoints(cycles: CycleState) {
+  const pts = binCyclesByDayAndPart(cycles.part_cycles);
+  return LazySeq.ofIterable(pts)
+    .map(([dayAndPart, val]) => {
+      return {
+        x: dayAndPart.day,
+        y: dayAndPart.part,
+        color: val.activeMachineMins,
+        label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
+        count: val.count,
+        activeMachineMins: val.activeMachineMins,
+      };
+    })
+    .toArray()
+    .sort((p1, p2) => {
+      const cmp = p1.x.getTime() - p2.x.getTime();
+      if (cmp === 0) {
+        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+      } else {
+        return cmp;
+      }
+    });
+}
+
+function partsPlannedPoints(simUse: SimUseState) {
+  const pts = binSimProductionByDayAndPart(simUse.production);
+  return LazySeq.ofIterable(pts)
+    .map(([dayAndPart, val]) => {
+      return {
+        x: dayAndPart.day,
+        y: dayAndPart.part,
+        color: val.activeMachineMins,
+        label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
+        count: val.count,
+        activeMachineMins: val.activeMachineMins,
+      };
+    })
+    .toArray()
+    .sort((p1, p2) => {
+      const cmp = p1.x.getTime() - p2.x.getTime();
+      if (cmp === 0) {
+        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
+      } else {
+        return cmp;
+      }
+    });
+}
+
 function CompletedCountHeatmap(props: CompletedHeatmapProps) {
+  const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
+  const data = useSelector((s) =>
+    s.Events.analysis_period === AnalysisPeriod.Last30Days ? s.Events.last30 : s.Events.selected_month
+  );
+  const points = React.useMemo(() => {
+    if (selected === "Completed") {
+      return partsCompletedPoints(data.cycles);
+    } else {
+      return partsPlannedPoints(data.sim_use);
+    }
+  }, [selected, data]);
   return (
     <SelectableHeatChart
       card_label="Part Production"
       y_title="Part"
-      label_title={props.planned_or_actual === guiState.PlannedOrActual.Actual ? "Completed" : "Planned"}
+      label_title={selected}
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
-      planned_or_actual={props.planned_or_actual}
-      points={props.points}
-      onExport={() => copyCompletedPartsHeatmapToClipboard(props.points)}
-      setType={props.allowSetType ? props.setType : undefined}
+      cur_selected={selected}
+      options={["Completed", "Planned"]}
+      setSelected={props.allowSetType ? setSelected : undefined}
+      points={points}
+      onExport={() => copyCompletedPartsHeatmapToClipboard(points)}
     />
   );
 }
-
-const completedActualPointsSelector = createSelector(
-  (cycles: CycleState) => cycles.part_cycles,
-  (cycles) => {
-    const pts = binCyclesByDayAndPart(cycles);
-    return LazySeq.ofIterable(pts)
-      .map(([dayAndPart, val]) => {
-        return {
-          x: dayAndPart.day,
-          y: dayAndPart.part,
-          color: val.activeMachineMins,
-          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
-          count: val.count,
-          activeMachineMins: val.activeMachineMins,
-        };
-      })
-      .toArray()
-      .sort((p1, p2) => {
-        const cmp = p1.x.getTime() - p2.x.getTime();
-        if (cmp === 0) {
-          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-        } else {
-          return cmp;
-        }
-      });
-  }
-);
-
-const completedPlannedPointsSelector = createSelector(
-  (simUse: SimUseState) => simUse.production,
-  (production) => {
-    const pts = binSimProductionByDayAndPart(production);
-    return LazySeq.ofIterable(pts)
-      .map(([dayAndPart, val]) => {
-        return {
-          x: dayAndPart.day,
-          y: dayAndPart.part,
-          color: val.activeMachineMins,
-          label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
-          count: val.count,
-          activeMachineMins: val.activeMachineMins,
-        };
-      })
-      .toArray()
-      .sort((p1, p2) => {
-        const cmp = p1.x.getTime() - p2.x.getTime();
-        if (cmp === 0) {
-          return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-        } else {
-          return cmp;
-        }
-      });
-  }
-);
-
-function completedPoints(st: Store) {
-  let cycles: CycleState;
-  let sim: SimUseState;
-  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
-    cycles = st.Events.last30.cycles;
-    sim = st.Events.last30.sim_use;
-  } else {
-    cycles = st.Events.selected_month.cycles;
-    sim = st.Events.selected_month.sim_use;
-  }
-
-  switch (st.Gui.completed_count_heatmap_type) {
-    case guiState.PlannedOrActual.Actual:
-      return completedActualPointsSelector(cycles);
-    case guiState.PlannedOrActual.Planned:
-      return completedPlannedPointsSelector(sim);
-    case guiState.PlannedOrActual.PlannedMinusActual:
-      return [];
-  }
-}
-
-const ConnectedCompletedCountHeatmap = connect(
-  (st: Store) => {
-    return {
-      planned_or_actual: st.Gui.completed_count_heatmap_type,
-      points: completedPoints(st),
-    };
-  },
-  {
-    setType: (p: guiState.PlannedOrActual) => ({
-      type: guiState.ActionType.SetCompletedCountHeatmapType,
-      ty: p,
-    }),
-  }
-)(CompletedCountHeatmap);
 
 // --------------------------------------------------------------------------------
 // Inspection
@@ -679,28 +617,29 @@ const ConnectedInspection = connect(
 // --------------------------------------------------------------------------------
 
 export default function Efficiency({ allowSetType }: { allowSetType: boolean }) {
+  React.useEffect(() => {
+    document.title = "Efficiency - FMS Insight";
+  }, []);
   return (
-    <DocumentTitle title="Efficiency - FMS Insight">
-      <>
-        <AnalysisSelectToolbar />
-        <main style={{ padding: "24px" }}>
-          <div data-testid="part-cycle-chart">
-            <ConnectedPartStationCycleChart />
-          </div>
-          <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
-            <ConnectedPalletCycleChart />
-          </div>
-          <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
-            <ConnectedStationOeeHeatmap allowSetType={allowSetType} />
-          </div>
-          <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
-            <ConnectedCompletedCountHeatmap allowSetType={allowSetType} />
-          </div>
-          <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
-            <ConnectedInspection />
-          </div>
-        </main>
-      </>
-    </DocumentTitle>
+    <>
+      <AnalysisSelectToolbar />
+      <main style={{ padding: "24px" }}>
+        <div data-testid="part-cycle-chart">
+          <ConnectedPartStationCycleChart />
+        </div>
+        <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
+          <ConnectedPalletCycleChart />
+        </div>
+        <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
+          <StationOeeHeatmap allowSetType={allowSetType} />
+        </div>
+        <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
+          <CompletedCountHeatmap allowSetType={allowSetType} />
+        </div>
+        <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
+          <ConnectedInspection />
+        </div>
+      </main>
+    </>
   );
 }

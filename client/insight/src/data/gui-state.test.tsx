@@ -134,22 +134,6 @@ it("sets the pallet zoom range", () => {
   expect(s.pallet_cycle_date_zoom).toBeUndefined();
 });
 
-it("sets the station oee heatmap type", () => {
-  const s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetStationOeeHeatmapType,
-    ty: gui.PlannedOrActual.PlannedMinusActual,
-  });
-  expect(s.station_oee_heatmap_type).toEqual(gui.PlannedOrActual.PlannedMinusActual);
-});
-
-it("sets the completed count heatmap type", () => {
-  const s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetCompletedCountHeatmapType,
-    ty: gui.PlannedOrActual.Planned,
-  });
-  expect(s.completed_count_heatmap_type).toEqual(gui.PlannedOrActual.Planned);
-});
-
 it("opens the workorder dialog", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetWorkorderDialogOpen,
