@@ -113,8 +113,8 @@ export interface CycleState {
 
   readonly part_and_proc_names: HashSet<string>;
   readonly machine_groups: HashSet<string>;
-  readonly station_groups: HashSet<string>;
-  readonly station_names: HashSet<string>;
+  readonly machine_names: HashSet<string>;
+  readonly loadstation_names: HashSet<string>;
   readonly pallet_names: HashSet<string>;
   readonly estimatedCycleTimes: EstimatedCycleTimes;
 }
@@ -124,8 +124,8 @@ export const initial: CycleState = {
   part_and_proc_names: HashSet.empty(),
   by_pallet: HashMap.empty(),
   machine_groups: HashSet.empty(),
-  station_groups: HashSet.empty(),
-  station_names: HashSet.empty(),
+  machine_names: HashSet.empty(),
+  loadstation_names: HashSet.empty(),
   pallet_names: HashSet.empty(),
   estimatedCycleTimes: HashMap.empty(),
 };
@@ -469,9 +469,9 @@ export function process_events(
   }
 
   let partNames = st.part_and_proc_names;
-  let statNames = st.station_names;
+  let machNames = st.machine_names;
   let machineGroups = st.machine_groups;
-  let statGroups = st.station_groups;
+  let lulNames = st.loadstation_names;
   let palNames = st.pallet_names;
   for (const e of newEvts) {
     for (const m of e.material) {
@@ -485,18 +485,19 @@ export function process_events(
         palNames = palNames.add(e.pal);
       }
     }
-    if (e.type === api.LogType.MachineCycle || e.type === api.LogType.LoadUnloadCycle) {
-      if (!statGroups.contains(e.loc)) {
-        statGroups = statGroups.add(e.loc);
-      }
-      const statName = stat_name_and_num(e.loc, e.locnum);
-      if (!statNames.contains(statName)) {
-        statNames = statNames.add(statName);
-      }
-    }
     if (e.type === api.LogType.MachineCycle) {
       if (!machineGroups.contains(e.loc)) {
         machineGroups = machineGroups.add(e.loc);
+      }
+      const machName = stat_name_and_num(e.loc, e.locnum);
+      if (!machNames.contains(machName)) {
+        machNames = machNames.add(machName);
+      }
+    }
+    if (e.type === api.LogType.LoadUnloadCycle) {
+      const n = stat_name_and_num(e.loc, e.locnum);
+      if (!lulNames.contains(n)) {
+        lulNames = lulNames.add(n);
       }
     }
   }
@@ -574,9 +575,9 @@ export function process_events(
     part_cycles: allPartCycles,
     part_and_proc_names: partNames,
     by_pallet: pals,
-    station_groups: statGroups,
     machine_groups: machineGroups,
-    station_names: statNames,
+    machine_names: machNames,
+    loadstation_names: lulNames,
     pallet_names: palNames,
   };
 

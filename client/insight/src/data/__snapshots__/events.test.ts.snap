@@ -128,8 +128,15 @@ Object {
         "medianMinutesForSingleMat": 30,
       },
     },
+    "loadstation_names": Array [
+      "L/U #1",
+      "L/U #2",
+    ],
     "machine_groups": Array [
       "MC",
+    ],
+    "machine_names": Array [
+      "MC #1",
     ],
     "pallet_names": Array [
       "palss",
@@ -457,15 +464,6 @@ Object {
         "y": 3,
       },
     ],
-    "station_groups": Array [
-      "L/U",
-      "MC",
-    ],
-    "station_names": Array [
-      "L/U #1",
-      "L/U #2",
-      "MC #1",
-    ],
   },
   "inspection": Object {
     "by_part": Map {
@@ -765,8 +763,15 @@ Object {
         "medianMinutesForSingleMat": 3,
       },
     },
+    "loadstation_names": Array [
+      "L/U #1",
+      "L/U #2",
+    ],
     "machine_groups": Array [
       "MC",
+    ],
+    "machine_names": Array [
+      "MC #1",
     ],
     "pallet_names": Array [
       "palaa",
@@ -1094,15 +1099,6 @@ Object {
         "x": 2018-02-08T09:34:05.000Z,
         "y": 3,
       },
-    ],
-    "station_groups": Array [
-      "L/U",
-      "MC",
-    ],
-    "station_names": Array [
-      "L/U #1",
-      "L/U #2",
-      "MC #1",
     ],
   },
   "inspection": Object {
@@ -1690,8 +1686,15 @@ Object {
         "medianMinutesForSingleMat": 3,
       },
     },
+    "loadstation_names": Array [
+      "L/U #1",
+      "L/U #2",
+    ],
     "machine_groups": Array [
       "MC",
+    ],
+    "machine_names": Array [
+      "MC #1",
     ],
     "pallet_names": Array [
       "palaa",
@@ -2018,15 +2021,6 @@ Object {
         "x": 2018-02-02T09:52:05.000Z,
         "y": 3,
       },
-    ],
-    "station_groups": Array [
-      "L/U",
-      "MC",
-    ],
-    "station_names": Array [
-      "L/U #1",
-      "L/U #2",
-      "MC #1",
     ],
   },
   "inspection": Object {
@@ -2635,8 +2629,15 @@ Object {
         "medianMinutesForSingleMat": 3,
       },
     },
+    "loadstation_names": Array [
+      "L/U #1",
+      "L/U #2",
+    ],
     "machine_groups": Array [
       "MC",
+    ],
+    "machine_names": Array [
+      "MC #1",
     ],
     "pallet_names": Array [
       "palaa",
@@ -2964,15 +2965,6 @@ Object {
         "x": 2018-02-08T09:34:05.000Z,
         "y": 3,
       },
-    ],
-    "station_groups": Array [
-      "L/U",
-      "MC",
-    ],
-    "station_names": Array [
-      "L/U #1",
-      "L/U #2",
-      "MC #1",
     ],
   },
   "inspection": Object {
@@ -3560,8 +3552,15 @@ Object {
         "medianMinutesForSingleMat": 3,
       },
     },
+    "loadstation_names": Array [
+      "L/U #1",
+      "L/U #2",
+    ],
     "machine_groups": Array [
       "MC",
+    ],
+    "machine_names": Array [
+      "MC #1",
     ],
     "pallet_names": Array [
       "palaa",
@@ -3888,15 +3887,6 @@ Object {
         "x": 2018-02-02T09:52:05.000Z,
         "y": 3,
       },
-    ],
-    "station_groups": Array [
-      "L/U",
-      "MC",
-    ],
-    "station_names": Array [
-      "L/U #1",
-      "L/U #2",
-      "MC #1",
     ],
   },
   "inspection": Object {
