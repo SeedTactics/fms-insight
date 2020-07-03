@@ -74,11 +74,10 @@ import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
 
 // --------------------------------------------------------------------------------
-// Station Cycles
+// Machine Cycles
 // --------------------------------------------------------------------------------
 
 interface PartStationCycleChartProps {
-  readonly machineOrLoad: "Machine" | "Load";
   readonly openMaterial: (matId: number) => void;
 }
 
@@ -91,7 +90,7 @@ function stripAfterDash(s: string): string {
   }
 }
 
-function PartStationCycleChart(props: PartStationCycleChartProps) {
+function PartMachineCycleChart(props: PartStationCycleChartProps) {
   function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
     const partC = point as PartCycleData;
     const ret = [];
@@ -111,13 +110,9 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       : st.Events.selected_month.cycles.part_and_proc_names
   );
   const stationNames = useSelector((st) =>
-    props.machineOrLoad === "Machine"
-      ? st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? st.Events.last30.cycles.machine_names
-        : st.Events.selected_month.cycles.machine_names
-      : st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.loadstation_names
-      : st.Events.selected_month.cycles.loadstation_names
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.machine_names
+      : st.Events.selected_month.cycles.machine_names
   );
   const palletNames = useSelector((st) =>
     st.Events.analysis_period === AnalysisPeriod.Last30Days
@@ -127,9 +122,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
 
   const [showGraph, setShowGraph] = React.useState(true);
   const [selectedPart, setSelectedPart] = React.useState<string>();
-  const [selectedStation, setSelectedStation] = React.useState<string>(
-    props.machineOrLoad === "Machine" ? FilterAnyMachineKey : FilterAnyLoadKey
-  );
+  const [selectedStation, setSelectedStation] = React.useState<string>(FilterAnyMachineKey);
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
 
@@ -145,16 +138,12 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       : s.Events.selected_month.cycles.part_cycles
   );
   const points = React.useMemo(() => {
-    if (
-      selectedPart ||
-      selectedPallet ||
-      selectedStation !== (props.machineOrLoad === "Machine" ? FilterAnyMachineKey : FilterAnyLoadKey)
-    ) {
+    if (selectedPart || selectedPallet || selectedStation !== FilterAnyMachineKey) {
       return filterStationCycles(cycles, undefined, selectedPart, selectedPallet, selectedStation);
     } else {
       return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
     }
-  }, [selectedPart, selectedPallet, selectedStation, cycles, props.machineOrLoad]);
+  }, [selectedPart, selectedPallet, selectedStation, cycles]);
 
   return (
     <Card raised>
@@ -162,9 +151,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         title={
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <WorkIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              {props.machineOrLoad === "Machine" ? "Machine Cycles" : "Load/Unload Cycles"}
-            </div>
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Machine Cycles</div>
             <div style={{ flexGrow: 1 }} />
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
@@ -217,15 +204,9 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               style={{ marginLeft: "1em" }}
               onChange={(e) => setSelectedStation(e.target.value as string)}
             >
-              {props.machineOrLoad === "Machine" ? (
-                <MenuItem value={FilterAnyMachineKey}>
-                  <em>Any Machine</em>
-                </MenuItem>
-              ) : (
-                <MenuItem value={FilterAnyLoadKey}>
-                  <em>Any Load Station</em>
-                </MenuItem>
-              )}
+              <MenuItem value={FilterAnyMachineKey}>
+                <em>Any Machine</em>
+              </MenuItem>
               {stationNames.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
@@ -282,10 +263,190 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   );
 }
 
-const ConnectedPartStationCycleChart = connect((st) => ({}), {
+const ConnectedPartMachineCycleChart = connect((st) => ({}), {
   openMaterial: matDetails.openMaterialById,
-})(PartStationCycleChart);
+})(PartMachineCycleChart);
 
+// --------------------------------------------------------------------------------
+// Load Cycles
+// --------------------------------------------------------------------------------
+
+function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
+  function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
+    const partC = point as PartCycleData;
+    const ret = [];
+    for (const mat of partC.material) {
+      ret.push({
+        title: mat.serial ? mat.serial : "Material",
+        value: "Open Card",
+        link: () => props.openMaterial(mat.id),
+      });
+    }
+    return ret;
+  }
+
+  const allParts = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.part_and_proc_names
+      : st.Events.selected_month.cycles.part_and_proc_names
+  );
+  const stationNames = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.loadstation_names
+      : st.Events.selected_month.cycles.loadstation_names
+  );
+  const palletNames = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.pallet_names
+      : st.Events.selected_month.cycles.pallet_names
+  );
+
+  const [showGraph, setShowGraph] = React.useState(true);
+  const [selectedPart, setSelectedPart] = React.useState<string>();
+  const [selectedStation, setSelectedStation] = React.useState<string>(FilterAnyLoadKey);
+  const [selectedPallet, setSelectedPallet] = React.useState<string>();
+  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
+
+  const analysisPeriod = useSelector((s) => s.Events.analysis_period);
+  const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
+  const defaultDateRange =
+    analysisPeriod === AnalysisPeriod.Last30Days
+      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+      : [analysisPeriodMonth, addMonths(analysisPeriodMonth, 1)];
+  const cycles = useSelector((s) =>
+    s.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? s.Events.last30.cycles.part_cycles
+      : s.Events.selected_month.cycles.part_cycles
+  );
+  const points = React.useMemo(() => {
+    if (selectedPart || selectedPallet || selectedStation !== FilterAnyLoadKey) {
+      return filterStationCycles(cycles, undefined, selectedPart, selectedPallet, selectedStation);
+    } else {
+      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
+    }
+  }, [selectedPart, selectedPallet, selectedStation, cycles]);
+
+  return (
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <WorkIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Load/Unload Cycles</div>
+            <div style={{ flexGrow: 1 }} />
+            {points.data.length() > 0 ? (
+              <Tooltip title="Copy to Clipboard">
+                <IconButton
+                  onClick={() => copyCyclesToClipboard(points, zoomDateRange)}
+                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                >
+                  <ImportExport />
+                </IconButton>
+              </Tooltip>
+            ) : undefined}
+            <Select
+              name="Station-Cycles-chart-or-table-select"
+              autoWidth
+              value={showGraph ? "graph" : "table"}
+              onChange={(e) => setShowGraph(e.target.value === "graph")}
+            >
+              <MenuItem key="graph" value="graph">
+                Graph
+              </MenuItem>
+              <MenuItem key="table" value="table">
+                Table
+              </MenuItem>
+            </Select>
+            <Select
+              name="Station-Cycles-cycle-chart-select"
+              autoWidth
+              displayEmpty
+              value={selectedPart || ""}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => setSelectedPart(e.target.value === "" ? undefined : (e.target.value as string))}
+            >
+              <MenuItem key={0} value="">
+                <em>Any Part</em>
+              </MenuItem>
+              {allParts.toArray({ sortOn: (x) => x }).map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <PartIdenticon part={stripAfterDash(n)} size={20} />
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+            <Select
+              name="Station-Cycles-cycle-chart-station-select"
+              autoWidth
+              displayEmpty
+              value={selectedStation}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => setSelectedStation(e.target.value as string)}
+            >
+              <MenuItem value={FilterAnyLoadKey}>
+                <em>Any Load Station</em>
+              </MenuItem>
+              {stationNames.toArray({ sortOn: (x) => x }).map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+            <Select
+              name="Station-Cycles-cycle-chart-station-pallet"
+              autoWidth
+              displayEmpty
+              value={selectedPallet || ""}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as string))}
+            >
+              <MenuItem key={0} value="">
+                <em>Any Pallet</em>
+              </MenuItem>
+              {palletNames.toArray({ sortOn: (x) => x }).map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+          </div>
+        }
+      />
+      <CardContent>
+        {showGraph ? (
+          <CycleChart
+            points={points.data}
+            series_label={points.seriesLabel}
+            default_date_range={defaultDateRange}
+            extra_tooltip={extraStationCycleTooltip}
+            current_date_zoom={zoomDateRange}
+            set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+          />
+        ) : (
+          <StationDataTable
+            points={points.data}
+            default_date_range={defaultDateRange}
+            current_date_zoom={zoomDateRange}
+            set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+            last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
+            openDetails={props.openMaterial}
+            showWorkorderAndInspect={true}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const ConnectedPartLoadStationCycleChart = connect((st) => ({}), {
+  openMaterial: matDetails.openMaterialById,
+})(PartLoadStationCycleChart);
 // --------------------------------------------------------------------------------
 // Pallet Cycles
 // --------------------------------------------------------------------------------
@@ -592,10 +753,10 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
       <AnalysisSelectToolbar />
       <main style={{ padding: "24px" }}>
         <div data-testid="part-cycle-chart">
-          <ConnectedPartStationCycleChart machineOrLoad="Machine" />
+          <ConnectedPartMachineCycleChart />
         </div>
         <div data-testid="part-load-cycle-chart" style={{ marginTop: "3em" }}>
-          <ConnectedPartStationCycleChart machineOrLoad="Load" />
+          <ConnectedPartLoadStationCycleChart />
         </div>
         <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
           <ConnectedPalletCycleChart />
