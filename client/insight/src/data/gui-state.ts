@@ -49,8 +49,6 @@ export enum ActionType {
 }
 
 export type Action =
-  | { type: ActionType.SetSelectedStationCycle; part?: string; station?: string; pallet?: string }
-  | { type: ActionType.SetStationCycleDateZoom; zoom?: { start: Date; end: Date } }
   | { type: ActionType.SetSelectedPalletCycle; pallet: string }
   | { type: ActionType.SetPalletCycleDateZoom; zoom?: { start: Date; end: Date } }
   | { type: ActionType.SetWorkorderDialogOpen; open: boolean }
@@ -63,10 +61,6 @@ export type Action =
   | { type: ActionType.SetBackupFileOpenened; open: boolean };
 
 export interface State {
-  readonly station_cycle_selected_part?: string;
-  readonly station_cycle_selected_station?: string;
-  readonly station_cycle_selected_pallet?: string;
-  readonly station_cycle_date_zoom?: { start: Date; end: Date };
   readonly pallet_cycle_selected?: string;
   readonly pallet_cycle_date_zoom?: { start: Date; end: Date };
   readonly workorder_dialog_open: boolean;
@@ -94,15 +88,6 @@ export function reducer(s: State, a: Action): State {
     return initial;
   }
   switch (a.type) {
-    case ActionType.SetSelectedStationCycle:
-      return {
-        ...s,
-        station_cycle_selected_part: a.part,
-        station_cycle_selected_station: a.station,
-        station_cycle_selected_pallet: a.pallet,
-      };
-    case ActionType.SetStationCycleDateZoom:
-      return { ...s, station_cycle_date_zoom: a.zoom };
     case ActionType.SetSelectedPalletCycle:
       return { ...s, pallet_cycle_selected: a.pallet };
     case ActionType.SetPalletCycleDateZoom:

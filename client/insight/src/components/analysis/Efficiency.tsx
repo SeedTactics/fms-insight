@@ -34,10 +34,9 @@ import * as React from "react";
 import WorkIcon from "@material-ui/icons/Work";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
 import { addMonths, addDays, startOfToday } from "date-fns";
-import { createSelector } from "reselect";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
-import { HashMap, Vector, HashSet } from "prelude-ts";
+import { HashMap } from "prelude-ts";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
 import Select from "@material-ui/core/Select";
@@ -50,14 +49,13 @@ import ImportExport from "@material-ui/icons/ImportExport";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart } from "./HeatChart";
-import { Store, connect, mkAC, DispatchAction, useSelector } from "../../store/store";
+import { connect, mkAC, DispatchAction, useSelector } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import { InspectionSankey } from "./InspectionSankey";
 import { PartCycleData, CycleData, CycleState } from "../../data/events.cycles";
 import {
   filterStationCycles,
-  FilteredStationCycles,
   FilterAnyMachineKey,
   FilterAnyLoadKey,
   copyCyclesToClipboard,
@@ -80,18 +78,6 @@ import { DataTableActionZoomType } from "./DataTable";
 // --------------------------------------------------------------------------------
 
 interface PartStationCycleChartProps {
-  readonly allParts: HashSet<string>;
-  readonly stationNames: HashSet<string>;
-  readonly palletNames: HashSet<string>;
-  readonly points: FilteredStationCycles;
-  readonly default_date_range: Date[];
-  readonly analysisPeriod: AnalysisPeriod;
-  readonly selectedPart?: string;
-  readonly selectedPallet?: string;
-  readonly selectedStation?: string;
-  readonly zoomDateRange?: { start: Date; end: Date };
-  readonly setSelected: DispatchAction<guiState.ActionType.SetSelectedStationCycle>;
-  readonly setZoomRange: DispatchAction<guiState.ActionType.SetStationCycleDateZoom>;
   readonly openMaterial: (matId: number) => void;
 }
 
@@ -118,7 +104,46 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
     return ret;
   }
 
+  const allParts = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.part_and_proc_names
+      : st.Events.selected_month.cycles.part_and_proc_names
+  );
+  const stationNames = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.station_names
+      : st.Events.selected_month.cycles.station_names
+  );
+  const palletNames = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.pallet_names
+      : st.Events.selected_month.cycles.pallet_names
+  );
+
   const [showGraph, setShowGraph] = React.useState(true);
+  const [selectedPart, setSelectedPart] = React.useState<string>();
+  const [selectedStation, setSelectedStation] = React.useState<string>();
+  const [selectedPallet, setSelectedPallet] = React.useState<string>();
+  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
+
+  const analysisPeriod = useSelector((s) => s.Events.analysis_period);
+  const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
+  const defaultDateRange =
+    analysisPeriod === AnalysisPeriod.Last30Days
+      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+      : [analysisPeriodMonth, addMonths(analysisPeriodMonth, 1)];
+  const cycles = useSelector((s) =>
+    s.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? s.Events.last30.cycles.part_cycles
+      : s.Events.selected_month.cycles.part_cycles
+  );
+  const points = React.useMemo(() => {
+    if (selectedPart || selectedPallet || selectedStation) {
+      return filterStationCycles(cycles, undefined, selectedPart, selectedPallet, selectedStation);
+    } else {
+      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
+    }
+  }, [selectedPart, selectedPallet, selectedStation, cycles]);
 
   return (
     <Card raised>
@@ -128,10 +153,10 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             <WorkIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Station Cycles</div>
             <div style={{ flexGrow: 1 }} />
-            {props.points.data.length() > 0 ? (
+            {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(props.points, false, props.zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(points, false, zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -155,20 +180,14 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={props.selectedPart || ""}
+              value={selectedPart || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) =>
-                props.setSelected({
-                  part: e.target.value === "" ? undefined : e.target.value,
-                  pallet: props.selectedPallet,
-                  station: props.selectedStation,
-                })
-              }
+              onChange={(e) => setSelectedPart(e.target.value === "" ? undefined : (e.target.value as string))}
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
               </MenuItem>
-              {props.allParts.toArray({ sortOn: (x) => x }).map((n) => (
+              {allParts.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={stripAfterDash(n)} size={30} />
@@ -181,15 +200,9 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               name="Station-Cycles-cycle-chart-station-select"
               autoWidth
               displayEmpty
-              value={props.selectedStation || ""}
+              value={selectedStation || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) =>
-                props.setSelected({
-                  station: e.target.value === "" ? undefined : e.target.value,
-                  pallet: props.selectedPallet,
-                  part: props.selectedPart,
-                })
-              }
+              onChange={(e) => setSelectedStation(e.target.value === "" ? undefined : (e.target.value as string))}
             >
               <MenuItem key={0} value="">
                 <em>Any Station</em>
@@ -200,7 +213,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               <MenuItem key={2} value={FilterAnyLoadKey}>
                 <em>Any Load Station</em>
               </MenuItem>
-              {props.stationNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {stationNames.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -212,20 +225,14 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               name="Station-Cycles-cycle-chart-station-pallet"
               autoWidth
               displayEmpty
-              value={props.selectedPallet || ""}
+              value={selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) =>
-                props.setSelected({
-                  pallet: e.target.value === "" ? undefined : e.target.value,
-                  station: props.selectedStation,
-                  part: props.selectedPart,
-                })
-              }
+              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as string))}
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {props.palletNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {palletNames.toArray({ sortOn: (x) => x }).map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -239,20 +246,20 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       <CardContent>
         {showGraph ? (
           <CycleChart
-            points={props.points.data}
-            series_label={props.points.seriesLabel}
-            default_date_range={props.default_date_range}
+            points={points.data}
+            series_label={points.seriesLabel}
+            default_date_range={defaultDateRange}
             extra_tooltip={extraStationCycleTooltip}
-            current_date_zoom={props.zoomDateRange}
-            set_date_zoom_range={props.setZoomRange}
+            current_date_zoom={zoomDateRange}
+            set_date_zoom_range={(z) => setZoomRange(z.zoom)}
           />
         ) : (
           <StationDataTable
-            points={props.points.data}
-            default_date_range={props.default_date_range}
-            current_date_zoom={props.zoomDateRange}
-            set_date_zoom_range={props.setZoomRange}
-            last30_days={props.analysisPeriod === AnalysisPeriod.Last30Days}
+            points={points.data}
+            default_date_range={defaultDateRange}
+            current_date_zoom={zoomDateRange}
+            set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+            last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
             openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
             showMedian={false}
@@ -263,61 +270,9 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   );
 }
 
-const stationCyclePointsSelector = createSelector(
-  [
-    (st: Store) =>
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? st.Events.last30.cycles.part_cycles
-        : st.Events.selected_month.cycles.part_cycles,
-    (st: Store) => st.Gui.station_cycle_selected_part,
-    (st: Store) => st.Gui.station_cycle_selected_pallet,
-    (st: Store) => st.Gui.station_cycle_selected_station,
-  ],
-  (
-    cycles: Vector<PartCycleData>,
-    part: string | undefined,
-    pallet: string | undefined,
-    station: string | undefined
-  ) => {
-    if (part || pallet || station) {
-      return filterStationCycles(cycles, undefined, part, pallet, station);
-    } else {
-      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
-    }
-  }
-);
-
-const ConnectedPartStationCycleChart = connect(
-  (st) => ({
-    allParts:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? st.Events.last30.cycles.part_and_proc_names
-        : st.Events.selected_month.cycles.part_and_proc_names,
-    points: stationCyclePointsSelector(st),
-    selectedPart: st.Gui.station_cycle_selected_part,
-    selectedPallet: st.Gui.station_cycle_selected_pallet,
-    selectedStation: st.Gui.station_cycle_selected_station,
-    zoomDateRange: st.Gui.station_cycle_date_zoom,
-    analysisPeriod: st.Events.analysis_period,
-    stationNames:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? st.Events.last30.cycles.station_names
-        : st.Events.selected_month.cycles.station_names,
-    palletNames:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? st.Events.last30.cycles.pallet_names
-        : st.Events.selected_month.cycles.pallet_names,
-    default_date_range:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-  }),
-  {
-    setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
-    setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
-    openMaterial: matDetails.openMaterialById,
-  }
-)(PartStationCycleChart);
+const ConnectedPartStationCycleChart = connect((st) => ({}), {
+  openMaterial: matDetails.openMaterialById,
+})(PartStationCycleChart);
 
 // --------------------------------------------------------------------------------
 // Pallet Cycles
