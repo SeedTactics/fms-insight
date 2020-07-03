@@ -191,7 +191,6 @@ export function format_cycle_inspection(c: PartCycleData): string {
 
 export function buildCycleTable(
   cycles: FilteredStationCycles,
-  includeStats: boolean,
   startD: Date | undefined,
   endD: Date | undefined
 ): string {
@@ -199,9 +198,7 @@ export function buildCycleTable(
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspection</th>";
   table += "<th>Elapsed Min</th><th>Target Min</th>";
-  if (includeStats) {
-    table += "<th>Median Elapsed Min</th><th>Median Deviation</th>";
-  }
+  table += "<th>Median Elapsed Min</th><th>Median Deviation</th>";
   table += "</tr></thead>\n<tbody>\n";
 
   const filteredCycles = LazySeq.ofIterable(cycles.data)
@@ -232,10 +229,8 @@ export function buildCycleTable(
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.activeMinutes.toFixed(1) + "</td>";
-    if (includeStats) {
-      table += "<td>" + cycle.medianCycleMinutes.toFixed(1) + "</td>";
-      table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";
-    }
+    table += "<td>" + cycle.medianCycleMinutes.toFixed(1) + "</td>";
+    table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";
     table += "</tr>\n";
   }
   table += "</tbody>\n</table>";
@@ -244,10 +239,9 @@ export function buildCycleTable(
 
 export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
-  includeStats: boolean,
   zoom: { start: Date; end: Date } | undefined
 ): void {
-  copy(buildCycleTable(cycles, includeStats, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
+  copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
 }
 
 function stat_name(e: Readonly<api.ILogEntry>): string {

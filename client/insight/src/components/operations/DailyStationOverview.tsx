@@ -90,7 +90,7 @@ function OutlierCycles(props: OutlierCycleProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyCyclesToClipboard(props.points, true, undefined)}
+                onClick={() => copyCyclesToClipboard(props.points, undefined)}
               >
                 <ImportExport />
               </IconButton>
@@ -110,7 +110,6 @@ function OutlierCycles(props: OutlierCycleProps) {
           set_date_zoom_range={undefined}
           last30_days={true}
           openDetails={props.openMaterial}
-          showMedian={true}
           showWorkorderAndInspect={false}
         />
       </CardContent>
@@ -305,7 +304,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, false, undefined)}
+                  onClick={() => copyCyclesToClipboard(points, undefined)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -386,7 +385,6 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             last30_days={true}
             openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
-            showMedian={false}
           />
         )}
       </CardContent>

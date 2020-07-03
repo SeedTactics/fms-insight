@@ -146,7 +146,6 @@ interface StationDataTableProps {
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly last30_days: boolean;
   readonly showWorkorderAndInspect: boolean;
-  readonly showMedian: boolean;
   readonly openDetails: (matId: number) => void;
 }
 
@@ -243,12 +242,6 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
       return false;
     }
     if (!props.showWorkorderAndInspect && c.id === ColumnId.Inspection) {
-      return false;
-    }
-    if (!props.showMedian && c.id === ColumnId.MedianElapsed) {
-      return false;
-    }
-    if (!props.showMedian && c.id === ColumnId.MedianDeviation) {
       return false;
     }
     return true;

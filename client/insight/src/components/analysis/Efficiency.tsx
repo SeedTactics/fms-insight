@@ -169,7 +169,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, false, zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(points, zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -275,7 +275,6 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
             openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
-            showMedian={false}
           />
         )}
       </CardContent>
