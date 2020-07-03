@@ -293,22 +293,17 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   const points = React.useMemo(() => {
     const today = startOfToday();
     if (curOperation) {
-      return filterStationCycles(
-        cycles,
-        { start: addDays(today, -2), end: addDays(today, 1) },
-        undefined,
-        undefined,
-        undefined,
-        curOperation
-      );
+      return filterStationCycles(cycles, {
+        zoom: { start: addDays(today, -2), end: addDays(today, 1) },
+        operation: curOperation,
+      });
     } else {
-      return filterStationCycles(
-        cycles,
-        { start: addDays(today, -2), end: addDays(today, 1) },
-        selectedPart,
-        selectedPallet,
-        props.showLabor ? FilterAnyLoadKey : FilterAnyMachineKey
-      );
+      return filterStationCycles(cycles, {
+        zoom: { start: addDays(today, -2), end: addDays(today, 1) },
+        partAndProc: selectedPart,
+        pallet: selectedPallet,
+        station: props.showLabor ? FilterAnyLoadKey : FilterAnyMachineKey,
+      });
     }
   }, [cycles, props.showLabor, selectedPart, selectedPallet]);
 

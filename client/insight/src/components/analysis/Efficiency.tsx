@@ -169,13 +169,17 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
   const points = React.useMemo(() => {
     if (selectedPart) {
       if (curOperation) {
-        return filterStationCycles(cycles, undefined, undefined, undefined, undefined, curOperation);
+        return filterStationCycles(cycles, { operation: curOperation });
       } else {
-        return filterStationCycles(cycles, undefined, selectedPart, selectedPallet, FilterAnyMachineKey);
+        return filterStationCycles(cycles, {
+          partAndProc: selectedPart,
+          pallet: selectedPallet,
+          station: FilterAnyMachineKey,
+        });
       }
     } else {
       if (selectedPallet || selectedMachine !== FilterAnyMachineKey) {
-        return filterStationCycles(cycles, undefined, undefined, selectedPallet, selectedMachine);
+        return filterStationCycles(cycles, { pallet: selectedPallet, station: selectedMachine });
       } else {
         return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
       }
@@ -361,11 +365,6 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
       ? st.Events.last30.cycles.part_and_proc_names
       : st.Events.selected_month.cycles.part_and_proc_names
   );
-  const stationNames = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.loadstation_names
-      : st.Events.selected_month.cycles.loadstation_names
-  );
   const palletNames = useSelector((st) =>
     st.Events.analysis_period === AnalysisPeriod.Last30Days
       ? st.Events.last30.cycles.pallet_names
@@ -391,7 +390,11 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
   );
   const points = React.useMemo(() => {
     if (selectedPart || selectedPallet || selectedStation !== FilterAnyLoadKey) {
-      return filterStationCycles(cycles, undefined, selectedPart, selectedPallet, selectedStation);
+      return filterStationCycles(cycles, {
+        partAndProc: selectedPart,
+        pallet: selectedPallet,
+        station: selectedStation,
+      });
     } else {
       return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
     }
@@ -456,16 +459,9 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
               style={{ marginLeft: "1em" }}
               onChange={(e) => setSelectedStation(e.target.value as string)}
             >
-              <MenuItem value={FilterAnyLoadKey}>
-                <em>Any Load Station</em>
-              </MenuItem>
-              {stationNames.toArray({ sortOn: (x) => x }).map((n) => (
-                <MenuItem key={n} value={n}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ marginRight: "1em" }}>{n}</span>
-                  </div>
-                </MenuItem>
-              ))}
+              <MenuItem value={FilterAnyLoadKey}>L/U Occupancy</MenuItem>
+              <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem>
+              <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem>
             </Select>
             <Select
               name="Station-Cycles-cycle-chart-station-pallet"

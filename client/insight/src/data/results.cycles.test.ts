@@ -61,7 +61,7 @@ it("creates cycles clipboard table", () => {
       result: evts,
     },
   });
-  const data = filterStationCycles(st.last30.cycles.part_cycles, undefined, undefined, undefined);
+  const data = filterStationCycles(st.last30.cycles.part_cycles, {});
 
   const table = document.createElement("div");
   table.innerHTML = buildCycleTable(data, undefined, undefined);

@@ -56,13 +56,24 @@ export interface FilteredStationCycles {
 export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
 export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
 
+export enum LoadCycleFilter {
+  LUOccupancy = "LUOccupancy",
+  LoadOp = "LoadOp",
+  UnloadOp = "UnloadOp",
+}
+
+export interface StationCycleFilter {
+  readonly zoom?: { start: Date; end: Date };
+  readonly partAndProc?: string;
+  readonly pallet?: string;
+  readonly station?: string;
+  readonly operation?: PartAndStationOperation;
+  readonly loadOp?: LoadCycleFilter;
+}
+
 export function filterStationCycles(
   allCycles: Vector<PartCycleData>,
-  zoom: { start: Date; end: Date } | undefined,
-  partAndProc?: string,
-  pallet?: string,
-  station?: string,
-  operation?: PartAndStationOperation
+  { zoom, partAndProc, pallet, station, operation }: StationCycleFilter
 ): FilteredStationCycles {
   const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
   const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
@@ -95,6 +106,8 @@ export function filterStationCycles(
         if (operation && !operation.equals(PartAndStationOperation.ofPartCycle(e))) {
           return false;
         }
+
+        // TODO: loadOp!!
 
         return true;
       })
