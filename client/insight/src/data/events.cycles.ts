@@ -67,7 +67,7 @@ export interface PartCycleData extends CycleData {
 export interface StatisticalCycleTime {
   readonly medianMinutesForSingleMat: number;
   readonly MAD_belowMinutes: number; // MAD of points below the median
-  readonly MAD_aboveMinutes: number; // MAD of points below the median
+  readonly MAD_aboveMinutes: number; // MAD of points above the median
   readonly expectedCycleMinutesForSingleMat: number;
 }
 

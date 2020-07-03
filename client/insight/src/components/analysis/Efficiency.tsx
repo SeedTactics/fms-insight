@@ -152,7 +152,7 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
         : Vector.empty<PartAndStationOperation>(),
     [selectedPart, estimatedCycleTimes, machineGroups]
   );
-  const curOperation = selectedOperation ? operationNames.get(selectedOperation).getOrNull() : null;
+  const curOperation = selectedPart ? operationNames.get(selectedOperation ?? 0).getOrNull() : null;
 
   // calculate points
   const analysisPeriod = useSelector((s) => s.Events.analysis_period);
@@ -308,6 +308,15 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
+            partCntPerPoint={
+              curOperation
+                ? points.data
+                    .findAny(() => true)
+                    .map(([, cs]) => cs[0]?.material.length)
+                    .getOrUndefined()
+                : undefined
+            }
           />
         ) : (
           <StationDataTable

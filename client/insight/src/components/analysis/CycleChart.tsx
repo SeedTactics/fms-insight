@@ -42,10 +42,12 @@ import {
   VerticalGridLines,
   HorizontalGridLines,
   DiscreteColorLegend,
+  AreaSeries,
 } from "react-vis";
 import Button from "@material-ui/core/Button";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core";
 import { HashMap } from "prelude-ts";
+import { StatisticalCycleTime } from "../../data/events.cycles";
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -65,6 +67,8 @@ export interface CycleChartProps {
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
+  readonly stats?: StatisticalCycleTime;
+  readonly partCntPerPoint?: number;
 }
 
 interface CycleChartTooltip {
@@ -284,6 +288,35 @@ export const CycleChart = withStyles(cycleChartStyles)(
       const dateRange = this.props.default_date_range;
       const setZoom = this.props.set_date_zoom_range;
 
+      let statsSeries: JSX.Element | undefined;
+      if (this.props.stats) {
+        const low =
+          (this.props.partCntPerPoint ?? 1) *
+          (this.props.stats.expectedCycleMinutesForSingleMat - this.props.stats.MAD_belowMinutes);
+        const high =
+          (this.props.partCntPerPoint ?? 1) *
+          (this.props.stats.expectedCycleMinutesForSingleMat + this.props.stats.MAD_aboveMinutes);
+
+        statsSeries = (
+          <AreaSeries
+            color="gray"
+            opacity={0.2}
+            data={[
+              {
+                x: dateRange[0],
+                y0: low,
+                y: high,
+              },
+              {
+                x: dateRange[1],
+                y0: low,
+                y: high,
+              },
+            ]}
+          />
+        );
+      }
+
       return (
         <div className={this.state.brushing ? this.props.classes.noSeriesPointerEvts : undefined}>
           <FlexibleWidthXYPlot
@@ -312,6 +345,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
             <HorizontalGridLines />
             <XAxis tickLabelAngle={-45} />
             <YAxis />
+            {statsSeries}
             {setZoom ? (
               <Highlight
                 onBrushStart={() => this.setState({ brushing: true })}

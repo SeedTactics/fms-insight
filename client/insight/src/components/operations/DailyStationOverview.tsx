@@ -287,7 +287,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         : Vector.empty<PartAndStationOperation>(),
     [props.showLabor, selectedPart, estimatedCycleTimes, machineGroups]
   );
-  const curOperation = selectedOperation ? operationNames.get(selectedOperation).getOrNull() : null;
+  const curOperation = selectedPart ? operationNames.get(selectedOperation ?? 0).getOrNull() : null;
 
   const cycles = useSelector((st) => st.Events.last30.cycles.part_cycles);
   const points = React.useMemo(() => {
@@ -421,6 +421,15 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={chartZoom.zoom}
             set_date_zoom_range={setChartZoom}
+            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
+            partCntPerPoint={
+              curOperation
+                ? points.data
+                    .findAny(() => true)
+                    .map(([, cs]) => cs[0]?.material.length)
+                    .getOrUndefined()
+                : undefined
+            }
           />
         ) : (
           <StationDataTable
