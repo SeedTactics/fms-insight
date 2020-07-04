@@ -66,6 +66,7 @@ import {
   copyCyclesToClipboard,
   estimateLulOperations,
   FilterAnyLoadKey,
+  plannedOperationSeries,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
@@ -186,6 +187,13 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
       }
     }
   }, [selectedPart, selectedPallet, selectedMachine, curOperation, cycles]);
+  const plannedSeries = React.useMemo(() => {
+    if (curOperation !== null) {
+      return plannedOperationSeries(points, false);
+    } else {
+      return undefined;
+    }
+  }, [points, curOperation]);
 
   return (
     <Card raised>
@@ -324,6 +332,7 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
                     .getOrUndefined()
                 : undefined
             }
+            plannedSeries={plannedSeries}
           />
         ) : (
           <StationDataTable
@@ -419,6 +428,13 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
       return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
     }
   }, [selectedPart, selectedPallet, selectedOperation, cycles]);
+  const plannedSeries = React.useMemo(() => {
+    if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
+      return plannedOperationSeries(points, true);
+    } else {
+      return undefined;
+    }
+  }, [points, selectedOperation]);
 
   return (
     <Card raised>
@@ -517,6 +533,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
+            plannedSeries={plannedSeries}
           />
         ) : (
           <StationDataTable
@@ -538,6 +555,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
 const ConnectedPartLoadStationCycleChart = connect((st) => ({}), {
   openMaterial: matDetails.openMaterialById,
 })(PartLoadStationCycleChart);
+
 // --------------------------------------------------------------------------------
 // Pallet Cycles
 // --------------------------------------------------------------------------------

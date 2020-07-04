@@ -203,6 +203,28 @@ export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date):
     );
 }
 
+export function plannedOperationSeries(
+  s: FilteredStationCycles,
+  forSingleMat: boolean
+): ReadonlyArray<{ readonly x: Date; readonly y: number }> {
+  const arr = LazySeq.ofIterable(s.data)
+    .flatMap(([, d]) => d)
+    .filter((c) => c.material.length > 0)
+    .map((c) => ({ x: c.x, y: forSingleMat ? c.activeMinutes / c.material.length : c.activeMinutes }))
+    .toArray();
+
+  arr.sort((a, b) => a.x.getTime() - b.x.getTime());
+
+  const toRemove = new Set<number>();
+  for (let i = 1; i < arr.length - 1; i++) {
+    if (arr[i - 1].y === arr[i].y && arr[i].y === arr[i + 1].y) {
+      toRemove.add(i);
+    }
+  }
+
+  return arr.filter((_, idx) => !toRemove.has(idx));
+}
+
 // --------------------------------------------------------------------------------
 // Clipboard
 // --------------------------------------------------------------------------------

@@ -43,6 +43,7 @@ import {
   HorizontalGridLines,
   DiscreteColorLegend,
   AreaSeries,
+  LineSeries,
 } from "react-vis";
 import Button from "@material-ui/core/Button";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core";
@@ -69,6 +70,7 @@ export interface CycleChartProps {
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly stats?: StatisticalCycleTime;
   readonly partCntPerPoint?: number;
+  readonly plannedSeries?: ReadonlyArray<CycleChartPoint>;
 }
 
 interface CycleChartTooltip {
@@ -346,6 +348,9 @@ export const CycleChart = withStyles(cycleChartStyles)(
             <XAxis tickLabelAngle={-45} />
             <YAxis />
             {statsSeries}
+            {this.props.plannedSeries ? (
+              <LineSeries data={this.props.plannedSeries} color="black" opacity={0.4} />
+            ) : undefined}
             {setZoom ? (
               <Highlight
                 onBrushStart={() => this.setState({ brushing: true })}
