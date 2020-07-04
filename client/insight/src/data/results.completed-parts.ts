@@ -35,7 +35,7 @@ import { SimPartCompleted } from "./events.simuse";
 import { startOfDay } from "date-fns";
 import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
-import { PartCycleData, part_and_proc } from "./events.cycles";
+import { PartCycleData } from "./events.cycles";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
@@ -68,7 +68,7 @@ export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<
   return LazySeq.ofIterable(cycles)
     .map((point) => ({
       day: startOfDay(point.x),
-      part: part_and_proc(point.part, point.process),
+      part: point.part + "-" + point.process.toString(),
       value: {
         count: point.completed ? point.material.length : 0,
         activeMachineMins: point.completed ? point.activeTotalMachineMinutesForSingleMat * point.material.length : 0,

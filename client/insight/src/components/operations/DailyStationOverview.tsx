@@ -49,7 +49,7 @@ import HourglassIcon from "@material-ui/icons/HourglassFull";
 import StationDataTable from "../analysis/StationDataTable";
 import { connect, Store, mkAC, useSelector } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
-import { PartCycleData, EstimatedCycleTimes, part_and_proc, PartAndStationOperation } from "../../data/events.cycles";
+import { PartCycleData, EstimatedCycleTimes, PartAndStationOperation, PartAndProcess } from "../../data/events.cycles";
 import {
   filterStationCycles,
   outlierMachineCycles,
@@ -240,15 +240,6 @@ interface PartStationCycleChartProps {
   readonly openMaterial: (matId: number) => void;
 }
 
-function stripAfterDash(s: string): string {
-  const idx = s.indexOf("-");
-  if (idx >= 0) {
-    return s.substring(0, idx);
-  } else {
-    return s;
-  }
-}
-
 function PartStationCycleChart(props: PartStationCycleChartProps) {
   function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
     const partC = point as PartCycleData;
@@ -265,7 +256,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
 
   const [showGraph, setShowGraph] = React.useState(true);
   const [chartZoom, setChartZoom] = React.useState<{ zoom?: { start: Date; end: Date } }>({});
-  const [selectedPart, setSelectedPart] = React.useState<string>();
+  const [selectedPart, setSelectedPart] = React.useState<PartAndProcess>();
   const [selectedOperation, setSelectedOperation] = React.useState<number>();
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
 
@@ -277,7 +268,10 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
     () =>
       !props.showLabor && selectedPart
         ? LazySeq.ofIterable(estimatedCycleTimes)
-            .filter(([k]) => part_and_proc(k.part, k.proc) === selectedPart && machineGroups.contains(k.statGroup))
+            .filter(
+              ([k]) =>
+                selectedPart.part === k.part && selectedPart.proc === k.proc && machineGroups.contains(k.statGroup)
+            )
             .map(([k]) => k)
             .toVector()
             .sortOn(
@@ -320,7 +314,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, undefined)}
+                  onClick={() => copyCyclesToClipboard(points, undefined, props.showLabor)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -347,18 +341,20 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               value={selectedPart || ""}
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as string));
+                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as PartAndProcess));
                 setSelectedOperation(undefined);
               }}
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: (x) => x }).map((n) => (
-                <MenuItem key={n} value={n}>
+              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
+                <MenuItem key={idx} value={n as any}>
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <PartIdenticon part={stripAfterDash(n)} size={20} />
-                    <span style={{ marginRight: "1em" }}>{n}</span>
+                    <PartIdenticon part={n.part} size={20} />
+                    <span style={{ marginRight: "1em" }}>
+                      {n.part}-{n.proc}
+                    </span>
                   </div>
                 </MenuItem>
               ))}
@@ -435,6 +431,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             last30_days={true}
             openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
+            hideMedian={props.showLabor}
           />
         )}
       </CardContent>

@@ -35,7 +35,7 @@ import { HashMap, Vector } from "prelude-ts";
 import {
   PartCycleData,
   stat_name_and_num,
-  part_and_proc,
+  PartAndProcess,
   isOutlier,
   EstimatedCycleTimes,
   splitElapsedLoadTimeAmongCycles,
@@ -56,19 +56,12 @@ export interface FilteredStationCycles {
 export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
 export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
 
-export enum LoadCycleFilter {
-  LUOccupancy = "LUOccupancy",
-  LoadOp = "LoadOp",
-  UnloadOp = "UnloadOp",
-}
-
 export interface StationCycleFilter {
   readonly zoom?: { start: Date; end: Date };
-  readonly partAndProc?: string;
+  readonly partAndProc?: PartAndProcess;
   readonly pallet?: string;
   readonly station?: string;
   readonly operation?: PartAndStationOperation;
-  readonly loadOp?: LoadCycleFilter;
 }
 
 export function filterStationCycles(
@@ -77,6 +70,7 @@ export function filterStationCycles(
 ): FilteredStationCycles {
   const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
   const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+
   return {
     seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
     data: LazySeq.ofIterable(allCycles)
@@ -84,7 +78,7 @@ export function filterStationCycles(
         if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
           return false;
         }
-        if (partAndProc && part_and_proc(e.part, e.process) !== partAndProc) {
+        if (partAndProc && (e.part !== partAndProc.part || e.process !== partAndProc.proc)) {
           return false;
         }
         if (pallet && e.pallet !== pallet) {
@@ -107,19 +101,40 @@ export function filterStationCycles(
           return false;
         }
 
-        // TODO: loadOp!!
-
         return true;
       })
       .groupBy((e) => {
         if (groupByPal) {
           return e.pallet;
         } else if (groupByPart) {
-          return part_and_proc(e.part, e.process);
+          return e.part + "-" + e.process.toString();
         } else {
           return stat_name_and_num(e.stationGroup, e.stationNumber);
         }
       })
+      .mapValues((e) => e.toArray()),
+  };
+}
+
+export function estimateLulOperations(
+  allCycles: Vector<PartCycleData>,
+  operation: PartAndStationOperation,
+  zoom?: { start: Date; end: Date }
+) {
+  return {
+    seriesLabel: "Station",
+    data: splitElapsedLoadTimeAmongCycles(LazySeq.ofIterable(allCycles).filter((e) => e.isLabor))
+      .filter((e) => {
+        if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
+          return false;
+        }
+        if (!operation.equals(PartAndStationOperation.ofPartCycle(e.cycle))) {
+          return false;
+        }
+        return true;
+      })
+      .map((e) => ({ ...e.cycle, y: e.elapsedForSingleMaterialMinutes }))
+      .groupBy((e) => stat_name_and_num(e.stationGroup, e.stationNumber))
       .mapValues((e) => e.toArray()),
   };
 }
@@ -129,7 +144,7 @@ export function outlierMachineCycles(
   start: Date,
   end: Date,
   estimated: EstimatedCycleTimes
-) {
+): FilteredStationCycles {
   return {
     seriesLabel: "Part",
     data: LazySeq.ofIterable(allCycles)
@@ -139,7 +154,7 @@ export function outlierMachineCycles(
         const stats = estimated.get(PartAndStationOperation.ofPartCycle(cycle));
         return stats.isSome() && isOutlier(stats.get(), cycle.y / cycle.material.length);
       })
-      .groupBy((e) => part_and_proc(e.part, e.process))
+      .groupBy((e) => e.part + "-" + e.process.toString())
       .mapValues((e) => e.toArray()),
   };
 }
@@ -170,7 +185,7 @@ export function outlierLoadCycles(
         return stats.isSome() && isOutlier(stats.get(), e.elapsedForSingleMaterialMinutes);
       })
       .map((e) => e.cycle)
-      .groupBy((c) => part_and_proc(c.part, c.process))
+      .groupBy((c) => c.part + "-" + c.process.toString())
       .mapValues((e) => e.toArray()),
   };
 }
@@ -210,13 +225,16 @@ export function format_cycle_inspection(c: PartCycleData): string {
 export function buildCycleTable(
   cycles: FilteredStationCycles,
   startD: Date | undefined,
-  endD: Date | undefined
+  endD: Date | undefined,
+  hideMedian?: boolean
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspection</th>";
   table += "<th>Elapsed Min</th><th>Target Min</th>";
-  table += "<th>Median Elapsed Min</th><th>Median Deviation</th>";
+  if (!hideMedian) {
+    table += "<th>Median Elapsed Min</th><th>Median Deviation</th>";
+  }
   table += "</tr></thead>\n<tbody>\n";
 
   const filteredCycles = LazySeq.ofIterable(cycles.data)
@@ -247,8 +265,10 @@ export function buildCycleTable(
     table += "<td>" + format_cycle_inspection(cycle) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.activeMinutes.toFixed(1) + "</td>";
-    table += "<td>" + cycle.medianCycleMinutes.toFixed(1) + "</td>";
-    table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";
+    if (!hideMedian) {
+      table += "<td>" + cycle.medianCycleMinutes.toFixed(1) + "</td>";
+      table += "<td>" + cycle.MAD_aboveMinutes.toFixed(1) + "</td>";
+    }
     table += "</tr>\n";
   }
   table += "</tbody>\n</table>";
@@ -257,9 +277,10 @@ export function buildCycleTable(
 
 export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
-  zoom: { start: Date; end: Date } | undefined
+  zoom: { start: Date; end: Date } | undefined,
+  hideMedian?: boolean
 ): void {
-  copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined));
+  copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian));
 }
 
 function stat_name(e: Readonly<api.ILogEntry>): string {

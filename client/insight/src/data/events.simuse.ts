@@ -34,7 +34,6 @@ import * as api from "./api";
 import { duration } from "moment";
 import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
-import { part_and_proc } from "./events.cycles";
 
 export interface SimStationUse {
   readonly station: string;
@@ -138,7 +137,7 @@ export function process_sim_use(
         let prevQty = 0;
         for (const prod of pathInfo.simulatedProduction || []) {
           yield {
-            part: part_and_proc(j.partName, proc + 1),
+            part: j.partName + "-" + (proc + 1).toString(),
             completeTime: prod.timeUTC,
             quantity: prod.quantity - prevQty,
             expectedMachineMins: machTime,

@@ -143,9 +143,18 @@ Object {
       "paltt",
     ],
     "part_and_proc_names": Array [
-      "partAAA-1",
-      "partBBB-2",
-      "partCCC-3",
+      PartAndProcess {
+        "part": "partAAA",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "partBBB",
+        "proc": 2,
+      },
+      PartAndProcess {
+        "part": "partCCC",
+        "proc": 3,
+      },
     ],
     "part_cycles": Array [
       Object {
@@ -779,9 +788,18 @@ Object {
       "palcc",
     ],
     "part_and_proc_names": Array [
-      "part111-1",
-      "part222-1",
-      "part222-2",
+      PartAndProcess {
+        "part": "part111",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 2,
+      },
     ],
     "part_cycles": Array [
       Object {
@@ -1701,9 +1719,18 @@ Object {
       "palbb",
     ],
     "part_and_proc_names": Array [
-      "part111-1",
-      "part222-1",
-      "part222-2",
+      PartAndProcess {
+        "part": "part111",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 2,
+      },
     ],
     "part_cycles": Array [
       Object {
@@ -2645,9 +2672,18 @@ Object {
       "palcc",
     ],
     "part_and_proc_names": Array [
-      "part111-1",
-      "part222-1",
-      "part222-2",
+      PartAndProcess {
+        "part": "part111",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 2,
+      },
     ],
     "part_cycles": Array [
       Object {
@@ -3567,9 +3603,18 @@ Object {
       "palbb",
     ],
     "part_and_proc_names": Array [
-      "part111-1",
-      "part222-1",
-      "part222-2",
+      PartAndProcess {
+        "part": "part111",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 1,
+      },
+      PartAndProcess {
+        "part": "part222",
+        "proc": 2,
+      },
     ],
     "part_cycles": Array [
       Object {

@@ -71,6 +71,25 @@ export interface StatisticalCycleTime {
   readonly expectedCycleMinutesForSingleMat: number;
 }
 
+export class PartAndProcess {
+  public constructor(public readonly part: string, public readonly proc: number) {}
+  public static ofPartCycle(cy: PartCycleData): PartAndProcess {
+    return new PartAndProcess(cy.part, cy.process);
+  }
+  public static ofLogCycle(c: Readonly<api.ILogEntry>): PartAndProcess {
+    return new PartAndProcess(c.material[0].part, c.material[0].proc);
+  }
+  equals(other: PartAndProcess): boolean {
+    return this.part === other.part && this.proc === other.proc;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.part, this.proc);
+  }
+  toString(): string {
+    return this.part + "-" + this.proc.toString();
+  }
+}
+
 export class PartAndStationOperation {
   public constructor(
     public readonly part: string,
@@ -111,7 +130,7 @@ export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
   readonly by_pallet: HashMap<string, ReadonlyArray<PalletCycleData>>;
 
-  readonly part_and_proc_names: HashSet<string>;
+  readonly part_and_proc_names: HashSet<PartAndProcess>;
   readonly machine_groups: HashSet<string>;
   readonly machine_names: HashSet<string>;
   readonly loadstation_names: HashSet<string>;
@@ -138,10 +157,6 @@ export enum ExpireOldDataType {
 export type ExpireOldData =
   | { type: ExpireOldDataType.ExpireEarlierThan; d: Date }
   | { type: ExpireOldDataType.NoExpire };
-
-export function part_and_proc(part: string, proc: number): string {
-  return part + "-" + proc.toString();
-}
 
 export function stat_name_and_num(stationGroup: string, stationNumber: number): string {
   if (stationGroup.startsWith("Inspect")) {
@@ -475,7 +490,7 @@ export function process_events(
   let palNames = st.pallet_names;
   for (const e of newEvts) {
     for (const m of e.material) {
-      const p = part_and_proc(m.part, m.proc);
+      const p = new PartAndProcess(m.part, m.proc);
       if (!partNames.contains(p)) {
         partNames = partNames.add(p);
       }

@@ -53,12 +53,19 @@ import { connect, mkAC, DispatchAction, useSelector } from "../../store/store";
 import * as guiState from "../../data/gui-state";
 import * as matDetails from "../../data/material-details";
 import { InspectionSankey } from "./InspectionSankey";
-import { PartCycleData, CycleData, CycleState, part_and_proc, PartAndStationOperation } from "../../data/events.cycles";
+import {
+  PartCycleData,
+  CycleData,
+  CycleState,
+  PartAndProcess,
+  PartAndStationOperation,
+} from "../../data/events.cycles";
 import {
   filterStationCycles,
   FilterAnyMachineKey,
-  FilterAnyLoadKey,
   copyCyclesToClipboard,
+  estimateLulOperations,
+  FilterAnyLoadKey,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
@@ -81,15 +88,6 @@ interface PartStationCycleChartProps {
   readonly openMaterial: (matId: number) => void;
 }
 
-function stripAfterDash(s: string): string {
-  const idx = s.indexOf("-");
-  if (idx >= 0) {
-    return s.substring(0, idx);
-  } else {
-    return s;
-  }
-}
-
 function PartMachineCycleChart(props: PartStationCycleChartProps) {
   function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
     const partC = point as PartCycleData;
@@ -106,7 +104,7 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
 
   // filter/display state
   const [showGraph, setShowGraph] = React.useState(true);
-  const [selectedPart, setSelectedPart] = React.useState<string>();
+  const [selectedPart, setSelectedPart] = React.useState<PartAndProcess>();
   const [selectedMachine, setSelectedMachine] = React.useState<string>(FilterAnyMachineKey);
   const [selectedOperation, setSelectedOperation] = React.useState<number>();
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
@@ -142,7 +140,10 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
     () =>
       selectedPart
         ? LazySeq.ofIterable(estimatedCycleTimes)
-            .filter(([k]) => part_and_proc(k.part, k.proc) === selectedPart && machineGroups.contains(k.statGroup))
+            .filter(
+              ([k]) =>
+                selectedPart.part === k.part && selectedPart.proc === k.proc && machineGroups.contains(k.statGroup)
+            )
             .map(([k]) => k)
             .toVector()
             .sortOn(
@@ -224,18 +225,20 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
               value={selectedPart || ""}
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as string));
+                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as PartAndProcess));
                 setSelectedOperation(undefined);
               }}
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: (x) => x }).map((n) => (
-                <MenuItem key={n} value={n}>
+              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
+                <MenuItem key={idx} value={n as any}>
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <PartIdenticon part={stripAfterDash(n)} size={20} />
-                    <span style={{ marginRight: "1em" }}>{n}</span>
+                    <PartIdenticon part={n.part} size={20} />
+                    <span style={{ marginRight: "1em" }}>
+                      {n.part}-{n.proc}
+                    </span>
                   </div>
                 </MenuItem>
               ))}
@@ -346,6 +349,8 @@ const ConnectedPartMachineCycleChart = connect((st) => ({}), {
 // Load Cycles
 // --------------------------------------------------------------------------------
 
+type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
+
 function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
   function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
     const partC = point as PartCycleData;
@@ -372,10 +377,16 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
   );
 
   const [showGraph, setShowGraph] = React.useState(true);
-  const [selectedPart, setSelectedPart] = React.useState<string>();
-  const [selectedStation, setSelectedStation] = React.useState<string>(FilterAnyLoadKey);
+  const [selectedPart, setSelectedPart] = React.useState<PartAndProcess>();
+  const [selectedOperation, setSelectedOperation] = React.useState<LoadCycleFilter>("LULOccupancy");
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
+  const curOperation =
+    selectedPart && selectedOperation === "LoadOp"
+      ? new PartAndStationOperation(selectedPart.part, selectedPart.proc, "L/U", "LOAD")
+      : selectedPart && selectedOperation === "UnloadOp"
+      ? new PartAndStationOperation(selectedPart.part, selectedPart.proc, "L/U", "UNLOAD")
+      : null;
 
   const analysisPeriod = useSelector((s) => s.Events.analysis_period);
   const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
@@ -388,17 +399,26 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
       ? s.Events.last30.cycles.part_cycles
       : s.Events.selected_month.cycles.part_cycles
   );
+  const estimatedCycleTimes = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.estimatedCycleTimes
+      : st.Events.selected_month.cycles.estimatedCycleTimes
+  );
   const points = React.useMemo(() => {
-    if (selectedPart || selectedPallet || selectedStation !== FilterAnyLoadKey) {
-      return filterStationCycles(cycles, {
-        partAndProc: selectedPart,
-        pallet: selectedPallet,
-        station: selectedStation,
-      });
+    if (selectedPart || selectedPallet) {
+      if (curOperation) {
+        return estimateLulOperations(cycles, curOperation);
+      } else {
+        return filterStationCycles(cycles, {
+          partAndProc: selectedPart,
+          pallet: selectedPallet,
+          station: FilterAnyLoadKey,
+        });
+      }
     } else {
       return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
     }
-  }, [selectedPart, selectedPallet, selectedStation, cycles]);
+  }, [selectedPart, selectedPallet, selectedOperation, cycles]);
 
   return (
     <Card raised>
@@ -411,7 +431,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(points, zoomDateRange, selectedOperation === "LULOccupancy")}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -437,16 +457,18 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={selectedPart || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPart(e.target.value === "" ? undefined : (e.target.value as string))}
+              onChange={(e) => setSelectedPart(e.target.value === "" ? undefined : (e.target.value as PartAndProcess))}
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: (x) => x }).map((n) => (
-                <MenuItem key={n} value={n}>
+              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
+                <MenuItem key={idx} value={n as any}>
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <PartIdenticon part={stripAfterDash(n)} size={20} />
-                    <span style={{ marginRight: "1em" }}>{n}</span>
+                    <PartIdenticon part={n.part} size={20} />
+                    <span style={{ marginRight: "1em" }}>
+                      {n.part}-{n.proc}
+                    </span>
                   </div>
                 </MenuItem>
               ))}
@@ -455,11 +477,11 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
               name="Station-Cycles-cycle-chart-station-select"
               autoWidth
               displayEmpty
-              value={selectedStation}
+              value={selectedOperation}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedStation(e.target.value as string)}
+              onChange={(e) => setSelectedOperation(e.target.value as LoadCycleFilter)}
             >
-              <MenuItem value={FilterAnyLoadKey}>L/U Occupancy</MenuItem>
+              <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
               <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem>
               <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem>
             </Select>
@@ -494,6 +516,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
           />
         ) : (
           <StationDataTable
@@ -504,6 +527,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
             last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
             openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
+            hideMedian={selectedOperation === "LULOccupancy"}
           />
         )}
       </CardContent>

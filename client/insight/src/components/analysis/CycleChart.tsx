@@ -292,10 +292,10 @@ export const CycleChart = withStyles(cycleChartStyles)(
       if (this.props.stats) {
         const low =
           (this.props.partCntPerPoint ?? 1) *
-          (this.props.stats.expectedCycleMinutesForSingleMat - this.props.stats.MAD_belowMinutes);
+          (this.props.stats.medianMinutesForSingleMat - this.props.stats.MAD_belowMinutes);
         const high =
           (this.props.partCntPerPoint ?? 1) *
-          (this.props.stats.expectedCycleMinutesForSingleMat + this.props.stats.MAD_aboveMinutes);
+          (this.props.stats.medianMinutesForSingleMat + this.props.stats.MAD_aboveMinutes);
 
         statsSeries = (
           <AreaSeries
