@@ -42,10 +42,13 @@ import {
   VerticalGridLines,
   HorizontalGridLines,
   DiscreteColorLegend,
+  AreaSeries,
+  LineSeries,
 } from "react-vis";
 import Button from "@material-ui/core/Button";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core";
 import { HashMap } from "prelude-ts";
+import { StatisticalCycleTime } from "../../data/events.cycles";
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -65,6 +68,9 @@ export interface CycleChartProps {
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
+  readonly stats?: StatisticalCycleTime;
+  readonly partCntPerPoint?: number;
+  readonly plannedSeries?: ReadonlyArray<CycleChartPoint>;
 }
 
 interface CycleChartTooltip {
@@ -284,6 +290,53 @@ export const CycleChart = withStyles(cycleChartStyles)(
       const dateRange = this.props.default_date_range;
       const setZoom = this.props.set_date_zoom_range;
 
+      let statsSeries: JSX.Element | undefined;
+      let statZoom: JSX.Element | undefined;
+      if (this.props.stats) {
+        const low =
+          (this.props.partCntPerPoint ?? 1) *
+          (this.props.stats.medianMinutesForSingleMat - this.props.stats.MAD_belowMinutes);
+        const high =
+          (this.props.partCntPerPoint ?? 1) *
+          (this.props.stats.medianMinutesForSingleMat + this.props.stats.MAD_aboveMinutes);
+
+        statsSeries = (
+          <AreaSeries
+            color="gray"
+            opacity={0.2}
+            data={[
+              {
+                x: dateRange[0],
+                y0: low,
+                y: high,
+              },
+              {
+                x: dateRange[1],
+                y0: low,
+                y: high,
+              },
+            ]}
+          />
+        );
+
+        if (setZoom) {
+          const extra = 0.2 * (high - low);
+          statZoom = (
+            <>
+              <span> or </span>
+              <Button
+                size="small"
+                onClick={() => {
+                  this.setState({ current_y_zoom_range: { y_low: low - extra, y_high: high + extra } });
+                }}
+              >
+                Zoom To Inliers
+              </Button>
+            </>
+          );
+        }
+      }
+
       return (
         <div className={this.state.brushing ? this.props.classes.noSeriesPointerEvts : undefined}>
           <FlexibleWidthXYPlot
@@ -312,6 +365,10 @@ export const CycleChart = withStyles(cycleChartStyles)(
             <HorizontalGridLines />
             <XAxis tickLabelAngle={-45} />
             <YAxis />
+            {statsSeries}
+            {this.props.plannedSeries ? (
+              <LineSeries data={this.props.plannedSeries} color="black" opacity={0.4} />
+            ) : undefined}
             {setZoom ? (
               <Highlight
                 onBrushStart={() => this.setState({ brushing: true })}
@@ -330,15 +387,17 @@ export const CycleChart = withStyles(cycleChartStyles)(
                 }}
               />
             ) : undefined}
-            {seriesNames.map((series, idx) => (
-              <MarkSeries
-                key={series}
-                color={seriesColor(idx, seriesNames.length)}
-                data={this.props.points.get(series).getOrElse([])}
-                onValueClick={this.state.disabled_series[series] ? undefined : this.setTooltip(series)}
-                {...(this.state.disabled_series[series] ? { opacity: 0.2 } : null)}
-              />
-            ))}
+            {seriesNames
+              .map((series, idx) => ({ series, color: seriesColor(idx, seriesNames.length) }))
+              .filter((s) => !this.state.disabled_series[s.series])
+              .map((s) => (
+                <MarkSeries
+                  key={s.series}
+                  color={s.color}
+                  data={this.props.points.get(s.series).getOrElse([])}
+                  onValueClick={this.setTooltip(s.series)}
+                />
+              ))}
             {this.state.tooltip === undefined ? undefined : (
               <Hint value={this.state.tooltip} format={this.formatHint} />
             )}
@@ -371,7 +430,10 @@ export const CycleChart = withStyles(cycleChartStyles)(
               </Button>
             ) : undefined}
             {setZoom && !this.props.current_date_zoom && !this.state.current_y_zoom_range ? (
-              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>Zoom via mouse drag</span>
+              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
+                Zoom via mouse drag
+                {statZoom}
+              </span>
             ) : undefined}
           </div>
         </div>

@@ -504,8 +504,8 @@ function CostPerPiecePage(props: CostPerPieceProps) {
 const ConnectedCostPerPiecePage = connect((s) => ({
   statGroups:
     s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.cycles.station_groups
-      : s.Events.selected_month.cycles.station_groups,
+      ? s.Events.last30.cycles.machine_groups
+      : s.Events.selected_month.cycles.machine_groups,
   cycles:
     s.Events.analysis_period === AnalysisPeriod.Last30Days
       ? s.Events.last30.cycles.part_cycles

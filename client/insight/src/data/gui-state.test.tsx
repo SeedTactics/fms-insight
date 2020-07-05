@@ -40,77 +40,6 @@ it("creates initial state", () => {
   expect(s).toBe(gui.initial);
 });
 
-it("selects a part and pal for the station cycle", () => {
-  const s = gui.reducer(
-    {
-      ...gui.initial,
-      station_cycle_selected_part: "origpart",
-      station_cycle_selected_station: "origstation",
-      station_cycle_selected_pallet: "origpallet",
-    },
-    {
-      type: gui.ActionType.SetSelectedStationCycle,
-      part: "abcdef",
-      pallet: "xyz",
-    }
-  );
-  expect(s.station_cycle_selected_part).toEqual("abcdef");
-  expect(s.station_cycle_selected_pallet).toEqual("xyz");
-  expect(s.station_cycle_selected_station).toBeUndefined();
-});
-
-it("selects a pallet and station for the station cycle", () => {
-  const s = gui.reducer(
-    {
-      ...gui.initial,
-      station_cycle_selected_part: "origpart",
-      station_cycle_selected_station: "origstation",
-      station_cycle_selected_pallet: "origpallet",
-    },
-    {
-      type: gui.ActionType.SetSelectedStationCycle,
-      pallet: "xyz",
-      station: "www",
-    }
-  );
-  expect(s.station_cycle_selected_part).toBeUndefined();
-  expect(s.station_cycle_selected_pallet).toEqual("xyz");
-  expect(s.station_cycle_selected_station).toEqual("www");
-});
-
-it("selects a station for the station cycle", () => {
-  const s = gui.reducer(
-    {
-      ...gui.initial,
-      station_cycle_selected_part: "origpart",
-      station_cycle_selected_station: "origstation",
-      station_cycle_selected_pallet: "origpallet",
-    },
-    {
-      type: gui.ActionType.SetSelectedStationCycle,
-      station: "www",
-    }
-  );
-  expect(s.station_cycle_selected_part).toBeUndefined();
-  expect(s.station_cycle_selected_pallet).toBeUndefined();
-  expect(s.station_cycle_selected_station).toEqual("www");
-});
-
-it("sets the station zoom range", () => {
-  const now = new Date();
-  let s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetStationCycleDateZoom,
-    zoom: { start: addHours(now, -2), end: now },
-  });
-  expect(s.station_cycle_date_zoom).toEqual({ start: addHours(now, -2), end: now });
-
-  s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetStationCycleDateZoom,
-    zoom: undefined,
-  });
-  expect(s.station_cycle_date_zoom).toBeUndefined();
-});
-
 it("selects a pallet for the pallet cycle chart", () => {
   const s = gui.reducer(gui.initial, {
     type: gui.ActionType.SetSelectedPalletCycle,
@@ -132,22 +61,6 @@ it("sets the pallet zoom range", () => {
     zoom: undefined,
   });
   expect(s.pallet_cycle_date_zoom).toBeUndefined();
-});
-
-it("sets the station oee heatmap type", () => {
-  const s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetStationOeeHeatmapType,
-    ty: gui.PlannedOrActual.PlannedMinusActual,
-  });
-  expect(s.station_oee_heatmap_type).toEqual(gui.PlannedOrActual.PlannedMinusActual);
-});
-
-it("sets the completed count heatmap type", () => {
-  const s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetCompletedCountHeatmapType,
-    ty: gui.PlannedOrActual.Planned,
-  });
-  expect(s.completed_count_heatmap_type).toEqual(gui.PlannedOrActual.Planned);
 });
 
 it("opens the workorder dialog", () => {

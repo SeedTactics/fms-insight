@@ -4,43 +4,43 @@ exports[`computes part costs: cost calcs 1`] = `
 Array [
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1398286.2736752501,
-    "machine_cost": 32.95329590935028,
+    "labor_cost": 1396412.7034232696,
+    "machine_cost": 32.83108410848132,
     "part": "aaa",
     "parts_completed": 414,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1606364.5882102575,
-    "machine_cost": 42.13706088111057,
+    "labor_cost": 1606625.3684547297,
+    "machine_cost": 41.97249601841517,
     "part": "bbb",
     "parts_completed": 480,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1629669.3594381784,
-    "machine_cost": 98.26228909757042,
+    "labor_cost": 1629982.331236003,
+    "machine_cost": 98.38348705182466,
     "part": "ccc",
     "parts_completed": 491,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1100318.1272611192,
-    "machine_cost": 41.8446189981095,
+    "labor_cost": 1099445.6052042232,
+    "machine_cost": 41.9161595369218,
     "part": "xxx",
     "parts_completed": 658,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1408274.0327729303,
-    "machine_cost": 76.65246871208149,
+    "labor_cost": 1409759.539298283,
+    "machine_cost": 76.69030706516801,
     "part": "yyy",
     "parts_completed": 844,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 679167.6186422643,
-    "machine_cost": 113.84889653876404,
+    "labor_cost": 679854.4523834914,
+    "machine_cost": 113.90509635617538,
     "part": "zzz",
     "parts_completed": 407,
   },
@@ -90,13 +90,13 @@ exports[`computes part costs: cost clipboard table 1`] = `
           0.1
         </td>
         <td>
-          3,377.5
+          3,373
         </td>
         <td>
           2
         </td>
         <td>
-          3,379.6
+          3,375
         </td>
       </tr>
       
@@ -112,13 +112,13 @@ exports[`computes part costs: cost clipboard table 1`] = `
           0.1
         </td>
         <td>
-          3,346.6
+          3,347.1
         </td>
         <td>
           1.7
         </td>
         <td>
-          3,348.4
+          3,348.9
         </td>
       </tr>
       
@@ -134,13 +134,13 @@ exports[`computes part costs: cost clipboard table 1`] = `
           0.2
         </td>
         <td>
-          3,319.1
+          3,319.7
         </td>
         <td>
           1.7
         </td>
         <td>
-          3,321
+          3,321.6
         </td>
       </tr>
       
@@ -156,13 +156,13 @@ exports[`computes part costs: cost clipboard table 1`] = `
           0.1
         </td>
         <td>
-          1,672.2
+          1,670.9
         </td>
         <td>
           1.2
         </td>
         <td>
-          1,673.5
+          1,672.2
         </td>
       </tr>
       
@@ -178,13 +178,13 @@ exports[`computes part costs: cost clipboard table 1`] = `
           0.1
         </td>
         <td>
-          1,668.6
+          1,670.3
         </td>
         <td>
           1
         </td>
         <td>
-          1,669.6
+          1,671.4
         </td>
       </tr>
       
@@ -200,13 +200,13 @@ exports[`computes part costs: cost clipboard table 1`] = `
           0.3
         </td>
         <td>
-          1,668.7
+          1,670.4
         </td>
         <td>
           2
         </td>
         <td>
-          1,671
+          1,672.7
         </td>
       </tr>
       

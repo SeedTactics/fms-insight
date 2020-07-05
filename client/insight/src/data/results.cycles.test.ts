@@ -61,13 +61,13 @@ it("creates cycles clipboard table", () => {
       result: evts,
     },
   });
-  const data = filterStationCycles(st.last30.cycles.part_cycles, undefined, undefined, undefined);
+  const data = filterStationCycles(st.last30.cycles.part_cycles, {});
 
   const table = document.createElement("div");
-  table.innerHTML = buildCycleTable(data, true, undefined, undefined);
+  table.innerHTML = buildCycleTable(data, undefined, undefined);
   expect(table).toMatchSnapshot("cycle clipboard table");
 
-  table.innerHTML = buildCycleTable(data, true, addHours(now, -3), now);
+  table.innerHTML = buildCycleTable(data, addHours(now, -3), now);
   expect(table).toMatchSnapshot("cycle filtered clipboard table");
 });
 

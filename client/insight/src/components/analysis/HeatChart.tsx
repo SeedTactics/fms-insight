@@ -42,7 +42,6 @@ import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
 
-import * as gui from "../../data/gui-state";
 import { LazySeq } from "../../data/lazyseq";
 
 export interface HeatChartPoint {
@@ -115,13 +114,14 @@ class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
   }
 }
 
-export interface SelectableHeatChartProps {
+export interface SelectableHeatChartProps<T extends string> {
   readonly icon: JSX.Element;
   readonly card_label: string;
   readonly y_title: string;
   readonly label_title: string;
-  readonly planned_or_actual: gui.PlannedOrActual;
-  readonly setType?: (p: gui.PlannedOrActual) => void;
+  readonly cur_selected: T;
+  readonly options: ReadonlyArray<T>;
+  readonly setSelected?: (p: T) => void;
   readonly onExport: () => void;
 
   readonly points: ReadonlyArray<HeatChartPoint>;
@@ -131,8 +131,8 @@ export interface SelectableHeatChartProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (LabelSeries as any).propTypes = {};
 
-export function SelectableHeatChart(props: SelectableHeatChartProps) {
-  const setType = props.setType;
+export function SelectableHeatChart<T extends string>(props: SelectableHeatChartProps<T>) {
+  const setSelected = props.setSelected;
   return (
     <Card raised>
       <CardHeader
@@ -146,20 +146,19 @@ export function SelectableHeatChart(props: SelectableHeatChartProps) {
                 <ImportExport />
               </IconButton>
             </Tooltip>
-            {setType ? (
+            {setSelected ? (
               <Select
                 name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
                 autoWidth
                 displayEmpty
-                value={props.planned_or_actual}
-                onChange={(e) => setType(e.target.value as gui.PlannedOrActual)}
+                value={props.cur_selected}
+                onChange={(e) => setSelected(e.target.value as T)}
               >
-                <MenuItem key={gui.PlannedOrActual.Actual} value={gui.PlannedOrActual.Actual}>
-                  Actual
-                </MenuItem>
-                <MenuItem key={gui.PlannedOrActual.Planned} value={gui.PlannedOrActual.Planned}>
-                  Planned
-                </MenuItem>
+                {props.options.map((v, idx) => (
+                  <MenuItem key={idx} value={v}>
+                    {v}
+                  </MenuItem>
+                ))}
               </Select>
             ) : undefined}
           </div>

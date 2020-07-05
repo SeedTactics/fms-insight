@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,12 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export enum PlannedOrActual {
-  Planned = "Planned",
-  Actual = "Actual",
-  PlannedMinusActual = "PlannedOrActual",
-}
-
 export enum ActionType {
   SetSelectedStationCycle = "Gui_SetSelectedStationCycle",
   SetStationCycleDateZoom = "Gui_SetStationCycleDateZoom",
@@ -55,12 +49,8 @@ export enum ActionType {
 }
 
 export type Action =
-  | { type: ActionType.SetSelectedStationCycle; part?: string; station?: string; pallet?: string }
-  | { type: ActionType.SetStationCycleDateZoom; zoom?: { start: Date; end: Date } }
   | { type: ActionType.SetSelectedPalletCycle; pallet: string }
   | { type: ActionType.SetPalletCycleDateZoom; zoom?: { start: Date; end: Date } }
-  | { type: ActionType.SetStationOeeHeatmapType; ty: PlannedOrActual }
-  | { type: ActionType.SetCompletedCountHeatmapType; ty: PlannedOrActual }
   | { type: ActionType.SetWorkorderDialogOpen; open: boolean }
   | { type: ActionType.SetInspTypeDialogOpen; open: boolean }
   | { type: ActionType.SetSerialDialogOpen; open: boolean }
@@ -71,14 +61,8 @@ export type Action =
   | { type: ActionType.SetBackupFileOpenened; open: boolean };
 
 export interface State {
-  readonly station_cycle_selected_part?: string;
-  readonly station_cycle_selected_station?: string;
-  readonly station_cycle_selected_pallet?: string;
-  readonly station_cycle_date_zoom?: { start: Date; end: Date };
   readonly pallet_cycle_selected?: string;
   readonly pallet_cycle_date_zoom?: { start: Date; end: Date };
-  readonly station_oee_heatmap_type: PlannedOrActual;
-  readonly completed_count_heatmap_type: PlannedOrActual;
   readonly workorder_dialog_open: boolean;
   readonly insptype_dialog_open: boolean;
   readonly serial_dialog_open: boolean;
@@ -90,8 +74,6 @@ export interface State {
 }
 
 export const initial: State = {
-  station_oee_heatmap_type: PlannedOrActual.Actual,
-  completed_count_heatmap_type: PlannedOrActual.Actual,
   workorder_dialog_open: false,
   insptype_dialog_open: false,
   serial_dialog_open: false,
@@ -106,23 +88,10 @@ export function reducer(s: State, a: Action): State {
     return initial;
   }
   switch (a.type) {
-    case ActionType.SetSelectedStationCycle:
-      return {
-        ...s,
-        station_cycle_selected_part: a.part,
-        station_cycle_selected_station: a.station,
-        station_cycle_selected_pallet: a.pallet,
-      };
-    case ActionType.SetStationCycleDateZoom:
-      return { ...s, station_cycle_date_zoom: a.zoom };
     case ActionType.SetSelectedPalletCycle:
       return { ...s, pallet_cycle_selected: a.pallet };
     case ActionType.SetPalletCycleDateZoom:
       return { ...s, pallet_cycle_date_zoom: a.zoom };
-    case ActionType.SetStationOeeHeatmapType:
-      return { ...s, station_oee_heatmap_type: a.ty };
-    case ActionType.SetCompletedCountHeatmapType:
-      return { ...s, completed_count_heatmap_type: a.ty };
     case ActionType.SetWorkorderDialogOpen:
       return { ...s, workorder_dialog_open: a.open };
     case ActionType.SetInspTypeDialogOpen:

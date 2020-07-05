@@ -67,8 +67,27 @@ export interface PartCycleData extends CycleData {
 export interface StatisticalCycleTime {
   readonly medianMinutesForSingleMat: number;
   readonly MAD_belowMinutes: number; // MAD of points below the median
-  readonly MAD_aboveMinutes: number; // MAD of points below the median
+  readonly MAD_aboveMinutes: number; // MAD of points above the median
   readonly expectedCycleMinutesForSingleMat: number;
+}
+
+export class PartAndProcess {
+  public constructor(public readonly part: string, public readonly proc: number) {}
+  public static ofPartCycle(cy: PartCycleData): PartAndProcess {
+    return new PartAndProcess(cy.part, cy.process);
+  }
+  public static ofLogCycle(c: Readonly<api.ILogEntry>): PartAndProcess {
+    return new PartAndProcess(c.material[0].part, c.material[0].proc);
+  }
+  equals(other: PartAndProcess): boolean {
+    return this.part === other.part && this.proc === other.proc;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.part, this.proc);
+  }
+  toString(): string {
+    return this.part + "-" + this.proc.toString();
+  }
 }
 
 export class PartAndStationOperation {
@@ -111,10 +130,10 @@ export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
   readonly by_pallet: HashMap<string, ReadonlyArray<PalletCycleData>>;
 
-  readonly part_and_proc_names: HashSet<string>;
+  readonly part_and_proc_names: HashSet<PartAndProcess>;
   readonly machine_groups: HashSet<string>;
-  readonly station_groups: HashSet<string>;
-  readonly station_names: HashSet<string>;
+  readonly machine_names: HashSet<string>;
+  readonly loadstation_names: HashSet<string>;
   readonly pallet_names: HashSet<string>;
   readonly estimatedCycleTimes: EstimatedCycleTimes;
 }
@@ -124,8 +143,8 @@ export const initial: CycleState = {
   part_and_proc_names: HashSet.empty(),
   by_pallet: HashMap.empty(),
   machine_groups: HashSet.empty(),
-  station_groups: HashSet.empty(),
-  station_names: HashSet.empty(),
+  machine_names: HashSet.empty(),
+  loadstation_names: HashSet.empty(),
   pallet_names: HashSet.empty(),
   estimatedCycleTimes: HashMap.empty(),
 };
@@ -138,10 +157,6 @@ export enum ExpireOldDataType {
 export type ExpireOldData =
   | { type: ExpireOldDataType.ExpireEarlierThan; d: Date }
   | { type: ExpireOldDataType.NoExpire };
-
-export function part_and_proc(part: string, proc: number): string {
-  return part + "-" + proc.toString();
-}
 
 export function stat_name_and_num(stationGroup: string, stationNumber: number): string {
   if (stationGroup.startsWith("Inspect")) {
@@ -469,13 +484,13 @@ export function process_events(
   }
 
   let partNames = st.part_and_proc_names;
-  let statNames = st.station_names;
+  let machNames = st.machine_names;
   let machineGroups = st.machine_groups;
-  let statGroups = st.station_groups;
+  let lulNames = st.loadstation_names;
   let palNames = st.pallet_names;
   for (const e of newEvts) {
     for (const m of e.material) {
-      const p = part_and_proc(m.part, m.proc);
+      const p = new PartAndProcess(m.part, m.proc);
       if (!partNames.contains(p)) {
         partNames = partNames.add(p);
       }
@@ -485,18 +500,19 @@ export function process_events(
         palNames = palNames.add(e.pal);
       }
     }
-    if (e.type === api.LogType.MachineCycle || e.type === api.LogType.LoadUnloadCycle) {
-      if (!statGroups.contains(e.loc)) {
-        statGroups = statGroups.add(e.loc);
-      }
-      const statName = stat_name_and_num(e.loc, e.locnum);
-      if (!statNames.contains(statName)) {
-        statNames = statNames.add(statName);
-      }
-    }
     if (e.type === api.LogType.MachineCycle) {
       if (!machineGroups.contains(e.loc)) {
         machineGroups = machineGroups.add(e.loc);
+      }
+      const machName = stat_name_and_num(e.loc, e.locnum);
+      if (!machNames.contains(machName)) {
+        machNames = machNames.add(machName);
+      }
+    }
+    if (e.type === api.LogType.LoadUnloadCycle) {
+      const n = stat_name_and_num(e.loc, e.locnum);
+      if (!lulNames.contains(n)) {
+        lulNames = lulNames.add(n);
       }
     }
   }
@@ -574,9 +590,9 @@ export function process_events(
     part_cycles: allPartCycles,
     part_and_proc_names: partNames,
     by_pallet: pals,
-    station_groups: statGroups,
     machine_groups: machineGroups,
-    station_names: statNames,
+    machine_names: machNames,
+    loadstation_names: lulNames,
     pallet_names: palNames,
   };
 
