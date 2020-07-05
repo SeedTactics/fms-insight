@@ -58,6 +58,7 @@ import {
   FilterAnyMachineKey,
   FilterAnyLoadKey,
   copyCyclesToClipboard,
+  plannedOperationSeries,
 } from "../../data/results.cycles";
 import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
@@ -289,6 +290,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
     if (curOperation) {
       return filterStationCycles(cycles, {
         zoom: { start: addDays(today, -2), end: addDays(today, 1) },
+        pallet: selectedPallet,
         operation: curOperation,
       });
     } else {
@@ -300,6 +302,13 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       });
     }
   }, [cycles, props.showLabor, selectedPart, selectedPallet]);
+  const plannedSeries = React.useMemo(() => {
+    if (curOperation !== null) {
+      return plannedOperationSeries(points, false);
+    } else {
+      return undefined;
+    }
+  }, [points, curOperation]);
 
   return (
     <Card raised>
@@ -308,7 +317,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <WorkIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              Recent {props.showLabor ? "Load/Unload" : "Machines"} Cycles
+              Recent {props.showLabor ? "Load/Unload Occupancy" : "Machine Cycles"}
             </div>
             <div style={{ flexGrow: 1 }} />
             {points.data.length() > 0 ? (
@@ -421,6 +430,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
                     .getOrUndefined()
                 : undefined
             }
+            plannedSeries={plannedSeries}
           />
         ) : (
           <StationDataTable
