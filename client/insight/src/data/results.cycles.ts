@@ -116,11 +116,13 @@ export function filterStationCycles(
   };
 }
 
-export function estimateLulOperations(
-  allCycles: Vector<PartCycleData>,
-  operation: PartAndStationOperation,
-  zoom?: { start: Date; end: Date }
-) {
+export interface LoadOpFilters {
+  readonly operation: PartAndStationOperation;
+  readonly pallet?: string;
+  readonly zoom?: { readonly start: Date; readonly end: Date };
+}
+
+export function estimateLulOperations(allCycles: Vector<PartCycleData>, { operation, pallet, zoom }: LoadOpFilters) {
   return {
     seriesLabel: "Station",
     data: splitElapsedLoadTimeAmongCycles(LazySeq.ofIterable(allCycles).filter((e) => e.isLabor))
@@ -129,6 +131,9 @@ export function estimateLulOperations(
           return false;
         }
         if (!operation.equals(PartAndStationOperation.ofPartCycle(e.cycle))) {
+          return false;
+        }
+        if (pallet !== undefined && pallet !== "" && e.cycle.pallet !== pallet) {
           return false;
         }
         return true;

@@ -291,6 +291,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
       const setZoom = this.props.set_date_zoom_range;
 
       let statsSeries: JSX.Element | undefined;
+      let statZoom: JSX.Element | undefined;
       if (this.props.stats) {
         const low =
           (this.props.partCntPerPoint ?? 1) *
@@ -317,6 +318,23 @@ export const CycleChart = withStyles(cycleChartStyles)(
             ]}
           />
         );
+
+        if (setZoom) {
+          const extra = 0.2 * (high - low);
+          statZoom = (
+            <>
+              <span> or </span>
+              <Button
+                size="small"
+                onClick={() => {
+                  this.setState({ current_y_zoom_range: { y_low: low - extra, y_high: high + extra } });
+                }}
+              >
+                Zoom To Inliers
+              </Button>
+            </>
+          );
+        }
       }
 
       return (
@@ -412,7 +430,10 @@ export const CycleChart = withStyles(cycleChartStyles)(
               </Button>
             ) : undefined}
             {setZoom && !this.props.current_date_zoom && !this.state.current_y_zoom_range ? (
-              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>Zoom via mouse drag</span>
+              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
+                Zoom via mouse drag
+                {statZoom}
+              </span>
             ) : undefined}
           </div>
         </div>

@@ -45,6 +45,7 @@ import CardContent from "@material-ui/core/CardContent";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
+import AccountIcon from "@material-ui/icons/AccountBox";
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
@@ -171,7 +172,7 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
   const points = React.useMemo(() => {
     if (selectedPart) {
       if (curOperation) {
-        return filterStationCycles(cycles, { operation: curOperation });
+        return filterStationCycles(cycles, { operation: curOperation, pallet: selectedPallet });
       } else {
         return filterStationCycles(cycles, {
           partAndProc: selectedPart,
@@ -416,7 +417,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
   const points = React.useMemo(() => {
     if (selectedPart || selectedPallet) {
       if (curOperation) {
-        return estimateLulOperations(cycles, curOperation);
+        return estimateLulOperations(cycles, { operation: curOperation, pallet: selectedPallet });
       } else {
         return filterStationCycles(cycles, {
           partAndProc: selectedPart,
@@ -441,7 +442,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
       <CardHeader
         title={
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <WorkIcon style={{ color: "#6D4C41" }} />
+            <AccountIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Load/Unload Cycles</div>
             <div style={{ flexGrow: 1 }} />
             {points.data.length() > 0 ? (
@@ -473,7 +474,14 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
               displayEmpty
               value={selectedPart || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPart(e.target.value === "" ? undefined : (e.target.value as PartAndProcess))}
+              onChange={(e) => {
+                if (e.target.value === "") {
+                  setSelectedPart(undefined);
+                  setSelectedOperation("LULOccupancy");
+                } else {
+                  setSelectedPart(e.target.value as PartAndProcess);
+                }
+              }}
             >
               <MenuItem key={0} value="">
                 <em>Any Part</em>
@@ -498,8 +506,8 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
               onChange={(e) => setSelectedOperation(e.target.value as LoadCycleFilter)}
             >
               <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
-              <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem>
-              <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem>
+              {selectedPart ? <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem> : undefined}
+              {selectedPart ? <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem> : undefined}
             </Select>
             <Select
               name="Station-Cycles-cycle-chart-station-pallet"
