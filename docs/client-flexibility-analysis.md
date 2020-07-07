@@ -26,42 +26,102 @@ helpful to find and fix bottlenecks. We suggest you review this data once a
 month and use these reports to gradually alter the flexibility or operation
 of the cell to improve the performance.
 
-## Station Cycles
+## Machine Cycles
 
-![Screenshot of station cycle chart](assets/insight-analysis-cycles.png)
+![Screenshot of station cycle chart](assets/insight-machinecycle-graph.png)
 
-The station cycle chart displays a point for each load and machine cycle. The
-cycles can be filtered by a specific part, a specific machine, a specific
-pallet or a combination. The x-axis is the days of the month and the y-axis
-is cycle time in minutes. The cycle time is the wall clock time between cycle
-start and cycle end of the machine or the wall clock time between a pallet
-arriving at the load station to the pallet leaving the load station. The
-legend at the bottom shows which colors correspond to which stations, and by
-clicking on stations in the legend you can enable or disable the viewing of
-specific stations. By clicking on a point you can obtain details about that
-specific cycle in a tooltip and open the material card for the cycle.
-Finally, the chart can be zoomed by clicking and dragging.
+The machine cycle chart displays a point for each program cycle. The cycles
+can be filtered by a specific part, a specific program, a specific machine, a
+specific pallet or a combination. The x-axis is the days of the month and the
+y-axis is cycle time in minutes. The cycle time is the wall clock time
+between program start and program end of the machine. The legend at the
+bottom shows which colors correspond to which stations, and by clicking on
+stations in the legend you can enable or disable the viewing of specific
+stations. By clicking on a point you can obtain details about that specific
+cycle in a tooltip and open the material card for the cycle. Finally, the
+chart can be zoomed by clicking and dragging.
 
-The example screenshot above is an example of a part program which might need
-improvement. We see that most of the machine cycles are fine at around 40
-minutes, but there are quite a few machine cycles longer than 40 minutes
-which likely come from program interruptions, tool problems, etc. and since
-there are so many it is likely worth it to investigate and improve the part
-program. On the other hand, if there were only a couple of machine cycles
-longer than 40 minutes, we might instead conclude that it is not worth the
-effort to spend a large amount of time focusing on this part. Finally, the
-load station cycles seem consistent at between 5 and 15 minutes so likely no
-improvements are required at the load station. If instead there were a
-large number of outlier load/unload times, we might spend some time investigating
-and potentially making operational changes. By periodically viewing this
-cycle chart for each part, you can get a feel for your specific system
-and iteratively detect and fix problems.
+When a specific part and specific program are selected, a gray background and
+black horizontal line are shown. The gray background is calculated to be the
+statistical median and deviation of the points; the middle of the gray band is
+the median of the program time and the width of the band is determined by calculating
+the median absolute deviation of the median (MAD). In contrast, the horizontal
+black line is the expected cycle time entered during scheduling and sent in
+the [scheduled jobs](creating-jobs.md). Thus if the horizontal black line differs
+significantly from the middle of the gray band, this means that likely the expected
+time used in the simulation and scheduling is incorrect.
 
-![Screenshot of station cycle table](assets/insight-analysis-cycle-table.png)
+The example screenshot above is an example of a part program which looks
+good. We see that almost all of the machine cycles are around 40 minutes,
+within the gray band and the horizontal black line and there are only a
+couple machine cycles significantly longer than 40 minutes which likely come
+from program interruptions, tool problems, etc. Since there are only a couple
+outlier points, we might instead conclude that it is not worth the effort to
+spend a large amount of time focusing on this part. If instead the graph
+showed many points outside the gray band and longer than 40 minutes, it would
+be worth it to investigate and improve the part program and tooling.
+
+![Screenshot of station cycle table](assets/insight-machinecycle-table.png)
 
 The cycles can be toggled to display the raw data in a table instead of a chart.
 The table can be filtered, sorted, and restricted to a specific date range. The resulting
 raw data can be copied to the clipboard to be pasted into a spreadsheet for further analysis.
+
+## Load/Unload Cycles
+
+![Screenshot of load station cycle chart](assets/insight-loadcycle-graph.png)
+
+The load/unload cycle chart displays a point for each load or unload event.
+The x-axis is the days of the month and the y-axis is time in minutes.
+The cycles can be filtered by a specific part or pallet. The chart will display one of
+three possible times for each operation: "L/U Occupancy", "Load (estimated)", and "Unload (estimated)".
+
+The "L/U Occupancy" chart displays a point for the wall clock time that the pallet spends at the
+load station; the time from the pallet arriving at the load station until the operator presses
+the ready button. This is the time that FMS Insight collects and stores
+so this chart displays the actual raw data collected.
+
+Despite being the actual data FMS Insight collects, the "L/U Occupancy" chart
+is hard to use to determine if there are problems or slowdowns in loading a
+specific part. The recorded time is the wall clock time from pallet arrival
+to departure so includes all the operations which occur at the load station
+which might include a load and an unload or just a load or just an unload.
+Thus, FMS Insight attempts to split the wall clock occupied time of the
+pallet at the load station among the various operations such as loading or
+unloading that occurred.
+
+For each cycle, FMS Insight splits the time the pallet spends at the load
+station among each piece of material being loaded, transfered, or unload. To
+do so, FMS Insight uses the list of material loaded/unloaded/transfered and
+calculates the expected time the operation should take based on the values
+entered into the [scheduled jobs](creating-jobs.md). The expected time is
+then used to calculate a percentage consuption for each material, and this
+percentage is then applied to the actual wall clock time of the pallet
+occupancy. For example, consider an operation where part _aaa_ is loaded and
+part _bbb_ is unloaded. The schedule says that the loading of _aaa_ should
+take 5 minutes and the unloading of _bbb_ should take 8 minutes for a total
+time the pallet should spend at the load station of 13 minutes. Now say that
+the pallet actually spent 15 minutes at the load station. The load of _aaa_
+is expected to consume `5/13 = 38%` of the cycle and the unload of _bbb_ is
+expected to consume `8/13 = 62%` of the cycle. The 38% is multipled by the
+actual wall clock time of 15 minutes to give approximately 5.8 minutes for
+the load of _aaa_. Similarly for the unload of _bbb_, 15 minutes times 62% is
+approximately 9.2 minutes. Note how the "extra" 2 minutes (15 minutes
+compared to 13 minutes) for the entire cycle is divided among both the load
+and the unload operation. This calculation is repeated separately for each
+load/unload cycle.
+
+The result of FMS Insight's estimated splitting is graphed in the "Load
+Operation (estimated)" and "Unload Operation (estimated)" charts selected in
+the top-right corner. The screenshot above shows the "Load Operation
+(estimated)" chart. For each load/unload cycle, FMS Insight splits the time
+as described above and then plots a point with the y-coordinate the
+calculated time, filtering the data to a specific part and/or pallet. (In the
+example from the previous paragraph, the points would have y-coordinate 5.8
+and 9.2 minutes.) Exactly like the machine cycles, FMS Insight calculates the
+median and median absolute deviaion of the points and plots them as a gray band
+in the background. Finally, the expected time entered into the
+[scheduled jobs](creating-jobs.md) is graphed as a horizontal black line.
 
 ## Pallet Cycles
 
@@ -85,22 +145,49 @@ to determine if there are traffic jams occuring in the pallets. In a lean,
 healthy cell, most pallet cycles should be low and reasonably consistent. If
 pallet cycle times vary wildly, there is likely taffic jams or other flow problems.
 
-## Station OEE
+## Station Use
 
-![Screenshot of Station OEE Heatmap](assets/insight-analysis-station-oee.png)
+![Screenshot of Station Use Heatmap](assets/insight-analysis-station-oee.png)
 
-The Station OEE heatmap shows the station overall equipment effectiveness (OEE)
-over the month. On the x-axis are the days of the month and on the y-axis are
-the machines and load stations. For each station and each day, FMS Insight adds
-up the expected operation time for each part cycle and then divides by 24 hours
-to obtain a percentage that the station was busy with productive work. (If station cycles
-were longer than expected, this extra time is not counted in the OEE. Thus the Station OEE
-should only be focused on seriously once the station cycles are mostly stable at their
-expected cycle time.) For each grid cell in the chart, the OEE percentage is drawn
-with a color with darker colors higher OEE and lighter colors lower OEE. A grid cell
-can be moused over to obtain extra information in a tooltip.
+The Station Use heatmap shows the station usage over the month. On the x-axis
+are the days of the month and on the y-axis are the machines and load
+stations. There are three charts which can be selected in the top-right
+corner: "Standard OEE", "Planned OEE", and "Occupied".
 
-The Station OEE heatmap helps visualize how balanced the machines were loaded over the month.
+- The "Standard OEE" chart computes the actual overall equipment effectiveness (OEE) over the month.
+  For each station and each day, FMS Insight uses the log of parts produced and adds up the expected
+  operation time for each part cycle and then divides by 24 hours
+  to obtain a percentage that the station was busy with productive work. (If station cycles
+  were longer than expected, this extra time is not counted in the OEE.) For each grid cell in the chart, the OEE percentage is drawn
+  with a color with darker colors higher OEE and lighter colors lower OEE. A grid cell
+  can be moused over to obtain extra information in a tooltip.
+
+- The "Planned OEE" chart displays the simulated station usage for the [downloaded jobs](creating-jobs.md) and
+  is the prediction of what the OEE should look like based on all the schedules for the month.
+
+- The "Occupied" chart computes the total percentage of time that a pallet is occupying the station. For
+  each station and each day, FMS Insight uses the log of events to determine when a pallet arrives
+  and departs from each station. The total time a pallet is at the station is then divided by 24 hours
+  to obtain a percentage that the station was occupied. These percentages are then charted with darker colors
+  higher occupancy.
+
+The Station Use heatmaps are useful for several observations. First, the Occupied heatmap can be used to
+determine the overall usage of the load station. If the load station occupied percentages are very high,
+it can indicate that the load station is a bottleneck and preventing the cell from performing useful work.
+In a healthy cell, the load stations should be faster than the machines,
+so the load stations should be empty at least part of the time waiting for machining to finish.
+
+The difference between the Standard OEE and Occupied heatmaps can be useful to determine if there is a lot
+of cycle interruptions. For example, if a program is expected to take 25 minutes but spends 40 minutes at
+the machine, the Standard OEE heatmap will be credited with 25 minutes and the Occupied heatmap will be
+credited with 40 minutes, causing the Occupied heatmap to be darker in color for that day. Now, cycle
+interruptions do occasionally happen; comparing the Standard OEE and Occupied heatmaps allows you to
+determine if these are one-off events or a consistent problem. If most days are darker on the Occupied
+heatmap, the cycle interruptions should be investigated in more detail. (For example, look at individual parts on the
+machine cycle charts, ensure the expected time entered into the schedule is actually correct, investigate
+machine maintenance records, etc.)
+
+Finally, the Standard OEE heatmap helps visualize how balanced the machines were loaded over the month.
 We want to see all the machines consitantly roughly the same color. If you see that
 a machine has a lighter color for a couple days, that indiciates either the machine was down or
 that the daily mix for that day did not have enough flexibility. You should then consider
