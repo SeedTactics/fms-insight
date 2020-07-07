@@ -73,7 +73,13 @@ import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
 import StationDataTable from "./StationDataTable";
 import { AnalysisPeriod } from "../../data/events";
-import { binCyclesByDayAndStat, binSimStationUseByDayAndStat, copyOeeHeatmapToClipboard } from "../../data/results.oee";
+import {
+  binSimStationUseByDayAndStat,
+  copyOeeHeatmapToClipboard,
+  binActiveCyclesByDayAndStat,
+  DayAndStation,
+  binOccupiedCyclesByDayAndStat,
+} from "../../data/results.oee";
 import {
   binCyclesByDayAndPart,
   binSimProductionByDayAndPart,
@@ -671,38 +677,14 @@ interface HeatmapProps {
 
 type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
 
-function stationOeeStandardPoints(cycles: CycleState, extractValue: (c: PartCycleData) => number) {
-  const pts = binCyclesByDayAndStat(cycles.part_cycles, extractValue);
+function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
   return LazySeq.ofIterable(pts)
     .map(([dayAndStat, val]) => {
       const pct = val / (24 * 60);
       return {
         x: dayAndStat.day,
         y: dayAndStat.station,
-        color: pct,
-        label: (pct * 100).toFixed(1) + "%",
-      };
-    })
-    .toArray()
-    .sort((p1, p2) => {
-      const cmp = p1.x.getTime() - p2.x.getTime();
-      if (cmp === 0) {
-        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-      } else {
-        return cmp;
-      }
-    });
-}
-
-function stationOeePlannedPoints(sim: SimUseState) {
-  const pts = binSimStationUseByDayAndStat(sim.station_use, (c) => c.utilizationTime - c.plannedDownTime);
-  return LazySeq.ofIterable(pts)
-    .map(([dayAndStat, val]) => {
-      const pct = val / (24 * 60);
-      return {
-        x: dayAndStat.day,
-        y: dayAndStat.station,
-        color: pct,
+        color: Math.min(pct, 1),
         label: (pct * 100).toFixed(1) + "%",
       };
     })
@@ -724,11 +706,13 @@ function StationOeeHeatmap(props: HeatmapProps) {
   );
   const points = React.useMemo(() => {
     if (selected === "Standard OEE") {
-      return stationOeeStandardPoints(data.cycles, (c) => c.activeMinutes);
+      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(data.cycles.part_cycles));
     } else if (selected === "Occupied") {
-      return stationOeeStandardPoints(data.cycles, (c) => c.y);
+      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(data.cycles.part_cycles));
     } else {
-      return stationOeePlannedPoints(data.sim_use);
+      return dayAndStatToHeatmapPoints(
+        binSimStationUseByDayAndStat(data.sim_use.station_use, (c) => c.utilizationTime - c.plannedDownTime)
+      );
     }
   }, [selected, data]);
 

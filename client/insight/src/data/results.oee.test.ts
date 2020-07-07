@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -32,14 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
-import { duration } from "moment";
 
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
-import { fakeCycle } from "./events.fake";
-import { ILogEntry } from "./api";
+import { fakeCycle, fakeMaterial } from "./events.fake";
+import { ILogEntry, LogType } from "./api";
 import { LazySeq } from "./lazyseq";
-import { binCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee";
+import { binActiveCyclesByDayAndStat, binOccupiedCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -49,7 +48,26 @@ it("bins actual cycles by day", () => {
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle(now, 30),
     fakeCycle(addHours(now, -3), 20),
-    fakeCycle(addHours(now, -15), 15)
+    fakeCycle(addHours(now, -15), 15),
+    LazySeq.ofRange(1, 3)
+      .map((i) => {
+        const material = [fakeMaterial()];
+        return {
+          counter: 1,
+          material,
+          pal: "2",
+          type: LogType.LoadUnloadCycle,
+          startofcycle: false,
+          endUTC: addHours(now, -4), // same time for both cycles
+          loc: "L/U",
+          locnum: 3,
+          result: i === 1 ? "LOAD" : "UNLOAD",
+          program: i === 1 ? "LOAD" : "UNLOAD",
+          elapsed: "PT8M",
+          active: "PT3M",
+        };
+      })
+      .toArray()
   );
   const st = events.reducer(events.initial, {
     type: events.ActionType.LoadRecentLogEntries,
@@ -60,7 +78,7 @@ it("bins actual cycles by day", () => {
     },
   });
 
-  let byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, (c) => duration(c.activeMinutes).asMinutes());
+  let byDayAndStat = binActiveCyclesByDayAndStat(st.last30.cycles.part_cycles);
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone
@@ -70,6 +88,11 @@ it("bins actual cycles by day", () => {
   byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
+
+  byDayAndStat = binOccupiedCyclesByDayAndStat(st.last30.cycles.part_cycles);
+  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
+
+  expect(byDayAndStat).toMatchSnapshot("occupied cycles binned by day and station");
 });
 
 it("creates points clipboard table", () => {
@@ -90,9 +113,7 @@ it("creates points clipboard table", () => {
     },
   });
 
-  const byDayAndStat = binCyclesByDayAndStat(st.last30.cycles.part_cycles, (c) =>
-    duration(c.activeMinutes).asMinutes()
-  );
+  const byDayAndStat = binActiveCyclesByDayAndStat(st.last30.cycles.part_cycles);
 
   const points = LazySeq.ofIterable(byDayAndStat)
     .map(([dayAndStat, val]) => ({
@@ -106,7 +127,3 @@ it("creates points clipboard table", () => {
   table.innerHTML = buildOeeHeatmapTable("Station", points);
   expect(table).toMatchSnapshot("clipboard table");
 });
-
-it.skip("bins simulated station use");
-
-it.skip("calculates combined oee series and creates table");
