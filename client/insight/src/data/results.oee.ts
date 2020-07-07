@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { SimStationUse } from "./events.simuse";
 import { startOfDay, addMinutes, differenceInMinutes, addDays } from "date-fns";
-import { HashMap, fieldsHashCode } from "prelude-ts";
+import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
-import { CycleData } from "./events.cycles";
+import { chunkCyclesWithSimilarEndTime } from "./events.cycles";
 import { PartCycleData, stat_name_and_num } from "./events.cycles";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
@@ -60,9 +60,9 @@ export class DayAndStation {
   }
 }
 
-function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: Date; value: number }> {
-  const startDay = startOfDay(cycle.x);
-  const endTime = addMinutes(cycle.x, totalVal);
+function splitPartCycleToDays(d: Date, totalVal: number): Array<{ day: Date; value: number }> {
+  const startDay = startOfDay(d);
+  const endTime = addMinutes(d, totalVal);
   const endDay = startOfDay(endTime);
   if (startDay.getTime() === endDay.getTime()) {
     return [
@@ -72,7 +72,7 @@ function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: 
       },
     ];
   } else {
-    const startDayPct = differenceInMinutes(endDay, cycle.x) / totalVal;
+    const startDayPct = differenceInMinutes(endDay, d) / totalVal;
     return [
       {
         day: startDay,
@@ -86,17 +86,35 @@ function splitPartCycleToDays(cycle: CycleData, totalVal: number): Array<{ day: 
   }
 }
 
-export function binCyclesByDayAndStat(
-  cycles: Iterable<PartCycleData>,
-  extractValue: (c: PartCycleData) => number
-): HashMap<DayAndStation, number> {
+export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(cycles)
     .flatMap((point) =>
-      splitPartCycleToDays(point, extractValue(point)).map((x) => ({
+      splitPartCycleToDays(point.x, point.activeMinutes).map((x) => ({
         ...x,
         station: stat_name_and_num(point.stationGroup, point.stationNumber),
         isLabor: point.isLabor,
       }))
+    )
+    .toMap(
+      (p) => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
+      (v1, v2) => v1 + v2
+    );
+}
+
+export function binOccupiedCyclesByDayAndStat(cycles: Vector<PartCycleData>): HashMap<DayAndStation, number> {
+  return cycles
+    .groupBy((point) => stat_name_and_num(point.stationGroup, point.stationNumber))
+    .transform(LazySeq.ofIterable)
+    .flatMap(([station, cyclesForStat]) =>
+      chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
+        .transform(LazySeq.ofIterable)
+        .flatMap((chunk) =>
+          splitPartCycleToDays(chunk[0].x, chunk[0].y).map((split) => ({
+            ...split,
+            station: station,
+            isLabor: chunk[0].isLabor,
+          }))
+        )
     )
     .toMap(
       (p) => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
@@ -182,7 +200,7 @@ export function buildOeeSeries(
   statUse: Iterable<SimStationUse>
 ): ReadonlyArray<OEEBarSeries> {
   const filteredCycles = LazySeq.ofIterable(cycles).filter((e) => isLabor === e.isLabor && e.x >= start && e.x <= end);
-  const actualBins = binCyclesByDayAndStat(filteredCycles, (c) => c.activeMinutes);
+  const actualBins = binActiveCyclesByDayAndStat(filteredCycles);
   const filteredStatUse = LazySeq.ofIterable(statUse).filter(
     (e) => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
   );

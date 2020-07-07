@@ -1,0 +1,136 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`bins actual cycles by day: cycles binned by day and station 1`] = `
+Map {
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"L/U #3\\",
+}" => 6,
+  "DayAndStation {
+  \\"day\\": 2018-03-05T06:00:00.000Z,
+  \\"station\\": \\"L/U #2\\",
+}" => 3,
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"L/U #2\\",
+}" => 6,
+  "DayAndStation {
+  \\"day\\": 2018-03-05T06:00:00.000Z,
+  \\"station\\": \\"L/U #1\\",
+}" => 6,
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"L/U #1\\",
+}" => 12,
+  "DayAndStation {
+  \\"day\\": 2018-03-05T06:00:00.000Z,
+  \\"station\\": \\"MC #1\\",
+}" => 30,
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"MC #1\\",
+}" => 35,
+}
+`;
+
+exports[`bins actual cycles by day: occupied cycles binned by day and station 1`] = `
+Map {
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"L/U #3\\",
+}" => 8,
+  "DayAndStation {
+  \\"day\\": 2018-03-05T06:00:00.000Z,
+  \\"station\\": \\"L/U #2\\",
+}" => 3,
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"L/U #2\\",
+}" => 6,
+  "DayAndStation {
+  \\"day\\": 2018-03-05T06:00:00.000Z,
+  \\"station\\": \\"L/U #1\\",
+}" => 6,
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"L/U #1\\",
+}" => 12,
+  "DayAndStation {
+  \\"day\\": 2018-03-05T06:00:00.000Z,
+  \\"station\\": \\"MC #1\\",
+}" => 30,
+  "DayAndStation {
+  \\"day\\": 2018-03-04T06:00:00.000Z,
+  \\"station\\": \\"MC #1\\",
+}" => 35,
+}
+`;
+
+exports[`creates points clipboard table: clipboard table 1`] = `
+<div>
+  <table>
+    
+
+    <thead>
+      <tr>
+        <th>
+          Station
+        </th>
+        <th>
+          Sun Mar 04 2018
+        </th>
+        <th>
+          Mon Mar 05 2018
+        </th>
+      </tr>
+    </thead>
+    
+
+    <tbody>
+      
+
+      <tr>
+        <th>
+          L/U #1
+        </th>
+        <td>
+          12
+        </td>
+        <td>
+          6
+        </td>
+      </tr>
+      
+
+      <tr>
+        <th>
+          L/U #2
+        </th>
+        <td>
+          6
+        </td>
+        <td>
+          3
+        </td>
+      </tr>
+      
+
+      <tr>
+        <th>
+          MC #1
+        </th>
+        <td>
+          35
+        </td>
+        <td>
+          30
+        </td>
+      </tr>
+      
+
+    </tbody>
+    
+
+  </table>
+</div>
+`;

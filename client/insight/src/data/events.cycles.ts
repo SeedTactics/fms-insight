@@ -248,7 +248,7 @@ function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
   return { ...statCycleTime, expectedCycleMinutesForSingleMat };
 }
 
-function chunkCyclesWithSimilarEndTime<T>(cycles: Vector<T>, getTime: (c: T) => Date): Vector<ReadonlyArray<T>> {
+export function chunkCyclesWithSimilarEndTime<T>(cycles: Vector<T>, getTime: (c: T) => Date): Vector<ReadonlyArray<T>> {
   const sorted = cycles.sortOn((c) => getTime(c).getTime());
   return Vector.ofIterable(
     LazySeq.ofIterator(function* () {
