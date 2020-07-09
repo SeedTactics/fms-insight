@@ -373,9 +373,21 @@ namespace MazakMachineInterface
         _thread.Start();
         _watcher = new FileSystemWatcher(_path);
         _watcher.Filter = "*.csv";
+
+        CancellationTokenSource cancelSource = null;
         _watcher.Created += (sender, evt) =>
-          _newLogFile.Set();
-        //_watcher.Changed += (sender, evt) => _newLogFile.Set();
+        {
+          cancelSource?.Cancel();
+          cancelSource = new CancellationTokenSource();
+          System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(1), cancelSource.Token).ContinueWith(t =>
+          {
+            if (!t.IsCanceled)
+            {
+              _newLogFile.Set();
+            }
+          }, System.Threading.Tasks.TaskScheduler.Default);
+        };
+
         _watcher.EnableRaisingEvents = true;
         Log.Debug("Watching {path} for new CSV files", _path);
       }
@@ -393,6 +405,9 @@ namespace MazakMachineInterface
 
           var sleepTime = TimeSpan.FromMinutes(1);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
+
+          Thread.Sleep(TimeSpan.FromSeconds(1));
+
           var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newLogFile, _recheckQueues }, sleepTime, false);
           if (ret == 0)
           {
@@ -401,7 +416,7 @@ namespace MazakMachineInterface
           }
           bool recheckingQueues = ret == 2;
 
-          Thread.Sleep(TimeSpan.FromSeconds(1));
+          Log.Debug("Waking up log thread for {reason}: total GC memory {mem}", ret, GC.GetTotalMemory(false));
 
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
           var logs = LoadLog(_log.MaxForeignID());
