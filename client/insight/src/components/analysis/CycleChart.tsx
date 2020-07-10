@@ -46,9 +46,75 @@ import {
   LineSeries,
 } from "react-vis";
 import Button from "@material-ui/core/Button";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core";
+import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
 import { HashMap } from "prelude-ts";
 import { StatisticalCycleTime } from "../../data/events.cycles";
+import Dialog from "@material-ui/core/Dialog";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogActions from "@material-ui/core/DialogActions";
+import TextField from "@material-ui/core/TextField";
+import IconButton from "@material-ui/core/IconButton";
+import ZoomIn from "@material-ui/icons/ZoomIn";
+
+interface YZoomRange {
+  readonly y_low: number;
+  readonly y_high: number;
+}
+
+interface SetZoomDialogProps {
+  readonly open: boolean;
+  readonly curZoom: YZoomRange | null;
+  readonly close: () => void;
+  readonly setLow: (r: number) => void;
+  readonly setHigh: (r: number) => void;
+}
+
+function SetZoomDialog(props: SetZoomDialogProps) {
+  const [low, setLow] = React.useState<number>();
+  const [high, setHigh] = React.useState<number>();
+
+  function close() {
+    props.close();
+    setLow(undefined);
+    setHigh(undefined);
+  }
+
+  return (
+    <Dialog open={props.open} onClose={close}>
+      <DialogContent>
+        <div style={{ marginBottom: "1em" }}>
+          <TextField
+            type="number"
+            label="Y Low"
+            value={low !== undefined ? (isNaN(low) ? "" : low) : props.curZoom?.y_low ?? ""}
+            onChange={(e) => setLow(parseFloat(e.target.value))}
+            onBlur={() => {
+              if (low) {
+                props.setLow(low);
+              }
+            }}
+          />
+        </div>
+        <div style={{ marginBottom: "1em" }}>
+          <TextField
+            type="number"
+            label="Y High"
+            value={high !== undefined ? (isNaN(high) ? "" : high) : props.curZoom?.y_high ?? ""}
+            onChange={(e) => setHigh(parseFloat(e.target.value))}
+            onBlur={() => {
+              if (high) {
+                props.setHigh(high);
+              }
+            }}
+          />
+        </div>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={close}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -80,16 +146,12 @@ interface CycleChartTooltip {
   readonly extra: ReadonlyArray<ExtraTooltip>;
 }
 
-interface YZoomRange {
-  y_low: number;
-  y_high: number;
-}
-
 interface CycleChartState {
   readonly tooltip?: CycleChartTooltip;
   readonly disabled_series: { [key: string]: boolean };
   readonly current_y_zoom_range: YZoomRange | null;
   readonly brushing: boolean;
+  readonly zoom_dialog_open: boolean;
 }
 
 function memoize<A, R>(f: (x: A) => R): (x: A) => R {
@@ -285,6 +347,27 @@ export const CycleChart = withStyles(cycleChartStyles)(
       ];
     };
 
+    setLowZoom = (val: number) => {
+      let high: number | undefined = this.state.current_y_zoom_range?.y_high;
+      if (high === undefined) {
+        for (const [, points] of this.props.points) {
+          for (const point of points) {
+            if (!high || high < point.y) {
+              high = point.y;
+            }
+          }
+        }
+      }
+      this.setState({
+        current_y_zoom_range: { y_low: val, y_high: high ?? 60 },
+      });
+    };
+
+    setHighZoom = (val: number) =>
+      this.setState({
+        current_y_zoom_range: { y_low: this.state.current_y_zoom_range?.y_low ?? 0, y_high: val },
+      });
+
     render() {
       const seriesNames = this.props.points.keySet().toArray({ sortOn: (x) => x });
       const dateRange = this.props.default_date_range;
@@ -335,6 +418,15 @@ export const CycleChart = withStyles(cycleChartStyles)(
             </>
           );
         }
+      }
+
+      let openZoom: JSX.Element | undefined;
+      if (setZoom) {
+        openZoom = (
+          <IconButton size="small" onClick={() => this.setState({ zoom_dialog_open: true })}>
+            <ZoomIn fontSize="inherit" />
+          </IconButton>
+        );
       }
 
       return (
@@ -418,24 +510,34 @@ export const CycleChart = withStyles(cycleChartStyles)(
               ) : undefined}
             </div>
             {setZoom && (this.props.current_date_zoom || this.state.current_y_zoom_range) ? (
-              <Button
-                size="small"
-                style={{ position: "absolute", right: 0, top: 0 }}
-                onClick={() => {
-                  setZoom({ zoom: undefined });
-                  this.setState({ current_y_zoom_range: null });
-                }}
-              >
-                Reset Zoom
-              </Button>
+              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setZoom({ zoom: undefined });
+                    this.setState({ current_y_zoom_range: null });
+                  }}
+                >
+                  Reset Zoom
+                </Button>
+                {openZoom}
+              </span>
             ) : undefined}
             {setZoom && !this.props.current_date_zoom && !this.state.current_y_zoom_range ? (
               <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
                 Zoom via mouse drag
                 {statZoom}
+                {openZoom}
               </span>
             ) : undefined}
           </div>
+          <SetZoomDialog
+            open={this.state.zoom_dialog_open}
+            curZoom={this.state.current_y_zoom_range}
+            close={() => this.setState({ zoom_dialog_open: false })}
+            setLow={this.setLowZoom}
+            setHigh={this.setHighZoom}
+          />
         </div>
       );
     }

@@ -66,8 +66,10 @@ import {
   FilterAnyMachineKey,
   copyCyclesToClipboard,
   estimateLulOperations,
-  FilterAnyLoadKey,
   plannedOperationSeries,
+  LoadCycleData,
+  loadOccupancyCycles,
+  FilterAnyLoadKey,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
@@ -97,18 +99,21 @@ interface PartStationCycleChartProps {
 }
 
 function PartMachineCycleChart(props: PartStationCycleChartProps) {
-  function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-    const partC = point as PartCycleData;
-    const ret = [];
-    for (const mat of partC.material) {
-      ret.push({
-        title: mat.serial ? mat.serial : "Material",
-        value: "Open Card",
-        link: () => props.openMaterial(mat.id),
-      });
-    }
-    return ret;
-  }
+  const extraStationCycleTooltip = React.useCallback(
+    function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
+      const partC = point as PartCycleData;
+      const ret = [];
+      for (const mat of partC.material) {
+        ret.push({
+          title: mat.serial ? mat.serial : "Material",
+          value: "Open Card",
+          link: () => props.openMaterial(mat.id),
+        });
+      }
+      return ret;
+    },
+    [props.openMaterial]
+  );
 
   // filter/display state
   const [showGraph, setShowGraph] = React.useState(true);
@@ -368,18 +373,23 @@ const ConnectedPartMachineCycleChart = connect((st) => ({}), {
 type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
 function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
-  function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-    const partC = point as PartCycleData;
-    const ret = [];
-    for (const mat of partC.material) {
-      ret.push({
-        title: mat.serial ? mat.serial : "Material",
-        value: "Open Card",
-        link: () => props.openMaterial(mat.id),
-      });
-    }
-    return ret;
-  }
+  const extraLoadCycleTooltip = React.useCallback(
+    function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
+      const partC = point as LoadCycleData;
+      const ret = [];
+      if (partC.operations) {
+        for (const mat of partC.operations) {
+          ret.push({
+            title: (mat.serial ? mat.serial : "Material") + " " + mat.operation,
+            value: "Open Card",
+            link: () => props.openMaterial(mat.id),
+          });
+        }
+      }
+      return ret;
+    },
+    [props.openMaterial]
+  );
 
   const allParts = useSelector((st) =>
     st.Events.analysis_period === AnalysisPeriod.Last30Days
@@ -424,6 +434,11 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
     if (selectedPart || selectedPallet) {
       if (curOperation) {
         return estimateLulOperations(cycles, { operation: curOperation, pallet: selectedPallet });
+      } else if (showGraph) {
+        return loadOccupancyCycles(cycles, {
+          partAndProc: selectedPart,
+          pallet: selectedPallet,
+        });
       } else {
         return filterStationCycles(cycles, {
           partAndProc: selectedPart,
@@ -432,9 +447,9 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
         });
       }
     } else {
-      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
+      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<LoadCycleData>>() };
     }
-  }, [selectedPart, selectedPallet, selectedOperation, cycles]);
+  }, [selectedPart, selectedPallet, selectedOperation, cycles, showGraph]);
   const plannedSeries = React.useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
       return plannedOperationSeries(points, true);
@@ -543,7 +558,7 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
             points={points.data}
             series_label={points.seriesLabel}
             default_date_range={defaultDateRange}
-            extra_tooltip={extraStationCycleTooltip}
+            extra_tooltip={extraLoadCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}

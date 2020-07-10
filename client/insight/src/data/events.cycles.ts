@@ -275,7 +275,7 @@ interface LogEntryWithSplitElapsed<T> {
   readonly elapsedForSingleMaterialMinutes: number;
 }
 
-function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<unknown> }>(
+export function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<unknown> }>(
   chunk: ReadonlyArray<T>,
   getElapsedMins: (c: T) => number,
   getActiveMins: (c: T) => number
