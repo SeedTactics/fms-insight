@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashMap, Vector } from "prelude-ts";
+import { HashMap, Vector, Option } from "prelude-ts";
 import {
   PartCycleData,
   stat_name_and_num,
@@ -40,6 +40,8 @@ import {
   EstimatedCycleTimes,
   splitElapsedLoadTimeAmongCycles,
   PartAndStationOperation,
+  chunkCyclesWithSimilarEndTime,
+  splitElapsedTimeAmongChunk,
 } from "./events.cycles";
 import { LazySeq } from "./lazyseq";
 import * as api from "./api";
@@ -116,31 +118,126 @@ export function filterStationCycles(
   };
 }
 
+export interface LoadCycleData extends PartCycleData {
+  readonly operations?: ReadonlyArray<{ readonly id: number; readonly serial?: string; readonly operation: string }>;
+}
+
+export interface FilteredLoadCycles {
+  readonly seriesLabel: string;
+  readonly data: HashMap<string, ReadonlyArray<LoadCycleData>>;
+}
+
+export interface LoadCycleFilter {
+  readonly zoom?: { start: Date; end: Date };
+  readonly partAndProc?: PartAndProcess;
+  readonly pallet?: string;
+}
+
+export function loadOccupancyCycles(
+  allCycles: Vector<PartCycleData>,
+  { zoom, partAndProc, pallet }: LoadCycleFilter
+): FilteredLoadCycles {
+  return {
+    seriesLabel: "Station",
+    data: LazySeq.ofIterable(allCycles)
+      .filter((e) => e.isLabor)
+      .groupBy((e) => stat_name_and_num(e.stationGroup, e.stationNumber))
+      .mapValues((cyclesForStat) =>
+        chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
+          .transform(LazySeq.ofIterable)
+          .mapOption((chunk) => {
+            var cycle = chunk.find((e) => {
+              if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
+                return false;
+              }
+              if (partAndProc && (e.part !== partAndProc.part || e.process !== partAndProc.proc)) {
+                return false;
+              }
+              if (pallet && e.pallet !== pallet) {
+                return false;
+              }
+              return true;
+            });
+
+            if (cycle) {
+              return Option.some({
+                ...cycle,
+                operations: LazySeq.ofIterable(chunk)
+                  .flatMap((e) =>
+                    e.material.map((mat) => ({
+                      id: mat.id,
+                      serial: mat.serial,
+                      operation: e.operation,
+                    }))
+                  )
+                  .toArray(),
+              });
+            } else {
+              return Option.none<LoadCycleData>();
+            }
+          })
+          .toArray()
+      ),
+  };
+}
+
 export interface LoadOpFilters {
   readonly operation: PartAndStationOperation;
   readonly pallet?: string;
   readonly zoom?: { readonly start: Date; readonly end: Date };
 }
 
-export function estimateLulOperations(allCycles: Vector<PartCycleData>, { operation, pallet, zoom }: LoadOpFilters) {
+export function estimateLulOperations(
+  allCycles: Vector<PartCycleData>,
+  { operation, pallet, zoom }: LoadOpFilters
+): FilteredLoadCycles {
   return {
     seriesLabel: "Station",
-    data: splitElapsedLoadTimeAmongCycles(LazySeq.ofIterable(allCycles).filter((e) => e.isLabor))
-      .filter((e) => {
-        if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
-          return false;
-        }
-        if (!operation.equals(PartAndStationOperation.ofPartCycle(e.cycle))) {
-          return false;
-        }
-        if (pallet !== undefined && pallet !== "" && e.cycle.pallet !== pallet) {
-          return false;
-        }
-        return true;
-      })
-      .map((e) => ({ ...e.cycle, y: e.elapsedForSingleMaterialMinutes }))
+    data: LazySeq.ofIterable(allCycles)
+      .filter((e) => e.isLabor)
       .groupBy((e) => stat_name_and_num(e.stationGroup, e.stationNumber))
-      .mapValues((e) => e.toArray()),
+      .mapValues((cyclesForStat) =>
+        chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
+          .transform(LazySeq.ofIterable)
+          .mapOption((chunk) => {
+            const split = splitElapsedTimeAmongChunk(
+              chunk,
+              (c) => c.y,
+              (c) => c.activeMinutes
+            );
+            const splitCycle = split.find((e) => {
+              if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
+                return false;
+              }
+              if (!operation.equals(PartAndStationOperation.ofPartCycle(e.cycle))) {
+                return false;
+              }
+              if (pallet && e.cycle.pallet !== pallet) {
+                return false;
+              }
+              return true;
+            });
+
+            if (splitCycle) {
+              return Option.some({
+                ...splitCycle.cycle,
+                y: splitCycle.elapsedForSingleMaterialMinutes,
+                operations: LazySeq.ofIterable(chunk)
+                  .flatMap((e) =>
+                    e.material.map((mat) => ({
+                      id: mat.id,
+                      serial: mat.serial,
+                      operation: e.operation + (e === splitCycle.cycle ? "*" : ""),
+                    }))
+                  )
+                  .toArray(),
+              });
+            } else {
+              return Option.none<LoadCycleData>();
+            }
+          })
+          .toArray()
+      ),
   };
 }
 

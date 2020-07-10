@@ -56,9 +56,11 @@ import {
   outlierLoadCycles,
   FilteredStationCycles,
   FilterAnyMachineKey,
-  FilterAnyLoadKey,
   copyCyclesToClipboard,
   plannedOperationSeries,
+  loadOccupancyCycles,
+  LoadCycleData,
+  FilterAnyLoadKey,
 } from "../../data/results.cycles";
 import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
@@ -242,18 +244,31 @@ interface PartStationCycleChartProps {
 }
 
 function PartStationCycleChart(props: PartStationCycleChartProps) {
-  function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-    const partC = point as PartCycleData;
-    const ret = [];
-    for (const mat of partC.material) {
-      ret.push({
-        title: mat.serial ? mat.serial : "Material",
-        value: "Open Card",
-        link: () => props.openMaterial(mat.id),
-      });
-    }
-    return ret;
-  }
+  const extraStationCycleTooltip = React.useCallback(
+    function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
+      const partC = point as LoadCycleData;
+      const ret = [];
+      if (partC.operations) {
+        for (const mat of partC.operations) {
+          ret.push({
+            title: (mat.serial ? mat.serial : "Material") + " " + mat.operation,
+            value: "Open Card",
+            link: () => props.openMaterial(mat.id),
+          });
+        }
+      } else {
+        for (const mat of partC.material) {
+          ret.push({
+            title: mat.serial ? mat.serial : "Material",
+            value: "Open Card",
+            link: () => props.openMaterial(mat.id),
+          });
+        }
+      }
+      return ret;
+    },
+    [props.openMaterial]
+  );
 
   const [showGraph, setShowGraph] = React.useState(true);
   const [chartZoom, setChartZoom] = React.useState<{ zoom?: { start: Date; end: Date } }>({});
@@ -293,6 +308,12 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         pallet: selectedPallet,
         operation: curOperation,
       });
+    } else if (props.showLabor && showGraph) {
+      return loadOccupancyCycles(cycles, {
+        zoom: { start: addDays(today, -2), end: addDays(today, 1) },
+        partAndProc: selectedPart,
+        pallet: selectedPallet,
+      });
     } else {
       return filterStationCycles(cycles, {
         zoom: { start: addDays(today, -2), end: addDays(today, 1) },
@@ -301,7 +322,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         station: props.showLabor ? FilterAnyLoadKey : FilterAnyMachineKey,
       });
     }
-  }, [cycles, props.showLabor, selectedPart, selectedPallet]);
+  }, [cycles, props.showLabor, selectedPart, selectedPallet, showGraph]);
   const plannedSeries = React.useMemo(() => {
     if (curOperation !== null) {
       return plannedOperationSeries(points, false);
