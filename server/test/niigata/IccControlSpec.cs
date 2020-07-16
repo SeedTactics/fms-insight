@@ -127,15 +127,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: fstMats)
         })
+        .AdvanceMinutes(1)
+        .ExpectNoChanges()
+
         .MoveToMachineQueue(pal: 1, mach: 3)
-        .AdvanceMinutes(5) // =9
+        .AdvanceMinutes(2)
         .SetBeforeMC(pal: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectRotaryStart(pal: 1, mach: 3, mats: fstMats),
-          FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, waitForMach: true, elapMin: 5, mats: fstMats),
+          FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, waitForMach: true, elapMin: 3, mats: fstMats),
+        })
+        .AdvanceMinutes(3)
+        .MoveToBuffer(pal: 1, buff: 6)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectRotaryEnd(pal: 1, mach: 3, rotate: false, elapMin: 3, mats: fstMats),
+          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 6, waitForMach: true, mats: fstMats)
+        })
+        .AdvanceMinutes(2)
+        .MoveToMachineQueue(pal: 1, mach: 3)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectRotaryStart(pal: 1, mach: 3, mats: fstMats),
+          FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 6, waitForMach: true, elapMin: 2, mats: fstMats),
         })
         .MoveToMachine(pal: 1, mach: 3)
-        .AdvanceMinutes(1) // = 10
+        .AdvanceMinutes(1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectRotaryEnd(pal: 1, mach: 3, rotate: true, elapMin: 1, mats: fstMats)
         })
@@ -151,7 +166,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 3, program: "prog111", rev: 5, mat: fstMats)
         })
-        .AdvanceMinutes(10) // =20
+        .AdvanceMinutes(10)
         .UpdateExpectedMaterial(fstMats, im =>
           {
             im.Action.ElapsedMachiningTime = TimeSpan.FromMinutes(10);
@@ -159,7 +174,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
         .ExpectNoChanges()
-        .AdvanceMinutes(5) // =25
+        .AdvanceMinutes(5)
         .EndMachine(mach: 3)
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(fstMats, im =>
@@ -195,7 +210,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }),
           FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: false, mats: fstMats)
         })
-        .AdvanceMinutes(3) //=28
+        .AdvanceMinutes(3)
         .ExpectNoChanges()
         .MoveToLoad(pal: 1, lul: 4)
         .DecrJobRemainCnt("uniq1", path: 1)
@@ -214,7 +229,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4),
           FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 2)
         })
-        .AdvanceMinutes(2) // =30
+        .AdvanceMinutes(2) // =33
         .UpdateExpectedMaterial(fstMats, im =>
         {
           im.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(2);
@@ -227,7 +242,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .RemoveExpectedMaterial(fstMats.Select(m => m.MaterialID))
         .ExpectTransition(new[] {
-          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 30 - 4),
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 33 - 4),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 2, activeMins: 9, mats: fstMats),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 2, activeMins: 8, mats: out var sndMats)
         })
