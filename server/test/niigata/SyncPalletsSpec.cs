@@ -116,7 +116,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         _sync.SynchronizePallets(false);
         var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
-        if (evts.Any())
+        if (evts.Any(e => e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound))
         {
           syncMonitor.Should().Raise("OnPalletsChanged");
         }
@@ -235,7 +235,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         long matId, string uniq, string part, int numProc, int[][] pals, string queue = null, bool[] reclamp = null
     )
     {
-      logs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
+      var matLogs = logs.Where(e =>
+        e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound
+      ).ToList();
+      matLogs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
 
       var expected = new List<Action<LogEntry>>();
       for (int procNum = 1; procNum <= numProc; procNum++)
@@ -326,7 +329,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
       }
 
-      logs.Should().SatisfyRespectively(expected);
+      matLogs.Should().SatisfyRespectively(expected);
     }
 
     private void CheckMaxQueueSize(IEnumerable<LogEntry> logs, string queue, int expectedMax)
