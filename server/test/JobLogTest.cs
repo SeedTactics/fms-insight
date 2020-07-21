@@ -321,10 +321,10 @@ namespace MachineWatchTest
 
       var machineStartPockets = new List<JobLogDB.ToolPocketSnapshot> {
         new JobLogDB.ToolPocketSnapshot() {
-          PocketNumber = 10, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
+          PocketNumber = 10, Tool = "tool1", Offset = "off1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
         },
         new JobLogDB.ToolPocketSnapshot() {
-          PocketNumber = 20, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromMinutes(40)
+          PocketNumber = 20, Tool = "tool2", Offset = "off2", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromMinutes(40)
         }
       };
       var machineStartActualCycle = _jobLog.RecordMachineStart(
@@ -1313,10 +1313,10 @@ namespace MachineWatchTest
 
       // first a normal use
       start.Add(
-        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Offset = "off1", Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 0, Offset = "off1", Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
       );
       expectedUse["tool1"] = TimeSpan.FromSeconds(50 - 10);
       expectedTotalUse["tool1"] = TimeSpan.FromSeconds(50);
@@ -1332,10 +1332,10 @@ namespace MachineWatchTest
 
       // now a tool which is replaced and used
       start.Add(
-        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(70), ToolLife = TimeSpan.FromSeconds(100) }
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Offset = "off1", Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(70), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromSeconds(100) }
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Offset = "off1", Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromSeconds(100) }
       );
       expectedUse["tool3"] = TimeSpan.FromSeconds(100 - 70 + 20);
       expectedTotalUse["tool3"] = TimeSpan.FromSeconds(20);
@@ -1343,10 +1343,10 @@ namespace MachineWatchTest
 
       // now a tool which is replaced with a different tool and not used
       start.Add(
-        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Offset = "off2", Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(120) }
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 2, Offset = "off2", Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(120) }
       );
       expectedUse["tool4"] = TimeSpan.FromSeconds(100 - 60);
       expectedTotalUse["tool4"] = TimeSpan.Zero;

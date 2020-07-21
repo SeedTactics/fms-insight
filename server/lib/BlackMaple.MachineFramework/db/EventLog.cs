@@ -89,7 +89,7 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
-    private const int Version = 21;
+    private const int Version = 22;
 
     public void CreateTables(string firstSerialOnEmpty)
     {
@@ -170,8 +170,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, PocketNumber))";
+        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Offset TEXT, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
+            "PRIMARY KEY(Counter, PocketNumber, Offset))";
         cmd.ExecuteNonQuery();
 
         if (!string.IsNullOrEmpty(firstSerialOnEmpty))
@@ -317,6 +317,8 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 20) Ver19ToVer20(trans);
 
           if (curVersion < 21) Ver20ToVer21(trans);
+
+          if (curVersion < 22) Ver21ToVer22(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -639,6 +641,21 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
             "PRIMARY KEY(Counter, PocketNumber))";
         cmd.ExecuteNonQuery();
+      }
+    }
+
+    private void Ver21ToVer22(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+        cmd.CommandText = "DROP TABLE tool_snapshots";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Offset TEXT, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
+            "PRIMARY KEY(Counter, PocketNumber, Offset))";
+        cmd.ExecuteNonQuery();
+
       }
     }
 
@@ -1109,7 +1126,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          cmd.CommandText = "SELECT PocketNumber, Tool, CurrentUse, ToolLife FROM tool_snapshots WHERE Counter = $cntr";
+          cmd.CommandText = "SELECT PocketNumber, Offset, Tool, CurrentUse, ToolLife FROM tool_snapshots WHERE Counter = $cntr";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
           using (var reader = cmd.ExecuteReader())
@@ -1120,9 +1137,10 @@ namespace BlackMaple.MachineFramework
               ret.Add(new ToolPocketSnapshot()
               {
                 PocketNumber = reader.GetInt32(0),
-                Tool = reader.GetString(1),
-                CurrentUse = TimeSpan.FromTicks(reader.GetInt64(2)),
-                ToolLife = TimeSpan.FromTicks(reader.GetInt64(3))
+                Offset = reader.IsDBNull(1) ? null : reader.GetString(1),
+                Tool = reader.GetString(2),
+                CurrentUse = TimeSpan.FromTicks(reader.GetInt64(3)),
+                ToolLife = TimeSpan.FromTicks(reader.GetInt64(4))
               });
             }
             return ret;
@@ -1407,6 +1425,7 @@ namespace BlackMaple.MachineFramework
     public class ToolPocketSnapshot
     {
       public int PocketNumber { get; set; }
+      public string Offset { get; set; }
       public string Tool { get; set; }
       public TimeSpan CurrentUse { get; set; }
       public TimeSpan ToolLife { get; set; }
@@ -1415,7 +1434,7 @@ namespace BlackMaple.MachineFramework
       {
         if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
         if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
-        var endPockets = end.ToDictionary(s => s.PocketNumber);
+        var endPockets = end.ToDictionary(s => (s.PocketNumber, s.Offset));
 
         var tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
         void addUse(string tool, MachineWatchInterface.ToolUse use)
@@ -1434,9 +1453,9 @@ namespace BlackMaple.MachineFramework
 
         foreach (var startPocket in start)
         {
-          if (endPockets.TryGetValue(startPocket.PocketNumber, out var endPocket))
+          if (endPockets.TryGetValue((startPocket.PocketNumber, startPocket.Offset), out var endPocket))
           {
-            endPockets.Remove(startPocket.PocketNumber);
+            endPockets.Remove((startPocket.PocketNumber, startPocket.Offset));
 
             if (startPocket.Tool == endPocket.Tool)
             {
@@ -1472,7 +1491,7 @@ namespace BlackMaple.MachineFramework
               // assume start tool was used until life
               addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
               {
-                ToolUseDuringCycle = startPocket.ToolLife - startPocket.CurrentUse,
+                ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, (startPocket.ToolLife - startPocket.CurrentUse).Ticks)),
                 TotalToolUseAtEndOfCycle = TimeSpan.Zero,
                 ConfiguredToolLife = TimeSpan.Zero
               });
@@ -1495,7 +1514,7 @@ namespace BlackMaple.MachineFramework
             // assume start tool was used until life
             addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
             {
-              ToolUseDuringCycle = startPocket.ToolLife - startPocket.CurrentUse,
+              ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, (startPocket.ToolLife - startPocket.CurrentUse).Ticks)),
               TotalToolUseAtEndOfCycle = TimeSpan.Zero,
               ConfiguredToolLife = TimeSpan.Zero
             });
@@ -1745,9 +1764,10 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT OR REPLACE INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife) VALUES ($cntr,$pocket,$tool,$use,$life)";
+        cmd.CommandText = "INSERT OR REPLACE INTO tool_snapshots(Counter, PocketNumber, Offset, Tool, CurrentUse, ToolLife) VALUES ($cntr,$pocket,$off,$tool,$use,$life)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("pocket", SqliteType.Integer);
+        cmd.Parameters.Add("off", SqliteType.Text);
         cmd.Parameters.Add("tool", SqliteType.Text);
         cmd.Parameters.Add("use", SqliteType.Integer);
         cmd.Parameters.Add("life", SqliteType.Integer);
@@ -1755,9 +1775,10 @@ namespace BlackMaple.MachineFramework
         foreach (var pocket in pockets)
         {
           cmd.Parameters[1].Value = pocket.PocketNumber;
-          cmd.Parameters[2].Value = pocket.Tool;
-          cmd.Parameters[3].Value = pocket.CurrentUse.Ticks;
-          cmd.Parameters[4].Value = pocket.ToolLife.Ticks;
+          cmd.Parameters[2].Value = pocket.Offset ?? "";
+          cmd.Parameters[3].Value = pocket.Tool;
+          cmd.Parameters[4].Value = pocket.CurrentUse.Ticks;
+          cmd.Parameters[5].Value = pocket.ToolLife.Ticks;
           cmd.ExecuteNonQuery();
         }
       }
