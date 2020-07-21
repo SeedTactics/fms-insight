@@ -42,7 +42,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.4" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
 

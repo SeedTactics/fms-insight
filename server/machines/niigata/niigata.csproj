@@ -39,8 +39,8 @@
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.*" />
-    <PackageReference Include="Npgsql" Version="4.1.*" />
+    <PackageReference Include="Dapper" Version="2.0.35" />
+    <PackageReference Include="Npgsql" Version="4.1.4" />
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>

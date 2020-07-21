@@ -61,13 +61,13 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="2.1.*"/>
 
     <PackageReference Include="NSwag.AspNetCore" Version="12.3.1"/>
-    <PackageReference Include="Serilog" Version="2.8.0"/>
-    <PackageReference Include="Serilog.Sinks.File" Version="4.0.0"/>
+    <PackageReference Include="Serilog" Version="2.9.0"/>
+    <PackageReference Include="Serilog.Sinks.File" Version="4.1.0"/>
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1"/>
-    <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0"/>
-    <PackageReference Include="Serilog.AspNetCore" Version="2.1.1"/>
+    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0"/>
+    <PackageReference Include="Serilog.AspNetCore" Version="2.1.*"/>
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.4" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
     <PackageReference Include="CsvHelper" Version="12.1.2"/>
 
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
