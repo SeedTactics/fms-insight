@@ -95,9 +95,12 @@ class BufferSeriesKey {
 }
 
 const numPoints: number = 30 * 5;
-const movingAverageDistanceInMilliseconds = 4 * 60 * 60 * 1000;
 
-function addEntryToPoint(point: { x: Date; y: number }, entry: BufferEntry) {
+function addEntryToPoint(
+  movingAverageDistanceInMilliseconds: number,
+  point: { x: Date; y: number },
+  entry: BufferEntry
+) {
   const startT = Math.max(
     point.x.getTime() - movingAverageDistanceInMilliseconds,
     entry.endTime.getTime() - entry.elapsedSeconds * 1000
@@ -110,6 +113,7 @@ function addEntryToPoint(point: { x: Date; y: number }, entry: BufferEntry) {
 function calcPoints(
   absoluteStart: Date,
   absoluteEnd: Date,
+  movingAverageDistanceInMilliseconds: number,
   entries: Iterable<BufferEntry>
 ): ReadonlyArray<BufferChartPoint> {
   // the actual start and end is inward from the start and end by the moving average distance
@@ -141,7 +145,7 @@ function calcPoints(
       Math.floor((e.endTime.getTime() + movingAverageDistanceInMilliseconds - start.getTime()) / gap)
     );
     for (let i = startIdx; i <= endIdx; i++) {
-      addEntryToPoint(points[i], e);
+      addEntryToPoint(movingAverageDistanceInMilliseconds, points[i], e);
     }
   }
 
@@ -151,11 +155,13 @@ function calcPoints(
 export function buildBufferChart(
   start: Date,
   end: Date,
+  movingAverageDistanceInHours: number,
   entries: Vector<BufferEntry>
 ): ReadonlyArray<BufferChartSeries> {
+  const movingAverageDistanceInMilliseconds = movingAverageDistanceInHours * 60 * 60 * 1000;
   return entries
     .groupBy((v) => new BufferSeriesKey(v.buffer))
-    .mapValues((es) => calcPoints(start, end, es))
+    .mapValues((es) => calcPoints(start, end, movingAverageDistanceInMilliseconds, es))
     .toArray()
     .map(([k, points]) => ({
       label: k.toString(),

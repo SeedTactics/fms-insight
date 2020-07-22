@@ -47,7 +47,11 @@ import { addDays, startOfToday, addMonths } from "date-fns";
 import { buildBufferChart } from "../../data/results.bufferchart";
 import { seriesColor } from "./CycleChart";
 
-export const BufferChart = React.memo(function BufferChart() {
+export interface BufferChartProps {
+  readonly movingAverageDistanceInHours: number;
+}
+
+export const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
   const analysisPeriod = useSelector((s) => s.Events.analysis_period);
   const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
   const defaultDateRange =
@@ -59,11 +63,10 @@ export const BufferChart = React.memo(function BufferChart() {
       ? s.Events.last30.buffering.entries
       : s.Events.selected_month.buffering.entries
   );
-  const series = React.useMemo(() => buildBufferChart(defaultDateRange[0], defaultDateRange[1], entries), [
-    defaultDateRange[0],
-    defaultDateRange[1],
-    entries,
-  ]);
+  const series = React.useMemo(
+    () => buildBufferChart(defaultDateRange[0], defaultDateRange[1], props.movingAverageDistanceInHours, entries),
+    [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours]
+  );
   return (
     <div>
       <FlexibleWidthXYPlot
@@ -80,7 +83,7 @@ export const BufferChart = React.memo(function BufferChart() {
         <XAxis tickLabelAngle={-45} />
         <YAxis />
         {series.map((s, idx) => (
-          <LineSeries key={s.label} data={s.points} color={seriesColor(idx, series.length)} />
+          <LineSeries key={s.label} data={s.points} curve="curveCatmullRom" color={seriesColor(idx, series.length)} />
         ))}
       </FlexibleWidthXYPlot>
       <div style={{ textAlign: "center" }}>
