@@ -4,45 +4,45 @@ exports[`computes part costs: cost calcs 1`] = `
 Array [
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1396412.7034232696,
-    "machine_cost": 32.83108410848132,
+    "labor_cost": 1298080.9620340148,
+    "machine_cost": 24.924370475942847,
     "part": "aaa",
-    "parts_completed": 414,
+    "parts_completed": 240,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1606625.3684547297,
-    "machine_cost": 41.97249601841517,
+    "labor_cost": 1655523.5457825116,
+    "machine_cost": 35.82595186816961,
     "part": "bbb",
-    "parts_completed": 480,
+    "parts_completed": 307,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1629982.331236003,
-    "machine_cost": 98.38348705182466,
+    "labor_cost": 2064029.3557807938,
+    "machine_cost": 102.69565292984005,
     "part": "ccc",
-    "parts_completed": 491,
+    "parts_completed": 383,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1099445.6052042232,
-    "machine_cost": 41.9161595369218,
+    "labor_cost": 1083077.904140182,
+    "machine_cost": 53.19519293243262,
     "part": "xxx",
-    "parts_completed": 658,
+    "parts_completed": 402,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 1409759.539298283,
-    "machine_cost": 76.69030706516801,
+    "labor_cost": 1056202.521903453,
+    "machine_cost": 71.2062591214296,
     "part": "yyy",
-    "parts_completed": 844,
+    "parts_completed": 392,
   },
   Object {
     "automation_cost": 821.917808219178,
-    "labor_cost": 679854.4523834914,
-    "machine_cost": 113.90509635617538,
+    "labor_cost": 665165.7103590448,
+    "machine_cost": 117.85120280917151,
     "part": "zzz",
-    "parts_completed": 407,
+    "parts_completed": 247,
   },
 ]
 `;
@@ -84,19 +84,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           aaa
         </td>
         <td>
-          414
+          240
         </td>
         <td>
           0.1
         </td>
         <td>
-          3,373
+          5,408.7
         </td>
         <td>
-          2
+          3.4
         </td>
         <td>
-          3,375
+          5,412.2
         </td>
       </tr>
       
@@ -106,19 +106,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           bbb
         </td>
         <td>
-          480
+          307
         </td>
         <td>
           0.1
         </td>
         <td>
-          3,347.1
+          5,392.6
         </td>
         <td>
-          1.7
+          2.7
         </td>
         <td>
-          3,348.9
+          5,395.4
         </td>
       </tr>
       
@@ -128,19 +128,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           ccc
         </td>
         <td>
-          491
+          383
         </td>
         <td>
-          0.2
+          0.3
         </td>
         <td>
-          3,319.7
+          5,389.1
         </td>
         <td>
-          1.7
+          2.1
         </td>
         <td>
-          3,321.6
+          5,391.5
         </td>
       </tr>
       
@@ -150,19 +150,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           xxx
         </td>
         <td>
-          658
+          402
         </td>
         <td>
           0.1
         </td>
         <td>
-          1,670.9
+          2,694.2
         </td>
         <td>
-          1.2
+          2
         </td>
         <td>
-          1,672.2
+          2,696.4
         </td>
       </tr>
       
@@ -172,19 +172,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           yyy
         </td>
         <td>
-          844
+          392
         </td>
         <td>
-          0.1
+          0.2
         </td>
         <td>
-          1,670.3
+          2,694.4
         </td>
         <td>
-          1
+          2.1
         </td>
         <td>
-          1,671.4
+          2,696.7
         </td>
       </tr>
       
@@ -194,19 +194,19 @@ exports[`computes part costs: cost clipboard table 1`] = `
           zzz
         </td>
         <td>
-          407
+          247
         </td>
         <td>
-          0.3
+          0.5
         </td>
         <td>
-          1,670.4
+          2,693
         </td>
         <td>
-          2
+          3.3
         </td>
         <td>
-          1,672.7
+          2,696.8
         </td>
       </tr>
       

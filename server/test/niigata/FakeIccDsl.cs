@@ -1136,6 +1136,84 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
+    private class ExpectStockerStartEvent : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public int Stocker { get; set; }
+      public bool WaitForMachine { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectStockerStart(int pal, int stocker, bool waitForMach, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectStockerStartEvent()
+      {
+        Pallet = pal,
+        Stocker = stocker,
+        WaitForMachine = waitForMach,
+        Material = mats
+      };
+    }
+
+    private class ExpectStockerEndEvent : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public int Stocker { get; set; }
+      public bool WaitForMachine { get; set; }
+      public int ElapsedMin { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectStockerEnd(int pal, int stocker, int elapMin, bool waitForMach, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectStockerEndEvent()
+      {
+        Pallet = pal,
+        Stocker = stocker,
+        WaitForMachine = waitForMach,
+        ElapsedMin = elapMin,
+        Material = mats
+      };
+    }
+
+    private class ExpectRotaryStartEvent : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public int Machine { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectRotaryStart(int pal, int mach, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectRotaryStartEvent()
+      {
+        Pallet = pal,
+        Machine = mach,
+        Material = mats
+      };
+    }
+
+    private class ExpectRotaryEndEvent : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public int Machine { get; set; }
+      public bool RotateIntoMachine { get; set; }
+      public int ElapsedMin { get; set; }
+      public IEnumerable<LogMaterial> Material { get; set; }
+    }
+
+    public static ExpectedChange ExpectRotaryEnd(int pal, int mach, bool rotate, int elapMin, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectRotaryEndEvent()
+      {
+        Pallet = pal,
+        Machine = mach,
+        RotateIntoMachine = rotate,
+        ElapsedMin = elapMin,
+        Material = mats
+      };
+    }
+
     private class ExpectInspectionDecision : ExpectedChange
     {
       public IEnumerable<LogMaterial> Material { get; set; }
@@ -1599,6 +1677,82 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(reclampEnd.ElapsedMin),
                     active: TimeSpan.FromMinutes(reclampEnd.ActiveMin)
+                ));
+              }
+              break;
+
+            case ExpectStockerStartEvent stockerStart:
+              {
+                expectedLogs.Add(new LogEntry(
+                    cntr: -1,
+                    mat: stockerStart.Material,
+                    pal: stockerStart.Pallet.ToString(),
+                    ty: LogType.PalletInStocker,
+                    locName: "Stocker",
+                    locNum: stockerStart.Stocker,
+                    prog: "Arrive",
+                    start: true,
+                    endTime: _status.TimeOfStatusUTC,
+                    result: stockerStart.WaitForMachine ? "WaitForMachine" : "WaitForUnload",
+                    endOfRoute: false
+                ));
+              }
+              break;
+
+            case ExpectStockerEndEvent stockerEnd:
+              {
+                expectedLogs.Add(new LogEntry(
+                    cntr: -1,
+                    mat: stockerEnd.Material,
+                    pal: stockerEnd.Pallet.ToString(),
+                    ty: LogType.PalletInStocker,
+                    locName: "Stocker",
+                    locNum: stockerEnd.Stocker,
+                    prog: "Depart",
+                    start: false,
+                    endTime: _status.TimeOfStatusUTC,
+                    result: stockerEnd.WaitForMachine ? "WaitForMachine" : "WaitForUnload",
+                    endOfRoute: false,
+                    elapsed: TimeSpan.FromMinutes(stockerEnd.ElapsedMin),
+                    active: TimeSpan.Zero
+                ));
+              }
+              break;
+
+            case ExpectRotaryStartEvent rotaryStart:
+              {
+                expectedLogs.Add(new LogEntry(
+                    cntr: -1,
+                    mat: rotaryStart.Material,
+                    pal: rotaryStart.Pallet.ToString(),
+                    ty: LogType.PalletOnRotaryInbound,
+                    locName: "TestMC",
+                    locNum: 100 + rotaryStart.Machine,
+                    prog: "Arrive",
+                    start: true,
+                    endTime: _status.TimeOfStatusUTC,
+                    result: "Arrive",
+                    endOfRoute: false
+                ));
+              }
+              break;
+
+            case ExpectRotaryEndEvent rotaryEnd:
+              {
+                expectedLogs.Add(new LogEntry(
+                    cntr: -1,
+                    mat: rotaryEnd.Material,
+                    pal: rotaryEnd.Pallet.ToString(),
+                    ty: LogType.PalletOnRotaryInbound,
+                    locName: "TestMC",
+                    locNum: 100 + rotaryEnd.Machine,
+                    prog: "Depart",
+                    start: false,
+                    endTime: _status.TimeOfStatusUTC,
+                    result: rotaryEnd.RotateIntoMachine ? "RotateIntoWorktable" : "LeaveMachine",
+                    endOfRoute: false,
+                    elapsed: TimeSpan.FromMinutes(rotaryEnd.ElapsedMin),
+                    active: TimeSpan.Zero
                 ));
               }
               break;

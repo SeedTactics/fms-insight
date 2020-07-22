@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension"
+>
+  <Product
+    Name='SeedTactic FMS Insight Reverse Proxy'
+    Version='$(env.ProxyVersion)'
+    Manufacturer='Black Maple Software, LLC'
+    Id='$(env.ProxyProductId)'
+    UpgradeCode='29e9dd87-1fea-4599-9baa-acdb226349ef'
+    Language='1033'
+    Codepage='1252'
+  >
+
+    <Package
+      Id='*'
+      Description="SeedTactic FMS Insight Reverse Proxy"
+      Manufacturer='Black Maple Software, LLC'
+      InstallerVersion='100'
+      Languages='1033'
+      Compressed='yes'
+      SummaryCodepage='1252'
+    />
+
+    <MajorUpgrade DowngradeErrorMessage="A later version of FMS Insight Reverse Proxy is already installed. Setup will now exit." />
+    <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
+    <InstallExecuteSequence>
+      <DeleteServices>NOT UPGRADINGPRODUCTCODE</DeleteServices>
+      <InstallServices>NOT WIX_UPGRADE_DETECTED</InstallServices>
+    </InstallExecuteSequence>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+        <Directory Id='INSTALLDIR' Name='SeedTactic FMS Insight Reverse Proxy'>
+
+          <Component Id="ProxyService" Guid="2c84d1be-3bb1-4d43-83c2-50fcd5892f2d">
+            <File Id="ProxyService" KeyPath="yes" Source="reverse-proxy.exe"/>
+            <RemoveFile Id="RemoveLogFiles" Name="*.svclog" On="both"/>
+            <ServiceInstall Id="ServiceInstallation"
+                            DisplayName="SeedTactic Reverse Proxy"
+                            Description="SeedTactic FMS Insight Reverse Proxy"
+                            Account="LocalSystem"
+                            Type="ownProcess"
+                            Name="seedtactics-fmsinsight-reverseproxy"
+                            ErrorControl="normal"
+                            Interactive="no"
+                            Start="auto"
+                            Vital="yes"
+            />
+            <ServiceControl Id="ServiceControl"
+                            Name="seedtactics-fmsinsight-reverseproxy"
+                            Start="install"
+                            Stop="both"
+                            Remove="uninstall"
+            />
+          </Component>
+
+          <Component Id="ServiceSettings" Guid="fe168c7c-4ef4-453b-ab46-4154721abee3">
+            <File Id="ProxyDefaultConfigIni" KeyPath="yes" Name="appsettings.json.default" Source="appsettings.json"/>
+          </Component>
+
+          <Component Id="ServiceSource" Guid="b31e566f-a1bf-431d-8dbc-d79f0e8c4ec2">
+            <File Id="ProxySource" KeyPath="yes" Source="Program.cs"/>
+          </Component>
+
+          <Component Id="ServiceCsproj" Guid="3886109a-a844-4807-8b23-54d745120f35">
+            <File Id="ProxyCsproj" KeyPath="yes" Source="reverse-proxy.csproj"/>
+          </Component>
+
+          <Component Id="ServiceBuild" Guid="a0e070bc-9e89-4336-817d-3edc615b8f9a">
+            <File Id="ProxyBuild" KeyPath="yes" Source="build.ps1"/>
+          </Component>
+
+          <Component Id="ServiceWix" Guid="82996d62-0ad8-4e11-b76f-8787dc21001d">
+            <File Id="ProxyWix" KeyPath="yes" Source="reverse-proxy.wsx"/>
+          </Component>
+
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id="InsightAll" Level="1">
+      <ComponentRef Id="ProxyService"/>
+      <ComponentRef Id="ServiceSettings"/>
+      <ComponentRef Id="ServiceSource"/>
+      <ComponentRef Id="ServiceCsproj"/>
+      <ComponentRef Id="ServiceBuild"/>
+      <ComponentRef Id="ServiceWix"/>
+    </Feature>
+
+  </Product>
+</Wix>

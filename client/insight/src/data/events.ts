@@ -41,6 +41,7 @@ import * as matsummary from "./events.matsummary";
 import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
 import * as schJobs from "./events.scheduledjobs";
+import * as buffering from "./events.buffering";
 import { JobsBackend, LogBackend } from "./backend";
 
 export enum AnalysisPeriod {
@@ -57,6 +58,7 @@ export interface Last30Days {
   readonly cycles: cycles.CycleState;
   readonly sim_use: simuse.SimUseState;
   readonly inspection: inspection.InspectionState;
+  readonly buffering: buffering.BufferingState;
 
   readonly mat_summary: matsummary.MatSummaryState;
   readonly scheduled_jobs: schJobs.ScheduledJobsState;
@@ -66,12 +68,14 @@ export interface AnalysisMonth {
   readonly cycles: cycles.CycleState;
   readonly sim_use: simuse.SimUseState;
   readonly inspection: inspection.InspectionState;
+  readonly buffering: buffering.BufferingState;
 }
 
 const emptyAnalysisMonth: AnalysisMonth = {
   cycles: cycles.initial,
   sim_use: simuse.initial,
   inspection: inspection.initial,
+  buffering: buffering.initial,
 };
 
 export interface State {
@@ -105,6 +109,7 @@ export const initial: State = {
     sim_use: simuse.initial,
     inspection: inspection.initial,
     scheduled_jobs: schJobs.initial,
+    buffering: buffering.initial,
   },
 
   selected_month: emptyAnalysisMonth,
@@ -280,6 +285,11 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
       undefined,
       s.inspection
     ),
+    buffering: buffering.process_events(
+      { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
+      evts,
+      s.buffering
+    ),
   });
 }
 
@@ -292,6 +302,7 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
       s.cycles
     ),
     inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection),
+    buffering: buffering.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.buffering),
   });
 }
 

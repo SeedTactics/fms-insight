@@ -101,6 +101,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: server/reverse-proxy/reverse-proxy.zip
-          asset_name: FMS Insight Reverse Proxy.zip
+          asset_path: server/reverse-proxy/build/FMS Insight Reverse Proxy Install.msi
+          asset_name: FMS Insight Reverse Proxy Install.msi
           asset_content_type: application/octet-stream

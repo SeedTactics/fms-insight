@@ -608,6 +608,9 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, ref palletStateUpdated);
       }
+
+      EnsurePalletRotaryEvents(pallet, nowUtc);
+      EnsurePalletStockerEvents(pallet, nowUtc);
     }
 
     private void CurrentlyLoadingPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, ref bool palletStateUpdated)
@@ -638,6 +641,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, ref palletStateUpdated);
+      EnsurePalletStockerEvents(pallet, nowUtc);
 
       // clear the material and recalculte what will be on the pallet after the load ends
       var unusedMatsOnPal = pallet.Material.ToDictionary(m => m.Mat.MaterialID, m => m);
@@ -1175,6 +1179,129 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
+    private void EnsurePalletRotaryEvents(PalletAndMaterial pallet, DateTime nowUtc)
+    {
+      LogEntry start = null;
+      foreach (var e in pallet.Log)
+      {
+        if (e.LogType == LogType.PalletOnRotaryInbound)
+        {
+          if (e.StartOfCycle)
+          {
+            start = e;
+          }
+          else
+          {
+            start = null;
+          }
+        }
+      }
+
+      bool currentlyOnRotary =
+          pallet.Status.CurStation.Location.Location == PalletLocationEnum.MachineQueue
+        && pallet.Status.CurrentStep is MachiningStep
+        && pallet.Status.Tracking.BeforeCurrentStep;
+
+      if (start == null && currentlyOnRotary)
+      {
+        _log.RecordPalletArriveRotaryInbound(
+          mats: pallet.Material.Select(m => new JobLogDB.EventLogMaterial()
+          {
+            MaterialID = m.Mat.MaterialID,
+            Process = m.Mat.Process,
+            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+          }),
+          pallet: pallet.Status.Master.PalletNum.ToString(),
+          statName: pallet.Status.CurStation.Location.StationGroup,
+          statNum: pallet.Status.CurStation.Location.Num,
+          timeUTC: nowUtc
+        );
+      }
+      else if (start != null && !currentlyOnRotary)
+      {
+        _log.RecordPalletDepartRotaryInbound(
+          mats: pallet.Material.Select(m => new JobLogDB.EventLogMaterial()
+          {
+            MaterialID = m.Mat.MaterialID,
+            Process = m.Mat.Process,
+            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+          }),
+          pallet: pallet.Status.Master.PalletNum.ToString(),
+          statName: start.LocationName,
+          statNum: start.LocationNum,
+          timeUTC: nowUtc,
+          elapsed: nowUtc.Subtract(start.EndTimeUTC),
+          rotateIntoWorktable: pallet.Status.CurStation.Location.Location == PalletLocationEnum.Machine
+        );
+      }
+    }
+
+    private void EnsurePalletStockerEvents(PalletAndMaterial pallet, DateTime nowUtc)
+    {
+      if (!pallet.Material.Any()) return;
+
+      LogEntry start = null;
+      foreach (var e in pallet.Log)
+      {
+        if (e.LogType == LogType.PalletInStocker)
+        {
+          if (e.StartOfCycle)
+          {
+            start = e;
+          }
+          else
+          {
+            start = null;
+          }
+        }
+      }
+
+      bool currentlyAtStocker = pallet.Status.CurStation.Location.Location == PalletLocationEnum.Buffer;
+      bool waitForMachine = false;
+      if (pallet.Status.CurrentStep is MachiningStep && pallet.Status.Tracking.BeforeCurrentStep)
+      {
+        waitForMachine = true;
+      }
+      for (int stepNum = pallet.Status.Tracking.CurrentStepNum + 1; stepNum <= pallet.Status.Master.Routes.Count; stepNum += 1)
+      {
+        if (pallet.Status.Master.Routes[stepNum - 1] is MachiningStep)
+        {
+          waitForMachine = true;
+        }
+      }
+
+      if (start == null && currentlyAtStocker)
+      {
+        _log.RecordPalletArriveStocker(
+          mats: pallet.Material.Select(m => new JobLogDB.EventLogMaterial()
+          {
+            MaterialID = m.Mat.MaterialID,
+            Process = m.Mat.Process,
+            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+          }),
+          pallet: pallet.Status.Master.PalletNum.ToString(),
+          stockerNum: pallet.Status.CurStation.Location.Num,
+          timeUTC: nowUtc,
+          waitForMachine: waitForMachine
+        );
+      }
+      else if (start != null && !currentlyAtStocker)
+      {
+        _log.RecordPalletDepartStocker(
+          mats: pallet.Material.Select(m => new JobLogDB.EventLogMaterial()
+          {
+            MaterialID = m.Mat.MaterialID,
+            Process = m.Mat.Process,
+            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+          }),
+          pallet: pallet.Status.Master.PalletNum.ToString(),
+          stockerNum: start.LocationNum,
+          timeUTC: nowUtc,
+          elapsed: nowUtc.Subtract(start.EndTimeUTC),
+          waitForMachine: waitForMachine
+        );
+      }
+    }
 
     #region Material Computations
     private List<InProcessMaterial> QueuedMaterial(HashSet<long> matsOnPallets)

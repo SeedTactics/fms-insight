@@ -28,7 +28,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
         .ConfigureWebHostDefaults(webBuilder => webBuilder
           .UseStartup<Startup>()
         )
-        .ConfigureLogging(logging => logging.AddConsole())
+        .UseWindowsService()
         .Build()
         .Run();
     }
