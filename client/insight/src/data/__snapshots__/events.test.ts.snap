@@ -2,6 +2,9 @@
 
 exports[`loads a specific month for analysis: selected month with 27 days ago, 2 days ago, and today 1`] = `
 Object {
+  "buffering": Object {
+    "entries": Array [],
+  },
   "cycles": Object {
     "by_pallet": Map {
       "palss" => Array [
@@ -645,6 +648,9 @@ Object {
 
 exports[`processes new log events into last30: last30 with 2 days ago, today, and 6 days from now 1`] = `
 Object {
+  "buffering": Object {
+    "entries": Array [],
+  },
   "cycles": Object {
     "by_pallet": Map {
       "palaa" => Array [],
@@ -1578,6 +1584,9 @@ Object {
 
 exports[`processes new log events into last30: last30 with 27 days ago, 2 days ago, and today 1`] = `
 Object {
+  "buffering": Object {
+    "entries": Array [],
+  },
   "cycles": Object {
     "by_pallet": Map {
       "palaa" => Array [
@@ -2529,6 +2538,9 @@ Object {
 
 exports[`refreshes new events into last30: last30 with 2 days ago, today, and 6 days from now 1`] = `
 Object {
+  "buffering": Object {
+    "entries": Array [],
+  },
   "cycles": Object {
     "by_pallet": Map {
       "palaa" => Array [],
@@ -3462,6 +3474,9 @@ Object {
 
 exports[`refreshes new events into last30: last30 with 27 days ago, 2 days ago, and today 1`] = `
 Object {
+  "buffering": Object {
+    "entries": Array [],
+  },
   "cycles": Object {
     "by_pallet": Map {
       "palaa" => Array [

@@ -46,6 +46,8 @@ import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
 import AccountIcon from "@material-ui/icons/AccountBox";
+import DonutIcon from "@material-ui/icons/DonutSmall";
+import Slider from "@material-ui/core/Slider";
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
@@ -89,6 +91,7 @@ import {
 } from "../../data/results.completed-parts";
 import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
+import { BufferChart } from "./BufferChart";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -683,6 +686,43 @@ const ConnectedPalletCycleChart = connect(
 )(PalletCycleChart);
 
 // --------------------------------------------------------------------------------
+// Buffer Chart
+// --------------------------------------------------------------------------------
+
+// https://github.com/mui-org/material-ui/issues/20191
+const SliderAny: React.ComponentType<any> = Slider;
+
+function BufferOccupancyChart() {
+  const [movingAverageHours, setMovingAverage] = React.useState(12);
+  return (
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <DonutIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Buffer Occupancy</div>
+            <div style={{ flexGrow: 1 }} />
+            <span style={{ fontSize: "small", marginRight: "1em" }}>Moving Average Window: </span>
+            <SliderAny
+              style={{ width: "10em" }}
+              min={1}
+              max={36}
+              steps={0.2}
+              valueLabelDisplay="off"
+              value={movingAverageHours}
+              onChange={(e: React.ChangeEvent<{}>, v: number) => setMovingAverage(v)}
+            />
+          </div>
+        }
+      />
+      <CardContent>
+        <BufferChart movingAverageDistanceInHours={movingAverageHours} />
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------------------------
 // Oee Heatmap
 // --------------------------------------------------------------------------------
 
@@ -876,6 +916,9 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
         </div>
         <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
           <ConnectedPalletCycleChart />
+        </div>
+        <div data-testid="buffer-chart" style={{ marginTop: "3em" }}>
+          <BufferOccupancyChart />
         </div>
         <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
           <StationOeeHeatmap allowSetType={allowSetType} />
