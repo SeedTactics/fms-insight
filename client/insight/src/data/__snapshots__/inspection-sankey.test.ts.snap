@@ -6,27 +6,12 @@ Object {
     Object {
       "source": 0,
       "target": 3,
-      "value": 131,
+      "value": 71,
     },
     Object {
-      "source": 11,
+      "source": 4,
       "target": 5,
-      "value": 1,
-    },
-    Object {
-      "source": 10,
-      "target": 5,
-      "value": 1,
-    },
-    Object {
-      "source": 7,
-      "target": 5,
-      "value": 1,
-    },
-    Object {
-      "source": 1,
-      "target": 5,
-      "value": 1,
+      "value": 2,
     },
     Object {
       "source": 11,
@@ -36,7 +21,7 @@ Object {
     Object {
       "source": 6,
       "target": 9,
-      "value": 6,
+      "value": 3,
     },
     Object {
       "source": 10,
@@ -46,17 +31,17 @@ Object {
     Object {
       "source": 7,
       "target": 9,
-      "value": 8,
+      "value": 5,
     },
     Object {
       "source": 8,
       "target": 5,
-      "value": 2,
+      "value": 1,
     },
     Object {
       "source": 4,
       "target": 9,
-      "value": 6,
+      "value": 2,
     },
     Object {
       "source": 1,
@@ -66,107 +51,107 @@ Object {
     Object {
       "source": 3,
       "target": 2,
-      "value": 34,
+      "value": 22,
     },
     Object {
       "source": 15,
       "target": 1,
-      "value": 35,
+      "value": 21,
     },
     Object {
       "source": 8,
       "target": 9,
-      "value": 8,
+      "value": 4,
     },
     Object {
       "source": 13,
       "target": 4,
-      "value": 58,
+      "value": 41,
     },
     Object {
       "source": 2,
       "target": 9,
-      "value": 3,
+      "value": 2,
     },
     Object {
       "source": 11,
       "target": 12,
-      "value": 30,
+      "value": 15,
     },
     Object {
       "source": 3,
       "target": 8,
-      "value": 97,
+      "value": 49,
     },
     Object {
       "source": 7,
       "target": 12,
-      "value": 75,
+      "value": 37,
     },
     Object {
       "source": 6,
       "target": 12,
-      "value": 47,
+      "value": 26,
     },
     Object {
       "source": 10,
       "target": 12,
-      "value": 21,
+      "value": 17,
     },
     Object {
       "source": 0,
       "target": 13,
-      "value": 82,
+      "value": 60,
     },
     Object {
       "source": 15,
       "target": 7,
-      "value": 84,
+      "value": 42,
     },
     Object {
       "source": 14,
       "target": 6,
-      "value": 53,
+      "value": 29,
     },
     Object {
       "source": 4,
       "target": 12,
-      "value": 52,
+      "value": 37,
     },
     Object {
       "source": 1,
       "target": 12,
-      "value": 32,
+      "value": 19,
     },
     Object {
       "source": 13,
       "target": 10,
-      "value": 24,
+      "value": 19,
     },
     Object {
       "source": 8,
       "target": 12,
-      "value": 87,
+      "value": 44,
     },
     Object {
       "source": 0,
       "target": 15,
-      "value": 119,
+      "value": 63,
     },
     Object {
       "source": 0,
       "target": 14,
-      "value": 86,
+      "value": 46,
     },
     Object {
       "source": 14,
       "target": 11,
-      "value": 33,
+      "value": 17,
     },
     Object {
       "source": 2,
       "target": 12,
-      "value": 31,
+      "value": 20,
     },
   ],
   "nodes": Array [
