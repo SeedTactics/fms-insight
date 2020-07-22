@@ -46,6 +46,7 @@ import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import ImportExport from "@material-ui/icons/ImportExport";
 import AccountIcon from "@material-ui/icons/AccountBox";
+import DonutIcon from "@material-ui/icons/DonutSmall";
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
@@ -89,6 +90,7 @@ import {
 } from "../../data/results.completed-parts";
 import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
+import { BufferChart } from "./BufferChart";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -683,6 +685,28 @@ const ConnectedPalletCycleChart = connect(
 )(PalletCycleChart);
 
 // --------------------------------------------------------------------------------
+// Buffer Chart
+// --------------------------------------------------------------------------------
+
+function BufferOccupancyChart() {
+  return (
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <DonutIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Buffer Occupancy</div>
+          </div>
+        }
+      />
+      <CardContent>
+        <BufferChart />
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------------------------
 // Oee Heatmap
 // --------------------------------------------------------------------------------
 
@@ -876,6 +900,9 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
         </div>
         <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
           <ConnectedPalletCycleChart />
+        </div>
+        <div data-testid="buffer-chart" style={{ marginTop: "3em" }}>
+          <BufferOccupancyChart />
         </div>
         <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
           <StationOeeHeatmap allowSetType={allowSetType} />

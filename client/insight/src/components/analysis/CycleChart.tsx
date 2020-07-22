@@ -273,7 +273,7 @@ const mpn65Colors = [
   "a04a9b",
 ];
 
-function seriesColor(idx: number, count: number): string {
+export function seriesColor(idx: number, count: number): string {
   if (count <= paulTolQualitativeColors.length) {
     return "#" + paulTolQualitativeColors[count - 1][idx];
   } else {

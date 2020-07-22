@@ -95,7 +95,7 @@ class BufferSeriesKey {
 }
 
 const numPoints: number = 30 * 5;
-const movingAverageDistanceInMilliseconds = 2 * 60 * 60 * 1000;
+const movingAverageDistanceInMilliseconds = 4 * 60 * 60 * 1000;
 
 function addEntryToPoint(point: { x: Date; y: number }, entry: BufferEntry) {
   const startT = Math.max(
@@ -132,13 +132,13 @@ function calcPoints(
   for (const e of entries) {
     const startIdx = Math.max(
       0,
-      Math.floor(
+      Math.ceil(
         (e.endTime.getTime() - e.elapsedSeconds * 1000 - movingAverageDistanceInMilliseconds - start.getTime()) / gap
       )
     );
     const endIdx = Math.min(
       numPoints - 1,
-      Math.ceil((e.endTime.getTime() + movingAverageDistanceInMilliseconds - start.getTime()) / gap)
+      Math.floor((e.endTime.getTime() + movingAverageDistanceInMilliseconds - start.getTime()) / gap)
     );
     for (let i = startIdx; i <= endIdx; i++) {
       addEntryToPoint(points[i], e);
@@ -160,5 +160,6 @@ export function buildBufferChart(
     .map(([k, points]) => ({
       label: k.toString(),
       points,
-    }));
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }

@@ -97,7 +97,7 @@ export function process_events(
 
     switch (e.type) {
       case api.LogType.RemoveFromQueue:
-        entries.append({
+        entries = entries.append({
           buffer: { type: "Queue", queue: e.loc },
           endTime: e.endUTC,
           elapsedSeconds,
@@ -106,14 +106,14 @@ export function process_events(
         break;
       case api.LogType.PalletInStocker:
         if (!e.startofcycle && e.result === "WaitForMachine") {
-          entries.append({
+          entries = entries.append({
             buffer: { type: "StockerWaitForMC", stockerNum: e.locnum },
             endTime: e.endUTC,
             elapsedSeconds,
             mats: e.material,
           });
         } else if (!e.startofcycle) {
-          entries.append({
+          entries = entries.append({
             buffer: { type: "StockerWaitForUnload", stockerNum: e.locnum },
             endTime: e.endUTC,
             elapsedSeconds,
@@ -123,7 +123,7 @@ export function process_events(
         break;
       case api.LogType.PalletOnRotaryInbound:
         if (!e.startofcycle) {
-          entries.append({
+          entries = entries.append({
             buffer: { type: "Rotary", machineGroup: e.loc, machineNum: e.locnum },
             endTime: e.endUTC,
             elapsedSeconds,
@@ -134,5 +134,5 @@ export function process_events(
     }
   }
 
-  return st;
+  return { entries };
 }
