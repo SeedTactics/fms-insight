@@ -1341,18 +1341,27 @@ namespace MachineWatchTest
       expectedTotalUse["tool3"] = TimeSpan.FromSeconds(20);
       expectedLife["tool3"] = TimeSpan.FromSeconds(100);
 
-      // now a tool which is replaced with a different tool and not used
+      // now a pocket with two tools
       start.Add(
         new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
       );
+      start.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(200) }
+      );
       end.Add(
-        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(120) }
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new JobLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(110), ToolLife = TimeSpan.FromSeconds(200) }
       );
       expectedUse["tool4"] = TimeSpan.FromSeconds(100 - 60);
       expectedTotalUse["tool4"] = TimeSpan.Zero;
-      expectedLife["tool4"] = TimeSpan.Zero;
+      expectedLife["tool4"] = TimeSpan.FromSeconds(100);
+      expectedUse["tool5"] = TimeSpan.FromSeconds(110 - 80);
+      expectedTotalUse["tool5"] = TimeSpan.FromSeconds(110);
+      expectedLife["tool5"] = TimeSpan.FromSeconds(200);
 
-      // now a tool which is replaced with a different tool and that tool is used
+      // now a tool which is removed and a new tool added
       start.Add(
         new JobLogDB.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool6", CurrentUse = TimeSpan.FromSeconds(65), ToolLife = TimeSpan.FromSeconds(100) }
       );
