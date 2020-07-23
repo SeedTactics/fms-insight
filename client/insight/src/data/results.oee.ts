@@ -60,27 +60,27 @@ export class DayAndStation {
   }
 }
 
-function splitPartCycleToDays(d: Date, totalVal: number): Array<{ day: Date; value: number }> {
-  const startDay = startOfDay(d);
-  const endTime = addMinutes(d, totalVal);
+function splitPartCycleToDays(endTime: Date, elapsed: number): Array<{ day: Date; value: number }> {
+  const startTime = addMinutes(endTime, -elapsed);
+  const startDay = startOfDay(startTime);
   const endDay = startOfDay(endTime);
   if (startDay.getTime() === endDay.getTime()) {
     return [
       {
         day: startDay,
-        value: totalVal,
+        value: elapsed,
       },
     ];
   } else {
-    const startDayPct = differenceInMinutes(endDay, d) / totalVal;
+    const startDayPct = differenceInMinutes(endDay, startTime) / elapsed;
     return [
       {
         day: startDay,
-        value: totalVal * startDayPct,
+        value: elapsed * startDayPct,
       },
       {
         day: endDay,
-        value: totalVal * (1 - startDayPct),
+        value: elapsed * (1 - startDayPct),
       },
     ];
   }
