@@ -2767,18 +2767,20 @@ namespace BlackMaple.MachineFramework
           cmd.ExecuteNonQuery();
 
           cmd.CommandText =
-              "INSERT INTO queues(MaterialID, Queue, Position) " +
-              " VALUES ($m, $q, (SELECT MIN(IFNULL(MAX(Position) + 1, 0), $p) FROM queues WHERE Queue = $q))";
+              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
+              " VALUES ($m, $q, (SELECT MIN(IFNULL(MAX(Position) + 1, 0), $p) FROM queues WHERE Queue = $q), $t)";
           cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
+          cmd.Parameters.Add("t", SqliteType.Integer).Value = timeUTC.Ticks;
           cmd.ExecuteNonQuery();
         }
         else
         {
           cmd.CommandText =
-              "INSERT INTO queues(MaterialID, Queue, Position) " +
-              " VALUES ($m, $q, (SELECT IFNULL(MAX(Position) + 1, 0) FROM queues WHERE Queue = $q))";
+              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
+              " VALUES ($m, $q, (SELECT IFNULL(MAX(Position) + 1, 0) FROM queues WHERE Queue = $q), $t)";
           cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
           cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+          cmd.Parameters.Add("t", SqliteType.Integer).Value = timeUTC.Ticks;
           cmd.ExecuteNonQuery();
         }
       }
@@ -2834,7 +2836,7 @@ namespace BlackMaple.MachineFramework
       using (var deleteCmd = _connection.CreateCommand())
       {
         ((IDbCommand)findCmd).Transaction = trans;
-        findCmd.CommandText = "SELECT Queue, Position FROM queues WHERE MaterialID = $mid";
+        findCmd.CommandText = "SELECT Queue, Position, AddTimeUTC FROM queues WHERE MaterialID = $mid";
         findCmd.Parameters.Add("mid", SqliteType.Integer).Value = mat.MaterialID;
 
         ((IDbCommand)updatePosCmd).Transaction = trans;
@@ -2856,6 +2858,7 @@ namespace BlackMaple.MachineFramework
           {
             var queue = reader.GetString(0);
             var pos = reader.GetInt32(1);
+            var addTime = reader.IsDBNull(2) ? null : (DateTime?)(new DateTime(reader.GetInt64(2), DateTimeKind.Utc));
 
             var log = new NewEventLogEntry()
             {
@@ -2868,7 +2871,8 @@ namespace BlackMaple.MachineFramework
               StartOfCycle = false,
               EndTimeUTC = timeUTC,
               Result = "",
-              EndOfRoute = false
+              EndOfRoute = false,
+              ElapsedTime = addTime.HasValue ? timeUTC.Subtract(addTime.Value) : TimeSpan.Zero
             };
             if (!string.IsNullOrEmpty(operatorName))
             {
@@ -3006,6 +3010,7 @@ namespace BlackMaple.MachineFramework
       public string Unique { get; set; }
       public string PartNameOrCasting { get; set; }
       public int NumProcesses { get; set; }
+      public DateTime? AddTimeUTC { get; set; }
     }
 
     public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
@@ -3019,7 +3024,7 @@ namespace BlackMaple.MachineFramework
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
-            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses " +
+            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
               " FROM queues " +
               " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
               " WHERE Queue = $q " +
@@ -3037,6 +3042,7 @@ namespace BlackMaple.MachineFramework
                   Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
                   PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                  AddTimeUTC = reader.IsDBNull(5) ? null : ((DateTime?)(new DateTime(reader.GetInt64(5), DateTimeKind.Utc))),
                 });
               }
             }
@@ -3063,7 +3069,7 @@ namespace BlackMaple.MachineFramework
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
-            cmd.CommandText = "SELECT queues.MaterialID, Queue, Position, UniqueStr, PartName, NumProcesses " +
+            cmd.CommandText = "SELECT queues.MaterialID, Queue, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
               " FROM queues " +
               " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
               " ORDER BY Queue, Position";
@@ -3079,6 +3085,7 @@ namespace BlackMaple.MachineFramework
                   Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
                   NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
+                  AddTimeUTC = reader.IsDBNull(6) ? null : ((DateTime?)(new DateTime(reader.GetInt64(6), DateTimeKind.Utc))),
                 });
               }
             }

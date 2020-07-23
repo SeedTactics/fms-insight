@@ -907,11 +907,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
       public string FromQueue { get; set; }
       public int Position { get; set; }
+      public int ElapsedMins { get; set; }
     }
 
-    public static ExpectedChange RemoveFromQueue(string queue, int pos, IEnumerable<LogMaterial> mat)
+    public static ExpectedChange RemoveFromQueue(string queue, int pos, int elapMin, IEnumerable<LogMaterial> mat)
     {
-      return new ExpectedRemoveFromQueueEvt() { Material = mat, FromQueue = queue, Position = pos };
+      return new ExpectedRemoveFromQueueEvt() { Material = mat, FromQueue = queue, Position = pos, ElapsedMins = elapMin };
     }
 
     private class ExpectedUnloadEvt : ExpectedChange
@@ -1553,8 +1554,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 start: false,
                 endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                 result: "",
-                endOfRoute: false
-
+                endOfRoute: false,
+                // add 1 second because addtoqueue event is one-second after load end
+                elapsed: TimeSpan.FromMinutes(removeFromQueueEvt.ElapsedMins).Add(TimeSpan.FromSeconds(1)),
+                active: TimeSpan.Zero
               )));
               break;
 

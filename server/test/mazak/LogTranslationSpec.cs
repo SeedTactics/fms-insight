@@ -844,11 +844,11 @@ namespace MachineWatchTest
       }
     }
 
-    protected void ExpectRemoveFromQueue(TestMaterial mat, int offset, string queue, int startingPos)
+    protected void ExpectRemoveFromQueue(TestMaterial mat, int offset, string queue, int startingPos, int elapMin)
     {
-      ExpectRemoveFromQueue(new[] { mat }, offset, queue, startingPos);
+      ExpectRemoveFromQueue(new[] { mat }, offset, queue, startingPos, elapMin);
     }
-    protected void ExpectRemoveFromQueue(IEnumerable<TestMaterial> mats, int offset, string queue, int startingPos)
+    protected void ExpectRemoveFromQueue(IEnumerable<TestMaterial> mats, int offset, string queue, int startingPos, int elapMin)
     {
       foreach (var mat in mats)
         expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
@@ -871,7 +871,9 @@ namespace MachineWatchTest
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
             result: "",
-            endOfRoute: false
+            endOfRoute: false,
+            elapsed: TimeSpan.FromMinutes(elapMin).Add(TimeSpan.FromSeconds(1)),
+            active: TimeSpan.Zero
         ));
     }
 
@@ -1377,7 +1379,7 @@ namespace MachineWatchTest
       LoadStart(proc2, offset: 28, load: 1);
       LoadEnd(proc2, offset: 29, cycleOffset: 30, load: 1, elapMin: 1);
       MovePallet(t, pal: 9, offset: 30, load: 1, elapMin: 0);
-      ExpectRemoveFromQueue(proc2, offset: 30, queue: "thequeue", startingPos: 0);
+      ExpectRemoveFromQueue(proc2, offset: 30, queue: "thequeue", startingPos: 0, elapMin: 30 - 24);
 
       MachStart(proc2, offset: 30, mach: 6);
       MachStart(proc1snd, offset: 35, mach: 3);
@@ -1474,7 +1476,8 @@ namespace MachineWatchTest
             Position = idx,
             Unique = "uuuu",
             PartNameOrCasting = "pppp",
-            NumProcesses = 2
+            NumProcesses = 2,
+            AddTimeUTC = t.AddMinutes(i <= 3 ? 15 : i <= 6 ? 27 : 33)
           }
         )
       );
@@ -1484,7 +1487,7 @@ namespace MachineWatchTest
       LoadStart(proc2path1, offset: 40, load: 2);
       LoadEnd(proc2path1, offset: 44, cycleOffset: 45, load: 2, elapMin: 4);
       MovePallet(t, offset: 45, pal: 5, load: 2, elapMin: 0);
-      ExpectRemoveFromQueue(proc2path1, offset: 45, queue: "thequeue", startingPos: 0);
+      ExpectRemoveFromQueue(proc2path1, offset: 45, queue: "thequeue", startingPos: 0, elapMin: 45 - 15);
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
@@ -1495,7 +1498,8 @@ namespace MachineWatchTest
               Position = idx,
               Unique = "uuuu",
               PartNameOrCasting = "pppp",
-              NumProcesses = 2
+              NumProcesses = 2,
+              AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33)
             }
         )
       );
@@ -1510,7 +1514,7 @@ namespace MachineWatchTest
       UnloadEnd(proc2path1, offset: 65, load: 1, elapMin: 5);
       LoadEnd(proc2path1snd, offset: 65, cycleOffset: 66, load: 1, elapMin: 5);
       MovePallet(t, offset: 66, pal: 5, load: 1, elapMin: 66 - 45);
-      ExpectRemoveFromQueue(proc2path1snd, offset: 66, queue: "thequeue", startingPos: 3);
+      ExpectRemoveFromQueue(proc2path1snd, offset: 66, queue: "thequeue", startingPos: 3, elapMin: 66 - 33);
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6 }).Select((i, idx) =>
@@ -1521,7 +1525,8 @@ namespace MachineWatchTest
               Position = idx,
               Unique = "uuuu",
               PartNameOrCasting = "pppp",
-              NumProcesses = 2
+              NumProcesses = 2,
+              AddTimeUTC = t.AddMinutes(27)
             }
         )
       );
@@ -1530,7 +1535,7 @@ namespace MachineWatchTest
       LoadStart(proc2path2, offset: 70, load: 2);
       LoadEnd(proc2path2, offset: 73, cycleOffset: 74, load: 2, elapMin: 3);
       MovePallet(t, offset: 74, pal: 7, load: 2, elapMin: 0);
-      ExpectRemoveFromQueue(proc2path2, offset: 74, queue: "thequeue", startingPos: 0);
+      ExpectRemoveFromQueue(proc2path2, offset: 74, queue: "thequeue", startingPos: 0, elapMin: 74 - 27);
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEmpty();
 
