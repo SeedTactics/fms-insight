@@ -6,6 +6,77 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
+    "active_cycle_times": Map {
+      "PartAndProcess {
+      \\"part\\": \\"partAAA\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progi\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 30,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"partBBB\\",
+      \\"proc\\": 2,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progi\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 24,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"partCCC\\",
+      \\"proc\\": 3,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progk\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 18,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+    },
     "by_pallet": Map {
       "palss" => Array [
         Object {
@@ -163,7 +234,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 18,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -268,7 +339,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 24,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -373,7 +444,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -652,6 +723,83 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
+    "active_cycle_times": Map {
+      "PartAndProcess {
+      \\"part\\": \\"part111\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"progw\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 12,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progz\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 30,
+        },
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progm\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 24,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 2,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progi\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 18,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+    },
     "by_pallet": Map {
       "palaa" => Array [],
       "palbb" => Array [
@@ -811,7 +959,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 24,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -916,7 +1064,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1056,7 +1204,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0,
         "activeMinutes": 12,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 42,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1091,7 +1239,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 42,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1588,6 +1736,77 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
+    "active_cycle_times": Map {
+      "PartAndProcess {
+      \\"part\\": \\"part111\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"progz\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 30,
+        },
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progm\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 24,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 2,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progi\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 18,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+    },
     "by_pallet": Map {
       "palaa" => Array [
         Object {
@@ -1745,7 +1964,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 18,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1850,7 +2069,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 24,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1955,7 +2174,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2542,6 +2761,83 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
+    "active_cycle_times": Map {
+      "PartAndProcess {
+      \\"part\\": \\"part111\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"prog5\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 12,
+        },
+        "StationOperation {
+        \\"operation\\": \\"prog6\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 30,
+        },
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progn\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 24,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 2,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progj\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 18,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+    },
     "by_pallet": Map {
       "palaa" => Array [],
       "palbb" => Array [
@@ -2701,7 +2997,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 24,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2806,7 +3102,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2946,7 +3242,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0,
         "activeMinutes": 12,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 42,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2981,7 +3277,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 42,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3478,6 +3774,77 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
+    "active_cycle_times": Map {
+      "PartAndProcess {
+      \\"part\\": \\"part111\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"prog6\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 30,
+        },
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 1,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progn\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 24,
+        },
+      },
+      "PartAndProcess {
+      \\"part\\": \\"part222\\",
+      \\"proc\\": 2,
+    }" => Map {
+        "StationOperation {
+        \\"operation\\": \\"UNLOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 3,
+        },
+        "StationOperation {
+        \\"operation\\": \\"progj\\",
+        \\"statGroup\\": \\"MC\\",
+      }" => Object {
+          "activeMinsForSingleMat": 18,
+        },
+        "StationOperation {
+        \\"operation\\": \\"LOAD\\",
+        \\"statGroup\\": \\"L/U\\",
+      }" => Object {
+          "activeMinsForSingleMat": 6,
+        },
+      },
+    },
     "by_pallet": Map {
       "palaa" => Array [
         Object {
@@ -3635,7 +4002,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 18,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3740,7 +4107,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 24,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3845,7 +4212,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 30,
+        "activeTotalMachineMinutesForSingleMat": 0,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
