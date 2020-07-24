@@ -47,7 +47,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
 
 import StationDataTable from "../analysis/StationDataTable";
-import { connect, Store, mkAC, useSelector } from "../../store/store";
+import { connect, Store, useSelector } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
 import { PartCycleData, EstimatedCycleTimes, PartAndStationOperation, PartAndProcess } from "../../data/events.cycles";
 import {
@@ -65,7 +65,6 @@ import {
 import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
-import * as guiState from "../../data/gui-state";
 import { OEEProps, OEEChart, OEETable } from "./OEEChart";
 import { copyOeeToClipboard, buildOeeSeries, OEEBarSeries } from "../../data/results.oee";
 import { LazySeq } from "../../data/lazyseq";
@@ -476,8 +475,6 @@ const ConnectedLaborCycleChart = connect(
     default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
   }),
   {
-    setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
-    setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
     openMaterial: matDetails.openMaterialById,
   }
 )(PartStationCycleChart);
@@ -488,8 +485,6 @@ const ConnectedMachineCycleChart = connect(
     default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
   }),
   {
-    setSelected: mkAC(guiState.ActionType.SetSelectedStationCycle),
-    setZoomRange: mkAC(guiState.ActionType.SetStationCycleDateZoom),
     openMaterial: matDetails.openMaterialById,
   }
 )(PartStationCycleChart);
