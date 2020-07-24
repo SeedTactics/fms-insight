@@ -765,9 +765,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
     } else if (selected === "Occupied") {
       return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(data.cycles.part_cycles));
     } else {
-      return dayAndStatToHeatmapPoints(
-        binSimStationUseByDayAndStat(data.sim_use.station_use, (c) => c.utilizationTime - c.plannedDownTime)
-      );
+      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(data.sim_use.station_use));
     }
   }, [selected, data]);
 
