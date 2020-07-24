@@ -32,35 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as gui from "./gui-state";
-import { addHours } from "date-fns";
 
 it("creates initial state", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const s = gui.reducer(undefined as any, undefined as any);
   expect(s).toBe(gui.initial);
-});
-
-it("selects a pallet for the pallet cycle chart", () => {
-  const s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetSelectedPalletCycle,
-    pallet: "pal555",
-  });
-  expect(s.pallet_cycle_selected).toEqual("pal555");
-});
-
-it("sets the pallet zoom range", () => {
-  const now = new Date();
-  let s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetPalletCycleDateZoom,
-    zoom: { start: addHours(now, -2), end: now },
-  });
-  expect(s.pallet_cycle_date_zoom).toEqual({ start: addHours(now, -2), end: now });
-
-  s = gui.reducer(gui.initial, {
-    type: gui.ActionType.SetPalletCycleDateZoom,
-    zoom: undefined,
-  });
-  expect(s.pallet_cycle_date_zoom).toBeUndefined();
 });
 
 it("opens the workorder dialog", () => {
