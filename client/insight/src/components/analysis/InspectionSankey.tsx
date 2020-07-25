@@ -50,6 +50,7 @@ import { HashMap } from "prelude-ts";
 import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 import { DataTableActionZoomType } from "./DataTable";
+import { useIsDemo } from "../IsDemo";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
@@ -140,140 +141,128 @@ export interface InspectionSankeyProps {
   readonly extendDateRange?: (numDays: number) => void;
 }
 
-interface InspectionSankeyState {
-  readonly selectedPart?: string;
-  readonly selectedInspectType?: string;
-  readonly showTable: boolean | null;
-}
+export function InspectionSankey(props: InspectionSankeyProps) {
+  const demo = useIsDemo();
+  const [curPart, setSelectedPart] = React.useState<string | undefined>(demo ? "aaa" : undefined);
+  const [selectedInspectType, setSelectedInspectType] = React.useState<string | undefined>(demo ? "CMM" : undefined);
+  const [showTable, setShowTable] = React.useState<boolean>(props.defaultToTable);
 
-export class InspectionSankey extends React.Component<InspectionSankeyProps, InspectionSankeyState> {
-  state: InspectionSankeyState = { showTable: null };
-
-  render() {
-    let curData: ReadonlyArray<InspectionLogEntry> | undefined;
-    const selectedPart = this.props.restrictToPart || this.state.selectedPart;
-    if (selectedPart && this.state.selectedInspectType) {
-      curData = this.props.inspectionlogs
-        .get(new PartAndInspType(selectedPart, this.state.selectedInspectType))
-        .getOrElse([]);
-    }
-    const showTable = this.state.showTable === null ? this.props.defaultToTable : this.state.showTable;
-    const parts = this.props.inspectionlogs
-      .keySet()
-      .map((x) => x.part)
-      .toArray({ sortOn: (x) => x });
-    const inspTypes = this.props.inspectionlogs
-      .keySet()
-      .map((e) => e.inspType)
-      .toArray({ sortOn: (x) => x });
-    return (
-      <Card raised>
-        <CardHeader
-          title={
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
+  let curData: ReadonlyArray<InspectionLogEntry> | undefined;
+  const selectedPart = props.restrictToPart || curPart;
+  if (selectedPart && selectedInspectType) {
+    curData = props.inspectionlogs.get(new PartAndInspType(selectedPart, selectedInspectType)).getOrElse([]);
+  }
+  const parts = props.inspectionlogs
+    .keySet()
+    .map((x) => x.part)
+    .toArray({ sortOn: (x) => x });
+  const inspTypes = props.inspectionlogs
+    .keySet()
+    .map((e) => e.inspType)
+    .toArray({ sortOn: (x) => x });
+  return (
+    <Card raised>
+      <CardHeader
+        title={
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <SearchIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
+            <div style={{ flexGrow: 1 }} />
+            {curData ? (
+              <Tooltip title="Copy to Clipboard">
+                <IconButton
+                  onClick={() =>
+                    curData
+                      ? copyInspectionEntriesToClipboard(selectedPart || "", selectedInspectType || "", curData)
+                      : undefined
+                  }
+                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                >
+                  <ImportExport />
+                </IconButton>
+              </Tooltip>
+            ) : undefined}
+            <Select
+              autoWidth
+              value={showTable ? "table" : "sankey"}
+              onChange={(e) => setShowTable(e.target.value === "table")}
             >
-              <SearchIcon style={{ color: "#6D4C41" }} />
-              <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
-              <div style={{ flexGrow: 1 }} />
-              {curData ? (
-                <Tooltip title="Copy to Clipboard">
-                  <IconButton
-                    onClick={() =>
-                      curData
-                        ? copyInspectionEntriesToClipboard(
-                            selectedPart || "",
-                            this.state.selectedInspectType || "",
-                            curData
-                          )
-                        : undefined
-                    }
-                    style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                  >
-                    <ImportExport />
-                  </IconButton>
-                </Tooltip>
-              ) : undefined}
-              <Select
-                autoWidth
-                value={showTable ? "table" : "sankey"}
-                onChange={(e) => this.setState({ showTable: e.target.value === "table" })}
-              >
-                <MenuItem key="sankey" value="sankey">
-                  Sankey
+              <MenuItem key="sankey" value="sankey">
+                Sankey
+              </MenuItem>
+              <MenuItem key="table" value="table">
+                Table
+              </MenuItem>
+            </Select>
+            <Select
+              name="inspection-sankey-select-type"
+              autoWidth
+              displayEmpty
+              style={{ marginRight: "1em", marginLeft: "1em" }}
+              value={selectedInspectType || ""}
+              onChange={(e) => setSelectedInspectType(e.target.value as string)}
+            >
+              {selectedInspectType ? undefined : (
+                <MenuItem key={0} value="">
+                  <em>Select Inspection Type</em>
                 </MenuItem>
-                <MenuItem key="table" value="table">
-                  Table
+              )}
+              {inspTypes.map((n) => (
+                <MenuItem key={n} value={n}>
+                  {n}
                 </MenuItem>
-              </Select>
+              ))}
+            </Select>
+            {props.restrictToPart === undefined ? (
               <Select
-                name="inspection-sankey-select-type"
+                name="inspection-sankey-select-part"
                 autoWidth
                 displayEmpty
-                style={{ marginRight: "1em", marginLeft: "1em" }}
-                value={this.state.selectedInspectType || ""}
-                onChange={(e) => this.setState({ selectedInspectType: e.target.value as string })}
+                value={selectedPart || ""}
+                onChange={(e) => setSelectedPart(e.target.value as string)}
               >
-                {this.state.selectedInspectType ? undefined : (
+                {selectedPart ? undefined : (
                   <MenuItem key={0} value="">
-                    <em>Select Inspection Type</em>
+                    <em>Select Part</em>
                   </MenuItem>
                 )}
-                {inspTypes.map((n) => (
+                {parts.map((n) => (
                   <MenuItem key={n} value={n}>
-                    {n}
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <PartIdenticon part={n} size={30} />
+                      <span style={{ marginRight: "1em" }}>{n}</span>
+                    </div>
                   </MenuItem>
                 ))}
               </Select>
-              {this.props.restrictToPart === undefined ? (
-                <Select
-                  name="inspection-sankey-select-part"
-                  autoWidth
-                  displayEmpty
-                  value={this.state.selectedPart || ""}
-                  onChange={(e) => this.setState({ selectedPart: e.target.value as string })}
-                >
-                  {this.state.selectedPart ? undefined : (
-                    <MenuItem key={0} value="">
-                      <em>Select Part</em>
-                    </MenuItem>
-                  )}
-                  {parts.map((n) => (
-                    <MenuItem key={n} value={n}>
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <PartIdenticon part={n} size={30} />
-                        <span style={{ marginRight: "1em" }}>{n}</span>
-                      </div>
-                    </MenuItem>
-                  ))}
-                </Select>
-              ) : undefined}
-            </div>
-          }
-          subheader={this.props.subtitle}
-        />
-        <CardContent>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            {curData ? (
-              showTable ? (
-                <InspectionDataTable
-                  zoomType={this.props.zoomType}
-                  points={curData}
-                  default_date_range={this.props.default_date_range}
-                  extendDateRange={this.props.extendDateRange}
-                  openDetails={this.props.openMaterialDetails}
-                />
-              ) : (
-                <ConvertInspectionDataToSankey data={curData} />
-              )
             ) : undefined}
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
+        }
+        subheader={props.subtitle}
+      />
+      <CardContent>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          {curData ? (
+            showTable ? (
+              <InspectionDataTable
+                zoomType={props.zoomType}
+                points={curData}
+                default_date_range={props.default_date_range}
+                extendDateRange={props.extendDateRange}
+                openDetails={props.openMaterialDetails}
+              />
+            ) : (
+              <ConvertInspectionDataToSankey data={curData} />
+            )
+          ) : undefined}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

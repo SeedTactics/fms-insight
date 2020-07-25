@@ -124,7 +124,27 @@ export class PartAndStationOperation {
   }
 }
 
+export class StationOperation {
+  public constructor(public readonly statGroup: string, public readonly operation: string) {}
+  public static ofLogCycle(c: Readonly<api.ILogEntry>): StationOperation {
+    return new StationOperation(c.loc, c.type === api.LogType.LoadUnloadCycle ? c.result : c.program);
+  }
+  equals(other: PartAndStationOperation): boolean {
+    return this.statGroup === other.statGroup && this.operation === other.operation;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.statGroup, this.operation);
+  }
+  toString(): string {
+    return `{statGroup: ${this.statGroup}, operation: ${this.operation}}`;
+  }
+}
+
 export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCycleTime>;
+export type ActiveCycleTime = HashMap<
+  PartAndProcess,
+  HashMap<StationOperation, { readonly activeMinsForSingleMat: number }>
+>;
 
 export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
@@ -136,6 +156,7 @@ export interface CycleState {
   readonly loadstation_names: HashSet<string>;
   readonly pallet_names: HashSet<string>;
   readonly estimatedCycleTimes: EstimatedCycleTimes;
+  readonly active_cycle_times: ActiveCycleTime;
 }
 
 export const initial: CycleState = {
@@ -147,6 +168,7 @@ export const initial: CycleState = {
   loadstation_names: HashSet.empty(),
   pallet_names: HashSet.empty(),
   estimatedCycleTimes: HashMap.empty(),
+  active_cycle_times: HashMap.empty(),
 };
 
 export enum ExpireOldDataType {
@@ -370,15 +392,36 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): E
   return machines.mergeWith(loads, (s1, _) => s1);
 }
 
-function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>) {
-  const cMins = duration(cycle.active).asMinutes();
-  if (
-    (cycle.type === api.LogType.MachineCycle || cycle.type === api.LogType.LoadUnloadCycle) &&
-    (cycle.active === "" || cMins <= 0)
-  ) {
-    return stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length;
+function activeMinutes(
+  cycle: Readonly<api.ILogEntry>,
+  stats: Option<StatisticalCycleTime>,
+  activeTimes: ActiveCycleTime
+): [number, ActiveCycleTime] {
+  const aMins = duration(cycle.active).asMinutes();
+  const activeMinsForSingleMat = aMins / cycle.material.length;
+  if (cycle.active === "" || aMins <= 0) {
+    return [stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length, activeTimes];
   } else {
-    return cMins;
+    const partKey = PartAndProcess.ofLogCycle(cycle);
+    const oldActive = activeTimes.get(partKey);
+    const statKey = StationOperation.ofLogCycle(cycle);
+    if (oldActive.isSome()) {
+      const oldOp = oldActive.get().get(statKey);
+      if (oldOp.isSome()) {
+        if (activeMinsForSingleMat !== oldOp.get().activeMinsForSingleMat) {
+          // adjust to new time
+          activeTimes = activeTimes.put(partKey, oldActive.get().put(statKey, { activeMinsForSingleMat }));
+        } else {
+          // no adjustment, cMins equals current value
+        }
+      } else {
+        // add operation
+        activeTimes = activeTimes.put(partKey, oldActive.get().put(statKey, { activeMinsForSingleMat }));
+      }
+    } else {
+      activeTimes = activeTimes.put(partKey, HashMap.of([statKey, { activeMinsForSingleMat }]));
+    }
+    return [aMins, activeTimes];
   }
 }
 
@@ -386,13 +429,22 @@ function activeTotalMachineMinutesForSingleMat(
   part: string,
   process: number,
   machineGroups: HashSet<string>,
+  activeTimes: ActiveCycleTime,
   estimated: EstimatedCycleTimes
 ): number {
-  return LazySeq.ofIterable(estimated).sumOn(([k, times]) =>
-    k.part === part && k.proc === process && machineGroups.contains(k.statGroup)
-      ? times.expectedCycleMinutesForSingleMat
-      : 0
-  );
+  const active = activeTimes.get(new PartAndProcess(part, process));
+  if (active.isSome()) {
+    return LazySeq.ofIterable(active.get()).sumOn(([k, time]) =>
+      machineGroups.contains(k.statGroup) ? time.activeMinsForSingleMat : 0
+    );
+  } else {
+    // fall back to using estimated times
+    return LazySeq.ofIterable(estimated).sumOn(([k, times]) =>
+      k.part === part && k.proc === process && machineGroups.contains(k.statGroup)
+        ? times.expectedCycleMinutesForSingleMat
+        : 0
+    );
+  }
 }
 
 interface InspectionData {
@@ -457,6 +509,7 @@ export function process_events(
   } else {
     estimatedCycleTimes = st.estimatedCycleTimes;
   }
+  let activeCycleTimes = st.active_cycle_times;
 
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan: {
@@ -526,16 +579,19 @@ export function process_events(
         cycle.material.length > 0
           ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
           : Option.none<StatisticalCycleTime>();
+      let activeMins;
+      [activeMins, activeCycleTimes] = activeMinutes(cycle, stats, activeCycleTimes);
       return {
         x: cycle.endUTC,
         y: duration(cycle.elapsed).asMinutes(),
-        activeMinutes: activeMinutes(cycle, stats),
+        activeMinutes: activeMins,
         medianCycleMinutes: stats.map((s) => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
         MAD_aboveMinutes: stats.map((s) => s.MAD_aboveMinutes).getOrElse(0),
         activeTotalMachineMinutesForSingleMat: activeTotalMachineMinutesForSingleMat(
           part,
           proc,
           machineGroups,
+          activeCycleTimes,
           estimatedCycleTimes
         ),
         completed: cycle.type === api.LogType.LoadUnloadCycle && cycle.result === "UNLOAD",
@@ -585,7 +641,7 @@ export function process_events(
     return x;
   });
 
-  const newSt = {
+  const newSt: CycleState = {
     ...st,
     part_cycles: allPartCycles,
     part_and_proc_names: partNames,
@@ -594,6 +650,7 @@ export function process_events(
     machine_names: machNames,
     loadstation_names: lulNames,
     pallet_names: palNames,
+    active_cycle_times: activeCycleTimes,
   };
 
   if (initialLoad) {

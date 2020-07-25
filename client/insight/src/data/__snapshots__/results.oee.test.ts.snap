@@ -17,11 +17,11 @@ Map {
   "DayAndStation {
   \\"day\\": 2018-03-05T06:00:00.000Z,
   \\"station\\": \\"L/U #1\\",
-}" => 6,
+}" => 5,
   "DayAndStation {
   \\"day\\": 2018-03-04T06:00:00.000Z,
   \\"station\\": \\"L/U #1\\",
-}" => 12,
+}" => 13,
   "DayAndStation {
   \\"day\\": 2018-03-05T06:00:00.000Z,
   \\"station\\": \\"MC #1\\",
@@ -50,11 +50,11 @@ Map {
   "DayAndStation {
   \\"day\\": 2018-03-05T06:00:00.000Z,
   \\"station\\": \\"L/U #1\\",
-}" => 6,
+}" => 5,
   "DayAndStation {
   \\"day\\": 2018-03-04T06:00:00.000Z,
   \\"station\\": \\"L/U #1\\",
-}" => 12,
+}" => 13,
   "DayAndStation {
   \\"day\\": 2018-03-05T06:00:00.000Z,
   \\"station\\": \\"MC #1\\",
@@ -94,10 +94,10 @@ exports[`creates points clipboard table: clipboard table 1`] = `
           L/U #1
         </th>
         <td>
-          12
+          13
         </td>
         <td>
-          6
+          5
         </td>
       </tr>
       

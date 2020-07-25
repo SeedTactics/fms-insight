@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { BufferEntry } from "./events.buffering";
-import { Vector, fieldsHashCode } from "prelude-ts";
+import { Vector, fieldsHashCode, HashSet } from "prelude-ts";
 
 export interface BufferChartPoint {
   readonly x: Date;
@@ -156,6 +156,7 @@ export function buildBufferChart(
   start: Date,
   end: Date,
   movingAverageDistanceInHours: number,
+  rawMatQueues: HashSet<string>,
   entries: Vector<BufferEntry>
 ): ReadonlyArray<BufferChartSeries> {
   const movingAverageDistanceInMilliseconds = movingAverageDistanceInHours * 60 * 60 * 1000;
@@ -163,6 +164,7 @@ export function buildBufferChart(
     .groupBy((v) => new BufferSeriesKey(v.buffer))
     .mapValues((es) => calcPoints(start, end, movingAverageDistanceInMilliseconds, es))
     .toArray()
+    .filter(([k]) => k.ty.type !== "Queue" || !rawMatQueues.contains(k.ty.queue))
     .map(([k, points]) => ({
       label: k.toString(),
       points,

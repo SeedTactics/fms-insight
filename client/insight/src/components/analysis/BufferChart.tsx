@@ -63,8 +63,21 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
       ? s.Events.last30.buffering.entries
       : s.Events.selected_month.buffering.entries
   );
+  const rawMatQueues = useSelector((s) =>
+    s.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? s.Events.last30.sim_use.rawMaterialQueues
+      : s.Events.selected_month.sim_use.rawMaterialQueues
+  );
+
   const series = React.useMemo(
-    () => buildBufferChart(defaultDateRange[0], defaultDateRange[1], props.movingAverageDistanceInHours, entries),
+    () =>
+      buildBufferChart(
+        defaultDateRange[0],
+        defaultDateRange[1],
+        props.movingAverageDistanceInHours,
+        rawMatQueues,
+        entries
+      ),
     [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours]
   );
   return (

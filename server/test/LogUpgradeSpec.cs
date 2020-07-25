@@ -217,6 +217,7 @@ namespace MachineWatchTest
           Unique = "uuu5",
           PartNameOrCasting = "part5",
           NumProcesses = 1,
+          AddTimeUTC = now.AddHours(2)
         }
       });
     }

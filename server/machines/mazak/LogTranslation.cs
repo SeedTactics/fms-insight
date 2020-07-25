@@ -782,21 +782,11 @@ namespace MazakMachineInterface
         .Where(t => t.MachineNumber == machine && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
         .Select(t => new JobLogDB.ToolPocketSnapshot()
         {
-          PocketNumber = t.PocketNumber ?? -1,
+          PocketNumber = t.PocketNumber.Value,
           Tool = t.GroupNo,
           CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
           ToolLife = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
         })
-        .GroupBy(t => t.PocketNumber)
-        .Select(t =>
-        {
-          if (t.Count() > 1)
-          {
-            Log.Warning("Duplicate tools in the same pocket at machine {machine}! {@tools}", machine, t);
-          }
-          return t.FirstOrDefault();
-        })
-        .Where(t => t != null)
         .ToList();
     }
 

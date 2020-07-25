@@ -89,7 +89,7 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
-    private const int Version = 21;
+    private const int Version = 22;
 
     public void CreateTables(string firstSerialOnEmpty)
     {
@@ -165,13 +165,13 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
+        cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, AddTimeUTC INTEGER, PRIMARY KEY(MaterialID, Queue))";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, PocketNumber))";
+            "PRIMARY KEY(Counter, PocketNumber, Tool))";
         cmd.ExecuteNonQuery();
 
         if (!string.IsNullOrEmpty(firstSerialOnEmpty))
@@ -317,6 +317,8 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 20) Ver19ToVer20(trans);
 
           if (curVersion < 21) Ver20ToVer21(trans);
+
+          if (curVersion < 22) Ver21ToVer22(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -638,6 +640,24 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = transaction;
         cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
             "PRIMARY KEY(Counter, PocketNumber))";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
+    public void Ver21ToVer22(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+
+        cmd.CommandText = "DROP TABLE tool_snapshots";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
+            "PRIMARY KEY(Counter, PocketNumber, Tool))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "ALTER TABLE queues ADD AddTimeUTC INTEGER";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1415,7 +1435,7 @@ namespace BlackMaple.MachineFramework
       {
         if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
         if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
-        var endPockets = end.ToDictionary(s => s.PocketNumber);
+        var endPockets = end.ToDictionary(s => (s.PocketNumber, s.Tool));
 
         var tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
         void addUse(string tool, MachineWatchInterface.ToolUse use)
@@ -1434,59 +1454,33 @@ namespace BlackMaple.MachineFramework
 
         foreach (var startPocket in start)
         {
-          if (endPockets.TryGetValue(startPocket.PocketNumber, out var endPocket))
+          if (endPockets.TryGetValue((startPocket.PocketNumber, startPocket.Tool), out var endPocket))
           {
-            endPockets.Remove(startPocket.PocketNumber);
+            endPockets.Remove((startPocket.PocketNumber, startPocket.Tool));
 
-            if (startPocket.Tool == endPocket.Tool)
+            if (startPocket.CurrentUse < endPocket.CurrentUse)
             {
-              // tool was unchanged or changed to the same tool
-              if (startPocket.CurrentUse < endPocket.CurrentUse)
+              // no tool change
+              addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
               {
-                addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
-                {
-                  ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
-                  TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-                  ConfiguredToolLife = endPocket.ToolLife
-                });
-              }
-              else if (endPocket.CurrentUse < startPocket.CurrentUse)
+                ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
+                TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+                ConfiguredToolLife = endPocket.ToolLife
+              });
+            }
+            else if (endPocket.CurrentUse < startPocket.CurrentUse)
+            {
+              // there was a tool change
+              addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
               {
-                // there was a tool change to the same tool during the cycle
-                addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
-                {
-                  ToolUseDuringCycle = (startPocket.ToolLife - startPocket.CurrentUse) + endPocket.CurrentUse,
-                  TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-                  ConfiguredToolLife = endPocket.ToolLife
-                });
-              }
-              else
-              {
-                // tool was not used, use same at beginning and end
-              }
+                ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)) + endPocket.CurrentUse,
+                TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+                ConfiguredToolLife = endPocket.ToolLife
+              });
             }
             else
             {
-              // tool was changed to a different tool
-
-              // assume start tool was used until life
-              addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
-              {
-                ToolUseDuringCycle = startPocket.ToolLife - startPocket.CurrentUse,
-                TotalToolUseAtEndOfCycle = TimeSpan.Zero,
-                ConfiguredToolLife = TimeSpan.Zero
-              });
-
-              // and new tool was used from 0 to current use
-              if (endPocket.CurrentUse.Ticks > 0)
-              {
-                addUse(endPocket.Tool, new MachineWatchInterface.ToolUse()
-                {
-                  ToolUseDuringCycle = endPocket.CurrentUse,
-                  TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-                  ConfiguredToolLife = endPocket.ToolLife
-                });
-              }
+              // tool was not used, use same at beginning and end
             }
           }
           else
@@ -1495,7 +1489,7 @@ namespace BlackMaple.MachineFramework
             // assume start tool was used until life
             addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
             {
-              ToolUseDuringCycle = startPocket.ToolLife - startPocket.CurrentUse,
+              ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)),
               TotalToolUseAtEndOfCycle = TimeSpan.Zero,
               ConfiguredToolLife = TimeSpan.Zero
             });
@@ -2773,18 +2767,20 @@ namespace BlackMaple.MachineFramework
           cmd.ExecuteNonQuery();
 
           cmd.CommandText =
-              "INSERT INTO queues(MaterialID, Queue, Position) " +
-              " VALUES ($m, $q, (SELECT MIN(IFNULL(MAX(Position) + 1, 0), $p) FROM queues WHERE Queue = $q))";
+              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
+              " VALUES ($m, $q, (SELECT MIN(IFNULL(MAX(Position) + 1, 0), $p) FROM queues WHERE Queue = $q), $t)";
           cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
+          cmd.Parameters.Add("t", SqliteType.Integer).Value = timeUTC.Ticks;
           cmd.ExecuteNonQuery();
         }
         else
         {
           cmd.CommandText =
-              "INSERT INTO queues(MaterialID, Queue, Position) " +
-              " VALUES ($m, $q, (SELECT IFNULL(MAX(Position) + 1, 0) FROM queues WHERE Queue = $q))";
+              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
+              " VALUES ($m, $q, (SELECT IFNULL(MAX(Position) + 1, 0) FROM queues WHERE Queue = $q), $t)";
           cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
           cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+          cmd.Parameters.Add("t", SqliteType.Integer).Value = timeUTC.Ticks;
           cmd.ExecuteNonQuery();
         }
       }
@@ -2840,7 +2836,7 @@ namespace BlackMaple.MachineFramework
       using (var deleteCmd = _connection.CreateCommand())
       {
         ((IDbCommand)findCmd).Transaction = trans;
-        findCmd.CommandText = "SELECT Queue, Position FROM queues WHERE MaterialID = $mid";
+        findCmd.CommandText = "SELECT Queue, Position, AddTimeUTC FROM queues WHERE MaterialID = $mid";
         findCmd.Parameters.Add("mid", SqliteType.Integer).Value = mat.MaterialID;
 
         ((IDbCommand)updatePosCmd).Transaction = trans;
@@ -2862,6 +2858,7 @@ namespace BlackMaple.MachineFramework
           {
             var queue = reader.GetString(0);
             var pos = reader.GetInt32(1);
+            var addTime = reader.IsDBNull(2) ? null : (DateTime?)(new DateTime(reader.GetInt64(2), DateTimeKind.Utc));
 
             var log = new NewEventLogEntry()
             {
@@ -2874,7 +2871,8 @@ namespace BlackMaple.MachineFramework
               StartOfCycle = false,
               EndTimeUTC = timeUTC,
               Result = "",
-              EndOfRoute = false
+              EndOfRoute = false,
+              ElapsedTime = addTime.HasValue ? timeUTC.Subtract(addTime.Value) : TimeSpan.Zero
             };
             if (!string.IsNullOrEmpty(operatorName))
             {
@@ -3012,6 +3010,7 @@ namespace BlackMaple.MachineFramework
       public string Unique { get; set; }
       public string PartNameOrCasting { get; set; }
       public int NumProcesses { get; set; }
+      public DateTime? AddTimeUTC { get; set; }
     }
 
     public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
@@ -3025,7 +3024,7 @@ namespace BlackMaple.MachineFramework
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
-            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses " +
+            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
               " FROM queues " +
               " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
               " WHERE Queue = $q " +
@@ -3043,6 +3042,7 @@ namespace BlackMaple.MachineFramework
                   Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
                   PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                  AddTimeUTC = reader.IsDBNull(5) ? null : ((DateTime?)(new DateTime(reader.GetInt64(5), DateTimeKind.Utc))),
                 });
               }
             }
@@ -3069,7 +3069,7 @@ namespace BlackMaple.MachineFramework
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
-            cmd.CommandText = "SELECT queues.MaterialID, Queue, Position, UniqueStr, PartName, NumProcesses " +
+            cmd.CommandText = "SELECT queues.MaterialID, Queue, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
               " FROM queues " +
               " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
               " ORDER BY Queue, Position";
@@ -3085,6 +3085,7 @@ namespace BlackMaple.MachineFramework
                   Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
                   NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
+                  AddTimeUTC = reader.IsDBNull(6) ? null : ((DateTime?)(new DateTime(reader.GetInt64(6), DateTimeKind.Utc))),
                 });
               }
             }

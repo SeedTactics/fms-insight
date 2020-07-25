@@ -49,6 +49,7 @@ import { HashMap } from "prelude-ts";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 import { InspectionSankey } from "../analysis/InspectionSankey";
 import { DataTableActionZoomType } from "../analysis/DataTable";
+import { useIsDemo } from "../IsDemo";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
@@ -57,7 +58,8 @@ interface SerialLookupProps {
 }
 
 function SerialLookup(props: SerialLookupProps) {
-  const [serial, setSerial] = React.useState("");
+  const demo = useIsDemo();
+  const [serial, setSerial] = React.useState(demo ? "00000000i9" : "");
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ marginBottom: "2em" }}>

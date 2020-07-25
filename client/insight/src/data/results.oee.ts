@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { SimStationUse } from "./events.simuse";
-import { startOfDay, addMinutes, differenceInMinutes, addDays } from "date-fns";
+import { startOfDay, addSeconds, addDays, max, min } from "date-fns";
 import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { chunkCyclesWithSimilarEndTime } from "./events.cycles";
@@ -60,36 +60,39 @@ export class DayAndStation {
   }
 }
 
-function splitPartCycleToDays(d: Date, totalVal: number): Array<{ day: Date; value: number }> {
-  const startDay = startOfDay(d);
-  const endTime = addMinutes(d, totalVal);
+function splitTimeToDays(startTime: Date, endTime: Date, mins: number): Array<{ day: Date; value: number }> {
+  const startDay = startOfDay(startTime);
   const endDay = startOfDay(endTime);
   if (startDay.getTime() === endDay.getTime()) {
     return [
       {
         day: startDay,
-        value: totalVal,
+        value: mins,
       },
     ];
   } else {
-    const startDayPct = differenceInMinutes(endDay, d) / totalVal;
-    return [
-      {
-        day: startDay,
-        value: totalVal * startDayPct,
-      },
-      {
-        day: endDay,
-        value: totalVal * (1 - startDayPct),
-      },
-    ];
+    const vals: Array<{ day: Date; value: number }> = [];
+    const totalRange = endTime.getTime() - startTime.getTime();
+    for (let day = startDay; day <= endDay; day = addDays(day, 1)) {
+      const s = max([day, startTime]);
+      const e = min([addDays(day, 1), endTime]);
+      const pct = (e.getTime() - s.getTime()) / totalRange;
+
+      vals.push({
+        day,
+        value: mins * pct,
+      });
+    }
+    return vals;
   }
 }
 
 export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(cycles)
     .flatMap((point) =>
-      splitPartCycleToDays(point.x, point.activeMinutes).map((x) => ({
+      // point.x is the end time, point.y is elapsed in minutes, so point.x - point.y is start time
+      // also, use addSeconds since addMinutes from date-fns rounds to nearest minute
+      splitTimeToDays(addSeconds(point.x, -point.y * 60), point.x, point.activeMinutes).map((x) => ({
         ...x,
         station: stat_name_and_num(point.stationGroup, point.stationNumber),
         isLabor: point.isLabor,
@@ -109,7 +112,8 @@ export function binOccupiedCyclesByDayAndStat(cycles: Vector<PartCycleData>): Ha
       chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
         .transform(LazySeq.ofIterable)
         .flatMap((chunk) =>
-          splitPartCycleToDays(chunk[0].x, chunk[0].y).map((split) => ({
+          // point.x is the end time, point.y is elapsed in minutes, so point.x - point.y is start time
+          splitTimeToDays(addSeconds(chunk[0].x, -chunk[0].y * 60), chunk[0].x, chunk[0].y).map((split) => ({
             ...split,
             station: station,
             isLabor: chunk[0].isLabor,
@@ -126,49 +130,14 @@ export function binOccupiedCyclesByDayAndStat(cycles: Vector<PartCycleData>): Ha
 // Planned
 // --------------------------------------------------------------------------------
 
-interface DayStatAndVal {
-  day: Date;
-  station: string;
-  value: number;
-}
-
-function splitElapsedToDays(simUse: SimStationUse, extractValue: (c: SimStationUse) => number): DayStatAndVal[] {
-  const startDay = startOfDay(simUse.start);
-  const endDay = startOfDay(simUse.end);
-
-  if (startDay.getTime() === endDay.getTime()) {
-    return [
-      {
-        day: startDay,
-        station: simUse.station,
-        value: extractValue(simUse),
-      },
-    ];
-  } else {
-    const totalVal = extractValue(simUse);
-    const endDayPercentage =
-      (simUse.end.getTime() - endDay.getTime()) / (simUse.end.getTime() - simUse.start.getTime());
-    return [
-      {
-        day: startDay,
-        station: simUse.station,
-        value: totalVal * (1 - endDayPercentage),
-      },
-      {
-        day: endDay,
-        station: simUse.station,
-        value: totalVal * endDayPercentage,
-      },
-    ];
-  }
-}
-
-export function binSimStationUseByDayAndStat(
-  simUses: Iterable<SimStationUse>,
-  extractValue: (c: SimStationUse) => number
-): HashMap<DayAndStation, number> {
+export function binSimStationUseByDayAndStat(simUses: Iterable<SimStationUse>): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(simUses)
-    .flatMap((s) => splitElapsedToDays(s, extractValue))
+    .flatMap((simUse) =>
+      splitTimeToDays(simUse.start, simUse.end, simUse.utilizationTime - simUse.plannedDownTime).map((x) => ({
+        ...x,
+        station: simUse.station,
+      }))
+    )
     .toMap(
       (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
       (v1, v2) => v1 + v2
@@ -204,7 +173,7 @@ export function buildOeeSeries(
   const filteredStatUse = LazySeq.ofIterable(statUse).filter(
     (e) => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
   );
-  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, (c) => c.utilizationTime - c.plannedDownTime);
+  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse);
 
   const series: Array<OEEBarSeries> = [];
   const statNames = actualBins

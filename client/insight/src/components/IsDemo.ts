@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,39 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as ReactDOM from "react-dom";
 
-import "typeface-roboto";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import green from "@material-ui/core/colors/green";
-import brown from "@material-ui/core/colors/brown";
-import { ThemeProvider } from "@material-ui/core/styles";
-import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
-import "react-vis/dist/style.css";
+const IsDemoCtx = React.createContext(false);
 
-import App, { AppProps } from "./components/App";
-import { Store } from "./store/typed-redux";
-import { IsDemoProvider } from "./components/IsDemo";
+export const IsDemoProvider = IsDemoCtx.Provider;
 
-export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null) {
-  const theme = createMuiTheme({
-    palette: {
-      primary: green,
-      secondary: brown,
-    },
-  });
-
-  ReactDOM.render(
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <IsDemoProvider value={props.demo}>
-        <store.Provider>
-          {/* <React.StrictMode> */}
-          <App {...props} />
-          {/* </React.StrictMode> */}
-        </store.Provider>
-      </IsDemoProvider>
-    </ThemeProvider>,
-    elem
-  );
+export function useIsDemo(): boolean {
+  return React.useContext(IsDemoCtx);
 }

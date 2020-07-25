@@ -32,12 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 export enum ActionType {
-  SetSelectedStationCycle = "Gui_SetSelectedStationCycle",
-  SetStationCycleDateZoom = "Gui_SetStationCycleDateZoom",
-  SetSelectedPalletCycle = "Gui_SetSelectedPalletCycle",
-  SetPalletCycleDateZoom = "Gui_SetPalletCycleDateZoom",
-  SetStationOeeHeatmapType = "Gui_SetStationOeeHeatmapType",
-  SetCompletedCountHeatmapType = "Gui_SetCompletedCountHeatmapType",
   SetWorkorderDialogOpen = "Gui_SetWorkorderDialog",
   SetInspTypeDialogOpen = "Gui_SetInspTypeDialog",
   SetSerialDialogOpen = "Gui_SetSerialDialogOpen",
@@ -49,8 +43,6 @@ export enum ActionType {
 }
 
 export type Action =
-  | { type: ActionType.SetSelectedPalletCycle; pallet: string }
-  | { type: ActionType.SetPalletCycleDateZoom; zoom?: { start: Date; end: Date } }
   | { type: ActionType.SetWorkorderDialogOpen; open: boolean }
   | { type: ActionType.SetInspTypeDialogOpen; open: boolean }
   | { type: ActionType.SetSerialDialogOpen; open: boolean }
@@ -61,8 +53,6 @@ export type Action =
   | { type: ActionType.SetBackupFileOpenened; open: boolean };
 
 export interface State {
-  readonly pallet_cycle_selected?: string;
-  readonly pallet_cycle_date_zoom?: { start: Date; end: Date };
   readonly workorder_dialog_open: boolean;
   readonly insptype_dialog_open: boolean;
   readonly serial_dialog_open: boolean;
@@ -88,10 +78,6 @@ export function reducer(s: State, a: Action): State {
     return initial;
   }
   switch (a.type) {
-    case ActionType.SetSelectedPalletCycle:
-      return { ...s, pallet_cycle_selected: a.pallet };
-    case ActionType.SetPalletCycleDateZoom:
-      return { ...s, pallet_cycle_date_zoom: a.zoom };
     case ActionType.SetWorkorderDialogOpen:
       return { ...s, workorder_dialog_open: a.open };
     case ActionType.SetInspTypeDialogOpen:
