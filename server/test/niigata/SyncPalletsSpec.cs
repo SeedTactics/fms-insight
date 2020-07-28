@@ -68,10 +68,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB = new JobLogDB(_settings, logConn);
       _logDB.CreateTables(firstSerialOnEmpty: null);
 
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      var jdbCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
+      _jobDB = jdbCfg.OpenConnection();
 
       var record = new RecordFacesForPallet(_logDB);
 
@@ -89,10 +87,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
         })
       });
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, statNames, machConn);
+      _createLog = new CreateCellState(_logDB, record, _settings, statNames, machConn);
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);
-      _sync = new SyncPallets(_jobDB, _logDB, _sim, _assign, _createLog);
+      _sync = new SyncPallets(jdbCfg, _logDB, _sim, _assign, _createLog);
 
       _sim.OnNewProgram += (newprog) =>
         _jobDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());

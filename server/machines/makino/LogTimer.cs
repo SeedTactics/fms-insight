@@ -42,7 +42,7 @@ namespace Makino
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTimer>();
     private object _lock;
     private JobLogDB _log;
-    private JobDB _jobDB;
+    private Func<JobDB> _openJobDB;
     private MakinoDB _makinoDB;
     private StatusDB _status;
     private System.Timers.Timer _timer;
@@ -57,11 +57,11 @@ namespace Makino
     }
 
     public LogTimer(
-      JobLogDB log, JobDB jobDB, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
+      JobLogDB log, Func<JobDB> jobDB, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
     {
       _lock = new object();
       _log = log;
-      _jobDB = jobDB;
+      _openJobDB = jobDB;
       Settings = settings;
       _makinoDB = makinoDB;
       _status = status;
@@ -218,12 +218,16 @@ namespace Makino
 
     private void AddInspection(MakinoDB.MachineResults m, IList<JobLogDB.EventLogMaterial> material)
     {
-      if (_jobDB == null && _log == null)
+      if (_openJobDB == null && _log == null)
         return;
 
-      var job = _jobDB.LoadJob(m.OrderName);
-      if (job == null)
-        return;
+      JobPlan job;
+      using (var jdb = _openJobDB())
+      {
+        job = jdb.LoadJob(m.OrderName);
+        if (job == null)
+          return;
+      }
 
       foreach (var mat in material)
       {

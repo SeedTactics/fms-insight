@@ -50,22 +50,20 @@ namespace MazakMachineInterface
     private static ILogger log = Serilog.Log.ForContext<MazakQueues>();
 
     private JobLogDB _log;
-    private JobDB _jobDB;
     private IWriteData _transDB;
     private bool _waitForAllCastings;
 
     public bool CurrentQueueMismatch { get; private set; }
 
-    public MazakQueues(JobLogDB log, JobDB jDB, IWriteData trans, bool waitForAllCastings)
+    public MazakQueues(JobLogDB log, IWriteData trans, bool waitForAllCastings)
     {
-      _jobDB = jDB;
       _log = log;
       _transDB = trans;
       _waitForAllCastings = waitForAllCastings;
       CurrentQueueMismatch = false;
     }
 
-    public bool CheckQueues(MazakSchedulesAndLoadActions mazakData)
+    public bool CheckQueues(JobDB jobDB, MazakSchedulesAndLoadActions mazakData)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
       {
@@ -74,7 +72,7 @@ namespace MazakMachineInterface
       }
       try
       {
-        var transSet = CalculateScheduleChanges(mazakData);
+        var transSet = CalculateScheduleChanges(jobDB, mazakData);
 
         bool changed = false;
         if (transSet != null && transSet.Schedules.Count() > 0)
@@ -97,11 +95,12 @@ namespace MazakMachineInterface
       }
     }
 
-    public MazakWriteData CalculateScheduleChanges(MazakSchedulesAndLoadActions mazakData)
+    public MazakWriteData CalculateScheduleChanges(JobDB jdb, MazakSchedulesAndLoadActions mazakData)
     {
       log.Debug("Starting check for new queued material to add to mazak");
 
-      var schs = LoadSchedules(mazakData);
+      IEnumerable<ScheduleWithQueues> schs;
+      schs = LoadSchedules(jdb, mazakData);
       if (!schs.Any()) return null;
 
       CalculateTargetMatQty(mazakData, schs);
@@ -129,7 +128,7 @@ namespace MazakMachineInterface
       public int? NewPriority { get; set; }
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(MazakSchedulesAndLoadActions mazakData)
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(JobDB jdb, MazakSchedulesAndLoadActions mazakData)
     {
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
@@ -141,7 +140,7 @@ namespace MazakMachineInterface
 
         MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
 
-        var job = _jobDB.LoadJob(unique);
+        var job = jdb.LoadJob(unique);
         if (job == null) continue;
 
         var casting = job.GetCasting(procToPath.PathForProc(1));

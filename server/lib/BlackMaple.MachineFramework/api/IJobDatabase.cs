@@ -36,9 +36,7 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-  public delegate void NewJobsDelegate(NewJobs j);
-
-  public interface IJobDatabase
+  public interface IJobDatabase : IDisposable
   {
     ///Load all jobs, station, and tool utilization which intersect the given date range.
     HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
@@ -50,7 +48,5 @@ namespace BlackMaple.MachineWatchInterface
     PlannedSchedule LoadMostRecentSchedule();
 
     List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
-
-    event NewJobsDelegate OnNewJobs;
   }
 }

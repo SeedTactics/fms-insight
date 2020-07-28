@@ -70,10 +70,7 @@ namespace MachineWatchTest
       jobLog = new JobLogDB(settings, logConn);
       jobLog.CreateTables(firstSerialOnEmpty: null);
 
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      jobDB = new JobDB(jobConn);
-      jobDB.CreateTables();
+      jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _schedules = new List<MazakScheduleRow>();
       mazakData = new MazakSchedulesAndLoadActions()

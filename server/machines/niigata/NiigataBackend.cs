@@ -50,7 +50,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private SyncPallets _sync;
 
     public JobLogDB LogDB { get; private set; }
-    public JobDB JobDB { get; private set; }
+    public JobDB.Config JobDBConfig { get; private set; }
     public ISyncPallets SyncPallets => _sync;
     public NiigataStationNames StationNames { get; }
     public ICncMachineConnection MachineConnection { get; }
@@ -70,10 +70,7 @@ namespace BlackMaple.FMSInsight.Niigata
             System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
             startingSerial: cfg.StartingSerial
         );
-        JobDB = new JobDB();
-        JobDB.Open(
-          System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
-        );
+        JobDBConfig = JobDB.Config.InitializeJobDatabase(System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db"));
 
         var programDir = config.GetValue<string>("Program Directory");
         if (!System.IO.Directory.Exists(programDir))
@@ -114,9 +111,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
         var connStr = config.GetValue<string>("Connection String");
 
-        _icc = new NiigataICC(JobDB, programDir, connStr, StationNames);
+        _icc = new NiigataICC(programDir, connStr, StationNames);
         var recordFaces = new RecordFacesForPallet(LogDB);
-        var createLog = new CreateCellState(LogDB, JobDB, recordFaces, cfg, StationNames, MachineConnection);
+        var createLog = new CreateCellState(LogDB, recordFaces, cfg, StationNames, MachineConnection);
 
         IAssignPallets assign;
         if (customAssignment != null)
@@ -130,8 +127,8 @@ namespace BlackMaple.FMSInsight.Niigata
             new SizedQueues(cfg.Queues)
           });
         }
-        _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
-        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync, StationNames);
+        _sync = new SyncPallets(JobDBConfig, LogDB, _icc, assign, createLog);
+        _jobControl = new NiigataJobs(JobDBConfig, LogDB, cfg, _sync, StationNames);
         if (startSyncThread)
         {
           StartSyncThread();
@@ -158,8 +155,6 @@ namespace BlackMaple.FMSInsight.Niigata
       _icc = null;
       if (LogDB != null) LogDB.Close();
       LogDB = null;
-      if (JobDB != null) JobDB.Close();
-      JobDB = null;
     }
 
     public IInspectionControl InspectionControl()
@@ -167,20 +162,14 @@ namespace BlackMaple.FMSInsight.Niigata
       return LogDB;
     }
 
-    public IJobDatabase JobDatabase()
+    public IJobDatabase OpenJobDatabase()
     {
-      return JobDB;
+      return JobDBConfig.OpenConnection();
     }
 
-    public IOldJobDecrement OldJobDecrement()
-    {
-      return null;
-    }
+    public IOldJobDecrement OldJobDecrement { get => null; }
 
-    public IJobControl JobControl()
-    {
-      return _jobControl;
-    }
+    public IJobControl JobControl { get => _jobControl; }
 
     public ILogDatabase LogDatabase()
     {

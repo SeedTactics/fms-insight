@@ -55,7 +55,7 @@ namespace MazakMachineInterface
     private IMazakLogReader logDataLoader;
 
     private JobLogDB jobLog;
-    private JobDB jobDB;
+    private JobDB.Config jobDBConfig;
 
     //Settings
     public MazakDbType MazakType;
@@ -77,9 +77,9 @@ namespace MazakMachineInterface
     {
       get { return jobLog; }
     }
-    public JobDB JobDB
+    public JobDB.Config JobDBConfig
     {
-      get { return jobDB; }
+      get { return jobDBConfig; }
     }
 
     public IMazakLogReader LogTranslation
@@ -197,12 +197,11 @@ namespace MazakMachineInterface
         startingSerial: st.StartingSerial
       );
 
-      jobDB = new BlackMaple.MachineFramework.JobDB();
       var jobInspName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
       if (System.IO.File.Exists(jobInspName))
-        jobDB.Open(jobInspName);
+        jobDBConfig = BlackMaple.MachineFramework.JobDB.Config.InitializeJobDatabase(jobInspName);
       else
-        jobDB.Open(System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db"));
+        jobDBConfig = BlackMaple.MachineFramework.JobDB.Config.InitializeJobDatabase(System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db"));
 
       _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
 
@@ -219,15 +218,19 @@ namespace MazakMachineInterface
       else
         _readDB = openReadDb;
 
-      queues = new MazakQueues(jobLog, jobDB, _writeDB, waitForAllCastings);
+      queues = new MazakQueues(jobLog, _writeDB, waitForAllCastings);
       var sendToExternal = new SendMaterialToExternalQueue();
 
-      hold = new HoldPattern(_writeDB, _readDB, jobDB, true);
-      var writeJobs = new WriteJobs(_writeDB, _readDB, hold, jobDB, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
-      var decr = new DecrementPlanQty(jobDB, _writeDB, _readDB);
+      hold = new HoldPattern(_writeDB, _readDB, jobDBConfig, true);
+      WriteJobs writeJobs;
+      using (var jdb = jobDBConfig.OpenConnection())
+      {
+        writeJobs = new WriteJobs(_writeDB, _readDB, hold, jdb, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
+      }
+      var decr = new DecrementPlanQty(_writeDB, _readDB);
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDB, writeJobs, sendToExternal, _readDB, queues, st);
+        logDataLoader = new LogDataWeb(logPath, jobLog, jobDBConfig, writeJobs, sendToExternal, _readDB, queues, st);
       else
       {
 #if USE_OLEDB
@@ -237,7 +240,7 @@ namespace MazakMachineInterface
 #endif
       }
 
-      routing = new RoutingInfo(_writeDB, writeJobs, _readDB, logDataLoader, jobDB, jobLog, writeJobs, queues, decr,
+      routing = new RoutingInfo(_writeDB, writeJobs, _readDB, logDataLoader, jobDBConfig, jobLog, writeJobs, queues, decr,
                                 CheckPalletsUsedOnce, st);
 
       logDataLoader.NewEntries += OnNewLogEntries;
@@ -255,7 +258,6 @@ namespace MazakMachineInterface
       hold.Shutdown();
       logDataLoader.Halt();
       if (loadOper != null) loadOper.Halt();
-      jobDB.Close();
       jobLog.Close();
     }
 
@@ -264,19 +266,13 @@ namespace MazakMachineInterface
       return jobLog;
     }
 
-    public IJobControl JobControl()
-    {
-      return routing;
-    }
+    public IJobControl JobControl { get => routing; }
 
-    public IOldJobDecrement OldJobDecrement()
-    {
-      return routing;
-    }
+    public IOldJobDecrement OldJobDecrement { get => routing; }
 
-    public IJobDatabase JobDatabase()
+    public IJobDatabase OpenJobDatabase()
     {
-      return jobDB;
+      return jobDBConfig.OpenConnection();
     }
 
     public ILogDatabase LogDatabase()
@@ -291,6 +287,7 @@ namespace MazakMachineInterface
 
     private void OnNewLogEntries()
     {
+      // TODO: remove this and call directly from log translation, since needs jobdb connection.
       var st = routing.GetCurrentStatus();
       if (st.Material.Any(m =>
         m.Action.Type == InProcessMaterialAction.ActionType.Loading

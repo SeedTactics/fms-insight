@@ -45,52 +45,60 @@ namespace BlackMaple.MachineFramework.Controllers
   [DataContract]
   public class ServerEvent
   {
-    [DataMember(IsRequired=false, EmitDefaultValue=false)]
-    public LogEntry LogEntry {get;set;}
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public LogEntry LogEntry { get; set; }
 
-    [DataMember(IsRequired=false, EmitDefaultValue=false)]
-    public NewJobs NewJobs {get;set;}
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public NewJobs NewJobs { get; set; }
 
-    [DataMember(IsRequired=false, EmitDefaultValue=false)]
-    public CurrentStatus NewCurrentStatus {get;set;}
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public CurrentStatus NewCurrentStatus { get; set; }
   }
 
   public class WebsocketManager
   {
 
-    private class ServerClosingException : Exception {}
+    private class ServerClosingException : Exception { }
 
     private class WebsocketDict
     {
       private object _lock = new object();
-      private Dictionary<Guid, WebSocket>  _sockets = new Dictionary<Guid, WebSocket>();
+      private Dictionary<Guid, WebSocket> _sockets = new Dictionary<Guid, WebSocket>();
 
-      public List<WebSocket> AllSockets() {
-        lock (_lock) {
+      public List<WebSocket> AllSockets()
+      {
+        lock (_lock)
+        {
           return _sockets.Values.ToList();
         }
       }
 
-      public List<WebSocket> Clear() {
-        lock (_lock) {
+      public List<WebSocket> Clear()
+      {
+        lock (_lock)
+        {
           var sockets = _sockets.Values.ToList();
           _sockets = null;
           return sockets;
         }
       }
 
-      public void Add(Guid guid, WebSocket ws) {
+      public void Add(Guid guid, WebSocket ws)
+      {
         lock (_lock)
         {
-          if (_sockets == null) {
+          if (_sockets == null)
+          {
             throw new ServerClosingException();
           }
           _sockets.Add(guid, ws);
         }
       }
 
-      public void Remove(Guid guid) {
-        lock (_lock) {
+      public void Remove(Guid guid)
+      {
+        lock (_lock)
+        {
           if (_sockets != null) _sockets.Remove(guid);
         }
       }
@@ -99,7 +107,7 @@ namespace BlackMaple.MachineFramework.Controllers
     private WebsocketDict _sockets = new WebsocketDict();
     private Newtonsoft.Json.JsonSerializerSettings _serSettings;
 
-    public WebsocketManager(ILogDatabase log, IJobDatabase jobDatabase, IJobControl jobControl)
+    public WebsocketManager(ILogDatabase log, IJobControl jobControl)
     {
       _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
       _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
@@ -107,24 +115,26 @@ namespace BlackMaple.MachineFramework.Controllers
 
       if (log != null)
         log.NewLogEntry += (e, foreignId) =>
-          Send(new ServerEvent() {LogEntry = e});
-
-      if (jobDatabase != null)
-        jobDatabase.OnNewJobs += (jobs) =>
-          Send(new ServerEvent() {NewJobs = jobs});
+          Send(new ServerEvent() { LogEntry = e });
 
       if (jobControl != null)
+      {
+        jobControl.OnNewJobs += (jobs) =>
+          Send(new ServerEvent() { NewJobs = jobs });
         jobControl.OnNewCurrentStatus += (status) =>
-          Send(new ServerEvent() {NewCurrentStatus = status});
+          Send(new ServerEvent() { NewCurrentStatus = status });
+      }
     }
 
-    private void Send(ServerEvent val) {
+    private void Send(ServerEvent val)
+    {
       var data = Newtonsoft.Json.JsonConvert.SerializeObject(val, Newtonsoft.Json.Formatting.None, _serSettings);
       var encoded = System.Text.Encoding.UTF8.GetBytes(data);
       var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
 
       var sockets = _sockets.AllSockets();
-      foreach (var ws in sockets) {
+      foreach (var ws in sockets)
+      {
         if (ws.CloseStatus.HasValue) continue;
         ws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
       }
@@ -134,34 +144,45 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       var buffer = new byte[1024 * 4];
       var guid = Guid.NewGuid();
-      try {
+      try
+      {
 
         _sockets.Add(guid, ws);
 
         var res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-        while (res.MessageType != WebSocketMessageType.Close) {
+        while (res.MessageType != WebSocketMessageType.Close)
+        {
           //process client to server messages here.  Currently there are no messages from the client to the server.
 
           res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         }
-      } catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) {
+      }
+      catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+      {
         //do nothing, just exit the loop
-      } catch (ServerClosingException) {
+      }
+      catch (ServerClosingException)
+      {
         await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Server is closing", CancellationToken.None);
-      } finally {
+      }
+      finally
+      {
         _sockets.Remove(guid);
       }
 
-      if (ws.CloseStatus.HasValue) {
+      if (ws.CloseStatus.HasValue)
+      {
         await ws.CloseAsync(ws.CloseStatus.Value, ws.CloseStatusDescription, CancellationToken.None);
       }
     }
 
-    public async Task CloseAll() {
+    public async Task CloseAll()
+    {
       var tasks = new List<Task>();
       var sockets = _sockets.Clear();
 
-      foreach (var ws in sockets) {
+      foreach (var ws in sockets)
+      {
         var tokenSource = new CancellationTokenSource();
         var closeTask = ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Server is stopping", tokenSource.Token);
         var cancelTask = Task.Delay(TimeSpan.FromSeconds(3)).ContinueWith(_ => tokenSource.Cancel());

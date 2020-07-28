@@ -89,8 +89,7 @@ namespace BlackMaple.MachineFramework
           .AddSingleton<Controllers.WebsocketManager>(
               new Controllers.WebsocketManager(
                   _fmsImpl.Backend.LogDatabase(),
-                  _fmsImpl.Backend.JobDatabase(),
-                  _fmsImpl.Backend.JobControl())
+                  _fmsImpl.Backend.JobControl)
           );
 
       var mvcBuilder = services

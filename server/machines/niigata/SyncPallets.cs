@@ -42,22 +42,22 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface ISyncPallets
   {
     void JobsOrQueuesChanged();
-    void DecrementPlannedButNotStartedQty();
-    event Action<CellState> OnPalletsChanged;
+    void DecrementPlannedButNotStartedQty(JobDB jobDB);
+    event Action<JobDB, CellState> OnPalletsChanged;
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<SyncPallets>();
-    private JobDB _jobs;
+    private JobDB.Config _jobDbCfg;
     private JobLogDB _log;
     private INiigataCommunication _icc;
     private IAssignPallets _assign;
     private IBuildCellState _createLog;
 
-    public SyncPallets(JobDB jobs, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create)
+    public SyncPallets(JobDB.Config jobDbCfg, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create)
     {
-      _jobs = jobs;
+      _jobDbCfg = jobDbCfg;
       _log = log;
       _icc = icc;
       _assign = assign;
@@ -149,7 +149,7 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     #endregion
 
-    public event Action<CellState> OnPalletsChanged;
+    public event Action<JobDB, CellState> OnPalletsChanged;
 
     internal void SynchronizePallets(bool raisePalletChanged)
     {
@@ -165,51 +165,55 @@ namespace BlackMaple.FMSInsight.Niigata
         // 4. decide what is currently on each pallet and is currently loaded/unloaded
         // 5. Decide on any changes to pallet routes or planned quantities.
 
-        NiigataAction action = null;
-        do
+        using (var jdb = _jobDbCfg.OpenConnection())
         {
-          _newCurStatus.Reset();
-          status = _icc.LoadNiigataStatus();
-          var jobs = _jobs.LoadUnarchivedJobs();
 
-          Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
-
-          cellSt = _createLog.BuildCellState(status, jobs);
-          raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
-
-          Log.Debug("Computed cell state {@pals}", cellSt);
-
-          action = _assign.NewPalletChange(cellSt);
-
-          if (action != null)
+          NiigataAction action = null;
+          do
           {
-            Log.Debug("Executing action pallet to {@change}", action);
-            raisePalletChanged = true;
-            _icc.PerformAction(action);
-          }
-        } while (action != null);
+            _newCurStatus.Reset();
+            status = _icc.LoadNiigataStatus();
+            var jobs = jdb.LoadUnarchivedJobs();
 
-        if (raisePalletChanged)
-        {
-          OnPalletsChanged?.Invoke(cellSt);
+            Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
+
+            cellSt = _createLog.BuildCellState(jdb, status, jobs);
+            raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
+
+            Log.Debug("Computed cell state {@pals}", cellSt);
+
+            action = _assign.NewPalletChange(cellSt);
+
+            if (action != null)
+            {
+              Log.Debug("Executing action pallet to {@change}", action);
+              raisePalletChanged = true;
+              _icc.PerformAction(jdb, action);
+            }
+          } while (action != null);
+
+          if (raisePalletChanged)
+          {
+            OnPalletsChanged?.Invoke(jdb, cellSt);
+          }
         }
       }
 
     }
 
-    public void DecrementPlannedButNotStartedQty()
+    public void DecrementPlannedButNotStartedQty(JobDB jobDB)
     {
       // lock prevents decrement from occuring at the same time as the thread
       // is deciding what to put onto a pallet
       lock (_changeLock)
       {
-        var jobs = _jobs.LoadUnarchivedJobs();
-        var cellSt = _createLog.BuildCellState(_icc.LoadNiigataStatus(), jobs);
+        var jobs = jobDB.LoadUnarchivedJobs();
+        var cellSt = _createLog.BuildCellState(jobDB, _icc.LoadNiigataStatus(), jobs);
 
         var decrs = new List<JobDB.NewDecrementQuantity>();
         foreach (var j in jobs.Jobs)
         {
-          if (_jobs.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
+          if (jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
 
           int qtyToDecr = 0;
           for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
@@ -234,12 +238,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (decrs.Count > 0)
         {
-          _jobs.AddNewDecrement(decrs);
+          jobDB.AddNewDecrement(decrs);
         }
 
         if (decrs.Count > 0 || cellSt.PalletStateUpdated)
         {
-          OnPalletsChanged?.Invoke(cellSt);
+          OnPalletsChanged?.Invoke(jobDB, cellSt);
         }
       }
     }

@@ -76,35 +76,33 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public interface IBuildCellState
   {
-    CellState BuildCellState(NiigataStatus status, PlannedSchedule sch);
+    CellState BuildCellState(JobDB jobDB, NiigataStatus status, PlannedSchedule sch);
   }
 
   public class CreateCellState : IBuildCellState
   {
     private JobLogDB _log;
-    private JobDB _jobs;
     private IRecordFacesForPallet _recordFaces;
     private FMSSettings _settings;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
     private NiigataStationNames _stationNames;
     private ICncMachineConnection _machConnection;
 
-    public CreateCellState(JobLogDB l, JobDB jobs, IRecordFacesForPallet r, FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
+    public CreateCellState(JobLogDB l, IRecordFacesForPallet r, FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
     {
       _log = l;
-      _jobs = jobs;
       _recordFaces = r;
       _settings = s;
       _stationNames = n;
       _machConnection = machConn;
     }
 
-    public CellState BuildCellState(NiigataStatus status, PlannedSchedule sch)
+    public CellState BuildCellState(JobDB jobDB, NiigataStatus status, PlannedSchedule sch)
     {
       var palletStateUpdated = false;
 
       // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
-      var jobCache = Memoize<string, JobPlan>(_jobs.LoadJob);
+      var jobCache = Memoize<string, JobPlan>(jobDB.LoadJob);
       var pals = status.Pallets.Select(p => BuildCurrentPallet(status.Machines, jobCache, p))
         .OrderBy(p =>
         {
@@ -119,19 +117,19 @@ namespace BlackMaple.FMSInsight.Niigata
       var currentlyLoading = new HashSet<long>();
       foreach (var pal in pals.Where(p => !p.IsLoading && !p.Status.Master.NoWork))
       {
-        LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
+        LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, ref palletStateUpdated);
       }
 
       // next, go through pallets currently being loaded
       foreach (var pal in pals.Where(p => p.IsLoading && !p.Status.Master.NoWork))
       {
-        CurrentlyLoadingPallet(pal, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
+        CurrentlyLoadingPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, ref palletStateUpdated);
       }
 
       foreach (var pal in pals.Where(p => p.Status.Master.NoWork))
       {
         // need to check if an unload with no load happened and if so record unload end
-        LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, ref palletStateUpdated);
+        LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, ref palletStateUpdated);
       }
 
       pals.Sort((p1, p2) => p1.Status.Master.PalletNum.CompareTo(p2.Status.Master.PalletNum));
@@ -144,8 +142,8 @@ namespace BlackMaple.FMSInsight.Niigata
         QueuedMaterial = QueuedMaterial(new HashSet<long>(
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
         )),
-        JobQtyRemainingOnProc1 = CountRemainingQuantity(sch, pals),
-        ProgramNums = FindProgramNums(sch),
+        JobQtyRemainingOnProc1 = CountRemainingQuantity(jobDB, sch, pals),
+        ProgramNums = FindProgramNums(jobDB, sch),
       };
     }
 
@@ -590,7 +588,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void LoadedPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, ref bool palletStateUpdated)
+    private void LoadedPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, JobDB jobDB, ref bool palletStateUpdated)
     {
       // first, check if this is the first time seeing pallet as loaded since a load began
       var loadBegin =
@@ -606,14 +604,14 @@ namespace BlackMaple.FMSInsight.Niigata
 
       if (!pallet.Status.Master.NoWork)
       {
-        EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, ref palletStateUpdated);
+        EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, jobDB, ref palletStateUpdated);
       }
 
       EnsurePalletRotaryEvents(pallet, nowUtc);
       EnsurePalletStockerEvents(pallet, nowUtc);
     }
 
-    private void CurrentlyLoadingPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, ref bool palletStateUpdated)
+    private void CurrentlyLoadingPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, JobDB jobDB, ref bool palletStateUpdated)
     {
       TimeSpan? elapsedLoadTime = null;
       if (pallet.Status.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
@@ -640,7 +638,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, ref palletStateUpdated);
+      EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, jobDB, ref palletStateUpdated);
       EnsurePalletStockerEvents(pallet, nowUtc);
 
       // clear the material and recalculte what will be on the pallet after the load ends
@@ -760,7 +758,7 @@ namespace BlackMaple.FMSInsight.Niigata
       pallet.Log = newLoadEvents;
     }
 
-    private void EnsureAllNonloadStopsHaveEvents(PalletAndMaterial pallet, DateTime nowUtc, ref bool palletStateUpdated)
+    private void EnsureAllNonloadStopsHaveEvents(PalletAndMaterial pallet, DateTime nowUtc, JobDB jobDB, ref bool palletStateUpdated)
     {
       var unusedLogs = pallet.Log.ToList();
 
@@ -773,7 +771,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .ToList();
         var matIdsOnFace = new HashSet<long>(matOnFace.Select(m => m.MaterialID));
 
-        foreach (var ss in MatchStopsAndSteps(pallet, face))
+        foreach (var ss in MatchStopsAndSteps(jobDB, pallet, face))
         {
           switch (ss.IccStep)
           {
@@ -801,7 +799,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 if (pallet.Status.CurStation.Location.Location == PalletLocationEnum.Machine && ss.JobStop.Stations.Contains(pallet.Status.CurStation.Location.Num))
                 {
-                  RecordPalletAtMachine(pallet, face, matOnFace, ss, machStart, machEnd, nowUtc, ref palletStateUpdated);
+                  RecordPalletAtMachine(pallet, face, matOnFace, ss, machStart, machEnd, nowUtc, jobDB, ref palletStateUpdated);
                 }
               }
               break;
@@ -853,7 +851,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public bool StopCompleted { get; set; }
     }
 
-    private IReadOnlyList<StopAndStep> MatchStopsAndSteps(PalletAndMaterial pallet, PalletFace face)
+    private IReadOnlyList<StopAndStep> MatchStopsAndSteps(JobDB jobDB, PalletAndMaterial pallet, PalletFace face)
     {
       var ret = new List<StopAndStep>();
 
@@ -872,7 +870,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (stop.ProgramRevision.HasValue)
           {
-            iccMachineProg = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value)?.CellControllerProgramName;
+            iccMachineProg = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value)?.CellControllerProgramName;
           }
           else
           {
@@ -950,7 +948,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return ret;
     }
 
-    private void RecordPalletAtMachine(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry machineStart, LogEntry machineEnd, DateTime nowUtc, ref bool palletStateUpdated)
+    private void RecordPalletAtMachine(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry machineStart, LogEntry machineEnd, DateTime nowUtc, JobDB jobDB, ref bool palletStateUpdated)
     {
       bool runningProgram = false;
       if (pallet.MachineStatus != null && pallet.MachineStatus.Machining)
@@ -960,7 +958,7 @@ namespace BlackMaple.FMSInsight.Niigata
           runningProgram =
             pallet.MachineStatus.CurrentlyExecutingProgram.ToString()
             ==
-            _jobs.LoadProgram(ss.JobStop.ProgramName, ss.JobStop.ProgramRevision.Value).CellControllerProgramName;
+            jobDB.LoadProgram(ss.JobStop.ProgramName, ss.JobStop.ProgramRevision.Value).CellControllerProgramName;
         }
         else
         {
@@ -1349,12 +1347,12 @@ namespace BlackMaple.FMSInsight.Niigata
       return mats;
     }
 
-    private Dictionary<(string uniq, int proc1path), int> CountRemainingQuantity(PlannedSchedule schedule, IEnumerable<PalletAndMaterial> pals)
+    private Dictionary<(string uniq, int proc1path), int> CountRemainingQuantity(JobDB jobDB, PlannedSchedule schedule, IEnumerable<PalletAndMaterial> pals)
     {
       var cnts = new Dictionary<(string uniq, int proc1path), int>();
       foreach (var job in schedule.Jobs)
       {
-        if (_jobs.LoadDecrementsForJob(job.UniqueStr).Count == 0)
+        if (jobDB.LoadDecrementsForJob(job.UniqueStr).Count == 0)
         {
           var loadedCnt =
             _log.GetLogForJobUnique(job.UniqueStr)
@@ -1457,7 +1455,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return null;
     }
 
-    private Dictionary<(string progName, long revision), JobDB.ProgramRevision> FindProgramNums(PlannedSchedule schedule)
+    private Dictionary<(string progName, long revision), JobDB.ProgramRevision> FindProgramNums(JobDB jobDB, PlannedSchedule schedule)
     {
       var stops =
         schedule.Jobs
@@ -1472,7 +1470,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (stop.ProgramRevision.HasValue)
         {
-          progs[(stop.ProgramName, stop.ProgramRevision.Value)] = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
+          progs[(stop.ProgramName, stop.ProgramRevision.Value)] = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
         }
       }
       return progs;

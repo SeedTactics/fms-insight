@@ -62,10 +62,7 @@ namespace MachineWatchTest
       _memoryLog = new JobLogDB(new FMSSettings(), logConn);
       _memoryLog.CreateTables(firstSerialOnEmpty: null);
 
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _settings = new FMSSettings();
       _settings.Queues["castings"] = new QueueSize();

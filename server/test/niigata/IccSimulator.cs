@@ -57,7 +57,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public event Action<NewProgram> OnNewProgram;
     public event Action NewCurrentStatus;
 
-    public void PerformAction(NiigataAction a)
+    public void PerformAction(MachineFramework.JobDB jobDB, NiigataAction a)
     {
       switch (a)
       {

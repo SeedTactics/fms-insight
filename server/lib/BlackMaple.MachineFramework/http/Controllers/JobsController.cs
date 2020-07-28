@@ -52,19 +52,20 @@ namespace BlackMaple.MachineFramework.Controllers
   [Route("api/v1/[controller]")]
   public class jobsController : ControllerBase
   {
-    private IJobDatabase _db;
-    private IJobControl _control;
+    private IFMSBackend _backend;
 
     public jobsController(IFMSBackend backend)
     {
-      _db = backend.JobDatabase();
-      _control = backend.JobControl();
+      _backend = backend;
     }
 
     [HttpGet("history")]
     public HistoricData History([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      return _db.LoadJobHistory(startUTC, endUTC);
+      using (var db = _backend.OpenJobDatabase())
+      {
+        return db.LoadJobHistory(startUTC, endUTC);
+      }
     }
 
     [HttpGet("recent")]
@@ -72,13 +73,19 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(afterScheduleId))
         throw new BadRequestException("After schedule ID must be non-empty");
-      return _db.LoadJobsAfterScheduleId(afterScheduleId);
+      using (var db = _backend.OpenJobDatabase())
+      {
+        return db.LoadJobsAfterScheduleId(afterScheduleId);
+      }
     }
 
     [HttpGet("latest-schedule")]
     public PlannedSchedule LatestSchedule()
     {
-      return _db.LoadMostRecentSchedule();
+      using (var db = _backend.OpenJobDatabase())
+      {
+        return db.LoadMostRecentSchedule();
+      }
     }
 
     [HttpGet("unfilled-workorders/by-part/{part}")]
@@ -86,26 +93,29 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(part))
         throw new BadRequestException("Part must be non-empty");
-      return _db.MostRecentUnfilledWorkordersForPart(part);
+      using (var db = _backend.OpenJobDatabase())
+      {
+        return db.MostRecentUnfilledWorkordersForPart(part);
+      }
     }
 
     [HttpGet("status")]
     public CurrentStatus CurrentStatus()
     {
-      return _control.GetCurrentStatus();
+      return _backend.JobControl.GetCurrentStatus();
     }
 
     [HttpGet("check-valid")]
     public IList<string> CheckValid([FromBody] IList<JobPlan> jobs)
     {
-      return _control.CheckValidRoutes(jobs);
+      return _backend.JobControl.CheckValidRoutes(jobs);
     }
 
     [HttpPost("add")]
     [ProducesResponseType(typeof(void), 200)]
     public void Add([FromBody] NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId)
     {
-      _control.AddJobs(newJobs, expectedPreviousScheduleId);
+      _backend.JobControl.AddJobs(newJobs, expectedPreviousScheduleId);
     }
 
     [HttpPost("part/{partName}/casting")]
@@ -115,7 +125,7 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Part name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      return _control.AddUnallocatedPartToQueue(partName, queue, pos, serial, operName);
+      return _backend.JobControl.AddUnallocatedPartToQueue(partName, queue, pos, serial, operName);
     }
 
     [HttpPost("casting/{castingName}")]
@@ -125,7 +135,7 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Casting name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      return _control.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials, operName);
+      return _backend.JobControl.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials, operName);
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]
@@ -137,14 +147,14 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Queue must be non-empty");
       if (lastCompletedProcess < 0) lastCompletedProcess = 0;
       if (pathGroup < 0) pathGroup = 0;
-      return _control.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial, operName);
+      return _backend.JobControl.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial, operName);
     }
 
     [HttpPut("job/{jobUnique}/comment")]
     [ProducesResponseType(typeof(void), 200)]
     public void SetJobComment(string jobUnique, [FromBody] string comment)
     {
-      _control.SetJobComment(jobUnique, comment);
+      _backend.JobControl.SetJobComment(jobUnique, comment);
     }
 
     [HttpPut("material/{materialId}/queue")]
@@ -153,14 +163,14 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(queue.Queue))
         throw new BadRequestException("Queue name must be non-empty");
-      _control.SetMaterialInQueue(materialId, queue.Queue, queue.Position, operName);
+      _backend.JobControl.SetMaterialInQueue(materialId, queue.Queue, queue.Position, operName);
     }
 
     [HttpDelete("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
     public void RemoveMaterialFromAllQueues(long materialId, [FromQuery] string operName = null)
     {
-      _control.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
+      _backend.JobControl.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
     }
 
     [HttpDelete("material")]
@@ -168,7 +178,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public void BulkRemoveMaterialFromQueues([FromQuery] List<long> id, [FromQuery] string operName = null)
     {
       if (id == null || id.Count == 0) return;
-      _control.RemoveMaterialFromAllQueues(id, operName);
+      _backend.JobControl.RemoveMaterialFromAllQueues(id, operName);
     }
 
     [HttpDelete("planned-cycles")]
@@ -177,9 +187,9 @@ namespace BlackMaple.MachineFramework.Controllers
         [FromQuery] DateTime? loadDecrementsAfterTimeUTC = null)
     {
       if (loadDecrementsStrictlyAfterDecrementId != null)
-        return _control.DecrementJobQuantites(loadDecrementsStrictlyAfterDecrementId ?? 0);
+        return _backend.JobControl.DecrementJobQuantites(loadDecrementsStrictlyAfterDecrementId ?? 0);
       else if (loadDecrementsAfterTimeUTC.HasValue)
-        return _control.DecrementJobQuantites(loadDecrementsAfterTimeUTC.Value);
+        return _backend.JobControl.DecrementJobQuantites(loadDecrementsAfterTimeUTC.Value);
       else
         throw new BadRequestException("Must specify either loadDecrementsStrictlyAfterDecrementId or loadDecrementsAfterTimeUTC");
     }

@@ -41,15 +41,15 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NiigataJobs : IJobControl, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataJobs>();
-    private JobDB _jobs;
+    private JobDB.Config _jobDbCfg;
     private JobLogDB _log;
     private FMSSettings _settings;
     private ISyncPallets _sync;
     private readonly NiigataStationNames _statNames;
 
-    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames)
+    public NiigataJobs(JobDB.Config j, JobLogDB l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames)
     {
-      _jobs = j;
+      _jobDbCfg = j;
       _log = l;
       _sync = sy;
       _settings = st;
@@ -68,13 +68,13 @@ namespace BlackMaple.FMSInsight.Niigata
     private object _curStLock = new object();
     private CellState _lastCellState = null;
 
-    private void OnNewCellState(CellState s)
+    private void OnNewCellState(JobDB jobDB, CellState s)
     {
       lock (_curStLock)
       {
         _lastCellState = s;
       }
-      OnNewCurrentStatus?.Invoke(BuildCurrentStatus(s));
+      OnNewCurrentStatus?.Invoke(BuildCurrentStatus(jobDB, s));
     }
 
     public CurrentStatus GetCurrentStatus()
@@ -87,12 +87,15 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          return BuildCurrentStatus(_lastCellState);
+          using (var jdb = _jobDbCfg.OpenConnection())
+          {
+            return BuildCurrentStatus(jdb, _lastCellState);
+          }
         }
       }
     }
 
-    private CurrentStatus BuildCurrentStatus(CellState status)
+    private CurrentStatus BuildCurrentStatus(JobDB jobDB, CellState status)
     {
       var curStatus = new CurrentStatus();
       foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
@@ -119,7 +122,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
 
-        foreach (var d in _jobs.LoadDecrementsForJob(j.UniqueStr))
+        foreach (var d in jobDB.LoadDecrementsForJob(j.UniqueStr))
           curJob.Decrements.Add(d);
       }
 
@@ -262,15 +265,20 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Jobs
+    public event NewJobsDelegate OnNewJobs;
+
     public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
     {
-      return CheckJobs(new NewJobs()
+      using (var jdb = _jobDbCfg.OpenConnection())
       {
-        Jobs = newJobs.ToList()
-      });
+        return CheckJobs(jdb, new NewJobs()
+        {
+          Jobs = newJobs.ToList()
+        });
+      }
     }
 
-    public List<string> CheckJobs(NewJobs jobs)
+    public List<string> CheckJobs(JobDB jobDB, NewJobs jobs)
     {
       var errors = new List<string>();
 
@@ -333,7 +341,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
                 if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
                 {
-                  var existing = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
+                  var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
                   var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
                   if (!existing && !newProg)
                   {
@@ -342,7 +350,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
                 else
                 {
-                  var existing = _jobs.LoadMostRecentProgram(stop.ProgramName) != null;
+                  var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
                   var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
                   if (!existing && !newProg)
                   {
@@ -373,32 +381,37 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
-      var errors = CheckJobs(jobs);
-      if (errors.Any())
+      using (var jdb = _jobDbCfg.OpenConnection())
       {
-        throw new BadRequestException(string.Join(Environment.NewLine, errors));
-      }
-
-      CellState curSt;
-      lock (_curStLock)
-      {
-        curSt = _lastCellState;
-      }
-
-      var existingJobs = _jobs.LoadUnarchivedJobs();
-      foreach (var j in existingJobs.Jobs)
-      {
-        if (IsJobCompleted(j, curSt))
+        var errors = CheckJobs(jdb, jobs);
+        if (errors.Any())
         {
-          _jobs.ArchiveJob(j.UniqueStr);
+          throw new BadRequestException(string.Join(Environment.NewLine, errors));
         }
+
+        CellState curSt;
+        lock (_curStLock)
+        {
+          curSt = _lastCellState;
+        }
+
+        var existingJobs = jdb.LoadUnarchivedJobs();
+        foreach (var j in existingJobs.Jobs)
+        {
+          if (IsJobCompleted(j, curSt))
+          {
+            jdb.ArchiveJob(j.UniqueStr);
+          }
+        }
+
+        foreach (var j in jobs.Jobs)
+        {
+          j.JobCopiedToSystem = true;
+        }
+        jdb.AddJobs(jobs, expectedPreviousScheduleId);
       }
 
-      foreach (var j in jobs.Jobs)
-      {
-        j.JobCopiedToSystem = true;
-      }
-      _jobs.AddJobs(jobs, expectedPreviousScheduleId);
+      OnNewJobs?.Invoke(jobs);
 
       _sync.JobsOrQueuesChanged();
     }
@@ -435,19 +448,28 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
-      _sync.DecrementPlannedButNotStartedQty();
-      return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        _sync.DecrementPlannedButNotStartedQty(jdb);
+        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
+      }
     }
 
     public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
-      _sync.DecrementPlannedButNotStartedQty();
-      return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        _sync.DecrementPlannedButNotStartedQty(jdb);
+        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
+      }
     }
 
     public void SetJobComment(string jobUnique, string comment)
     {
-      _jobs.SetJobComment(jobUnique, comment);
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        jdb.SetJobComment(jobUnique, comment);
+      }
       _sync.JobsOrQueuesChanged();
     }
     #endregion
@@ -463,7 +485,11 @@ namespace BlackMaple.FMSInsight.Niigata
       string casting = partName;
 
       // try and see if there is a job for this part with an actual casting
-      var sch = _jobs.LoadUnarchivedJobs();
+      PlannedSchedule sch;
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        sch = jdb.LoadUnarchivedJobs();
+      }
       var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
       if (job != null)
       {
@@ -548,7 +574,11 @@ namespace BlackMaple.FMSInsight.Niigata
         jobUnique, process, queue, position, serial
       );
 
-      var job = _jobs.LoadJob(jobUnique);
+      JobPlan job;
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        job = jdb.LoadJob(jobUnique);
+      }
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 
       int? path = null;

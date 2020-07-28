@@ -43,7 +43,7 @@ namespace Makino
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
     // Common databases from machine framework
-    private JobDB _jobDB;
+    private Func<JobDB> _openJobDB;
     private JobLogDB _log;
 
     public JobLogDB JobLogDB => _log;
@@ -91,20 +91,21 @@ namespace Makino
             startingSerial: st.StartingSerial
         );
 
-        _jobDB = new BlackMaple.MachineFramework.JobDB();
-        _jobDB.Open(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
+        // open jobDB
+        var jobDBCfg = BlackMaple.MachineFramework.JobDB.Config.InitializeJobDatabase(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
+        _openJobDB = () => jobDBCfg.OpenConnection();
 
         _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
 #if DEBUG
         _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log);
 #else
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log);
+        _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log);
 #endif
 
-        _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, st);
+        _logTimer = new LogTimer(_log, _openJobDB, _makinoDB, _status, st);
 
-        _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
+        _jobs = new Jobs(_makinoDB, _openJobDB, adePath, downloadOnlyOrders);
 
         _logTimer.LogsProcessed += OnLogsProcessed;
 
@@ -122,7 +123,6 @@ namespace Makino
       _disposed = true;
       _logTimer.LogsProcessed -= OnLogsProcessed;
       if (_logTimer != null) _logTimer.Halt();
-      if (_jobDB != null) _jobDB.Close();
       if (_log != null) _log.Close();
       if (_status != null) _status.Close();
       if (_makinoDB != null) _makinoDB.Close();
@@ -143,20 +143,14 @@ namespace Makino
       return b.ConnectionString;
     }
 
-    public IJobDatabase JobDatabase()
+    public IJobDatabase OpenJobDatabase()
     {
-      return _jobDB;
+      return _openJobDB();
     }
 
-    public IJobControl JobControl()
-    {
-      return _jobs;
-    }
+    public IJobControl JobControl { get => _jobs; }
 
-    public IOldJobDecrement OldJobDecrement()
-    {
-      return _jobs;
-    }
+    public IOldJobDecrement OldJobDecrement { get => _jobs; }
 
     public IInspectionControl InspectionControl()
     {

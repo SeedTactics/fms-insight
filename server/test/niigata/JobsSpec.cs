@@ -56,17 +56,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB = new JobLogDB(new FMSSettings(), logConn);
       _logDB.CreateTables(firstSerialOnEmpty: null);
 
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      var jobDbCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
+      _jobDB = jobDbCfg.OpenConnection();
 
       _syncMock = Substitute.For<ISyncPallets>();
 
       var settings = new FMSSettings();
       settings.Queues.Add("q1", new QueueSize());
 
-      _jobs = new NiigataJobs(_jobDB, _logDB, settings, _syncMock, null);
+      _jobs = new NiigataJobs(jobDbCfg, _logDB, settings, _syncMock, null);
     }
 
     void IDisposable.Dispose()
@@ -332,7 +330,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var monitor = _jobs.Monitor())
       {
-        _syncMock.OnPalletsChanged += Raise.Event<Action<CellState>>(new CellState()
+        _syncMock.OnPalletsChanged += Raise.Event<Action<JobDB, CellState>>(_jobDB, new CellState()
         {
           Status = status,
           Pallets = new List<PalletAndMaterial> { pal1, pal2 },
@@ -363,7 +361,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       toKeepJob.PartName = "tokeep";
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = new List<JobPlan> { completedJob, toKeepJob } }, null);
 
-      _syncMock.OnPalletsChanged += Raise.Event<Action<CellState>>(new CellState()
+      _syncMock.OnPalletsChanged += Raise.Event<Action<JobDB, CellState>>(_jobDB, new CellState()
       {
         Pallets = new List<PalletAndMaterial>(),
         QueuedMaterial = new List<InProcessMaterial>(),
@@ -446,12 +444,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
 
       _jobs.DecrementJobQuantites(-1).Should().BeEquivalentTo(expected);
-      _syncMock.Received().DecrementPlannedButNotStartedQty();
+      _syncMock.Received().DecrementPlannedButNotStartedQty(Arg.Any<JobDB>());
 
       _syncMock.ClearReceivedCalls();
 
       _jobs.DecrementJobQuantites(DateTime.UtcNow.AddHours(-5)).Should().BeEquivalentTo(expected);
-      _syncMock.Received().DecrementPlannedButNotStartedQty();
+      _syncMock.Received().DecrementPlannedButNotStartedQty(Arg.Any<JobDB>());
     }
 
     [Fact]

@@ -310,7 +310,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface INiigataCommunication
   {
     NiigataStatus LoadNiigataStatus();
-    void PerformAction(NiigataAction a);
+    void PerformAction(MachineFramework.JobDB jobDB, NiigataAction a);
     event Action NewCurrentStatus;
   }
 }

@@ -71,10 +71,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB = new JobLogDB(_settings, logConn);
       _logDB.CreateTables(firstSerialOnEmpty: null);
 
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       var record = new RecordFacesForPallet(_logDB);
 
@@ -94,7 +91,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
         })
       });
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, _statNames, machConn);
+      _createLog = new CreateCellState(_logDB, record, _settings, _statNames, machConn);
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
@@ -813,7 +810,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var logMonitor = _logDB.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_status, sch);
+        var cellSt = _createLog.BuildCellState(_jobDB, _status, sch);
         cellSt.PalletStateUpdated.Should().BeFalse();
         cellSt.Schedule.Should().Be(sch);
         CheckCellStMatchesExpected(cellSt);
@@ -1294,7 +1291,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       using (var logMonitor = _logDB.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_status, sch);
+        var cellSt = _createLog.BuildCellState(_jobDB, _status, sch);
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
         cellSt.Schedule.Should().Be(sch);
 
@@ -1315,7 +1312,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_status, sch);
+          cellSt = _createLog.BuildCellState(_jobDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
           cellSt.Schedule.Should().Be(sch);
         }

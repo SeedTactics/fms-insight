@@ -37,6 +37,7 @@ using System.Collections.Generic;
 namespace BlackMaple.MachineWatchInterface
 {
   public delegate void NewCurrentStatus(CurrentStatus status);
+  public delegate void NewJobsDelegate(NewJobs j);
 
   public interface IJobControl
   {
@@ -99,6 +100,7 @@ namespace BlackMaple.MachineWatchInterface
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
 
     event NewCurrentStatus OnNewCurrentStatus;
+    event NewJobsDelegate OnNewJobs;
   }
 
   public interface IOldJobDecrement

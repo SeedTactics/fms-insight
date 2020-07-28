@@ -39,17 +39,18 @@ namespace Makino
   public class Jobs : IJobControl, IOldJobDecrement
   {
     private MakinoDB _db;
-    private BlackMaple.MachineFramework.JobDB _jobDB;
+    private Func<BlackMaple.MachineFramework.JobDB> _openJobDB;
     private string _xmlPath;
     private bool _onlyOrders;
 
     public event NewCurrentStatus OnNewCurrentStatus;
+    public event NewJobsDelegate OnNewJobs;
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
-    public Jobs(MakinoDB db, BlackMaple.MachineFramework.JobDB jdb, string xmlPath, bool onlyOrders)
+    public Jobs(MakinoDB db, Func<BlackMaple.MachineFramework.JobDB> jdb, string xmlPath, bool onlyOrders)
     {
       _db = db;
-      _jobDB = jdb;
+      _openJobDB = jdb;
       _xmlPath = xmlPath;
       _onlyOrders = onlyOrders;
     }
@@ -70,38 +71,45 @@ namespace Makino
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
       var newJobs = new List<JobPlan>();
-      foreach (var j in newJ.Jobs)
+      using (var jdb = _openJobDB())
       {
-        j.Archived = true;
-        j.JobCopiedToSystem = true;
-        if (!_jobDB.DoesJobExist(j.UniqueStr))
+        foreach (var j in newJ.Jobs)
         {
-          for (int proc = 1; proc <= j.NumProcesses; proc++)
+          j.Archived = true;
+          j.JobCopiedToSystem = true;
+          if (!jdb.DoesJobExist(j.UniqueStr))
           {
-            for (int path = 1; path <= j.GetNumPaths(proc); path++)
+            for (int proc = 1; proc <= j.NumProcesses; proc++)
             {
-              foreach (var stop in j.GetMachiningStop(proc, path))
+              for (int path = 1; path <= j.GetNumPaths(proc); path++)
               {
-                //The station group name on the job and the LocationName from the
-                //generated log entries must match.  Rather than store and try and lookup
-                //the station name when creating log entries, since we only support a single
-                //machine group, just set the group name to MC here during storage and
-                //always create log entries with MC.
-                stop.StationGroup = "MC";
+                foreach (var stop in j.GetMachiningStop(proc, path))
+                {
+                  //The station group name on the job and the LocationName from the
+                  //generated log entries must match.  Rather than store and try and lookup
+                  //the station name when creating log entries, since we only support a single
+                  //machine group, just set the group name to MC here during storage and
+                  //always create log entries with MC.
+                  stop.StationGroup = "MC";
+                }
               }
             }
+            newJobs.Add(j);
           }
-          newJobs.Add(j);
         }
-      }
 
-      _jobDB.AddJobs(newJ, expectedPreviousScheduleId);
+        jdb.AddJobs(newJ, expectedPreviousScheduleId);
+      }
       OrderXML.WriteOrderXML(System.IO.Path.Combine(_xmlPath, "sail.xml"), newJobs, _onlyOrders);
+      OnNewJobs?.Invoke(newJ);
     }
 
     void IJobControl.SetJobComment(string jobUnique, string comment)
     {
-      _jobDB.SetJobComment(jobUnique, comment);
+      using (var jdb = _openJobDB())
+      {
+        jdb.SetJobComment(jobUnique, comment);
+      }
       RaiseNewCurrentStatus(GetCurrentStatus());
     }
 

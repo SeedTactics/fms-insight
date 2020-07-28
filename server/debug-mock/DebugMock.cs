@@ -86,6 +86,7 @@ namespace DebugMachineWatchApiServer
     private JsonSerializerSettings _jsonSettings;
 
     public event NewCurrentStatus OnNewCurrentStatus;
+    public event NewJobsDelegate OnNewJobs;
 
     public MockServerBackend()
     {
@@ -100,8 +101,8 @@ namespace DebugMachineWatchApiServer
         LogDB.Open(dbFile("log"), dbFile("insp"));
 
         if (System.IO.File.Exists(dbFile("job"))) System.IO.File.Delete(dbFile("job"));
-        JobDB = new JobDB();
-        JobDB.Open(dbFile("job"));
+        var cfg = JobDB.Config.InitializeJobDatabase(dbFile("job"));
+        JobDB = cfg.OpenConnection();
       }
       else
       {
@@ -110,10 +111,8 @@ namespace DebugMachineWatchApiServer
         LogDB = new JobLogDB(new FMSSettings(), conn);
         LogDB.CreateTables(firstSerialOnEmpty: null);
 
-        conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-        conn.Open();
-        JobDB = new JobDB(conn);
-        JobDB.CreateTables();
+        var cfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
+        JobDB = cfg.OpenConnection();
       }
 
       _jsonSettings = new JsonSerializerSettings();
@@ -147,17 +146,14 @@ namespace DebugMachineWatchApiServer
       return LogDB;
     }
 
-    public IJobControl JobControl()
-    {
-      return this;
-    }
+    public IJobControl JobControl { get => this; }
 
     public ILogDatabase LogDatabase()
     {
       return LogDB;
     }
 
-    public IJobDatabase JobDatabase()
+    public IJobDatabase OpenJobDatabase()
     {
       return JobDB;
     }
@@ -190,6 +186,7 @@ namespace DebugMachineWatchApiServer
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
       JobDB.AddJobs(jobs, expectedPreviousScheduleId);
+      OnNewJobs?.Invoke(jobs);
     }
 
     public void SetJobComment(string jobUnique, string comment)
@@ -343,10 +340,7 @@ namespace DebugMachineWatchApiServer
       throw new NotImplementedException();
     }
 
-    public IOldJobDecrement OldJobDecrement()
-    {
-      return this;
-    }
+    public IOldJobDecrement OldJobDecrement { get => this; }
 
     protected void OnNewStatus(CurrentStatus s)
     {
