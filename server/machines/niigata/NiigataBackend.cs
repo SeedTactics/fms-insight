@@ -58,7 +58,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry;
     public event NewCurrentStatus OnNewCurrentStatus;
-    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId) =>
+    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId, EventLogDB db) =>
       NewLogEntry?.Invoke(e, foreignId);
 
     public NiigataBackend(

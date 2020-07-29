@@ -45,8 +45,8 @@ namespace BlackMaple.MachineFramework
     #region Database Create/Update
     public class Config
     {
-      public event NewLogEntryDelegate NewLogEntry;
-      internal void OnNewLogEntry(MachineWatchInterface.LogEntry e, string foreignId) => NewLogEntry?.Invoke(e, foreignId);
+      public event Action<MachineWatchInterface.LogEntry, string, EventLogDB> NewLogEntry;
+      internal void OnNewLogEntry(MachineWatchInterface.LogEntry e, string foreignId, EventLogDB db) => NewLogEntry?.Invoke(e, foreignId, db);
 
       public FMSSettings Settings { get; }
 
@@ -1848,7 +1848,7 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-      _config.OnNewLogEntry(log, foreignId);
+      _config.OnNewLogEntry(log, foreignId, this);
       return log;
     }
 
@@ -1869,7 +1869,7 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-      foreach (var l in logs) _config.OnNewLogEntry(l, foreignId);
+      foreach (var l in logs) _config.OnNewLogEntry(l, foreignId, this);
       return logs;
     }
 
@@ -3371,7 +3371,7 @@ namespace BlackMaple.MachineFramework
             {
               trans.Commit();
               foreach (var e in newEvts)
-                _config.OnNewLogEntry(e, foreignID);
+                _config.OnNewLogEntry(e, foreignID, this);
               return;
             }
 
@@ -3535,7 +3535,7 @@ namespace BlackMaple.MachineFramework
         }
 
         foreach (var e in newEvts)
-          _config.OnNewLogEntry(e, foreignID);
+          _config.OnNewLogEntry(e, foreignID, this);
       }
     }
 
@@ -4132,7 +4132,7 @@ namespace BlackMaple.MachineFramework
         }
 
         foreach (var log in logs)
-          _config.OnNewLogEntry(log, null);
+          _config.OnNewLogEntry(log, null, this);
       }
     }
     #endregion

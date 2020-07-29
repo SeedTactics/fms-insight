@@ -74,10 +74,10 @@ namespace MazakMachineInterface
     public event NewLogEntryDelegate NewLogEntry;
     public event NewCurrentStatus OnNewCurrentStatus;
 
-    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId) =>
+    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId, EventLogDB db) =>
       NewLogEntry?.Invoke(e, foreignId);
 
-    private void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.JobDB jobDb, BlackMaple.MachineFramework.EventLogDB logDB)
+    public void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.JobDB jobDb, BlackMaple.MachineFramework.EventLogDB logDB)
     {
       if (routing == null) return;
       OnNewCurrentStatus?.Invoke(routing.CurrentStatus(jobDb, logDB));
