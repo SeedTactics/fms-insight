@@ -107,21 +107,19 @@ namespace BlackMaple.MachineFramework.Controllers
     private WebsocketDict _sockets = new WebsocketDict();
     private Newtonsoft.Json.JsonSerializerSettings _serSettings;
 
-    public WebsocketManager(ILogDatabase log, IJobControl jobControl)
+    public WebsocketManager(IFMSBackend backend)
     {
       _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
       _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _serSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
 
-      if (log != null)
-        log.NewLogEntry += (e, foreignId) =>
-          Send(new ServerEvent() { LogEntry = e });
-
-      if (jobControl != null)
+      if (backend != null)
       {
-        jobControl.OnNewJobs += (jobs) =>
+        backend.NewLogEntry += (e, foreignId) =>
+          Send(new ServerEvent() { LogEntry = e });
+        backend.OnNewJobs += (jobs) =>
           Send(new ServerEvent() { NewJobs = jobs });
-        jobControl.OnNewCurrentStatus += (status) =>
+        backend.OnNewCurrentStatus += (status) =>
           Send(new ServerEvent() { NewCurrentStatus = status });
       }
     }

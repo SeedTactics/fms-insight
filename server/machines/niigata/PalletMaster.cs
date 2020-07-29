@@ -279,6 +279,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NewPalletRoute : NiigataAction
   {
     public PalletMaster NewMaster { get; set; }
+    public IEnumerable<AssignedJobAndPathForFace> NewFaces { get; set; }
   }
 
   public class UpdatePalletQuantities : NiigataAction
@@ -310,7 +311,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface INiigataCommunication
   {
     NiigataStatus LoadNiigataStatus();
-    void PerformAction(MachineFramework.JobDB jobDB, NiigataAction a);
+    void PerformAction(MachineFramework.JobDB jobDB, MachineFramework.EventLogDB logDB, NiigataAction a);
     event Action NewCurrentStatus;
   }
 }

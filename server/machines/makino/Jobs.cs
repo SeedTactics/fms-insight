@@ -40,19 +40,19 @@ namespace Makino
   {
     private MakinoDB _db;
     private Func<BlackMaple.MachineFramework.JobDB> _openJobDB;
+    private Action<NewJobs> _onNewJobs;
+    private Action _onJobCommentChange;
     private string _xmlPath;
     private bool _onlyOrders;
 
-    public event NewCurrentStatus OnNewCurrentStatus;
-    public event NewJobsDelegate OnNewJobs;
-    public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
-
-    public Jobs(MakinoDB db, Func<BlackMaple.MachineFramework.JobDB> jdb, string xmlPath, bool onlyOrders)
+    public Jobs(MakinoDB db, Func<BlackMaple.MachineFramework.JobDB> jdb, string xmlPath, bool onlyOrders, Action<NewJobs> onNewJob, Action onJobCommentChange)
     {
       _db = db;
       _openJobDB = jdb;
       _xmlPath = xmlPath;
       _onlyOrders = onlyOrders;
+      _onNewJobs = onNewJob;
+      _onJobCommentChange = onJobCommentChange;
     }
 
     public CurrentStatus GetCurrentStatus()
@@ -101,7 +101,7 @@ namespace Makino
         jdb.AddJobs(newJ, expectedPreviousScheduleId);
       }
       OrderXML.WriteOrderXML(System.IO.Path.Combine(_xmlPath, "sail.xml"), newJobs, _onlyOrders);
-      OnNewJobs?.Invoke(newJ);
+      _onNewJobs(newJ);
     }
 
     void IJobControl.SetJobComment(string jobUnique, string comment)
@@ -110,7 +110,7 @@ namespace Makino
       {
         jdb.SetJobComment(jobUnique, comment);
       }
-      RaiseNewCurrentStatus(GetCurrentStatus());
+      _onJobCommentChange();
     }
 
     #region Decrement

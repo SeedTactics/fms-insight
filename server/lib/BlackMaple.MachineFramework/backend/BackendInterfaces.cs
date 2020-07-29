@@ -37,15 +37,22 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {
+  public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
+  public delegate void NewCurrentStatus(CurrentStatus status);
+  public delegate void NewJobsDelegate(NewJobs j);
+
+
   public interface IFMSBackend : IDisposable
   {
     IOldJobDecrement OldJobDecrement { get; }
     IJobControl JobControl { get; }
     IJobDatabase OpenJobDatabase();
+    ILogDatabase OpenLogDatabase();
+    IInspectionControl OpenInspectionControl();
 
-
-    ILogDatabase LogDatabase();
-    IInspectionControl InspectionControl();
+    event NewLogEntryDelegate NewLogEntry;
+    event NewCurrentStatus OnNewCurrentStatus;
+    event NewJobsDelegate OnNewJobs;
   }
 
   public interface IBackgroundWorker : IDisposable

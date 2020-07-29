@@ -39,49 +39,114 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-  public class JobLogDB : MachineWatchInterface.ILogDatabase, MachineWatchInterface.IInspectionControl
+  public class EventLogDB : MachineWatchInterface.ILogDatabase, MachineWatchInterface.IInspectionControl, IDisposable
   {
 
     #region Database Create/Update
+    public class Config
+    {
+      public event NewLogEntryDelegate NewLogEntry;
+      internal void OnNewLogEntry(MachineWatchInterface.LogEntry e, string foreignId) => NewLogEntry?.Invoke(e, foreignId);
+
+      public FMSSettings Settings { get; }
+
+      public static Config InitializeEventDatabase(FMSSettings st, string filename, string oldInspDbFile = null)
+      {
+        var connStr = "Data Source=" + filename;
+        if (System.IO.File.Exists(filename))
+        {
+          using (var conn = new SqliteConnection(connStr))
+          {
+            conn.Open();
+            UpdateTables(conn, st, oldInspDbFile);
+            AdjustStartingSerial(conn, st);
+            return new Config(st, connStr);
+          }
+        }
+        else
+        {
+          using (var conn = new SqliteConnection(connStr))
+          {
+            conn.Open();
+            try
+            {
+              CreateTables(conn, st);
+              return new Config(st, connStr);
+            }
+            catch
+            {
+              conn.Close();
+              System.IO.File.Delete(filename);
+              throw;
+            }
+          }
+        }
+      }
+
+      public static Config InitializeSingleThreadedMemoryDB(FMSSettings st)
+      {
+        var memConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+        memConn.Open();
+        CreateTables(memConn, st);
+        return new Config(st, memConn);
+      }
+
+      public static Config InitializeSingleThreadedMemoryDB(FMSSettings st, SqliteConnection memConn, bool createTables)
+      {
+        if (createTables)
+        {
+          CreateTables(memConn, st);
+        }
+        else
+        {
+          UpdateTables(memConn, st, null);
+          AdjustStartingSerial(memConn, st);
+        }
+        return new Config(st, memConn);
+      }
+
+      public EventLogDB OpenConnection()
+      {
+        if (_memoryConnection != null)
+        {
+          return new EventLogDB(this, _memoryConnection, closeOnDispose: false);
+        }
+        else
+        {
+          var conn = new SqliteConnection(_connStr);
+          conn.Open();
+          return new EventLogDB(this, conn, closeOnDispose: true);
+        }
+      }
+
+      private string _connStr { get; }
+      private SqliteConnection _memoryConnection { get; }
+
+      private Config(FMSSettings st, string connStr)
+      {
+        Settings = st;
+        _connStr = connStr;
+      }
+
+      private Config(FMSSettings st, SqliteConnection memConn)
+      {
+        Settings = st;
+        _memoryConnection = memConn;
+      }
+
+
+    }
+
     private SqliteConnection _connection;
-    private FMSSettings _settings;
-    private object _lock;
+    private bool _closeConnectionOnDispose;
+    private Config _config;
     private Random _rand = new Random();
 
-    public JobLogDB(FMSSettings s)
-    {
-      _lock = new object();
-      _settings = s;
-    }
-    public JobLogDB(FMSSettings s, SqliteConnection c) : this(s)
+    private EventLogDB(Config cfg, SqliteConnection c, bool closeOnDispose)
     {
       _connection = c;
-    }
-
-    public void Open(string filename, string oldInspDbFile = null, string startingSerial = null)
-    {
-      if (System.IO.File.Exists(filename))
-      {
-        _connection = new SqliteConnection("Data Source=" + filename);
-        _connection.Open();
-        UpdateTables(oldInspDbFile);
-        AdjustStartingSerial(startingSerial);
-      }
-      else
-      {
-        _connection = new SqliteConnection("Data Source=" + filename);
-        _connection.Open();
-        try
-        {
-          CreateTables(firstSerialOnEmpty: startingSerial);
-        }
-        catch
-        {
-          _connection.Close();
-          System.IO.File.Delete(filename);
-          throw;
-        }
-      }
+      _closeConnectionOnDispose = closeOnDispose;
+      _config = cfg;
     }
 
     public void Close()
@@ -89,11 +154,21 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
+    public void Dispose()
+    {
+      if (_closeConnectionOnDispose && _connection != null)
+      {
+        _connection.Close();
+        _connection.Dispose();
+        _connection = null;
+      }
+    }
+
     private const int Version = 22;
 
-    public void CreateTables(string firstSerialOnEmpty)
+    private static void CreateTables(SqliteConnection conn, FMSSettings settings)
     {
-      using (var cmd = _connection.CreateCommand())
+      using (var cmd = conn.CreateCommand())
       {
 
         cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
@@ -174,11 +249,11 @@ namespace BlackMaple.MachineFramework
             "PRIMARY KEY(Counter, PocketNumber, Tool))";
         cmd.ExecuteNonQuery();
 
-        if (!string.IsNullOrEmpty(firstSerialOnEmpty))
+        if (!string.IsNullOrEmpty(settings.StartingSerial))
         {
-          long matId = _settings.ConvertSerialToMaterialID(firstSerialOnEmpty) - 1;
+          long matId = settings.ConvertSerialToMaterialID(settings.StartingSerial) - 1;
           if (matId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
-            throw new Exception("Serial " + firstSerialOnEmpty + " is too large");
+            throw new Exception("Serial " + settings.StartingSerial + " is too large");
           cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
           cmd.Parameters.Add("v", SqliteType.Integer).Value = matId;
           cmd.ExecuteNonQuery();
@@ -187,16 +262,16 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void AdjustStartingSerial(string startingSerial)
+    private static void AdjustStartingSerial(SqliteConnection conn, FMSSettings settings)
     {
-      if (string.IsNullOrEmpty(startingSerial)) return;
-      long startingMatId = _settings.ConvertSerialToMaterialID(startingSerial) - 1;
+      if (string.IsNullOrEmpty(settings.StartingSerial)) return;
+      long startingMatId = settings.ConvertSerialToMaterialID(settings.StartingSerial) - 1;
       if (startingMatId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
-        throw new Exception("Serial " + startingSerial + " is too large");
+        throw new Exception("Serial " + settings.StartingSerial + " is too large");
 
-      using (var cmd = _connection.CreateCommand())
+      using (var cmd = conn.CreateCommand())
       {
-        var trans = _connection.BeginTransaction();
+        var trans = conn.BeginTransaction();
         try
         {
           cmd.Transaction = trans;
@@ -225,9 +300,9 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    private void UpdateTables(string inspDbFile)
+    private static void UpdateTables(SqliteConnection connection, FMSSettings settings, string inspDbFile)
     {
-      using (var cmd = _connection.CreateCommand())
+      using (var cmd = connection.CreateCommand())
       {
 
         cmd.CommandText = "SELECT ver FROM version";
@@ -269,7 +344,7 @@ namespace BlackMaple.MachineFramework
         if (curVersion == Version) return;
 
 
-        var trans = _connection.BeginTransaction();
+        var trans = connection.BeginTransaction();
         bool detachInsp = false;
 
         try
@@ -334,7 +409,7 @@ namespace BlackMaple.MachineFramework
         }
 
         //detaching must be outside the transaction which attached
-        if (detachInsp) DetachInspectionDb();
+        if (detachInsp) DetachInspectionDb(connection);
 
         //only vacuum if we did some updating
         cmd.Transaction = null;
@@ -343,9 +418,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver0ToVer1(IDbTransaction trans)
+    private static void Ver0ToVer1(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE material ADD Part TEXT";
@@ -353,9 +428,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver1ToVer2(IDbTransaction trans)
+    private static void Ver1ToVer2(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE material ADD NumProcess INTEGER";
@@ -363,9 +438,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver2ToVer3(IDbTransaction trans)
+    private static void Ver2ToVer3(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE stations ADD EndOfRoute INTEGER";
@@ -373,14 +448,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver3ToVer4(IDbTransaction trans)
+    private static void Ver3ToVer4(IDbTransaction trans)
     {
       // This version added columns which have since been removed.
     }
 
-    private void Ver4ToVer5(IDbTransaction trans)
+    private static void Ver4ToVer5(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE stations ADD Elapsed INTEGER";
@@ -388,9 +463,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver5ToVer6(IDbTransaction trans)
+    private static void Ver5ToVer6(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE material ADD Face TEXT";
@@ -398,9 +473,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver6ToVer7(IDbTransaction trans)
+    private static void Ver6ToVer7(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE stations ADD ForeignID TEXT";
@@ -412,9 +487,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver7ToVer8(IDbTransaction trans)
+    private static void Ver7ToVer8(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ForeignID TEXT)";
@@ -431,9 +506,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver8ToVer9(IDbTransaction trans)
+    private static void Ver8ToVer9(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
@@ -442,9 +517,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver9ToVer10(IDbTransaction trans)
+    private static void Ver9ToVer10(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE stations ADD ActiveTime INTEGER";
@@ -458,9 +533,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver10ToVer11(IDbTransaction trans)
+    private static void Ver10ToVer11(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE stations ADD OriginalMessage TEXT";
@@ -468,9 +543,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver11ToVer12(IDbTransaction trans)
+    private static void Ver11ToVer12(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE materialid ADD Workorder TEXT";
@@ -480,9 +555,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver12ToVer13(IDbTransaction trans)
+    private static void Ver12ToVer13(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE stations ADD StationName TEXT";
@@ -490,9 +565,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver13ToVer14(IDbTransaction trans)
+    private static void Ver13ToVer14(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE sersettings(ID INTEGER PRIMARY KEY, SerialType INTEGER, SerialLength INTEGER, DepositProc INTEGER, FilenameTemplate TEXT, ProgramTemplate TEXT)";
@@ -500,9 +575,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver14ToVer15(IDbTransaction trans)
+    private static void Ver14ToVer15(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE INDEX materialid_uniq ON materialid(UniqueStr)";
@@ -510,9 +585,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver15ToVer16(IDbTransaction trans)
+    private static void Ver15ToVer16(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "DROP TABLE sersettings";
@@ -520,9 +595,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private bool Ver16ToVer17(IDbTransaction trans, string inspDbFile)
+    private static bool Ver16ToVer17(SqliteTransaction trans, string inspDbFile)
     {
-      using (var cmd = _connection.CreateCommand())
+      using (var cmd = trans.Connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
 
@@ -550,18 +625,18 @@ namespace BlackMaple.MachineFramework
       return true;
     }
 
-    private void DetachInspectionDb()
+    private static void DetachInspectionDb(SqliteConnection conn)
     {
-      using (var cmd = _connection.CreateCommand())
+      using (var cmd = conn.CreateCommand())
       {
         cmd.CommandText = "DETACH DATABASE insp";
         cmd.ExecuteNonQuery();
       }
     }
 
-    private void Ver17ToVer18(IDbTransaction trans)
+    private static void Ver17ToVer18(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
@@ -612,9 +687,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver18ToVer19(IDbTransaction trans)
+    private static void Ver18ToVer19(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, " +
@@ -623,9 +698,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver19ToVer20(IDbTransaction transaction)
+    private static void Ver19ToVer20(IDbTransaction transaction)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
@@ -633,9 +708,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver20ToVer21(IDbTransaction transaction)
+    private static void Ver20ToVer21(IDbTransaction transaction)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
@@ -644,9 +719,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void Ver21ToVer22(IDbTransaction transaction)
+    public static void Ver21ToVer22(IDbTransaction transaction)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
 
@@ -665,7 +740,6 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Event
-    public event MachineWatchInterface.NewLogEntryDelegate NewLogEntry;
     #endregion
 
     #region Loading
@@ -835,7 +909,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -855,7 +929,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLog(long counter)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -873,7 +947,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> StationLogByForeignID(string foreignID)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -891,7 +965,7 @@ namespace BlackMaple.MachineFramework
 
     public string OriginalMessageByForeignID(string foreignID)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -921,7 +995,7 @@ namespace BlackMaple.MachineFramework
     public List<MachineWatchInterface.LogEntry> GetLogForMaterial(long materialID)
     {
       if (materialID < 0) return new List<MachineWatchInterface.LogEntry>();
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -939,7 +1013,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs)
     {
-      lock (_lock)
+      lock (_config)
       {
         var ret = new List<MachineWatchInterface.LogEntry>();
         using (var cmd = _connection.CreateCommand())
@@ -966,7 +1040,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForSerial(string serial)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -984,7 +1058,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForJobUnique(string jobUnique)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1002,7 +1076,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForWorkorder(string workorder)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1046,7 +1120,7 @@ namespace BlackMaple.MachineFramework
                                 stations_mat.Process = matdetails.NumProcesses
                         )";
 
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1067,7 +1141,7 @@ namespace BlackMaple.MachineFramework
 
     public DateTime LastPalletCycleTime(string pallet)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1087,7 +1161,7 @@ namespace BlackMaple.MachineFramework
     //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
     public List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1125,7 +1199,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<ToolPocketSnapshot> ToolPocketSnapshotForCycle(long counter)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1153,7 +1227,7 @@ namespace BlackMaple.MachineFramework
 
     public System.DateTime MaxLogDate()
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1179,7 +1253,7 @@ namespace BlackMaple.MachineFramework
 
     public string MaxForeignID()
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1211,7 +1285,7 @@ namespace BlackMaple.MachineFramework
 
     public string ForeignIDForCounter(long counter)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1230,7 +1304,7 @@ namespace BlackMaple.MachineFramework
 
     public bool CycleExists(DateTime endUTC, string pal, MachineWatchInterface.LogType logTy, string locName, int locNum)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1760,7 +1834,7 @@ namespace BlackMaple.MachineFramework
     private MachineWatchInterface.LogEntry AddEntryInTransaction(Func<IDbTransaction, MachineWatchInterface.LogEntry> f, string foreignId = "")
     {
       MachineWatchInterface.LogEntry log;
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -1774,14 +1848,14 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-      NewLogEntry?.Invoke(log, foreignId);
+      _config.OnNewLogEntry(log, foreignId);
       return log;
     }
 
     private IEnumerable<MachineWatchInterface.LogEntry> AddEntryInTransaction(Func<IDbTransaction, IEnumerable<MachineWatchInterface.LogEntry>> f, string foreignId = "")
     {
       IEnumerable<MachineWatchInterface.LogEntry> logs;
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -1795,7 +1869,7 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-      foreach (var l in logs) NewLogEntry?.Invoke(l, foreignId);
+      foreach (var l in logs) _config.OnNewLogEntry(l, foreignId);
       return logs;
     }
 
@@ -2493,7 +2567,7 @@ namespace BlackMaple.MachineFramework
     #region Material IDs
     public long AllocateMaterialID(string unique, string part, int numProc)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2523,7 +2597,7 @@ namespace BlackMaple.MachineFramework
 
     public long AllocateMaterialIDForCasting(string casting)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2551,7 +2625,7 @@ namespace BlackMaple.MachineFramework
 
     public void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2567,7 +2641,7 @@ namespace BlackMaple.MachineFramework
 
     public void RecordPathForProcess(long matID, int process, int path)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2582,7 +2656,7 @@ namespace BlackMaple.MachineFramework
 
     public void CreateMaterialID(long matID, string unique, string part, int numProc)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2598,7 +2672,7 @@ namespace BlackMaple.MachineFramework
 
     public MachineWatchInterface.MaterialDetails GetMaterialDetails(long matID)
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2896,7 +2970,7 @@ namespace BlackMaple.MachineFramework
     /// Find parts without an assigned unique in the queue, and assign them to the given unique
     public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count)
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         var matIds = new List<long>();
@@ -2961,7 +3035,7 @@ namespace BlackMaple.MachineFramework
 
     public void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting)
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -3015,7 +3089,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         var ret = new List<QueuedMaterial>();
@@ -3060,7 +3134,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<QueuedMaterial> GetMaterialInAllQueues()
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         var ret = new List<QueuedMaterial>();
@@ -3106,7 +3180,7 @@ namespace BlackMaple.MachineFramework
 
     public void AddPendingLoad(string pal, string key, int load, TimeSpan elapsed, TimeSpan active, string foreignID)
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
 
@@ -3154,7 +3228,7 @@ namespace BlackMaple.MachineFramework
 
     public List<PendingLoad> PendingLoads(string pallet)
     {
-      lock (_lock)
+      lock (_config)
       {
         var ret = new List<PendingLoad>();
 
@@ -3202,7 +3276,7 @@ namespace BlackMaple.MachineFramework
 
     public List<PendingLoad> AllPendingLoads()
     {
-      lock (_lock)
+      lock (_config)
       {
         var ret = new List<PendingLoad>();
 
@@ -3255,7 +3329,7 @@ namespace BlackMaple.MachineFramework
     public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID,
                                     IDictionary<string, IEnumerable<EventLogMaterial>> mat, bool generateSerials)
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
 
@@ -3297,7 +3371,7 @@ namespace BlackMaple.MachineFramework
             {
               trans.Commit();
               foreach (var e in newEvts)
-                NewLogEntry?.Invoke(e, foreignID);
+                _config.OnNewLogEntry(e, foreignID);
               return;
             }
 
@@ -3315,7 +3389,7 @@ namespace BlackMaple.MachineFramework
                   var key = reader.GetString(0);
                   if (mat.ContainsKey(key))
                   {
-                    if (generateSerials && _settings.SerialType == SerialType.AssignOneSerialPerCycle)
+                    if (generateSerials && _config.Settings.SerialType == SerialType.AssignOneSerialPerCycle)
                     {
 
                       // find a material id to use to create the serial
@@ -3349,9 +3423,9 @@ namespace BlackMaple.MachineFramework
                       }
                       if (matID >= 0)
                       {
-                        var serial = _settings.ConvertMaterialIDToSerial(matID);
-                        serial = serial.Substring(0, Math.Min(_settings.SerialLength, serial.Length));
-                        serial = serial.PadLeft(_settings.SerialLength, '0');
+                        var serial = _config.Settings.ConvertMaterialIDToSerial(matID);
+                        serial = serial.Substring(0, Math.Min(_config.Settings.SerialLength, serial.Length));
+                        serial = serial.PadLeft(_config.Settings.SerialLength, '0');
                         // add the serial
                         foreach (var m in mat[key])
                         {
@@ -3374,7 +3448,7 @@ namespace BlackMaple.MachineFramework
                       }
 
                     }
-                    else if (generateSerials && _settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+                    else if (generateSerials && _config.Settings.SerialType == SerialType.AssignOneSerialPerMaterial)
                     {
                       using (var checkConn = _connection.CreateCommand())
                       {
@@ -3394,9 +3468,9 @@ namespace BlackMaple.MachineFramework
                             continue;
                           }
 
-                          var serial = _settings.ConvertMaterialIDToSerial(m.MaterialID);
-                          serial = serial.Substring(0, Math.Min(_settings.SerialLength, serial.Length));
-                          serial = serial.PadLeft(_settings.SerialLength, '0');
+                          var serial = _config.Settings.ConvertMaterialIDToSerial(m.MaterialID);
+                          serial = serial.Substring(0, Math.Min(_config.Settings.SerialLength, serial.Length));
+                          serial = serial.PadLeft(_config.Settings.SerialLength, '0');
                           if (m.MaterialID < 0) continue;
                           RecordSerialForMaterialID(trans, m.MaterialID, serial);
                           newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()
@@ -3461,7 +3535,7 @@ namespace BlackMaple.MachineFramework
         }
 
         foreach (var e in newEvts)
-          NewLogEntry?.Invoke(e, foreignID);
+          _config.OnNewLogEntry(e, foreignID);
       }
     }
 
@@ -3508,7 +3582,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.InspectCount> LoadInspectCounts()
     {
-      lock (_lock)
+      lock (_config)
       {
         List<MachineWatchInterface.InspectCount> ret = new List<MachineWatchInterface.InspectCount>();
 
@@ -3551,7 +3625,7 @@ namespace BlackMaple.MachineFramework
 
     public void SetInspectCounts(IEnumerable<MachineWatchInterface.InspectCount> counts)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -3704,7 +3778,7 @@ namespace BlackMaple.MachineFramework
     }
     public IList<Decision> LookupInspectionDecisions(long matID)
     {
-      lock (_lock)
+      lock (_config)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -3990,7 +4064,7 @@ namespace BlackMaple.MachineFramework
 
     public void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType)
     {
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -4010,7 +4084,7 @@ namespace BlackMaple.MachineFramework
     {
       var logs = new List<MachineWatchInterface.LogEntry>();
 
-      lock (_lock)
+      lock (_config)
       {
         using (var cmd = _connection.CreateCommand())
         using (var cmd2 = _connection.CreateCommand())
@@ -4058,7 +4132,7 @@ namespace BlackMaple.MachineFramework
         }
 
         foreach (var log in logs)
-          NewLogEntry?.Invoke(log, null);
+          _config.OnNewLogEntry(log, null);
       }
     }
     #endregion

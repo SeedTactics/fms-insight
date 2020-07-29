@@ -56,7 +56,6 @@ namespace MazakMachineInterface
     private IWriteData writeDb;
     private IReadDataAccess readDatabase;
     private IHoldManagement hold;
-    private BlackMaple.MachineFramework.JobLogDB log;
     private FMSSettings fmsSettings;
 
     private bool UseStartingOffsetForDueDate;
@@ -73,7 +72,6 @@ namespace MazakMachineInterface
       IReadDataAccess readDb,
       IHoldManagement h,
       BlackMaple.MachineFramework.JobDB jDB,
-      BlackMaple.MachineFramework.JobLogDB jLog,
       FMSSettings settings,
       bool check,
       bool useStarting,
@@ -83,7 +81,6 @@ namespace MazakMachineInterface
       writeDb = d;
       readDatabase = readDb;
       hold = h;
-      log = jLog;
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
       fmsSettings = settings;

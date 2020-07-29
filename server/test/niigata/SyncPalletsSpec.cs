@@ -38,13 +38,15 @@ using Xunit;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
 using BlackMaple.MachineWatchInterface;
+using NSubstitute;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
   public class SyncPalletsSpec : IDisposable
   {
     private FMSSettings _settings;
-    private JobLogDB _logDB;
+    private EventLogDB.Config _logDBCfg;
+    private EventLogDB _logDB;
     private JobDB _jobDB;
     private IAssignPallets _assign;
     private CreateCellState _createLog;
@@ -52,6 +54,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private SyncPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
     private bool _debugLogEnabled = false;
+    private Action<CurrentStatus> _onCurrentStatus;
 
     public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
     {
@@ -63,15 +66,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62
       };
 
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _logDB = new JobLogDB(_settings, logConn);
-      _logDB.CreateTables(firstSerialOnEmpty: null);
+      _logDBCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _logDB = _logDBCfg.OpenConnection();
 
       var jdbCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
       _jobDB = jdbCfg.OpenConnection();
-
-      var record = new RecordFacesForPallet(_logDB);
 
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
@@ -82,15 +81,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
 
       _assign = new MultiPalletAssign(new IAssignPallets[] {
-        new AssignNewRoutesOnPallets(record, statNames),
+        new AssignNewRoutesOnPallets(statNames),
         new SizedQueues(new Dictionary<string, QueueSize>() {
           {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
         })
       });
-      _createLog = new CreateCellState(_logDB, record, _settings, statNames, machConn);
+      _createLog = new CreateCellState(_settings, statNames, machConn);
 
       _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);
-      _sync = new SyncPallets(jdbCfg, _logDB, _sim, _assign, _createLog);
+
+      _onCurrentStatus = Substitute.For<Action<CurrentStatus>>();
+      _sync = new SyncPallets(jdbCfg, _logDBCfg, _sim, _assign, _createLog, _settings, onNewCurrentStatus: _onCurrentStatus);
 
       _sim.OnNewProgram += (newprog) =>
         _jobDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
@@ -109,15 +110,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         return null;
       }
-      using (var syncMonitor = _sync.Monitor())
-      using (var logMonitor = _logDB.Monitor())
+      using (var logMonitor = _logDBCfg.Monitor())
       {
         _sync.SynchronizePallets(false);
         var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
         if (evts.Any(e => e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound))
         {
-          syncMonitor.Should().Raise("OnPalletsChanged");
+          _onCurrentStatus.ReceivedCalls().Should().NotBeEmpty();
         }
+        _onCurrentStatus.ClearReceivedCalls();
         return evts;
       }
     }
@@ -221,7 +222,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
             }).ToList()
       }, null);
-      using (var logMonitor = _logDB.Monitor())
+      using (var logMonitor = _logDBCfg.Monitor())
       {
         _sync.SynchronizePallets(false);
         var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();

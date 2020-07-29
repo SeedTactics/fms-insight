@@ -41,24 +41,39 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public interface ISyncPallets
   {
+    CellState CurrentCellState();
     void JobsOrQueuesChanged();
-    void DecrementPlannedButNotStartedQty(JobDB jobDB);
-    event Action<JobDB, CellState> OnPalletsChanged;
+    void DecrementPlannedButNotStartedQty(JobDB jobDB, EventLogDB logDB);
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<SyncPallets>();
     private JobDB.Config _jobDbCfg;
-    private JobLogDB _log;
+    private EventLogDB.Config _logDbCfg;
     private INiigataCommunication _icc;
     private IAssignPallets _assign;
     private IBuildCellState _createLog;
+    private Action<CurrentStatus> _onNewCurrentStatus;
+    private FMSSettings _settings;
 
-    public SyncPallets(JobDB.Config jobDbCfg, JobLogDB log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create)
+    private object _curStLock = new object();
+    private CellState _lastCellState = null;
+
+    public CellState CurrentCellState()
     {
+      lock (_curStLock)
+      {
+        return _lastCellState ?? new CellState();
+      }
+    }
+
+    public SyncPallets(JobDB.Config jobDbCfg, EventLogDB.Config log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create, FMSSettings settings, Action<CurrentStatus> onNewCurrentStatus)
+    {
+      _settings = settings;
+      _onNewCurrentStatus = onNewCurrentStatus;
       _jobDbCfg = jobDbCfg;
-      _log = log;
+      _logDbCfg = log;
       _icc = icc;
       _assign = assign;
       _createLog = create;
@@ -149,8 +164,6 @@ namespace BlackMaple.FMSInsight.Niigata
     }
     #endregion
 
-    public event Action<JobDB, CellState> OnPalletsChanged;
-
     internal void SynchronizePallets(bool raisePalletChanged)
     {
       NiigataStatus status;
@@ -166,6 +179,7 @@ namespace BlackMaple.FMSInsight.Niigata
         // 5. Decide on any changes to pallet routes or planned quantities.
 
         using (var jdb = _jobDbCfg.OpenConnection())
+        using (var logDB = _logDbCfg.OpenConnection())
         {
 
           NiigataAction action = null;
@@ -177,7 +191,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
             Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
 
-            cellSt = _createLog.BuildCellState(jdb, status, jobs);
+            cellSt = _createLog.BuildCellState(jdb, logDB, status, jobs);
             raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
 
             Log.Debug("Computed cell state {@pals}", cellSt);
@@ -188,27 +202,32 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               Log.Debug("Executing action pallet to {@change}", action);
               raisePalletChanged = true;
-              _icc.PerformAction(jdb, action);
+              _icc.PerformAction(jdb, logDB, action);
             }
           } while (action != null);
 
+          lock (_curStLock)
+          {
+            _lastCellState = cellSt;
+          }
+
           if (raisePalletChanged)
           {
-            OnPalletsChanged?.Invoke(jdb, cellSt);
+            _onNewCurrentStatus(BuildCurrentStatus.Build(jdb, logDB, cellSt, _settings));
           }
         }
       }
 
     }
 
-    public void DecrementPlannedButNotStartedQty(JobDB jobDB)
+    public void DecrementPlannedButNotStartedQty(JobDB jobDB, EventLogDB logDB)
     {
       // lock prevents decrement from occuring at the same time as the thread
       // is deciding what to put onto a pallet
       lock (_changeLock)
       {
         var jobs = jobDB.LoadUnarchivedJobs();
-        var cellSt = _createLog.BuildCellState(jobDB, _icc.LoadNiigataStatus(), jobs);
+        var cellSt = _createLog.BuildCellState(jobDB, logDB, _icc.LoadNiigataStatus(), jobs);
 
         var decrs = new List<JobDB.NewDecrementQuantity>();
         foreach (var j in jobs.Jobs)
@@ -243,7 +262,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (decrs.Count > 0 || cellSt.PalletStateUpdated)
         {
-          OnPalletsChanged?.Invoke(jobDB, cellSt);
+          _onNewCurrentStatus(BuildCurrentStatus.Build(jobDB, logDB, cellSt, _settings));
         }
       }
     }

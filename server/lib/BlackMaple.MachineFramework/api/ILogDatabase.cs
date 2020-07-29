@@ -36,9 +36,7 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-  public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
-
-  public interface ILogDatabase
+  public interface ILogDatabase : IDisposable
   {
     List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     List<LogEntry> GetLog(long lastSeenCounter);
@@ -72,8 +70,6 @@ namespace BlackMaple.MachineWatchInterface
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active);
-
-    event NewLogEntryDelegate NewLogEntry;
   }
 }
 

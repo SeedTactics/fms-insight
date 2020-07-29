@@ -42,15 +42,14 @@ namespace MachineWatchTest
 
   public class EventDBUpgradeSpec : IDisposable
   {
-    private readonly JobLogDB _log;
+    private readonly EventLogDB _log;
     private string _tempFile;
 
     public EventDBUpgradeSpec()
     {
-      _log = new JobLogDB(new FMSSettings());
       _tempFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("log.v17.db", _tempFile, overwrite: true);
-      _log.Open(_tempFile);
+      _log = EventLogDB.Config.InitializeEventDatabase(new FMSSettings(), _tempFile).OpenConnection();
     }
 
     public void Dispose()
@@ -207,10 +206,10 @@ namespace MachineWatchTest
       var matId = _log.AllocateMaterialID("uuu5", "part5", 1);
       var mat = new LogMaterial(matId, "uuu5", 1, "part5", 1, "", "", "");
 
-      _log.RecordAddMaterialToQueue(JobLogDB.EventLogMaterial.FromLogMat(mat), "queue", 5, null, now.AddHours(2));
+      _log.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat), "queue", 5, null, now.AddHours(2));
 
       _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new[] {
-        new JobLogDB.QueuedMaterial() {
+        new EventLogDB.QueuedMaterial() {
           MaterialID = matId,
           Queue = "queue",
           Position = 0,

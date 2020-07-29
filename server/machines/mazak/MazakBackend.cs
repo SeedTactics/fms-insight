@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Linq;
-using System.Diagnostics;
 using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
@@ -54,40 +53,43 @@ namespace MazakMachineInterface
     private LoadOperationsFromFile loadOper;
     private IMazakLogReader logDataLoader;
 
-    private JobLogDB jobLog;
+    private EventLogDB.Config logDbConfig;
     private JobDB.Config jobDBConfig;
 
     //Settings
-    public MazakDbType MazakType;
-    public bool UseStartingOffsetForDueDate;
-    public bool CheckPalletsUsedOnce;
+    public MazakDbType MazakType { get; }
+    public bool UseStartingOffsetForDueDate { get; set; }
+    public bool CheckPalletsUsedOnce { get; set; }
     public string ProgramDirectory { get; set; }
 
-    public IWriteData WriteDB
-    {
-      get
-      {
-        return _writeDB;
-      }
-    }
-
+    public IWriteData WriteDB => _writeDB;
     public IReadDataAccess ReadDB => _readDB;
 
-    public JobLogDB JobLog
-    {
-      get { return jobLog; }
-    }
-    public JobDB.Config JobDBConfig
-    {
-      get { return jobDBConfig; }
-    }
-
-    public IMazakLogReader LogTranslation
-    {
-      get { return logDataLoader; }
-    }
-
+    public EventLogDB.Config EventLogDBConfig => logDbConfig;
+    public JobDB.Config JobDBConfig => jobDBConfig;
+    public IMazakLogReader LogTranslation => logDataLoader;
     public RoutingInfo RoutingInfo => routing;
+
+    public event NewJobsDelegate OnNewJobs;
+    public event NewLogEntryDelegate NewLogEntry;
+    public event NewCurrentStatus OnNewCurrentStatus;
+
+    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId) =>
+      NewLogEntry?.Invoke(e, foreignId);
+
+    private void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.JobDB jobDb, BlackMaple.MachineFramework.EventLogDB logDB)
+    {
+      if (routing == null) return;
+      OnNewCurrentStatus?.Invoke(routing.CurrentStatus(jobDb, logDB));
+    }
+
+    private void OnLoadActions(int lds, IEnumerable<LoadAction> actions)
+    {
+      // this opens log and db connections to the database again :(
+      // Only used for Mazak Version E
+      OnNewCurrentStatus?.Invoke(((IJobControl)routing).GetCurrentStatus());
+    }
+
 
     public MazakBackend(IConfiguration configuration, FMSSettings st)
     {
@@ -190,12 +192,12 @@ namespace MazakMachineInterface
         "Configured UseStartingOffsetForDueDate = {useStarting}",
         UseStartingOffsetForDueDate);
 
-      jobLog = new BlackMaple.MachineFramework.JobLogDB(st);
-      jobLog.Open(
+      logDbConfig = EventLogDB.Config.InitializeEventDatabase(
+        st,
         System.IO.Path.Combine(st.DataDirectory, "log.db"),
-        System.IO.Path.Combine(st.DataDirectory, "insp.db"),
-        startingSerial: st.StartingSerial
+        System.IO.Path.Combine(st.DataDirectory, "insp.db")
       );
+      logDbConfig.NewLogEntry += RaiseNewLogEntry;
 
       var jobInspName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
       if (System.IO.File.Exists(jobInspName))
@@ -206,9 +208,9 @@ namespace MazakMachineInterface
       _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
 
       if (MazakType == MazakDbType.MazakVersionE)
-        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: true);
+        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: true, onLoadActions: OnLoadActions);
       else if (MazakType == MazakDbType.MazakWeb)
-        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: false); // web instead watches the log csv files
+        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: false, onLoadActions: (l, a) => { }); // web instead watches the log csv files
       else
         loadOper = null; // smooth db doesn't use the load operations file
 
@@ -218,33 +220,35 @@ namespace MazakMachineInterface
       else
         _readDB = openReadDb;
 
-      queues = new MazakQueues(jobLog, _writeDB, waitForAllCastings);
+      queues = new MazakQueues(_writeDB, waitForAllCastings);
       var sendToExternal = new SendMaterialToExternalQueue();
 
       hold = new HoldPattern(_writeDB, _readDB, jobDBConfig, true);
       WriteJobs writeJobs;
       using (var jdb = jobDBConfig.OpenConnection())
       {
-        writeJobs = new WriteJobs(_writeDB, _readDB, hold, jdb, jobLog, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
+        writeJobs = new WriteJobs(_writeDB, _readDB, hold, jdb, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
       }
       var decr = new DecrementPlanQty(_writeDB, _readDB);
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, jobLog, jobDBConfig, writeJobs, sendToExternal, _readDB, queues, st);
+        logDataLoader = new LogDataWeb(logPath, logDbConfig, jobDBConfig, writeJobs, sendToExternal, _readDB, queues, st,
+          currentStatusChanged: RaiseCurrentStatusChanged
+        );
       else
       {
 #if USE_OLEDB
-				logDataLoader = new LogDataVerE(jobLog, jobDB, sendToExternal, writeJobs, _readDB, queues, st);
+				logDataLoader = new LogDataVerE(logDbConfig, jobDBConfig, sendToExternal, writeJobs, _readDB, queues, st);
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
 #endif
       }
 
-      routing = new RoutingInfo(_writeDB, writeJobs, _readDB, logDataLoader, jobDBConfig, jobLog, writeJobs, queues, decr,
-                                CheckPalletsUsedOnce, st);
-
-      logDataLoader.NewEntries += OnNewLogEntries;
-      if (loadOper != null) loadOper.LoadActions += OnLoadActions;
+      routing = new RoutingInfo(_writeDB, writeJobs, _readDB, logDataLoader, jobDBConfig, logDbConfig, writeJobs, queues, decr,
+          CheckPalletsUsedOnce, st,
+          onNewJobs: j => OnNewJobs?.Invoke(j),
+          onStatusChange: s => OnNewCurrentStatus?.Invoke(s)
+      );
     }
 
     private bool _disposed = false;
@@ -252,18 +256,11 @@ namespace MazakMachineInterface
     {
       if (_disposed) return;
       _disposed = true;
-      logDataLoader.NewEntries -= OnNewLogEntries;
-      if (loadOper != null) loadOper.LoadActions -= OnLoadActions;
+      logDbConfig.NewLogEntry -= RaiseNewLogEntry;
       routing.Halt();
       hold.Shutdown();
       logDataLoader.Halt();
       if (loadOper != null) loadOper.Halt();
-      jobLog.Close();
-    }
-
-    public IInspectionControl InspectionControl()
-    {
-      return jobLog;
     }
 
     public IJobControl JobControl { get => routing; }
@@ -274,30 +271,13 @@ namespace MazakMachineInterface
     {
       return jobDBConfig.OpenConnection();
     }
-
-    public ILogDatabase LogDatabase()
+    public ILogDatabase OpenLogDatabase()
     {
-      return jobLog;
+      return logDbConfig.OpenConnection();
     }
-
-    private void OnLoadActions(int lds, IEnumerable<LoadAction> actions)
+    public IInspectionControl OpenInspectionControl()
     {
-      routing.RaiseNewCurrentStatus(routing.GetCurrentStatus());
-    }
-
-    private void OnNewLogEntries()
-    {
-      // TODO: remove this and call directly from log translation, since needs jobdb connection.
-      var st = routing.GetCurrentStatus();
-      if (st.Material.Any(m =>
-        m.Action.Type == InProcessMaterialAction.ActionType.Loading
-        || m.Action.Type == InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-        || m.Action.Type == InProcessMaterialAction.ActionType.UnloadToInProcess
-      ))
-      {
-        Log.Debug("Current status with load/unload {@status}", st);
-      }
-      routing.RaiseNewCurrentStatus(st);
+      return logDbConfig.OpenConnection();
     }
 
     private MazakDbType DetectMazakType(IConfigurationSection cfg, string localDbPath)

@@ -570,8 +570,11 @@ namespace BlackMaple.FMSInsight.Niigata
       conn.Execute("DELETE FROM register_program_tool", transaction: trans);
     }
 
-    private void SetRoute(NewPalletRoute newRoute)
+    private void SetRoute(NewPalletRoute newRoute, EventLogDB logDB)
     {
+      // first save the faces
+      newRoute.NewMaster.Comment = RecordFacesForPallet.Save(newRoute.NewMaster.PalletNum, DateTime.UtcNow, newRoute.NewFaces, logDB);
+
       long ProposalId = NewId();
       using (var conn = new NpgsqlConnection(_connStr))
       {
@@ -903,12 +906,12 @@ namespace BlackMaple.FMSInsight.Niigata
       jobDB.SetCellControllerProgramForProgram(delete.ProgramName, delete.ProgramRevision, null);
     }
 
-    public void PerformAction(JobDB jobDB, NiigataAction a)
+    public void PerformAction(JobDB jobDB, EventLogDB logDB, NiigataAction a)
     {
       switch (a)
       {
         case NewPalletRoute newRoute:
-          SetRoute(newRoute);
+          SetRoute(newRoute, logDB);
           break;
 
         case UpdatePalletQuantities update:

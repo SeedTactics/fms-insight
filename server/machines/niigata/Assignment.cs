@@ -64,12 +64,10 @@ namespace BlackMaple.FMSInsight.Niigata
   public class AssignNewRoutesOnPallets : IAssignPallets
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignNewRoutesOnPallets>();
-    private readonly IRecordFacesForPallet _recordFaces;
     private readonly NiigataStationNames _statNames;
 
-    public AssignNewRoutesOnPallets(IRecordFacesForPallet r, NiigataStationNames n)
+    public AssignNewRoutesOnPallets(NiigataStationNames n)
     {
-      _recordFaces = r;
       _statNames = n;
     }
 
@@ -328,18 +326,18 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else
       {
-        newMaster.Comment = _recordFaces.Save(newMaster.PalletNum, nowUtc, newPaths.Select(path =>
-          new AssignedJobAndPathForFace()
-          {
-            Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,
-            Unique = path.Job.UniqueStr,
-            Proc = path.Process,
-            Path = path.Path
-          }
-        ));
         return new NewPalletRoute()
         {
-          NewMaster = newMaster
+          NewMaster = newMaster,
+          NewFaces = newPaths.Select(path =>
+            new AssignedJobAndPathForFace()
+            {
+              Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,
+              Unique = path.Job.UniqueStr,
+              Proc = path.Process,
+              Path = path.Path
+            }
+        )
         };
       }
     }

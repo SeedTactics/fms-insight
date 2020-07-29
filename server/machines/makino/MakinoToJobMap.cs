@@ -67,9 +67,9 @@ namespace Makino
     private Dictionary<int, JobMachiningStop> _stops = new Dictionary<int, JobMachiningStop>();
     private Dictionary<int, InProcessJob> _byOrderID = new Dictionary<int, InProcessJob>();
 
-    private BlackMaple.MachineFramework.JobLogDB _logDb;
+    private BlackMaple.MachineFramework.EventLogDB _logDb;
 
-    public MakinoToJobMap(BlackMaple.MachineFramework.JobLogDB log)
+    public MakinoToJobMap(BlackMaple.MachineFramework.EventLogDB log)
     {
       _logDb = log;
     }

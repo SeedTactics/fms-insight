@@ -90,7 +90,7 @@ namespace MachineWatchTest
       }
     }
 
-    private JobLogDB _logDB;
+    private EventLogDB _logDB;
     private JobDB _jobDB;
     private IWriteJobs _writeJobs;
     private WriteMock _writeMock;
@@ -100,11 +100,7 @@ namespace MachineWatchTest
 
     public WriteJobsSpec()
     {
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _logDB = new JobLogDB(new FMSSettings(), logConn);
-      _logDB.CreateTables(firstSerialOnEmpty: null);
-
+      _logDB = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
       _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _writeMock = new WriteMock();
@@ -232,7 +228,6 @@ namespace MachineWatchTest
         _readMock,
         Substitute.For<IHoldManagement>(),
         _jobDB,
-        _logDB,
         _settings,
         check: false,
         useStarting: true,
