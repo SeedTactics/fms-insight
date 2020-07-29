@@ -51,28 +51,15 @@ namespace BlackMaple.FMSInsight.Niigata
 
   }
 
-  public interface IRecordFacesForPallet
+  public static class RecordFacesForPallet
   {
-    IEnumerable<AssignedJobAndPathForFace> Load(string palComment);
-    // returns the new pallet comment
-    string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths);
-  }
-
-  public class RecordFacesForPallet : IRecordFacesForPallet
-  {
-    private JobLogDB _log;
-    public RecordFacesForPallet(JobLogDB l)
-    {
-      _log = l;
-    }
-
-    public IEnumerable<AssignedJobAndPathForFace> Load(string palComment)
+    public static IEnumerable<AssignedJobAndPathForFace> Load(string palComment, EventLogDB logDB)
     {
       if (palComment == null || !palComment.StartsWith("Insight:"))
       {
         return Enumerable.Empty<AssignedJobAndPathForFace>();
       }
-      var msg = _log.OriginalMessageByForeignID("faces:" + palComment.Substring(8)); // substring 8 removes Insight: prefix
+      var msg = logDB.OriginalMessageByForeignID("faces:" + palComment.Substring(8)); // substring 8 removes Insight: prefix
       if (string.IsNullOrEmpty(msg))
       {
         Serilog.Log.Error("Unable to find faces for pallet comment {comment}", palComment);
@@ -86,7 +73,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths)
+    public static string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths, EventLogDB logDB)
     {
       // comments can be 32 characters. A base64 guid is 22 characters to which we add "Insight:" 8 characters
       var guid64 = Convert.ToBase64String(System.Guid.NewGuid().ToByteArray()).Replace("/", "_").Replace("+", "-").Substring(0, 22);
@@ -99,7 +86,7 @@ namespace BlackMaple.FMSInsight.Niigata
         json = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
       }
 
-      _log.RecordGeneralMessage(
+      logDB.RecordGeneralMessage(
         mat: null,
         program: "Assign",
         result: "New Niigata Route",

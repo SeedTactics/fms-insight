@@ -43,10 +43,9 @@ namespace Makino
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
     // Common databases from machine framework
-    private JobDB _jobDB;
-    private JobLogDB _log;
-
-    public JobLogDB JobLogDB => _log;
+    private Func<JobDB> _openJobDB;
+    private EventLogDB.Config _logDbCfg;
+    public EventLogDB OpenLogDB => _logDbCfg.OpenConnection();
 
     // Makino databases
     private MakinoDB _makinoDB;
@@ -84,27 +83,28 @@ namespace Makino
 
         _dataDirectory = st.DataDirectory;
 
-        _log = new JobLogDB(st);
-        _log.Open(
+        _logDbCfg = EventLogDB.Config.InitializeEventDatabase(
+            st,
             System.IO.Path.Combine(_dataDirectory, "log.db"),
-            System.IO.Path.Combine(_dataDirectory, "inspections.db"),
-            startingSerial: st.StartingSerial
+            System.IO.Path.Combine(_dataDirectory, "inspections.db")
         );
+        _logDbCfg.NewLogEntry += OnLogEntry;
 
-        _jobDB = new BlackMaple.MachineFramework.JobDB();
-        _jobDB.Open(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
+        // open jobDB
+        var jobDBCfg = BlackMaple.MachineFramework.JobDB.Config.InitializeJobDatabase(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
+        _openJobDB = () => jobDBCfg.OpenConnection();
 
         _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
 #if DEBUG
-        _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlLocal, "", _status, _log);
+        _makinoDB = new MakinoDB(_logDbCfg, MakinoDB.DBTypeEnum.SqlLocal, "", _status);
 #else
-                _makinoDB = new MakinoDB(MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status, _log);
+        _makinoDB = new MakinoDB(_logDbCfg, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status);
 #endif
 
-        _logTimer = new LogTimer(_log, _jobDB, _makinoDB, _status, st);
+        _logTimer = new LogTimer(_logDbCfg, _openJobDB, _makinoDB, _status, st);
 
-        _jobs = new Jobs(_makinoDB, _jobDB, adePath, downloadOnlyOrders);
+        _jobs = new Jobs(_makinoDB, _openJobDB, adePath, downloadOnlyOrders, onNewJob: j => OnNewJobs?.Invoke(j), onJobCommentChange: OnLogsProcessed);
 
         _logTimer.LogsProcessed += OnLogsProcessed;
 
@@ -122,16 +122,26 @@ namespace Makino
       _disposed = true;
       _logTimer.LogsProcessed -= OnLogsProcessed;
       if (_logTimer != null) _logTimer.Halt();
-      if (_jobDB != null) _jobDB.Close();
-      if (_log != null) _log.Close();
       if (_status != null) _status.Close();
       if (_makinoDB != null) _makinoDB.Close();
+      _logDbCfg.NewLogEntry -= OnLogEntry;
     }
 
+    public event NewLogEntryDelegate NewLogEntry;
+    private void OnLogEntry(LogEntry entry, string foreignId)
+    {
+      NewLogEntry?.Invoke(entry, foreignId);
+    }
+
+    public event NewCurrentStatus OnNewCurrentStatus;
+    public event NewJobsDelegate OnNewJobs;
+    public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
     private void OnLogsProcessed()
     {
-      _jobs.RaiseNewCurrentStatus(_jobs.GetCurrentStatus());
+      RaiseNewCurrentStatus(_jobs.GetCurrentStatus());
     }
+
+
 
     private string DetectSqlConnectionStr()
     {
@@ -143,29 +153,23 @@ namespace Makino
       return b.ConnectionString;
     }
 
-    public IJobDatabase JobDatabase()
+    public IJobDatabase OpenJobDatabase()
     {
-      return _jobDB;
+      return _openJobDB();
     }
 
-    public IJobControl JobControl()
+    public IJobControl JobControl { get => _jobs; }
+
+    public IOldJobDecrement OldJobDecrement { get => _jobs; }
+
+    public IInspectionControl OpenInspectionControl()
     {
-      return _jobs;
+      return _logDbCfg.OpenConnection();
     }
 
-    public IOldJobDecrement OldJobDecrement()
+    public ILogDatabase OpenLogDatabase()
     {
-      return _jobs;
-    }
-
-    public IInspectionControl InspectionControl()
-    {
-      return _log;
-    }
-
-    public ILogDatabase LogDatabase()
-    {
-      return _log;
+      return _logDbCfg.OpenConnection();
     }
 
     public LogTimer LogTimer

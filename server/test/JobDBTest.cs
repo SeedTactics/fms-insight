@@ -44,15 +44,11 @@ namespace MachineWatchTest
 {
   public class JobDBTest : JobEqualityChecks, IDisposable
   {
-    private SqliteConnection _jobConn;
     private JobDB _jobDB;
 
     public JobDBTest()
     {
-      _jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      _jobConn.Open();
-      _jobDB = new JobDB(_jobConn);
-      _jobDB.CreateTables();
+      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
     }
 
     public void Dispose()
@@ -1199,7 +1195,11 @@ namespace MachineWatchTest
 
     private byte[] LoadDebugData(string schId)
     {
-      var cmd = _jobConn.CreateCommand();
+      SqliteConnection conn = (SqliteConnection)
+        _jobDB.GetType().GetField("_connection",
+                                  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+        ).GetValue(_jobDB);
+      var cmd = conn.CreateCommand();
       cmd.CommandText = "SELECT DebugMessage FROM schedule_debug WHERE ScheduleId = @sch";
       cmd.Parameters.Add("sch", SqliteType.Text).Value = schId;
       return (byte[])cmd.ExecuteScalar();

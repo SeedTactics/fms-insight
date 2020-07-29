@@ -33,18 +33,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {
+  public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
+  public delegate void NewCurrentStatus(CurrentStatus status);
+  public delegate void NewJobsDelegate(NewJobs j);
+
+
   public interface IFMSBackend : IDisposable
   {
-    ILogDatabase LogDatabase();
-    IJobDatabase JobDatabase();
-    IJobControl JobControl();
-    IInspectionControl InspectionControl();
-    IOldJobDecrement OldJobDecrement();
+    IOldJobDecrement OldJobDecrement { get; }
+    IJobControl JobControl { get; }
+    IJobDatabase OpenJobDatabase();
+    ILogDatabase OpenLogDatabase();
+    IInspectionControl OpenInspectionControl();
+
+    event NewLogEntryDelegate NewLogEntry;
+    event NewCurrentStatus OnNewCurrentStatus;
+    event NewJobsDelegate OnNewJobs;
   }
 
   public interface IBackgroundWorker : IDisposable

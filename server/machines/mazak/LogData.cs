@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -84,7 +84,7 @@ namespace MazakMachineInterface
     public string FromPosition { get; set; }
   }
 
-  public delegate void MazakLogEventDel(LogEntry e);
+  public delegate void MazakLogEventDel(LogEntry e, BlackMaple.MachineFramework.JobDB jobDB, BlackMaple.MachineFramework.EventLogDB eventLogDB);
   public interface INotifyMazakLogEvent
   {
     event MazakLogEventDel MazakLogEvent;
@@ -94,7 +94,6 @@ namespace MazakMachineInterface
   {
     void RecheckQueues(bool wait);
     void Halt();
-    event NewEntriesDel NewEntries;
   }
 
 #if USE_OLEDB
@@ -102,31 +101,34 @@ namespace MazakMachineInterface
 	{
     private const string DateTimeFormat = "yyyyMMddHHmmss";
 
-    private BlackMaple.MachineFramework.JobDB _jobDB;
-    private BlackMaple.MachineFramework.JobLogDB _log;
+    private BlackMaple.MachineFramework.JobDB.Config _jobDBCfg;
+    private BlackMaple.MachineFramework.EventLogDB.Config _logCfg;
     private MazakQueues _queues;
     private IReadDataAccess _readDB;
     private IMachineGroupName _machGroupName;
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataVerE>();
+    private Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> _currentStatusChanged;
 
     private object _lock;
     private System.Timers.Timer _timer;
 
     public event MazakLogEventDel MazakLogEvent;
-    public event NewEntriesDel NewEntries;
 
-    public LogDataVerE(BlackMaple.MachineFramework.JobLogDB log,
-                       BlackMaple.MachineFramework.JobDB jobDB,
+    public LogDataVerE(BlackMaple.MachineFramework.EventLogDB.Config logCfg,
+                       BlackMaple.MachineFramework.JobDB.Config jobDBCfg,
                        BlackMaple.MachineFramework.ISendMaterialToExternalQueue send,
                        IMachineGroupName machGroupName,
                        IReadDataAccess readDB,
                        MazakQueues queues,
-                       BlackMaple.MachineFramework.FMSSettings settings)
+                       BlackMaple.MachineFramework.FMSSettings settings,
+                       Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged
+                      )
     {
-      _log = log;
-      _jobDB = jobDB;
+      _logCfg = logCfg;
+      _currentStatusChanged = currentStatusChanged;
+      _jobDBCfg = jobDBCfg;
       _readDB = readDB;
       _queues = queues;
       _sendToExternal = send;
@@ -155,33 +157,38 @@ namespace MazakMachineInterface
         try
         {
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
-          var logs = LoadLog(_log.MaxForeignID());
-          var trans = new LogTranslation(_jobDB, _log, mazakData, _machGroupName, FMSSettings,
-            le => MazakLogEvent?.Invoke(le)
-          );
+          List<LogEntry> logs;
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
-          foreach (var ev in logs)
-          {
-            try
+
+          using (var logDB = _logCfg.OpenConnection())
+          using (var jobDB = _jobDBCfg.OpenConnection()) {
+            logs = LoadLog(logDB.MaxForeignID());
+            var trans = new LogTranslation(jobDB, logDB, mazakData, _machGroupName, FMSSettings,
+              le => MazakLogEvent?.Invoke(le, jobDB, logDB)
+            );
+            foreach (var ev in logs)
             {
-              sendToExternal.AddRange(trans.HandleEvent(ev));
+              try
+              {
+                sendToExternal.AddRange(trans.HandleEvent(ev));
+              }
+              catch (Exception ex)
+              {
+                Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
+              }
             }
-            catch (Exception ex)
+
+            var queuesChanged = _queues.CheckQueues(jobDB, logDB, mazakData);
+
+            if (logs.Count > 0 || queuesChanged)
             {
-              Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
+              _currentStatusChanged(jobDB, logDB);
             }
           }
-
-          _queues.CheckQueues(mazakData);
 
           if (sendToExternal.Count > 0) {
             _sendToExternal.Post(sendToExternal);
           }
-
-          if (logs.Count > 0) {
-            NewEntries?.Invoke();
-          }
-
         }
         catch (Exception ex)
         {
@@ -329,13 +336,14 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
-    private BlackMaple.MachineFramework.JobDB _jobDB;
-    private BlackMaple.MachineFramework.JobLogDB _log;
+    private BlackMaple.MachineFramework.JobDB.Config _jobDBCfg;
+    private BlackMaple.MachineFramework.EventLogDB.Config _logDbCfg;
     private IReadDataAccess _readDB;
     private IMachineGroupName _machGroupName;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private MazakQueues _queues;
+    private Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> _currentStatusChanged;
 
     private string _path;
     private AutoResetEvent _shutdown;
@@ -347,21 +355,23 @@ namespace MazakMachineInterface
     private FileSystemWatcher _watcher;
 
     public LogDataWeb(string path,
-                      BlackMaple.MachineFramework.JobLogDB log,
-                      BlackMaple.MachineFramework.JobDB jobDB,
+                      BlackMaple.MachineFramework.EventLogDB.Config logCfg,
+                      BlackMaple.MachineFramework.JobDB.Config jobDBCfg,
                       IMachineGroupName machineGroupName,
                       BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
                       IReadDataAccess readDB,
                       MazakQueues queues,
-                      BlackMaple.MachineFramework.FMSSettings settings)
+                      BlackMaple.MachineFramework.FMSSettings settings,
+                      Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged)
     {
       _path = path;
-      _log = log;
-      _jobDB = jobDB;
+      _logDbCfg = logCfg;
+      _jobDBCfg = jobDBCfg;
       _readDB = readDB;
       _queues = queues;
       _settings = settings;
       _machGroupName = machineGroupName;
+      _currentStatusChanged = currentStatusChanged;
       _sendToExternal = sendToExternal;
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
@@ -394,7 +404,6 @@ namespace MazakMachineInterface
     }
 
     public event MazakLogEventDel MazakLogEvent;
-    public event NewEntriesDel NewEntries;
 
     public void ThreadFunc()
     {
@@ -419,35 +428,43 @@ namespace MazakMachineInterface
           Log.Debug("Waking up log thread for {reason}: total GC memory {mem}", ret, GC.GetTotalMemory(false));
 
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
-          var logs = LoadLog(_log.MaxForeignID());
-          var trans = new LogTranslation(_jobDB, _log, mazakData, _machGroupName, _settings,
-            le => MazakLogEvent?.Invoke(le)
-          );
+
+          List<LogEntry> logs;
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
-          foreach (var ev in logs)
+          bool queuesChanged;
+
+          using (var logDb = _logDbCfg.OpenConnection())
+          using (var jobDB = _jobDBCfg.OpenConnection())
           {
-            try
+            logs = LoadLog(logDb.MaxForeignID());
+            var trans = new LogTranslation(jobDB, logDb, mazakData, _machGroupName, _settings,
+              le => MazakLogEvent?.Invoke(le, jobDB, logDb)
+            );
+            foreach (var ev in logs)
             {
-              sendToExternal.AddRange(trans.HandleEvent(ev));
+              try
+              {
+                sendToExternal.AddRange(trans.HandleEvent(ev));
+              }
+              catch (Exception ex)
+              {
+                Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
+              }
             }
-            catch (Exception ex)
+
+            DeleteLog(logDb.MaxForeignID());
+
+            queuesChanged = _queues.CheckQueues(jobDB, logDb, mazakData);
+
+            if (logs.Count > 0 || queuesChanged)
             {
-              Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
+              _currentStatusChanged(jobDB, logDb);
             }
           }
-
-          DeleteLog(_log.MaxForeignID());
-
-          var queuesChanged = _queues.CheckQueues(mazakData);
 
           if (sendToExternal.Count > 0)
           {
             _sendToExternal.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
-          }
-
-          if (logs.Count > 0 || queuesChanged)
-          {
-            NewEntries?.Invoke();
           }
 
           if (recheckingQueues)

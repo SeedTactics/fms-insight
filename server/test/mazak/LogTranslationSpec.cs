@@ -46,7 +46,7 @@ namespace MachineWatchTest
 
   public class LogTestBase : IDisposable
   {
-    protected JobLogDB jobLog;
+    protected EventLogDB jobLog;
     protected JobDB jobDB;
     protected LogTranslation log;
     protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
@@ -65,15 +65,8 @@ namespace MachineWatchTest
       settings.Queues["thequeue"] = new QueueSize() { MaxSizeBeforeStopUnloading = -1 };
       settings.ExternalQueues["externalq"] = "testserver";
 
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      jobLog = new JobLogDB(settings, logConn);
-      jobLog.CreateTables(firstSerialOnEmpty: null);
-
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      jobDB = new JobDB(jobConn);
-      jobDB.CreateTables();
+      jobLog = EventLogDB.Config.InitializeSingleThreadedMemoryDB(settings).OpenConnection();
+      jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _schedules = new List<MazakScheduleRow>();
       mazakData = new MazakSchedulesAndLoadActions()
@@ -1469,7 +1462,7 @@ namespace MachineWatchTest
       //queue now has 9 elements
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         Enumerable.Range(1, 9).Select((i, idx) =>
-          new JobLogDB.QueuedMaterial()
+          new EventLogDB.QueuedMaterial()
           {
             MaterialID = i,
             Queue = "thequeue",
@@ -1491,7 +1484,7 @@ namespace MachineWatchTest
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
-            new JobLogDB.QueuedMaterial()
+            new EventLogDB.QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
@@ -1518,7 +1511,7 @@ namespace MachineWatchTest
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6 }).Select((i, idx) =>
-            new JobLogDB.QueuedMaterial()
+            new EventLogDB.QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
@@ -1577,7 +1570,7 @@ namespace MachineWatchTest
       MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
 
 
-      // some basic snapshots.  More complicated scenarios are tested as part of the JobLogDB spec
+      // some basic snapshots.  More complicated scenarios are tested as part of the EventLogDB spec
 
       mazakData.Tools = new[] {
         new ToolPocketRow() { MachineNumber = 1, PocketNumber = 10, GroupNo = "ignored", IsToolDataValid = true, LifeUsed = 20, LifeSpan = 101},

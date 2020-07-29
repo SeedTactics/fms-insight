@@ -40,25 +40,23 @@ namespace MazakMachineInterface
 {
   public interface IDecrementPlanQty
   {
-    void Decrement(DateTime? now = null);
+    void Decrement(JobDB jobDB, DateTime? now = null);
   }
 
   public class DecrementPlanQty : IDecrementPlanQty
   {
-    private JobDB _jobDB;
     private IWriteData _write;
     private IReadDataAccess _read;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrementPlanQty>();
 
-    public DecrementPlanQty(JobDB jdb, IWriteData w, IReadDataAccess r)
+    public DecrementPlanQty(IWriteData w, IReadDataAccess r)
     {
-      _jobDB = jdb;
       _write = w;
       _read = r;
     }
 
-    public void Decrement(DateTime? now = null)
+    public void Decrement(JobDB jobDB, DateTime? now = null)
     {
       // This works in three steps:
       //
@@ -78,13 +76,13 @@ namespace MazakMachineInterface
       //   the code checks if a previous decrement has happended.  The queues code will keep re-trying to sync the material
       //   quantities with the new scheduled quantities.
 
-      var jobs = JobsToDecrement(_read.LoadSchedulesAndLoadActions());
+      var jobs = JobsToDecrement(jobDB, _read.LoadSchedulesAndLoadActions());
       Log.Debug("Found jobs to decrement {@jobs}", jobs);
 
       if (jobs.Count == 0) return;
 
       ReducePlannedQuantity(jobs);
-      RecordDecrement(jobs, now);
+      RecordDecrement(jobDB, jobs, now);
     }
 
 
@@ -96,7 +94,7 @@ namespace MazakMachineInterface
       public int NewPlanQty { get; set; }
     }
 
-    private List<DecrSchedule> JobsToDecrement(MazakSchedulesAndLoadActions schedules)
+    private List<DecrSchedule> JobsToDecrement(JobDB jobDB, MazakSchedulesAndLoadActions schedules)
     {
       var jobs = new List<DecrSchedule>();
 
@@ -110,11 +108,11 @@ namespace MazakMachineInterface
 
         //load the job
         if (string.IsNullOrEmpty(unique)) continue;
-        var job = _jobDB.LoadJob(unique);
+        var job = jobDB.LoadJob(unique);
         if (job == null) continue;
 
         // if already decremented, ignore
-        if (_jobDB.LoadDecrementsForJob(unique).Any()) continue;
+        if (jobDB.LoadDecrementsForJob(unique).Any()) continue;
 
 
         // check load is in process
@@ -166,7 +164,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void RecordDecrement(List<DecrSchedule> decrs, DateTime? now)
+    private void RecordDecrement(JobDB jobDB, List<DecrSchedule> decrs, DateTime? now)
     {
       var decrAmt = new Dictionary<string, int>();
       var partNames = new Dictionary<string, string>();
@@ -187,7 +185,7 @@ namespace MazakMachineInterface
         }
       }
 
-      var oldJobs = _jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddHours(1), includeDecremented: false);
+      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddHours(1), includeDecremented: false);
       foreach (var j in oldJobs.Jobs)
       {
         decrAmt[j.UniqueStr] = Enumerable.Range(1, j.GetNumPaths(process: 1)).Select(path => j.GetPlannedCyclesOnFirstProcess(path)).Sum();
@@ -196,7 +194,7 @@ namespace MazakMachineInterface
 
       if (decrs.Count > 0)
       {
-        _jobDB.AddNewDecrement(decrAmt.Select(kv => new JobDB.NewDecrementQuantity()
+        jobDB.AddNewDecrement(decrAmt.Select(kv => new JobDB.NewDecrementQuantity()
         {
           JobUnique = kv.Key,
           Part = partNames[kv.Key],

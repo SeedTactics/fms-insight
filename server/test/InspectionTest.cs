@@ -44,14 +44,11 @@ namespace MachineWatchTest
   public class InspectionTest : IDisposable
   {
 
-    private JobLogDB _insp;
+    private EventLogDB _insp;
 
     public InspectionTest()
     {
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _insp = new JobLogDB(new FMSSettings(), logConn);
-      _insp.CreateTables(firstSerialOnEmpty: null);
+      _insp = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
     }
 
     public void Dispose()
@@ -339,8 +336,8 @@ namespace MachineWatchTest
     public void WithoutInspectProgram()
     {
       DateTime now = DateTime.UtcNow;
-      var mat1 = new JobLogDB.EventLogMaterial() { MaterialID = 1, Process = 1 };
-      var mat2 = new JobLogDB.EventLogMaterial() { MaterialID = 2, Process = 1 };
+      var mat1 = new EventLogDB.EventLogMaterial() { MaterialID = 1, Process = 1 };
+      var mat2 = new EventLogDB.EventLogMaterial() { MaterialID = 2, Process = 1 };
       _insp.ForceInspection(mat1, "myinspection", true, now);
       _insp.ForceInspection(mat2, "myinspection", false, now);
 
@@ -370,7 +367,7 @@ namespace MachineWatchTest
         if (d.InspType == iType)
         {
           d.Should().BeEquivalentTo(
-              new JobLogDB.Decision()
+              new EventLogDB.Decision()
               {
                 MaterialID = matID,
                 InspType = iType,

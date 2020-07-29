@@ -57,11 +57,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public event Action<NewProgram> OnNewProgram;
     public event Action NewCurrentStatus;
 
-    public void PerformAction(NiigataAction a)
+    public void PerformAction(MachineFramework.JobDB jobDB, MachineFramework.EventLogDB logDB, NiigataAction a)
     {
       switch (a)
       {
         case NewPalletRoute route:
+          route.NewMaster.Comment = RecordFacesForPallet.Save(route.NewMaster.PalletNum, _status.TimeOfStatusUTC, route.NewFaces, logDB);
           _status.Pallets[route.NewMaster.PalletNum - 1].Master = route.NewMaster;
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentStepNum = 1;
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentControlNum = 1;

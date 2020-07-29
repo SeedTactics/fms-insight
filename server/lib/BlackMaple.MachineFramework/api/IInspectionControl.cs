@@ -37,24 +37,24 @@ using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
-    [Serializable, DataContract]
-    public struct InspectCount
-    {
-        [DataMember(IsRequired=true)] public string Counter;
-        [DataMember(IsRequired=true)] public int Value;
-        [DataMember(IsRequired=true)] public DateTime LastUTC;
-    }
+  [Serializable, DataContract]
+  public struct InspectCount
+  {
+    [DataMember(IsRequired = true)] public string Counter;
+    [DataMember(IsRequired = true)] public int Value;
+    [DataMember(IsRequired = true)] public DateTime LastUTC;
+  }
 
-    public interface IInspectionControl
-    {
-        ///Forces the given materialID to be inspected
-        void ForceInspection(long materialID, string inspectionType);
+  public interface IInspectionControl : IDisposable
+  {
+    ///Forces the given materialID to be inspected
+    void ForceInspection(long materialID, string inspectionType);
 
-        ///Forces the next piece that runs on the given location to be inspected
-        void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType);
+    ///Forces the next piece that runs on the given location to be inspected
+    void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType);
 
-        //allow editing of counts.  Uses lists of InspectCount structure
-        List<InspectCount> LoadInspectCounts();
-        void SetInspectCounts(IEnumerable<InspectCount> countUpdates);
-    }
+    //allow editing of counts.  Uses lists of InspectCount structure
+    List<InspectCount> LoadInspectCounts();
+    void SetInspectCounts(IEnumerable<InspectCount> countUpdates);
+  }
 }

@@ -48,11 +48,9 @@ namespace MachineWatchTest
 
     public JobDBUpgradeSpec()
     {
-      _jobs = new JobDB();
-      //_jobs.Open("job.v16.db");
       _tempFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("job.v16.db", _tempFile, overwrite: true);
-      _jobs.Open(_tempFile);
+      _jobs = JobDB.Config.InitializeJobDatabase(_tempFile).OpenConnection();
     }
 
     public void Dispose()

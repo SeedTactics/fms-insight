@@ -40,45 +40,93 @@ using Microsoft.Data.Sqlite;
 namespace BlackMaple.MachineFramework
 {
   //database backend for the job db
-  public class JobDB : BlackMaple.MachineWatchInterface.IJobDatabase
+  public class JobDB : BlackMaple.MachineWatchInterface.IJobDatabase, IDisposable
   {
-
     #region Database Open/Update
-    private SqliteConnection _connection;
-    private object _lock = new object();
-
-    public event MachineWatchInterface.NewJobsDelegate OnNewJobs;
-
-    public JobDB() { }
-    public JobDB(SqliteConnection c)
+    public class Config
     {
-      _connection = c;
+      public bool JobTableHasOldPriorityColumn { get; } = false;
+
+      public static Config InitializeJobDatabase(string filename)
+      {
+        var connStr = "Data Source=" + filename;
+        if (System.IO.File.Exists(filename))
+        {
+          using (var conn = new SqliteConnection(connStr))
+          {
+            conn.Open();
+            var oldPriCol = UpdateTables(conn);
+            return new Config(connStr, oldPriCol);
+          }
+        }
+        else
+        {
+          using (var conn = new SqliteConnection(connStr))
+          {
+            conn.Open();
+            try
+            {
+              CreateTables(conn);
+              return new Config(connStr, jobTableHasOldPriCol: false);
+            }
+            catch
+            {
+              conn.Close();
+              System.IO.File.Delete(filename);
+              throw;
+            }
+          }
+        }
+      }
+
+      public static Config InitializeSingleThreadedMemoryDB()
+      {
+        var memConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+        memConn.Open();
+        CreateTables(memConn);
+        return new Config(memConn);
+      }
+
+      public JobDB OpenConnection()
+      {
+        if (_memoryConnection != null)
+        {
+          return new JobDB(this, _memoryConnection, closeOnDispose: false);
+        }
+        else
+        {
+          var conn = new SqliteConnection(_connStr);
+          conn.Open();
+          return new JobDB(this, conn, closeOnDispose: true);
+        }
+      }
+
+      private string _connStr { get; }
+      private SqliteConnection _memoryConnection { get; }
+
+      private Config(string connStr, bool jobTableHasOldPriCol)
+      {
+        _connStr = connStr;
+        JobTableHasOldPriorityColumn = jobTableHasOldPriCol;
+      }
+
+      private Config(SqliteConnection memConn)
+      {
+        _memoryConnection = memConn;
+        JobTableHasOldPriorityColumn = false;
+      }
+
     }
 
-    public void Open(string filename)
-    {
-      if (System.IO.File.Exists(filename))
-      {
-        _connection = new SqliteConnection("Data Source=" + filename);
-        _connection.Open();
-        UpdateTables();
-      }
-      else
-      {
-        _connection = new SqliteConnection("Data Source=" + filename);
-        _connection.Open();
-        try
-        {
-          CreateTables();
-        }
-        catch
-        {
-          _connection.Close();
-          System.IO.File.Delete(filename);
-          throw;
-        }
-      }
+    private SqliteConnection _connection;
+    private bool _closeConnectionOnDispose;
+    private Config _cfg;
 
+    private JobDB(Config cfg, SqliteConnection c, bool closeOnDispose)
+    {
+      _connection = c;
+      _closeConnectionOnDispose = closeOnDispose;
+      _cfg = cfg;
     }
 
     public void Close()
@@ -86,15 +134,24 @@ namespace BlackMaple.MachineFramework
       _connection.Close();
     }
 
+    public void Dispose()
+    {
+      if (_closeConnectionOnDispose && _connection != null)
+      {
+        _connection.Close();
+        _connection.Dispose();
+        _connection = null;
+      }
+    }
+
     private const int Version = 19;
 
     // the Priority field was removed from the job but old tables had it marked as NOT NULL.  So rather than try and copy
     // all the jobs, we just fill it in with 0 for old job databases.
-    private bool _jobTableHasOldPriorityColumn = false;
 
-    public void CreateTables()
+    private static void CreateTables(SqliteConnection conn)
     {
-      using (var cmd = _connection.CreateCommand())
+      using (var cmd = conn.CreateCommand())
       {
 
         cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
@@ -185,10 +242,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-
-    private void UpdateTables()
+    private static bool UpdateTables(SqliteConnection conn)
     {
-      using (var cmd = _connection.CreateCommand())
+      using (var cmd = conn.CreateCommand())
       {
 
         cmd.CommandText = "SELECT ver FROM version";
@@ -222,20 +278,24 @@ namespace BlackMaple.MachineFramework
           }
         }
 
+        var jobTableHasOldPriorityColumn = false;
         cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('jobs') WHERE name='Priority'";
         var priColCnt = cmd.ExecuteScalar();
         if (priColCnt != null && priColCnt != DBNull.Value && (long)priColCnt > 0)
-          _jobTableHasOldPriorityColumn = true;
+          jobTableHasOldPriorityColumn = true;
 
         if (curVersion > Version)
         {
           throw new Exception("This input file was created with a newer version of machine watch.  Please upgrade machine watch");
         }
 
-        if (curVersion == Version) return;
+        if (curVersion == Version)
+        {
+          return jobTableHasOldPriorityColumn;
+        }
 
 
-        var trans = _connection.BeginTransaction();
+        var trans = conn.BeginTransaction();
 
         try
         {
@@ -278,12 +338,14 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = null;
         cmd.CommandText = "VACUUM";
         cmd.ExecuteNonQuery();
+
+        return jobTableHasOldPriorityColumn;
       }
     }
 
-    private void Ver0ToVer1(IDbTransaction trans)
+    private static void Ver0ToVer1(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE fixtures(UniqueStr TEXT, Process INTEGER, Path INTEGER, Fixture TEXT, Face TEXT, PRIMARY KEY(UniqueStr,Process,Path,Fixture,Face))";
@@ -291,9 +353,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver1ToVer2(IDbTransaction trans)
+    private static void Ver1ToVer2(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE pathdata ADD PartsPerPallet INTEGER";
@@ -301,9 +363,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver2ToVer3(IDbTransaction trans)
+    private static void Ver2ToVer3(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE pathdata ADD PathGroup INTEGER";
@@ -311,9 +373,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver3ToVer4(IDbTransaction trans)
+    private static void Ver3ToVer4(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE inspections ADD RandomFreq NUMERIC";
@@ -322,9 +384,9 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    private void Ver4ToVer5(IDbTransaction trans)
+    private static void Ver4ToVer5(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE inspections ADD InspProc INTEGER";
@@ -332,9 +394,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver5ToVer6(IDbTransaction trans)
+    private static void Ver5ToVer6(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE jobs ADD StartUTC INTEGER";
@@ -382,9 +444,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver6ToVer7(IDbTransaction trans)
+    private static void Ver6ToVer7(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
@@ -395,9 +457,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver7ToVer8(IDbTransaction trans)
+    private static void Ver7ToVer8(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE jobs ADD ScheduleId TEXT";
@@ -417,9 +479,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver8ToVer9(IDbTransaction trans)
+    private static void Ver8ToVer9(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "DROP TABLE decrement_counts";
@@ -433,9 +495,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver9ToVer10(IDbTransaction trans)
+    private static void Ver9ToVer10(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE sim_station_use ADD PlanDownTime INTEGER";
@@ -443,9 +505,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver10ToVer11(IDbTransaction trans)
+    private static void Ver10ToVer11(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
@@ -453,9 +515,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver11ToVer12(IDbTransaction transaction)
+    private static void Ver11ToVer12(IDbTransaction transaction)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
@@ -463,9 +525,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver12ToVer13(IDbTransaction transaction)
+    private static void Ver12ToVer13(IDbTransaction transaction)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "ALTER TABLE pathdata ADD InputQueue TEXT";
@@ -475,9 +537,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver13ToVer14(IDbTransaction transaction)
+    private static void Ver13ToVer14(IDbTransaction transaction)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "ALTER TABLE pathdata ADD LoadTime INTEGER";
@@ -487,9 +549,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver14ToVer15(IDbTransaction trans)
+    private static void Ver14ToVer15(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         // at the time of conversion, none of the plugins had yet used the decrement snapshot table.
@@ -508,9 +570,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver15ToVer16(IDbTransaction trans)
+    private static void Ver15ToVer16(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "DROP TABLE material";
@@ -520,9 +582,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver16ToVer17(IDbTransaction trans)
+    private static void Ver16ToVer17(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.CommandText = "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
         cmd.ExecuteNonQuery();
@@ -578,9 +640,9 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    public void Ver17ToVer18(IDbTransaction trans)
+    private static void Ver17ToVer18(IDbTransaction trans)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
         cmd.CommandText = "CREATE TABLE path_inspections(UniqueStr TEXT, Process INTEGER, Path INTEGER, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, ExpectedTime INTEGER, PRIMARY KEY (UniqueStr, Process, Path, InspType))";
@@ -599,9 +661,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Ver18ToVer19(IDbTransaction transaction)
+    private static void Ver18ToVer19(IDbTransaction transaction)
     {
-      using (IDbCommand cmd = _connection.CreateCommand())
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "ALTER TABLE pathdata ADD Casting TEXT";
@@ -1079,7 +1141,7 @@ namespace BlackMaple.MachineFramework
 
     private MachineWatchInterface.PlannedSchedule LoadPlannedSchedule(IDbCommand cmd)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var ret = default(MachineWatchInterface.PlannedSchedule);
         ret.Jobs = new List<MachineWatchInterface.JobPlan>();
@@ -1109,7 +1171,7 @@ namespace BlackMaple.MachineFramework
 
     private MachineWatchInterface.HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var ret = default(BlackMaple.MachineWatchInterface.HistoricData);
         ret.Jobs = new Dictionary<string, MachineWatchInterface.HistoricJob>();
@@ -1208,7 +1270,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1239,7 +1301,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.PartWorkorder> UnfilledWorkordersForJob(string unique)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1277,7 +1339,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
                   " FROM jobs WHERE ScheduleId = $sid";
 
-        lock (_lock)
+        lock (_cfg)
         {
           var ret = default(BlackMaple.MachineWatchInterface.PlannedSchedule);
           ret.Jobs = new List<BlackMaple.MachineWatchInterface.JobPlan>();
@@ -1308,7 +1370,7 @@ namespace BlackMaple.MachineFramework
 
     public MachineWatchInterface.JobPlan LoadJob(string UniqueStr)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         using (var cmd2 = _connection.CreateCommand())
@@ -1387,7 +1449,7 @@ namespace BlackMaple.MachineFramework
 
     public bool DoesJobExist(string unique)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1414,7 +1476,7 @@ namespace BlackMaple.MachineFramework
         if (string.IsNullOrEmpty(j.ScheduleId))
           j.ScheduleId = newJobs.ScheduleId;
       }
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -1474,16 +1536,11 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-
-      if (OnNewJobs != null)
-      {
-        OnNewJobs(newJobs);
-      }
     }
 
     public void AddPrograms(IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime startingUtc)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -1505,7 +1562,7 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        if (_jobTableHasOldPriorityColumn)
+        if (_cfg.JobTableHasOldPriorityColumn)
         {
           cmd.CommandText =
             "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId,Priority) " +
@@ -1986,7 +2043,7 @@ namespace BlackMaple.MachineFramework
 
     public void ArchiveJob(string UniqueStr)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2004,7 +2061,7 @@ namespace BlackMaple.MachineFramework
 
     public void ArchiveJobs(IEnumerable<string> uniqueStrs, IEnumerable<NewDecrementQuantity> newDecrements = null, DateTime? nowUTC = null)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2041,7 +2098,7 @@ namespace BlackMaple.MachineFramework
 
     public void MarkJobCopiedToSystem(string UniqueStr)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2067,7 +2124,7 @@ namespace BlackMaple.MachineFramework
     #region "Modification of Jobs"
     public void SetJobComment(string unique, string comment)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2109,7 +2166,7 @@ namespace BlackMaple.MachineFramework
 
     private void UpdateJobHoldHelper(string unique, int proc, int path, bool load, MachineWatchInterface.JobHoldPattern newHold)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
 
@@ -2153,7 +2210,7 @@ namespace BlackMaple.MachineFramework
     }
     public void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2210,7 +2267,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(string unique)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         return LoadDecrementsForJob(trans: null, unique: unique);
       }
@@ -2241,7 +2298,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2254,7 +2311,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -2396,7 +2453,7 @@ namespace BlackMaple.MachineFramework
 
     public ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2435,7 +2492,7 @@ namespace BlackMaple.MachineFramework
 
     public ProgramRevision LoadProgram(string program, long revision)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2475,7 +2532,7 @@ namespace BlackMaple.MachineFramework
 
     public ProgramRevision LoadMostRecentProgram(string program)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2514,7 +2571,7 @@ namespace BlackMaple.MachineFramework
 
     public string LoadProgramContent(string program, long revision)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -2551,7 +2608,7 @@ namespace BlackMaple.MachineFramework
 
     public void SetCellControllerProgramForProgram(string program, long revision, string cellCtProgName)
     {
-      lock (_lock)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try

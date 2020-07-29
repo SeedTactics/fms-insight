@@ -86,13 +86,13 @@ namespace MazakMachineInterface
     private TransitionThread _thread;
     private IWriteData database;
     private IReadDataAccess readDatabase;
-    private BlackMaple.MachineFramework.JobDB jobDB;
+    private BlackMaple.MachineFramework.JobDB.Config jobDBConfig;
 
-    public HoldPattern(IWriteData d, IReadDataAccess readDb, BlackMaple.MachineFramework.JobDB jdb, bool createThread)
+    public HoldPattern(IWriteData d, IReadDataAccess readDb, BlackMaple.MachineFramework.JobDB.Config jdb, bool createThread)
     {
       database = d;
       readDatabase = readDb;
-      jobDB = jdb;
+      jobDBConfig = jdb;
 
       if (createThread)
         _thread = new TransitionThread(this);
@@ -223,8 +223,8 @@ namespace MazakMachineInterface
         get { return (HoldMode)_schRow.HoldMode; }
       }
 
-      public JobHoldPattern HoldEntireJob {get;}
-      public JobHoldPattern HoldMachining {get;}
+      public JobHoldPattern HoldEntireJob { get; }
+      public JobHoldPattern HoldMachining { get; }
 
       public void ChangeHoldMode(HoldMode newHold)
       {
@@ -237,15 +237,17 @@ namespace MazakMachineInterface
         _parent.database.Save(transSet, "Hold Mode");
       }
 
-      public MazakSchedule(HoldPattern parent, MazakScheduleRow s)
+      public MazakSchedule(BlackMaple.MachineFramework.JobDB jdb, HoldPattern parent, MazakScheduleRow s)
       {
         _parent = parent;
         _schRow = s;
 
-        if (MazakPart.IsSailPart(_schRow.PartName)) {
+        if (MazakPart.IsSailPart(_schRow.PartName))
+        {
           MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
-          var job = parent.jobDB.LoadJob(unique);
-          if (job != null) {
+          var job = jdb.LoadJob(unique);
+          if (job != null)
+          {
             HoldEntireJob = job.HoldEntireJob;
             HoldMachining = job.HoldMachining(process: 1, path: paths.PathForProc(proc: 1));
           }
@@ -256,14 +258,14 @@ namespace MazakMachineInterface
       private MazakScheduleRow _schRow;
     }
 
-    private IDictionary<int, MazakSchedule> LoadMazakSchedules()
+    private IDictionary<int, MazakSchedule> LoadMazakSchedules(BlackMaple.MachineFramework.JobDB jdb)
     {
       var ret = new Dictionary<int, MazakSchedule>();
       var mazakData = readDatabase.LoadSchedules();
 
       foreach (var schRow in mazakData.Schedules)
       {
-        ret.Add(schRow.Id, new MazakSchedule(this, schRow));
+        ret.Add(schRow.Id, new MazakSchedule(jdb, this, schRow));
       }
 
       return ret;
@@ -291,7 +293,11 @@ namespace MazakMachineInterface
           //we might miss a transition if it occurs while we are running this function.
           var nowUTC = DateTime.UtcNow;
 
-          var mazakSch = LoadMazakSchedules();
+          IDictionary<int, MazakSchedule> mazakSch;
+          using (var jdb = jobDBConfig.OpenConnection())
+          {
+            mazakSch = LoadMazakSchedules(jdb);
+          }
 
           Log.Debug("Checking for hold transitions at {time} ", nowUTC);
 

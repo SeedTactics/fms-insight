@@ -49,31 +49,34 @@ namespace BlackMaple.FMSInsight.Niigata
     private NiigataJobs _jobControl;
     private SyncPallets _sync;
 
-    public JobLogDB LogDB { get; private set; }
-    public JobDB JobDB { get; private set; }
+    public EventLogDB.Config LogDBConfig { get; private set; }
+    public JobDB.Config JobDBConfig { get; private set; }
     public ISyncPallets SyncPallets => _sync;
     public NiigataStationNames StationNames { get; }
     public ICncMachineConnection MachineConnection { get; }
+
+    public event NewJobsDelegate OnNewJobs;
+    public event NewLogEntryDelegate NewLogEntry;
+    public event NewCurrentStatus OnNewCurrentStatus;
+    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId) =>
+      NewLogEntry?.Invoke(e, foreignId);
 
     public NiigataBackend(
       IConfigurationSection config,
       FMSSettings cfg,
       bool startSyncThread,
-      Func<JobLogDB, IRecordFacesForPallet, NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null
+      Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null
     )
     {
       try
       {
         Log.Information("Starting niigata backend");
-        LogDB = new JobLogDB(cfg);
-        LogDB.Open(
-            System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
-            startingSerial: cfg.StartingSerial
+        LogDBConfig = EventLogDB.Config.InitializeEventDatabase(
+            cfg,
+            System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db")
         );
-        JobDB = new JobDB();
-        JobDB.Open(
-          System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
-        );
+        LogDBConfig.NewLogEntry += RaiseNewLogEntry;
+        JobDBConfig = JobDB.Config.InitializeJobDatabase(System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db"));
 
         var programDir = config.GetValue<string>("Program Directory");
         if (!System.IO.Directory.Exists(programDir))
@@ -114,24 +117,23 @@ namespace BlackMaple.FMSInsight.Niigata
 
         var connStr = config.GetValue<string>("Connection String");
 
-        _icc = new NiigataICC(JobDB, programDir, connStr, StationNames);
-        var recordFaces = new RecordFacesForPallet(LogDB);
-        var createLog = new CreateCellState(LogDB, JobDB, recordFaces, cfg, StationNames, MachineConnection);
+        _icc = new NiigataICC(programDir, connStr, StationNames);
+        var createLog = new CreateCellState(cfg, StationNames, MachineConnection);
 
         IAssignPallets assign;
         if (customAssignment != null)
         {
-          assign = customAssignment(LogDB, recordFaces, StationNames, MachineConnection);
+          assign = customAssignment(StationNames, MachineConnection);
         }
         else
         {
           assign = new MultiPalletAssign(new IAssignPallets[] {
-            new AssignNewRoutesOnPallets(recordFaces, StationNames),
+            new AssignNewRoutesOnPallets(StationNames),
             new SizedQueues(cfg.Queues)
           });
         }
-        _sync = new SyncPallets(JobDB, LogDB, _icc, assign, createLog);
-        _jobControl = new NiigataJobs(JobDB, LogDB, cfg, _sync, StationNames);
+        _sync = new SyncPallets(JobDBConfig, LogDBConfig, _icc, assign, createLog, cfg, s => OnNewCurrentStatus?.Invoke(s));
+        _jobControl = new NiigataJobs(JobDBConfig, LogDBConfig, cfg, _sync, StationNames, j => OnNewJobs?.Invoke(j));
         if (startSyncThread)
         {
           StartSyncThread();
@@ -150,41 +152,28 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void Dispose()
     {
-      if (_jobControl != null) _jobControl.Dispose();
+      LogDBConfig.NewLogEntry -= RaiseNewLogEntry;
       _jobControl = null;
       if (SyncPallets != null) _sync.Dispose();
       _sync = null;
       if (_icc != null) _icc.Dispose();
       _icc = null;
-      if (LogDB != null) LogDB.Close();
-      LogDB = null;
-      if (JobDB != null) JobDB.Close();
-      JobDB = null;
     }
 
-    public IInspectionControl InspectionControl()
-    {
-      return LogDB;
-    }
+    public IJobControl JobControl { get => _jobControl; }
+    public IOldJobDecrement OldJobDecrement { get => null; }
 
-    public IJobDatabase JobDatabase()
+    public IJobDatabase OpenJobDatabase()
     {
-      return JobDB;
+      return JobDBConfig.OpenConnection();
     }
-
-    public IOldJobDecrement OldJobDecrement()
+    public ILogDatabase OpenLogDatabase()
     {
-      return null;
+      return LogDBConfig.OpenConnection();
     }
-
-    public IJobControl JobControl()
+    public IInspectionControl OpenInspectionControl()
     {
-      return _jobControl;
-    }
-
-    public ILogDatabase LogDatabase()
-    {
-      return LogDB;
+      return LogDBConfig.OpenConnection();
     }
   }
 

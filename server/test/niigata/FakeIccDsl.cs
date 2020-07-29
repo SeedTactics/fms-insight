@@ -42,7 +42,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 {
   public class FakeIccDsl : IDisposable
   {
-    private JobLogDB _logDB;
+    private EventLogDB.Config _logDBCfg;
+    private EventLogDB _logDB;
     private JobDB _jobDB;
     private IAssignPallets _assign;
     private CreateCellState _createLog;
@@ -66,17 +67,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _settings.Queues.Add("thequeue", new MachineWatchInterface.QueueSize());
       _settings.Queues.Add("qqq", new MachineWatchInterface.QueueSize());
 
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _logDB = new JobLogDB(_settings, logConn);
-      _logDB.CreateTables(firstSerialOnEmpty: null);
-
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
-
-      var record = new RecordFacesForPallet(_logDB);
+      _logDBCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(_settings);
+      _logDB = _logDBCfg.OpenConnection();
+      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _statNames = new NiigataStationNames()
       {
@@ -89,12 +82,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
       _assign = new MultiPalletAssign(new IAssignPallets[] {
-        new AssignNewRoutesOnPallets(record, _statNames),
+        new AssignNewRoutesOnPallets(_statNames),
         new SizedQueues(new Dictionary<string, QueueSize>() {
           {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
         })
       });
-      _createLog = new CreateCellState(_logDB, _jobDB, record, _settings, _statNames, machConn);
+      _createLog = new CreateCellState(_settings, _statNames, machConn);
 
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
@@ -370,13 +363,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
-          new JobLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
           _settings.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
       }
       var addLog = _logDB.RecordAddMaterialToQueue(
-        new JobLogDB.EventLogMaterial()
+        new EventLogDB.EventLogMaterial()
         {
           MaterialID = matId,
           Process = 0,
@@ -811,9 +804,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var sch = _jobDB.LoadUnarchivedJobs();
 
-      using (var logMonitor = _logDB.Monitor())
+      using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_status, sch);
+        var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
         cellSt.PalletStateUpdated.Should().BeFalse();
         cellSt.Schedule.Should().Be(sch);
         CheckCellStMatchesExpected(cellSt);
@@ -1292,9 +1285,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var sch = _jobDB.LoadUnarchivedJobs();
 
-      using (var logMonitor = _logDB.Monitor())
+      using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_status, sch);
+        var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
         cellSt.Schedule.Should().Be(sch);
 
@@ -1315,7 +1308,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_status, sch);
+          cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
           cellSt.Schedule.Should().Be(sch);
         }
@@ -1331,11 +1324,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           var pal = expectedNewRoute.ExpectedMaster.PalletNum;
           action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
           {
-            NewMaster = expectedNewRoute.ExpectedMaster
+            NewMaster = expectedNewRoute.ExpectedMaster,
+            NewFaces = expectedNewRoute.Faces.Select(f => new AssignedJobAndPathForFace()
+            {
+              Face = f.face,
+              Unique = f.unique,
+              Proc = f.proc,
+              Path = f.path
+            })
           }, options => options
               .Excluding(e => e.NewMaster.Comment)
               .RespectingRuntimeTypes()
           );
+          ((NewPalletRoute)action).NewMaster.Comment =
+            RecordFacesForPallet.Save(((NewPalletRoute)action).NewMaster.PalletNum, _status.TimeOfStatusUTC, ((NewPalletRoute)action).NewFaces, _logDB);
           _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
           _status.Pallets[pal - 1].Tracking.CurrentControlNum = 1;
           _status.Pallets[pal - 1].Tracking.CurrentStepNum = 1;

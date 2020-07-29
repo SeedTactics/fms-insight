@@ -90,7 +90,7 @@ namespace MachineWatchTest
       }
     }
 
-    private JobLogDB _logDB;
+    private EventLogDB _logDB;
     private JobDB _jobDB;
     private IWriteJobs _writeJobs;
     private WriteMock _writeMock;
@@ -100,15 +100,8 @@ namespace MachineWatchTest
 
     public WriteJobsSpec()
     {
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _logDB = new JobLogDB(new FMSSettings(), logConn);
-      _logDB.CreateTables(firstSerialOnEmpty: null);
-
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      _logDB = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
+      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _writeMock = new WriteMock();
 
@@ -235,7 +228,6 @@ namespace MachineWatchTest
         _readMock,
         Substitute.For<IHoldManagement>(),
         _jobDB,
-        _logDB,
         _settings,
         check: false,
         useStarting: true,
@@ -312,7 +304,7 @@ namespace MachineWatchTest
         jsonSettings
       );
 
-      _writeJobs.Invoking(x => x.AddJobs(newJobsMultiFace, "xxxx"))
+      _writeJobs.Invoking(x => x.AddJobs(_jobDB, newJobsMultiFace, "xxxx"))
         .Should()
         .Throw<BadRequestException>()
         .WithMessage(
@@ -340,7 +332,7 @@ namespace MachineWatchTest
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
-      _writeJobs.AddJobs(newJobs, null);
+      _writeJobs.AddJobs(_jobDB, newJobs, null);
 
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
@@ -383,7 +375,7 @@ namespace MachineWatchTest
         jsonSettings
       );
 
-      _writeJobs.AddJobs(newJobs, null);
+      _writeJobs.AddJobs(_jobDB, newJobs, null);
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "path-groups-delparts.json");
@@ -438,7 +430,7 @@ namespace MachineWatchTest
         }
       }, newJobs.Jobs.First().RouteStartingTimeUTC);
 
-      _writeJobs.AddJobs(newJobs, null);
+      _writeJobs.AddJobs(_jobDB, newJobs, null);
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
@@ -457,7 +449,7 @@ namespace MachineWatchTest
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
           jsonSettings
       );
-      _writeJobs.Invoking(x => x.AddJobs(newJobs, null))
+      _writeJobs.Invoking(x => x.AddJobs(_jobDB, newJobs, null))
         .Should()
         .Throw<Exception>()
         .WithMessage("Sample error");
@@ -482,7 +474,7 @@ namespace MachineWatchTest
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
           jsonSettings
       );
-      _writeJobs.Invoking(x => x.AddJobs(newJobs, null))
+      _writeJobs.Invoking(x => x.AddJobs(_jobDB, newJobs, null))
         .Should()
         .Throw<Exception>()
         .WithMessage("Sample error");
@@ -503,7 +495,7 @@ namespace MachineWatchTest
 
       //try again still with error
       _writeMock.AddSchedules = null;
-      _writeJobs.Invoking(x => x.RecopyJobsToMazak(start))
+      _writeJobs.Invoking(x => x.RecopyJobsToMazak(_jobDB, start))
         .Should()
         .Throw<Exception>()
         .WithMessage("Sample error");
@@ -518,7 +510,7 @@ namespace MachineWatchTest
 
       //finally succeed without error
       _writeMock.errorForPrefix = null;
-      _writeJobs.RecopyJobsToMazak(start);
+      _writeJobs.RecopyJobsToMazak(_jobDB, start);
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();

@@ -45,7 +45,6 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NiigataICC : INiigataCommunication, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataICC>();
-    private JobDB _jobs;
     private NiigataStationNames _statNames;
     private string _programDir;
     private string _connStr;
@@ -54,9 +53,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public event Action NewCurrentStatus;
 
-    public NiigataICC(JobDB j, string progDir, string connectionStr, NiigataStationNames statNames)
+    public NiigataICC(string progDir, string connectionStr, NiigataStationNames statNames)
     {
-      _jobs = j;
       _programDir = progDir;
       _connStr = connectionStr;
       _statNames = statNames;
@@ -572,8 +570,11 @@ namespace BlackMaple.FMSInsight.Niigata
       conn.Execute("DELETE FROM register_program_tool", transaction: trans);
     }
 
-    private void SetRoute(NewPalletRoute newRoute)
+    private void SetRoute(NewPalletRoute newRoute, EventLogDB logDB)
     {
+      // first save the faces
+      newRoute.NewMaster.Comment = RecordFacesForPallet.Save(newRoute.NewMaster.PalletNum, DateTime.UtcNow, newRoute.NewFaces, logDB);
+
       long ProposalId = NewId();
       using (var conn = new NpgsqlConnection(_connStr))
       {
@@ -804,20 +805,20 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void AddProgram(NewProgram add)
+    private void AddProgram(JobDB jobDB, NewProgram add)
     {
 
       // it is possible that a program was deleted from the ICC but the server crashed/stopped before setting the cell controller program null
       // in the job database.  The Assignment code guarantees that a new program number it picks does not exist in the icc so if it exists
       // in the database, it is old leftover from a failed delete and should be cleared.
-      var oldProg = _jobs.ProgramFromCellControllerProgram(add.ProgramNum.ToString());
+      var oldProg = jobDB.ProgramFromCellControllerProgram(add.ProgramNum.ToString());
       if (oldProg != null)
       {
-        _jobs.SetCellControllerProgramForProgram(oldProg.ProgramName, oldProg.Revision, null);
+        jobDB.SetCellControllerProgramForProgram(oldProg.ProgramName, oldProg.Revision, null);
       }
 
       // write (or overwrite) the file to disk
-      var progCt = _jobs.LoadProgramContent(add.ProgramName, add.ProgramRevision);
+      var progCt = jobDB.LoadProgramContent(add.ProgramName, add.ProgramRevision);
       var fullPath = System.IO.Path.Combine(_programDir, add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA");
       System.IO.File.WriteAllText(fullPath, progCt);
 
@@ -893,24 +894,24 @@ namespace BlackMaple.FMSInsight.Niigata
       // if we crash at this point, the icc will have the program but it won't be recorded into the job database.  The next time
       // Insight starts, it will add another program with a new ICC number (but identical file).  The old program will eventually be
       // cleaned up since it isn't in use.
-      _jobs.SetCellControllerProgramForProgram(add.ProgramName, add.ProgramRevision, add.ProgramNum.ToString());
+      jobDB.SetCellControllerProgramForProgram(add.ProgramName, add.ProgramRevision, add.ProgramNum.ToString());
     }
 
-    private void DeleteProgram(DeleteProgram delete)
+    private void DeleteProgram(JobDB jobDB, DeleteProgram delete)
     {
       // TODO: send to ICC
 
       // if we crash after deleting from the icc but before clearing the cell controller program, the above NewProgram check will
       // clear it later.
-      _jobs.SetCellControllerProgramForProgram(delete.ProgramName, delete.ProgramRevision, null);
+      jobDB.SetCellControllerProgramForProgram(delete.ProgramName, delete.ProgramRevision, null);
     }
 
-    public void PerformAction(NiigataAction a)
+    public void PerformAction(JobDB jobDB, EventLogDB logDB, NiigataAction a)
     {
       switch (a)
       {
         case NewPalletRoute newRoute:
-          SetRoute(newRoute);
+          SetRoute(newRoute, logDB);
           break;
 
         case UpdatePalletQuantities update:
@@ -918,11 +919,11 @@ namespace BlackMaple.FMSInsight.Niigata
           break;
 
         case NewProgram add:
-          AddProgram(add);
+          AddProgram(jobDB, add);
           break;
 
         case DeleteProgram delete:
-          DeleteProgram(delete);
+          DeleteProgram(jobDB, delete);
           break;
       }
     }

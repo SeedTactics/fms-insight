@@ -45,28 +45,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
   public class NiigataJobSpec : IDisposable
   {
     private JobDB _jobDB;
-    private JobLogDB _logDB;
+    private EventLogDB _logDB;
     private NiigataJobs _jobs;
     private ISyncPallets _syncMock;
+    private Action<NewJobs> _onNewJobs;
 
     public NiigataJobSpec()
     {
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _logDB = new JobLogDB(new FMSSettings(), logConn);
-      _logDB.CreateTables(firstSerialOnEmpty: null);
+      var logCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _logDB = logCfg.OpenConnection();
 
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      var jobDbCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
+      _jobDB = jobDbCfg.OpenConnection();
 
       _syncMock = Substitute.For<ISyncPallets>();
 
       var settings = new FMSSettings();
       settings.Queues.Add("q1", new QueueSize());
 
-      _jobs = new NiigataJobs(_jobDB, _logDB, settings, _syncMock, null);
+      _onNewJobs = Substitute.For<Action<NewJobs>>();
+      _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, _onNewJobs);
     }
 
     void IDisposable.Dispose()
@@ -106,7 +104,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 20, 0, 0, DateTimeKind.Utc));
       j.ScheduleId = "sch1";
       _logDB.RecordUnloadEnd(
-        mats: new[] { new JobLogDB.EventLogMaterial() {
+        mats: new[] { new EventLogDB.EventLogMaterial() {
           MaterialID = mat1,
           Process = 1,
           Face = "f1"
@@ -261,13 +259,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
 
       // two material in queues
-      _logDB.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial()
+      _logDB.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial()
       {
         MaterialID = mat3,
         Process = 1,
         Face = null
       }, "q1", 0);
-      _logDB.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial()
+      _logDB.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial()
       {
         MaterialID = mat4,
         Process = 1,
@@ -330,27 +328,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       expectedSt.Alarms.Add("ICC has an alarm");
       expectedSt.QueueSizes.Add("q1", new QueueSize());
 
-      using (var monitor = _jobs.Monitor())
+      _syncMock.CurrentCellState().Returns(new CellState()
       {
-        _syncMock.OnPalletsChanged += Raise.Event<Action<CellState>>(new CellState()
+        Status = status,
+        Pallets = new List<PalletAndMaterial> { pal1, pal2 },
+        QueuedMaterial = new List<InProcessMaterial> { queuedMat },
+        Schedule = new PlannedSchedule()
         {
-          Status = status,
-          Pallets = new List<PalletAndMaterial> { pal1, pal2 },
-          QueuedMaterial = new List<InProcessMaterial> { queuedMat },
-          Schedule = new PlannedSchedule()
-          {
-            Jobs = new List<JobPlan> { j, j2, j3 }
-          }
-        });
+          Jobs = new List<JobPlan> { j, j2, j3 }
+        }
+      });
 
-        _jobs.GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
-          config.Excluding(c => c.TimeOfCurrentStatusUTC)
-        );
-
-        monitor.Should().Raise("OnNewCurrentStatus").First().Parameters.First().Should().BeEquivalentTo(expectedSt, config =>
-          config.Excluding(c => c.TimeOfCurrentStatusUTC)
-        );
-      }
+      ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
+        config.Excluding(c => c.TimeOfCurrentStatusUTC)
+      );
     }
 
     [Fact]
@@ -363,7 +354,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       toKeepJob.PartName = "tokeep";
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = new List<JobPlan> { completedJob, toKeepJob } }, null);
 
-      _syncMock.OnPalletsChanged += Raise.Event<Action<CellState>>(new CellState()
+      _syncMock.CurrentCellState().Returns(new CellState()
       {
         Pallets = new List<PalletAndMaterial>(),
         QueuedMaterial = new List<InProcessMaterial>(),
@@ -398,7 +389,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Jobs = new List<JobPlan> { newJob1, newJob2 }
       };
 
-      _jobs.AddJobs(newJobs, null);
+      ((IJobControl)_jobs).AddJobs(newJobs, null);
 
       _jobDB.LoadUnarchivedJobs().Jobs.Should().BeEquivalentTo(new[] { newJob1, newJob2, toKeepJob });
       _jobDB.LoadJob("old").Archived.Should().BeTrue();
@@ -445,20 +436,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }
       };
 
-      _jobs.DecrementJobQuantites(-1).Should().BeEquivalentTo(expected);
-      _syncMock.Received().DecrementPlannedButNotStartedQty();
+      ((IJobControl)_jobs).DecrementJobQuantites(-1).Should().BeEquivalentTo(expected);
+      _syncMock.Received().DecrementPlannedButNotStartedQty(Arg.Any<JobDB>(), Arg.Any<EventLogDB>());
 
       _syncMock.ClearReceivedCalls();
 
-      _jobs.DecrementJobQuantites(DateTime.UtcNow.AddHours(-5)).Should().BeEquivalentTo(expected);
-      _syncMock.Received().DecrementPlannedButNotStartedQty();
+      ((IJobControl)_jobs).DecrementJobQuantites(DateTime.UtcNow.AddHours(-5)).Should().BeEquivalentTo(expected);
+      _syncMock.Received().DecrementPlannedButNotStartedQty(Arg.Any<JobDB>(), Arg.Any<EventLogDB>());
     }
 
     [Fact]
     public void UnallocatedQueues()
     {
       //add a casting
-      _jobs.AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, operatorName: "theoper");
+      ((IJobControl)_jobs).AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, operatorName: "theoper");
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -479,19 +470,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
-         new JobLogDB.QueuedMaterial()
+         new EventLogDB.QueuedMaterial()
           { MaterialID = 1, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC },
-         new JobLogDB.QueuedMaterial()
+         new EventLogDB.QueuedMaterial()
           { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 1, Queue = "q1", Unique = "", AddTimeUTC = mats[1].AddTimeUTC }
         });
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
-      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
+      ((IJobControl)_jobs).RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
       mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats.Should().BeEquivalentTo(new[] {
-          new JobLogDB.QueuedMaterial()
+          new EventLogDB.QueuedMaterial()
             { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC}
         }, options => options.Using<DateTime?>(ctx => ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, 4000)).WhenTypeIs<DateTime?>());
 
@@ -509,7 +500,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
 
       //add an allocated material
-      _jobs.AddUnprocessedMaterialToQueue("uuu1", process: 1, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper");
+      ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: 1, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper");
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -523,7 +514,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
-          new JobLogDB.QueuedMaterial()
+          new EventLogDB.QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
         });
 
@@ -531,17 +522,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.ClearReceivedCalls();
 
       //remove it
-      _jobs.RemoveMaterialFromAllQueues(new List<long> { 1 }, "myoper");
+      ((IJobControl)_jobs).RemoveMaterialFromAllQueues(new List<long> { 1 }, "myoper");
       _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
       //add it back in
-      _jobs.SetMaterialInQueue(1, "q1", 0, "theoper");
+      ((IJobControl)_jobs).SetMaterialInQueue(1, "q1", 0, "theoper");
       mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats.Should().BeEquivalentTo(new[] {
-          new JobLogDB.QueuedMaterial()
+          new EventLogDB.QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
         });
 

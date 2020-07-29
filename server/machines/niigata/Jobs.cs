@@ -38,241 +38,51 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public class NiigataJobs : IJobControl, IDisposable
+  public class NiigataJobs : IJobControl
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataJobs>();
-    private JobDB _jobs;
-    private JobLogDB _log;
+    private JobDB.Config _jobDbCfg;
+    private EventLogDB.Config _logDbCfg;
     private FMSSettings _settings;
     private ISyncPallets _sync;
     private readonly NiigataStationNames _statNames;
+    private Action<NewJobs> _onNewJobs;
 
-    public NiigataJobs(JobDB j, JobLogDB l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames)
+    public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames, Action<NewJobs> onNewJobs)
     {
-      _jobs = j;
-      _log = l;
+      _onNewJobs = onNewJobs;
+      _jobDbCfg = j;
+      _logDbCfg = l;
       _sync = sy;
       _settings = st;
       _statNames = statNames;
-
-      _sync.OnPalletsChanged += OnNewCellState;
     }
 
-    public void Dispose()
+    CurrentStatus IJobControl.GetCurrentStatus()
     {
-      _sync.OnPalletsChanged -= OnNewCellState;
-    }
-
-    #region Status
-    public event NewCurrentStatus OnNewCurrentStatus;
-    private object _curStLock = new object();
-    private CellState _lastCellState = null;
-
-    private void OnNewCellState(CellState s)
-    {
-      lock (_curStLock)
+      using (var jdb = _jobDbCfg.OpenConnection())
+      using (var ldb = _logDbCfg.OpenConnection())
       {
-        _lastCellState = s;
-      }
-      OnNewCurrentStatus?.Invoke(BuildCurrentStatus(s));
-    }
-
-    public CurrentStatus GetCurrentStatus()
-    {
-      lock (_curStLock)
-      {
-        if (_lastCellState == null)
-        {
-          return new CurrentStatus();
-        }
-        else
-        {
-          return BuildCurrentStatus(_lastCellState);
-        }
+        return BuildCurrentStatus.Build(jdb, ldb, _sync.CurrentCellState(), _settings);
       }
     }
-
-    private CurrentStatus BuildCurrentStatus(CellState status)
-    {
-      var curStatus = new CurrentStatus();
-      foreach (var k in _settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
-
-      // jobs
-      foreach (var j in status.Schedule.Jobs)
-      {
-        var curJob = new InProcessJob(j);
-        curStatus.Jobs.Add(curJob.UniqueStr, curJob);
-        var evts = _log.GetLogForJobUnique(j.UniqueStr);
-        foreach (var e in evts)
-        {
-          if (e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
-          {
-            foreach (var mat in e.Material)
-            {
-              if (mat.JobUniqueStr == j.UniqueStr)
-              {
-                var details = _log.GetMaterialDetails(mat.MaterialID);
-                int matPath = details.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
-                curJob.AdjustCompleted(mat.Process, matPath, x => x + 1);
-              }
-            }
-          }
-        }
-
-        foreach (var d in _jobs.LoadDecrementsForJob(j.UniqueStr))
-          curJob.Decrements.Add(d);
-      }
-
-      // set precedence
-      var proc1paths =
-        curStatus.Jobs.Values.SelectMany(job =>
-          Enumerable.Range(1, job.GetNumPaths(1)).Select(proc1path => (job, proc1path))
-        )
-        .OrderBy(x => x.job.RouteStartingTimeUTC)
-        .ThenBy(x => x.job.GetSimulatedStartingTimeUTC(1, x.proc1path));
-      int precedence = 0;
-      foreach (var (j, proc1path) in proc1paths)
-      {
-        precedence += 1;
-        j.SetPrecedence(1, proc1path, precedence);
-
-        // now set the rest of the processes
-        for (int proc = 2; proc <= j.NumProcesses; proc++)
-        {
-          for (int path = 1; path <= j.GetNumPaths(proc); path++)
-          {
-            if (j.GetPathGroup(proc, path) == j.GetPathGroup(1, proc1path))
-            {
-              // only set if it hasn't already been set
-              if (j.GetPrecedence(proc, path) <= 0)
-              {
-                j.SetPrecedence(proc, path, precedence);
-              }
-            }
-          }
-        }
-      }
-
-
-      // pallets
-      foreach (var pal in status.Pallets)
-      {
-        curStatus.Pallets.Add(pal.Status.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
-        {
-          Pallet = pal.Status.Master.PalletNum.ToString(),
-          FixtureOnPallet = "",
-          OnHold = pal.Status.Master.Skip,
-          CurrentPalletLocation = pal.Status.CurStation.Location,
-          NumFaces = pal.Material.Count > 0 ? pal.Material.Max(m => m.Mat.Location.Face ?? 1) : 0
-        });
-      }
-
-      // material on pallets
-      foreach (var mat in status.Pallets.SelectMany(pal => pal.Material))
-      {
-        curStatus.Material.Add(mat.Mat);
-      }
-
-      // queued mats
-      foreach (var mat in status.QueuedMaterial)
-      {
-        curStatus.Material.Add(mat);
-      }
-
-      // tool loads/unloads
-      foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance))
-      {
-        switch (pal.Status.CurrentStep)
-        {
-          case LoadStep load:
-            if (pal.Status.Tracking.BeforeCurrentStep)
-            {
-              curStatus.Material.Add(new InProcessMaterial()
-              {
-                MaterialID = -1,
-                JobUnique = null,
-                PartName = "LongTool",
-                Process = 1,
-                Path = 1,
-                Location = new InProcessMaterialLocation()
-                {
-                  Type = InProcessMaterialLocation.LocType.Free,
-                },
-                Action = new InProcessMaterialAction()
-                {
-                  Type = InProcessMaterialAction.ActionType.Loading,
-                  LoadOntoPallet = pal.Status.Master.PalletNum.ToString(),
-                  LoadOntoFace = 1,
-                  ProcessAfterLoad = 1,
-                  PathAfterLoad = 1
-                }
-              });
-            }
-            break;
-          case UnloadStep unload:
-            if (pal.Status.Tracking.BeforeCurrentStep)
-            {
-              curStatus.Material.Add(new InProcessMaterial()
-              {
-                MaterialID = -1,
-                JobUnique = null,
-                PartName = "LongTool",
-                Process = 1,
-                Path = 1,
-                Location = new InProcessMaterialLocation()
-                {
-                  Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = pal.Status.Master.PalletNum.ToString(),
-                  Face = 1
-                },
-                Action = new InProcessMaterialAction()
-                {
-                  Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
-                }
-              });
-            }
-            break;
-        }
-
-      }
-
-      //alarms
-      foreach (var pal in status.Pallets)
-      {
-        if (pal.Status.Tracking.Alarm)
-        {
-          curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + " has alarm " + pal.Status.Tracking.AlarmCode.ToString());
-        }
-      }
-      foreach (var mc in status.Status.Machines.Values)
-      {
-        if (mc.Alarm)
-        {
-          curStatus.Alarms.Add("Machine " + mc.MachineNumber.ToString() + " has an alarm");
-        }
-      }
-      if (status.Status.Alarm)
-      {
-        curStatus.Alarms.Add("ICC has an alarm");
-      }
-
-      return curStatus;
-
-    }
-    #endregion
 
     #region Jobs
-    public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
+    List<string> IJobControl.CheckValidRoutes(IEnumerable<JobPlan> newJobs)
     {
-      return CheckJobs(new NewJobs()
+      using (var jdb = _jobDbCfg.OpenConnection())
       {
-        Jobs = newJobs.ToList()
-      });
+        return CheckJobs(jdb, new NewJobs()
+        {
+          Jobs = newJobs.ToList()
+        });
+      }
     }
 
-    public List<string> CheckJobs(NewJobs jobs)
+    public List<string> CheckJobs(JobDB jobDB, NewJobs jobs)
     {
       var errors = new List<string>();
+      var cellState = _sync.CurrentCellState();
 
       foreach (var j in jobs.Jobs)
       {
@@ -333,7 +143,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
                 if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
                 {
-                  var existing = _jobs.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
+                  var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
                   var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
                   if (!existing && !newProg)
                   {
@@ -342,18 +152,15 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
                 else
                 {
-                  var existing = _jobs.LoadMostRecentProgram(stop.ProgramName) != null;
+                  var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
                   var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
                   if (!existing && !newProg)
                   {
                     if (int.TryParse(stop.ProgramName, out int progNum))
                     {
-                      lock (_curStLock)
+                      if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
                       {
-                        if (!_lastCellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
-                        {
-                          errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
-                        }
+                        errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
                       }
                     }
                     else
@@ -371,34 +178,35 @@ namespace BlackMaple.FMSInsight.Niigata
       return errors;
     }
 
-    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
+    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
-      var errors = CheckJobs(jobs);
-      if (errors.Any())
+      using (var jdb = _jobDbCfg.OpenConnection())
       {
-        throw new BadRequestException(string.Join(Environment.NewLine, errors));
-      }
-
-      CellState curSt;
-      lock (_curStLock)
-      {
-        curSt = _lastCellState;
-      }
-
-      var existingJobs = _jobs.LoadUnarchivedJobs();
-      foreach (var j in existingJobs.Jobs)
-      {
-        if (IsJobCompleted(j, curSt))
+        var errors = CheckJobs(jdb, jobs);
+        if (errors.Any())
         {
-          _jobs.ArchiveJob(j.UniqueStr);
+          throw new BadRequestException(string.Join(Environment.NewLine, errors));
         }
+
+        CellState curSt = _sync.CurrentCellState();
+
+        var existingJobs = jdb.LoadUnarchivedJobs();
+        foreach (var j in existingJobs.Jobs)
+        {
+          if (IsJobCompleted(j, curSt))
+          {
+            jdb.ArchiveJob(j.UniqueStr);
+          }
+        }
+
+        foreach (var j in jobs.Jobs)
+        {
+          j.JobCopiedToSystem = true;
+        }
+        jdb.AddJobs(jobs, expectedPreviousScheduleId);
       }
 
-      foreach (var j in jobs.Jobs)
-      {
-        j.JobCopiedToSystem = true;
-      }
-      _jobs.AddJobs(jobs, expectedPreviousScheduleId);
+      _onNewJobs(jobs);
 
       _sync.JobsOrQueuesChanged();
     }
@@ -433,56 +241,38 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
+    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
-      _sync.DecrementPlannedButNotStartedQty();
-      return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
+      using (var jdb = _jobDbCfg.OpenConnection())
+      using (var ldb = _logDbCfg.OpenConnection())
+      {
+        _sync.DecrementPlannedButNotStartedQty(jdb, ldb);
+        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
+      }
     }
 
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
+    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
-      _sync.DecrementPlannedButNotStartedQty();
-      return _jobs.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
+      using (var jdb = _jobDbCfg.OpenConnection())
+      using (var ldb = _logDbCfg.OpenConnection())
+      {
+        _sync.DecrementPlannedButNotStartedQty(jdb, ldb);
+        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
+      }
     }
 
-    public void SetJobComment(string jobUnique, string comment)
+    void IJobControl.SetJobComment(string jobUnique, string comment)
     {
-      _jobs.SetJobComment(jobUnique, comment);
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        jdb.SetJobComment(jobUnique, comment);
+      }
       _sync.JobsOrQueuesChanged();
     }
     #endregion
 
     #region Queues
-    public InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
-    {
-      if (!_settings.Queues.ContainsKey(queue))
-      {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
-      }
-
-      string casting = partName;
-
-      // try and see if there is a job for this part with an actual casting
-      var sch = _jobs.LoadUnarchivedJobs();
-      var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
-      if (job != null)
-      {
-        for (int path = 1; path <= job.GetNumPaths(1); path++)
-        {
-          if (!string.IsNullOrEmpty(job.GetCasting(path)))
-          {
-            casting = job.GetCasting(path);
-            break;
-          }
-        }
-      }
-
-      return
-        AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName)
-        .FirstOrDefault();
-    }
-
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    private List<InProcessMaterial> AddUnallocatedCastingToQueue(EventLogDB logDB, string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -493,7 +283,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var mats = new List<InProcessMaterial>();
       for (int i = 0; i < qty; i++)
       {
-        var matId = _log.AllocateMaterialIDForCasting(casting);
+        var matId = logDB.AllocateMaterialIDForCasting(casting);
 
         Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
                   "Assigned matId {matId}",
@@ -502,8 +292,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (i < serial.Count)
         {
-          _log.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
+          logDB.RecordSerialForMaterialID(
+            new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
             {
               MaterialID = matId,
               Process = 0,
@@ -511,7 +301,7 @@ namespace BlackMaple.FMSInsight.Niigata
             },
             serial[i]);
         }
-        var logEvt = _log.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
+        var logEvt = logDB.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
         mats.Add(new InProcessMaterial()
         {
           MaterialID = matId,
@@ -532,12 +322,57 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         });
       }
+
       _sync.JobsOrQueuesChanged();
 
       return mats;
     }
 
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
+    InProcessMaterial IJobControl.AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
+    {
+      if (!_settings.Queues.ContainsKey(queue))
+      {
+        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+      }
+
+      string casting = partName;
+
+      // try and see if there is a job for this part with an actual casting
+      PlannedSchedule sch;
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        sch = jdb.LoadUnarchivedJobs();
+      }
+      var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
+      if (job != null)
+      {
+        for (int path = 1; path <= job.GetNumPaths(1); path++)
+        {
+          if (!string.IsNullOrEmpty(job.GetCasting(path)))
+          {
+            casting = job.GetCasting(path);
+            break;
+          }
+        }
+      }
+
+      using (var ldb = _logDbCfg.OpenConnection())
+      {
+        return
+          AddUnallocatedCastingToQueue(ldb, casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName)
+          .FirstOrDefault();
+      }
+    }
+
+    List<InProcessMaterial> IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    {
+      using (var ldb = _logDbCfg.OpenConnection())
+      {
+        return AddUnallocatedCastingToQueue(ldb, casting, qty, queue, position, serial, operatorName);
+      }
+    }
+
+    InProcessMaterial IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -548,7 +383,11 @@ namespace BlackMaple.FMSInsight.Niigata
         jobUnique, process, queue, position, serial
       );
 
-      var job = _jobs.LoadJob(jobUnique);
+      JobPlan job;
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        job = jdb.LoadJob(jobUnique);
+      }
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 
       int? path = null;
@@ -562,20 +401,26 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       if (!path.HasValue) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find path group " + pathGroup.ToString() + " for job " + jobUnique + " and process " + process.ToString());
 
-      var matId = _log.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
-      if (!string.IsNullOrEmpty(serial))
+      long matId;
+      IEnumerable<LogEntry> logEvt;
+      using (var ldb = _logDbCfg.OpenConnection())
       {
-        _log.RecordSerialForMaterialID(
-          new BlackMaple.MachineFramework.JobLogDB.EventLogMaterial()
-          {
-            MaterialID = matId,
-            Process = process,
-            Face = ""
-          },
-          serial);
+        matId = ldb.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
+        if (!string.IsNullOrEmpty(serial))
+        {
+          ldb.RecordSerialForMaterialID(
+            new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = process,
+              Face = ""
+            },
+            serial);
+        }
+        logEvt = ldb.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
+        ldb.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       }
-      var logEvt = _log.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
-      _log.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
+
       _sync.JobsOrQueuesChanged();
 
       return new InProcessMaterial()
@@ -599,7 +444,7 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
+    void IJobControl.SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -608,22 +453,29 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Adding material {matId} to queue {queue} in position {pos}",
         materialId, queue, position
       );
-      var proc =
-        _log.GetLogForMaterial(materialId)
-        .SelectMany(e => e.Material)
-        .Where(m => m.MaterialID == materialId)
-        .Select(m => m.Process)
-        .DefaultIfEmpty(0)
-        .Max();
-      _log.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
+      using (var ldb = _logDbCfg.OpenConnection())
+      {
+        var proc =
+          ldb.GetLogForMaterial(materialId)
+          .SelectMany(e => e.Material)
+          .Where(m => m.MaterialID == materialId)
+          .Select(m => m.Process)
+          .DefaultIfEmpty(0)
+          .Max();
+        ldb.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
+      }
+
       _sync.JobsOrQueuesChanged();
     }
 
-    public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
+    void IJobControl.RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
-      foreach (var materialId in materialIds)
-        _log.RecordRemoveMaterialFromAllQueues(materialId, operatorName);
+      using (var ldb = _logDbCfg.OpenConnection())
+      {
+        foreach (var materialId in materialIds)
+          ldb.RecordRemoveMaterialFromAllQueues(materialId, operatorName);
+      }
       _sync.JobsOrQueuesChanged();
     }
     #endregion

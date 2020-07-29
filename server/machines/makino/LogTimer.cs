@@ -41,8 +41,8 @@ namespace Makino
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTimer>();
     private object _lock;
-    private JobLogDB _log;
-    private JobDB _jobDB;
+    private Func<EventLogDB> _openLogDB;
+    private Func<JobDB> _openJobDB;
     private MakinoDB _makinoDB;
     private StatusDB _status;
     private System.Timers.Timer _timer;
@@ -57,11 +57,11 @@ namespace Makino
     }
 
     public LogTimer(
-      JobLogDB log, JobDB jobDB, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
+      EventLogDB.Config logCfg, Func<JobDB> jobDB, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
     {
       _lock = new object();
-      _log = log;
-      _jobDB = jobDB;
+      _openLogDB = () => logCfg.OpenConnection();
+      _openJobDB = jobDB;
       Settings = settings;
       _makinoDB = makinoDB;
       _status = status;
@@ -84,11 +84,14 @@ namespace Makino
         lock (_lock)
         {
           // Load one month
-          var lastDate = _log.MaxLogDate();
-          if (DateTime.UtcNow.Subtract(lastDate) > TimeSpan.FromDays(30))
-            lastDate = DateTime.UtcNow.AddDays(-30);
+          using (var logDb = _openLogDB())
+          {
+            var lastDate = logDb.MaxLogDate();
+            if (DateTime.UtcNow.Subtract(lastDate) > TimeSpan.FromDays(30))
+              lastDate = DateTime.UtcNow.AddDays(-30);
 
-          CheckLogs(lastDate);
+            CheckLogs(logDb, lastDate);
+          }
         }
 
       }
@@ -99,7 +102,7 @@ namespace Makino
     }
 
     /* This has public instead of private for testing */
-    public void CheckLogs(DateTime lastDate)
+    public void CheckLogs(EventLogDB logDb, DateTime lastDate)
     {
       var devices = _makinoDB.Devices();
 
@@ -125,24 +128,24 @@ namespace Makino
           //check which event occured first and process it
           if (mE.Current.EndDateTimeUTC < lE.Current.EndDateTimeUTC)
           {
-            AddMachineToLog(lastDate, devices, mE.Current);
+            AddMachineToLog(lastDate, devices, mE.Current, logDb);
             moreMachines = mE.MoveNext();
           }
           else
           {
-            AddLoadToLog(lastDate, devices, lE.Current);
+            AddLoadToLog(lastDate, devices, lE.Current, logDb);
             moreLoads = lE.MoveNext();
           }
 
         }
         else if (moreMachines)
         {
-          AddMachineToLog(lastDate, devices, mE.Current);
+          AddMachineToLog(lastDate, devices, mE.Current, logDb);
           moreMachines = mE.MoveNext();
         }
         else
         {
-          AddLoadToLog(lastDate, devices, lE.Current);
+          AddLoadToLog(lastDate, devices, lE.Current, logDb);
           moreLoads = lE.MoveNext();
         }
       }
@@ -152,7 +155,7 @@ namespace Makino
     }
 
     private void AddMachineToLog(
-        DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.MachineResults m)
+        DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.MachineResults m, EventLogDB logDb)
     {
       //find the location
       PalletLocation loc;
@@ -175,13 +178,13 @@ namespace Makino
 
       //create the material
       var matList = FindOrCreateMaterial(m.PalletID, m.FixtureNumber, m.EndDateTimeUTC,
-                                         m.OrderName, m.PartName, m.ProcessNum, numParts);
+                                         m.OrderName, m.PartName, m.ProcessNum, numParts, logDb);
 
       var elapsed = m.EndDateTimeUTC.Subtract(m.StartDateTimeUTC);
 
       //check if the cycle already exists
       if (timeToSkip == m.EndDateTimeUTC
-    && _log.CycleExists(m.EndDateTimeUTC, m.PalletID.ToString(), LogType.MachineCycle, "MC", loc.Num))
+    && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID.ToString(), LogType.MachineCycle, "MC", loc.Num))
       {
         return;
       }
@@ -201,7 +204,7 @@ namespace Makino
           extraData[v.Number.ToString()] = v.Value;
         }
       }
-      _log.RecordMachineEnd(
+      logDb.RecordMachineEnd(
         mats: matList,
         pallet: m.PalletID.ToString(),
         statName: "MC",
@@ -213,26 +216,30 @@ namespace Makino
         active: TimeSpan.FromSeconds(m.SpindleTimeSeconds),
         extraData: extraData);
 
-      AddInspection(m, matList);
+      AddInspection(m, matList, logDb);
     }
 
-    private void AddInspection(MakinoDB.MachineResults m, IList<JobLogDB.EventLogMaterial> material)
+    private void AddInspection(MakinoDB.MachineResults m, IList<EventLogDB.EventLogMaterial> material, EventLogDB logDb)
     {
-      if (_jobDB == null && _log == null)
+      if (_openJobDB == null && logDb == null)
         return;
 
-      var job = _jobDB.LoadJob(m.OrderName);
-      if (job == null)
-        return;
+      JobPlan job;
+      using (var jdb = _openJobDB())
+      {
+        job = jdb.LoadJob(m.OrderName);
+        if (job == null)
+          return;
+      }
 
       foreach (var mat in material)
       {
-        _log.MakeInspectionDecisions(mat.MaterialID, m.ProcessNum, job.PathInspections(m.ProcessNum, path: 1));
+        logDb.MakeInspectionDecisions(mat.MaterialID, m.ProcessNum, job.PathInspections(m.ProcessNum, path: 1));
       }
     }
 
     private void AddLoadToLog(
-      DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.WorkSetResults w)
+      DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.WorkSetResults w, EventLogDB logDb)
     {
       //find the location
       PalletLocation loc;
@@ -260,14 +267,14 @@ namespace Makino
       {
         //create the material for unload
         var matList = FindOrCreateMaterial(w.PalletID, w.FixtureNumber, w.EndDateTimeUTC,
-                                         w.UnloadOrderName, w.UnloadPartName, w.UnloadProcessNum, numParts);
+                                         w.UnloadOrderName, w.UnloadPartName, w.UnloadProcessNum, numParts, logDb);
 
         //check if the cycle already exists
         if (timeToSkip == w.EndDateTimeUTC
-          && _log.CycleExists(w.EndDateTimeUTC, w.PalletID.ToString(), LogType.LoadUnloadCycle, "L/U", loc.Num))
+          && logDb.CycleExists(w.EndDateTimeUTC, w.PalletID.ToString(), LogType.LoadUnloadCycle, "L/U", loc.Num))
           return;
 
-        _log.RecordUnloadEnd(
+        logDb.RecordUnloadEnd(
           mats: matList,
           pallet: w.PalletID.ToString(),
           lulNum: loc.Num,
@@ -277,7 +284,7 @@ namespace Makino
       }
 
       //Pallet Cycle
-      _log.CompletePalletCycle(w.PalletID.ToString(), w.EndDateTimeUTC, "");
+      logDb.CompletePalletCycle(w.PalletID.ToString(), w.EndDateTimeUTC, "");
 
       //now the load cycle
       numParts = 0;
@@ -288,9 +295,9 @@ namespace Makino
       {
         //create the material
         var matList = CreateMaterial(w.PalletID, w.FixtureNumber, w.EndDateTimeUTC.AddSeconds(1),
-                                     w.LoadOrderName, w.LoadPartName, w.LoadProcessNum, numParts);
+                                     w.LoadOrderName, w.LoadPartName, w.LoadProcessNum, numParts, logDb);
 
-        _log.RecordLoadEnd(
+        logDb.RecordLoadEnd(
           mats: matList,
           pallet: w.PalletID.ToString(),
           lulNum: loc.Num,
@@ -300,27 +307,27 @@ namespace Makino
       }
     }
 
-    private IReadOnlyList<long> AllocateMatIds(int count, string order, string part, int numProcess)
+    private IReadOnlyList<long> AllocateMatIds(int count, string order, string part, int numProcess, EventLogDB logDb)
     {
       var matIds = new List<long>();
       for (int i = 0; i < count; i++)
       {
-        matIds.Add(_log.AllocateMaterialID(order, part, numProcess));
+        matIds.Add(logDb.AllocateMaterialID(order, part, numProcess));
       }
       return matIds;
     }
 
-    private IList<JobLogDB.EventLogMaterial> CreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count)
+    private IList<EventLogDB.EventLogMaterial> CreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, EventLogDB logDb)
     {
-      var rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process), 0);
+      var rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process, logDb), 0);
 
-      var ret = new List<JobLogDB.EventLogMaterial>();
+      var ret = new List<EventLogDB.EventLogMaterial>();
       foreach (var row in rows)
-        ret.Add(new JobLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
+        ret.Add(new EventLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       return ret;
     }
 
-    private IList<JobLogDB.EventLogMaterial> FindOrCreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count)
+    private IList<EventLogDB.EventLogMaterial> FindOrCreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, EventLogDB logDb)
     {
       var rows = _status.FindMaterialIDs(pallet, fixturenum, endUTC);
 
@@ -328,7 +335,7 @@ namespace Makino
       {
         Log.Warning("Unable to find any material ids for pallet " + pallet.ToString() + "-" +
           fixturenum.ToString() + " for order " + order + " for event at time " + endUTC.ToString());
-        rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process), 0);
+        rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process, logDb), 0);
       }
 
       if (rows[0].Order != order)
@@ -337,7 +344,7 @@ namespace Makino
           " for event at time " + endUTC.ToString() + " does not have matching orders: " +
           "expected " + order + " but found " + rows[0].Order);
 
-        rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process), 0);
+        rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process, logDb), 0);
       }
 
       if (rows.Count < count)
@@ -355,24 +362,24 @@ namespace Makino
 
         //stupid that IList doesn't have AddRange
         foreach (var row in _status.CreateMaterialIDs(
-          pallet, fixturenum, rows[0].LoadedUTC, order, AllocateMatIds(count - rows.Count, order, part, process), maxCounter + 1))
+          pallet, fixturenum, rows[0].LoadedUTC, order, AllocateMatIds(count - rows.Count, order, part, process, logDb), maxCounter + 1))
         {
           rows.Add(row);
         }
       }
 
-      var ret = new List<JobLogDB.EventLogMaterial>();
+      var ret = new List<EventLogDB.EventLogMaterial>();
       foreach (var row in rows)
       {
         if (Settings.SerialType != SerialType.NoAutomaticSerials)
-          CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), _log, Settings);
-        ret.Add(new JobLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
+          CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), logDb, Settings);
+        ret.Add(new EventLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       }
       return ret;
     }
 
     public static void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
-                                        JobLogDB _log, FMSSettings Settings)
+                                        EventLogDB _log, FMSSettings Settings)
     {
       foreach (var stat in _log.GetLogForMaterial(matID))
       {
@@ -400,7 +407,7 @@ namespace Makino
       Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
 
 
-      var logMat = new JobLogDB.EventLogMaterial() { MaterialID = matID, Process = process, Face = face };
+      var logMat = new EventLogDB.EventLogMaterial() { MaterialID = matID, Process = process, Face = face };
       _log.RecordSerialForMaterialID(logMat, serial);
     }
 

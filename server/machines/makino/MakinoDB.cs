@@ -187,15 +187,14 @@ namespace Makino
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
 
     private IDbConnection _db;
+    private BlackMaple.MachineFramework.EventLogDB.Config _logDbCfg;
     private StatusDB _status;
     private string dbo;
-    private BlackMaple.MachineFramework.JobLogDB _logDb;
 
-    public MakinoDB(DBTypeEnum dbType, string dbConnStr, StatusDB status,
-        BlackMaple.MachineFramework.JobLogDB log)
+    public MakinoDB(BlackMaple.MachineFramework.EventLogDB.Config logDb, DBTypeEnum dbType, string dbConnStr, StatusDB status)
     {
+      _logDbCfg = logDb;
       _status = status;
-      _logDb = log;
       switch (dbType)
       {
         case DBTypeEnum.SqlLocal:
@@ -597,10 +596,11 @@ namespace Makino
 
     public CurrentStatus LoadCurrentInfo()
     {
+      using (var logDb = _logDbCfg.OpenConnection())
       using (var cmd = _db.CreateCommand())
       {
 
-        var map = new MakinoToJobMap(_logDb);
+        var map = new MakinoToJobMap(logDb);
         var palMap = new MakinoToPalletMap();
 
         Load("SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes", reader =>

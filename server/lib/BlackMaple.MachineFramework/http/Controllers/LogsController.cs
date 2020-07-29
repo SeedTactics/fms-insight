@@ -70,28 +70,37 @@ namespace BlackMaple.MachineFramework.Controllers
   [Route("api/v1/[controller]")]
   public class logController : ControllerBase
   {
-    private ILogDatabase _server;
+    private IFMSBackend _backend;
 
     public logController(IFMSBackend backend)
     {
-      _server = backend.LogDatabase();
+      _backend = backend;
     }
 
     [HttpGet("events/all")]
     public List<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      return _server.GetLogEntries(startUTC, endUTC);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetLogEntries(startUTC, endUTC);
+      }
     }
 
     [HttpGet("events.csv")]
     [Produces("text/csv")]
     public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
+      IEnumerable<LogEntry> entries;
+      using (var db = _backend.OpenLogDatabase())
+      {
+        entries = db.GetLogEntries(startUTC, endUTC);
+      }
+
       var ms = new System.IO.MemoryStream();
       try
       {
         var tx = new System.IO.StreamWriter(ms);
-        CSVLogConverter.WriteCSV(tx, _server.GetLogEntries(startUTC, endUTC));
+        CSVLogConverter.WriteCSV(tx, entries);
         tx.Flush();
       }
       catch
@@ -110,62 +119,92 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/all-completed-parts")]
     public List<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      return _server.GetCompletedPartLogs(startUTC, endUTC);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetCompletedPartLogs(startUTC, endUTC);
+      }
     }
 
     [HttpGet("events/recent")]
     public List<LogEntry> Recent([FromQuery] long lastSeenCounter)
     {
-      return _server.GetLog(lastSeenCounter);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetLog(lastSeenCounter);
+      }
     }
 
     [HttpGet("events/for-material/{materialID}")]
     public List<LogEntry> LogForMaterial(long materialID)
     {
-      return _server.GetLogForMaterial(materialID);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetLogForMaterial(materialID);
+      }
     }
 
     [HttpGet("events/for-material")]
     public List<LogEntry> LogForMaterials([FromQuery] List<long> id)
     {
       if (id == null || id.Count == 0) return new List<LogEntry>();
-      return _server.GetLogForMaterial(id);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetLogForMaterial(id);
+      }
     }
 
     [HttpGet("events/for-serial/{serial}")]
     [EnableCors("AllowOtherLogServers")]
     public List<LogEntry> LogForSerial(string serial)
     {
-      return _server.GetLogForSerial(serial);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetLogForSerial(serial);
+      }
     }
 
     [HttpGet("events/for-workorder/{workorder}")]
     public List<LogEntry> LogForWorkorder(string workorder)
     {
-      return _server.GetLogForWorkorder(workorder);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetLogForWorkorder(workorder);
+      }
     }
 
     [HttpGet("material-details/{materialID}")]
     public MaterialDetails MaterialDetails(long materialID)
     {
-      return _server.GetMaterialDetails(materialID);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetMaterialDetails(materialID);
+      }
     }
 
     [HttpGet("workorders")]
     public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
     {
-      return _server.GetWorkorderSummaries(ids);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetWorkorderSummaries(ids);
+      }
     }
 
     [HttpGet("workorders.csv")]
     [Produces("text/csv")]
     public IActionResult GetWorkordersCSV([FromQuery] IEnumerable<string> ids)
     {
+      IEnumerable<WorkorderSummary> workorders;
+      using (var db = _backend.OpenLogDatabase())
+      {
+        workorders = db.GetWorkorderSummaries(ids);
+      }
+
       var ms = new System.IO.MemoryStream();
       try
       {
         var tx = new System.IO.StreamWriter(ms);
-        CSVWorkorderConverter.WriteCSV(tx, _server.GetWorkorderSummaries(ids));
+        CSVWorkorderConverter.WriteCSV(tx, workorders);
         tx.Flush();
       }
       catch
@@ -184,25 +223,37 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/serial")]
     public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
     {
-      return _server.RecordSerialForMaterialID(materialID, process, serial);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.RecordSerialForMaterialID(materialID, process, serial);
+      }
     }
 
     [HttpPost("material-details/{materialID}/workorder")]
     public LogEntry SetWorkorder(long materialID, [FromBody] string workorder, [FromQuery] int process = 1)
     {
-      return _server.RecordWorkorderForMaterialID(materialID, process, workorder);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.RecordWorkorderForMaterialID(materialID, process, workorder);
+      }
     }
 
     [HttpPost("material-details/{materialID}/inspections/{inspType}")]
     public LogEntry SetInspectionDecision(long materialID, string inspType, [FromBody] bool inspect, [FromQuery] int process = 1)
     {
-      return _server.ForceInspection(materialID, process, inspType, inspect);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.ForceInspection(materialID, process, inspType, inspect);
+      }
     }
 
     [HttpPost("material-details/{materialID}/notes")]
     public LogEntry RecordOperatorNotes(long materialID, [FromBody] string notes, [FromQuery] int process = 1, [FromQuery] string operatorName = null)
     {
-      return _server.RecordOperatorNotes(materialID, process, notes, operatorName);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.RecordOperatorNotes(materialID, process, notes, operatorName);
+      }
     }
 
 
@@ -210,35 +261,44 @@ namespace BlackMaple.MachineFramework.Controllers
     public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
     {
       if (string.IsNullOrEmpty(insp.InspectionType)) throw new BadRequestException("Must give inspection type");
-      return _server.RecordInspectionCompleted(
-          insp.MaterialID,
-          insp.Process,
-          insp.InspectionLocationNum,
-          insp.InspectionType,
-          insp.Success,
-          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
-          insp.Elapsed,
-          insp.Active
-      );
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.RecordInspectionCompleted(
+            insp.MaterialID,
+            insp.Process,
+            insp.InspectionLocationNum,
+            insp.InspectionType,
+            insp.Success,
+            insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+            insp.Elapsed,
+            insp.Active
+        );
+      }
     }
 
     [HttpPost("events/wash")]
     public LogEntry RecordWashCompleted([FromBody] NewWash insp)
     {
-      return _server.RecordWashCompleted(
-          insp.MaterialID,
-          insp.Process,
-          insp.WashLocationNum,
-          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
-          insp.Elapsed,
-          insp.Active
-      );
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.RecordWashCompleted(
+            insp.MaterialID,
+            insp.Process,
+            insp.WashLocationNum,
+            insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+            insp.Elapsed,
+            insp.Active
+        );
+      }
     }
 
     [HttpPost("workorder/{workorder}/finalize")]
     public LogEntry FinalizeWorkorder(string workorder)
     {
-      return _server.RecordFinalizedWorkorder(workorder);
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.RecordFinalizedWorkorder(workorder);
+      }
     }
   }
 }

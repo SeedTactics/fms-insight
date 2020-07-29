@@ -43,12 +43,13 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromFile>();
 
-    public delegate void LoadActionsDel(int lds, IEnumerable<LoadAction> actions);
-    public event LoadActionsDel LoadActions;
     private string mazakPath;
 
-    public LoadOperationsFromFile(IConfigurationSection cfg, bool enableWatcher)
+    private Action<int, IEnumerable<LoadAction>> _onLoadActions;
+
+    public LoadOperationsFromFile(IConfigurationSection cfg, bool enableWatcher, Action<int, IEnumerable<LoadAction>> onLoadActions)
     {
+      _onLoadActions = onLoadActions;
       mazakPath = cfg.GetValue<string>("Load CSV Path");
       if (string.IsNullOrEmpty(mazakPath))
       {
@@ -140,8 +141,8 @@ namespace MazakMachineInterface
 
         Log.Debug(a.ToString());
 
-        if (LoadActions != null && a != null)
-          LoadActions(lds, a);
+        if (a != null)
+          _onLoadActions(lds, a);
 
       }
       catch (Exception ex)

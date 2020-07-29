@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
 
-    public static CurrentStatus Build(JobDB jobDB, JobLogDB log, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
+    public static CurrentStatus Build(JobDB jobDB, EventLogDB log, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
       CalculateMaxProcAndPath(mazakData, out var uniqueToMaxPath, out var uniqueToMaxProcess, out var partNameToNumProc);
@@ -601,9 +601,9 @@ namespace MazakMachineInterface
       return null;
     }
 
-    private static void AddRemainingLoadsAndUnloads(JobLogDB log, List<LoadAction> currentActions, PalletStatus pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
+    private static void AddRemainingLoadsAndUnloads(EventLogDB log, List<LoadAction> currentActions, PalletStatus pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
     {
-      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial>>();
+      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<EventLogDB.QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
 
       // loads from raw material or a queue have not yet been processed.
@@ -729,7 +729,7 @@ namespace MazakMachineInterface
           };
 
           // load queued material
-          List<BlackMaple.MachineFramework.JobLogDB.QueuedMaterial> queuedMat = null;
+          List<BlackMaple.MachineFramework.EventLogDB.QueuedMaterial> queuedMat = null;
           if (curStatus.Jobs.ContainsKey(operation.Unique))
           {
             var job = curStatus.Jobs[operation.Unique];
@@ -790,7 +790,7 @@ namespace MazakMachineInterface
     }
 
     private static IEnumerable<long> FindMatIDsFromOldCycles(
-      IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, bool hasPendingLoads, JobPlan job, int proc, int path, JobLogDB log
+      IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, bool hasPendingLoads, JobPlan job, int proc, int path, EventLogDB log
     )
     {
 

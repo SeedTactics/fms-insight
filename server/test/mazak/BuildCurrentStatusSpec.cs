@@ -47,7 +47,7 @@ namespace MachineWatchTest
 {
   public class BuildCurrentStatusSpec : IDisposable
   {
-    private JobLogDB _memoryLog;
+    private EventLogDB _memoryLog;
     private JobDB _jobDB;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
@@ -57,15 +57,8 @@ namespace MachineWatchTest
 
     public BuildCurrentStatusSpec()
     {
-      var logConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      logConn.Open();
-      _memoryLog = new JobLogDB(new FMSSettings(), logConn);
-      _memoryLog.CreateTables(firstSerialOnEmpty: null);
-
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      _memoryLog = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
+      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _settings = new FMSSettings();
       _settings.Queues["castings"] = new QueueSize();
@@ -198,8 +191,7 @@ namespace MachineWatchTest
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
       if (File.Exists(existingLogPath))
       {
-        logDb = new JobLogDB(new FMSSettings());
-        logDb.Open(existingLogPath);
+        logDb = EventLogDB.Config.InitializeEventDatabase(new FMSSettings(), existingLogPath).OpenConnection();
         close = true;
       }
 
@@ -249,7 +241,7 @@ namespace MachineWatchTest
       _memoryLog.AddPendingLoad("1", "thekey", 1, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), "foreignid");
 
       var matId = _memoryLog.AllocateMaterialID("aaa-schId1234", "aaa", 2);
-      _memoryLog.RecordAddMaterialToQueue(new JobLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1);
+      _memoryLog.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1);
 
       var status = BuildCurrentStatus.Build(_jobDB, _memoryLog, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));

@@ -77,7 +77,7 @@ namespace DebugMachineWatchApiServer
 
   public class MockServerBackend : IFMSBackend, IJobControl, IOldJobDecrement, IDisposable
   {
-    public JobLogDB LogDB { get; private set; }
+    public EventLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
@@ -86,6 +86,9 @@ namespace DebugMachineWatchApiServer
     private JsonSerializerSettings _jsonSettings;
 
     public event NewCurrentStatus OnNewCurrentStatus;
+    public event NewJobsDelegate OnNewJobs;
+
+    public event NewLogEntryDelegate NewLogEntry;
 
     public MockServerBackend()
     {
@@ -96,24 +99,18 @@ namespace DebugMachineWatchApiServer
       if (path != null)
       {
         if (System.IO.File.Exists(dbFile("log"))) System.IO.File.Delete(dbFile("log"));
-        LogDB = new JobLogDB(new FMSSettings());
-        LogDB.Open(dbFile("log"), dbFile("insp"));
+        LogDB = EventLogDB.Config.InitializeEventDatabase(new FMSSettings(), dbFile("log"), dbFile("insp")).OpenConnection();
 
         if (System.IO.File.Exists(dbFile("job"))) System.IO.File.Delete(dbFile("job"));
-        JobDB = new JobDB();
-        JobDB.Open(dbFile("job"));
+        var cfg = JobDB.Config.InitializeJobDatabase(dbFile("job"));
+        JobDB = cfg.OpenConnection();
       }
       else
       {
-        var conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-        conn.Open();
-        LogDB = new JobLogDB(new FMSSettings(), conn);
-        LogDB.CreateTables(firstSerialOnEmpty: null);
+        LogDB = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
 
-        conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-        conn.Open();
-        JobDB = new JobDB(conn);
-        JobDB.CreateTables();
+        var cfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
+        JobDB = cfg.OpenConnection();
       }
 
       _jsonSettings = new JsonSerializerSettings();
@@ -142,22 +139,19 @@ namespace DebugMachineWatchApiServer
       LogDB.Close();
     }
 
-    public IInspectionControl InspectionControl()
+    public IInspectionControl OpenInspectionControl()
     {
       return LogDB;
     }
 
-    public IJobControl JobControl()
-    {
-      return this;
-    }
+    public IJobControl JobControl { get => this; }
 
-    public ILogDatabase LogDatabase()
+    public ILogDatabase OpenLogDatabase()
     {
       return LogDB;
     }
 
-    public IJobDatabase JobDatabase()
+    public IJobDatabase OpenJobDatabase()
     {
       return JobDB;
     }
@@ -190,6 +184,7 @@ namespace DebugMachineWatchApiServer
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
       JobDB.AddJobs(jobs, expectedPreviousScheduleId);
+      OnNewJobs?.Invoke(jobs);
     }
 
     public void SetJobComment(string jobUnique, string comment)
@@ -343,10 +338,7 @@ namespace DebugMachineWatchApiServer
       throw new NotImplementedException();
     }
 
-    public IOldJobDecrement OldJobDecrement()
-    {
-      return this;
-    }
+    public IOldJobDecrement OldJobDecrement { get => this; }
 
     protected void OnNewStatus(CurrentStatus s)
     {
@@ -398,12 +390,12 @@ namespace DebugMachineWatchApiServer
         if (e.LogType == LogType.PartMark)
         {
           foreach (var m in e.Material)
-            LogDB.RecordSerialForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.OrderAssignment)
         {
           foreach (var m in e.Material)
-            LogDB.RecordWorkorderForMaterialID(JobLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.FinalizeWorkorder)
         {

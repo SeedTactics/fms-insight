@@ -65,17 +65,14 @@ namespace MachineWatchTest
 
     public DecrementSpec()
     {
-      var jobConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      jobConn.Open();
-      _jobDB = new JobDB(jobConn);
-      _jobDB.CreateTables();
+      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _write = new WriteMock();
 
       _read = Substitute.For<IReadDataAccess>();
       _read.MazakType.Returns(MazakDbType.MazakSmooth);
 
-      _decr = new DecrementPlanQty(_jobDB, _write, _read);
+      _decr = new DecrementPlanQty(_write, _read);
     }
     public void Dispose()
     {
@@ -118,7 +115,7 @@ namespace MachineWatchTest
       }, null);
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(now);
+      _decr.Decrement(_jobDB, now);
 
       _write.Schedules.Count.Should().Be(1);
       var sch = _write.Schedules[0];
@@ -170,7 +167,7 @@ namespace MachineWatchTest
         Jobs = new List<JobPlan> { j }
       }, null);
 
-      _decr.Decrement();
+      _decr.Decrement(_jobDB);
 
       _write.Schedules.Should().BeNull();
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEmpty();
@@ -218,7 +215,7 @@ namespace MachineWatchTest
         }
       }, now);
 
-      _decr.Decrement();
+      _decr.Decrement(_jobDB);
 
       _write.Schedules.Should().BeNull();
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
@@ -295,7 +292,7 @@ namespace MachineWatchTest
       }, null);
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(now);
+      _decr.Decrement(_jobDB, now);
 
       _write.Schedules.Count.Should().Be(1);
       _write.Schedules[0].PlanQuantity.Should().Be(36);
@@ -346,7 +343,7 @@ namespace MachineWatchTest
       }, null);
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(now);
+      _decr.Decrement(_jobDB, now);
 
       _write.Schedules.Should().BeNull();
 
@@ -434,7 +431,7 @@ namespace MachineWatchTest
       }, null);
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(now);
+      _decr.Decrement(_jobDB, now);
 
       _write.Schedules.Count.Should().Be(2);
       _write.Schedules[0].Id.Should().Be(15);
@@ -502,7 +499,7 @@ namespace MachineWatchTest
       _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Jobs.Select(j => j.UniqueStr)
         .Should().BeEquivalentTo(new[] { "vvvv" });
 
-      _decr.Decrement(now);
+      _decr.Decrement(_jobDB, now);
 
       _write.Schedules.Count.Should().Be(1);
       var sch = _write.Schedules[0];
