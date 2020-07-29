@@ -112,11 +112,11 @@ namespace BlackMaple.MachineWatch
                 System.Runtime.Remoting.RemotingConfiguration.CustomErrorsMode = System.Runtime.Remoting.CustomErrorsModes.Off;
             }
 
-            var jobDb = plugin.Backend.JobDatabase();
-            var logDb = plugin.Backend.LogDatabase();
-            var inspServer = plugin.Backend.InspectionControl();
-            var jobControl = plugin.Backend.JobControl();
-            var oldJob = plugin.Backend.OldJobDecrement();
+            var jobDb = new JobDbWrapper(plugin.Backend);
+            var logDb = new LogDbWrapper(plugin.Backend);
+            var inspServer = new InspDbWrapper(plugin.Backend);
+            var jobControl = plugin.Backend.JobControl;
+            var oldJob = plugin.Backend.OldJobDecrement;
 
             singletons = new RemoteSingletons();
 
@@ -267,6 +267,212 @@ namespace BlackMaple.MachineWatch
             private ModuleBuilder module;
             private IList<WrapperBase> marshaledObjects;
         }
+
+        private class JobDbWrapper : IJobDatabase
+        {
+            private IFMSBackend _backend;
+            public JobDbWrapper(IFMSBackend backend)  => _backend = backend;
+            public void Dispose() { }
+
+            public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
+            {
+                using (var jdb = _backend.OpenJobDatabase()) {
+                    return jdb.LoadJobHistory(startUTC, endUTC);
+                }
+            }
+
+            public HistoricData LoadJobsAfterScheduleId(string scheduleId)
+            {
+                using (var jdb = _backend.OpenJobDatabase()) {
+                    return jdb.LoadJobsAfterScheduleId(scheduleId);
+                }
+            }
+
+            public PlannedSchedule LoadMostRecentSchedule()
+            {
+                using (var jdb = _backend.OpenJobDatabase()) {
+                    return jdb.LoadMostRecentSchedule();
+                }
+            }
+
+            public List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
+            {
+                using (var jdb = _backend.OpenJobDatabase()) {
+                    return jdb.MostRecentUnfilledWorkordersForPart(part);
+                }
+            }
+        }
+
+        private class InspDbWrapper : IInspectionControl
+        {
+            private IFMSBackend _backend;
+            public InspDbWrapper(IFMSBackend backend) => _backend = backend;
+            public void Dispose() { }
+
+            public void ForceInspection(long materialID, string inspectionType)
+            {
+                using (var ldb = _backend.OpenInspectionControl()) {
+                    ldb.ForceInspection(materialID, inspectionType);
+                }
+            }
+
+            public List<InspectCount> LoadInspectCounts()
+            {
+                using (var ldb = _backend.OpenInspectionControl()) {
+                    return ldb.LoadInspectCounts();
+                }
+            }
+
+            public void NextPieceInspection(PalletLocation palLoc, string inspType)
+            {
+                using (var ldb = _backend.OpenInspectionControl()) {
+                    ldb.NextPieceInspection(palLoc, inspType);
+                }
+            }
+
+            public void SetInspectCounts(IEnumerable<InspectCount> countUpdates)
+            {
+                using (var ldb = _backend.OpenInspectionControl()) {
+                    ldb.SetInspectCounts(countUpdates);
+                }
+            }
+        }
+
+        private class LogDbWrapper : ILogDatabase
+        {
+            private IFMSBackend _backend;
+            public LogDbWrapper(IFMSBackend backend) => _backend = backend;
+            public void Dispose() { }
+
+            public LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.ForceInspection(materialID, process, inspType, inspect);
+                }
+            }
+
+            public List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetCompletedPartLogs(startUTC, endUTC);
+                }
+            }
+
+            public List<LogEntry> GetLog(long lastSeenCounter)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetLog(lastSeenCounter);
+                }
+            }
+
+            public List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetLogEntries(startUTC, endUTC);
+                }
+            }
+
+            public List<LogEntry> GetLogForMaterial(long materialID)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetLogForMaterial(materialID);
+                }
+            }
+
+            public List<LogEntry> GetLogForMaterial(IEnumerable<long> materialID)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetLogForMaterial(materialID);
+                }
+            }
+
+            public List<LogEntry> GetLogForSerial(string serial)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetLogForSerial(serial);
+                }
+            }
+
+            public List<LogEntry> GetLogForWorkorder(string workorder)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetLogForWorkorder(workorder);
+                }
+            }
+
+            public MaterialDetails GetMaterialDetails(long materialID)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetMaterialDetails(materialID);
+                }
+            }
+
+            public List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorderIds)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.GetWorkorderSummaries(workorderIds);
+                }
+            }
+
+            public LogEntry RecordFinalizedWorkorder(string workorder)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.RecordFinalizedWorkorder(workorder);
+                }
+            }
+
+            public LogEntry RecordInspectionCompleted(long materialID, int process, int inspectionLocNum, string inspectionType, bool success, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.RecordInspectionCompleted(materialID, process, inspectionLocNum, inspectionType, success, extraData, elapsed, active);
+                }
+            }
+
+            public LogEntry RecordOperatorNotes(long materialID, int process, string notes, string operatorName = null)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.RecordOperatorNotes(materialID, process, notes, operatorName);
+                }
+            }
+
+            public LogEntry RecordSerialForMaterialID(long materialID, int process, string serial)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.RecordSerialForMaterialID(materialID, process, serial);
+                }
+            }
+
+            public LogEntry RecordWashCompleted(long materialID, int process, int washLocNum, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.RecordWashCompleted(materialID, process, washLocNum, extraData, elapsed, active);
+                }
+            }
+
+            public LogEntry RecordWorkorderForMaterialID(long materialID, int process, string workorder)
+            {
+                using (var ldb = _backend.OpenLogDatabase())
+                {
+                    return ldb.RecordWorkorderForMaterialID(materialID, process, workorder);
+                }
+            }
+        }
+
     }
 }
 

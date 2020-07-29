@@ -182,7 +182,7 @@ namespace MazakMachineInterface
 
             if (logs.Count > 0 || queuesChanged)
             {
-              _currentStatusChanged(jobDB, logDb);
+              _currentStatusChanged(jobDB, logDB);
             }
           }
 
