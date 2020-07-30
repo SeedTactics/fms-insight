@@ -120,7 +120,6 @@ namespace Makino
       _disposed = true;
       _logTimer.LogsProcessed -= OnLogsProcessed;
       if (_logTimer != null) _logTimer.Halt();
-      if (_status != null) _status.Close();
       if (_makinoDB != null) _makinoDB.Close();
       EventLogDBConfig.NewLogEntry -= OnLogEntry;
     }

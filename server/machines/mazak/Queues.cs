@@ -247,22 +247,63 @@ namespace MazakMachineInterface
 
         if (proc == 1)
         {
-          // check for too many assigned
-          var started = CountCompletedOrMachiningStarted(sch);
-          if (started + numMatInQueue > sch.SchRow.PlanQuantity)
+          if (_waitForAllCastings)
           {
-            logDb.MarkCastingsAsUnallocated(
-              matInQueue
-                .Skip(Math.Max(0, sch.SchRow.PlanQuantity - started))
-                .Select(m => m.MaterialID),
-              schProc.Casting);
-            numMatInQueue = Math.Max(0, sch.SchRow.PlanQuantity - started);
+            // update FMS Insight queue to match schedule
+            if (numMatInQueue < schProc.SchProcRow.ProcessMaterialQuantity)
+            {
+              // add some new material to queues
+              for (int i = numMatInQueue + 1; i <= schProc.SchProcRow.ProcessMaterialQuantity; i++)
+              {
+                var m = logDb.AllocateMaterialID(sch.Job.UniqueStr, sch.Job.PartName, sch.Job.NumProcesses);
+                logDb.RecordPathForProcess(m, 1, schProc.Path);
+                logDb.RecordAddMaterialToQueue(
+                  mat: new EventLogDB.EventLogMaterial() { MaterialID = m, Process = 1, Face = "" },
+                  queue: schProc.InputQueue,
+                  position: -1
+                );
+              }
+            }
+            else if (numMatInQueue > schProc.SchProcRow.ProcessMaterialQuantity)
+            {
+              // remove material from queues
+              foreach (var m in matInQueue.TakeLast(numMatInQueue - schProc.SchProcRow.ProcessMaterialQuantity))
+              {
+                logDb.RecordRemoveMaterialFromAllQueues(
+                  new EventLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = 1, Face = "" }
+                );
+              }
+            }
+
+          }
+          else
+          {
+            // check for too many assigned
+            var started = CountCompletedOrMachiningStarted(sch);
+            if (started + numMatInQueue > sch.SchRow.PlanQuantity)
+            {
+              logDb.MarkCastingsAsUnallocated(
+                matInQueue
+                  .Skip(Math.Max(0, sch.SchRow.PlanQuantity - started))
+                  .Select(m => m.MaterialID),
+                schProc.Casting);
+              numMatInQueue = Math.Max(0, sch.SchRow.PlanQuantity - started);
+            }
+
+            // update schedule to match FMS Insight queue
+            if (numMatInQueue != schProc.SchProcRow.ProcessMaterialQuantity)
+            {
+              schProc.TargetMaterialCount = numMatInQueue;
+            }
           }
         }
-
-        if (numMatInQueue != schProc.SchProcRow.ProcessMaterialQuantity)
+        else
         {
-          schProc.TargetMaterialCount = numMatInQueue;
+          // for larger proc, update schedule to match FMS Insight queue
+          if (numMatInQueue != schProc.SchProcRow.ProcessMaterialQuantity)
+          {
+            schProc.TargetMaterialCount = numMatInQueue;
+          }
         }
       }
 
@@ -302,7 +343,7 @@ namespace MazakMachineInterface
           // find some new castings
           var unassignedCastings =
             logDb.GetMaterialInQueue(schProc1.InputQueue)
-            .Where(m => string.IsNullOrEmpty(m.Unique) && m.PartNameOrCasting == schProc1.Casting)
+            .Where(m => string.IsNullOrEmpty(m.Unique) && (m.PartNameOrCasting == schProc1.Casting || m.PartNameOrCasting == sch.Job.PartName))
             .Count();
 
           var toAdd =
