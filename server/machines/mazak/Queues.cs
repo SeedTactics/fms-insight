@@ -302,7 +302,7 @@ namespace MazakMachineInterface
           // find some new castings
           var unassignedCastings =
             logDb.GetMaterialInQueue(schProc1.InputQueue)
-            .Where(m => string.IsNullOrEmpty(m.Unique) && m.PartNameOrCasting == schProc1.Casting)
+            .Where(m => string.IsNullOrEmpty(m.Unique) && (m.PartNameOrCasting == schProc1.Casting || m.PartNameOrCasting == sch.Job.PartName))
             .Count();
 
           var toAdd =
