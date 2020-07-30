@@ -97,7 +97,7 @@ namespace Makino
 #if DEBUG
         _makinoDB = new MakinoDB(EventLogDBConfig, MakinoDB.DBTypeEnum.SqlLocal, "", _status);
 #else
-        _makinoDB = new MakinoDB(_logDbCfg, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status);
+        _makinoDB = new MakinoDB(EventLogDBConfig, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status);
 #endif
 
         _logTimer = new LogTimer(EventLogDBConfig, JobDBConfig.OpenConnection, _makinoDB, _status, st);
