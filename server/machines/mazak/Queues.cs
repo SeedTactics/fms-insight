@@ -267,7 +267,7 @@ namespace MazakMachineInterface
             else if (numMatInQueue > schProc.SchProcRow.ProcessMaterialQuantity)
             {
               // remove material from queues
-              foreach (var m in matInQueue.TakeLast(numMatInQueue - schProc.SchProcRow.ProcessMaterialQuantity))
+              foreach (var m in matInQueue.Skip(schProc.SchProcRow.ProcessMaterialQuantity))
               {
                 logDb.RecordRemoveMaterialFromAllQueues(
                   new EventLogDB.EventLogMaterial() { MaterialID = m.MaterialID, Process = 1, Face = "" }
