@@ -1065,18 +1065,18 @@ namespace MachineWatchTest
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA"), "Insight:9:ccc"); // 9 is used by new job, should not be deleted
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ddd_rev7.EIA"), "Insight:7:ddd"); // latest revision of unused program, should be kept
 
-      var lookupProgram = Substitute.For<Func<string, long?, JobDB.ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new JobDB.ProgramRevision()
+      var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
+      lookupProgram("aaa", null).Returns(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 3,
       });
-      lookupProgram("bbb", 7).Returns(new JobDB.ProgramRevision()
+      lookupProgram("bbb", 7).Returns(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 7,
       });
-      lookupProgram("ccc", 9).Returns(new JobDB.ProgramRevision()
+      lookupProgram("ccc", 9).Returns(new ProgramRevision()
       {
         ProgramName = "ccc",
         Revision = 9
@@ -1155,13 +1155,13 @@ namespace MachineWatchTest
       // create bbb with older revision
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "bbb_rev6.EIA"), "Insight:6:bbb");
 
-      var lookupProgram = Substitute.For<Func<string, long?, JobDB.ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new JobDB.ProgramRevision()
+      var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
+      lookupProgram("aaa", null).Returns(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 3,
       });
-      lookupProgram("bbb", 7).Returns((JobDB.ProgramRevision)null);
+      lookupProgram("bbb", 7).Returns((ProgramRevision)null);
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
         new JobPlan[] { job1 },

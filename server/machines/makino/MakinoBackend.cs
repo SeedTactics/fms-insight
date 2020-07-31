@@ -157,6 +157,8 @@ namespace Makino
 
     public IOldJobDecrement OldJobDecrement { get => _jobs; }
 
+    public IMachineControl MachineControl => null;
+
     public IInspectionControl OpenInspectionControl()
     {
       return EventLogDBConfig.OpenConnection();

@@ -1583,6 +1583,175 @@
           }
         }
       }
+    },
+    "/api/v1/machines/tools": {
+      "get": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines_GetToolsInMachines",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ToolInMachine"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/machines/programs-in-cell-controller": {
+      "get": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines_GetProgramsInCellController",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProgramInCellController"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/machines/program/{programName}/revisions": {
+      "get": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines_GetProgramRevisionsInDescendingOrderOfRevision",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "programName",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "count",
+            "in": "query",
+            "required": true,
+            "format": "int32",
+            "x-nullable": false
+          },
+          {
+            "type": "integer",
+            "name": "revisionToStart",
+            "in": "query",
+            "format": "int32",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProgramRevision"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/machines/program/{programName}/revision/{revision}/content": {
+      "get": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines_GetProgramRevisionContent",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "programName",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "format": "int32",
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/machines/program/{programName}/latest-revision/content": {
+      "get": {
+        "tags": [
+          "machines"
+        ],
+        "operationId": "machines_GetLatestProgramRevisionContent",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "programName",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -3007,6 +3176,88 @@
         "Active": {
           "type": "string",
           "format": "time-span"
+        }
+      }
+    },
+    "ToolInMachine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "MachineGroupName",
+        "MachineNum",
+        "Pocket",
+        "ToolName",
+        "CurrentUse",
+        "TotalLifeTime"
+      ],
+      "properties": {
+        "MachineGroupName": {
+          "type": "string"
+        },
+        "MachineNum": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Pocket": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "ToolName": {
+          "type": "string"
+        },
+        "CurrentUse": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "TotalLifeTime": {
+          "type": "string",
+          "format": "time-span"
+        }
+      }
+    },
+    "ProgramInCellController": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ProgramName",
+        "CellControllerProgramName"
+      ],
+      "properties": {
+        "ProgramName": {
+          "type": "string"
+        },
+        "Revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Comment": {
+          "type": "string"
+        },
+        "CellControllerProgramName": {
+          "type": "string"
+        }
+      }
+    },
+    "ProgramRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ProgramName",
+        "Revision"
+      ],
+      "properties": {
+        "ProgramName": {
+          "type": "string"
+        },
+        "Revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Comment": {
+          "type": "string"
+        },
+        "CellControllerProgramName": {
+          "type": "string"
         }
       }
     }

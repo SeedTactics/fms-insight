@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017, John Lenz
+﻿/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -44,20 +44,19 @@ namespace BlackMaple.MachineFramework
 
   public interface IFMSBackend : IDisposable
   {
-    IOldJobDecrement OldJobDecrement { get; }
     IJobControl JobControl { get; }
+    IMachineControl MachineControl { get; }
     IJobDatabase OpenJobDatabase();
     ILogDatabase OpenLogDatabase();
     IInspectionControl OpenInspectionControl();
+    IOldJobDecrement OldJobDecrement { get; }
 
     event NewLogEntryDelegate NewLogEntry;
     event NewCurrentStatus OnNewCurrentStatus;
     event NewJobsDelegate OnNewJobs;
   }
 
-  public interface IBackgroundWorker : IDisposable
-  {
-  }
+  public interface IBackgroundWorker : IDisposable { }
 
   public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
   public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);

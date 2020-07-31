@@ -71,7 +71,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterial> QueuedMaterial { get; set; }
     public Dictionary<(string uniq, int proc1path), int> JobQtyRemainingOnProc1 { get; set; }
-    public Dictionary<(string progName, long revision), JobDB.ProgramRevision> ProgramNums { get; set; }
+    public Dictionary<(string progName, long revision), ProgramRevision> ProgramNums { get; set; }
   }
 
   public interface IBuildCellState
@@ -1453,7 +1453,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return null;
     }
 
-    private Dictionary<(string progName, long revision), JobDB.ProgramRevision> FindProgramNums(JobDB jobDB, PlannedSchedule schedule)
+    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, PlannedSchedule schedule)
     {
       var stops =
         schedule.Jobs
@@ -1463,7 +1463,7 @@ namespace BlackMaple.FMSInsight.Niigata
             )
           ));
 
-      var progs = new Dictionary<(string progName, long revision), JobDB.ProgramRevision>();
+      var progs = new Dictionary<(string progName, long revision), ProgramRevision>();
       foreach (var stop in stops)
       {
         if (stop.ProgramRevision.HasValue)
