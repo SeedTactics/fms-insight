@@ -75,20 +75,28 @@ namespace DebugMachineWatchApiServer
     }
   }
 
-  public class MockServerBackend : IFMSBackend, IJobControl, IOldJobDecrement, IDisposable
+  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IOldJobDecrement, IDisposable
   {
     public EventLogDB LogDB { get; private set; }
     public JobDB JobDB { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
+    private List<ToolInMachine> Tools { get; set; }
+    private class MockProgram
+    {
+      public string ProgramName { get; set; }
+      public long? Revision { get; set; }
+      public string Comment { get; set; }
+      public string CellControllerProgramName { get; set; }
+    }
+    private List<MockProgram> Programs { get; set; }
 
     private JsonSerializerSettings _jsonSettings;
 
     public event NewCurrentStatus OnNewCurrentStatus;
     public event NewJobsDelegate OnNewJobs;
-
-    public event NewLogEntryDelegate NewLogEntry;
+    public event NewLogEntryDelegate NewLogEntry { add { } remove { } }
 
     public MockServerBackend()
     {
@@ -131,6 +139,8 @@ namespace DebugMachineWatchApiServer
       LoadEvents(sampleDataPath, offset);
       LoadJobs(sampleDataPath, offset);
       LoadStatus(sampleDataPath, offset);
+      LoadTools(sampleDataPath);
+      LoadPrograms(sampleDataPath);
     }
 
     public void Dispose()
@@ -145,6 +155,8 @@ namespace DebugMachineWatchApiServer
     }
 
     public IJobControl JobControl { get => this; }
+
+    public IMachineControl MachineControl => this;
 
     public ILogDatabase OpenLogDatabase()
     {
@@ -355,6 +367,44 @@ namespace DebugMachineWatchApiServer
       throw new NotImplementedException();
     }
 
+    public List<ToolInMachine> CurrentToolsInMachines()
+    {
+      return Tools;
+    }
+
+    public List<ProgramInCellController> CurrentProgramsInCellController()
+    {
+      return Programs
+        .Where(p => !string.IsNullOrEmpty(p.CellControllerProgramName))
+        .Select(p => new ProgramInCellController()
+        {
+          ProgramName = p.ProgramName,
+          Revision = p.Revision,
+          Comment = p.Comment,
+          CellControllerProgramName = p.CellControllerProgramName
+        }).ToList();
+    }
+
+    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, int? revisionToStart)
+    {
+      return Programs
+        .Where(p => p.ProgramName == programName && p.Revision.HasValue && (!revisionToStart.HasValue || p.Revision.Value <= revisionToStart.Value))
+        .OrderByDescending(p => p.Revision.Value)
+        .Take(count)
+        .Select(p => new ProgramRevision()
+        {
+          ProgramName = p.ProgramName,
+          Revision = p.Revision.Value,
+          Comment = p.Comment,
+          CellControllerProgramName = p.CellControllerProgramName
+        }).ToList();
+    }
+
+    public string GetProgramContent(string programName, int? revision)
+    {
+      return "Program Content for " + programName + " and revision " + revision.ToString();
+    }
+
     private void LoadEvents(string sampleDataPath, TimeSpan offset)
     {
       var files = System.IO.Directory.GetFiles(sampleDataPath, "events-*.json");
@@ -525,5 +575,24 @@ namespace DebugMachineWatchApiServer
       }
       // not converted: hold patterns
     }
+
+    public void LoadTools(string sampleDataPath)
+    {
+      var json = System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tools.json"));
+      Tools = JsonConvert.DeserializeObject<List<ToolInMachine>>(
+        json,
+        _jsonSettings
+      );
+    }
+
+    public void LoadPrograms(string sampleDataPath)
+    {
+      var programJson = System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "programs.json"));
+      Programs = JsonConvert.DeserializeObject<List<MockProgram>>(
+        programJson,
+        _jsonSettings
+      );
+    }
+
   }
 }

@@ -822,25 +822,25 @@ namespace MachineWatchTest
 
       CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
 
-      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
       });
-      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
       });
-      _jobDB.LoadProgram("bbb", 6).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadProgram("bbb", 6).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
       });
-      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
@@ -892,13 +892,13 @@ namespace MachineWatchTest
       .Should().Throw<BadRequestException>().WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
 
       _jobDB.LoadProgram("aaa", 2).Should().BeNull();
-      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
       });
-      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
@@ -927,19 +927,19 @@ namespace MachineWatchTest
             }
       }, null);
 
-      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 2,
         Comment = "aaa comment rev 2",
       });
-      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 2,
         Comment = "aaa comment rev 2",
       });
-      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
@@ -951,28 +951,28 @@ namespace MachineWatchTest
       _jobDB.SetCellControllerProgramForProgram("aaa", 1, "aaa-1");
       _jobDB.SetCellControllerProgramForProgram("bbb", 6, "bbb-6");
 
-      _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
         CellControllerProgramName = "aaa-1"
       });
-      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
         Comment = "aaa comment",
         CellControllerProgramName = "aaa-1"
       });
-      _jobDB.ProgramFromCellControllerProgram("bbb-6").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.ProgramFromCellControllerProgram("bbb-6").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
         Comment = "bbb comment",
         CellControllerProgramName = "bbb-6"
       });
-      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 6,
@@ -984,7 +984,7 @@ namespace MachineWatchTest
       _jobDB.SetCellControllerProgramForProgram("aaa", 1, null);
 
       _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeNull();
-      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 1,
@@ -1009,19 +1009,19 @@ namespace MachineWatchTest
         },
       }, job1.RouteStartingTimeUTC);
 
-      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 2,
         Comment = "aaa comment rev 2",
       });
-      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
         Revision = 2,
         Comment = "aaa comment rev 2",
       });
-      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new JobDB.ProgramRevision()
+      _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "bbb",
         Revision = 7,

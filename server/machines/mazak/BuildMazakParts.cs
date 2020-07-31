@@ -238,7 +238,7 @@ namespace MazakMachineInterface
 
     public abstract IEnumerable<string> Pallets();
     public abstract (string fixture, int face) FixtureFace();
-    public abstract BlackMaple.MachineFramework.JobDB.ProgramRevision PartProgram { get; }
+    public abstract BlackMaple.MachineWatchInterface.ProgramRevision PartProgram { get; }
 
     public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
 
@@ -258,9 +258,9 @@ namespace MazakMachineInterface
 
   public class MazakProcessFromJob : MazakProcess
   {
-    public override BlackMaple.MachineFramework.JobDB.ProgramRevision PartProgram { get; }
+    public override ProgramRevision PartProgram { get; }
 
-    public MazakProcessFromJob(MazakPart parent, int process, int pth, BlackMaple.MachineFramework.JobDB.ProgramRevision prog)
+    public MazakProcessFromJob(MazakPart parent, int process, int pth, ProgramRevision prog)
       : base(parent, process, pth)
     {
       PartProgram = prog;
@@ -331,7 +331,7 @@ namespace MazakMachineInterface
 
   public class MazakProcessFromTemplate : MazakProcess
   {
-    public override BlackMaple.MachineFramework.JobDB.ProgramRevision PartProgram { get; }
+    public override ProgramRevision PartProgram { get; }
 
     //Here, jobs have only one process.  The number of processes are copied from the template.
     public readonly MazakPartProcessRow TemplateProcessRow;
@@ -340,7 +340,7 @@ namespace MazakMachineInterface
       : base(parent, template.ProcessNumber, path)
     {
       TemplateProcessRow = template;
-      PartProgram = new BlackMaple.MachineFramework.JobDB.ProgramRevision()
+      PartProgram = new ProgramRevision()
       {
         CellControllerProgramName = template.MainProgram
       };
@@ -639,7 +639,7 @@ namespace MazakMachineInterface
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakJobs>();
 
     //Allows plugins to customize the process creation
-    public delegate MazakProcess ProcessFromJobDelegate(MazakPart parent, int process, int pth, BlackMaple.MachineFramework.JobDB.ProgramRevision prog);
+    public delegate MazakProcess ProcessFromJobDelegate(MazakPart parent, int process, int pth, BlackMaple.MachineWatchInterface.ProgramRevision prog);
     public static ProcessFromJobDelegate ProcessFromJob
       = (parent, process, pth, prog) => new MazakProcessFromJob(parent, process, pth, prog);
 
@@ -651,7 +651,7 @@ namespace MazakMachineInterface
       MazakDbType MazakType,
       bool checkPalletsUsedOnce,
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
-      Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram,
+      Func<string, long?, BlackMaple.MachineWatchInterface.ProgramRevision> lookupProgram,
       IList<string> errors)
     {
       Validate(jobs, fmsSettings, errors);
@@ -730,7 +730,7 @@ namespace MazakMachineInterface
     #region Parts
     private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakSchedulesPartsPallets mazakData, MazakDbType mazakTy,
                                                   IList<string> log,
-                                                  Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram)
+                                                  Func<string, long?, ProgramRevision> lookupProgram)
     {
       var ret = new List<MazakPart>();
       int partIdx = 1;
@@ -829,7 +829,7 @@ namespace MazakMachineInterface
 
     private static void BuildProcFromPathGroup(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
                                                    MazakSchedulesPartsPallets mazakData, MatchFunc matchPath,
-                                                   Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram)
+                                                   Func<string, long?, ProgramRevision> lookupProgram)
     {
       ErrorDuringCreate = null;
 
@@ -842,7 +842,7 @@ namespace MazakMachineInterface
 
             //Check this proc and path has a program
             bool has1Stop = false;
-            BlackMaple.MachineFramework.JobDB.ProgramRevision prog = null;
+            ProgramRevision prog = null;
             foreach (var stop in job.GetMachiningStop(proc, path))
             {
               has1Stop = true;
@@ -869,7 +869,7 @@ namespace MazakMachineInterface
               }
               if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
               {
-                prog = new BlackMaple.MachineFramework.JobDB.ProgramRevision()
+                prog = new ProgramRevision()
                 {
                   CellControllerProgramName = stop.ProgramName
                 };
@@ -913,7 +913,7 @@ namespace MazakMachineInterface
 
     private static void BuildProcFromJobWithOneProc(JobPlan job, int proc1path, MazakPart mazak, MazakDbType mazakTy,
                                                     MazakSchedulesPartsPallets mazakData,
-                                                    Func<string, long?, BlackMaple.MachineFramework.JobDB.ProgramRevision> lookupProgram,
+                                                    Func<string, long?, ProgramRevision> lookupProgram,
                                                     out string ErrorDuringCreate)
     {
       ErrorDuringCreate = null;

@@ -162,6 +162,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IJobControl JobControl { get => _jobControl; }
     public IOldJobDecrement OldJobDecrement { get => null; }
+    public IMachineControl MachineControl => null;
 
     public IJobDatabase OpenJobDatabase()
     {

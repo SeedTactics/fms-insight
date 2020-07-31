@@ -1,0 +1,18 @@
+[
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 1,
+    "Pocket": 100,
+    "ToolName": "tool1",
+    "CurrentUse": "PT11M",
+    "TotalLifeTime": "PT1H"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 1,
+    "Pocket": 200,
+    "ToolName": "tool2",
+    "CurrentUse": "PT22M",
+    "TotalLifeTime": "PT1H"
+  }
+]

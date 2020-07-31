@@ -304,7 +304,7 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
-    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), MachineFramework.JobDB.ProgramRevision> progs)
+    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs)
     {
       var newMaster = NewPalletMaster(oldPallet.Master.PalletNum, newPaths, progs);
       if (SimpleQuantityChange(oldPallet.Master, newMaster))
@@ -342,7 +342,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private List<RouteStep> MiddleStepsForPath(JobPath path, IReadOnlyDictionary<(string progNum, long revision), MachineFramework.JobDB.ProgramRevision> progs)
+    private List<RouteStep> MiddleStepsForPath(JobPath path, IReadOnlyDictionary<(string progNum, long revision), ProgramRevision> progs)
     {
       var steps = new List<RouteStep>();
       foreach (var stop in path.Job.GetMachiningStop(path.Process, path.Path))
@@ -454,7 +454,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     }
 
-    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths, IReadOnlyDictionary<(string progNum, long revision), MachineFramework.JobDB.ProgramRevision> progs)
+    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPath> newPaths, IReadOnlyDictionary<(string progNum, long revision), ProgramRevision> progs)
     {
       var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
 
@@ -563,7 +563,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return false;
     }
 
-    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, MachineFramework.JobDB.ProgramRevision prog)
+    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, ProgramRevision prog)
     {
       int progNum = Enumerable.Range(2000, 9999 - 2000).FirstOrDefault(p => !existing.ContainsKey(p));
       return new NewProgram()

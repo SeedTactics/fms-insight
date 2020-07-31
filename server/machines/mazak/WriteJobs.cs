@@ -172,7 +172,7 @@ namespace MazakMachineInterface
       hold.SignalNewSchedules();
     }
 
-    private JobDB.ProgramRevision LookupProgram(JobDB jobDB, string program, long? rev)
+    private ProgramRevision LookupProgram(JobDB jobDB, string program, long? rev)
     {
       if (rev.HasValue)
       {

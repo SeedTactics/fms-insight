@@ -269,6 +269,8 @@ namespace MazakMachineInterface
 
     public IOldJobDecrement OldJobDecrement { get => routing; }
 
+    public IMachineControl MachineControl => null;
+
     public IJobDatabase OpenJobDatabase()
     {
       return jobDBConfig.OpenConnection();

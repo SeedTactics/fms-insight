@@ -2443,22 +2443,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public class ProgramRevision
-    {
-      public string ProgramName { get; set; }
-      public long Revision { get; set; }
-      public string Comment { get; set; }
-      public string CellControllerProgramName { get; set; }
-    }
-
-    public ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
+    public MachineWatchInterface.ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          ProgramRevision prog = null;
+          MachineWatchInterface.ProgramRevision prog = null;
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
@@ -2468,7 +2460,7 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                prog = new ProgramRevision
+                prog = new MachineWatchInterface.ProgramRevision
                 {
                   ProgramName = reader.GetString(0),
                   Revision = reader.GetInt64(1),
@@ -2490,14 +2482,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public ProgramRevision LoadProgram(string program, long revision)
+    public MachineWatchInterface.ProgramRevision LoadProgram(string program, long revision)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          ProgramRevision prog = null;
+          MachineWatchInterface.ProgramRevision prog = null;
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
@@ -2508,7 +2500,7 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                prog = new ProgramRevision
+                prog = new MachineWatchInterface.ProgramRevision
                 {
                   ProgramName = program,
                   Revision = revision,
@@ -2530,14 +2522,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public ProgramRevision LoadMostRecentProgram(string program)
+    public MachineWatchInterface.ProgramRevision LoadMostRecentProgram(string program)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          ProgramRevision prog = null;
+          MachineWatchInterface.ProgramRevision prog = null;
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
@@ -2547,7 +2539,7 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                prog = new ProgramRevision
+                prog = new MachineWatchInterface.ProgramRevision
                 {
                   ProgramName = program,
                   Revision = reader.GetInt64(0),

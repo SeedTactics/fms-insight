@@ -156,7 +156,7 @@ namespace MazakMachineInterface
         {
           Log.Debug("Check valid routing info");
 
-          BlackMaple.MachineFramework.JobDB.ProgramRevision lookupProg(string prog, long? rev)
+          ProgramRevision lookupProg(string prog, long? rev)
           {
             if (rev.HasValue)
             {
