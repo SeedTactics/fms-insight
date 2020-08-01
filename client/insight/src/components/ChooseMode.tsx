@@ -60,6 +60,7 @@ export interface ChooseModeProps {
   readonly setEngieering: () => void;
   readonly setQuality: () => void;
   readonly setAnalysis: () => void;
+  readonly setTools: () => void;
 }
 
 export function ChooseMode(p: ChooseModeProps) {
@@ -91,7 +92,7 @@ export function ChooseMode(p: ChooseModeProps) {
           </ListItemIcon>
           <ListItemText>Wash</ListItemText>
         </ListItem>
-        <ListItem button disabled>
+        <ListItem button onClick={p.setTools}>
           <ListItemIcon>
             <BuildIcon />
           </ListItemIcon>
@@ -173,5 +174,8 @@ export default connect(() => ({}), {
   }),
   setAnalysis: () => ({
     type: routes.RouteLocation.Analysis_Efficiency,
+  }),
+  setTools: () => ({
+    type: routes.RouteLocation.Tools_Dashboard,
   }),
 })(ChooseMode);

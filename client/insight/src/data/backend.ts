@@ -128,12 +128,17 @@ export interface LogAPI {
   ): Promise<Readonly<api.ILogEntry>>;
 }
 
+export interface MachineAPI {
+  getToolsInMachines(): Promise<ReadonlyArray<Readonly<api.IToolInMachine>>>;
+}
+
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
 export const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
 
 export let FmsServerBackend: FmsAPI = new api.FmsClient(BackendUrl);
 export let JobsBackend: JobAPI = new api.JobsClient(BackendUrl);
 export let LogBackend: LogAPI = new api.LogClient(BackendUrl);
+export let MachineBackend: MachineAPI = new api.MachinesClient(BackendUrl);
 let otherLogServers: ReadonlyArray<string> = [];
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
 
@@ -523,6 +528,12 @@ function initMockBackend(data: Promise<MockData>) {
           return evt;
         })
       );
+    },
+  };
+
+  MachineBackend = {
+    getToolsInMachines() {
+      return Promise.resolve([]);
     },
   };
 }
