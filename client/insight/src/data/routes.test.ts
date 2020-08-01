@@ -145,6 +145,7 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     routes.RouteLocation.Operations_Machines,
     routes.RouteLocation.Operations_AllMaterial,
     routes.RouteLocation.Operations_CompletedParts,
+    routes.RouteLocation.Operations_Tools,
 
     routes.RouteLocation.Engineering,
 

@@ -66,6 +66,7 @@ import MoneyIcon from "@material-ui/icons/AttachMoney";
 import MenuIcon from "@material-ui/icons/Menu";
 import CheckIcon from "@material-ui/icons/CheckCircle";
 import PersonIcon from "@material-ui/icons/Person";
+import ToolIcon from "@material-ui/icons/Dns";
 import { User } from "oidc-client";
 
 import OperationDashboard from "./operations/Dashboard";
@@ -98,6 +99,7 @@ import LoadStation from "./station-monitor/LoadStation";
 import Inspection from "./station-monitor/Inspection";
 import Wash from "./station-monitor/Wash";
 import Queues from "./station-monitor/Queues";
+import { ToolReport } from "./operations/ToolReport";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -127,6 +129,7 @@ function OperationsTabs(p: HeaderNavProps) {
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
       <Tab label="Schedules" value={routes.RouteLocation.Operations_CompletedParts} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
+      <Tab label="Tools" value={routes.RouteLocation.Operations_Tools} />
     </Tabs>
   );
 }
@@ -273,6 +276,16 @@ function DemoNav(p: HeaderNavProps) {
         </ListItemIcon>
         <ListItemText>Part Lookup</ListItemText>
       </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Operations_Tools}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Tools, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <ToolIcon />
+        </ListItemIcon>
+        <ListItemText>Tools</ListItemText>
+      </ListItem>
       <ListSubheader>Monthly Review</ListSubheader>
       <ListItem
         button
@@ -327,6 +340,7 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Operations_LoadStation:
     case routes.RouteLocation.Operations_Machines:
     case routes.RouteLocation.Operations_AllMaterial:
+    case routes.RouteLocation.Operations_Tools:
     case routes.RouteLocation.Operations_CompletedParts:
       return "https://fms-insight.seedtactics.com/docs/client-operations.html";
 
@@ -340,7 +354,7 @@ function helpUrl(r: routes.RouteLocation): string {
       return "https://fms-insight.seedtactics.com/docs/client-quality.html";
 
     case routes.RouteLocation.Tools_Dashboard:
-      return "https://fms-insight.seedtactics.com/docs/client-launch.html";
+      return "https://fms-insight.seedtactics.com/docs/client-operations.html";
 
     case routes.RouteLocation.Analysis_Efficiency:
     case routes.RouteLocation.Analysis_CostPerPiece:
@@ -592,6 +606,10 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <CompletedParts />;
           navigation = OperationsTabs;
           break;
+        case routes.RouteLocation.Operations_Tools:
+          page = <ToolReport />;
+          navigation = OperationsTabs;
+          break;
 
         case routes.RouteLocation.Engineering:
           page = <OperationMachines />;
@@ -623,7 +641,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           break;
 
         case routes.RouteLocation.Tools_Dashboard:
-          page = <p>Tools Dashboard</p>;
+          page = <ToolReport />;
           break;
 
         case routes.RouteLocation.ChooseMode:
