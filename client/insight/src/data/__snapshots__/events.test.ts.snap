@@ -547,6 +547,7 @@ Object {
         "y": 3,
       },
     ],
+    "tool_usage": Map {},
   },
   "inspection": Object {
     "by_part": Map {
@@ -1272,6 +1273,7 @@ Object {
         "y": 3,
       },
     ],
+    "tool_usage": Map {},
   },
   "inspection": Object {
     "by_part": Map {
@@ -2277,6 +2279,7 @@ Object {
         "y": 3,
       },
     ],
+    "tool_usage": Map {},
   },
   "inspection": Object {
     "by_part": Map {
@@ -3310,6 +3313,7 @@ Object {
         "y": 3,
       },
     ],
+    "tool_usage": Map {},
   },
   "inspection": Object {
     "by_part": Map {
@@ -4315,6 +4319,7 @@ Object {
         "y": 3,
       },
     ],
+    "tool_usage": Map {},
   },
   "inspection": Object {
     "by_part": Map {
