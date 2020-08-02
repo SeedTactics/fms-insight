@@ -146,6 +146,15 @@ export type ActiveCycleTime = HashMap<
   HashMap<StationOperation, { readonly activeMinsForSingleMat: number }>
 >;
 
+export interface ProgramToolUseInSingleCycle {
+  readonly tools: ReadonlyArray<{
+    readonly toolName: string;
+    readonly cycleUsageMinutes: number;
+  }>;
+}
+
+export type ToolUsage = HashMap<PartAndStationOperation, Vector<ProgramToolUseInSingleCycle>>;
+
 export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
   readonly by_pallet: HashMap<string, ReadonlyArray<PalletCycleData>>;
@@ -157,6 +166,7 @@ export interface CycleState {
   readonly pallet_names: HashSet<string>;
   readonly estimatedCycleTimes: EstimatedCycleTimes;
   readonly active_cycle_times: ActiveCycleTime;
+  readonly tool_usage: ToolUsage;
 }
 
 export const initial: CycleState = {
@@ -169,6 +179,7 @@ export const initial: CycleState = {
   pallet_names: HashSet.empty(),
   estimatedCycleTimes: HashMap.empty(),
   active_cycle_times: HashMap.empty(),
+  tool_usage: HashMap.empty(),
 };
 
 export enum ExpireOldDataType {
@@ -494,6 +505,28 @@ function newInspectionData(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>): Ins
   return { signaled, result };
 }
 
+function process_tools(cycle: Readonly<api.ILogEntry>, toolUsage: ToolUsage): ToolUsage {
+  if (cycle.tools === undefined) {
+    return toolUsage;
+  }
+
+  const toolsUsedInCycle = LazySeq.ofObject(cycle.tools)
+    .map(([toolName, use]) => ({
+      toolName,
+      cycleUsageMinutes: use.toolUseDuringCycle === "" ? 0 : duration(use.toolUseDuringCycle).asMinutes(),
+    }))
+    .toArray();
+
+  if (toolsUsedInCycle.length === 0) {
+    return toolUsage;
+  }
+
+  const key = PartAndStationOperation.ofLogCycle(cycle);
+  return toolUsage.putWithMerge(key, Vector.of({ tools: toolsUsedInCycle }), (oldV, newV) =>
+    oldV.drop(Math.max(0, oldV.length() - 4)).appendAll(newV)
+  );
+}
+
 export function process_events(
   expire: ExpireOldData,
   newEvts: ReadonlyArray<Readonly<api.ILogEntry>>,
@@ -510,6 +543,7 @@ export function process_events(
     estimatedCycleTimes = st.estimatedCycleTimes;
   }
   let activeCycleTimes = st.active_cycle_times;
+  let toolUsage = st.tool_usage;
 
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan: {
@@ -581,9 +615,13 @@ export function process_events(
           : Option.none<StatisticalCycleTime>();
       let activeMins;
       [activeMins, activeCycleTimes] = activeMinutes(cycle, stats, activeCycleTimes);
+      const elapsed = duration(cycle.elapsed).asMinutes();
+      if (stats.isSome() && !isOutlier(stats.get(), elapsed)) {
+        toolUsage = process_tools(cycle, toolUsage);
+      }
       return {
         x: cycle.endUTC,
-        y: duration(cycle.elapsed).asMinutes(),
+        y: elapsed,
         activeMinutes: activeMins,
         medianCycleMinutes: stats.map((s) => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
         MAD_aboveMinutes: stats.map((s) => s.MAD_aboveMinutes).getOrElse(0),
@@ -651,6 +689,7 @@ export function process_events(
     loadstation_names: lulNames,
     pallet_names: palNames,
     active_cycle_times: activeCycleTimes,
+    tool_usage: toolUsage,
   };
 
   if (initialLoad) {
