@@ -2,17 +2,161 @@
   {
     "MachineGroupName": "MC",
     "MachineNum": 1,
-    "Pocket": 100,
-    "ToolName": "tool1",
-    "CurrentUse": "PT11M",
-    "TotalLifeTime": "PT1H"
+    "Pocket": 10,
+    "ToolName": "tool4",
+    "CurrentUse": "PT41M",
+    "TotalLifeTime": "PT1H30M"
   },
   {
     "MachineGroupName": "MC",
     "MachineNum": 1,
-    "Pocket": 200,
-    "ToolName": "tool2",
+    "Pocket": 11,
+    "ToolName": "tool3",
+    "CurrentUse": "PT58M",
+    "TotalLifeTime": "PT1H50M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 1,
+    "Pocket": 12,
+    "ToolName": "tool3",
     "CurrentUse": "PT22M",
-    "TotalLifeTime": "PT1H"
+    "TotalLifeTime": "PT1H50M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 1,
+    "Pocket": 13,
+    "ToolName": "tool1",
+    "CurrentUse": "PT94M",
+    "TotalLifeTime": "PT1H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 1,
+    "Pocket": 14,
+    "ToolName": "tool3",
+    "CurrentUse": "PT25M",
+    "TotalLifeTime": "PT1H50M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 2,
+    "Pocket": 10,
+    "ToolName": "tool4",
+    "CurrentUse": "PT82M",
+    "TotalLifeTime": "PT1H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 2,
+    "Pocket": 11,
+    "ToolName": "tool3",
+    "CurrentUse": "PT72M",
+    "TotalLifeTime": "PT1H50M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 2,
+    "Pocket": 12,
+    "ToolName": "tool3",
+    "CurrentUse": "PT58M",
+    "TotalLifeTime": "PT1H50M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 2,
+    "Pocket": 13,
+    "ToolName": "tool2",
+    "CurrentUse": "PT89M",
+    "TotalLifeTime": "PT2H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 2,
+    "Pocket": 14,
+    "ToolName": "tool2",
+    "CurrentUse": "PT93M",
+    "TotalLifeTime": "PT2H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 3,
+    "Pocket": 10,
+    "ToolName": "tool3",
+    "CurrentUse": "PT81M",
+    "TotalLifeTime": "PT1H50M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 3,
+    "Pocket": 11,
+    "ToolName": "tool2",
+    "CurrentUse": "PT9M",
+    "TotalLifeTime": "PT2H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 3,
+    "Pocket": 12,
+    "ToolName": "tool1",
+    "CurrentUse": "PT71M",
+    "TotalLifeTime": "PT1H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 3,
+    "Pocket": 13,
+    "ToolName": "tool4",
+    "CurrentUse": "PT81M",
+    "TotalLifeTime": "PT1H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 3,
+    "Pocket": 14,
+    "ToolName": "tool2",
+    "CurrentUse": "PT76M",
+    "TotalLifeTime": "PT2H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 4,
+    "Pocket": 10,
+    "ToolName": "tool2",
+    "CurrentUse": "PT74M",
+    "TotalLifeTime": "PT2H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 4,
+    "Pocket": 11,
+    "ToolName": "tool2",
+    "CurrentUse": "PT42M",
+    "TotalLifeTime": "PT2H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 4,
+    "Pocket": 12,
+    "ToolName": "tool1",
+    "CurrentUse": "PT65M",
+    "TotalLifeTime": "PT1H30M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 4,
+    "Pocket": 13,
+    "ToolName": "tool3",
+    "CurrentUse": "PT23M",
+    "TotalLifeTime": "PT1H50M"
+  },
+  {
+    "MachineGroupName": "MC",
+    "MachineNum": 4,
+    "Pocket": 14,
+    "ToolName": "tool3",
+    "CurrentUse": "PT71M",
+    "TotalLifeTime": "PT1H50M"
   }
 ]
