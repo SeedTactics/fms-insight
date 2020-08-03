@@ -31,10 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { IToolInMachine } from "./api";
+import { IToolInMachine, ICurrentStatus, ActionType } from "./api";
 import { LazySeq } from "./lazyseq";
-import { Vector } from "prelude-ts";
+import { Vector, HashMap } from "prelude-ts";
 import { duration } from "moment";
+import { ToolUsage, ProgramToolUseInSingleCycle, PartAndProgram } from "./events.cycles";
+
+export function averageToolUse(usage: ToolUsage): HashMap<PartAndProgram, ProgramToolUseInSingleCycle> {
+  // TODO: average
+  return usage.mapValues((v) => v.head().getOrThrow());
+}
 
 export interface ToolInMachine {
   readonly machineName: string;
@@ -44,14 +50,86 @@ export interface ToolInMachine {
   readonly remainingMinutes: number;
 }
 
+export interface PartToolUsage {
+  readonly partName: string;
+  readonly process: number;
+  readonly program: string;
+  readonly quantity: number;
+  readonly scheduledUseMinutes: number;
+}
+
 export interface ToolReport {
   readonly toolName: string;
   readonly machines: Vector<ToolInMachine>;
   readonly minRemainingMinutes: number;
   readonly minRemainingMachine: string;
+  readonly parts: Vector<PartToolUsage>;
 }
 
-export function calcToolSummary(allTools: Iterable<Readonly<IToolInMachine>>): Vector<ToolReport> {
+export function calcToolSummary(
+  allTools: Iterable<Readonly<IToolInMachine>>,
+  usage: ToolUsage,
+  currentSt: Readonly<ICurrentStatus>
+): Vector<ToolReport> {
+  let partPlannedQtys = HashMap.empty<PartAndProgram, number>();
+  for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
+    const planQty = LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((x) => x);
+    for (let procIdx = 0; procIdx < job.procsAndPaths.length; procIdx++) {
+      let completed = 0;
+      let programsToAfterInProc = HashMap.empty<string, number>();
+      for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
+        completed += job.completed?.[procIdx]?.[pathIdx] ?? 0;
+        const path = job.procsAndPaths[procIdx].paths[pathIdx];
+        for (let stopIdx = 0; stopIdx < path.stops.length; stopIdx += 1) {
+          const stop = path.stops[stopIdx];
+          const inProcAfter = LazySeq.ofIterable(currentSt.material)
+            .filter(
+              (m) =>
+                m.jobUnique === uniq &&
+                m.process == procIdx + 1 &&
+                m.path === pathIdx + 1 &&
+                (m.action.type === ActionType.UnloadToCompletedMaterial ||
+                  m.action.type === ActionType.UnloadToInProcess ||
+                  (m.lastCompletedMachiningRouteStopIndex !== undefined &&
+                    m.lastCompletedMachiningRouteStopIndex > stopIdx))
+            )
+            .length();
+          if (stop.program !== undefined && stop.program !== "") {
+            programsToAfterInProc = programsToAfterInProc.putWithMerge(stop.program, inProcAfter, (a, b) => a + b);
+          }
+        }
+      }
+      for (const [program, afterInProc] of programsToAfterInProc) {
+        partPlannedQtys = partPlannedQtys.putWithMerge(
+          new PartAndProgram(job.partName, procIdx + 1, program),
+          planQty - completed - afterInProc,
+          (a, b) => a + b
+        );
+      }
+    }
+  }
+
+  const parts = LazySeq.ofIterable(averageToolUse(usage))
+    .flatMap(([partAndProg, tools]) => {
+      const qty = partPlannedQtys.get(partAndProg);
+      if (qty.isSome() && qty.get() > 0) {
+        return tools.tools.map((tool) => ({
+          toolName: tool.toolName,
+          part: {
+            partName: partAndProg.part,
+            process: partAndProg.proc,
+            program: partAndProg.program,
+            quantity: qty.get(),
+            scheduledUseMinutes: tool.cycleUsageMinutes,
+          },
+        }));
+      } else {
+        return [];
+      }
+    })
+    .groupBy((t) => t.toolName)
+    .mapValues((v) => v.map((t) => t.part));
+
   return LazySeq.ofIterable(allTools)
     .groupBy((t) => t.toolName)
     .toVector()
@@ -88,6 +166,7 @@ export function calcToolSummary(allTools: Iterable<Readonly<IToolInMachine>>): V
         machines: toolsInMachine,
         minRemainingMachine: minMachine.map((m) => m.machineName).getOrElse(""),
         minRemainingMinutes: minMachine.map((m) => m.remaining).getOrElse(0),
+        parts: parts.get(toolName).getOrElse(Vector.empty()),
       };
     });
 }
