@@ -164,7 +164,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private const int Version = 22;
+    private const int Version = 23;
 
     private static void CreateTables(SqliteConnection conn, FMSSettings settings)
     {
@@ -230,7 +230,7 @@ namespace BlackMaple.MachineFramework
             "PRIMARY KEY(Counter, Key))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, " +
+        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
             "PRIMARY KEY(Counter, Tool))";
         cmd.ExecuteNonQuery();
 
@@ -394,6 +394,8 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 21) Ver20ToVer21(trans);
 
           if (curVersion < 22) Ver21ToVer22(trans);
+
+          if (curVersion < 23) Ver22ToVer23(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -737,6 +739,17 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public static void Ver22ToVer23(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+
+        cmd.CommandText = "ALTER TABLE station_tools ADD ToolChange INTEGER";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
     #endregion
 
     #region Event
@@ -765,7 +778,7 @@ namespace BlackMaple.MachineFramework
         detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
         detailCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        toolCmd.CommandText = "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tools WHERE Counter = $cntr";
+        toolCmd.CommandText = "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tools WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
 
         var lst = new List<MachineWatchInterface.LogEntry>();
@@ -894,7 +907,8 @@ namespace BlackMaple.MachineFramework
               {
                 ToolUseDuringCycle = TimeSpan.FromTicks(toolReader.GetInt64(1)),
                 TotalToolUseAtEndOfCycle = TimeSpan.FromTicks(toolReader.GetInt64(2)),
-                ConfiguredToolLife = TimeSpan.FromTicks(toolReader.GetInt64(3))
+                ConfiguredToolLife = TimeSpan.FromTicks(toolReader.GetInt64(3)),
+                ToolChangeOccurred = toolReader.IsDBNull(4) ? null : toolReader.GetBoolean(4) ? (bool?)true : null,
               };
             }
           }
@@ -1519,6 +1533,7 @@ namespace BlackMaple.MachineFramework
             existingUse.ToolUseDuringCycle += use.ToolUseDuringCycle;
             existingUse.ConfiguredToolLife += use.ConfiguredToolLife;
             existingUse.TotalToolUseAtEndOfCycle += use.TotalToolUseAtEndOfCycle;
+            existingUse.ToolChangeOccurred = existingUse.ToolChangeOccurred.GetValueOrDefault() || use.ToolChangeOccurred.GetValueOrDefault();
           }
           else
           {
@@ -1539,7 +1554,8 @@ namespace BlackMaple.MachineFramework
               {
                 ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
                 TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-                ConfiguredToolLife = endPocket.ToolLife
+                ConfiguredToolLife = endPocket.ToolLife,
+                ToolChangeOccurred = false
               });
             }
             else if (endPocket.CurrentUse < startPocket.CurrentUse)
@@ -1549,7 +1565,8 @@ namespace BlackMaple.MachineFramework
               {
                 ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)) + endPocket.CurrentUse,
                 TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-                ConfiguredToolLife = endPocket.ToolLife
+                ConfiguredToolLife = endPocket.ToolLife,
+                ToolChangeOccurred = true
               });
             }
             else
@@ -1565,7 +1582,8 @@ namespace BlackMaple.MachineFramework
             {
               ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)),
               TotalToolUseAtEndOfCycle = TimeSpan.Zero,
-              ConfiguredToolLife = TimeSpan.Zero
+              ConfiguredToolLife = TimeSpan.Zero,
+              ToolChangeOccurred = true
             });
           }
         }
@@ -1579,7 +1597,8 @@ namespace BlackMaple.MachineFramework
             {
               ToolUseDuringCycle = endPocket.CurrentUse,
               TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-              ConfiguredToolLife = endPocket.ToolLife
+              ConfiguredToolLife = endPocket.ToolLife,
+              ToolChangeOccurred = false
             });
           }
         }
@@ -1787,12 +1806,13 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO station_tools(Counter, Tool, UseInCycle, UseAtEndOfCycle, ToolLife) VALUES ($cntr,$tool,$use,$totalUse,$life)";
+        cmd.CommandText = "INSERT INTO station_tools(Counter, Tool, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange) VALUES ($cntr,$tool,$use,$totalUse,$life,$change)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("tool", SqliteType.Text);
         cmd.Parameters.Add("use", SqliteType.Integer);
         cmd.Parameters.Add("totalUse", SqliteType.Integer);
         cmd.Parameters.Add("life", SqliteType.Integer);
+        cmd.Parameters.Add("change", SqliteType.Integer);
 
         foreach (var pair in tools)
         {
@@ -1800,6 +1820,7 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[2].Value = pair.Value.ToolUseDuringCycle.Ticks;
           cmd.Parameters[3].Value = pair.Value.TotalToolUseAtEndOfCycle.Ticks;
           cmd.Parameters[4].Value = pair.Value.ConfiguredToolLife.Ticks;
+          cmd.Parameters[5].Value = pair.Value.ToolChangeOccurred.GetValueOrDefault(false);
           cmd.ExecuteNonQuery();
         }
       }

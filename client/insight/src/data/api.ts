@@ -3870,6 +3870,7 @@ export class ToolUse implements IToolUse {
     toolUseDuringCycle!: string;
     totalToolUseAtEndOfCycle!: string;
     configuredToolLife!: string;
+    toolChangeOccurred?: boolean | undefined;
 
     constructor(data?: IToolUse) {
         if (data) {
@@ -3885,6 +3886,7 @@ export class ToolUse implements IToolUse {
             this.toolUseDuringCycle = data["ToolUseDuringCycle"];
             this.totalToolUseAtEndOfCycle = data["TotalToolUseAtEndOfCycle"];
             this.configuredToolLife = data["ConfiguredToolLife"];
+            this.toolChangeOccurred = data["ToolChangeOccurred"];
         }
     }
 
@@ -3900,6 +3902,7 @@ export class ToolUse implements IToolUse {
         data["ToolUseDuringCycle"] = this.toolUseDuringCycle;
         data["TotalToolUseAtEndOfCycle"] = this.totalToolUseAtEndOfCycle;
         data["ConfiguredToolLife"] = this.configuredToolLife;
+        data["ToolChangeOccurred"] = this.toolChangeOccurred;
         return data; 
     }
 }
@@ -3908,6 +3911,7 @@ export interface IToolUse {
     toolUseDuringCycle: string;
     totalToolUseAtEndOfCycle: string;
     configuredToolLife: string;
+    toolChangeOccurred?: boolean | undefined;
 }
 
 export class MaterialProcessActualPath implements IMaterialProcessActualPath {

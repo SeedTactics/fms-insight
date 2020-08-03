@@ -1307,6 +1307,7 @@ namespace MachineWatchTest
       var expectedUse = new Dictionary<string, TimeSpan>();
       var expectedTotalUse = new Dictionary<string, TimeSpan>();
       var expectedLife = new Dictionary<string, TimeSpan>();
+      var expectedChange = new HashSet<string>();
 
       // first a normal use
       start.Add(
@@ -1337,6 +1338,7 @@ namespace MachineWatchTest
       expectedUse["tool3"] = TimeSpan.FromSeconds(100 - 70 + 20);
       expectedTotalUse["tool3"] = TimeSpan.FromSeconds(20);
       expectedLife["tool3"] = TimeSpan.FromSeconds(100);
+      expectedChange.Add("tool3");
 
       // now a pocket with two tools
       start.Add(
@@ -1354,6 +1356,7 @@ namespace MachineWatchTest
       expectedUse["tool4"] = TimeSpan.FromSeconds(100 - 60);
       expectedTotalUse["tool4"] = TimeSpan.Zero;
       expectedLife["tool4"] = TimeSpan.FromSeconds(100);
+      expectedChange.Add("tool4");
       expectedUse["tool5"] = TimeSpan.FromSeconds(110 - 80);
       expectedTotalUse["tool5"] = TimeSpan.FromSeconds(110);
       expectedLife["tool5"] = TimeSpan.FromSeconds(200);
@@ -1368,6 +1371,7 @@ namespace MachineWatchTest
       expectedUse["tool6"] = TimeSpan.FromSeconds(100 - 65);
       expectedTotalUse["tool6"] = TimeSpan.Zero;
       expectedLife["tool6"] = TimeSpan.Zero;
+      expectedChange.Add("tool6");
       expectedUse["tool7"] = TimeSpan.FromSeconds(30);
       expectedTotalUse["tool7"] = TimeSpan.FromSeconds(30);
       expectedLife["tool7"] = TimeSpan.FromSeconds(120);
@@ -1379,6 +1383,7 @@ namespace MachineWatchTest
       expectedUse["tool8"] = TimeSpan.FromSeconds(100 - 80);
       expectedTotalUse["tool8"] = TimeSpan.Zero;
       expectedLife["tool8"] = TimeSpan.Zero;
+      expectedChange.Add("tool8");
 
       // now a new tool which is appears
       end.Add(
@@ -1409,12 +1414,13 @@ namespace MachineWatchTest
       expectedUse["tool11"] = TimeSpan.FromSeconds((77 - 50) + (100 - 80) + 13);
       expectedTotalUse["tool11"] = TimeSpan.FromSeconds(77 + 13);
       expectedLife["tool11"] = TimeSpan.FromSeconds(100 + 100);
+      expectedChange.Add("tool11");
 
       EventLogDB.ToolPocketSnapshot.DiffSnapshots(start, end).Should().BeEquivalentTo(
         expectedUse.Select(x => new
         {
           Tool = x.Key,
-          Use = new ToolUse() { ToolUseDuringCycle = x.Value, TotalToolUseAtEndOfCycle = expectedTotalUse[x.Key], ConfiguredToolLife = expectedLife[x.Key] }
+          Use = new ToolUse() { ToolUseDuringCycle = x.Value, TotalToolUseAtEndOfCycle = expectedTotalUse[x.Key], ConfiguredToolLife = expectedLife[x.Key], ToolChangeOccurred = expectedChange.Contains(x.Key) }
         })
         .ToDictionary(x => x.Tool, x => x.Use)
       );
