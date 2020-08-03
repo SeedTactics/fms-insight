@@ -428,6 +428,19 @@ namespace MachineWatchTest
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(2); // unchanged quantity of 2
       trans.Schedules[0].Processes[1].ProcessNumber.Should().Be(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.Should().Be(3); // set the material back to 3
+
+      read.Schedules[0].Processes[1].ProcessMaterialQuantity = 3;
+
+      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans.Schedules.Should().BeEmpty();
+
+      // no extra material a second time
+      actual = _logDB.GetMaterialInQueue("castingQ");
+      actual.Should().BeEquivalentTo(new[] {
+          new EventLogDB.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
+          new EventLogDB.QueuedMaterial() { MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now },
+          new EventLogDB.QueuedMaterial() { MaterialID = xxxId2 + 1, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = actual.Last().AddTimeUTC }
+      });
     }
 
     [Theory]
