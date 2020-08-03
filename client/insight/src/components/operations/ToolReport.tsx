@@ -55,6 +55,8 @@ import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
+import { useSelector } from "../../store/store";
+import { PartIdenticon } from "../station-monitor/Material";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -70,10 +72,21 @@ const useRowStyles = makeStyles({
     paddingBottom: 0,
     paddingTop: 0,
   },
+  detailContainer: {
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+    marginLeft: "1em",
+    marginRight: "1em",
+  },
   detailTable: {
     width: "auto",
     marginLeft: "10em",
     marginBottom: "1em",
+  },
+  partNameContainer: {
+    display: "flex",
+    alignItems: "center",
   },
 });
 
@@ -90,7 +103,7 @@ function ToolRow(props: ToolRowProps) {
           </IconButton>
         </TableCell>
         <TableCell>{props.tool.toolName}</TableCell>
-        <TableCell align="right">0</TableCell>
+        <TableCell align="right">{props.tool.parts.sumOn((p) => p.scheduledUseMinutes)}</TableCell>
         <TableCell align="right">{props.tool.machines.sumOn((m) => m.remainingMinutes)}</TableCell>
         <TableCell align="right">{props.tool.minRemainingMinutes}</TableCell>
         <TableCell>{props.tool.minRemainingMachine}</TableCell>
@@ -98,28 +111,59 @@ function ToolRow(props: ToolRowProps) {
       <TableRow>
         <TableCell className={classes.collapseCell} colSpan={6}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <Table size="small" className={classes.detailTable}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Machine</TableCell>
-                  <TableCell align="right">Pocket</TableCell>
-                  <TableCell align="right">Current Use (min)</TableCell>
-                  <TableCell align="right">Lifetime (min)</TableCell>
-                  <TableCell align="right">Remaining Use (min)</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {LazySeq.ofIterable(props.tool.machines).map((m, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell>{m.machineName}</TableCell>
-                    <TableCell align="right">{m.pocket}</TableCell>
-                    <TableCell align="right">{m.currentUseMinutes}</TableCell>
-                    <TableCell align="right">{m.lifetimeMinutes}</TableCell>
-                    <TableCell align="right">{m.remainingMinutes}</TableCell>
+            <div className={classes.detailContainer}>
+              <Table size="small" className={classes.detailTable}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Machine</TableCell>
+                    <TableCell align="right">Pocket</TableCell>
+                    <TableCell align="right">Current Use (min)</TableCell>
+                    <TableCell align="right">Lifetime (min)</TableCell>
+                    <TableCell align="right">Remaining Use (min)</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {LazySeq.ofIterable(props.tool.machines).map((m, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{m.machineName}</TableCell>
+                      <TableCell align="right">{m.pocket}</TableCell>
+                      <TableCell align="right">{m.currentUseMinutes}</TableCell>
+                      <TableCell align="right">{m.lifetimeMinutes}</TableCell>
+                      <TableCell align="right">{m.remainingMinutes}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {props.tool.parts.isEmpty() ? undefined : (
+                <Table size="small" className={classes.detailTable}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Part</TableCell>
+                      <TableCell>Program</TableCell>
+                      <TableCell align="right">Quantity</TableCell>
+                      <TableCell align="right">Scheduled Use (min)</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>
+                          <div className={classes.partNameContainer}>
+                            <PartIdenticon part={p.partName} size={20} />
+                            <span>
+                              {p.partName}-{p.process}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{p.program}</TableCell>
+                        <TableCell align="right">{p.quantity}</TableCell>
+                        <TableCell align="right">{p.scheduledUseMinutes}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
           </Collapse>
         </TableCell>
       </TableRow>
@@ -136,8 +180,14 @@ type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemai
 function ToolSummaryTable(props: ToolTableProps) {
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const usage = useSelector((s) => s.Events.last30.cycles.tool_usage);
+  const status = useSelector((s) => s.Current.current_status);
 
-  const report = React.useMemo(() => calcToolSummary(props.toolsInMach), [props.toolsInMach]);
+  const report = React.useMemo(() => calcToolSummary(props.toolsInMach, usage, status), [
+    props.toolsInMach,
+    usage,
+    status,
+  ]);
 
   const rows = report.sortBy((a: ToolReport, b: ToolReport) => {
     let c: number = 0;
