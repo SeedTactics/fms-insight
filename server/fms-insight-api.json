@@ -2934,6 +2934,9 @@
         "ConfiguredToolLife": {
           "type": "string",
           "format": "time-span"
+        },
+        "ToolChangeOccurred": {
+          "type": "boolean"
         }
       }
     },
