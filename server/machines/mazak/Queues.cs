@@ -258,7 +258,7 @@ namespace MazakMachineInterface
                 var m = logDb.AllocateMaterialID(sch.Job.UniqueStr, sch.Job.PartName, sch.Job.NumProcesses);
                 logDb.RecordPathForProcess(m, 1, schProc.Path);
                 logDb.RecordAddMaterialToQueue(
-                  mat: new EventLogDB.EventLogMaterial() { MaterialID = m, Process = 1, Face = "" },
+                  mat: new EventLogDB.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" },
                   queue: schProc.InputQueue,
                   position: -1
                 );
