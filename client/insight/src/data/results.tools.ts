@@ -38,8 +38,18 @@ import { duration } from "moment";
 import { ToolUsage, ProgramToolUseInSingleCycle, PartAndProgram } from "./events.cycles";
 
 export function averageToolUse(usage: ToolUsage): HashMap<PartAndProgram, ProgramToolUseInSingleCycle> {
-  // TODO: average
-  return usage.mapValues((v) => v.head().getOrThrow());
+  return usage.mapValues((cycles) => ({
+    tools: LazySeq.ofIterable(cycles)
+      .flatMap((c) => c.tools)
+      .filter((c) => c.toolChanged !== true)
+      .groupBy((t) => t.toolName)
+      .toArray()
+      .map(([toolName, usageInCycles]) => ({
+        toolName: toolName,
+        cycleUsageMinutes: usageInCycles.sumOn((c) => c.cycleUsageMinutes) / usageInCycles.length(),
+        toolChanged: false,
+      })),
+  }));
 }
 
 export interface ToolInMachine {
@@ -128,7 +138,14 @@ export function calcToolSummary(
       }
     })
     .groupBy((t) => t.toolName)
-    .mapValues((v) => v.map((t) => t.part));
+    .mapValues((v) =>
+      v
+        .map((t) => t.part)
+        .sortOn(
+          (p) => p.partName,
+          (p) => p.process
+        )
+    );
 
   return LazySeq.ofIterable(allTools)
     .groupBy((t) => t.toolName)

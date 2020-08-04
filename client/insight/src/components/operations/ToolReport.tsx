@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { IToolInMachine } from "../../data/api";
 import { MachineBackend } from "../../data/backend";
 import Fab from "@material-ui/core/Fab";
 import CircularProgress from "@material-ui/core/CircularProgress";
@@ -55,8 +54,11 @@ import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
-import { useSelector } from "../../store/store";
+import { Store } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
+import clsx from "clsx";
+import { useStore } from "react-redux";
+import { Vector } from "prelude-ts";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -88,23 +90,38 @@ const useRowStyles = makeStyles({
     display: "flex",
     alignItems: "center",
   },
+  highlightedRow: {
+    backgroundColor: "#BDBDBD",
+  },
+  noticeRow: {
+    backgroundColor: "#E0E0E0",
+  },
 });
 
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
   const classes = useRowStyles();
 
+  const schUse = props.tool.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
+  const totalLife = props.tool.machines.sumOn((m) => m.remainingMinutes);
+
   return (
     <>
-      <TableRow className={classes.mainRow}>
+      <TableRow
+        className={clsx({
+          [classes.mainRow]: true,
+          [classes.highlightedRow]: schUse > totalLife,
+          [classes.noticeRow]: schUse <= totalLife && schUse > props.tool.minRemainingMinutes,
+        })}
+      >
         <TableCell>
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
         <TableCell>{props.tool.toolName}</TableCell>
-        <TableCell align="right">{props.tool.parts.sumOn((p) => p.scheduledUseMinutes)}</TableCell>
-        <TableCell align="right">{props.tool.machines.sumOn((m) => m.remainingMinutes)}</TableCell>
+        <TableCell align="right">{schUse}</TableCell>
+        <TableCell align="right">{totalLife}</TableCell>
         <TableCell align="right">{props.tool.minRemainingMinutes}</TableCell>
         <TableCell>{props.tool.minRemainingMachine}</TableCell>
       </TableRow>
@@ -112,6 +129,35 @@ function ToolRow(props: ToolRowProps) {
         <TableCell className={classes.collapseCell} colSpan={6}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <div className={classes.detailContainer}>
+              {props.tool.parts.isEmpty() ? undefined : (
+                <Table size="small" className={classes.detailTable}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Part</TableCell>
+                      <TableCell>Program</TableCell>
+                      <TableCell align="right">Quantity</TableCell>
+                      <TableCell align="right">Use/Cycle (min)</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>
+                          <div className={classes.partNameContainer}>
+                            <PartIdenticon part={p.partName} size={20} />
+                            <span>
+                              {p.partName}-{p.process}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{p.program}</TableCell>
+                        <TableCell align="right">{p.quantity}</TableCell>
+                        <TableCell align="right">{p.scheduledUseMinutes}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
               <Table size="small" className={classes.detailTable}>
                 <TableHead>
                   <TableRow>
@@ -134,35 +180,6 @@ function ToolRow(props: ToolRowProps) {
                   ))}
                 </TableBody>
               </Table>
-              {props.tool.parts.isEmpty() ? undefined : (
-                <Table size="small" className={classes.detailTable}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Part</TableCell>
-                      <TableCell>Program</TableCell>
-                      <TableCell align="right">Quantity</TableCell>
-                      <TableCell align="right">Scheduled Use (min)</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>
-                          <div className={classes.partNameContainer}>
-                            <PartIdenticon part={p.partName} size={20} />
-                            <span>
-                              {p.partName}-{p.process}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{p.program}</TableCell>
-                        <TableCell align="right">{p.quantity}</TableCell>
-                        <TableCell align="right">{p.scheduledUseMinutes}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
             </div>
           </Collapse>
         </TableCell>
@@ -172,7 +189,7 @@ function ToolRow(props: ToolRowProps) {
 }
 
 interface ToolTableProps {
-  readonly toolsInMach: ReadonlyArray<Readonly<IToolInMachine>>;
+  readonly toolReport: Vector<ToolReport>;
 }
 
 type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemainingLife" | "MinRemainingMachine";
@@ -180,16 +197,8 @@ type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemai
 function ToolSummaryTable(props: ToolTableProps) {
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-  const usage = useSelector((s) => s.Events.last30.cycles.tool_usage);
-  const status = useSelector((s) => s.Current.current_status);
 
-  const report = React.useMemo(() => calcToolSummary(props.toolsInMach, usage, status), [
-    props.toolsInMach,
-    usage,
-    status,
-  ]);
-
-  const rows = report.sortBy((a: ToolReport, b: ToolReport) => {
+  const rows = props.toolReport.sortBy((a: ToolReport, b: ToolReport) => {
     let c: number = 0;
     switch (sortCol) {
       case "ToolName":
@@ -349,40 +358,46 @@ function ToolNavHeader(props: ToolNavHeaderProps) {
   }
 }
 
-export function ToolReport() {
+export function ToolReportPage() {
   React.useEffect(() => {
     document.title = "Tool Report - FMS Insight";
   }, []);
-  const [toolsInMach, setToolsInMach] = React.useState<ReadonlyArray<Readonly<IToolInMachine>> | null>(null);
+  const [toolReport, setToolReport] = React.useState<Vector<ToolReport> | null>(null);
   const [refreshTime, setRefreshTime] = React.useState<Date | null>(null);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
+  const store = useStore<Store>();
 
   const loadTools = React.useCallback(async () => {
     setLoading(true);
     setError(null);
-    setToolsInMach([]);
     try {
-      setToolsInMach(await MachineBackend.getToolsInMachines());
+      const toolsInMach = await MachineBackend.getToolsInMachines();
+      const report = calcToolSummary(
+        toolsInMach,
+        store.getState().Events.last30.cycles.tool_usage,
+        store.getState().Current.current_status
+      );
+      setToolReport(report);
       setRefreshTime(new Date());
     } catch (e) {
       setError(e);
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setError, setToolsInMach, setRefreshTime]);
+  }, [setLoading, setError, setToolReport, setRefreshTime, store]);
 
   return (
     <>
       <ToolNavHeader loading={loading} loadTools={loadTools} refreshTime={refreshTime} />
       <main style={{ padding: "24px" }}>
         {error != null ? (
-          <Card style={{ margin: "3em" }}>
+          <Card>
             <CardContent>{error}</CardContent>
           </Card>
         ) : undefined}
-        {toolsInMach !== null ? (
-          <Card style={{ margin: "3em" }} raised>
+        {toolReport !== null ? (
+          <Card raised>
             <CardHeader
               title={
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
@@ -392,7 +407,7 @@ export function ToolReport() {
               }
             />
             <CardContent>
-              <ToolSummaryTable toolsInMach={toolsInMach} />
+              <ToolSummaryTable toolReport={toolReport} />
             </CardContent>
           </Card>
         ) : undefined}
