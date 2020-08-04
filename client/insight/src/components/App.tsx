@@ -130,6 +130,7 @@ function OperationsTabs(p: HeaderNavProps) {
       <Tab label="Schedules" value={routes.RouteLocation.Operations_CompletedParts} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
       <Tab label="Tools" value={routes.RouteLocation.Operations_Tools} />
+      <Tab label="Programs" value={routes.RouteLocation.Operations_Programs} />
     </Tabs>
   );
 }
@@ -149,6 +150,23 @@ function QualityTabs(p: HeaderNavProps) {
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
       <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
       <Tab label="Quarantine Material" value={routes.RouteLocation.Quality_Quarantine} />
+    </Tabs>
+  );
+}
+
+function ToolsTabs(p: HeaderNavProps) {
+  if (p.demo) {
+    return <div style={{ flexGrow: 1 }} />;
+  }
+  return (
+    <Tabs
+      variant={p.full ? "fullWidth" : "standard"}
+      style={p.full ? {} : tabsStyle}
+      value={p.routeState.current}
+      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+    >
+      <Tab label="Tools" value={routes.RouteLocation.Tools_Dashboard} />
+      <Tab label="Programs" value={routes.RouteLocation.Tools_Programs} />
     </Tabs>
   );
 }
@@ -286,6 +304,16 @@ function DemoNav(p: HeaderNavProps) {
         </ListItemIcon>
         <ListItemText>Tools</ListItemText>
       </ListItem>
+      <ListItem
+        button
+        selected={p.routeState.current === routes.RouteLocation.Operations_Programs}
+        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Programs, curSt: p.routeState })}
+      >
+        <ListItemIcon>
+          <ToolIcon />
+        </ListItemIcon>
+        <ListItemText>Programs</ListItemText>
+      </ListItem>
       <ListSubheader>Monthly Review</ListSubheader>
       <ListItem
         button
@@ -341,6 +369,7 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Operations_Machines:
     case routes.RouteLocation.Operations_AllMaterial:
     case routes.RouteLocation.Operations_Tools:
+    case routes.RouteLocation.Operations_Programs:
     case routes.RouteLocation.Operations_CompletedParts:
       return "https://fms-insight.seedtactics.com/docs/client-operations.html";
 
@@ -354,6 +383,7 @@ function helpUrl(r: routes.RouteLocation): string {
       return "https://fms-insight.seedtactics.com/docs/client-quality.html";
 
     case routes.RouteLocation.Tools_Dashboard:
+    case routes.RouteLocation.Tools_Programs:
       return "https://fms-insight.seedtactics.com/docs/client-operations.html";
 
     case routes.RouteLocation.Analysis_Efficiency:
@@ -610,6 +640,10 @@ class App extends React.PureComponent<AppConnectedProps> {
           page = <ToolReportPage />;
           navigation = OperationsTabs;
           break;
+        case routes.RouteLocation.Operations_Programs:
+          page = <p>Program Page</p>;
+          navigation = OperationsTabs;
+          break;
 
         case routes.RouteLocation.Engineering:
           page = <OperationMachines />;
@@ -642,6 +676,11 @@ class App extends React.PureComponent<AppConnectedProps> {
 
         case routes.RouteLocation.Tools_Dashboard:
           page = <ToolReportPage />;
+          navigation = ToolsTabs;
+          break;
+        case routes.RouteLocation.Tools_Programs:
+          page = <p>Programs</p>;
+          navigation = ToolsTabs;
           break;
 
         case routes.RouteLocation.ChooseMode:

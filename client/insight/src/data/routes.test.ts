@@ -146,6 +146,7 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     routes.RouteLocation.Operations_AllMaterial,
     routes.RouteLocation.Operations_CompletedParts,
     routes.RouteLocation.Operations_Tools,
+    routes.RouteLocation.Operations_Programs,
 
     routes.RouteLocation.Engineering,
 
@@ -155,6 +156,7 @@ it("transitions to the cost/piece, dashboard, and efficiency pages", () => {
     routes.RouteLocation.Quality_Quarantine,
 
     routes.RouteLocation.Tools_Dashboard,
+    routes.RouteLocation.Tools_Programs,
 
     routes.RouteLocation.Analysis_Efficiency,
     routes.RouteLocation.Analysis_CostPerPiece,
