@@ -427,6 +427,9 @@ namespace DebugMachineWatchApiServer
         }
       }
 
+      var tools = JsonConvert.DeserializeObject<Dictionary<long, Dictionary<string, ToolUse>>>(
+        System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tool-use.json")), _jsonSettings);
+
       foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
       {
         foreach (var m in e.Material)
@@ -482,6 +485,13 @@ namespace DebugMachineWatchApiServer
           {
             foreach (var x in e.Tools)
               e2.Tools[x.Key] = x.Value;
+          }
+          if (tools.TryGetValue(e.Counter, out var usage))
+          {
+            foreach (var u in usage)
+            {
+              e2.Tools[u.Key] = u.Value;
+            }
           }
           LogDB.AddLogEntryFromUnitTest(e2);
         }

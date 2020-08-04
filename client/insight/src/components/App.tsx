@@ -99,7 +99,7 @@ import LoadStation from "./station-monitor/LoadStation";
 import Inspection from "./station-monitor/Inspection";
 import Wash from "./station-monitor/Wash";
 import Queues from "./station-monitor/Queues";
-import { ToolReport } from "./operations/ToolReport";
+import { ToolReportPage } from "./operations/ToolReport";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -607,7 +607,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_Tools:
-          page = <ToolReport />;
+          page = <ToolReportPage />;
           navigation = OperationsTabs;
           break;
 
@@ -641,7 +641,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           break;
 
         case routes.RouteLocation.Tools_Dashboard:
-          page = <ToolReport />;
+          page = <ToolReportPage />;
           break;
 
         case routes.RouteLocation.ChooseMode:
