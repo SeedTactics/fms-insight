@@ -47,6 +47,7 @@ export enum RouteLocation {
   Operations_AllMaterial = "ROUTE_Operations_AllMaterial",
   Operations_CompletedParts = "ROUTE_Operations_CompletedParts",
   Operations_Tools = "ROUTE_Operations_Tools",
+  Operations_Programs = "ROUTE_Operations_Programs",
 
   Engineering = "ROUTE_Engineering",
 
@@ -56,6 +57,7 @@ export enum RouteLocation {
   Quality_Quarantine = "ROUTE_Quality_Quarantine",
 
   Tools_Dashboard = "ROUTE_Tools_Dashboard",
+  Tools_Programs = "ROUTE_Tools_Programs",
 
   Analysis_Efficiency = "ROUTE_Analysis_Efficiency",
   Analysis_CostPerPiece = "ROUTE_Analysis_CostPerPiece",
@@ -76,6 +78,7 @@ export const routeMap = {
   [RouteLocation.Operations_AllMaterial]: "/operations/material",
   [RouteLocation.Operations_CompletedParts]: "/operations/completed",
   [RouteLocation.Operations_Tools]: "/operations/tools",
+  [RouteLocation.Operations_Programs]: "/operations/programs",
 
   [RouteLocation.Engineering]: "/engineering",
 
@@ -85,6 +88,7 @@ export const routeMap = {
   [RouteLocation.Quality_Quarantine]: "/quality/quarantine",
 
   [RouteLocation.Tools_Dashboard]: "/tools",
+  [RouteLocation.Tools_Programs]: "/tools/programs",
 
   [RouteLocation.Analysis_Efficiency]: "/analysis/efficiency",
   [RouteLocation.Analysis_CostPerPiece]: "/analysis/cost",
@@ -129,12 +133,14 @@ export type Action =
   | { type: RouteLocation.Operations_AllMaterial }
   | { type: RouteLocation.Operations_CompletedParts }
   | { type: RouteLocation.Operations_Tools }
+  | { type: RouteLocation.Operations_Programs }
   | { type: RouteLocation.Engineering }
   | { type: RouteLocation.Quality_Dashboard }
   | { type: RouteLocation.Quality_Serials }
   | { type: RouteLocation.Quality_Paths }
   | { type: RouteLocation.Quality_Quarantine }
   | { type: RouteLocation.Tools_Dashboard }
+  | { type: RouteLocation.Tools_Programs }
   | { type: RouteLocation.Analysis_Efficiency }
   | { type: RouteLocation.Analysis_CostPerPiece }
   | { type: RouteLocation.Analysis_DataExport }
@@ -273,12 +279,14 @@ export function reducer(s: State, a: Action): State {
     case RouteLocation.Operations_Machines:
     case RouteLocation.Operations_CompletedParts:
     case RouteLocation.Operations_Tools:
+    case RouteLocation.Operations_Programs:
     case RouteLocation.Engineering:
     case RouteLocation.Quality_Dashboard:
     case RouteLocation.Quality_Serials:
     case RouteLocation.Quality_Paths:
     case RouteLocation.Quality_Quarantine:
     case RouteLocation.Tools_Dashboard:
+    case RouteLocation.Tools_Programs:
     case RouteLocation.Analysis_CostPerPiece:
     case RouteLocation.Analysis_Efficiency:
     case RouteLocation.Analysis_DataExport:
