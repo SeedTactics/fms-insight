@@ -116,6 +116,21 @@ function ProgramRow(props: ProgramRowProps) {
         </TableCell>
         <TableCell>{props.program.comment ?? ""}</TableCell>
         <TableCell>{props.program.revision === null ? "" : props.program.revision.toFixed()}</TableCell>
+        <TableCell align="right">
+          {props.program.statisticalCycleTime === null
+            ? ""
+            : props.program.statisticalCycleTime.medianMinutesForSingleMat.toFixed(2)}
+        </TableCell>
+        <TableCell align="right">
+          {props.program.statisticalCycleTime === null
+            ? ""
+            : props.program.statisticalCycleTime.MAD_aboveMinutes.toFixed(2)}
+        </TableCell>
+        <TableCell align="right">
+          {props.program.statisticalCycleTime === null
+            ? ""
+            : props.program.statisticalCycleTime.MAD_belowMinutes.toFixed(2)}
+        </TableCell>
       </TableRow>
       <TableRow>
         <TableCell className={classes.collapseCell} colSpan={6}>
@@ -139,16 +154,6 @@ function ProgramRow(props: ProgramRowProps) {
                   </TableBody>
                 </Table>
               )}
-              {props.program.statisticalCycleTime === null ? undefined : (
-                <dl>
-                  <dt>Median Cycle Time Per Material (min)</dt>
-                  <dd>{props.program.statisticalCycleTime.medianMinutesForSingleMat.toFixed(2)}</dd>
-                  <dt>Deviation Above Median(min)</dt>
-                  <dd>{props.program.statisticalCycleTime.MAD_aboveMinutes.toFixed(2)}</dd>
-                  <dt>Deviation Below Median(min)</dt>
-                  <dd>{props.program.statisticalCycleTime.MAD_belowMinutes.toFixed(2)}</dd>
-                </dl>
-              )}
             </div>
           </Collapse>
         </TableCell>
@@ -161,7 +166,15 @@ interface ProgramTableProps {
   readonly programs: Vector<CellControllerProgram>;
 }
 
-type SortColumn = "ProgramName" | "CellProgName" | "Comment" | "Revision" | "PartName";
+type SortColumn =
+  | "ProgramName"
+  | "CellProgName"
+  | "Comment"
+  | "Revision"
+  | "PartName"
+  | "MedianTime"
+  | "DeviationAbove"
+  | "DeviationBelow";
 
 function ProgramSummaryTable(props: ProgramTableProps) {
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
@@ -210,6 +223,39 @@ function ProgramSummaryTable(props: ProgramTableProps) {
           if (c === 0) {
             c = (a.process ?? 1) - (b.process ?? 1);
           }
+        }
+        break;
+      case "MedianTime":
+        if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
+          c = 0;
+        } else if (a.statisticalCycleTime === null) {
+          c = -1;
+        } else if (b.statisticalCycleTime === null) {
+          c = 1;
+        } else {
+          c = a.statisticalCycleTime.medianMinutesForSingleMat - b.statisticalCycleTime.medianMinutesForSingleMat;
+        }
+        break;
+      case "DeviationAbove":
+        if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
+          c = 0;
+        } else if (a.statisticalCycleTime === null) {
+          c = -1;
+        } else if (b.statisticalCycleTime === null) {
+          c = 1;
+        } else {
+          c = a.statisticalCycleTime.MAD_aboveMinutes - b.statisticalCycleTime.MAD_aboveMinutes;
+        }
+        break;
+      case "DeviationBelow":
+        if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
+          c = 0;
+        } else if (a.statisticalCycleTime === null) {
+          c = -1;
+        } else if (b.statisticalCycleTime === null) {
+          c = 1;
+        } else {
+          c = a.statisticalCycleTime.MAD_belowMinutes - b.statisticalCycleTime.MAD_belowMinutes;
         }
         break;
     }
@@ -266,6 +312,33 @@ function ProgramSummaryTable(props: ProgramTableProps) {
           <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
             <TableSortLabel active={sortCol === "Revision"} direction={sortDir} onClick={() => toggleSort("Revision")}>
               Revision
+            </TableSortLabel>
+          </TableCell>
+          <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
+            <TableSortLabel
+              active={sortCol === "MedianTime"}
+              direction={sortDir}
+              onClick={() => toggleSort("MedianTime")}
+            >
+              Median Time / Material (min)
+            </TableSortLabel>
+          </TableCell>
+          <TableCell sortDirection={sortCol === "DeviationAbove" ? sortDir : false} align="right">
+            <TableSortLabel
+              active={sortCol === "DeviationAbove"}
+              direction={sortDir}
+              onClick={() => toggleSort("DeviationAbove")}
+            >
+              Deviation Above Median
+            </TableSortLabel>
+          </TableCell>
+          <TableCell sortDirection={sortCol === "DeviationBelow" ? sortDir : false} align="right">
+            <TableSortLabel
+              active={sortCol === "DeviationBelow"}
+              direction={sortDir}
+              onClick={() => toggleSort("DeviationBelow")}
+            >
+              Deviation Below Median
             </TableSortLabel>
           </TableCell>
         </TableRow>
