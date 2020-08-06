@@ -90,22 +90,6 @@ export class PartAndProcess {
   }
 }
 
-export class PartAndProgram {
-  public constructor(public readonly part: string, public readonly proc: number, public readonly program: string) {}
-  public static ofLogCycle(c: Readonly<api.ILogEntry>): PartAndProgram {
-    return new PartAndProgram(c.material[0].part, c.material[0].proc, c.program);
-  }
-  equals(other: PartAndProgram): boolean {
-    return this.part === other.part && this.proc === other.proc && this.program === other.program;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.part, this.proc, this.program);
-  }
-  toString(): string {
-    return `{part: ${this.part}}, proc: ${this.proc}, program: ${this.program}}`;
-  }
-}
-
 export class PartAndStationOperation {
   public constructor(
     public readonly part: string,
@@ -170,7 +154,7 @@ export interface ProgramToolUseInSingleCycle {
   }>;
 }
 
-export type ToolUsage = HashMap<PartAndProgram, Vector<ProgramToolUseInSingleCycle>>;
+export type ToolUsage = HashMap<PartAndStationOperation, Vector<ProgramToolUseInSingleCycle>>;
 
 export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
@@ -539,7 +523,7 @@ function process_tools(cycle: Readonly<api.ILogEntry>, toolUsage: ToolUsage): To
     return toolUsage;
   }
 
-  const key = PartAndProgram.ofLogCycle(cycle);
+  const key = PartAndStationOperation.ofLogCycle(cycle);
   return toolUsage.putWithMerge(key, Vector.of({ tools: toolsUsedInCycle }), (oldV, newV) =>
     oldV.drop(Math.max(0, oldV.length() - 4)).appendAll(newV)
   );
