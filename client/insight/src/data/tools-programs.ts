@@ -31,11 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { IToolInMachine, ICurrentStatus, ActionType } from "./api";
+import { ActionType } from "./api";
 import { LazySeq } from "./lazyseq";
 import { Vector, HashMap } from "prelude-ts";
 import { duration } from "moment";
 import { ToolUsage, ProgramToolUseInSingleCycle, PartAndProgram } from "./events.cycles";
+import { Store } from "../store/store";
+import * as redux from "redux";
+import { MachineBackend } from "./backend";
 
 export function averageToolUse(usage: ToolUsage): HashMap<PartAndProgram, ProgramToolUseInSingleCycle> {
   return usage.mapValues((cycles) => ({
@@ -76,11 +79,11 @@ export interface ToolReport {
   readonly parts: Vector<PartToolUsage>;
 }
 
-export function calcToolSummary(
-  allTools: Iterable<Readonly<IToolInMachine>>,
-  usage: ToolUsage,
-  currentSt: Readonly<ICurrentStatus>
-): Vector<ToolReport> {
+export async function calcToolSummary(
+  store: redux.Store<Store>
+): Promise<{ readonly report: Vector<ToolReport>; readonly time: Date }> {
+  const currentSt = store.getState().Current.current_status;
+  const usage = store.getState().Events.last30.cycles.tool_usage;
   let partPlannedQtys = HashMap.empty<PartAndProgram, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
     const planQty = LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((x) => x);
@@ -147,43 +150,70 @@ export function calcToolSummary(
         )
     );
 
-  return LazySeq.ofIterable(allTools)
-    .groupBy((t) => t.toolName)
-    .toVector()
-    .map(([toolName, tools]) => {
-      const toolsInMachine = tools
-        .sortOn(
-          (t) => t.machineGroupName,
-          (t) => t.machineNum,
-          (t) => t.pocket
-        )
-        .map((m) => {
-          const currentUseMinutes = m.currentUse !== "" ? duration(m.currentUse).asMinutes() : 0;
-          const lifetimeMinutes = m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
-          return {
-            machineName: m.machineGroupName + " #" + m.machineNum,
-            pocket: m.pocket,
-            currentUseMinutes,
-            lifetimeMinutes,
-            remainingMinutes: Math.max(0, lifetimeMinutes - currentUseMinutes),
-          };
-        });
+  const toolsInMach = await MachineBackend.getToolsInMachines();
+  return {
+    time: new Date(),
+    report: LazySeq.ofIterable(toolsInMach)
+      .groupBy((t) => t.toolName)
+      .toVector()
+      .map(([toolName, tools]) => {
+        const toolsInMachine = tools
+          .sortOn(
+            (t) => t.machineGroupName,
+            (t) => t.machineNum,
+            (t) => t.pocket
+          )
+          .map((m) => {
+            const currentUseMinutes = m.currentUse !== "" ? duration(m.currentUse).asMinutes() : 0;
+            const lifetimeMinutes = m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
+            return {
+              machineName: m.machineGroupName + " #" + m.machineNum,
+              pocket: m.pocket,
+              currentUseMinutes,
+              lifetimeMinutes,
+              remainingMinutes: Math.max(0, lifetimeMinutes - currentUseMinutes),
+            };
+          });
 
-      const minMachine = toolsInMachine
-        .groupBy((m) => m.machineName)
-        .toVector()
-        .map(([machineName, toolsForMachine]) => ({
-          machineName,
-          remaining: toolsForMachine.sumOn((m) => m.remainingMinutes),
-        }))
-        .minOn((m) => m.remaining);
+        const minMachine = toolsInMachine
+          .groupBy((m) => m.machineName)
+          .toVector()
+          .map(([machineName, toolsForMachine]) => ({
+            machineName,
+            remaining: toolsForMachine.sumOn((m) => m.remainingMinutes),
+          }))
+          .minOn((m) => m.remaining);
 
-      return {
-        toolName,
-        machines: toolsInMachine,
-        minRemainingMachine: minMachine.map((m) => m.machineName).getOrElse(""),
-        minRemainingMinutes: minMachine.map((m) => m.remaining).getOrElse(0),
-        parts: parts.get(toolName).getOrElse(Vector.empty()),
-      };
-    });
+        return {
+          toolName,
+          machines: toolsInMachine,
+          minRemainingMachine: minMachine.map((m) => m.machineName).getOrElse(""),
+          minRemainingMinutes: minMachine.map((m) => m.remaining).getOrElse(0),
+          parts: parts.get(toolName).getOrElse(Vector.empty()),
+        };
+      }),
+  };
+}
+
+export type Action = { readonly type: "Tools_SetToolReport"; readonly report: Vector<ToolReport>; readonly time: Date };
+
+export interface State {
+  readonly tool_report: Vector<ToolReport> | null;
+  readonly tool_report_time: Date | null;
+}
+
+export const initial: State = {
+  tool_report: null,
+  tool_report_time: null,
+};
+
+export function reducer(s: State, a: Action): State {
+  if (s === undefined) return initial;
+
+  switch (a.type) {
+    case "Tools_SetToolReport":
+      return { ...s, tool_report: a.report, tool_report_time: a.time };
+    default:
+      return s;
+  }
 }
