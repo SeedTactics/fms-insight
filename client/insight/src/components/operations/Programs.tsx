@@ -45,7 +45,7 @@ import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Tooltip from "@material-ui/core/Tooltip";
-import { calcToolSummary, ToolReport } from "../../data/tools-programs";
+import { calcProgramSummary, CellControllerProgram } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
@@ -55,12 +55,11 @@ import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
 import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
-import clsx from "clsx";
 import { useStore } from "react-redux";
 import { Vector } from "prelude-ts";
 
-interface ToolRowProps {
-  readonly tool: ToolReport;
+interface ProgramRowProps {
+  readonly program: CellControllerProgram;
 }
 
 const useRowStyles = makeStyles({
@@ -89,96 +88,67 @@ const useRowStyles = makeStyles({
     display: "flex",
     alignItems: "center",
   },
-  highlightedRow: {
-    backgroundColor: "#BDBDBD",
-  },
-  noticeRow: {
-    backgroundColor: "#E0E0E0",
-  },
 });
 
-function ToolRow(props: ToolRowProps) {
+function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
   const classes = useRowStyles();
 
-  const schUse = props.tool.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
-  const totalLife = props.tool.machines.sumOn((m) => m.remainingMinutes);
-
   return (
     <>
-      <TableRow
-        className={clsx({
-          [classes.mainRow]: true,
-          [classes.highlightedRow]: schUse > totalLife,
-          [classes.noticeRow]: schUse <= totalLife && schUse > props.tool.minRemainingMinutes,
-        })}
-      >
+      <TableRow className={classes.mainRow}>
         <TableCell>
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell>{props.tool.toolName}</TableCell>
-        <TableCell align="right">{schUse}</TableCell>
-        <TableCell align="right">{totalLife}</TableCell>
-        <TableCell align="right">{props.tool.minRemainingMinutes}</TableCell>
-        <TableCell>{props.tool.minRemainingMachine}</TableCell>
+        <TableCell>{props.program.programName}</TableCell>
+        <TableCell>{props.program.cellControllerProgramName}</TableCell>
+        <TableCell>
+          {props.program.partName !== null ? (
+            <div className={classes.partNameContainer}>
+              <PartIdenticon part={props.program.partName} size={20} />
+              <span>
+                {props.program.partName}-{props.program.process}
+              </span>
+            </div>
+          ) : undefined}
+        </TableCell>
+        <TableCell>{props.program.comment ?? ""}</TableCell>
+        <TableCell>{props.program.revision === null ? "" : props.program.revision.toFixed()}</TableCell>
       </TableRow>
       <TableRow>
         <TableCell className={classes.collapseCell} colSpan={6}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <div className={classes.detailContainer}>
-              {props.tool.parts.isEmpty() ? undefined : (
+              {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
                 <Table size="small" className={classes.detailTable}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Part</TableCell>
-                      <TableCell>Program</TableCell>
-                      <TableCell align="right">Quantity</TableCell>
-                      <TableCell align="right">Use/Cycle (min)</TableCell>
+                      <TableCell>Tool</TableCell>
+                      <TableCell align="right">Estimated Usage (min)</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
+                    {LazySeq.ofIterable(props.program.toolUse.tools).map((t, idx) => (
                       <TableRow key={idx}>
-                        <TableCell>
-                          <div className={classes.partNameContainer}>
-                            <PartIdenticon part={p.partName} size={20} />
-                            <span>
-                              {p.partName}-{p.process}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{p.program}</TableCell>
-                        <TableCell align="right">{p.quantity}</TableCell>
-                        <TableCell align="right">{p.scheduledUseMinutes}</TableCell>
+                        <TableCell>{t.toolName}</TableCell>
+                        <TableCell align="right">{t.cycleUsageMinutes}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               )}
-              <Table size="small" className={classes.detailTable}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Machine</TableCell>
-                    <TableCell align="right">Pocket</TableCell>
-                    <TableCell align="right">Current Use (min)</TableCell>
-                    <TableCell align="right">Lifetime (min)</TableCell>
-                    <TableCell align="right">Remaining Use (min)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {LazySeq.ofIterable(props.tool.machines).map((m, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{m.machineName}</TableCell>
-                      <TableCell align="right">{m.pocket}</TableCell>
-                      <TableCell align="right">{m.currentUseMinutes}</TableCell>
-                      <TableCell align="right">{m.lifetimeMinutes}</TableCell>
-                      <TableCell align="right">{m.remainingMinutes}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {props.program.statisticalCycleTime === null ? undefined : (
+                <dl>
+                  <dt>Median Cycle Time Per Material (min)</dt>
+                  <dd>{props.program.statisticalCycleTime.medianMinutesForSingleMat.toFixed(2)}</dd>
+                  <dt>Deviation Above Median(min)</dt>
+                  <dd>{props.program.statisticalCycleTime.MAD_aboveMinutes.toFixed(2)}</dd>
+                  <dt>Deviation Below Median(min)</dt>
+                  <dd>{props.program.statisticalCycleTime.MAD_belowMinutes.toFixed(2)}</dd>
+                </dl>
+              )}
             </div>
           </Collapse>
         </TableCell>
@@ -187,35 +157,60 @@ function ToolRow(props: ToolRowProps) {
   );
 }
 
-interface ToolTableProps {
-  readonly toolReport: Vector<ToolReport>;
+interface ProgramTableProps {
+  readonly programs: Vector<CellControllerProgram>;
 }
 
-type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemainingLife" | "MinRemainingMachine";
+type SortColumn = "ProgramName" | "CellProgName" | "Comment" | "Revision" | "PartName";
 
-function ToolSummaryTable(props: ToolTableProps) {
-  const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
+function ProgramSummaryTable(props: ProgramTableProps) {
+  const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
-  const rows = props.toolReport.sortBy((a: ToolReport, b: ToolReport) => {
+  const rows = props.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
     let c: number = 0;
     switch (sortCol) {
-      case "ToolName":
-        c = a.toolName.localeCompare(b.toolName);
+      case "ProgramName":
+        c = a.programName.localeCompare(b.programName);
         break;
-      case "ScheduledUse":
-        c =
-          a.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity) -
-          b.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
+      case "CellProgName":
+        c = a.cellControllerProgramName.localeCompare(b.cellControllerProgramName);
         break;
-      case "RemainingTotalLife":
-        c = a.machines.sumOn((m) => m.remainingMinutes) - b.machines.sumOn((m) => m.remainingMinutes);
+      case "Comment":
+        if (a.comment === null && b.comment === null) {
+          c = 0;
+        } else if (a.comment === null) {
+          c = -1;
+        } else if (b.comment === null) {
+          c = 1;
+        } else {
+          c = a.comment.localeCompare(b.comment);
+        }
         break;
-      case "MinRemainingLife":
-        c = a.minRemainingMinutes - b.minRemainingMinutes;
+      case "Revision":
+        if (a.revision === null && b.revision === null) {
+          c = 0;
+        } else if (a.revision === null) {
+          c = -1;
+        } else if (b.revision === null) {
+          c = 1;
+        } else {
+          c = a.revision - b.revision;
+        }
         break;
-      case "MinRemainingMachine":
-        c = a.minRemainingMachine.localeCompare(b.minRemainingMachine);
+      case "PartName":
+        if (a.partName === null && b.partName === null) {
+          c = 0;
+        } else if (a.partName === null) {
+          c = -1;
+        } else if (b.partName === null) {
+          c = 1;
+        } else {
+          c = a.partName.localeCompare(b.partName);
+          if (c === 0) {
+            c = (a.process ?? 1) - (b.process ?? 1);
+          }
+        }
         break;
     }
     if (c === 0) {
@@ -228,7 +223,7 @@ function ToolSummaryTable(props: ToolTableProps) {
   });
 
   function toggleSort(s: SortColumn) {
-    if (s == sortCol) {
+    if (s === sortCol) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortCol(s);
@@ -240,73 +235,57 @@ function ToolSummaryTable(props: ToolTableProps) {
       <TableHead>
         <TableRow>
           <TableCell />
-          <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
-            <TableSortLabel active={sortCol === "ToolName"} direction={sortDir} onClick={() => toggleSort("ToolName")}>
-              Tool
+          <TableCell sortDirection={sortCol === "ProgramName" ? sortDir : false}>
+            <TableSortLabel
+              active={sortCol === "ProgramName"}
+              direction={sortDir}
+              onClick={() => toggleSort("ProgramName")}
+            >
+              Program Name
             </TableSortLabel>
           </TableCell>
-          <TableCell sortDirection={sortCol === "ScheduledUse" ? sortDir : false} align="right">
-            <Tooltip title="Expected use for all currently scheduled parts">
-              <TableSortLabel
-                active={sortCol === "ScheduledUse"}
-                direction={sortDir}
-                onClick={() => toggleSort("ScheduledUse")}
-              >
-                Scheduled Use (min)
-              </TableSortLabel>
-            </Tooltip>
+          <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
+            <TableSortLabel
+              active={sortCol === "CellProgName"}
+              direction={sortDir}
+              onClick={() => toggleSort("CellProgName")}
+            >
+              Cell Controller Program
+            </TableSortLabel>
           </TableCell>
-          <TableCell sortDirection={sortCol === "RemainingTotalLife" ? sortDir : false} align="right">
-            <Tooltip title="Remaining life summed over all machines">
-              <TableSortLabel
-                active={sortCol === "RemainingTotalLife"}
-                direction={sortDir}
-                onClick={() => toggleSort("RemainingTotalLife")}
-              >
-                Total Remaining Life (min)
-              </TableSortLabel>
-            </Tooltip>
+          <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
+            <TableSortLabel active={sortCol === "PartName"} direction={sortDir} onClick={() => toggleSort("PartName")}>
+              Part
+            </TableSortLabel>
           </TableCell>
-          <TableCell sortDirection={sortCol === "MinRemainingLife" ? sortDir : false} align="right">
-            <Tooltip title="Machine with the least remaining life">
-              <TableSortLabel
-                active={sortCol === "MinRemainingLife"}
-                direction={sortDir}
-                onClick={() => toggleSort("MinRemainingLife")}
-              >
-                Smallest Remaining Life (min)
-              </TableSortLabel>
-            </Tooltip>
+          <TableCell sortDirection={sortCol === "Comment" ? sortDir : false}>
+            <TableSortLabel active={sortCol === "Comment"} direction={sortDir} onClick={() => toggleSort("Comment")}>
+              Comment
+            </TableSortLabel>
           </TableCell>
-          <TableCell sortDirection={sortCol === "MinRemainingMachine" ? sortDir : false}>
-            <Tooltip title="Machine with the least remaining life">
-              <TableSortLabel
-                active={sortCol === "MinRemainingMachine"}
-                direction={sortDir}
-                onClick={() => toggleSort("MinRemainingMachine")}
-              >
-                Machine With Smallest Remaining Life
-              </TableSortLabel>
-            </Tooltip>
+          <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
+            <TableSortLabel active={sortCol === "Revision"} direction={sortDir} onClick={() => toggleSort("Revision")}>
+              Revision
+            </TableSortLabel>
           </TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
-        {rows.map((tool) => (
-          <ToolRow key={tool.toolName} tool={tool} />
+        {LazySeq.ofIterable(rows).map((program, idx) => (
+          <ProgramRow key={idx} program={program} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-interface ToolNavHeaderProps {
+interface ProgNavHeaderProps {
   readonly refreshTime: Date | null;
   readonly loading: boolean;
-  readonly loadTools: () => void;
+  readonly loadPrograms: () => void;
 }
 
-function ToolNavHeader(props: ToolNavHeaderProps) {
+function ProgNavHeader(props: ProgNavHeaderProps) {
   if (props.refreshTime === null) {
     return (
       <main style={{ margin: "2em", display: "flex", justifyContent: "center" }}>
@@ -315,7 +294,7 @@ function ToolNavHeader(props: ToolNavHeaderProps) {
           size="large"
           variant="extended"
           style={{ margin: "2em" }}
-          onClick={props.loadTools}
+          onClick={props.loadPrograms}
           disabled={props.loading}
         >
           {props.loading ? (
@@ -326,7 +305,7 @@ function ToolNavHeader(props: ToolNavHeaderProps) {
           ) : (
             <>
               <RefreshIcon style={{ marginRight: "1em" }} />
-              Load Tools
+              Load Programs
             </>
           )}
         </Fab>
@@ -346,38 +325,38 @@ function ToolNavHeader(props: ToolNavHeaderProps) {
       >
         <Tooltip title="Refresh Tools">
           <div>
-            <IconButton onClick={props.loadTools} disabled={props.loading} size="small">
+            <IconButton onClick={props.loadPrograms} disabled={props.loading} size="small">
               {props.loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
             </IconButton>
           </div>
         </Tooltip>
         <span style={{ marginLeft: "1em" }}>
-          Tools from <TimeAgo date={props.refreshTime} />
+          Programs from <TimeAgo date={props.refreshTime} />
         </span>
       </nav>
     );
   }
 }
 
-interface ToolReportContentProps {
-  readonly report: Vector<ToolReport> | null;
+interface ProgReportContentProps {
+  readonly programs: Vector<CellControllerProgram> | null;
   readonly time: Date | null;
-  readonly setReport: DispatchAction<"Tools_SetToolReport">;
+  readonly setReport: DispatchAction<"Programs_SetProgramData">;
 }
 
-function ToolReportContent(props: ToolReportContentProps) {
+function ProgReportContent(props: ProgReportContentProps) {
   React.useEffect(() => {
-    document.title = "Tool Report - FMS Insight";
+    document.title = "Programs - FMS Insight";
   }, []);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
   const store = useStore<Store>();
 
-  const loadTools = React.useCallback(async () => {
+  const loadPrograms = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      props.setReport(await calcToolSummary(store));
+      props.setReport(await calcProgramSummary(store));
     } catch (e) {
       setError(e);
     } finally {
@@ -387,25 +366,25 @@ function ToolReportContent(props: ToolReportContentProps) {
 
   return (
     <>
-      <ToolNavHeader loading={loading} loadTools={loadTools} refreshTime={props.time} />
+      <ProgNavHeader loading={loading} loadPrograms={loadPrograms} refreshTime={props.time} />
       <main style={{ padding: "24px" }}>
         {error != null ? (
           <Card>
             <CardContent>{error}</CardContent>
           </Card>
         ) : undefined}
-        {props.report !== null ? (
+        {props.programs !== null ? (
           <Card raised>
             <CardHeader
               title={
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
                   <ToolIcon style={{ color: "#6D4C41" }} />
-                  <div style={{ marginLeft: "10px", marginRight: "3em" }}>Tools</div>
+                  <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
                 </div>
               }
             />
             <CardContent>
-              <ToolSummaryTable toolReport={props.report} />
+              <ProgramSummaryTable programs={props.programs} />
             </CardContent>
           </Card>
         ) : undefined}
@@ -414,12 +393,12 @@ function ToolReportContent(props: ToolReportContentProps) {
   );
 }
 
-export const ToolReportPage = connect(
+export const ProgramReportPage = connect(
   (s) => ({
-    report: s.ToolsPrograms.tool_report,
-    time: s.ToolsPrograms.tool_report_time,
+    programs: s.ToolsPrograms.programs,
+    time: s.ToolsPrograms.program_time,
   }),
   {
-    setReport: mkAC("Tools_SetToolReport"),
+    setReport: mkAC("Programs_SetProgramData"),
   }
-)(ToolReportContent);
+)(ProgReportContent);

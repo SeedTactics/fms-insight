@@ -35,14 +35,20 @@ import { ActionType } from "./api";
 import { LazySeq } from "./lazyseq";
 import { Vector, HashMap } from "prelude-ts";
 import { duration } from "moment";
-import { ToolUsage, ProgramToolUseInSingleCycle, PartAndProgram } from "./events.cycles";
+import {
+  ToolUsage,
+  ProgramToolUseInSingleCycle,
+  PartAndProgram,
+  StatisticalCycleTime,
+  PartAndStationOperation,
+} from "./events.cycles";
 import { Store } from "../store/store";
 import * as redux from "redux";
 import { MachineBackend } from "./backend";
 
-export function averageToolUse(usage: ToolUsage): HashMap<PartAndProgram, ProgramToolUseInSingleCycle> {
-  return usage.mapValues((cycles) => ({
-    tools: LazySeq.ofIterable(cycles)
+function averageToolUse(usage: ToolUsage, sort: boolean): HashMap<PartAndProgram, ProgramToolUseInSingleCycle> {
+  return usage.mapValues((cycles) => {
+    const tools = LazySeq.ofIterable(cycles)
       .flatMap((c) => c.tools)
       .filter((c) => c.toolChanged !== true)
       .groupBy((t) => t.toolName)
@@ -51,8 +57,12 @@ export function averageToolUse(usage: ToolUsage): HashMap<PartAndProgram, Progra
         toolName: toolName,
         cycleUsageMinutes: usageInCycles.sumOn((c) => c.cycleUsageMinutes) / usageInCycles.length(),
         toolChanged: false,
-      })),
-  }));
+      }));
+    if (sort) {
+      tools.sort((a, b) => a.toolName.localeCompare(b.toolName));
+    }
+    return { tools };
+  });
 }
 
 export interface ToolInMachine {
@@ -122,7 +132,7 @@ export async function calcToolSummary(
     }
   }
 
-  const parts = LazySeq.ofIterable(averageToolUse(usage))
+  const parts = LazySeq.ofIterable(averageToolUse(usage, false))
     .flatMap(([partAndProg, tools]) => {
       const qty = partPlannedQtys.get(partAndProg);
       if (qty.isSome() && qty.get() > 0) {
@@ -195,16 +205,70 @@ export async function calcToolSummary(
   };
 }
 
-export type Action = { readonly type: "Tools_SetToolReport"; readonly report: Vector<ToolReport>; readonly time: Date };
+export interface CellControllerProgram {
+  readonly programName: string;
+  readonly cellControllerProgramName: string;
+  readonly comment: string | null;
+  readonly revision: number | null;
+  readonly partName: string | null;
+  readonly process: number | null;
+  readonly statisticalCycleTime: StatisticalCycleTime | null;
+  readonly toolUse: ProgramToolUseInSingleCycle | null;
+}
+export async function calcProgramSummary(
+  store: redux.Store<Store>
+): Promise<{ readonly programs: Vector<CellControllerProgram>; readonly time: Date }> {
+  const tools = averageToolUse(store.getState().Events.last30.cycles.tool_usage, true);
+  const cycleTimes = store.getState().Events.last30.cycles.estimatedCycleTimes;
+
+  const progToPart = LazySeq.ofIterable(store.getState().Events.last30.cycles.active_cycle_times)
+    .flatMap(([partAndProc, ops]) =>
+      LazySeq.ofIterable(ops.keySet()).map((op) => ({
+        op: op.operation,
+        part: new PartAndStationOperation(partAndProc.part, partAndProc.proc, op.statGroup, op.operation),
+      }))
+    )
+    .toMap(
+      (x) => [x.op, x.part],
+      (_, x) => x
+    );
+
+  return {
+    time: new Date(),
+    programs: LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
+      .map((prog) => {
+        const part = progToPart.get(prog.programName).getOrNull();
+        return {
+          programName: prog.programName,
+          cellControllerProgramName: prog.cellControllerProgramName,
+          comment: prog.comment ?? null,
+          revision: prog.revision ?? null,
+          partName: part?.part ?? null,
+          process: part?.proc ?? null,
+          statisticalCycleTime: part ? cycleTimes.get(part).getOrNull() : null,
+          toolUse: part ? tools.get(new PartAndProgram(part.part, part.proc, part.operation)).getOrNull() : null,
+        };
+      })
+      .toVector(),
+  };
+}
+
+export type Action =
+  | { readonly type: "Tools_SetToolReport"; readonly report: Vector<ToolReport>; readonly time: Date }
+  | { readonly type: "Programs_SetProgramData"; readonly programs: Vector<CellControllerProgram>; readonly time: Date };
 
 export interface State {
   readonly tool_report: Vector<ToolReport> | null;
   readonly tool_report_time: Date | null;
+  readonly programs: Vector<CellControllerProgram> | null;
+  readonly program_time: Date | null;
 }
 
 export const initial: State = {
   tool_report: null,
   tool_report_time: null,
+  programs: null,
+  program_time: null,
 };
 
 export function reducer(s: State, a: Action): State {
@@ -213,6 +277,8 @@ export function reducer(s: State, a: Action): State {
   switch (a.type) {
     case "Tools_SetToolReport":
       return { ...s, tool_report: a.report, tool_report_time: a.time };
+    case "Programs_SetProgramData":
+      return { ...s, programs: a.programs, program_time: a.time };
     default:
       return s;
   }
