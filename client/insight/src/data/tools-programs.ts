@@ -38,15 +38,18 @@ import { duration } from "moment";
 import {
   ToolUsage,
   ProgramToolUseInSingleCycle,
-  PartAndProgram,
   StatisticalCycleTime,
   PartAndStationOperation,
+  StationOperation,
 } from "./events.cycles";
 import { Store } from "../store/store";
 import * as redux from "redux";
 import { MachineBackend } from "./backend";
 
-function averageToolUse(usage: ToolUsage, sort: boolean): HashMap<PartAndProgram, ProgramToolUseInSingleCycle> {
+function averageToolUse(
+  usage: ToolUsage,
+  sort: boolean
+): HashMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
   return usage.mapValues((cycles) => {
     const tools = LazySeq.ofIterable(cycles)
       .flatMap((c) => c.tools)
@@ -94,12 +97,12 @@ export async function calcToolSummary(
 ): Promise<{ readonly report: Vector<ToolReport>; readonly time: Date }> {
   const currentSt = store.getState().Current.current_status;
   const usage = store.getState().Events.last30.cycles.tool_usage;
-  let partPlannedQtys = HashMap.empty<PartAndProgram, number>();
+  let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
     const planQty = LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((x) => x);
     for (let procIdx = 0; procIdx < job.procsAndPaths.length; procIdx++) {
       let completed = 0;
-      let programsToAfterInProc = HashMap.empty<string, number>();
+      let programsToAfterInProc = HashMap.empty<StationOperation, number>();
       for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
         completed += job.completed?.[procIdx]?.[pathIdx] ?? 0;
         const path = job.procsAndPaths[procIdx].paths[pathIdx];
@@ -118,13 +121,17 @@ export async function calcToolSummary(
             )
             .length();
           if (stop.program !== undefined && stop.program !== "") {
-            programsToAfterInProc = programsToAfterInProc.putWithMerge(stop.program, inProcAfter, (a, b) => a + b);
+            programsToAfterInProc = programsToAfterInProc.putWithMerge(
+              new StationOperation(stop.stationGroup, stop.program),
+              inProcAfter,
+              (a, b) => a + b
+            );
           }
         }
       }
-      for (const [program, afterInProc] of programsToAfterInProc) {
+      for (const [op, afterInProc] of programsToAfterInProc) {
         partPlannedQtys = partPlannedQtys.putWithMerge(
-          new PartAndProgram(job.partName, procIdx + 1, program),
+          new PartAndStationOperation(job.partName, procIdx + 1, op.statGroup, op.operation),
           planQty - completed - afterInProc,
           (a, b) => a + b
         );
@@ -141,7 +148,7 @@ export async function calcToolSummary(
           part: {
             partName: partAndProg.part,
             process: partAndProg.proc,
-            program: partAndProg.program,
+            program: partAndProg.operation,
             quantity: qty.get(),
             scheduledUseMinutes: tool.cycleUsageMinutes,
           },
@@ -246,7 +253,7 @@ export async function calcProgramSummary(
           partName: part?.part ?? null,
           process: part?.proc ?? null,
           statisticalCycleTime: part ? cycleTimes.get(part).getOrNull() : null,
-          toolUse: part ? tools.get(new PartAndProgram(part.part, part.proc, part.operation)).getOrNull() : null,
+          toolUse: part ? tools.get(part).getOrNull() : null,
         };
       })
       .toVector(),
