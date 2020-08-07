@@ -35,6 +35,7 @@ import { ActionType } from "./api";
 import { LazySeq } from "./lazyseq";
 import { Vector, HashMap } from "prelude-ts";
 import { duration } from "moment";
+import { atom, useRecoilCallback, RecoilValueReadOnly, selector } from "recoil";
 import {
   ToolUsage,
   ProgramToolUseInSingleCycle,
@@ -43,8 +44,8 @@ import {
   StationOperation,
 } from "./events.cycles";
 import { Store } from "../store/store";
-import * as redux from "redux";
 import { MachineBackend } from "./backend";
+import { useStore } from "react-redux";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -92,124 +93,142 @@ export interface ToolReport {
   readonly parts: Vector<PartToolUsage>;
 }
 
-export async function calcToolSummary(
-  store: redux.Store<Store>
-): Promise<{ readonly report: Vector<ToolReport>; readonly time: Date }> {
-  const currentSt = store.getState().Current.current_status;
-  const usage = store.getState().Events.last30.cycles.tool_usage;
-  let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
-  for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
-    const planQty = LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((x) => x);
-    for (let procIdx = 0; procIdx < job.procsAndPaths.length; procIdx++) {
-      let completed = 0;
-      let programsToAfterInProc = HashMap.empty<StationOperation, number>();
-      for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
-        completed += job.completed?.[procIdx]?.[pathIdx] ?? 0;
-        const path = job.procsAndPaths[procIdx].paths[pathIdx];
-        for (let stopIdx = 0; stopIdx < path.stops.length; stopIdx += 1) {
-          const stop = path.stops[stopIdx];
-          const inProcAfter = LazySeq.ofIterable(currentSt.material)
-            .filter(
-              (m) =>
-                m.jobUnique === uniq &&
-                m.process == procIdx + 1 &&
-                m.path === pathIdx + 1 &&
-                (m.action.type === ActionType.UnloadToCompletedMaterial ||
-                  m.action.type === ActionType.UnloadToInProcess ||
-                  (m.lastCompletedMachiningRouteStopIndex !== undefined &&
-                    m.lastCompletedMachiningRouteStopIndex > stopIdx))
-            )
-            .length();
-          if (stop.program !== undefined && stop.program !== "") {
-            programsToAfterInProc = programsToAfterInProc.putWithMerge(
-              new StationOperation(stop.stationGroup, stop.program),
-              inProcAfter,
+export interface ToolsAtom {
+  readonly tools: Vector<ToolReport>;
+  readonly time: Date;
+}
+
+const currentToolAtom = atom<ToolsAtom | null>({
+  key: "tool-usage-report",
+  default: null,
+});
+
+export const currentToolReport: RecoilValueReadOnly<ToolsAtom | null> = currentToolAtom;
+
+export function useCalcToolReport(): () => Promise<void> {
+  const store = useStore<Store>();
+  return useRecoilCallback(
+    ({ set }) => async () => {
+      const currentSt = store.getState().Current.current_status;
+      const usage = store.getState().Events.last30.cycles.tool_usage;
+      let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
+      for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
+        const planQty = LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((x) => x);
+        for (let procIdx = 0; procIdx < job.procsAndPaths.length; procIdx++) {
+          let completed = 0;
+          let programsToAfterInProc = HashMap.empty<StationOperation, number>();
+          for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
+            completed += job.completed?.[procIdx]?.[pathIdx] ?? 0;
+            const path = job.procsAndPaths[procIdx].paths[pathIdx];
+            for (let stopIdx = 0; stopIdx < path.stops.length; stopIdx += 1) {
+              const stop = path.stops[stopIdx];
+              const inProcAfter = LazySeq.ofIterable(currentSt.material)
+                .filter(
+                  (m) =>
+                    m.jobUnique === uniq &&
+                    m.process == procIdx + 1 &&
+                    m.path === pathIdx + 1 &&
+                    (m.action.type === ActionType.UnloadToCompletedMaterial ||
+                      m.action.type === ActionType.UnloadToInProcess ||
+                      (m.lastCompletedMachiningRouteStopIndex !== undefined &&
+                        m.lastCompletedMachiningRouteStopIndex > stopIdx))
+                )
+                .length();
+              if (stop.program !== undefined && stop.program !== "") {
+                programsToAfterInProc = programsToAfterInProc.putWithMerge(
+                  new StationOperation(stop.stationGroup, stop.program),
+                  inProcAfter,
+                  (a, b) => a + b
+                );
+              }
+            }
+          }
+          for (const [op, afterInProc] of programsToAfterInProc) {
+            partPlannedQtys = partPlannedQtys.putWithMerge(
+              new PartAndStationOperation(job.partName, procIdx + 1, op.statGroup, op.operation),
+              planQty - completed - afterInProc,
               (a, b) => a + b
             );
           }
         }
       }
-      for (const [op, afterInProc] of programsToAfterInProc) {
-        partPlannedQtys = partPlannedQtys.putWithMerge(
-          new PartAndStationOperation(job.partName, procIdx + 1, op.statGroup, op.operation),
-          planQty - completed - afterInProc,
-          (a, b) => a + b
+
+      const parts = LazySeq.ofIterable(averageToolUse(usage, false))
+        .flatMap(([partAndProg, tools]) => {
+          const qty = partPlannedQtys.get(partAndProg);
+          if (qty.isSome() && qty.get() > 0) {
+            return tools.tools.map((tool) => ({
+              toolName: tool.toolName,
+              part: {
+                partName: partAndProg.part,
+                process: partAndProg.proc,
+                program: partAndProg.operation,
+                quantity: qty.get(),
+                scheduledUseMinutes: tool.cycleUsageMinutes,
+              },
+            }));
+          } else {
+            return [];
+          }
+        })
+        .groupBy((t) => t.toolName)
+        .mapValues((v) =>
+          v
+            .map((t) => t.part)
+            .sortOn(
+              (p) => p.partName,
+              (p) => p.process
+            )
         );
-      }
-    }
-  }
 
-  const parts = LazySeq.ofIterable(averageToolUse(usage, false))
-    .flatMap(([partAndProg, tools]) => {
-      const qty = partPlannedQtys.get(partAndProg);
-      if (qty.isSome() && qty.get() > 0) {
-        return tools.tools.map((tool) => ({
-          toolName: tool.toolName,
-          part: {
-            partName: partAndProg.part,
-            process: partAndProg.proc,
-            program: partAndProg.operation,
-            quantity: qty.get(),
-            scheduledUseMinutes: tool.cycleUsageMinutes,
-          },
-        }));
-      } else {
-        return [];
-      }
-    })
-    .groupBy((t) => t.toolName)
-    .mapValues((v) =>
-      v
-        .map((t) => t.part)
-        .sortOn(
-          (p) => p.partName,
-          (p) => p.process
-        )
-    );
+      const toolsInMach = await MachineBackend.getToolsInMachines();
+      const report = LazySeq.ofIterable(toolsInMach)
+        .groupBy((t) => t.toolName)
+        .toVector()
+        .map(([toolName, tools]) => {
+          const toolsInMachine = tools
+            .sortOn(
+              (t) => t.machineGroupName,
+              (t) => t.machineNum,
+              (t) => t.pocket
+            )
+            .map((m) => {
+              const currentUseMinutes = m.currentUse !== "" ? duration(m.currentUse).asMinutes() : 0;
+              const lifetimeMinutes = m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
+              return {
+                machineName: m.machineGroupName + " #" + m.machineNum,
+                pocket: m.pocket,
+                currentUseMinutes,
+                lifetimeMinutes,
+                remainingMinutes: Math.max(0, lifetimeMinutes - currentUseMinutes),
+              };
+            });
 
-  const toolsInMach = await MachineBackend.getToolsInMachines();
-  return {
-    time: new Date(),
-    report: LazySeq.ofIterable(toolsInMach)
-      .groupBy((t) => t.toolName)
-      .toVector()
-      .map(([toolName, tools]) => {
-        const toolsInMachine = tools
-          .sortOn(
-            (t) => t.machineGroupName,
-            (t) => t.machineNum,
-            (t) => t.pocket
-          )
-          .map((m) => {
-            const currentUseMinutes = m.currentUse !== "" ? duration(m.currentUse).asMinutes() : 0;
-            const lifetimeMinutes = m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
-            return {
-              machineName: m.machineGroupName + " #" + m.machineNum,
-              pocket: m.pocket,
-              currentUseMinutes,
-              lifetimeMinutes,
-              remainingMinutes: Math.max(0, lifetimeMinutes - currentUseMinutes),
-            };
-          });
+          const minMachine = toolsInMachine
+            .groupBy((m) => m.machineName)
+            .toVector()
+            .map(([machineName, toolsForMachine]) => ({
+              machineName,
+              remaining: toolsForMachine.sumOn((m) => m.remainingMinutes),
+            }))
+            .minOn((m) => m.remaining);
 
-        const minMachine = toolsInMachine
-          .groupBy((m) => m.machineName)
-          .toVector()
-          .map(([machineName, toolsForMachine]) => ({
-            machineName,
-            remaining: toolsForMachine.sumOn((m) => m.remainingMinutes),
-          }))
-          .minOn((m) => m.remaining);
+          return {
+            toolName,
+            machines: toolsInMachine,
+            minRemainingMachine: minMachine.map((m) => m.machineName).getOrElse(""),
+            minRemainingMinutes: minMachine.map((m) => m.remaining).getOrElse(0),
+            parts: parts.get(toolName).getOrElse(Vector.empty()),
+          };
+        });
 
-        return {
-          toolName,
-          machines: toolsInMachine,
-          minRemainingMachine: minMachine.map((m) => m.machineName).getOrElse(""),
-          minRemainingMinutes: minMachine.map((m) => m.remaining).getOrElse(0),
-          parts: parts.get(toolName).getOrElse(Vector.empty()),
-        };
-      }),
-  };
+      set(currentToolAtom, {
+        tools: report,
+        time: new Date(),
+      });
+    },
+    [store]
+  );
 }
 
 export interface CellControllerProgram {
@@ -222,71 +241,76 @@ export interface CellControllerProgram {
   readonly statisticalCycleTime: StatisticalCycleTime | null;
   readonly toolUse: ProgramToolUseInSingleCycle | null;
 }
-export async function calcProgramSummary(
-  store: redux.Store<Store>
-): Promise<{ readonly programs: Vector<CellControllerProgram>; readonly time: Date }> {
-  const tools = averageToolUse(store.getState().Events.last30.cycles.tool_usage, true);
-  const cycleTimes = store.getState().Events.last30.cycles.estimatedCycleTimes;
 
-  const progToPart = LazySeq.ofIterable(store.getState().Events.last30.cycles.active_cycle_times)
-    .flatMap(([partAndProc, ops]) =>
-      LazySeq.ofIterable(ops.keySet()).map((op) => ({
-        op: new StationOperation(op.statGroup, op.operation),
-        part: new PartAndStationOperation(partAndProc.part, partAndProc.proc, op.statGroup, op.operation),
-      }))
-    )
-    .toMap(
-      (x) => [x.op, x.part],
-      (_, x) => x
-    );
-
-  return {
-    time: new Date(),
-    programs: LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
-      .map((prog) => {
-        const part = progToPart.get(new StationOperation(prog.machineGroupName, prog.programName)).getOrNull();
-        return {
-          programName: prog.programName,
-          cellControllerProgramName: prog.cellControllerProgramName,
-          comment: prog.comment ?? null,
-          revision: prog.revision ?? null,
-          partName: part?.part ?? null,
-          process: part?.proc ?? null,
-          statisticalCycleTime: part ? cycleTimes.get(part).getOrNull() : null,
-          toolUse: part ? tools.get(part).getOrNull() : null,
-        };
-      })
-      .toVector(),
-  };
+export interface ProgramReport {
+  readonly time: Date;
+  readonly programs: Vector<CellControllerProgram>;
 }
 
-export type Action =
-  | { readonly type: "Tools_SetToolReport"; readonly report: Vector<ToolReport>; readonly time: Date }
-  | { readonly type: "Programs_SetProgramData"; readonly programs: Vector<CellControllerProgram>; readonly time: Date };
+const programAtom = atom<ProgramReport | null>({
+  key: "cell-controller-programs",
+  default: null,
+});
 
-export interface State {
-  readonly tool_report: Vector<ToolReport> | null;
-  readonly tool_report_time: Date | null;
-  readonly programs: Vector<CellControllerProgram> | null;
-  readonly program_time: Date | null;
+export const currentProgramReport: RecoilValueReadOnly<ProgramReport | null> = programAtom;
+
+export function useCalcProgramReport(): () => Promise<void> {
+  const store = useStore<Store>();
+  return useRecoilCallback(
+    ({ set }) => async () => {
+      const tools = averageToolUse(store.getState().Events.last30.cycles.tool_usage, true);
+      const cycleTimes = store.getState().Events.last30.cycles.estimatedCycleTimes;
+
+      const progToPart = LazySeq.ofIterable(store.getState().Events.last30.cycles.active_cycle_times)
+        .flatMap(([partAndProc, ops]) =>
+          LazySeq.ofIterable(ops.keySet()).map((op) => ({
+            op: new StationOperation(op.statGroup, op.operation),
+            part: new PartAndStationOperation(partAndProc.part, partAndProc.proc, op.statGroup, op.operation),
+          }))
+        )
+        .toMap(
+          (x) => [x.op, x.part],
+          (_, x) => x
+        );
+
+      set(programAtom, {
+        time: new Date(),
+        programs: LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
+          .map((prog) => {
+            const part = progToPart.get(new StationOperation(prog.machineGroupName, prog.programName)).getOrNull();
+            return {
+              programName: prog.programName,
+              cellControllerProgramName: prog.cellControllerProgramName,
+              comment: prog.comment ?? null,
+              revision: prog.revision ?? null,
+              partName: part?.part ?? null,
+              process: part?.proc ?? null,
+              statisticalCycleTime: part ? cycleTimes.get(part).getOrNull() : null,
+              toolUse: part ? tools.get(part).getOrNull() : null,
+            };
+          })
+          .toVector(),
+      });
+    },
+    [store]
+  );
 }
 
-export const initial: State = {
-  tool_report: null,
-  tool_report_time: null,
-  programs: null,
-  program_time: null,
-};
+export const programToShowContent = atom<CellControllerProgram | null>({
+  key: "program-to-show-content",
+  default: null,
+});
 
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) return initial;
-
-  switch (a.type) {
-    case "Tools_SetToolReport":
-      return { ...s, tool_report: a.report, tool_report_time: a.time };
-    case "Programs_SetProgramData":
-      return { ...s, programs: a.programs, program_time: a.time };
-    default:
-      return s;
-  }
-}
+export const programContent = selector<string>({
+  key: "program-content",
+  get: async ({ get }) => {
+    const prog = get(programToShowContent);
+    if (prog === null) {
+      return "";
+    } else if (prog.revision === null) {
+      return await MachineBackend.getLatestProgramRevisionContent(prog.programName);
+    } else {
+      return await MachineBackend.getProgramRevisionContent(prog.programName, prog.revision);
+    }
+  },
+});
