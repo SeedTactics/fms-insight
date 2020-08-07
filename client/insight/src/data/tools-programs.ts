@@ -245,6 +245,8 @@ export interface CellControllerProgram {
 export interface ProgramReport {
   readonly time: Date;
   readonly programs: Vector<CellControllerProgram>;
+  readonly hasRevisions: boolean;
+  readonly cellNameDifferentFromProgName: boolean;
 }
 
 const programAtom = atom<ProgramReport | null>({
@@ -273,23 +275,27 @@ export function useCalcProgramReport(): () => Promise<void> {
           (_, x) => x
         );
 
+      const programs = LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
+        .map((prog) => {
+          const part = progToPart.get(new StationOperation(prog.machineGroupName, prog.programName)).getOrNull();
+          return {
+            programName: prog.programName,
+            cellControllerProgramName: prog.cellControllerProgramName,
+            comment: prog.comment ?? null,
+            revision: prog.revision ?? null,
+            partName: part?.part ?? null,
+            process: part?.proc ?? null,
+            statisticalCycleTime: part ? cycleTimes.get(part).getOrNull() : null,
+            toolUse: part ? tools.get(part).getOrNull() : null,
+          };
+        })
+        .toVector();
+
       set(programAtom, {
         time: new Date(),
-        programs: LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
-          .map((prog) => {
-            const part = progToPart.get(new StationOperation(prog.machineGroupName, prog.programName)).getOrNull();
-            return {
-              programName: prog.programName,
-              cellControllerProgramName: prog.cellControllerProgramName,
-              comment: prog.comment ?? null,
-              revision: prog.revision ?? null,
-              partName: part?.part ?? null,
-              process: part?.proc ?? null,
-              statisticalCycleTime: part ? cycleTimes.get(part).getOrNull() : null,
-              toolUse: part ? tools.get(part).getOrNull() : null,
-            };
-          })
-          .toVector(),
+        programs,
+        hasRevisions: programs.find((p) => p.revision !== null).isSome(),
+        cellNameDifferentFromProgName: programs.find((p) => p.cellControllerProgramName !== p.programName).isSome(),
       });
     },
     [store]
