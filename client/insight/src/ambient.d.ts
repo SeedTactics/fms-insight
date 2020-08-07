@@ -50,3 +50,12 @@ declare module "react-vis" {
 
   export class Sankey extends React.Component<any> {}
 }
+
+declare module "highlight.js/lib/languages/gcode" {
+  const gcode: any;
+  export default gcode;
+}
+
+declare module "highlight.js/lib/core" {
+  export = hljs;
+}

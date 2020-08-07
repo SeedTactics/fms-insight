@@ -40,7 +40,6 @@ import * as paths from "../data/path-lookup";
 import * as serverSettings from "../data/server-settings";
 import * as allMatBins from "../data/all-material-bins";
 import * as websocket from "./websocket";
-import * as toolProg from "../data/tools-programs";
 import { initBarcodeListener } from "./barcode";
 
 import { createStore, StoreState, StoreActions, ACPayload, mkACF } from "./typed-redux";
@@ -88,7 +87,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       Websocket: websocket.reducer,
       Operators: operators.reducer,
       ServerSettings: serverSettings.reducer,
-      ToolsPrograms: toolProg.reducer,
       location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
     },
     middleware,

@@ -45,7 +45,7 @@ import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Tooltip from "@material-ui/core/Tooltip";
-import { calcToolSummary, ToolReport } from "../../data/tools-programs";
+import { useCalcToolReport, ToolReport, currentToolReport } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
@@ -53,11 +53,10 @@ import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
-import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
 import clsx from "clsx";
-import { useStore } from "react-redux";
 import { Vector } from "prelude-ts";
+import { useRecoilValue } from "recoil";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -359,42 +358,37 @@ function ToolNavHeader(props: ToolNavHeaderProps) {
   }
 }
 
-interface ToolReportContentProps {
-  readonly report: Vector<ToolReport> | null;
-  readonly time: Date | null;
-  readonly setReport: DispatchAction<"Tools_SetToolReport">;
-}
-
-function ToolReportContent(props: ToolReportContentProps) {
+export function ToolReportPage() {
   React.useEffect(() => {
     document.title = "Tool Report - FMS Insight";
   }, []);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
-  const store = useStore<Store>();
+  const calcToolReport = useCalcToolReport();
+  const report = useRecoilValue(currentToolReport);
 
   const loadTools = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      props.setReport(await calcToolSummary(store));
+      await calcToolReport();
     } catch (e) {
       setError(e);
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setError, props.setReport, store]);
+  }, [setLoading, setError, calcToolReport]);
 
   return (
     <>
-      <ToolNavHeader loading={loading} loadTools={loadTools} refreshTime={props.time} />
+      <ToolNavHeader loading={loading} loadTools={loadTools} refreshTime={report?.time ?? null} />
       <main style={{ padding: "24px" }}>
         {error != null ? (
           <Card>
             <CardContent>{error}</CardContent>
           </Card>
         ) : undefined}
-        {props.report !== null ? (
+        {report !== null ? (
           <Card raised>
             <CardHeader
               title={
@@ -405,7 +399,7 @@ function ToolReportContent(props: ToolReportContentProps) {
               }
             />
             <CardContent>
-              <ToolSummaryTable toolReport={props.report} />
+              <ToolSummaryTable toolReport={report.tools} />
             </CardContent>
           </Card>
         ) : undefined}
@@ -413,13 +407,3 @@ function ToolReportContent(props: ToolReportContentProps) {
     </>
   );
 }
-
-export const ToolReportPage = connect(
-  (s) => ({
-    report: s.ToolsPrograms.tool_report,
-    time: s.ToolsPrograms.tool_report_time,
-  }),
-  {
-    setReport: mkAC("Tools_SetToolReport"),
-  }
-)(ToolReportContent);

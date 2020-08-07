@@ -131,6 +131,8 @@ export interface LogAPI {
 export interface MachineAPI {
   getToolsInMachines(): Promise<ReadonlyArray<Readonly<api.IToolInMachine>>>;
   getProgramsInCellController(): Promise<ReadonlyArray<Readonly<api.ProgramInCellController>>>;
+  getProgramRevisionContent(program: string, revision: number): Promise<string>;
+  getLatestProgramRevisionContent(program: string): Promise<string>;
 }
 
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
@@ -538,6 +540,12 @@ function initMockBackend(data: Promise<MockData>) {
     },
     getProgramsInCellController() {
       return Promise.resolve([]);
+    },
+    getProgramRevisionContent() {
+      return Promise.resolve("");
+    },
+    getLatestProgramRevisionContent() {
+      return Promise.resolve("");
     },
   };
 }

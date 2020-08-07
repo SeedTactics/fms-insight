@@ -38,14 +38,21 @@ import CardContent from "@material-ui/core/CardContent";
 import TimeAgo from "react-timeago";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import CardHeader from "@material-ui/core/CardHeader";
-import ToolIcon from "@material-ui/icons/Dns";
+import ProgramIcon from "@material-ui/icons/Storage";
+import CodeIcon from "@material-ui/icons/Code";
 import Table from "@material-ui/core/Table";
 import TableHead from "@material-ui/core/TableHead";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Tooltip from "@material-ui/core/Tooltip";
-import { calcProgramSummary, CellControllerProgram } from "../../data/tools-programs";
+import {
+  useCalcProgramReport,
+  currentProgramReport,
+  CellControllerProgram,
+  programToShowContent,
+  programContent,
+} from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
@@ -53,10 +60,15 @@ import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
-import { Store, connect, mkAC, DispatchAction } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
-import { useStore } from "react-redux";
 import { Vector } from "prelude-ts";
+import { useRecoilValue, useSetRecoilState, useRecoilState, useRecoilValueLoadable } from "recoil";
+import Dialog from "@material-ui/core/Dialog";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import Button from "@material-ui/core/Button";
+import DialogActions from "@material-ui/core/DialogActions";
+import hljs from "highlight.js/lib/core";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -90,6 +102,7 @@ const useRowStyles = makeStyles({
 function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
   const classes = useRowStyles();
+  const setProgramToShowContent = useSetRecoilState(programToShowContent);
 
   return (
     <>
@@ -130,9 +143,14 @@ function ProgramRow(props: ProgramRowProps) {
             ? ""
             : props.program.statisticalCycleTime.MAD_belowMinutes.toFixed(2)}
         </TableCell>
+        <TableCell>
+          <IconButton size="small" onClick={() => setProgramToShowContent(props.program)}>
+            <CodeIcon />
+          </IconButton>
+        </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell className={classes.collapseCell} colSpan={9}>
+        <TableCell className={classes.collapseCell} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <div className={classes.detailContainer}>
               {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
@@ -340,6 +358,7 @@ function ProgramSummaryTable(props: ProgramTableProps) {
               Deviation Below Median
             </TableSortLabel>
           </TableCell>
+          <TableCell />
         </TableRow>
       </TableHead>
       <TableBody>
@@ -348,6 +367,41 @@ function ProgramSummaryTable(props: ProgramTableProps) {
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function ProgramContentDialog() {
+  const [program, setProgramToShowContent] = useRecoilState(programToShowContent);
+  const ct = useRecoilValueLoadable(programContent);
+  const preElement = React.useRef<HTMLPreElement>(null);
+
+  React.useEffect(() => {
+    if (ct.state === "hasValue" && preElement.current) {
+      hljs.highlightBlock(preElement.current);
+    }
+  }, [ct]);
+
+  return (
+    <Dialog open={program !== null} onClose={() => setProgramToShowContent(null)}>
+      <DialogTitle>Program</DialogTitle>
+      <DialogContent>
+        {ct.state === "hasError" ? (
+          <p>{ct.contents}</p>
+        ) : ct.state === "loading" ? (
+          <div style={{ textAlign: "center", marginTop: "4em" }}>
+            <CircularProgress />
+            <p>Loading</p>
+          </div>
+        ) : (
+          <pre ref={preElement}>
+            <code className="gcode">{ct.contents}</code>
+          </pre>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setProgramToShowContent(null)}>Close</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -410,67 +464,53 @@ function ProgNavHeader(props: ProgNavHeaderProps) {
   }
 }
 
-interface ProgReportContentProps {
-  readonly programs: Vector<CellControllerProgram> | null;
-  readonly time: Date | null;
-  readonly setReport: DispatchAction<"Programs_SetProgramData">;
-}
-
-function ProgReportContent(props: ProgReportContentProps) {
+export function ProgramReportPage() {
   React.useEffect(() => {
     document.title = "Programs - FMS Insight";
   }, []);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
-  const store = useStore<Store>();
+  const calcProgramReport = useCalcProgramReport();
+  const report = useRecoilValue(currentProgramReport);
 
   const loadPrograms = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      props.setReport(await calcProgramSummary(store));
+      await calcProgramReport();
     } catch (e) {
       setError(e);
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setError, props.setReport, store]);
+  }, [setLoading, setError, calcProgramReport]);
 
   return (
     <>
-      <ProgNavHeader loading={loading} loadPrograms={loadPrograms} refreshTime={props.time} />
+      <ProgNavHeader loading={loading} loadPrograms={loadPrograms} refreshTime={report?.time ?? null} />
       <main style={{ padding: "24px" }}>
         {error != null ? (
           <Card>
             <CardContent>{error}</CardContent>
           </Card>
         ) : undefined}
-        {props.programs !== null ? (
+        {report !== null ? (
           <Card raised>
             <CardHeader
               title={
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-                  <ToolIcon style={{ color: "#6D4C41" }} />
+                  <ProgramIcon style={{ color: "#6D4C41" }} />
                   <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
                 </div>
               }
             />
             <CardContent>
-              <ProgramSummaryTable programs={props.programs} />
+              <ProgramSummaryTable programs={report.programs} />
             </CardContent>
           </Card>
         ) : undefined}
       </main>
+      <ProgramContentDialog />
     </>
   );
 }
-
-export const ProgramReportPage = connect(
-  (s) => ({
-    programs: s.ToolsPrograms.programs,
-    time: s.ToolsPrograms.program_time,
-  }),
-  {
-    setReport: mkAC("Programs_SetProgramData"),
-  }
-)(ProgReportContent);
