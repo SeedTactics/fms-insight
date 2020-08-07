@@ -98,7 +98,7 @@ namespace BlackMaple.MachineWatchInterface
   {
     List<ToolInMachine> CurrentToolsInMachines();
     List<ProgramInCellController> CurrentProgramsInCellController();
-    List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, int? revisionToStart);
-    string GetProgramContent(string programName, int? revision);
+    List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart);
+    string GetProgramContent(string programName, long? revision);
   }
 }

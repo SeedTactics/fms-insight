@@ -1665,7 +1665,7 @@
             "type": "integer",
             "name": "revisionToStart",
             "in": "query",
-            "format": "int32",
+            "format": "int64",
             "x-nullable": true
           }
         ],
@@ -1707,7 +1707,7 @@
             "name": "revision",
             "in": "path",
             "required": true,
-            "format": "int32",
+            "format": "int64",
             "x-nullable": false
           }
         ],

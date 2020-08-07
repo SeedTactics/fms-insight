@@ -387,7 +387,7 @@ namespace DebugMachineWatchApiServer
         }).ToList();
     }
 
-    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, int? revisionToStart)
+    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart)
     {
       return Programs
         .Where(p => p.ProgramName == programName && p.Revision.HasValue && (!revisionToStart.HasValue || p.Revision.Value <= revisionToStart.Value))
@@ -402,7 +402,7 @@ namespace DebugMachineWatchApiServer
         }).ToList();
     }
 
-    public string GetProgramContent(string programName, int? revision)
+    public string GetProgramContent(string programName, long? revision)
     {
       return "Program Content for " + programName + " and revision " + revision.ToString();
     }
