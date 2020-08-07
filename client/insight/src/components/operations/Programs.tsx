@@ -73,11 +73,8 @@ const useRowStyles = makeStyles({
     paddingTop: 0,
   },
   detailContainer: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    marginLeft: "1em",
     marginRight: "1em",
+    marginLeft: "3em",
   },
   detailTable: {
     width: "auto",
@@ -98,9 +95,11 @@ function ProgramRow(props: ProgramRowProps) {
     <>
       <TableRow className={classes.mainRow}>
         <TableCell>
-          <IconButton size="small" onClick={() => setOpen(!open)}>
-            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
+          {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
+            <IconButton size="small" onClick={() => setOpen(!open)}>
+              {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+          )}
         </TableCell>
         <TableCell>{props.program.programName}</TableCell>
         <TableCell>{props.program.cellControllerProgramName}</TableCell>
@@ -133,7 +132,7 @@ function ProgramRow(props: ProgramRowProps) {
         </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell className={classes.collapseCell} colSpan={6}>
+        <TableCell className={classes.collapseCell} colSpan={9}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <div className={classes.detailContainer}>
               {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
@@ -193,9 +192,9 @@ function ProgramSummaryTable(props: ProgramTableProps) {
         if (a.comment === null && b.comment === null) {
           c = 0;
         } else if (a.comment === null) {
-          c = -1;
-        } else if (b.comment === null) {
           c = 1;
+        } else if (b.comment === null) {
+          c = -1;
         } else {
           c = a.comment.localeCompare(b.comment);
         }
@@ -204,9 +203,9 @@ function ProgramSummaryTable(props: ProgramTableProps) {
         if (a.revision === null && b.revision === null) {
           c = 0;
         } else if (a.revision === null) {
-          c = -1;
-        } else if (b.revision === null) {
           c = 1;
+        } else if (b.revision === null) {
+          c = -1;
         } else {
           c = a.revision - b.revision;
         }
@@ -215,9 +214,9 @@ function ProgramSummaryTable(props: ProgramTableProps) {
         if (a.partName === null && b.partName === null) {
           c = 0;
         } else if (a.partName === null) {
-          c = -1;
-        } else if (b.partName === null) {
           c = 1;
+        } else if (b.partName === null) {
+          c = -1;
         } else {
           c = a.partName.localeCompare(b.partName);
           if (c === 0) {
@@ -229,9 +228,9 @@ function ProgramSummaryTable(props: ProgramTableProps) {
         if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
           c = 0;
         } else if (a.statisticalCycleTime === null) {
-          c = -1;
-        } else if (b.statisticalCycleTime === null) {
           c = 1;
+        } else if (b.statisticalCycleTime === null) {
+          c = -1;
         } else {
           c = a.statisticalCycleTime.medianMinutesForSingleMat - b.statisticalCycleTime.medianMinutesForSingleMat;
         }
@@ -240,9 +239,9 @@ function ProgramSummaryTable(props: ProgramTableProps) {
         if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
           c = 0;
         } else if (a.statisticalCycleTime === null) {
-          c = -1;
-        } else if (b.statisticalCycleTime === null) {
           c = 1;
+        } else if (b.statisticalCycleTime === null) {
+          c = -1;
         } else {
           c = a.statisticalCycleTime.MAD_aboveMinutes - b.statisticalCycleTime.MAD_aboveMinutes;
         }
@@ -251,9 +250,9 @@ function ProgramSummaryTable(props: ProgramTableProps) {
         if (a.statisticalCycleTime === null && b.statisticalCycleTime === null) {
           c = 0;
         } else if (a.statisticalCycleTime === null) {
-          c = -1;
-        } else if (b.statisticalCycleTime === null) {
           c = 1;
+        } else if (b.statisticalCycleTime === null) {
+          c = -1;
         } else {
           c = a.statisticalCycleTime.MAD_belowMinutes - b.statisticalCycleTime.MAD_belowMinutes;
         }

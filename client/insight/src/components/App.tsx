@@ -100,6 +100,7 @@ import Inspection from "./station-monitor/Inspection";
 import Wash from "./station-monitor/Wash";
 import Queues from "./station-monitor/Queues";
 import { ToolReportPage } from "./operations/ToolReport";
+import { ProgramReportPage } from "./operations/Programs";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -641,7 +642,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = OperationsTabs;
           break;
         case routes.RouteLocation.Operations_Programs:
-          page = <p>Program Page</p>;
+          page = <ProgramReportPage />;
           navigation = OperationsTabs;
           break;
 
@@ -679,7 +680,7 @@ class App extends React.PureComponent<AppConnectedProps> {
           navigation = ToolsTabs;
           break;
         case routes.RouteLocation.Tools_Programs:
-          page = <p>Programs</p>;
+          page = <ProgramReportPage />;
           navigation = ToolsTabs;
           break;
 
