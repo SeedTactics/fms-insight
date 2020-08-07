@@ -1069,6 +1069,25 @@ namespace MazakMachineInterface
       return data;
     }
 
+    public IEnumerable<MazakProgramRow> LoadPrograms()
+    {
+      return WithReadDBConnection(conn => conn.Query<MazakProgramRow>(_mainProgSelect).ToList());
+    }
+
+    public bool CheckProgramExists(string mainProgram)
+    {
+      return WithReadDBConnection(conn =>
+      {
+        var cnt = conn.ExecuteScalar<int>("SELECT COUNT(*) FROM MainProgram WHERE MainProgram = @m", new { m = mainProgram });
+        return cnt > 0;
+      });
+    }
+
+    public IEnumerable<ToolPocketRow> LoadTools()
+    {
+      return Enumerable.Empty<ToolPocketRow>();
+    }
+
     public bool CheckPartExists(string partName)
     {
       return WithReadDBConnection(conn =>

@@ -363,8 +363,11 @@ namespace MazakMachineInterface
     MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions();
     MazakSchedulesPartsPallets LoadSchedulesPartsPallets();
     MazakAllData LoadAllData();
+    IEnumerable<MazakProgramRow> LoadPrograms();
+    IEnumerable<ToolPocketRow> LoadTools();
 
     bool CheckPartExists(string part);
+    bool CheckProgramExists(string mainProgram);
 
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
   }

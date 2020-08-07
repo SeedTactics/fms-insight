@@ -110,9 +110,19 @@ namespace MazakMachineInterface
       return all;
     }
 
+    public IEnumerable<MazakProgramRow> LoadPrograms()
+    {
+      return _openReadDB.LoadPrograms();
+    }
+
     public bool CheckPartExists(string partName)
     {
       return _openReadDB.CheckPartExists(partName);
+    }
+
+    public bool CheckProgramExists(string mainProgram)
+    {
+      return _openReadDB.CheckProgramExists(mainProgram);
     }
 
     #region Tools
@@ -144,6 +154,17 @@ namespace MazakMachineInterface
         FROM ToolPocket
       ";
       return conn.Query<ToolPocketRow>(q, transaction: trans);
+    }
+
+    public IEnumerable<ToolPocketRow> LoadTools()
+    {
+      return WithReadDBConnection(conn =>
+      {
+        using (var trans = conn.BeginTransaction())
+        {
+          return LoadTools(conn, trans).ToList();
+        }
+      });
     }
 
     #endregion

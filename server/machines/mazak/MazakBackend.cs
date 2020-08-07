@@ -69,6 +69,7 @@ namespace MazakMachineInterface
     public JobDB.Config JobDBConfig => jobDBConfig;
     public IMazakLogReader LogTranslation => logDataLoader;
     public RoutingInfo RoutingInfo => routing;
+    public MazakMachineControl MazakMachineControl { get; }
 
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry;
@@ -251,6 +252,8 @@ namespace MazakMachineInterface
           onNewJobs: j => OnNewJobs?.Invoke(j),
           onStatusChange: s => OnNewCurrentStatus?.Invoke(s)
       );
+
+      MazakMachineControl = new MazakMachineControl(jobDBConfig, _readDB, writeJobs);
     }
 
     private bool _disposed = false;
@@ -269,7 +272,7 @@ namespace MazakMachineInterface
 
     public IOldJobDecrement OldJobDecrement { get => routing; }
 
-    public IMachineControl MachineControl => null;
+    public IMachineControl MachineControl => MazakMachineControl;
 
     public IJobDatabase OpenJobDatabase()
     {
