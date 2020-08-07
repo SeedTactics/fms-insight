@@ -1,8 +1,26 @@
 [
   {
-    "ProgramName": "prog1",
+    "MachineGroupName": "Machine",
+    "ProgramName": "100",
+    "CellControllerProgramName": "prog100",
     "Revision": 1,
-    "Comment": "prog1comment",
-    "CellControllerProgramName": "prog1-cell"
+    "Comment": "prog1comment"
+  },
+  {
+    "MachineGroupName": "Machine",
+    "ProgramName": "200",
+    "CellControllerProgramName": "prog200",
+    "Comment": "200comment"
+  },
+  {
+    "MachineGroupName": "Machine",
+    "ProgramName": "300",
+    "CellControllerProgramName": "prog300"
+  },
+  {
+    "MachineGroupName": "Machine",
+    "ProgramName": "400",
+    "CellControllerProgramName": "prog400",
+    "Revision": 8
   }
 ]

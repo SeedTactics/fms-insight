@@ -85,6 +85,7 @@ namespace DebugMachineWatchApiServer
     private List<ToolInMachine> Tools { get; set; }
     private class MockProgram
     {
+      public string MachineGroupName { get; set; }
       public string ProgramName { get; set; }
       public long? Revision { get; set; }
       public string Comment { get; set; }
@@ -381,7 +382,8 @@ namespace DebugMachineWatchApiServer
           ProgramName = p.ProgramName,
           Revision = p.Revision,
           Comment = p.Comment,
-          CellControllerProgramName = p.CellControllerProgramName
+          CellControllerProgramName = p.CellControllerProgramName,
+          MachineGroupName = p.MachineGroupName
         }).ToList();
     }
 

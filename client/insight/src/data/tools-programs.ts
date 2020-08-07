@@ -231,7 +231,7 @@ export async function calcProgramSummary(
   const progToPart = LazySeq.ofIterable(store.getState().Events.last30.cycles.active_cycle_times)
     .flatMap(([partAndProc, ops]) =>
       LazySeq.ofIterable(ops.keySet()).map((op) => ({
-        op: op.operation,
+        op: new StationOperation(op.statGroup, op.operation),
         part: new PartAndStationOperation(partAndProc.part, partAndProc.proc, op.statGroup, op.operation),
       }))
     )
@@ -244,7 +244,7 @@ export async function calcProgramSummary(
     time: new Date(),
     programs: LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
       .map((prog) => {
-        const part = progToPart.get(prog.programName).getOrNull();
+        const part = progToPart.get(new StationOperation(prog.machineGroupName, prog.programName)).getOrNull();
         return {
           programName: prog.programName,
           cellControllerProgramName: prog.cellControllerProgramName,
