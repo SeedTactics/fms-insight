@@ -1,0 +1,30 @@
+{
+  "17852": {
+    "tool1": {
+      "ToolUseDuringCycle": "PT7M",
+      "TotalToolUseAtEndOfCycle": "PT25M"
+    }
+  },
+  "17964": {
+    "tool1": {
+      "ToolUseDuringCycle": "PT6M",
+      "TotalToolUseAtEndOfCycle": "PT12M"
+    }
+  },
+  "13272": {
+    "tool2": {
+      "ToolUseDuringCycle": "PT4M30S",
+      "TotalToolUseAtEndOfCycle": "PT50M"
+    },
+    "tool3": {
+      "ToolUseDuringCycle": "PT8M",
+      "TotalToolUseAtEndOfCycle": "PT30M"
+    }
+  },
+  "13355": {
+    "tool2": {
+      "ToolUseDuringCycle": "PT2M",
+      "TotalToolUseAtEndOfCycle": "PT22M"
+    }
+  }
+}

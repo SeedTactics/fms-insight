@@ -66,6 +66,7 @@ import MoneyIcon from "@material-ui/icons/AttachMoney";
 import MenuIcon from "@material-ui/icons/Menu";
 import CheckIcon from "@material-ui/icons/CheckCircle";
 import PersonIcon from "@material-ui/icons/Person";
+import ProgramIcon from "@material-ui/icons/Receipt";
 import ToolIcon from "@material-ui/icons/Dns";
 import { User } from "oidc-client";
 
@@ -311,7 +312,7 @@ function DemoNav(p: HeaderNavProps) {
         onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Programs, curSt: p.routeState })}
       >
         <ListItemIcon>
-          <ToolIcon />
+          <ProgramIcon />
         </ListItemIcon>
         <ListItemText>Programs</ListItemText>
       </ListItem>

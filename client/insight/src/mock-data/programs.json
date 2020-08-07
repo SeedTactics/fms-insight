@@ -1,0 +1,28 @@
+[
+  {
+    "MachineGroupName": "Machine",
+    "ProgramName": "100",
+    "CellControllerProgramName": "100",
+    "Revision": null,
+    "Comment": "program 100 comment"
+  },
+  {
+    "MachineGroupName": "Machine",
+    "ProgramName": "200",
+    "CellControllerProgramName": "200",
+    "Revision": null,
+    "Comment": "comment for 200"
+  },
+  {
+    "MachineGroupName": "Machine",
+    "ProgramName": "300",
+    "Revision": null,
+    "CellControllerProgramName": "300"
+  },
+  {
+    "MachineGroupName": "Machine",
+    "ProgramName": "400",
+    "CellControllerProgramName": "400",
+    "Revision": null
+  }
+]

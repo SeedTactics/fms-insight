@@ -38,7 +38,7 @@ import CardContent from "@material-ui/core/CardContent";
 import TimeAgo from "react-timeago";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import CardHeader from "@material-ui/core/CardHeader";
-import ProgramIcon from "@material-ui/icons/Storage";
+import ProgramIcon from "@material-ui/icons/Receipt";
 import CodeIcon from "@material-ui/icons/Code";
 import Table from "@material-ui/core/Table";
 import TableHead from "@material-ui/core/TableHead";
@@ -69,6 +69,7 @@ import DialogTitle from "@material-ui/core/DialogTitle";
 import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
 import hljs from "highlight.js/lib/core";
+import { useIsDemo } from "../IsDemo";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -505,9 +506,10 @@ export function ProgramReportPage() {
     document.title = "Programs - FMS Insight";
   }, []);
   const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<Error | string | null>(null);
   const calcProgramReport = useCalcProgramReport();
   const report = useRecoilValue(currentProgramReport);
+  const demo = useIsDemo();
 
   const loadPrograms = React.useCallback(async () => {
     setLoading(true);
@@ -521,13 +523,21 @@ export function ProgramReportPage() {
     }
   }, [setLoading, setError, calcProgramReport]);
 
+  React.useEffect(() => {
+    if (demo && report === null) {
+      loadPrograms();
+    }
+  }, []);
+
   return (
     <>
-      <ProgNavHeader loading={loading} loadPrograms={loadPrograms} refreshTime={report?.time ?? null} />
+      {demo ? undefined : (
+        <ProgNavHeader loading={loading} loadPrograms={loadPrograms} refreshTime={report?.time ?? null} />
+      )}
       <main style={{ padding: "24px" }}>
         {error != null ? (
           <Card>
-            <CardContent>{error}</CardContent>
+            <CardContent>{typeof error === "string" ? error : error?.message}</CardContent>
           </Card>
         ) : undefined}
         {report !== null ? (
