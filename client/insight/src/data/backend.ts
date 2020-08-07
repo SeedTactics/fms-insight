@@ -130,7 +130,7 @@ export interface LogAPI {
 
 export interface MachineAPI {
   getToolsInMachines(): Promise<ReadonlyArray<Readonly<api.IToolInMachine>>>;
-  getProgramsInCellController(): Promise<ReadonlyArray<Readonly<api.ProgramInCellController>>>;
+  getProgramsInCellController(): Promise<ReadonlyArray<Readonly<api.IProgramInCellController>>>;
   getProgramRevisionContent(program: string, revision: number): Promise<string>;
   getLatestProgramRevisionContent(program: string): Promise<string>;
 }
@@ -191,6 +191,8 @@ export interface MockData {
   readonly jobs: Readonly<api.IHistoricData>;
   readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
   readonly events: Promise<Readonly<api.ILogEntry>[]>;
+  readonly tools?: ReadonlyArray<Readonly<api.IToolInMachine>>;
+  readonly programs?: ReadonlyArray<Readonly<api.IProgramInCellController>>;
 }
 
 function initMockBackend(data: Promise<MockData>) {
@@ -536,16 +538,16 @@ function initMockBackend(data: Promise<MockData>) {
 
   MachineBackend = {
     getToolsInMachines() {
-      return Promise.resolve([]);
+      return data.then((d) => d.tools ?? []);
     },
     getProgramsInCellController() {
-      return Promise.resolve([]);
+      return data.then((d) => d.programs ?? []);
     },
-    getProgramRevisionContent() {
-      return Promise.resolve("");
+    getProgramRevisionContent(program: string) {
+      return Promise.resolve("GCODE for " + program + " would be here");
     },
-    getLatestProgramRevisionContent() {
-      return Promise.resolve("");
+    getLatestProgramRevisionContent(program: string) {
+      return Promise.resolve("GCODE for " + program + " would be here");
     },
   };
 }

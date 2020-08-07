@@ -51,7 +51,7 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
 async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const evtJson: string = require("./events-json.txt");
-  let evtsSeq: LazySeq<object>;
+  let evtsSeq: LazySeq<api.ILogEntry>;
   if (evtJson.startsWith("[")) {
     // jest loads the contents as a string
     evtsSeq = LazySeq.ofIterable(JSON.parse(evtJson));
@@ -62,9 +62,12 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
     evtsSeq = LazySeq.ofIterable(rawEvts);
   }
 
+  const toolUse = require("./tool-use.json");
+
   return evtsSeq
-    .map((evt: object) => {
-      const e = api.LogEntry.fromJS(evt);
+    .map((evt: api.ILogEntry) => {
+      const tools = toolUse[evt.counter];
+      const e = api.LogEntry.fromJS(tools ? { ...evt, tools } : evt);
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
     })
@@ -101,6 +104,8 @@ export interface MockData {
   readonly jobs: Readonly<api.IHistoricData>;
   readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
   readonly events: Promise<Readonly<api.ILogEntry>[]>;
+  readonly tools?: ReadonlyArray<Readonly<api.IToolInMachine>>;
+  readonly programs?: ReadonlyArray<Readonly<api.IProgramInCellController>>;
 }
 
 export function loadMockData(offsetSeconds: number): MockData {
@@ -149,5 +154,7 @@ export function loadMockData(offsetSeconds: number): MockData {
     jobs: historic,
     workorders: new Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>(),
     events: loadEventsJson(offsetSeconds),
+    tools: require("./tools.json").map(api.ToolInMachine.fromJS),
+    programs: require("./programs.json").map(api.ProgramInCellController.fromJS),
   };
 }

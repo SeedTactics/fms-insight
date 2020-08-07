@@ -57,6 +57,7 @@ import { PartIdenticon } from "../station-monitor/Material";
 import clsx from "clsx";
 import { Vector } from "prelude-ts";
 import { useRecoilValue } from "recoil";
+import { useIsDemo } from "../IsDemo";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -363,9 +364,10 @@ export function ToolReportPage() {
     document.title = "Tool Report - FMS Insight";
   }, []);
   const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<Error | string | null>(null);
   const calcToolReport = useCalcToolReport();
   const report = useRecoilValue(currentToolReport);
+  const demo = useIsDemo();
 
   const loadTools = React.useCallback(async () => {
     setLoading(true);
@@ -379,13 +381,19 @@ export function ToolReportPage() {
     }
   }, [setLoading, setError, calcToolReport]);
 
+  React.useEffect(() => {
+    if (demo && report === null) {
+      loadTools();
+    }
+  }, []);
+
   return (
     <>
-      <ToolNavHeader loading={loading} loadTools={loadTools} refreshTime={report?.time ?? null} />
+      {demo ? undefined : <ToolNavHeader loading={loading} loadTools={loadTools} refreshTime={report?.time ?? null} />}
       <main style={{ padding: "24px" }}>
         {error != null ? (
           <Card>
-            <CardContent>{error}</CardContent>
+            <CardContent>{typeof error === "string" ? error : error?.message}</CardContent>
           </Card>
         ) : undefined}
         {report !== null ? (
