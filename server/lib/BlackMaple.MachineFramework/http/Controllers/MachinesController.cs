@@ -78,7 +78,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("program/{programName}/revisions")]
-    public List<ProgramRevision> GetProgramRevisionsInDescendingOrderOfRevision(string programName, [FromQuery] int count, [FromQuery] int? revisionToStart = null)
+    public List<ProgramRevision> GetProgramRevisionsInDescendingOrderOfRevision(string programName, [FromQuery] int count, [FromQuery] long? revisionToStart = null)
     {
       if (_machControl == null)
       {
@@ -91,7 +91,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("program/{programName}/revision/{revision}/content")]
-    public string GetProgramRevisionContent(string programName, int revision)
+    public string GetProgramRevisionContent(string programName, long revision)
     {
       if (_machControl == null)
       {
