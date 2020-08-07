@@ -2522,6 +2522,54 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public List<MachineWatchInterface.ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(string program, int count, long? startRevision)
+    {
+      count = Math.Min(count, 100);
+      lock (_cfg)
+      {
+        using (var cmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
+        {
+          cmd.Transaction = trans;
+          if (startRevision.HasValue)
+          {
+            cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
+                                " WHERE ProgramName = $prog AND ProgramRevision <= $rev " +
+                                " ORDER BY ProgramRevision DESC " +
+                                " LIMIT $cnt";
+            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+            cmd.Parameters.Add("rev", SqliteType.Integer).Value = startRevision.Value;
+            cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
+          }
+          else
+          {
+            cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
+                                " WHERE ProgramName = $prog " +
+                                " ORDER BY ProgramRevision DESC " +
+                                " LIMIT $cnt";
+            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+            cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
+          }
+
+          using (var reader = cmd.ExecuteReader())
+          {
+            var ret = new List<MachineWatchInterface.ProgramRevision>();
+            while (reader.Read())
+            {
+              ret.Add(new MachineWatchInterface.ProgramRevision
+              {
+                ProgramName = program,
+                Revision = reader.GetInt64(0),
+                Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
+                CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+              });
+            }
+            return ret;
+          }
+        }
+      }
+    }
+
     public MachineWatchInterface.ProgramRevision LoadMostRecentProgram(string program)
     {
       lock (_cfg)

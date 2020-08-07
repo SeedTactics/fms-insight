@@ -1028,6 +1028,43 @@ namespace MachineWatchTest
         Comment = "bbb comment rev7",
       });
       _jobDB.LoadProgramContent("bbb", 7).Should().Be("bbb program content rev7");
+
+      // loading all revisions
+      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 2, startRevision: null)
+        .Should().BeEquivalentTo(new[] {
+          new ProgramRevision()
+          {
+            ProgramName = "aaa",
+            Revision = 2,
+            Comment = "aaa comment rev 2",
+          },
+          new ProgramRevision()
+          {
+            ProgramName = "aaa",
+            Revision = 1,
+            Comment = "aaa comment",
+          }
+        }, options => options.WithStrictOrdering());
+      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 1, startRevision: null)
+        .Should().BeEquivalentTo(new[] {
+          new ProgramRevision()
+          {
+            ProgramName = "aaa",
+            Revision = 2,
+            Comment = "aaa comment rev 2",
+          }
+        }, options => options.WithStrictOrdering());
+      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 2, startRevision: 1)
+        .Should().BeEquivalentTo(new[] {
+          new ProgramRevision()
+          {
+            ProgramName = "aaa",
+            Revision = 1,
+            Comment = "aaa comment",
+          }
+        }, options => options.WithStrictOrdering());
+
+      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("wesrfohergh", 10000, null).Should().BeEmpty();
     }
 
     private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts, IEnumerable<PartWorkorder> works)
