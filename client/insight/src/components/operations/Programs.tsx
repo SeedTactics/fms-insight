@@ -52,6 +52,7 @@ import {
   CellControllerProgram,
   programToShowContent,
   programContent,
+  ProgramReport,
 } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
@@ -61,7 +62,6 @@ import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
 import { PartIdenticon } from "../station-monitor/Material";
-import { Vector } from "prelude-ts";
 import { useRecoilValue, useSetRecoilState, useRecoilState, useRecoilValueLoadable } from "recoil";
 import Dialog from "@material-ui/core/Dialog";
 import DialogContent from "@material-ui/core/DialogContent";
@@ -72,6 +72,8 @@ import hljs from "highlight.js/lib/core";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
+  readonly showCellCtrlCol: boolean;
+  readonly showRevCol: boolean;
 }
 
 const useRowStyles = makeStyles({
@@ -99,10 +101,23 @@ const useRowStyles = makeStyles({
   },
 });
 
+function programFilename(program: string): string {
+  if (program.length === 0) return "";
+
+  const idx = program.lastIndexOf("\\");
+  if (idx >= 0 && idx < program.length - 2) {
+    return program.substr(idx + 1);
+  } else {
+    return program;
+  }
+}
+
 function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
   const classes = useRowStyles();
   const setProgramToShowContent = useSetRecoilState(programToShowContent);
+
+  const numCols = 8 + (props.showCellCtrlCol ? 1 : 0) + (props.showRevCol ? 1 : 0);
 
   return (
     <>
@@ -114,8 +129,10 @@ function ProgramRow(props: ProgramRowProps) {
             </IconButton>
           )}
         </TableCell>
-        <TableCell>{props.program.programName}</TableCell>
-        <TableCell>{props.program.cellControllerProgramName}</TableCell>
+        <TableCell>{programFilename(props.program.programName)}</TableCell>
+        {props.showCellCtrlCol ? (
+          <TableCell>{programFilename(props.program.cellControllerProgramName)}</TableCell>
+        ) : undefined}
         <TableCell>
           {props.program.partName !== null ? (
             <div className={classes.partNameContainer}>
@@ -127,7 +144,9 @@ function ProgramRow(props: ProgramRowProps) {
           ) : undefined}
         </TableCell>
         <TableCell>{props.program.comment ?? ""}</TableCell>
-        <TableCell>{props.program.revision === null ? "" : props.program.revision.toFixed()}</TableCell>
+        {props.showRevCol ? (
+          <TableCell>{props.program.revision === null ? "" : props.program.revision.toFixed()}</TableCell>
+        ) : undefined}
         <TableCell align="right">
           {props.program.statisticalCycleTime === null
             ? ""
@@ -144,13 +163,15 @@ function ProgramRow(props: ProgramRowProps) {
             : props.program.statisticalCycleTime.MAD_belowMinutes.toFixed(2)}
         </TableCell>
         <TableCell>
-          <IconButton size="small" onClick={() => setProgramToShowContent(props.program)}>
-            <CodeIcon />
-          </IconButton>
+          <Tooltip title="Load Program Content">
+            <IconButton size="small" onClick={() => setProgramToShowContent(props.program)}>
+              <CodeIcon />
+            </IconButton>
+          </Tooltip>
         </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell className={classes.collapseCell} colSpan={10}>
+        <TableCell className={classes.collapseCell} colSpan={numCols}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <div className={classes.detailContainer}>
               {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
@@ -180,7 +201,7 @@ function ProgramRow(props: ProgramRowProps) {
 }
 
 interface ProgramTableProps {
-  readonly programs: Vector<CellControllerProgram>;
+  readonly report: ProgramReport;
 }
 
 type SortColumn =
@@ -197,14 +218,14 @@ function ProgramSummaryTable(props: ProgramTableProps) {
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
-  const rows = props.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
+  const rows = props.report.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
     let c: number = 0;
     switch (sortCol) {
       case "ProgramName":
-        c = a.programName.localeCompare(b.programName);
+        c = programFilename(a.programName).localeCompare(programFilename(b.programName));
         break;
       case "CellProgName":
-        c = a.cellControllerProgramName.localeCompare(b.cellControllerProgramName);
+        c = programFilename(a.cellControllerProgramName).localeCompare(programFilename(b.cellControllerProgramName));
         break;
       case "Comment":
         if (a.comment === null && b.comment === null) {
@@ -307,15 +328,17 @@ function ProgramSummaryTable(props: ProgramTableProps) {
               Program Name
             </TableSortLabel>
           </TableCell>
-          <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
-            <TableSortLabel
-              active={sortCol === "CellProgName"}
-              direction={sortDir}
-              onClick={() => toggleSort("CellProgName")}
-            >
-              Cell Controller Program
-            </TableSortLabel>
-          </TableCell>
+          {props.report.cellNameDifferentFromProgName ? (
+            <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
+              <TableSortLabel
+                active={sortCol === "CellProgName"}
+                direction={sortDir}
+                onClick={() => toggleSort("CellProgName")}
+              >
+                Cell Controller Program
+              </TableSortLabel>
+            </TableCell>
+          ) : undefined}
           <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
             <TableSortLabel active={sortCol === "PartName"} direction={sortDir} onClick={() => toggleSort("PartName")}>
               Part
@@ -326,11 +349,17 @@ function ProgramSummaryTable(props: ProgramTableProps) {
               Comment
             </TableSortLabel>
           </TableCell>
-          <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
-            <TableSortLabel active={sortCol === "Revision"} direction={sortDir} onClick={() => toggleSort("Revision")}>
-              Revision
-            </TableSortLabel>
-          </TableCell>
+          {props.report.hasRevisions ? (
+            <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
+              <TableSortLabel
+                active={sortCol === "Revision"}
+                direction={sortDir}
+                onClick={() => toggleSort("Revision")}
+              >
+                Revision
+              </TableSortLabel>
+            </TableCell>
+          ) : undefined}
           <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
             <TableSortLabel
               active={sortCol === "MedianTime"}
@@ -363,7 +392,12 @@ function ProgramSummaryTable(props: ProgramTableProps) {
       </TableHead>
       <TableBody>
         {LazySeq.ofIterable(rows).map((program, idx) => (
-          <ProgramRow key={idx} program={program} />
+          <ProgramRow
+            key={idx}
+            program={program}
+            showCellCtrlCol={props.report.cellNameDifferentFromProgName}
+            showRevCol={props.report.hasRevisions}
+          />
         ))}
       </TableBody>
     </Table>
@@ -383,7 +417,9 @@ function ProgramContentDialog() {
 
   return (
     <Dialog open={program !== null} onClose={() => setProgramToShowContent(null)}>
-      <DialogTitle>Program</DialogTitle>
+      <DialogTitle>
+        {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}
+      </DialogTitle>
       <DialogContent>
         {ct.state === "hasError" ? (
           <p>{ct.contents}</p>
@@ -505,7 +541,7 @@ export function ProgramReportPage() {
               }
             />
             <CardContent>
-              <ProgramSummaryTable programs={report.programs} />
+              <ProgramSummaryTable report={report} />
             </CardContent>
           </Card>
         ) : undefined}
