@@ -47,12 +47,11 @@ import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Tooltip from "@material-ui/core/Tooltip";
 import {
-  useCalcProgramReport,
+  programReportRefreshTime,
   currentProgramReport,
   CellControllerProgram,
   programToShowContent,
   programContent,
-  ProgramReport,
 } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
@@ -62,7 +61,7 @@ import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
 import { PartIdenticon } from "../station-monitor/Material";
-import { useRecoilValue, useSetRecoilState, useRecoilState, useRecoilValueLoadable } from "recoil";
+import { useSetRecoilState, useRecoilState, useRecoilValueLoadable, useRecoilValue } from "recoil";
 import Dialog from "@material-ui/core/Dialog";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
@@ -70,6 +69,7 @@ import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
 import hljs from "highlight.js/lib/core";
 import { useIsDemo } from "../IsDemo";
+import { DisplayLoadingAndErrorCard, Loading } from "../ErrorsAndLoading";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -201,10 +201,6 @@ function ProgramRow(props: ProgramRowProps) {
   );
 }
 
-interface ProgramTableProps {
-  readonly report: ProgramReport;
-}
-
 type SortColumn =
   | "ProgramName"
   | "CellProgName"
@@ -215,11 +211,16 @@ type SortColumn =
   | "DeviationAbove"
   | "DeviationBelow";
 
-function ProgramSummaryTable(props: ProgramTableProps) {
+function ProgramSummaryTable() {
+  const report = useRecoilValue(currentProgramReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
-  const rows = props.report.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
+  if (report === null) {
+    return <div />;
+  }
+
+  const rows = report.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
     let c: number = 0;
     switch (sortCol) {
       case "ProgramName":
@@ -316,92 +317,112 @@ function ProgramSummaryTable(props: ProgramTableProps) {
   }
 
   return (
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell />
-          <TableCell sortDirection={sortCol === "ProgramName" ? sortDir : false}>
-            <TableSortLabel
-              active={sortCol === "ProgramName"}
-              direction={sortDir}
-              onClick={() => toggleSort("ProgramName")}
-            >
-              Program Name
-            </TableSortLabel>
-          </TableCell>
-          {props.report.cellNameDifferentFromProgName ? (
-            <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
-              <TableSortLabel
-                active={sortCol === "CellProgName"}
-                direction={sortDir}
-                onClick={() => toggleSort("CellProgName")}
-              >
-                Cell Controller Program
-              </TableSortLabel>
-            </TableCell>
-          ) : undefined}
-          <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
-            <TableSortLabel active={sortCol === "PartName"} direction={sortDir} onClick={() => toggleSort("PartName")}>
-              Part
-            </TableSortLabel>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "Comment" ? sortDir : false}>
-            <TableSortLabel active={sortCol === "Comment"} direction={sortDir} onClick={() => toggleSort("Comment")}>
-              Comment
-            </TableSortLabel>
-          </TableCell>
-          {props.report.hasRevisions ? (
-            <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
-              <TableSortLabel
-                active={sortCol === "Revision"}
-                direction={sortDir}
-                onClick={() => toggleSort("Revision")}
-              >
-                Revision
-              </TableSortLabel>
-            </TableCell>
-          ) : undefined}
-          <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
-            <TableSortLabel
-              active={sortCol === "MedianTime"}
-              direction={sortDir}
-              onClick={() => toggleSort("MedianTime")}
-            >
-              Median Time / Material (min)
-            </TableSortLabel>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "DeviationAbove" ? sortDir : false} align="right">
-            <TableSortLabel
-              active={sortCol === "DeviationAbove"}
-              direction={sortDir}
-              onClick={() => toggleSort("DeviationAbove")}
-            >
-              Deviation Above Median
-            </TableSortLabel>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "DeviationBelow" ? sortDir : false} align="right">
-            <TableSortLabel
-              active={sortCol === "DeviationBelow"}
-              direction={sortDir}
-              onClick={() => toggleSort("DeviationBelow")}
-            >
-              Deviation Below Median
-            </TableSortLabel>
-          </TableCell>
-          <TableCell />
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {LazySeq.ofIterable(rows).map((program, idx) => (
-          <ProgramRow
-            key={idx}
-            program={program}
-            showCellCtrlCol={props.report.cellNameDifferentFromProgName}
-            showRevCol={props.report.hasRevisions}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <ProgramIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
+          </div>
+        }
+      />
+      <CardContent>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell />
+              <TableCell sortDirection={sortCol === "ProgramName" ? sortDir : false}>
+                <TableSortLabel
+                  active={sortCol === "ProgramName"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("ProgramName")}
+                >
+                  Program Name
+                </TableSortLabel>
+              </TableCell>
+              {report.cellNameDifferentFromProgName ? (
+                <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
+                  <TableSortLabel
+                    active={sortCol === "CellProgName"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("CellProgName")}
+                  >
+                    Cell Controller Program
+                  </TableSortLabel>
+                </TableCell>
+              ) : undefined}
+              <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
+                <TableSortLabel
+                  active={sortCol === "PartName"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("PartName")}
+                >
+                  Part
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "Comment" ? sortDir : false}>
+                <TableSortLabel
+                  active={sortCol === "Comment"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("Comment")}
+                >
+                  Comment
+                </TableSortLabel>
+              </TableCell>
+              {report.hasRevisions ? (
+                <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
+                  <TableSortLabel
+                    active={sortCol === "Revision"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("Revision")}
+                  >
+                    Revision
+                  </TableSortLabel>
+                </TableCell>
+              ) : undefined}
+              <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
+                <TableSortLabel
+                  active={sortCol === "MedianTime"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("MedianTime")}
+                >
+                  Median Time / Material (min)
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "DeviationAbove" ? sortDir : false} align="right">
+                <TableSortLabel
+                  active={sortCol === "DeviationAbove"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("DeviationAbove")}
+                >
+                  Deviation Above Median
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "DeviationBelow" ? sortDir : false} align="right">
+                <TableSortLabel
+                  active={sortCol === "DeviationBelow"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("DeviationBelow")}
+                >
+                  Deviation Below Median
+                </TableSortLabel>
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {LazySeq.ofIterable(rows).map((program, idx) => (
+              <ProgramRow
+                key={idx}
+                program={program}
+                showCellCtrlCol={report.cellNameDifferentFromProgName}
+                showRevCol={report.hasRevisions}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -425,10 +446,7 @@ function ProgramContentDialog() {
         {ct.state === "hasError" ? (
           <p>{ct.contents}</p>
         ) : ct.state === "loading" ? (
-          <div style={{ textAlign: "center", marginTop: "4em" }}>
-            <CircularProgress />
-            <p>Loading</p>
-          </div>
+          <Loading />
         ) : (
           <pre ref={preElement}>
             <code className="gcode">{ct.contents}</code>
@@ -442,14 +460,19 @@ function ProgramContentDialog() {
   );
 }
 
-interface ProgNavHeaderProps {
-  readonly refreshTime: Date | null;
-  readonly loading: boolean;
-  readonly loadPrograms: () => void;
-}
+function ProgNavHeader() {
+  const [reloadTime, setReloadTime] = useRecoilState(programReportRefreshTime);
+  const report = useRecoilValueLoadable(currentProgramReport);
+  const demo = useIsDemo();
+  const loading = report.state === "loading";
 
-function ProgNavHeader(props: ProgNavHeaderProps) {
-  if (props.refreshTime === null) {
+  React.useEffect(() => {
+    if (demo && reloadTime === null) {
+      setReloadTime(new Date());
+    }
+  }, []);
+
+  if (reloadTime === null) {
     return (
       <main style={{ margin: "2em", display: "flex", justifyContent: "center" }}>
         <Fab
@@ -457,20 +480,13 @@ function ProgNavHeader(props: ProgNavHeaderProps) {
           size="large"
           variant="extended"
           style={{ margin: "2em" }}
-          onClick={props.loadPrograms}
-          disabled={props.loading}
+          onClick={() => setReloadTime(new Date())}
+          disabled={loading}
         >
-          {props.loading ? (
-            <>
-              <CircularProgress size={10} style={{ marginRight: "1em" }} />
-              Loading
-            </>
-          ) : (
-            <>
-              <RefreshIcon style={{ marginRight: "1em" }} />
-              Load Programs
-            </>
-          )}
+          <>
+            <RefreshIcon style={{ marginRight: "1em" }} />
+            Load Programs
+          </>
         </Fab>
       </main>
     );
@@ -488,13 +504,13 @@ function ProgNavHeader(props: ProgNavHeaderProps) {
       >
         <Tooltip title="Refresh Tools">
           <div>
-            <IconButton onClick={props.loadPrograms} disabled={props.loading} size="small">
-              {props.loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
+            <IconButton onClick={() => setReloadTime(new Date())} disabled={loading} size="small">
+              {loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
             </IconButton>
           </div>
         </Tooltip>
         <span style={{ marginLeft: "1em" }}>
-          Programs from <TimeAgo date={props.refreshTime} />
+          Programs from <TimeAgo date={reloadTime} />
         </span>
       </nav>
     );
@@ -505,56 +521,15 @@ export function ProgramReportPage() {
   React.useEffect(() => {
     document.title = "Programs - FMS Insight";
   }, []);
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<Error | string | null>(null);
-  const calcProgramReport = useCalcProgramReport();
-  const report = useRecoilValue(currentProgramReport);
   const demo = useIsDemo();
-
-  const loadPrograms = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await calcProgramReport();
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [setLoading, setError, calcProgramReport]);
-
-  React.useEffect(() => {
-    if (demo && report === null) {
-      loadPrograms();
-    }
-  }, []);
 
   return (
     <>
-      {demo ? undefined : (
-        <ProgNavHeader loading={loading} loadPrograms={loadPrograms} refreshTime={report?.time ?? null} />
-      )}
+      {demo ? undefined : <ProgNavHeader />}
       <main style={{ padding: "24px" }}>
-        {error != null ? (
-          <Card>
-            <CardContent>{typeof error === "string" ? error : error?.message}</CardContent>
-          </Card>
-        ) : undefined}
-        {report !== null ? (
-          <Card raised>
-            <CardHeader
-              title={
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-                  <ProgramIcon style={{ color: "#6D4C41" }} />
-                  <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
-                </div>
-              }
-            />
-            <CardContent>
-              <ProgramSummaryTable report={report} />
-            </CardContent>
-          </Card>
-        ) : undefined}
+        <DisplayLoadingAndErrorCard>
+          <ProgramSummaryTable />
+        </DisplayLoadingAndErrorCard>
       </main>
       <ProgramContentDialog />
     </>

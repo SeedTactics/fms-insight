@@ -43,7 +43,7 @@ import * as websocket from "./websocket";
 import { initBarcodeListener } from "./barcode";
 
 import { createStore, StoreState, StoreActions, ACPayload, mkACF } from "./typed-redux";
-import { applyMiddleware, compose } from "redux";
+import * as redux from "redux";
 import * as reactRedux from "react-redux";
 import { middleware } from "./middleware";
 
@@ -61,6 +61,8 @@ export const connect: InitToStore<typeof initStore>["connect"] = reactRedux.conn
 export const mkAC = mkACF<AppActionBeforeMiddleware>();
 export const useSelector: reactRedux.TypedUseSelectorHook<Store> = reactRedux.useSelector;
 
+export let reduxStore: redux.Store<Store> | null = null;
+
 export function initStore({ useRouter }: { useRouter: boolean }) {
   const router = useRouter
     ? connectRoutes(routes.routeMap, {
@@ -72,7 +74,7 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
   const composeEnhancers =
     typeof window === "object" && (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
       ? (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
-      : compose;
+      : redux.compose;
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const store = createStore(
@@ -91,8 +93,8 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
     },
     middleware,
     router
-      ? (m) => composeEnhancers(router.enhancer, applyMiddleware(m, router.middleware))
-      : (m) => composeEnhancers(applyMiddleware(m))
+      ? (m) => composeEnhancers(router.enhancer, redux.applyMiddleware(m, router.middleware))
+      : (m) => composeEnhancers(redux.applyMiddleware(m))
   );
 
   initBarcodeListener(store.dispatch.bind(store));
@@ -104,5 +106,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
     matBinsOnStateChange(store.getState().AllMatBins);
   });
 
+  reduxStore = store as any;
   return store;
 }
