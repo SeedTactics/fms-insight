@@ -63,9 +63,6 @@ namespace BlackMaple.MachineWatchInterface
   public class ProgramInCellController
   {
     [DataMember(IsRequired = true)]
-    public string MachineGroupName { get; set; }
-
-    [DataMember(IsRequired = true)]
     public string CellControllerProgramName { get; set; }
 
     [DataMember(IsRequired = true)]

@@ -53,14 +53,14 @@ namespace MazakMachineInterface
 
     public List<ProgramInCellController> CurrentProgramsInCellController()
     {
+      var programs = _readData.LoadPrograms();
       using (var jobDb = _jobDbCfg.OpenConnection())
       {
-        return _readData.LoadPrograms().Select(p =>
+        return programs.Select(p =>
         {
           var prog = jobDb.ProgramFromCellControllerProgram(p.MainProgram);
           return new ProgramInCellController()
           {
-            MachineGroupName = _machGroupName.MachineGroupName,
             CellControllerProgramName = p.MainProgram,
             ProgramName = prog?.ProgramName ?? p.MainProgram,
             Revision = prog?.Revision,

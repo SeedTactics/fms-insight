@@ -3222,14 +3222,10 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "MachineGroupName",
         "CellControllerProgramName",
         "ProgramName"
       ],
       "properties": {
-        "MachineGroupName": {
-          "type": "string"
-        },
         "CellControllerProgramName": {
           "type": "string"
         },

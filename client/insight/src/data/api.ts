@@ -4438,7 +4438,6 @@ export interface IToolInMachine {
 }
 
 export class ProgramInCellController implements IProgramInCellController {
-    machineGroupName!: string;
     cellControllerProgramName!: string;
     programName!: string;
     revision?: number | undefined;
@@ -4455,7 +4454,6 @@ export class ProgramInCellController implements IProgramInCellController {
 
     init(data?: any) {
         if (data) {
-            this.machineGroupName = data["MachineGroupName"];
             this.cellControllerProgramName = data["CellControllerProgramName"];
             this.programName = data["ProgramName"];
             this.revision = data["Revision"];
@@ -4472,7 +4470,6 @@ export class ProgramInCellController implements IProgramInCellController {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["MachineGroupName"] = this.machineGroupName;
         data["CellControllerProgramName"] = this.cellControllerProgramName;
         data["ProgramName"] = this.programName;
         data["Revision"] = this.revision;
@@ -4482,7 +4479,6 @@ export class ProgramInCellController implements IProgramInCellController {
 }
 
 export interface IProgramInCellController {
-    machineGroupName: string;
     cellControllerProgramName: string;
     programName: string;
     revision?: number | undefined;

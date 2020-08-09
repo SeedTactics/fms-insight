@@ -258,18 +258,18 @@ export async function calcProgramReport(
   const progToPart = LazySeq.ofIterable(activeTimes)
     .flatMap(([partAndProc, ops]) =>
       LazySeq.ofIterable(ops.keySet()).map((op) => ({
-        op: new StationOperation(op.statGroup, op.operation),
+        program: op.operation,
         part: new PartAndStationOperation(partAndProc.part, partAndProc.proc, op.statGroup, op.operation),
       }))
     )
     .toMap(
-      (x) => [x.op, x.part],
+      (x) => [x.program, x.part],
       (_, x) => x
     );
 
   const programs = LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
     .map((prog) => {
-      const part = progToPart.get(new StationOperation(prog.machineGroupName, prog.programName)).getOrNull();
+      const part = progToPart.get(prog.programName).getOrNull();
       return {
         programName: prog.programName,
         cellControllerProgramName: prog.cellControllerProgramName,
