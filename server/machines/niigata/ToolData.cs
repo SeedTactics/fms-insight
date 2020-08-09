@@ -36,18 +36,65 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.IO;
+using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
+  public class NiigataToolData
+  {
+    public uint ToolNum { get; set; }
+    public int Pocket { get; set; }
+    public uint Group { get; set; }
+    public uint Serial { get; set; }
+    public short GNum { get; set; }
+    public int LifeTime { get; set; }
+    public int RestTime { get; set; }
+    public int LoadMax { get; set; }
+    public int LoadMore { get; set; }
+    public byte Meas { get; set; }
+    public byte LifeAlarm { get; set; }
+    public byte BrokenAlarm { get; set; }
+    public byte CuttingAlarm { get; set; }
+    public byte CheckingAlarm { get; set; }
+    public byte LifeKind { get; set; }
+
+    public ToolInMachine ToToolInMachine(string machineGroup, int machineNum)
+    {
+      return new ToolInMachine()
+      {
+        MachineGroupName = machineGroup,
+        MachineNum = machineNum,
+        Pocket = Pocket,
+        ToolName = Group.ToString(),
+        CurrentUse = TimeSpan.FromSeconds(LifeTime),
+        TotalLifeTime = TimeSpan.FromSeconds(LifeTime + RestTime),
+      };
+    }
+
+    public EventLogDB.ToolPocketSnapshot ToEventDBToolSnapshot()
+    {
+      return new EventLogDB.ToolPocketSnapshot()
+      {
+
+        PocketNumber = Pocket,
+        Tool = Group.ToString(),
+        CurrentUse = TimeSpan.FromSeconds(LifeTime),
+        ToolLife = TimeSpan.FromSeconds(LifeTime + RestTime),
+      };
+    }
+  }
+
+
   public static class LoadToolData
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CncMachineConnection>();
 
-    public static void ToolsForMachine(this ICncMachineConnection cnc, int machine)
+    public static List<NiigataToolData> ToolsForMachine(this ICncMachineConnection cnc, int machine)
     {
       try
       {
-        cnc.WithConnection<int>(machine, handle =>
+        return cnc.WithConnection<List<NiigataToolData>>(machine, handle =>
         {
           byte[] buff = new byte[10084];
           CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
@@ -67,6 +114,7 @@ namespace BlackMaple.FMSInsight.Niigata
             // two bytes are igored
             beReader.ReadByte(); beReader.ReadByte();
 
+            var tools = new List<NiigataToolData>(numTools);
             for (int i = 0; i < numTools; i++)
             {
               var toolNum = beReader.ReadUInt32();
@@ -93,15 +141,37 @@ namespace BlackMaple.FMSInsight.Niigata
                 (new Span<byte>(buff, 4 + i * 28, 28)).ToArray(),
                 toolNum, gNum, lifeTm, restTm, loadMax, loadMore, meas, lifeAlrm, brokenAlrm, cuttingAlrm, checkingAlrm, lifeKind
               );
+
+              if (toolNum > 0)
+              {
+                tools.Add(new NiigataToolData()
+                {
+                  ToolNum = toolNum,
+                  Serial = serialNo,
+                  Group = groupNo,
+                  GNum = gNum,
+                  LifeTime = lifeTm,
+                  RestTime = restTm,
+                  LoadMax = loadMax,
+                  LoadMore = loadMore,
+                  Meas = meas,
+                  LifeAlarm = lifeAlrm,
+                  BrokenAlarm = brokenAlrm,
+                  CuttingAlarm = cuttingAlrm,
+                  CheckingAlarm = checkingAlrm,
+                  LifeKind = lifeKind
+                });
+              }
             }
 
-            return numTools;
+            return tools;
           }
         });
       }
       catch (Exception ex)
       {
         Log.Error(ex, "Error communicatig with machine {machine}", machine);
+        return new List<NiigataToolData>();
       }
     }
 

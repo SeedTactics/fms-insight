@@ -971,6 +971,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
         palletStateUpdated = true;
 
+        var tools = _machConnection.ToolsForMachine(
+          _stationNames.JobMachToIcc(pallet.Status.CurStation.Location.StationGroup, pallet.Status.CurStation.Location.Num)
+        );
+
         logDB.RecordMachineStart(
           mats: matOnFace.Select(m => new EventLogDB.EventLogMaterial()
           {
@@ -985,7 +989,8 @@ namespace BlackMaple.FMSInsight.Niigata
           timeUTC: nowUtc,
           extraData: !ss.JobStop.ProgramRevision.HasValue ? null : new Dictionary<string, string> {
               {"ProgramRevision", ss.JobStop.ProgramRevision.Value.ToString()}
-          }
+          },
+          pockets: tools?.Select(t => t.ToEventDBToolSnapshot())
         );
 
         foreach (var m in matOnFace)
@@ -1028,10 +1033,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
       string statName;
       int statNum;
+      IEnumerable<EventLogDB.ToolPocketSnapshot> toolsAtStart;
       if (machStart != null)
       {
         statName = machStart.LocationName;
         statNum = machStart.LocationNum;
+        toolsAtStart = logDB.ToolPocketSnapshotForCycle(machStart.Counter) ?? Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
       }
       else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
       {
@@ -1045,14 +1052,16 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           statNum = jobMc.num;
         }
+        toolsAtStart = Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
       }
       else
       {
         statName = ss.JobStop.StationGroup;
         statNum = 0;
+        toolsAtStart = Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
       }
 
-      _machConnection.ToolsForMachine(statNum);
+      var toolsAtEnd = _machConnection.ToolsForMachine(_stationNames.JobMachToIcc(statName, statNum));
 
       logDB.RecordMachineEnd(
         mats: matOnFace.Select(m => new EventLogDB.EventLogMaterial()
@@ -1071,7 +1080,8 @@ namespace BlackMaple.FMSInsight.Niigata
         active: ss.JobStop.ExpectedCycleTime,
         extraData: !ss.JobStop.ProgramRevision.HasValue ? null : new Dictionary<string, string> {
                 {"ProgramRevision", ss.JobStop.ProgramRevision.Value.ToString()}
-        }
+        },
+        tools: toolsAtEnd == null ? null : EventLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
       );
     }
 

@@ -53,6 +53,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private Dictionary<int, TimeSpan> _programTimes = new Dictionary<int, TimeSpan>();
 
     public NiigataStatus LoadNiigataStatus() => _status;
+    public Dictionary<int, ProgramEntry> LoadPrograms() => _status.Programs;
 
     public event Action<NewProgram> OnNewProgram;
     public event Action NewCurrentStatus;
