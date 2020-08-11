@@ -45,6 +45,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
+import Typography from "@material-ui/core/Typography";
 import Tooltip from "@material-ui/core/Tooltip";
 import {
   programReportRefreshTime,
@@ -52,11 +53,16 @@ import {
   CellControllerProgram,
   programToShowContent,
   programContent,
+  programToShowHistory,
 } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
+import FirstPageIcon from "@material-ui/icons/FirstPage";
+import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
+import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
+import HistoryIcon from "@material-ui/icons/History";
 import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
@@ -69,7 +75,10 @@ import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
 import hljs from "highlight.js/lib/core";
 import { useIsDemo } from "../IsDemo";
-import { DisplayLoadingAndErrorCard, Loading } from "../ErrorsAndLoading";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
+import { Vector } from "prelude-ts";
+import { IProgramRevision } from "../../data/api";
+import { MachineBackend } from "../../data/backend";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -117,6 +126,7 @@ function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
   const classes = useRowStyles();
   const setProgramToShowContent = useSetRecoilState(programToShowContent);
+  const setProgramToShowHistory = useSetRecoilState(programToShowHistory);
 
   const numCols = 8 + (props.showCellCtrlCol ? 1 : 0) + (props.showRevCol ? 1 : 0);
 
@@ -169,6 +179,13 @@ function ProgramRow(props: ProgramRowProps) {
               <CodeIcon />
             </IconButton>
           </Tooltip>
+          {props.program.revision !== null ? (
+            <Tooltip title="Revision History">
+              <IconButton size="small" onClick={() => setProgramToShowHistory(props.program)}>
+                <HistoryIcon />
+              </IconButton>
+            </Tooltip>
+          ) : undefined}
         </TableCell>
       </TableRow>
       <TableRow>
@@ -426,35 +443,256 @@ function ProgramSummaryTable() {
   );
 }
 
-function ProgramContentDialog() {
-  const [program, setProgramToShowContent] = useRecoilState(programToShowContent);
-  const ct = useRecoilValueLoadable(programContent);
+function ProgramContentCode() {
+  const ct = useRecoilValue(programContent);
   const preElement = React.useRef<HTMLPreElement>(null);
 
   React.useEffect(() => {
-    if (ct.state === "hasValue" && preElement.current) {
+    if (ct && ct !== "" && preElement.current) {
       hljs.highlightBlock(preElement.current);
     }
-  }, [ct]);
+  }, [ct, preElement.current]);
 
   return (
-    <Dialog open={program !== null} onClose={() => setProgramToShowContent(null)}>
+    <pre ref={preElement}>
+      <code className="gcode">{ct}</code>
+    </pre>
+  );
+}
+
+function ProgramContentDialog() {
+  const [program, setProgramToShowContent] = useRecoilState(programToShowContent);
+  const history = useRecoilValue(programToShowHistory);
+
+  // when history is open, content is shown on the history dialog
+  return (
+    <Dialog open={program !== null && history === null} onClose={() => setProgramToShowContent(null)} maxWidth="lg">
       <DialogTitle>
-        {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}
+        {program?.partName ? (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <PartIdenticon part={program.partName} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
+              {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}{" "}
+              <Typography variant="subtitle1" component="span">
+                ({program.partName}-{program.process ?? 1})
+              </Typography>
+            </div>
+          </div>
+        ) : (
+          <>
+            {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}
+          </>
+        )}
       </DialogTitle>
       <DialogContent>
-        {ct.state === "hasError" ? (
-          <p>{ct.contents}</p>
-        ) : ct.state === "loading" ? (
-          <Loading />
+        {program === null || history !== null ? (
+          <div />
         ) : (
-          <pre ref={preElement}>
-            <code className="gcode">{ct.contents}</code>
-          </pre>
+          <DisplayLoadingAndErrorCard>
+            <ProgramContentCode />
+          </DisplayLoadingAndErrorCard>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setProgramToShowContent(null)}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+interface ProgramRevisionTableProps {
+  readonly page: number;
+  readonly loading: boolean;
+  readonly revisions: Vector<Readonly<IProgramRevision>>;
+}
+
+const revisionsPerPage = 10;
+
+function ProgramRevisionTable(props: ProgramRevisionTableProps) {
+  const program = useRecoilValue(programToShowHistory);
+  const setProgramToShowContent = useSetRecoilState(programToShowContent);
+
+  return (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Revision</TableCell>
+          <TableCell>Comment</TableCell>
+          <TableCell>Cell Controller Program</TableCell>
+          <TableCell />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {props.loading ? (
+          <>
+            <TableRow>
+              <TableCell colSpan={4}>
+                <CircularProgress />
+              </TableCell>
+            </TableRow>
+            {LazySeq.ofRange(0, revisionsPerPage - 1).map((i) => (
+              <TableRow key={i}>
+                <TableCell colSpan={4} />
+              </TableRow>
+            ))}
+          </>
+        ) : (
+          props.revisions
+            .drop(props.page * revisionsPerPage)
+            .take(revisionsPerPage)
+            .map((rev) => (
+              <TableRow key={rev.revision}>
+                <TableCell>{rev.revision}</TableCell>
+                <TableCell>{rev.comment ?? ""}</TableCell>
+                <TableCell>{programFilename(rev.cellControllerProgramName ?? "")}</TableCell>
+                <TableCell>
+                  <Tooltip title="Load Program Content">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setProgramToShowContent({
+                          ...rev,
+                          partName: program?.partName ?? null,
+                          process: program?.process ?? null,
+                        })
+                      }
+                    >
+                      <CodeIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+interface LastPage {
+  readonly page: number;
+  readonly hasMore: boolean;
+}
+
+function ProgramHistoryDialog() {
+  const [program, setProgram] = useRecoilState(programToShowHistory);
+  const [programForContent, setProgramForContent] = useRecoilState(programToShowContent);
+
+  const [revisions, setRevisions] = React.useState<Vector<Readonly<IProgramRevision>> | null>(null);
+  const [lastLoadedPage, setLastLoadedPage] = React.useState<LastPage>({ page: 0, hasMore: false });
+  const [page, setPage] = React.useState<number>(0);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | Error | null>(null);
+
+  React.useEffect(() => {
+    if (program === null) {
+      setRevisions(null);
+      setPage(0);
+      setLastLoadedPage({ page: 0, hasMore: false });
+    } else if (program !== null && revisions === null) {
+      // load initial
+      setLoading(true);
+      setError(null);
+      MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(program.programName, revisionsPerPage, undefined)
+        .then((revs) => {
+          setRevisions(Vector.ofIterable(revs));
+          setLastLoadedPage({ page: 0, hasMore: revs.length === revisionsPerPage });
+        })
+        .catch(setError)
+        .finally(() => setLoading(false));
+    }
+  }, [program, revisions]);
+
+  function advancePage() {
+    if (page < lastLoadedPage.page) {
+      setPage(page + 1);
+    } else if (lastLoadedPage.hasMore && program !== null && revisions !== null && !revisions.isEmpty()) {
+      setLoading(true);
+      setError(null);
+      MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
+        program.programName,
+        revisionsPerPage,
+        revisions.last().getOrThrow().revision - 1
+      )
+        .then((revs) => {
+          setRevisions(revisions.appendAll(revs));
+          setLastLoadedPage({ page: page + 1, hasMore: revs.length === revisionsPerPage });
+          setPage(page + 1);
+        })
+        .catch(setError)
+        .finally(() => setLoading(false));
+    }
+  }
+
+  return (
+    <Dialog open={program !== null} onClose={() => setProgram(null)} maxWidth="lg">
+      <DialogTitle>
+        {program?.partName ? (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <PartIdenticon part={program.partName} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
+              {program.programName ?? "Program"}{" "}
+              <Typography variant="subtitle1" component="span">
+                ({program.partName}-{program.process ?? 1})
+              </Typography>
+            </div>
+          </div>
+        ) : (
+          <>{program?.programName ?? "Program"}</>
+        )}
+      </DialogTitle>
+      <DialogContent>
+        {error !== null ? (
+          <Card>
+            <CardContent>{typeof error === "string" ? error : error.message}</CardContent>
+          </Card>
+        ) : undefined}
+        {programForContent !== null ? (
+          <DisplayLoadingAndErrorCard>
+            <ProgramContentCode />
+          </DisplayLoadingAndErrorCard>
+        ) : revisions !== null ? (
+          <ProgramRevisionTable page={page} revisions={revisions} loading={loading} />
+        ) : loading ? (
+          <CircularProgress />
+        ) : undefined}
+      </DialogContent>
+      <DialogActions>
+        <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+          {programForContent === null ? (
+            <>
+              <Tooltip title="Latest Revisions">
+                <span>
+                  <IconButton onClick={() => setPage(0)} disabled={loading || page === 0}>
+                    <FirstPageIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Previous Page">
+                <span>
+                  <IconButton onClick={() => setPage(page - 1)} disabled={loading || page === 0}>
+                    <KeyboardArrowLeft />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Next Page">
+                <span>
+                  <IconButton
+                    onClick={() => advancePage()}
+                    disabled={loading || (page === lastLoadedPage.page && !lastLoadedPage.hasMore)}
+                  >
+                    <KeyboardArrowRight />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </>
+          ) : undefined}
+          <div style={{ flexGrow: 1 }} />
+          {programForContent !== null ? (
+            <Button onClick={() => setProgramForContent(null)}>Back to History</Button>
+          ) : undefined}
+          <Button onClick={() => setProgram(null)}>Close</Button>
+        </div>
       </DialogActions>
     </Dialog>
   );
@@ -532,6 +770,7 @@ export function ProgramReportPage() {
         </DisplayLoadingAndErrorCard>
       </main>
       <ProgramContentDialog />
+      <ProgramHistoryDialog />
     </>
   );
 }

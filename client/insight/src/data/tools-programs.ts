@@ -309,7 +309,14 @@ export const currentProgramReport = selector<ProgramReport | null>({
   },
 });
 
-export const programToShowContent = atom<CellControllerProgram | null>({
+export interface ProgramNameAndRevision {
+  readonly programName: string;
+  readonly revision: number | null;
+  readonly partName: string | null;
+  readonly process: number | null;
+}
+
+export const programToShowContent = atom<ProgramNameAndRevision | null>({
   key: "program-to-show-content",
   default: null,
 });
@@ -326,4 +333,15 @@ export const programContent = selector<string>({
       return await MachineBackend.getProgramRevisionContent(prog.programName, prog.revision);
     }
   },
+});
+
+export interface ProgramHistoryRequest {
+  readonly programName: string;
+  readonly partName: string | null;
+  readonly process: number | null;
+}
+
+export const programToShowHistory = atom<ProgramHistoryRequest | null>({
+  key: "program-to-show-history",
+  default: null,
 });

@@ -387,16 +387,18 @@ namespace DebugMachineWatchApiServer
 
     public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart)
     {
-      return Programs
-        .Where(p => p.ProgramName == programName && p.Revision.HasValue && (!revisionToStart.HasValue || p.Revision.Value <= revisionToStart.Value))
-        .OrderByDescending(p => p.Revision.Value)
-        .Take(count)
-        .Select(p => new ProgramRevision()
+      var start = revisionToStart.GetValueOrDefault(50);
+      if (start - count < 0)
+      {
+        count = Math.Max(1, (int)(start - 3));
+      }
+      return Enumerable.Range(0, count).Select(i =>
+        new ProgramRevision()
         {
-          ProgramName = p.ProgramName,
-          Revision = p.Revision.Value,
-          Comment = p.Comment,
-          CellControllerProgramName = p.CellControllerProgramName
+          ProgramName = programName,
+          Revision = start - i,
+          Comment = $"programName comment {start - i}",
+          CellControllerProgramName = "cell " + programName
         }).ToList();
     }
 
