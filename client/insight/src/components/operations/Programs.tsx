@@ -710,7 +710,9 @@ function ProgNavHeader() {
     }
   }, []);
 
-  if (reloadTime === null) {
+  if (demo) {
+    return <div />;
+  } else if (reloadTime === null) {
     return (
       <main style={{ margin: "2em", display: "flex", justifyContent: "center" }}>
         <Fab
@@ -759,11 +761,10 @@ export function ProgramReportPage() {
   React.useEffect(() => {
     document.title = "Programs - FMS Insight";
   }, []);
-  const demo = useIsDemo();
 
   return (
     <>
-      {demo ? undefined : <ProgNavHeader />}
+      <ProgNavHeader />
       <main style={{ padding: "24px" }}>
         <DisplayLoadingAndErrorCard>
           <ProgramSummaryTable />

@@ -329,7 +329,9 @@ function ToolNavHeader() {
     }
   }, []);
 
-  if (reloadTime === null) {
+  if (demo) {
+    return <div />;
+  } else if (reloadTime === null) {
     return (
       <main style={{ margin: "2em", display: "flex", justifyContent: "center" }}>
         <Fab
@@ -378,11 +380,10 @@ export function ToolReportPage() {
   React.useEffect(() => {
     document.title = "Tool Report - FMS Insight";
   }, []);
-  const demo = useIsDemo();
 
   return (
     <>
-      {demo ? undefined : <ToolNavHeader />}
+      <ToolNavHeader />
       <main style={{ padding: "24px" }}>
         <DisplayLoadingAndErrorCard>
           <ToolSummaryTable />
