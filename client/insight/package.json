@@ -10,7 +10,7 @@
   "scripts": {
     "start": "parcel src/index.html",
     "start-demo": "parcel src/demo.html",
-    "build": "tsc --noEmit --composite false && parcel build src/index.html",
+    "build": "tsc --noEmit --composite false && parcel build src/index.html && cp service-worker.js dist",
     "build-demo": "tsc --noEmit --composite false && parcel build --out-dir demo --public-url /demo/ src/demo.html",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
@@ -75,7 +75,6 @@
     "jest": "^26.3.0",
     "nswag": "^12.3.1",
     "parcel-bundler": "^1.9.7",
-    "parcel-plugin-sw-precache": "^1.1.2",
     "prettier": "^2.0.5",
     "source-map-explorer": "^2.1.0",
     "ts-jest": "^26.2.0",
@@ -108,12 +107,6 @@
     "testMatch": null,
     "snapshotSerializers": [
       "<rootDir>/prelude-ts-snapshots.js"
-    ]
-  },
-  "sw-precache": {
-    "navigateFallback": "index.html",
-    "navigateFallbackWhitelist": [
-      "^(?!/(swagger|api|instructions)/).*"
     ]
   }
 }
