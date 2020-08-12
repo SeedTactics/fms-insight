@@ -119,9 +119,9 @@ function ToolRow(props: ToolRowProps) {
           </IconButton>
         </TableCell>
         <TableCell>{props.tool.toolName}</TableCell>
-        <TableCell align="right">{schUse}</TableCell>
-        <TableCell align="right">{totalLife}</TableCell>
-        <TableCell align="right">{props.tool.minRemainingMinutes}</TableCell>
+        <TableCell align="right">{schUse.toFixed(1)}</TableCell>
+        <TableCell align="right">{totalLife.toFixed(1)}</TableCell>
+        <TableCell align="right">{props.tool.minRemainingMinutes.toFixed(1)}</TableCell>
         <TableCell>{props.tool.minRemainingMachine}</TableCell>
       </TableRow>
       <TableRow>
@@ -151,7 +151,7 @@ function ToolRow(props: ToolRowProps) {
                         </TableCell>
                         <TableCell>{p.program}</TableCell>
                         <TableCell align="right">{p.quantity}</TableCell>
-                        <TableCell align="right">{p.scheduledUseMinutes}</TableCell>
+                        <TableCell align="right">{p.scheduledUseMinutes.toFixed(1)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -172,9 +172,9 @@ function ToolRow(props: ToolRowProps) {
                     <TableRow key={idx}>
                       <TableCell>{m.machineName}</TableCell>
                       <TableCell align="right">{m.pocket}</TableCell>
-                      <TableCell align="right">{m.currentUseMinutes}</TableCell>
-                      <TableCell align="right">{m.lifetimeMinutes}</TableCell>
-                      <TableCell align="right">{m.remainingMinutes}</TableCell>
+                      <TableCell align="right">{m.currentUseMinutes.toFixed(1)}</TableCell>
+                      <TableCell align="right">{m.lifetimeMinutes.toFixed(1)}</TableCell>
+                      <TableCell align="right">{m.remainingMinutes.toFixed(1)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

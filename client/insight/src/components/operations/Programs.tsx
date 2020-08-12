@@ -204,7 +204,7 @@ function ProgramRow(props: ProgramRowProps) {
                     {LazySeq.ofIterable(props.program.toolUse.tools).map((t, idx) => (
                       <TableRow key={idx}>
                         <TableCell>{t.toolName}</TableCell>
-                        <TableCell align="right">{t.cycleUsageMinutes}</TableCell>
+                        <TableCell align="right">{t.cycleUsageMinutes.toFixed(1)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
