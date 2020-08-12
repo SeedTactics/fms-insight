@@ -83,8 +83,7 @@ export class PartIdenticon extends React.PureComponent<{
 }> {
   render() {
     const iconSize = this.props.size || 50;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const icon = (jdenticon as any).toSvg(this.props.part, iconSize);
+    const icon = jdenticon.toSvg(this.props.part, iconSize);
 
     return <div style={{ width: iconSize, height: iconSize }} dangerouslySetInnerHTML={{ __html: icon }} />;
   }
