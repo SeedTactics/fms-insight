@@ -53,8 +53,6 @@ import { connect } from "../../store/store";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
 import { openMaterialById } from "../../data/material-details";
 import { RouteLocation } from "../../data/routes";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 interface RecentFailedInspectionsProps {
   readonly failed: Vector<FailedInspectionEntry>;
@@ -205,13 +203,14 @@ const ConnectedFailedInspections = connect(
 )(RecentFailedInspections);
 
 export function QualityDashboard() {
+  React.useEffect(() => {
+    document.title = "Quality - FMS Insight";
+  }, []);
   return (
-    <DocumentTitle title="Quality - FMS Insight">
-      <main style={{ padding: "24px" }}>
-        <div data-testid="recent-failed">
-          <ConnectedFailedInspections />
-        </div>
-      </main>
-    </DocumentTitle>
+    <main style={{ padding: "24px" }}>
+      <div data-testid="recent-failed">
+        <ConnectedFailedInspections />
+      </div>
+    </main>
   );
 }

@@ -50,8 +50,6 @@ import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspectio
 import { InspectionSankey } from "../analysis/InspectionSankey";
 import { DataTableActionZoomType } from "../analysis/DataTable";
 import { useIsDemo } from "../IsDemo";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 interface SerialLookupProps {
   readonly onSelect: (s: string) => void;
@@ -248,13 +246,14 @@ const ConnectedStepper = connect(
 )(PartLookupStepper);
 
 export function FailedPartLookup() {
+  React.useEffect(() => {
+    document.title = "Failed Part Lookup - FMS Insight";
+  }, []);
   return (
-    <DocumentTitle title="Failed Part Lookup - FMS Insight">
-      <main style={{ padding: "24px" }}>
-        <div data-testid="failed-parts">
-          <ConnectedStepper />
-        </div>
-      </main>
-    </DocumentTitle>
+    <main style={{ padding: "24px" }}>
+      <div data-testid="failed-parts">
+        <ConnectedStepper />
+      </div>
+    </main>
   );
 }

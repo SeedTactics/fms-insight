@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import * as df from "date-fns";
-import DocumentTitle from "react-document-title";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 import ExportIcon from "@material-ui/icons/ImportExport";
@@ -193,13 +192,14 @@ const ConnectedRecentEvents = connect((s: Store) => ({
 }))(RecentEvents);
 
 export default function DataExport() {
+  React.useEffect(() => {
+    document.title = "Data Export - FMS Insight";
+  }, []);
   return (
-    <DocumentTitle title="Data Export - FMS Insight">
-      <main style={{ padding: "8px" }}>
-        <CSVLogExport />
-        <CSVWorkorderExport />
-        <ConnectedRecentEvents />
-      </main>
-    </DocumentTitle>
+    <main style={{ padding: "8px" }}>
+      <CSVLogExport />
+      <CSVWorkorderExport />
+      <ConnectedRecentEvents />
+    </main>
   );
 }

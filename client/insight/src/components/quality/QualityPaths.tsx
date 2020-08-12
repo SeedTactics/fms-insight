@@ -39,8 +39,6 @@ import { Last30Days } from "../../data/events";
 import { HashMap } from "prelude-ts";
 import { createSelector } from "reselect";
 import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 const filterLogSelector = createSelector(
   (last30: Last30Days, _t: Date) => last30.inspection.by_part,
@@ -64,13 +62,14 @@ const ConnectedInspection = connect(
 )(InspectionSankey);
 
 export function QualityPaths() {
+  React.useEffect(() => {
+    document.title = "Paths - FMS Insight";
+  }, []);
   return (
-    <DocumentTitle title="Paths - FMS Insight">
-      <main style={{ padding: "24px" }}>
-        <div data-testid="failed-parts">
-          <ConnectedInspection subtitle="Paths from the last 7 days" />
-        </div>
-      </main>
-    </DocumentTitle>
+    <main style={{ padding: "24px" }}>
+      <div data-testid="failed-parts">
+        <ConnectedInspection subtitle="Paths from the last 7 days" />
+      </div>
+    </main>
   );
 }
