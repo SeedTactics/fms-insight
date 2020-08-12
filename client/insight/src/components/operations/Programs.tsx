@@ -45,24 +45,29 @@ import TableHead from "@material-ui/core/TableHead";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
+import Typography from "@material-ui/core/Typography";
 import Tooltip from "@material-ui/core/Tooltip";
 import {
-  useCalcProgramReport,
+  programReportRefreshTime,
   currentProgramReport,
   CellControllerProgram,
   programToShowContent,
   programContent,
-  ProgramReport,
+  programToShowHistory,
 } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
+import FirstPageIcon from "@material-ui/icons/FirstPage";
+import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
+import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
+import HistoryIcon from "@material-ui/icons/History";
 import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
 import { PartIdenticon } from "../station-monitor/Material";
-import { useRecoilValue, useSetRecoilState, useRecoilState, useRecoilValueLoadable } from "recoil";
+import { useSetRecoilState, useRecoilState, useRecoilValueLoadable, useRecoilValue } from "recoil";
 import Dialog from "@material-ui/core/Dialog";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
@@ -70,6 +75,10 @@ import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
 import hljs from "highlight.js/lib/core";
 import { useIsDemo } from "../IsDemo";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
+import { Vector } from "prelude-ts";
+import { IProgramRevision } from "../../data/api";
+import { MachineBackend } from "../../data/backend";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -117,6 +126,7 @@ function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
   const classes = useRowStyles();
   const setProgramToShowContent = useSetRecoilState(programToShowContent);
+  const setProgramToShowHistory = useSetRecoilState(programToShowHistory);
 
   const numCols = 8 + (props.showCellCtrlCol ? 1 : 0) + (props.showRevCol ? 1 : 0);
 
@@ -169,6 +179,13 @@ function ProgramRow(props: ProgramRowProps) {
               <CodeIcon />
             </IconButton>
           </Tooltip>
+          {props.program.revision !== null ? (
+            <Tooltip title="Revision History">
+              <IconButton size="small" onClick={() => setProgramToShowHistory(props.program)}>
+                <HistoryIcon />
+              </IconButton>
+            </Tooltip>
+          ) : undefined}
         </TableCell>
       </TableRow>
       <TableRow>
@@ -187,7 +204,7 @@ function ProgramRow(props: ProgramRowProps) {
                     {LazySeq.ofIterable(props.program.toolUse.tools).map((t, idx) => (
                       <TableRow key={idx}>
                         <TableCell>{t.toolName}</TableCell>
-                        <TableCell align="right">{t.cycleUsageMinutes}</TableCell>
+                        <TableCell align="right">{t.cycleUsageMinutes.toFixed(1)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -201,10 +218,6 @@ function ProgramRow(props: ProgramRowProps) {
   );
 }
 
-interface ProgramTableProps {
-  readonly report: ProgramReport;
-}
-
 type SortColumn =
   | "ProgramName"
   | "CellProgName"
@@ -215,11 +228,16 @@ type SortColumn =
   | "DeviationAbove"
   | "DeviationBelow";
 
-function ProgramSummaryTable(props: ProgramTableProps) {
+function ProgramSummaryTable() {
+  const report = useRecoilValue(currentProgramReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
-  const rows = props.report.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
+  if (report === null) {
+    return <div />;
+  }
+
+  const rows = report.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
     let c: number = 0;
     switch (sortCol) {
       case "ProgramName":
@@ -316,123 +334,163 @@ function ProgramSummaryTable(props: ProgramTableProps) {
   }
 
   return (
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell />
-          <TableCell sortDirection={sortCol === "ProgramName" ? sortDir : false}>
-            <TableSortLabel
-              active={sortCol === "ProgramName"}
-              direction={sortDir}
-              onClick={() => toggleSort("ProgramName")}
-            >
-              Program Name
-            </TableSortLabel>
-          </TableCell>
-          {props.report.cellNameDifferentFromProgName ? (
-            <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
-              <TableSortLabel
-                active={sortCol === "CellProgName"}
-                direction={sortDir}
-                onClick={() => toggleSort("CellProgName")}
-              >
-                Cell Controller Program
-              </TableSortLabel>
-            </TableCell>
-          ) : undefined}
-          <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
-            <TableSortLabel active={sortCol === "PartName"} direction={sortDir} onClick={() => toggleSort("PartName")}>
-              Part
-            </TableSortLabel>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "Comment" ? sortDir : false}>
-            <TableSortLabel active={sortCol === "Comment"} direction={sortDir} onClick={() => toggleSort("Comment")}>
-              Comment
-            </TableSortLabel>
-          </TableCell>
-          {props.report.hasRevisions ? (
-            <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
-              <TableSortLabel
-                active={sortCol === "Revision"}
-                direction={sortDir}
-                onClick={() => toggleSort("Revision")}
-              >
-                Revision
-              </TableSortLabel>
-            </TableCell>
-          ) : undefined}
-          <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
-            <TableSortLabel
-              active={sortCol === "MedianTime"}
-              direction={sortDir}
-              onClick={() => toggleSort("MedianTime")}
-            >
-              Median Time / Material (min)
-            </TableSortLabel>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "DeviationAbove" ? sortDir : false} align="right">
-            <TableSortLabel
-              active={sortCol === "DeviationAbove"}
-              direction={sortDir}
-              onClick={() => toggleSort("DeviationAbove")}
-            >
-              Deviation Above Median
-            </TableSortLabel>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "DeviationBelow" ? sortDir : false} align="right">
-            <TableSortLabel
-              active={sortCol === "DeviationBelow"}
-              direction={sortDir}
-              onClick={() => toggleSort("DeviationBelow")}
-            >
-              Deviation Below Median
-            </TableSortLabel>
-          </TableCell>
-          <TableCell />
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {LazySeq.ofIterable(rows).map((program, idx) => (
-          <ProgramRow
-            key={idx}
-            program={program}
-            showCellCtrlCol={props.report.cellNameDifferentFromProgName}
-            showRevCol={props.report.hasRevisions}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <ProgramIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
+          </div>
+        }
+      />
+      <CardContent>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell />
+              <TableCell sortDirection={sortCol === "ProgramName" ? sortDir : false}>
+                <TableSortLabel
+                  active={sortCol === "ProgramName"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("ProgramName")}
+                >
+                  Program Name
+                </TableSortLabel>
+              </TableCell>
+              {report.cellNameDifferentFromProgName ? (
+                <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
+                  <TableSortLabel
+                    active={sortCol === "CellProgName"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("CellProgName")}
+                  >
+                    Cell Controller Program
+                  </TableSortLabel>
+                </TableCell>
+              ) : undefined}
+              <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
+                <TableSortLabel
+                  active={sortCol === "PartName"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("PartName")}
+                >
+                  Part
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "Comment" ? sortDir : false}>
+                <TableSortLabel
+                  active={sortCol === "Comment"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("Comment")}
+                >
+                  Comment
+                </TableSortLabel>
+              </TableCell>
+              {report.hasRevisions ? (
+                <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
+                  <TableSortLabel
+                    active={sortCol === "Revision"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("Revision")}
+                  >
+                    Revision
+                  </TableSortLabel>
+                </TableCell>
+              ) : undefined}
+              <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
+                <TableSortLabel
+                  active={sortCol === "MedianTime"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("MedianTime")}
+                >
+                  Median Time / Material (min)
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "DeviationAbove" ? sortDir : false} align="right">
+                <TableSortLabel
+                  active={sortCol === "DeviationAbove"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("DeviationAbove")}
+                >
+                  Deviation Above Median
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "DeviationBelow" ? sortDir : false} align="right">
+                <TableSortLabel
+                  active={sortCol === "DeviationBelow"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("DeviationBelow")}
+                >
+                  Deviation Below Median
+                </TableSortLabel>
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {LazySeq.ofIterable(rows).map((program, idx) => (
+              <ProgramRow
+                key={idx}
+                program={program}
+                showCellCtrlCol={report.cellNameDifferentFromProgName}
+                showRevCol={report.hasRevisions}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProgramContentCode() {
+  const ct = useRecoilValue(programContent);
+  const preElement = React.useRef<HTMLPreElement>(null);
+
+  React.useEffect(() => {
+    if (ct && ct !== "" && preElement.current) {
+      hljs.highlightBlock(preElement.current);
+    }
+  }, [ct, preElement.current]);
+
+  return (
+    <pre ref={preElement}>
+      <code className="gcode">{ct}</code>
+    </pre>
   );
 }
 
 function ProgramContentDialog() {
   const [program, setProgramToShowContent] = useRecoilState(programToShowContent);
-  const ct = useRecoilValueLoadable(programContent);
-  const preElement = React.useRef<HTMLPreElement>(null);
+  const history = useRecoilValue(programToShowHistory);
 
-  React.useEffect(() => {
-    if (ct.state === "hasValue" && preElement.current) {
-      hljs.highlightBlock(preElement.current);
-    }
-  }, [ct]);
-
+  // when history is open, content is shown on the history dialog
   return (
-    <Dialog open={program !== null} onClose={() => setProgramToShowContent(null)}>
+    <Dialog open={program !== null && history === null} onClose={() => setProgramToShowContent(null)} maxWidth="lg">
       <DialogTitle>
-        {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}
-      </DialogTitle>
-      <DialogContent>
-        {ct.state === "hasError" ? (
-          <p>{ct.contents}</p>
-        ) : ct.state === "loading" ? (
-          <div style={{ textAlign: "center", marginTop: "4em" }}>
-            <CircularProgress />
-            <p>Loading</p>
+        {program?.partName ? (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <PartIdenticon part={program.partName} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
+              {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}{" "}
+              <Typography variant="subtitle1" component="span">
+                ({program.partName}-{program.process ?? 1})
+              </Typography>
+            </div>
           </div>
         ) : (
-          <pre ref={preElement}>
-            <code className="gcode">{ct.contents}</code>
-          </pre>
+          <>
+            {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}
+          </>
+        )}
+      </DialogTitle>
+      <DialogContent>
+        {program === null || history !== null ? (
+          <div />
+        ) : (
+          <DisplayLoadingAndErrorCard>
+            <ProgramContentCode />
+          </DisplayLoadingAndErrorCard>
         )}
       </DialogContent>
       <DialogActions>
@@ -442,14 +500,217 @@ function ProgramContentDialog() {
   );
 }
 
-interface ProgNavHeaderProps {
-  readonly refreshTime: Date | null;
+interface ProgramRevisionTableProps {
+  readonly page: number;
   readonly loading: boolean;
-  readonly loadPrograms: () => void;
+  readonly revisions: Vector<Readonly<IProgramRevision>>;
 }
 
-function ProgNavHeader(props: ProgNavHeaderProps) {
-  if (props.refreshTime === null) {
+const revisionsPerPage = 10;
+
+function ProgramRevisionTable(props: ProgramRevisionTableProps) {
+  const program = useRecoilValue(programToShowHistory);
+  const setProgramToShowContent = useSetRecoilState(programToShowContent);
+
+  return (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Revision</TableCell>
+          <TableCell>Comment</TableCell>
+          <TableCell>Cell Controller Program</TableCell>
+          <TableCell />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {props.loading ? (
+          <>
+            <TableRow>
+              <TableCell colSpan={4}>
+                <CircularProgress />
+              </TableCell>
+            </TableRow>
+            {LazySeq.ofRange(0, revisionsPerPage - 1).map((i) => (
+              <TableRow key={i}>
+                <TableCell colSpan={4} />
+              </TableRow>
+            ))}
+          </>
+        ) : (
+          props.revisions
+            .drop(props.page * revisionsPerPage)
+            .take(revisionsPerPage)
+            .map((rev) => (
+              <TableRow key={rev.revision}>
+                <TableCell>{rev.revision}</TableCell>
+                <TableCell>{rev.comment ?? ""}</TableCell>
+                <TableCell>{programFilename(rev.cellControllerProgramName ?? "")}</TableCell>
+                <TableCell>
+                  <Tooltip title="Load Program Content">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        setProgramToShowContent({
+                          ...rev,
+                          partName: program?.partName ?? null,
+                          process: program?.process ?? null,
+                        })
+                      }
+                    >
+                      <CodeIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+interface LastPage {
+  readonly page: number;
+  readonly hasMore: boolean;
+}
+
+function ProgramHistoryDialog() {
+  const [program, setProgram] = useRecoilState(programToShowHistory);
+  const [programForContent, setProgramForContent] = useRecoilState(programToShowContent);
+
+  const [revisions, setRevisions] = React.useState<Vector<Readonly<IProgramRevision>> | null>(null);
+  const [lastLoadedPage, setLastLoadedPage] = React.useState<LastPage>({ page: 0, hasMore: false });
+  const [page, setPage] = React.useState<number>(0);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | Error | null>(null);
+
+  React.useEffect(() => {
+    if (program === null) {
+      setRevisions(null);
+      setPage(0);
+      setLastLoadedPage({ page: 0, hasMore: false });
+    } else if (program !== null && revisions === null) {
+      // load initial
+      setLoading(true);
+      setError(null);
+      MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(program.programName, revisionsPerPage, undefined)
+        .then((revs) => {
+          setRevisions(Vector.ofIterable(revs));
+          setLastLoadedPage({ page: 0, hasMore: revs.length === revisionsPerPage });
+        })
+        .catch(setError)
+        .finally(() => setLoading(false));
+    }
+  }, [program, revisions]);
+
+  function advancePage() {
+    if (page < lastLoadedPage.page) {
+      setPage(page + 1);
+    } else if (lastLoadedPage.hasMore && program !== null && revisions !== null && !revisions.isEmpty()) {
+      setLoading(true);
+      setError(null);
+      MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
+        program.programName,
+        revisionsPerPage,
+        revisions.last().getOrThrow().revision - 1
+      )
+        .then((revs) => {
+          setRevisions(revisions.appendAll(revs));
+          setLastLoadedPage({ page: page + 1, hasMore: revs.length === revisionsPerPage });
+          setPage(page + 1);
+        })
+        .catch(setError)
+        .finally(() => setLoading(false));
+    }
+  }
+
+  return (
+    <Dialog open={program !== null} onClose={() => setProgram(null)} maxWidth="lg">
+      <DialogTitle>
+        {program?.partName ? (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <PartIdenticon part={program.partName} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>
+              {program.programName ?? "Program"}{" "}
+              <Typography variant="subtitle1" component="span">
+                ({program.partName}-{program.process ?? 1})
+              </Typography>
+            </div>
+          </div>
+        ) : (
+          <>{program?.programName ?? "Program"}</>
+        )}
+      </DialogTitle>
+      <DialogContent>
+        {error !== null ? (
+          <Card>
+            <CardContent>{typeof error === "string" ? error : error.message}</CardContent>
+          </Card>
+        ) : undefined}
+        {programForContent !== null ? (
+          <DisplayLoadingAndErrorCard>
+            <ProgramContentCode />
+          </DisplayLoadingAndErrorCard>
+        ) : revisions !== null ? (
+          <ProgramRevisionTable page={page} revisions={revisions} loading={loading} />
+        ) : loading ? (
+          <CircularProgress />
+        ) : undefined}
+      </DialogContent>
+      <DialogActions>
+        <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+          {programForContent === null ? (
+            <>
+              <Tooltip title="Latest Revisions">
+                <span>
+                  <IconButton onClick={() => setPage(0)} disabled={loading || page === 0}>
+                    <FirstPageIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Previous Page">
+                <span>
+                  <IconButton onClick={() => setPage(page - 1)} disabled={loading || page === 0}>
+                    <KeyboardArrowLeft />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Next Page">
+                <span>
+                  <IconButton
+                    onClick={() => advancePage()}
+                    disabled={loading || (page === lastLoadedPage.page && !lastLoadedPage.hasMore)}
+                  >
+                    <KeyboardArrowRight />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </>
+          ) : undefined}
+          <div style={{ flexGrow: 1 }} />
+          {programForContent !== null ? (
+            <Button onClick={() => setProgramForContent(null)}>Back to History</Button>
+          ) : undefined}
+          <Button onClick={() => setProgram(null)}>Close</Button>
+        </div>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function ProgNavHeader() {
+  const [reloadTime, setReloadTime] = useRecoilState(programReportRefreshTime);
+  const report = useRecoilValueLoadable(currentProgramReport);
+  const demo = useIsDemo();
+  const loading = report.state === "loading";
+
+  React.useEffect(() => {
+    if (demo && reloadTime === null) {
+      setReloadTime(new Date());
+    }
+  }, []);
+
+  if (reloadTime === null) {
     return (
       <main style={{ margin: "2em", display: "flex", justifyContent: "center" }}>
         <Fab
@@ -457,20 +718,13 @@ function ProgNavHeader(props: ProgNavHeaderProps) {
           size="large"
           variant="extended"
           style={{ margin: "2em" }}
-          onClick={props.loadPrograms}
-          disabled={props.loading}
+          onClick={() => setReloadTime(new Date())}
+          disabled={loading}
         >
-          {props.loading ? (
-            <>
-              <CircularProgress size={10} style={{ marginRight: "1em" }} />
-              Loading
-            </>
-          ) : (
-            <>
-              <RefreshIcon style={{ marginRight: "1em" }} />
-              Load Programs
-            </>
-          )}
+          <>
+            <RefreshIcon style={{ marginRight: "1em" }} />
+            Load Programs
+          </>
         </Fab>
       </main>
     );
@@ -488,13 +742,13 @@ function ProgNavHeader(props: ProgNavHeaderProps) {
       >
         <Tooltip title="Refresh Tools">
           <div>
-            <IconButton onClick={props.loadPrograms} disabled={props.loading} size="small">
-              {props.loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
+            <IconButton onClick={() => setReloadTime(new Date())} disabled={loading} size="small">
+              {loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
             </IconButton>
           </div>
         </Tooltip>
         <span style={{ marginLeft: "1em" }}>
-          Programs from <TimeAgo date={props.refreshTime} />
+          Programs from <TimeAgo date={reloadTime} />
         </span>
       </nav>
     );
@@ -505,58 +759,18 @@ export function ProgramReportPage() {
   React.useEffect(() => {
     document.title = "Programs - FMS Insight";
   }, []);
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<Error | string | null>(null);
-  const calcProgramReport = useCalcProgramReport();
-  const report = useRecoilValue(currentProgramReport);
   const demo = useIsDemo();
-
-  const loadPrograms = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await calcProgramReport();
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [setLoading, setError, calcProgramReport]);
-
-  React.useEffect(() => {
-    if (demo && report === null) {
-      loadPrograms();
-    }
-  }, []);
 
   return (
     <>
-      {demo ? undefined : (
-        <ProgNavHeader loading={loading} loadPrograms={loadPrograms} refreshTime={report?.time ?? null} />
-      )}
+      {demo ? undefined : <ProgNavHeader />}
       <main style={{ padding: "24px" }}>
-        {error != null ? (
-          <Card>
-            <CardContent>{typeof error === "string" ? error : error?.message}</CardContent>
-          </Card>
-        ) : undefined}
-        {report !== null ? (
-          <Card raised>
-            <CardHeader
-              title={
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-                  <ProgramIcon style={{ color: "#6D4C41" }} />
-                  <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
-                </div>
-              }
-            />
-            <CardContent>
-              <ProgramSummaryTable report={report} />
-            </CardContent>
-          </Card>
-        ) : undefined}
+        <DisplayLoadingAndErrorCard>
+          <ProgramSummaryTable />
+        </DisplayLoadingAndErrorCard>
       </main>
       <ProgramContentDialog />
+      <ProgramHistoryDialog />
     </>
   );
 }

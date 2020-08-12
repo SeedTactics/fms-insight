@@ -311,6 +311,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public interface INiigataCommunication
   {
     NiigataStatus LoadNiigataStatus();
+    Dictionary<int, ProgramEntry> LoadPrograms();
     void PerformAction(MachineFramework.JobDB jobDB, MachineFramework.EventLogDB logDB, NiigataAction a);
     event Action NewCurrentStatus;
   }

@@ -436,6 +436,26 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
+    public Dictionary<int, ProgramEntry> LoadPrograms()
+    {
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        using (var trans = conn.BeginTransaction())
+        {
+          return conn.Query<ProgramEntry>(
+            $@"SELECT o_no AS {nameof(ProgramEntry.ProgramNum)},
+                      comment AS {nameof(ProgramEntry.Comment)},
+                      work_base_time AS {nameof(ProgramEntry.WorkBaseTimeSeconds)}
+                FROM status_program
+            ",
+            transaction: trans
+          )
+          .ToDictionary(p => p.ProgramNum);
+        }
+      }
+    }
+
     private IEnumerable<int> StepToStations(RouteStep step)
     {
       switch (step)

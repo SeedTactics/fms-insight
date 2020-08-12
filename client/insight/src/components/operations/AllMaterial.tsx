@@ -51,8 +51,6 @@ import { LazySeq } from "../../data/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
 import { IInProcessMaterial } from "../../data/api";
 import { HashMap, Ordering } from "prelude-ts";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 enum DragType {
   Material = "DRAG_MATERIAL",
@@ -249,6 +247,10 @@ interface AllMaterialProps {
 }
 
 function AllMaterial(props: AllMaterialProps) {
+  React.useEffect(() => {
+    document.title = "All Material - FMS Insight";
+  }, []);
+
   const curBins = props.displaySystemBins
     ? props.allBins
     : props.allBins.filter((bin) => bin.type === MaterialBinType.QuarantineQueues);
@@ -280,71 +282,69 @@ function AllMaterial(props: AllMaterialProps) {
     ) >= 0;
 
   return (
-    <DocumentTitle title="All Material - FMS Insight">
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="Board" type={DragType.Queue} direction="horizontal">
-          {(provided) => (
-            <div ref={provided.innerRef} style={{ display: "flex", flexWrap: "nowrap" }}>
-              {curBins.map((matBin, idx) => {
-                switch (matBin.type) {
-                  case MaterialBinType.LoadStations:
-                    return (
-                      <SystemMaterial
-                        name="Load Stations"
-                        draggableId={matBin.binId}
-                        key={matBin.binId}
-                        idx={idx}
-                        renderLabel={renderLul}
-                        compareLabel={compareLul}
-                        material={matBin.byLul}
-                        openMat={props.openMat}
-                      />
-                    );
-                  case MaterialBinType.Pallets:
-                    return (
-                      <SystemMaterial
-                        name="Pallets"
-                        draggableId={matBin.binId}
-                        key={matBin.binId}
-                        idx={idx}
-                        renderLabel={renderPal}
-                        compareLabel={comparePal}
-                        material={matBin.byPallet}
-                        openMat={props.openMat}
-                      />
-                    );
-                  case MaterialBinType.ActiveQueues:
-                    return (
-                      <SystemMaterial
-                        name="Queues"
-                        draggableId={matBin.binId}
-                        key={matBin.binId}
-                        idx={idx}
-                        renderLabel={renderQueue}
-                        compareLabel={compareQueue}
-                        material={matBin.byQueue}
-                        openMat={props.openMat}
-                      />
-                    );
-                  case MaterialBinType.QuarantineQueues:
-                    return (
-                      <MaterialQueue
-                        key={matBin.binId}
-                        idx={idx}
-                        queue={matBin.queueName}
-                        material={matBin.material}
-                        openMat={props.openMat}
-                      />
-                    );
-                }
-              })}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-        <ConnectedAllMatDialog display_material={props.display_material} quarantineQueue={curDisplayQuarantine} />
-      </DragDropContext>
-    </DocumentTitle>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable droppableId="Board" type={DragType.Queue} direction="horizontal">
+        {(provided) => (
+          <div ref={provided.innerRef} style={{ display: "flex", flexWrap: "nowrap" }}>
+            {curBins.map((matBin, idx) => {
+              switch (matBin.type) {
+                case MaterialBinType.LoadStations:
+                  return (
+                    <SystemMaterial
+                      name="Load Stations"
+                      draggableId={matBin.binId}
+                      key={matBin.binId}
+                      idx={idx}
+                      renderLabel={renderLul}
+                      compareLabel={compareLul}
+                      material={matBin.byLul}
+                      openMat={props.openMat}
+                    />
+                  );
+                case MaterialBinType.Pallets:
+                  return (
+                    <SystemMaterial
+                      name="Pallets"
+                      draggableId={matBin.binId}
+                      key={matBin.binId}
+                      idx={idx}
+                      renderLabel={renderPal}
+                      compareLabel={comparePal}
+                      material={matBin.byPallet}
+                      openMat={props.openMat}
+                    />
+                  );
+                case MaterialBinType.ActiveQueues:
+                  return (
+                    <SystemMaterial
+                      name="Queues"
+                      draggableId={matBin.binId}
+                      key={matBin.binId}
+                      idx={idx}
+                      renderLabel={renderQueue}
+                      compareLabel={compareQueue}
+                      material={matBin.byQueue}
+                      openMat={props.openMat}
+                    />
+                  );
+                case MaterialBinType.QuarantineQueues:
+                  return (
+                    <MaterialQueue
+                      key={matBin.binId}
+                      idx={idx}
+                      queue={matBin.queueName}
+                      material={matBin.material}
+                      openMat={props.openMat}
+                    />
+                  );
+              }
+            })}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+      <ConnectedAllMatDialog display_material={props.display_material} quarantineQueue={curDisplayQuarantine} />
+    </DragDropContext>
   );
 }
 

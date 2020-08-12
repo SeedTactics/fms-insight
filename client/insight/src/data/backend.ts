@@ -133,6 +133,11 @@ export interface MachineAPI {
   getProgramsInCellController(): Promise<ReadonlyArray<Readonly<api.IProgramInCellController>>>;
   getProgramRevisionContent(program: string, revision: number): Promise<string>;
   getLatestProgramRevisionContent(program: string): Promise<string>;
+  getProgramRevisionsInDescendingOrderOfRevision(
+    programName: string | null,
+    count: number,
+    revisionToStart: number | null | undefined
+  ): Promise<ReadonlyArray<Readonly<api.IProgramRevision>>>;
 }
 
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
@@ -548,6 +553,9 @@ function initMockBackend(data: Promise<MockData>) {
     },
     getLatestProgramRevisionContent(program: string) {
       return Promise.resolve("GCODE for " + program + " would be here");
+    },
+    getProgramRevisionsInDescendingOrderOfRevision() {
+      return Promise.resolve([]);
     },
   };
 }

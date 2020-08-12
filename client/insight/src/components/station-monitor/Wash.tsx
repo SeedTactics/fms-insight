@@ -36,8 +36,6 @@ import { addHours } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import { createSelector } from "reselect";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { Store, connect, mkAC } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from "./Material";
@@ -171,32 +169,34 @@ interface WashProps {
 }
 
 function Wash(props: WashProps) {
+  React.useEffect(() => {
+    document.title = "Wash - FMS Insight";
+  }, []);
+
   const unwashed = LazySeq.ofIterable(props.recent_completed).filter((m) => m.wash_completed === undefined);
   const washed = LazySeq.ofIterable(props.recent_completed).filter((m) => m.wash_completed !== undefined);
 
   return (
-    <DocumentTitle title="Wash - FMS Insight">
-      <main data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
-              {unwashed.map((m, idx) => (
-                <MatSummary key={idx} mat={m} onOpen={props.openMat} />
-              ))}
-            </WhiteboardRegion>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
-              {washed.map((m, idx) => (
-                <MatSummary key={idx} mat={m} onOpen={props.openMat} />
-              ))}
-            </WhiteboardRegion>
-          </Grid>
+    <main data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
+            {unwashed.map((m, idx) => (
+              <MatSummary key={idx} mat={m} onOpen={props.openMat} />
+            ))}
+          </WhiteboardRegion>
         </Grid>
-        <SelectWorkorderDialog />
-        <ConnectedWashDialog />
-      </main>
-    </DocumentTitle>
+        <Grid item xs={12} md={6}>
+          <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
+            {washed.map((m, idx) => (
+              <MatSummary key={idx} mat={m} onOpen={props.openMat} />
+            ))}
+          </WhiteboardRegion>
+        </Grid>
+      </Grid>
+      <SelectWorkorderDialog />
+      <ConnectedWashDialog />
+    </main>
   );
 }
 

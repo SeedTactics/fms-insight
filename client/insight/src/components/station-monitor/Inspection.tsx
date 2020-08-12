@@ -38,8 +38,6 @@ import Button from "@material-ui/core/Button";
 import Tooltip from "@material-ui/core/Tooltip";
 import { DialogActions } from "@material-ui/core";
 import { createSelector } from "reselect";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
 import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
@@ -201,45 +199,46 @@ interface InspectionProps {
 }
 
 function Inspection(props: InspectionProps) {
-  let title = "Inspection - FMS Insight";
-  if (props.focusInspectionType !== "") {
-    title = "Inspection " + props.focusInspectionType + " - FMS Insight";
-  }
+  React.useEffect(() => {
+    let title = "Inspection - FMS Insight";
+    if (props.focusInspectionType !== "") {
+      title = "Inspection " + props.focusInspectionType + " - FMS Insight";
+    }
+    document.title = title;
+  }, [props.focusInspectionType]);
 
   return (
-    <DocumentTitle title={title}>
-      <main data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
-              {props.recent_inspections.waiting_to_inspect.map((m, idx) => (
-                <MatSummary
-                  key={idx}
-                  mat={m}
-                  onOpen={props.openMat}
-                  focusInspectionType={props.focusInspectionType}
-                  hideInspectionIcon
-                />
-              ))}
-            </WhiteboardRegion>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
-              {props.recent_inspections.inspect_completed.map((m, idx) => (
-                <MatSummary
-                  key={idx}
-                  mat={m}
-                  onOpen={props.openMat}
-                  focusInspectionType={props.focusInspectionType}
-                  hideInspectionIcon
-                />
-              ))}
-            </WhiteboardRegion>
-          </Grid>
+    <main data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
+            {props.recent_inspections.waiting_to_inspect.map((m, idx) => (
+              <MatSummary
+                key={idx}
+                mat={m}
+                onOpen={props.openMat}
+                focusInspectionType={props.focusInspectionType}
+                hideInspectionIcon
+              />
+            ))}
+          </WhiteboardRegion>
         </Grid>
-        <ConnectedInspDialog />
-      </main>
-    </DocumentTitle>
+        <Grid item xs={12} md={6}>
+          <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
+            {props.recent_inspections.inspect_completed.map((m, idx) => (
+              <MatSummary
+                key={idx}
+                mat={m}
+                onOpen={props.openMat}
+                focusInspectionType={props.focusInspectionType}
+                hideInspectionIcon
+              />
+            ))}
+          </WhiteboardRegion>
+        </Grid>
+      </Grid>
+      <ConnectedInspDialog />
+    </main>
   );
 }
 

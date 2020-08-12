@@ -35,8 +35,6 @@ import * as React from "react";
 import Divider from "@material-ui/core/Divider";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
 import { createSelector } from "reselect";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const DocumentTitle = require("react-document-title"); // https://github.com/gaearon/react-document-title/issues/58
 import Button from "@material-ui/core/Button";
 import Hidden from "@material-ui/core/Hidden";
 import FolderOpenIcon from "@material-ui/icons/FolderOpen";
@@ -594,115 +592,113 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
   const col2 = cells.drop(2).take(2);
 
   return (
-    <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
-      <MoveMaterialArrowContainer>
-        <main
-          data-testid="stationmonitor-load"
-          className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}
-        >
-          <div className={props.classes.palCol}>
-            <PalletColumn {...palProps} />
-            <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
-              <MultiInstructionButton loadData={props.data} operator={props.operator} />
-            </div>
+    <MoveMaterialArrowContainer>
+      <main
+        data-testid="stationmonitor-load"
+        className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}
+      >
+        <div className={props.classes.palCol}>
+          <PalletColumn {...palProps} />
+          <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
+            <MultiInstructionButton loadData={props.data} operator={props.operator} />
           </div>
-          {col1.length() === 0 ? undefined : (
-            <div className={props.classes.queueCol}>
-              {col1.zipWithIndex().map(([mat, idx]) => (
-                <MoveMaterialArrowNode
-                  key={idx}
-                  {...(mat.isFree
-                    ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
-                    : {
-                        type: MoveMaterialNodeKindType.QueueZone,
-                        queue: mat.label,
-                      })}
+        </div>
+        {col1.length() === 0 ? undefined : (
+          <div className={props.classes.queueCol}>
+            {col1.zipWithIndex().map(([mat, idx]) => (
+              <MoveMaterialArrowNode
+                key={idx}
+                {...(mat.isFree
+                  ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+                  : {
+                      type: MoveMaterialNodeKindType.QueueZone,
+                      queue: mat.label,
+                    })}
+              >
+                <SortableWhiteboardRegion
+                  label={mat.label}
+                  axis="y"
+                  distance={5}
+                  shouldCancelStart={() => false}
+                  onSortEnd={(se: SortEnd) =>
+                    props.moveMaterialInQueue({
+                      materialId: mat.material[se.oldIndex].materialID,
+                      queue: mat.label,
+                      queuePosition: se.newIndex,
+                      operator: props.operator,
+                    })
+                  }
                 >
-                  <SortableWhiteboardRegion
-                    label={mat.label}
-                    axis="y"
-                    distance={5}
-                    shouldCancelStart={() => false}
-                    onSortEnd={(se: SortEnd) =>
-                      props.moveMaterialInQueue({
-                        materialId: mat.material[se.oldIndex].materialID,
-                        queue: mat.label,
-                        queuePosition: se.newIndex,
-                        operator: props.operator,
-                      })
-                    }
-                  >
-                    {mat.material.map((m, matIdx) => (
-                      <MoveMaterialArrowNode
-                        key={matIdx}
-                        type={MoveMaterialNodeKindType.Material}
-                        material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
-                      >
-                        <SortableInProcMaterial
-                          index={matIdx}
-                          mat={m}
-                          onOpen={props.openMat}
-                          displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
-                        />
-                      </MoveMaterialArrowNode>
-                    ))}
-                  </SortableWhiteboardRegion>
-                </MoveMaterialArrowNode>
-              ))}
-            </div>
-          )}
-          {col2.length() === 0 ? undefined : (
-            <div className={props.classes.queueCol}>
-              {col2.zipWithIndex().map(([mat, idx]) => (
-                <MoveMaterialArrowNode
-                  key={idx}
-                  {...(mat.isFree
-                    ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
-                    : {
-                        type: MoveMaterialNodeKindType.QueueZone,
-                        queue: mat.label,
-                      })}
+                  {mat.material.map((m, matIdx) => (
+                    <MoveMaterialArrowNode
+                      key={matIdx}
+                      type={MoveMaterialNodeKindType.Material}
+                      material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
+                    >
+                      <SortableInProcMaterial
+                        index={matIdx}
+                        mat={m}
+                        onOpen={props.openMat}
+                        displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                      />
+                    </MoveMaterialArrowNode>
+                  ))}
+                </SortableWhiteboardRegion>
+              </MoveMaterialArrowNode>
+            ))}
+          </div>
+        )}
+        {col2.length() === 0 ? undefined : (
+          <div className={props.classes.queueCol}>
+            {col2.zipWithIndex().map(([mat, idx]) => (
+              <MoveMaterialArrowNode
+                key={idx}
+                {...(mat.isFree
+                  ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+                  : {
+                      type: MoveMaterialNodeKindType.QueueZone,
+                      queue: mat.label,
+                    })}
+              >
+                <SortableWhiteboardRegion
+                  label={mat.label}
+                  axis="y"
+                  distance={5}
+                  shouldCancelStart={() => false}
+                  onSortEnd={(se: SortEnd) =>
+                    props.moveMaterialInQueue({
+                      materialId: mat.material[se.oldIndex].materialID,
+                      queue: mat.label,
+                      queuePosition: se.newIndex,
+                      operator: props.operator,
+                    })
+                  }
                 >
-                  <SortableWhiteboardRegion
-                    label={mat.label}
-                    axis="y"
-                    distance={5}
-                    shouldCancelStart={() => false}
-                    onSortEnd={(se: SortEnd) =>
-                      props.moveMaterialInQueue({
-                        materialId: mat.material[se.oldIndex].materialID,
-                        queue: mat.label,
-                        queuePosition: se.newIndex,
-                        operator: props.operator,
-                      })
-                    }
-                  >
-                    {mat.material.map((m, matIdx) => (
-                      <MoveMaterialArrowNode
-                        key={matIdx}
-                        type={MoveMaterialNodeKindType.Material}
-                        material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
-                      >
-                        <SortableInProcMaterial
-                          index={matIdx}
-                          mat={m}
-                          onOpen={props.openMat}
-                          displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
-                        />
-                      </MoveMaterialArrowNode>
-                    ))}
-                  </SortableWhiteboardRegion>
-                </MoveMaterialArrowNode>
-              ))}
-            </div>
-          )}
-          <SelectWorkorderDialog />
-          <SetSerialDialog />
-          <SelectInspTypeDialog />
-          <ConnectedMaterialDialog loadNum={props.data.loadNum} pallet={props.data.pallet?.pallet ?? null} />
-        </main>
-      </MoveMaterialArrowContainer>
-    </DocumentTitle>
+                  {mat.material.map((m, matIdx) => (
+                    <MoveMaterialArrowNode
+                      key={matIdx}
+                      type={MoveMaterialNodeKindType.Material}
+                      material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
+                    >
+                      <SortableInProcMaterial
+                        index={matIdx}
+                        mat={m}
+                        onOpen={props.openMat}
+                        displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                      />
+                    </MoveMaterialArrowNode>
+                  ))}
+                </SortableWhiteboardRegion>
+              </MoveMaterialArrowNode>
+            ))}
+          </div>
+        )}
+        <SelectWorkorderDialog />
+        <SetSerialDialog />
+        <SelectInspTypeDialog />
+        <ConnectedMaterialDialog loadNum={props.data.loadNum} pallet={props.data.pallet?.pallet ?? null} />
+      </main>
+    </MoveMaterialArrowContainer>
   );
 });
 
@@ -720,17 +716,18 @@ const buildLoadData = createSelector(
 );
 
 function LoadStationCheckWidth(props: LoadStationProps) {
+  React.useEffect(() => {
+    document.title = "Load " + props.data.loadNum.toString() + " - FMS Insight";
+  }, [props.data.loadNum]);
   return (
-    <DocumentTitle title={"Load " + props.data.loadNum.toString() + " - FMS Insight"}>
-      <div>
-        <Hidden mdDown>
-          <LoadStation {...props} fillViewPort />
-        </Hidden>
-        <Hidden lgUp>
-          <LoadStation {...props} fillViewPort={false} />
-        </Hidden>
-      </div>
-    </DocumentTitle>
+    <div>
+      <Hidden mdDown>
+        <LoadStation {...props} fillViewPort />
+      </Hidden>
+      <Hidden lgUp>
+        <LoadStation {...props} fillViewPort={false} />
+      </Hidden>
+    </div>
   );
 }
 

@@ -46,6 +46,7 @@ import { AnalysisPeriod } from "../../data/events";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import { buildBufferChart } from "../../data/results.bufferchart";
 import { seriesColor } from "./CycleChart";
+import { HashSet } from "prelude-ts";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;
@@ -69,6 +70,8 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
       : s.Events.selected_month.sim_use.rawMaterialQueues
   );
 
+  const [disabledBuffers, setDisabledBuffers] = React.useState<HashSet<string>>(HashSet.empty());
+
   const series = React.useMemo(
     () =>
       buildBufferChart(
@@ -80,6 +83,9 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
       ),
     [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours]
   );
+
+  const emptySeries = series.findIndex((s) => !disabledBuffers.contains(s.label)) < 0;
+
   return (
     <div>
       <FlexibleWidthXYPlot
@@ -89,15 +95,17 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
         margin={{ bottom: 50 }}
         dontCheckIfEmpty
         xDomain={defaultDateRange}
-        yDomain={series.length === 0 ? [0, 10] : undefined}
+        yDomain={emptySeries ? [0, 10] : undefined}
       >
         <VerticalGridLines />
         <HorizontalGridLines />
         <XAxis tickLabelAngle={-45} />
         <YAxis />
-        {series.map((s, idx) => (
-          <LineSeries key={s.label} data={s.points} curve="curveCatmullRom" color={seriesColor(idx, series.length)} />
-        ))}
+        {series.map((s, idx) =>
+          disabledBuffers.contains(s.label) ? undefined : (
+            <LineSeries key={s.label} data={s.points} curve="curveCatmullRom" color={seriesColor(idx, series.length)} />
+          )
+        )}
       </FlexibleWidthXYPlot>
       <div style={{ textAlign: "center" }}>
         <DiscreteColorLegend
@@ -105,7 +113,13 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
           items={series.map((s, idx) => ({
             title: s.label,
             color: seriesColor(idx, series.length),
+            disabled: disabledBuffers.contains(s.label),
           }))}
+          onItemClick={({ title }: { title: string }) =>
+            disabledBuffers.contains(title)
+              ? setDisabledBuffers(disabledBuffers.remove(title))
+              : setDisabledBuffers(disabledBuffers.add(title))
+          }
         />
       </div>
     </div>

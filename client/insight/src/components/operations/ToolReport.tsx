@@ -45,7 +45,7 @@ import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Tooltip from "@material-ui/core/Tooltip";
-import { useCalcToolReport, ToolReport, currentToolReport } from "../../data/tools-programs";
+import { ToolReport, currentToolReport, toolReportRefreshTime } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
@@ -55,9 +55,9 @@ import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
 import { PartIdenticon } from "../station-monitor/Material";
 import clsx from "clsx";
-import { Vector } from "prelude-ts";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValueLoadable, useRecoilValue } from "recoil";
 import { useIsDemo } from "../IsDemo";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -119,9 +119,9 @@ function ToolRow(props: ToolRowProps) {
           </IconButton>
         </TableCell>
         <TableCell>{props.tool.toolName}</TableCell>
-        <TableCell align="right">{schUse}</TableCell>
-        <TableCell align="right">{totalLife}</TableCell>
-        <TableCell align="right">{props.tool.minRemainingMinutes}</TableCell>
+        <TableCell align="right">{schUse.toFixed(1)}</TableCell>
+        <TableCell align="right">{totalLife.toFixed(1)}</TableCell>
+        <TableCell align="right">{props.tool.minRemainingMinutes.toFixed(1)}</TableCell>
         <TableCell>{props.tool.minRemainingMachine}</TableCell>
       </TableRow>
       <TableRow>
@@ -151,7 +151,7 @@ function ToolRow(props: ToolRowProps) {
                         </TableCell>
                         <TableCell>{p.program}</TableCell>
                         <TableCell align="right">{p.quantity}</TableCell>
-                        <TableCell align="right">{p.scheduledUseMinutes}</TableCell>
+                        <TableCell align="right">{p.scheduledUseMinutes.toFixed(1)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -172,9 +172,9 @@ function ToolRow(props: ToolRowProps) {
                     <TableRow key={idx}>
                       <TableCell>{m.machineName}</TableCell>
                       <TableCell align="right">{m.pocket}</TableCell>
-                      <TableCell align="right">{m.currentUseMinutes}</TableCell>
-                      <TableCell align="right">{m.lifetimeMinutes}</TableCell>
-                      <TableCell align="right">{m.remainingMinutes}</TableCell>
+                      <TableCell align="right">{m.currentUseMinutes.toFixed(1)}</TableCell>
+                      <TableCell align="right">{m.lifetimeMinutes.toFixed(1)}</TableCell>
+                      <TableCell align="right">{m.remainingMinutes.toFixed(1)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -187,17 +187,18 @@ function ToolRow(props: ToolRowProps) {
   );
 }
 
-interface ToolTableProps {
-  readonly toolReport: Vector<ToolReport>;
-}
-
 type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemainingLife" | "MinRemainingMachine";
 
-function ToolSummaryTable(props: ToolTableProps) {
+function ToolSummaryTable() {
+  const tools = useRecoilValue(currentToolReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
-  const rows = props.toolReport.sortBy((a: ToolReport, b: ToolReport) => {
+  if (tools === null) {
+    return <div />;
+  }
+
+  const rows = tools.sortBy((a: ToolReport, b: ToolReport) => {
     let c: number = 0;
     switch (sortCol) {
       case "ToolName":
@@ -236,78 +237,99 @@ function ToolSummaryTable(props: ToolTableProps) {
   }
 
   return (
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell />
-          <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
-            <TableSortLabel active={sortCol === "ToolName"} direction={sortDir} onClick={() => toggleSort("ToolName")}>
-              Tool
-            </TableSortLabel>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "ScheduledUse" ? sortDir : false} align="right">
-            <Tooltip title="Expected use for all currently scheduled parts">
-              <TableSortLabel
-                active={sortCol === "ScheduledUse"}
-                direction={sortDir}
-                onClick={() => toggleSort("ScheduledUse")}
-              >
-                Scheduled Use (min)
-              </TableSortLabel>
-            </Tooltip>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "RemainingTotalLife" ? sortDir : false} align="right">
-            <Tooltip title="Remaining life summed over all machines">
-              <TableSortLabel
-                active={sortCol === "RemainingTotalLife"}
-                direction={sortDir}
-                onClick={() => toggleSort("RemainingTotalLife")}
-              >
-                Total Remaining Life (min)
-              </TableSortLabel>
-            </Tooltip>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "MinRemainingLife" ? sortDir : false} align="right">
-            <Tooltip title="Machine with the least remaining life">
-              <TableSortLabel
-                active={sortCol === "MinRemainingLife"}
-                direction={sortDir}
-                onClick={() => toggleSort("MinRemainingLife")}
-              >
-                Smallest Remaining Life (min)
-              </TableSortLabel>
-            </Tooltip>
-          </TableCell>
-          <TableCell sortDirection={sortCol === "MinRemainingMachine" ? sortDir : false}>
-            <Tooltip title="Machine with the least remaining life">
-              <TableSortLabel
-                active={sortCol === "MinRemainingMachine"}
-                direction={sortDir}
-                onClick={() => toggleSort("MinRemainingMachine")}
-              >
-                Machine With Smallest Remaining Life
-              </TableSortLabel>
-            </Tooltip>
-          </TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {rows.map((tool) => (
-          <ToolRow key={tool.toolName} tool={tool} />
-        ))}
-      </TableBody>
-    </Table>
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <ToolIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Tools</div>
+          </div>
+        }
+      />
+      <CardContent>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell />
+              <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
+                <TableSortLabel
+                  active={sortCol === "ToolName"}
+                  direction={sortDir}
+                  onClick={() => toggleSort("ToolName")}
+                >
+                  Tool
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "ScheduledUse" ? sortDir : false} align="right">
+                <Tooltip title="Expected use for all currently scheduled parts">
+                  <TableSortLabel
+                    active={sortCol === "ScheduledUse"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("ScheduledUse")}
+                  >
+                    Scheduled Use (min)
+                  </TableSortLabel>
+                </Tooltip>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "RemainingTotalLife" ? sortDir : false} align="right">
+                <Tooltip title="Remaining life summed over all machines">
+                  <TableSortLabel
+                    active={sortCol === "RemainingTotalLife"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("RemainingTotalLife")}
+                  >
+                    Total Remaining Life (min)
+                  </TableSortLabel>
+                </Tooltip>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "MinRemainingLife" ? sortDir : false} align="right">
+                <Tooltip title="Machine with the least remaining life">
+                  <TableSortLabel
+                    active={sortCol === "MinRemainingLife"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("MinRemainingLife")}
+                  >
+                    Smallest Remaining Life (min)
+                  </TableSortLabel>
+                </Tooltip>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "MinRemainingMachine" ? sortDir : false}>
+                <Tooltip title="Machine with the least remaining life">
+                  <TableSortLabel
+                    active={sortCol === "MinRemainingMachine"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("MinRemainingMachine")}
+                  >
+                    Machine With Smallest Remaining Life
+                  </TableSortLabel>
+                </Tooltip>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((tool) => (
+              <ToolRow key={tool.toolName} tool={tool} />
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
-interface ToolNavHeaderProps {
-  readonly refreshTime: Date | null;
-  readonly loading: boolean;
-  readonly loadTools: () => void;
-}
+function ToolNavHeader() {
+  const [reloadTime, setReloadTime] = useRecoilState(toolReportRefreshTime);
+  const report = useRecoilValueLoadable(currentToolReport);
+  const demo = useIsDemo();
+  const loading = report.state === "loading";
 
-function ToolNavHeader(props: ToolNavHeaderProps) {
-  if (props.refreshTime === null) {
+  React.useEffect(() => {
+    if (demo && reloadTime === null) {
+      setReloadTime(new Date());
+    }
+  }, []);
+
+  if (reloadTime === null) {
     return (
       <main style={{ margin: "2em", display: "flex", justifyContent: "center" }}>
         <Fab
@@ -315,20 +337,13 @@ function ToolNavHeader(props: ToolNavHeaderProps) {
           size="large"
           variant="extended"
           style={{ margin: "2em" }}
-          onClick={props.loadTools}
-          disabled={props.loading}
+          onClick={() => setReloadTime(new Date())}
+          disabled={loading}
         >
-          {props.loading ? (
-            <>
-              <CircularProgress size={10} style={{ marginRight: "1em" }} />
-              Loading
-            </>
-          ) : (
-            <>
-              <RefreshIcon style={{ marginRight: "1em" }} />
-              Load Tools
-            </>
-          )}
+          <>
+            <RefreshIcon style={{ marginRight: "1em" }} />
+            Load Tools
+          </>
         </Fab>
       </main>
     );
@@ -346,13 +361,13 @@ function ToolNavHeader(props: ToolNavHeaderProps) {
       >
         <Tooltip title="Refresh Tools">
           <div>
-            <IconButton onClick={props.loadTools} disabled={props.loading} size="small">
-              {props.loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
+            <IconButton onClick={() => setReloadTime(new Date())} disabled={loading} size="small">
+              {loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
             </IconButton>
           </div>
         </Tooltip>
         <span style={{ marginLeft: "1em" }}>
-          Tools from <TimeAgo date={props.refreshTime} />
+          Tools from <TimeAgo date={reloadTime} />
         </span>
       </nav>
     );
@@ -363,54 +378,15 @@ export function ToolReportPage() {
   React.useEffect(() => {
     document.title = "Tool Report - FMS Insight";
   }, []);
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<Error | string | null>(null);
-  const calcToolReport = useCalcToolReport();
-  const report = useRecoilValue(currentToolReport);
   const demo = useIsDemo();
-
-  const loadTools = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await calcToolReport();
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [setLoading, setError, calcToolReport]);
-
-  React.useEffect(() => {
-    if (demo && report === null) {
-      loadTools();
-    }
-  }, []);
 
   return (
     <>
-      {demo ? undefined : <ToolNavHeader loading={loading} loadTools={loadTools} refreshTime={report?.time ?? null} />}
+      {demo ? undefined : <ToolNavHeader />}
       <main style={{ padding: "24px" }}>
-        {error != null ? (
-          <Card>
-            <CardContent>{typeof error === "string" ? error : error?.message}</CardContent>
-          </Card>
-        ) : undefined}
-        {report !== null ? (
-          <Card raised>
-            <CardHeader
-              title={
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-                  <ToolIcon style={{ color: "#6D4C41" }} />
-                  <div style={{ marginLeft: "10px", marginRight: "3em" }}>Tools</div>
-                </div>
-              }
-            />
-            <CardContent>
-              <ToolSummaryTable toolReport={report.tools} />
-            </CardContent>
-          </Card>
-        ) : undefined}
+        <DisplayLoadingAndErrorCard>
+          <ToolSummaryTable />
+        </DisplayLoadingAndErrorCard>
       </main>
     </>
   );

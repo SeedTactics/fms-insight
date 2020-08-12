@@ -48,6 +48,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private NiigataICC _icc;
     private NiigataJobs _jobControl;
     private SyncPallets _sync;
+    private NiigataMachineControl _machControl;
 
     public EventLogDB.Config LogDBConfig { get; private set; }
     public JobDB.Config JobDBConfig { get; private set; }
@@ -120,6 +121,8 @@ namespace BlackMaple.FMSInsight.Niigata
         _icc = new NiigataICC(programDir, connStr, StationNames);
         var createLog = new CreateCellState(cfg, StationNames, MachineConnection);
 
+        _machControl = new NiigataMachineControl(JobDBConfig, _icc, MachineConnection, StationNames);
+
         IAssignPallets assign;
         if (customAssignment != null)
         {
@@ -162,7 +165,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IJobControl JobControl { get => _jobControl; }
     public IOldJobDecrement OldJobDecrement { get => null; }
-    public IMachineControl MachineControl => null;
+    public IMachineControl MachineControl => _machControl;
 
     public IJobDatabase OpenJobDatabase()
     {

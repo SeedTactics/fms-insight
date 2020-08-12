@@ -36,53 +36,61 @@ using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 
-namespace MazakMachineInterface
+namespace BlackMaple.FMSInsight.Niigata
 {
-  public class MazakMachineControl : IMachineControl
+  public class NiigataMachineControl : IMachineControl
   {
     private JobDB.Config _jobDbCfg;
-    private IReadDataAccess _readData;
-    private IMachineGroupName _machGroupName;
+    private INiigataCommunication _icc;
+    private ICncMachineConnection _cnc;
+    private NiigataStationNames _statNames;
 
-    public MazakMachineControl(JobDB.Config jobDbCfg, IReadDataAccess readData, IMachineGroupName machineGroupName)
+    public NiigataMachineControl(JobDB.Config jobDbCfg, INiigataCommunication icc, ICncMachineConnection cnc, NiigataStationNames statNames)
     {
       _jobDbCfg = jobDbCfg;
-      _readData = readData;
-      _machGroupName = machineGroupName;
+      _icc = icc;
+      _cnc = cnc;
+      _statNames = statNames;
     }
+
 
     public List<ProgramInCellController> CurrentProgramsInCellController()
     {
-      var programs = _readData.LoadPrograms();
+      var programs = _icc.LoadPrograms();
       using (var jobDb = _jobDbCfg.OpenConnection())
       {
-        return programs.Select(p =>
+        return programs.Values.Select(p =>
         {
-          var prog = jobDb.ProgramFromCellControllerProgram(p.MainProgram);
-          return new ProgramInCellController()
+          if (AssignNewRoutesOnPallets.TryParseProgramComment(p, out string progName, out long rev))
           {
-            CellControllerProgramName = p.MainProgram,
-            ProgramName = prog?.ProgramName ?? p.MainProgram,
-            Revision = prog?.Revision,
-            Comment = p.Comment
-          };
+            var jobProg = jobDb.LoadProgram(progName, rev);
+            return new ProgramInCellController()
+            {
+              CellControllerProgramName = p.ProgramNum.ToString(),
+              ProgramName = progName,
+              Revision = rev,
+              Comment = jobProg?.Comment
+            };
+          }
+          else
+          {
+            return new ProgramInCellController()
+            {
+              CellControllerProgramName = p.ProgramNum.ToString(),
+              ProgramName = p.ProgramNum.ToString(),
+              Comment = p.Comment
+            };
+          }
         }).ToList();
       }
     }
 
     public List<ToolInMachine> CurrentToolsInMachines()
     {
-      return _readData.LoadTools()
-        .Where(t => t.MachineNumber.HasValue && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
-        .Select(t => new ToolInMachine()
-        {
-          MachineGroupName = _machGroupName.MachineGroupName,
-          MachineNum = t.MachineNumber.Value,
-          Pocket = t.PocketNumber.Value,
-          ToolName = t.GroupNo,
-          CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
-          TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
-        }).ToList();
+      return _statNames.IccMachineToJobMachNames
+        .SelectMany(k =>
+          _cnc.ToolsForMachine(k.Key).Select(t => t.ToToolInMachine(k.Value.group, k.Value.num))
+        ).ToList();
     }
 
     public string GetProgramContent(string programName, long? revision)
@@ -97,14 +105,11 @@ namespace MazakMachineInterface
         {
           return jobDb.LoadProgramContent(programName, revision.Value);
         }
+        else
+        {
+          return "";
+        }
       }
-
-      if (_readData.CheckProgramExists(programName) && System.IO.File.Exists(programName))
-      {
-        return System.IO.File.ReadAllText(programName);
-      }
-
-      return "";
     }
 
     public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart)

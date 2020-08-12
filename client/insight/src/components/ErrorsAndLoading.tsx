@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,31 +31,34 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-let windowRefreshing = false;
+import * as React from "react";
+import CircularProgress from "@material-ui/core/CircularProgress";
+import Card from "@material-ui/core/Card";
+import CardContent from "@material-ui/core/CardContent";
+import { ErrorBoundary } from "react-error-boundary";
 
-export function register() {
-  if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      const swUrl = `/service-worker.js`;
-      navigator.serviceWorker.register(swUrl).catch((error) => {
-        // tslint:disable-next-line:no-console
-        console.error("Error during service worker registration:", error);
-      });
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (windowRefreshing) {
-          return;
-        }
-        windowRefreshing = true;
-        window.location.reload();
-      });
-    });
-  }
+export function Loading() {
+  return (
+    <div style={{ textAlign: "center", marginTop: "4em" }}>
+      <CircularProgress />
+      <p>Loading</p>
+    </div>
+  );
 }
 
-export function unregister() {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.unregister();
-    });
-  }
+function DisplayError({ error }: { readonly error?: Error }) {
+  if (error === undefined) return <></>;
+  return (
+    <Card>
+      <CardContent>{error.message}</CardContent>
+    </Card>
+  );
+}
+
+export function DisplayLoadingAndErrorCard(props: React.PropsWithChildren<{}>) {
+  return (
+    <ErrorBoundary FallbackComponent={DisplayError}>
+      <React.Suspense fallback={<Loading />}>{props.children}</React.Suspense>
+    </ErrorBoundary>
+  );
 }
