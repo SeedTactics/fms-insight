@@ -211,6 +211,12 @@ namespace MachineWatchTest
       route.ProgramName = "so cool";
       job1.AddMachiningStop(2, 2, route);
 
+      route = new JobMachiningStop("Test");
+      route.Stations.Add(15);
+      route.Stations.Add(88);
+      route.ProgramName = "prog2-3";
+      job1.AddMachiningStop(2, 3, route);
+
       job1.PathInspections(1, 1).Add(new PathInspection()
       {
         InspectionType = "Insp1",
@@ -1065,6 +1071,143 @@ namespace MachineWatchTest
         }, options => options.WithStrictOrdering());
 
       _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("wesrfohergh", 10000, null).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void NegativeProgramRevisions()
+    {
+      // add an existing revision 6 for bbb and 4 for ccc
+      _jobDB.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan>(),
+        Programs = new List<ProgramEntry> {
+            new ProgramEntry() {
+              ProgramName = "bbb",
+              Revision = 6, // new revision
+              Comment = "bbb comment 6",
+              ProgramContent = "bbb program content 6"
+            },
+            new ProgramEntry() {
+              ProgramName = "ccc",
+              Revision = 4, // new revision
+              Comment = "ccc comment 4",
+              ProgramContent = "ccc program content 4"
+            },
+          }
+      }, null);
+
+      var job1 = new JobPlan("uniq", 2, new int[] { 2, 3 });
+      SetJob1Data(job1);
+
+      job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
+      job1.GetMachiningStop(1, 1).First().ProgramRevision = -1;
+
+      job1.GetMachiningStop(1, 2).First().ProgramName = "aaa";
+      job1.GetMachiningStop(1, 2).First().ProgramRevision = -2;
+
+      job1.GetMachiningStop(2, 1).First().ProgramName = "bbb";
+      job1.GetMachiningStop(2, 1).First().ProgramRevision = -1;
+
+      job1.GetMachiningStop(2, 2).First().ProgramName = "bbb";
+      job1.GetMachiningStop(2, 2).First().ProgramRevision = -2;
+
+      job1.GetMachiningStop(2, 3).First().ProgramName = "ccc";
+      job1.GetMachiningStop(2, 3).First().ProgramRevision = -1;
+
+      _jobDB.AddJobs(new NewJobs
+      {
+        Jobs = new List<JobPlan> { job1 },
+        Programs = new List<ProgramEntry> {
+            new ProgramEntry() {
+              ProgramName = "aaa",
+              Revision = -1, // should be assigned to 1
+              Comment = "aaa comment 1",
+              ProgramContent = "aaa program content for 1"
+            },
+            new ProgramEntry() {
+              ProgramName = "aaa",
+              Revision = -2, // should be assigned to 2
+              Comment = "aaa comment 2",
+              ProgramContent = "aaa program content for 2"
+            },
+            new ProgramEntry() {
+              ProgramName = "bbb",
+              Revision = -1, // matches existing so should be converted to 6
+              Comment = "bbb comment 6",
+              ProgramContent = "bbb program content 6"
+            },
+            new ProgramEntry() {
+              ProgramName = "bbb",
+              Revision = -2, // assigned a new val 7 since content differs
+              Comment = "bbb comment 7",
+              ProgramContent = "bbb program content 7"
+            },
+            new ProgramEntry() {
+              ProgramName = "ccc",
+              Revision = -1, // assigned a new val since doesn't match existing
+              Comment = "ccc comment 5",
+              ProgramContent = "ccc program content 5"
+            },
+          }
+      }, null);
+
+      job1.GetMachiningStop(1, 1).First().ProgramRevision = 1;
+      job1.GetMachiningStop(1, 2).First().ProgramRevision = 2;
+      job1.GetMachiningStop(2, 1).First().ProgramRevision = 6;
+      job1.GetMachiningStop(2, 2).First().ProgramRevision = 7;
+      job1.GetMachiningStop(2, 3).First().ProgramRevision = 5;
+
+      CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
+
+
+      _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 1,
+        Comment = "aaa comment 1",
+      });
+      _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content for 1");
+      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 2,
+        Comment = "aaa comment 2",
+      });
+      _jobDB.LoadProgramContent("aaa", 2).Should().Be("aaa program content for 2");
+      _jobDB.LoadMostRecentProgram("aaa").Revision.Should().Be(2);
+
+
+      _jobDB.LoadProgram("bbb", 6).Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 6,
+        Comment = "bbb comment 6",
+      });
+      _jobDB.LoadProgramContent("bbb", 6).Should().Be("bbb program content 6");
+      _jobDB.LoadProgram("bbb", 7).Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "bbb",
+        Revision = 7,
+        Comment = "bbb comment 7",
+      });
+      _jobDB.LoadProgramContent("bbb", 7).Should().Be("bbb program content 7");
+      _jobDB.LoadMostRecentProgram("bbb").Revision.Should().Be(7);
+
+      _jobDB.LoadProgram("ccc", 4).Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "ccc",
+        Revision = 4,
+        Comment = "ccc comment 4",
+      });
+      _jobDB.LoadProgramContent("ccc", 4).Should().Be("ccc program content 4");
+      _jobDB.LoadProgram("ccc", 5).Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "ccc",
+        Revision = 5,
+        Comment = "ccc comment 5",
+      });
+      _jobDB.LoadProgramContent("ccc", 5).Should().Be("ccc program content 5");
+      _jobDB.LoadMostRecentProgram("ccc").Revision.Should().Be(5);
     }
 
     private void CheckJobs(JobPlan job1, JobPlan job2, JobPlan job3, string schId, Dictionary<string, int> extraParts, IEnumerable<PartWorkorder> works)

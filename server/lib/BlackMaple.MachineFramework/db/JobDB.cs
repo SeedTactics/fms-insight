@@ -1497,11 +1497,11 @@ namespace BlackMaple.MachineFramework
             startingUtc = newJobs.Jobs[0].RouteStartingTimeUTC;
           }
 
-          AddPrograms(trans, newJobs.Programs, startingUtc);
+          var negRevisionMap = AddPrograms(trans, newJobs.Programs, startingUtc);
 
           foreach (var job in newJobs.Jobs)
           {
-            AddJob(trans, job);
+            AddJob(trans, job, negRevisionMap);
           }
 
           AddSimulatedStations(trans, newJobs.StationUse);
@@ -1556,7 +1556,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddJob(IDbTransaction trans, MachineWatchInterface.JobPlan job)
+    private void AddJob(IDbTransaction trans, MachineWatchInterface.JobPlan job, Dictionary<(string prog, long rev), long> negativeRevisionMap)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -1754,13 +1754,25 @@ namespace BlackMaple.MachineFramework
             foreach (var entry in job.GetMachiningStop(i, j))
             {
               long? rev = null;
-              if (entry.ProgramRevision.HasValue)
+              if (!entry.ProgramRevision.HasValue || entry.ProgramRevision.Value == 0)
               {
-                rev = entry.ProgramRevision;
+                if (!string.IsNullOrEmpty(entry.ProgramName))
+                {
+                  rev = LatestRevisionForProgram(trans, entry.ProgramName);
+                }
               }
-              else if (!string.IsNullOrEmpty(entry.ProgramName))
+              else if (entry.ProgramRevision.Value > 0)
               {
-                rev = LatestRevisionForProgram(trans, entry.ProgramName);
+                rev = entry.ProgramRevision.Value;
+              }
+              else if (negativeRevisionMap.TryGetValue((prog: entry.ProgramName, rev: entry.ProgramRevision.Value), out long convertedRev))
+              {
+                rev = convertedRev;
+              }
+              else
+              {
+                throw new BadRequestException($"Part {job.PartName}, process {i}, path {j}, stop {routeNum}, " +
+                  "has a negative program revision but no matching negative program revision exists in the downloaded ProgramEntry list");
               }
               cmd.Parameters[1].Value = i;
               cmd.Parameters[2].Value = j;
@@ -2343,14 +2355,15 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Programs
-    private void AddPrograms(IDbTransaction transaction, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime nowUtc)
+    private Dictionary<(string prog, long rev), long> AddPrograms(IDbTransaction transaction, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime nowUtc)
     {
-      if (programs == null || !programs.Any()) return;
+      if (programs == null || !programs.Any()) return new Dictionary<(string prog, long rev), long>();
+
+      var negativeRevisionMap = new Dictionary<(string prog, long rev), long>();
 
       using (var checkCmd = _connection.CreateCommand())
       using (var checkMaxCmd = _connection.CreateCommand())
-      using (var haveRevCmd = _connection.CreateCommand())
-      using (var needRevCmd = _connection.CreateCommand())
+      using (var addProgCmd = _connection.CreateCommand())
       {
         ((IDbCommand)checkCmd).Transaction = transaction;
         checkCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $name AND ProgramRevision = $rev";
@@ -2358,70 +2371,76 @@ namespace BlackMaple.MachineFramework
         checkCmd.Parameters.Add("rev", SqliteType.Integer);
 
         ((IDbCommand)checkMaxCmd).Transaction = transaction;
-        checkMaxCmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+        checkMaxCmd.CommandText = "SELECT ProgramRevision, ProgramContent FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
         checkMaxCmd.Parameters.Add("prog", SqliteType.Text);
 
-        ((IDbCommand)haveRevCmd).Transaction = transaction;
-        haveRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
+        ((IDbCommand)addProgCmd).Transaction = transaction;
+        addProgCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
                             " VALUES($name,$rev,$time,$comment,$prog)";
-        haveRevCmd.Parameters.Add("name", SqliteType.Text);
-        haveRevCmd.Parameters.Add("rev", SqliteType.Integer);
-        haveRevCmd.Parameters.Add("time", SqliteType.Integer).Value = nowUtc.Ticks;
-        haveRevCmd.Parameters.Add("comment", SqliteType.Text);
-        haveRevCmd.Parameters.Add("prog", SqliteType.Text);
+        addProgCmd.Parameters.Add("name", SqliteType.Text);
+        addProgCmd.Parameters.Add("rev", SqliteType.Integer);
+        addProgCmd.Parameters.Add("time", SqliteType.Integer).Value = nowUtc.Ticks;
+        addProgCmd.Parameters.Add("comment", SqliteType.Text);
+        addProgCmd.Parameters.Add("prog", SqliteType.Text);
 
-        ((IDbCommand)needRevCmd).Transaction = transaction;
-        needRevCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
-                            " VALUES($name,COALESCE((SELECT MAX(ProgramRevision) + 1 FROM program_revisions WHERE ProgramName = $name2), 1),$time,$comment,$prog)";
-        needRevCmd.Parameters.Add("name", SqliteType.Text);
-        needRevCmd.Parameters.Add("name2", SqliteType.Text);
-        needRevCmd.Parameters.Add("time", SqliteType.Integer).Value = nowUtc.Ticks;
-        needRevCmd.Parameters.Add("comment", SqliteType.Text);
-        needRevCmd.Parameters.Add("prog", SqliteType.Text);
-
-        foreach (var prog in programs)
+        // positive revisions are either added or checked for match
+        foreach (var prog in programs.Where(p => p.Revision > 0))
         {
-          if (prog.Revision > 0)
+          checkCmd.Parameters[0].Value = prog.ProgramName;
+          checkCmd.Parameters[1].Value = prog.Revision;
+          var content = checkCmd.ExecuteScalar();
+          if (content != null && content != DBNull.Value)
           {
-            checkCmd.Parameters[0].Value = prog.ProgramName;
-            checkCmd.Parameters[1].Value = prog.Revision;
-            var content = checkCmd.ExecuteScalar();
-            if (content != null && content != DBNull.Value)
+            if ((string)content != prog.ProgramContent)
             {
-              if ((string)content != prog.ProgramContent)
-              {
-                throw new BadRequestException("Program " + prog.ProgramName + " rev" + prog.Revision.ToString() + " has already been used and the program contents do not match.");
-              }
-              // if match, do nothing
+              throw new BadRequestException("Program " + prog.ProgramName + " rev" + prog.Revision.ToString() + " has already been used and the program contents do not match.");
             }
-            else
-            {
-              haveRevCmd.Parameters[0].Value = prog.ProgramName;
-              haveRevCmd.Parameters[1].Value = prog.Revision;
-              haveRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
-              haveRevCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
-              haveRevCmd.ExecuteNonQuery();
-            }
+            // if match, do nothing
           }
           else
           {
-            checkMaxCmd.Parameters[0].Value = prog.ProgramName;
-            var content = checkMaxCmd.ExecuteScalar();
-            if (content != null && content != DBNull.Value)
+            addProgCmd.Parameters[0].Value = prog.ProgramName;
+            addProgCmd.Parameters[1].Value = prog.Revision;
+            addProgCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
+            addProgCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
+            addProgCmd.ExecuteNonQuery();
+          }
+        }
+
+        // zero and negative revisions are allocated a new number
+        foreach (var prog in programs.Where(p => p.Revision <= 0).OrderByDescending(p => p.Revision))
+        {
+          long lastRev;
+          checkMaxCmd.Parameters[0].Value = prog.ProgramName;
+          using (var reader = checkMaxCmd.ExecuteReader())
+          {
+            if (reader.Read())
             {
-              if ((string)content == prog.ProgramContent)
+              lastRev = reader.GetInt64(0);
+              var lastContent = reader.GetString(1);
+              if (lastContent == prog.ProgramContent)
               {
+                if (prog.Revision < 0) negativeRevisionMap[(prog: prog.ProgramName, rev: prog.Revision)] = lastRev;
                 continue;
               }
             }
-            needRevCmd.Parameters[0].Value = prog.ProgramName;
-            needRevCmd.Parameters[1].Value = prog.ProgramName;
-            needRevCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
-            needRevCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
-            needRevCmd.ExecuteNonQuery();
+            else
+            {
+              lastRev = 0;
+            }
           }
+
+          addProgCmd.Parameters[0].Value = prog.ProgramName;
+          addProgCmd.Parameters[1].Value = lastRev + 1;
+          addProgCmd.Parameters[3].Value = string.IsNullOrEmpty(prog.Comment) ? DBNull.Value : (object)prog.Comment;
+          addProgCmd.Parameters[4].Value = string.IsNullOrEmpty(prog.ProgramContent) ? DBNull.Value : (object)prog.ProgramContent;
+          addProgCmd.ExecuteNonQuery();
+
+          if (prog.Revision < 0) negativeRevisionMap[(prog: prog.ProgramName, rev: prog.Revision)] = lastRev + 1;
         }
       }
+
+      return negativeRevisionMap;
     }
 
     private long? LatestRevisionForProgram(IDbTransaction trans, string program)

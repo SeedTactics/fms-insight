@@ -99,6 +99,18 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "Program")]
     private string _program;
 
+    // During Download:
+    //   * A null or zero revision value means use the latest program, either the one already in the cell controller
+    //     or the most recent revision in the database.
+    //   * A positive revision number will use this specified revision which must exist in the database or
+    //     be included in the Programs field of the NewJobs structure accompaning the downloaded job.
+    //   * A negative revision number must match a ProgramEntry in the NewJobs structure accompaning the download.
+    //     The ProgramEntry will be assigned a (positive) revision during the download and then this stop will
+    //     be updated to use that (positive) revision.
+    // When loading Jobs,
+    //   * A null revision means the program already exists in the cell controller and the DB is not managing programs.
+    //   * A positive revision means the program exists in the job DB with this specific revision.
+    //   * Negative revisions are never returned (they get translated as part of the download)
     [DataMember(Name = "ProgramRevision")]
     private long? _programRevision;
 
@@ -1363,9 +1375,22 @@ namespace BlackMaple.MachineWatchInterface
   public class ProgramEntry
   {
     [DataMember(IsRequired = true)] public string ProgramName { get; set; }
-    [DataMember(IsRequired = true)] public long Revision { get; set; }
     [DataMember(IsRequired = true)] public string Comment { get; set; }
     [DataMember(IsRequired = true)] public string ProgramContent { get; set; }
+
+    // * A positive revision number will either add it to the DB with this revision if the revision does
+    //   not yet exist, or verify the ProgramContent matches the ProgramContent from the DB if the revision
+    //   exists and throw an error if the contents don't match.
+    // * A zero revision means allocate a new revision if the program content does not match the most recent
+    //   revision in the DB
+    // * A negative revision number also allocates a new revision number if the program content does not match
+    //   the most recent revision in the DB, and in addition any matching negative numbers in the JobMachiningStop
+    //   will be translated to this revision number.
+    // * The allocation happens in descending order of Revision, so if multiple negative or zero revisions exist
+    //   for the same ProgramName, the one with the largest value will be checked to match the latest revision in
+    //   the DB and potentially avoid allocating a new number.  The sorting is on negative numbers, so place
+    //   the program entry which is likely to already exist with revision 0 or -1 so that it is the first examined.
+    [DataMember(IsRequired = true)] public long Revision { get; set; }
   }
 
   [Serializable, DataContract]
