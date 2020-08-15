@@ -594,15 +594,15 @@ namespace MachineWatchTest
 
       //check job2 is not copied
       var notCopied = _jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-4), DateTime.UtcNow.AddHours(-3));
-      notCopied.Jobs.Count.Should().Be(1);
-      CheckJobEqual(job2, notCopied.Jobs.FirstOrDefault(), true);
+      notCopied.Count.Should().Be(1);
+      CheckJobEqual(job2, notCopied.FirstOrDefault(), true);
 
       //mark job2 copied
       _jobDB.MarkJobCopiedToSystem("Unique2");
       job2.JobCopiedToSystem = true;
       CheckJobs(job1, job2, null, job2.ScheduleId, theExtraParts, unfilledWorks);
       notCopied = _jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-4), DateTime.UtcNow.AddHours(-3));
-      notCopied.Jobs.Should().BeEmpty();
+      notCopied.Should().BeEmpty();
 
       //Archive job2
       _jobDB.ArchiveJob(job2.UniqueStr);
@@ -643,9 +643,9 @@ namespace MachineWatchTest
 
       _jobDB.AddJobs(new NewJobs() { Jobs = (new[] { uniq1, uniq2 }).ToList() }, null);
 
-      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Jobs.Select(j => j.UniqueStr)
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Select(j => j.UniqueStr)
         .Should().BeEquivalentTo(new[] { "uniq1" });
-      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs.Select(j => j.UniqueStr)
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Select(j => j.UniqueStr)
         .Should().BeEquivalentTo(new[] { "uniq1" });
 
 
@@ -682,9 +682,9 @@ namespace MachineWatchTest
 
       _jobDB.LoadDecrementQuantitiesAfter(-1).Should().BeEquivalentTo(expected1);
 
-      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Jobs.Select(j => j.UniqueStr)
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Select(j => j.UniqueStr)
         .Should().BeEquivalentTo(new[] { "uniq1" });
-      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false)
         .Should().BeEmpty();
 
       var history = _jobDB.LoadJobHistory(dtime, dtime.AddMinutes(10));
@@ -753,9 +753,9 @@ namespace MachineWatchTest
         }
       });
 
-      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Jobs.Select(j => j.UniqueStr)
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: true).Select(j => j.UniqueStr)
         .Should().BeEquivalentTo(new[] { "uniq1" });
-      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false).Jobs
+      _jobDB.LoadJobsNotCopiedToSystem(dtime, dtime, includeDecremented: false)
         .Should().BeEmpty();
 
       history = _jobDB.LoadJobHistory(dtime, dtime.AddMinutes(10));

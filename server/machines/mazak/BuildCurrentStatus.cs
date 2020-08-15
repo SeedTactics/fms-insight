@@ -340,7 +340,7 @@ namespace MazakMachineInterface
 
 
       var notCopied = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-WriteJobs.JobLookbackHours), DateTime.UtcNow);
-      foreach (var j in notCopied.Jobs)
+      foreach (var j in notCopied)
       {
         if (curStatus.Jobs.ContainsKey(j.UniqueStr))
         {

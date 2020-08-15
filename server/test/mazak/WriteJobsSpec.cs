@@ -342,7 +342,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
       var start = newJobs.Jobs.First().RouteStartingTimeUTC;
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
 
       // uniq1 was archived
       _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
@@ -461,7 +461,7 @@ namespace MachineWatchTest
       _writeMock.AddSchedules.Should().BeNull();
 
       var start = newJobs.Jobs.First().RouteStartingTimeUTC;
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
     }
 
     [Fact]
@@ -486,7 +486,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
       var start = newJobs.Jobs.First().RouteStartingTimeUTC;
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Should().BeEquivalentTo(
           newJobs.Jobs,
           options => options
@@ -501,7 +501,7 @@ namespace MachineWatchTest
         .WithMessage("Sample error");
 
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Should().BeEquivalentTo(
           newJobs.Jobs,
           options => options
@@ -513,7 +513,7 @@ namespace MachineWatchTest
       _writeJobs.RecopyJobsToMazak(_jobDB, start);
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
     }
   }
 }

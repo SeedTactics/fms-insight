@@ -1139,36 +1139,6 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    private MachineWatchInterface.PlannedSchedule LoadPlannedSchedule(IDbCommand cmd)
-    {
-      lock (_cfg)
-      {
-        var ret = default(MachineWatchInterface.PlannedSchedule);
-        ret.Jobs = new List<MachineWatchInterface.JobPlan>();
-        ret.ExtraParts = new Dictionary<string, int>();
-
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          cmd.Transaction = trans;
-
-          ret.Jobs = LoadJobsHelper(cmd, trans);
-          ret.ExtraParts = LoadMostRecentExtraParts(trans);
-          ret.CurrentUnfilledWorkorders = LoadMostRecentUnfilledWorkorders(trans);
-          ret.LatestScheduleId = LatestScheduleId(trans);
-
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-
-        return ret;
-      }
-    }
-
     private MachineWatchInterface.HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd)
     {
       lock (_cfg)
@@ -1219,7 +1189,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public MachineWatchInterface.PlannedSchedule LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
+    public List<MachineWatchInterface.JobPlan> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
     {
       var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId " +
                   " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
@@ -1232,7 +1202,11 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = cmdTxt;
         cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-        return LoadPlannedSchedule(cmd);
+        using (var trans = _connection.BeginTransaction())
+        {
+          cmd.Transaction = trans;
+          return LoadJobsHelper(cmd, trans);
+        }
       }
     }
 
