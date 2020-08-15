@@ -230,7 +230,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var cellSt = _createLog.BuildCellState(jobDB, logDB, _icc.LoadNiigataStatus(), jobs);
 
         var decrs = new List<JobDB.NewDecrementQuantity>();
-        foreach (var j in jobs.Jobs)
+        foreach (var j in jobs)
         {
           if (jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
 

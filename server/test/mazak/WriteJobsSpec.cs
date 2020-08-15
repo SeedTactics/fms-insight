@@ -323,7 +323,7 @@ namespace MachineWatchTest
       inProcJob.SetPlannedCyclesOnFirstProcess(1, 15);
       _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { completedJob, inProcJob } }, null);
 
-      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq1", "uniq2" }
       );
 
@@ -345,7 +345,7 @@ namespace MachineWatchTest
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Jobs.Should().BeEmpty();
 
       // uniq1 was archived
-      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq2", "aaa-schId1234", "bbb-schId1234", "ccc-schId1234" }
       );
 
@@ -365,7 +365,7 @@ namespace MachineWatchTest
       inProcJob.SetPlannedCyclesOnFirstProcess(1, 20);
       _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { completedJob, inProcJob } }, null);
 
-      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq1", "uniq2" }
       );
 
@@ -383,7 +383,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
 
-      _jobDB.LoadUnarchivedJobs().Jobs.Select(j => j.UniqueStr).Should().BeEquivalentTo(
+      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq2", "part1-schId1234", "part2-schId1234", "part3-schId1234" }
       );
 

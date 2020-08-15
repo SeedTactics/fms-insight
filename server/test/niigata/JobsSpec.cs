@@ -333,10 +333,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Status = status,
         Pallets = new List<PalletAndMaterial> { pal1, pal2 },
         QueuedMaterial = new List<InProcessMaterial> { queuedMat },
-        Schedule = new PlannedSchedule()
-        {
-          Jobs = new List<JobPlan> { j, j2, j3 }
-        }
+        UnarchivedJobs = new List<JobPlan> { j, j2, j3 }
       });
 
       ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
@@ -391,7 +388,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       ((IJobControl)_jobs).AddJobs(newJobs, null);
 
-      _jobDB.LoadUnarchivedJobs().Jobs.Should().BeEquivalentTo(new[] { newJob1, newJob2, toKeepJob });
+      _jobDB.LoadUnarchivedJobs().Should().BeEquivalentTo(new[] { newJob1, newJob2, toKeepJob });
       _jobDB.LoadJob("old").Archived.Should().BeTrue();
 
       _syncMock.Received().JobsOrQueuesChanged();

@@ -191,7 +191,7 @@ namespace BlackMaple.FMSInsight.Niigata
         CellState curSt = _sync.CurrentCellState();
 
         var existingJobs = jdb.LoadUnarchivedJobs();
-        foreach (var j in existingJobs.Jobs)
+        foreach (var j in existingJobs)
         {
           if (IsJobCompleted(j, curSt))
           {
@@ -338,12 +338,12 @@ namespace BlackMaple.FMSInsight.Niigata
       string casting = partName;
 
       // try and see if there is a job for this part with an actual casting
-      PlannedSchedule sch;
+      List<JobPlan> unarchived;
       using (var jdb = _jobDbCfg.OpenConnection())
       {
-        sch = jdb.LoadUnarchivedJobs();
+        unarchived = jdb.LoadUnarchivedJobs();
       }
-      var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
+      var job = unarchived.FirstOrDefault(j => j.PartName == partName);
       if (job != null)
       {
         for (int path = 1; path <= job.GetNumPaths(1); path++)

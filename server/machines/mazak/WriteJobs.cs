@@ -338,9 +338,9 @@ namespace MazakMachineInterface
 
       var unarchived = jobDB.LoadUnarchivedJobs();
 
-      var toArchive = unarchived.Jobs.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
+      var toArchive = unarchived.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
 
-      var newDecrs = unarchived.Jobs.Select(j =>
+      var newDecrs = unarchived.Select(j =>
       {
         int toDecr = 0;
         for (int path = 1; path <= j.GetNumPaths(process: 1); path += 1)

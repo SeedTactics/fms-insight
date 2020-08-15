@@ -332,12 +332,12 @@ namespace MazakMachineInterface
       string casting = partName;
 
       // try and see if there is a job for this part with an actual casting
-      PlannedSchedule sch;
+      List<JobPlan> sch;
       using (var jdb = jobDBCfg.OpenConnection())
       {
         sch = jdb.LoadUnarchivedJobs();
       }
-      var job = sch.Jobs.FirstOrDefault(j => j.PartName == partName);
+      var job = sch.FirstOrDefault(j => j.PartName == partName);
       if (job != null)
       {
         for (int path = 1; path <= job.GetNumPaths(1); path++)

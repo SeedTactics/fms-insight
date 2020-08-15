@@ -1216,14 +1216,16 @@ namespace MachineWatchTest
       if ((job2 != null)) CheckJobEqual(job2, _jobDB.LoadJob(job2.UniqueStr), true);
       if ((job3 != null)) CheckJobEqual(job3, _jobDB.LoadJob(job3.UniqueStr), true);
 
-      var jobsAndExtra = _jobDB.LoadUnarchivedJobs();
-      var jobs = jobsAndExtra.Jobs.ToDictionary(x => x.UniqueStr, x => x);
-      Assert.Equal(schId == null ? "" : schId, jobsAndExtra.LatestScheduleId);
+      var latestSch = _jobDB.LoadMostRecentSchedule();
+      Assert.Equal(schId == null ? "" : schId, latestSch.LatestScheduleId);
       Assert.Equal(extraParts == null ? new Dictionary<string, int>() : extraParts,
-       jobsAndExtra.ExtraParts);
+       latestSch.ExtraParts);
 
       if (works == null) works = new List<PartWorkorder>();
-      CheckWorkordersEqual(works, jobsAndExtra.CurrentUnfilledWorkorders);
+      CheckWorkordersEqual(works, latestSch.CurrentUnfilledWorkorders);
+
+      var jobsLst = _jobDB.LoadUnarchivedJobs();
+      var jobs = jobsLst.ToDictionary(x => x.UniqueStr, x => x);
 
       if (job2 == null)
       {

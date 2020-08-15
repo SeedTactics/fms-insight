@@ -135,7 +135,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private IList<JobPath> FindPathsForPallet(CellState cellSt, int pallet, int? loadStation)
     {
       return
-        cellSt.Schedule.Jobs
+        cellSt.UnarchivedJobs
         .SelectMany(job => Enumerable.Range(1, job.NumProcesses).Select(proc => new { job, proc }))
         .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath { Job = j.job, Process = j.proc, Path = path }))
         .Where(j =>

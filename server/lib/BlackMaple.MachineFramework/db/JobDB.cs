@@ -1206,12 +1206,16 @@ namespace BlackMaple.MachineFramework
     // Public Loading API
     // --------------------------------------------------------------------------------
 
-    public MachineWatchInterface.PlannedSchedule LoadUnarchivedJobs()
+    public List<MachineWatchInterface.JobPlan> LoadUnarchivedJobs()
     {
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, CreateMarker, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId FROM jobs WHERE Archived = 0";
-        return LoadPlannedSchedule(cmd);
+        using (var trans = _connection.BeginTransaction())
+        {
+          cmd.Transaction = trans;
+          return LoadJobsHelper(cmd, trans);
+        }
       }
     }
 
