@@ -20,15 +20,18 @@ namespace BlackMaple.FMSInsight.ReverseProxy
   {
     public static void Main(string[] args)
     {
+      var exeDir = System.IO.Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+      System.IO.Directory.SetCurrentDirectory(exeDir);
       Host.CreateDefaultBuilder(args)
         .ConfigureServices((context, services) =>
         {
           services.Configure<KestrelServerOptions>(context.Configuration.GetSection("Kestrel"));
         })
+        .UseWindowsService()
         .ConfigureWebHostDefaults(webBuilder => webBuilder
           .UseStartup<Startup>()
+          .UseContentRoot(exeDir) // must appear after UseWindowsService or setting is overwritten
         )
-        .UseWindowsService()
         .Build()
         .Run();
     }
