@@ -802,13 +802,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectNoChanges()
     {
-      var sch = _jobDB.LoadUnarchivedJobs();
+      var unarchJobs = _jobDB.LoadUnarchivedJobs();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+        var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, unarchJobs);
         cellSt.PalletStateUpdated.Should().BeFalse();
-        cellSt.Schedule.Should().Be(sch);
+        cellSt.UnarchivedJobs.Should().BeEquivalentTo(unarchJobs);
         CheckCellStMatchesExpected(cellSt);
         _assign.NewPalletChange(cellSt).Should().BeNull();
         logMonitor.Should().NotRaise("NewLogEntry");
@@ -1289,7 +1289,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-        cellSt.Schedule.Should().Be(sch);
+        cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
 
         var expectedLogs = new List<LogEntry>();
 
@@ -1310,7 +1310,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           // reload cell state
           cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-          cellSt.Schedule.Should().Be(sch);
+          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
         }
 
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);

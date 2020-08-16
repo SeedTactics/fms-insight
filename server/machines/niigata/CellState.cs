@@ -66,7 +66,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class CellState
   {
     public NiigataStatus Status { get; set; }
-    public PlannedSchedule Schedule { get; set; }
+    public ICollection<JobPlan> UnarchivedJobs { get; set; }
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterial> QueuedMaterial { get; set; }
@@ -76,7 +76,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public interface IBuildCellState
   {
-    CellState BuildCellState(JobDB jobDB, EventLogDB logDB, NiigataStatus status, PlannedSchedule sch);
+    CellState BuildCellState(JobDB jobDB, EventLogDB logDB, NiigataStatus status, List<JobPlan> unarchivedJobs);
   }
 
   public class CreateCellState : IBuildCellState
@@ -93,7 +93,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _machConnection = machConn;
     }
 
-    public CellState BuildCellState(JobDB jobDB, EventLogDB logDB, NiigataStatus status, PlannedSchedule sch)
+    public CellState BuildCellState(JobDB jobDB, EventLogDB logDB, NiigataStatus status, List<JobPlan> unarchivedJobs)
     {
       var palletStateUpdated = false;
 
@@ -132,14 +132,14 @@ namespace BlackMaple.FMSInsight.Niigata
       return new CellState()
       {
         Status = status,
-        Schedule = sch,
+        UnarchivedJobs = unarchivedJobs,
         PalletStateUpdated = palletStateUpdated,
         Pallets = pals,
         QueuedMaterial = QueuedMaterial(new HashSet<long>(
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
         ), logDB),
-        JobQtyRemainingOnProc1 = CountRemainingQuantity(jobDB, logDB, sch, pals),
-        ProgramNums = FindProgramNums(jobDB, sch),
+        JobQtyRemainingOnProc1 = CountRemainingQuantity(jobDB, logDB, unarchivedJobs, pals),
+        ProgramNums = FindProgramNums(jobDB, unarchivedJobs),
       };
     }
 
@@ -1355,10 +1355,10 @@ namespace BlackMaple.FMSInsight.Niigata
       return mats;
     }
 
-    private Dictionary<(string uniq, int proc1path), int> CountRemainingQuantity(JobDB jobDB, EventLogDB logDB, PlannedSchedule schedule, IEnumerable<PalletAndMaterial> pals)
+    private Dictionary<(string uniq, int proc1path), int> CountRemainingQuantity(JobDB jobDB, EventLogDB logDB, IEnumerable<JobPlan> unarchivedJobs, IEnumerable<PalletAndMaterial> pals)
     {
       var cnts = new Dictionary<(string uniq, int proc1path), int>();
-      foreach (var job in schedule.Jobs)
+      foreach (var job in unarchivedJobs)
       {
         if (jobDB.LoadDecrementsForJob(job.UniqueStr).Count == 0)
         {
@@ -1463,10 +1463,10 @@ namespace BlackMaple.FMSInsight.Niigata
       return null;
     }
 
-    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, PlannedSchedule schedule)
+    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, IEnumerable<JobPlan> unarchivedJobs)
     {
       var stops =
-        schedule.Jobs
+        unarchivedJobs
           .SelectMany(j => Enumerable.Range(1, j.NumProcesses).SelectMany(proc =>
             Enumerable.Range(1, j.GetNumPaths(proc)).SelectMany(path =>
               j.GetMachiningStop(proc, path)

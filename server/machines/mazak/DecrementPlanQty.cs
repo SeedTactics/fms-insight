@@ -186,7 +186,7 @@ namespace MazakMachineInterface
       }
 
       var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddHours(1), includeDecremented: false);
-      foreach (var j in oldJobs.Jobs)
+      foreach (var j in oldJobs)
       {
         decrAmt[j.UniqueStr] = Enumerable.Range(1, j.GetNumPaths(process: 1)).Select(path => j.GetPlannedCyclesOnFirstProcess(path)).Sum();
         partNames[j.UniqueStr] = j.PartName;

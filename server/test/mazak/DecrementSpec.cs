@@ -496,7 +496,7 @@ namespace MachineWatchTest
         Jobs = new List<JobPlan> { uuuu, vvvv }
       }, null);
 
-      _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Jobs.Select(j => j.UniqueStr)
+      _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Select(j => j.UniqueStr)
         .Should().BeEquivalentTo(new[] { "vvvv" });
 
       _decr.Decrement(_jobDB, now);
@@ -539,7 +539,7 @@ namespace MachineWatchTest
         }
       });
 
-      _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Jobs
+      _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false)
         .Should().BeEmpty();
 
     }

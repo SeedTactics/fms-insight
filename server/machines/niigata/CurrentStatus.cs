@@ -47,7 +47,7 @@ namespace BlackMaple.FMSInsight.Niigata
       foreach (var k in settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
 
       // jobs
-      foreach (var j in status.Schedule.Jobs)
+      foreach (var j in status.UnarchivedJobs)
       {
         var curJob = new InProcessJob(j);
         curStatus.Jobs.Add(curJob.UniqueStr, curJob);

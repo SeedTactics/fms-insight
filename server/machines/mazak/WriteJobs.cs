@@ -127,13 +127,13 @@ namespace MazakMachineInterface
 
       //check for an old schedule that has not yet been copied
       var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1), includeDecremented: false);
-      if (oldJobs.Jobs.Count > 0)
+      if (oldJobs.Count > 0)
       {
         //there are jobs to copy
         Log.Information("Resuming copy of job schedules into mazak {uniqs}",
-            oldJobs.Jobs.Select(j => j.UniqueStr).ToList());
+            oldJobs.Select(j => j.UniqueStr).ToList());
 
-        AddSchedules(jobDB, oldJobs.Jobs);
+        AddSchedules(jobDB, oldJobs);
       }
 
       // add programs here first so that they exist in the database when looking up most recent revision for use in parts
@@ -159,15 +159,15 @@ namespace MazakMachineInterface
     {
       var now = nowUtc ?? DateTime.UtcNow;
       var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1), includeDecremented: false);
-      if (jobs.Jobs.Count == 0) return;
+      if (jobs.Count == 0) return;
 
       //there are jobs to copy
       Log.Information("Resuming copy of job schedules into mazak {uniqs}",
-          jobs.Jobs.Select(j => j.UniqueStr).ToList());
+          jobs.Select(j => j.UniqueStr).ToList());
 
       List<string> logMessages = new List<string>();
 
-      AddSchedules(jobDB, jobs.Jobs);
+      AddSchedules(jobDB, jobs);
 
       hold.SignalNewSchedules();
     }
@@ -338,9 +338,9 @@ namespace MazakMachineInterface
 
       var unarchived = jobDB.LoadUnarchivedJobs();
 
-      var toArchive = unarchived.Jobs.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
+      var toArchive = unarchived.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
 
-      var newDecrs = unarchived.Jobs.Select(j =>
+      var newDecrs = unarchived.Select(j =>
       {
         int toDecr = 0;
         for (int path = 1; path <= j.GetNumPaths(process: 1); path += 1)
