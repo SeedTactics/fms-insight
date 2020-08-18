@@ -21,11 +21,10 @@ Thus, FMS Insight provides specific pages targeted at specific users which
 display relevant information. We suggest that you bookmark this page or set
 it as the home page of the browser.
 
-![Screenshot of choosing mode](assets/insight-choose-mode.png)
-
 Once launched, the user must choose one of the following modes:
 
 - [Load Station, Queue Management, Inspection Stand, Wash](client-station-monitor.md)
+- [Tools and Programs](client-tools-programs.md)
 - [Operation Management](client-operations.md)
 - [Engineering](client-engineering.md)
 - [Quality Analysis](client-quality.md)

@@ -53,6 +53,10 @@ function screenshotUrl(img) {
   return siteConfig.baseUrl + "screenshots/" + img;
 }
 
+function assetUrl(img) {
+  return siteConfig.baseUrl + "docs/assets/" + img;
+}
+
 function docUrl(doc, language) {
   return siteConfig.baseUrl + "docs/" + (language ? language + "/" : "") + doc;
 }
@@ -215,6 +219,14 @@ const traits = [
       "lookup failed serials.",
     image: screenshotUrl("insight-inspection-details.jpg"),
     title: "Inspections and Quality",
+  },
+  {
+    content:
+      "FMS Insight uses statistics to automatically calculate the tool usage per program and provides a " +
+      "report showing the expected use from the currently scheduled parts and compares that to the current remaining life " +
+      " of tools currently in the machines.",
+    image: assetUrl("insight-tool-report.png"),
+    title: "Tool & Program Management",
   },
   {
     content:

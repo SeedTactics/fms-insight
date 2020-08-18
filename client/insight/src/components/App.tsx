@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -370,10 +370,12 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Operations_LoadStation:
     case routes.RouteLocation.Operations_Machines:
     case routes.RouteLocation.Operations_AllMaterial:
-    case routes.RouteLocation.Operations_Tools:
-    case routes.RouteLocation.Operations_Programs:
     case routes.RouteLocation.Operations_CompletedParts:
       return "https://fms-insight.seedtactics.com/docs/client-operations.html";
+
+    case routes.RouteLocation.Operations_Tools:
+    case routes.RouteLocation.Operations_Programs:
+      return "https://fms-insight.seedtactics.com/docs/client-tools-programs.html";
 
     case routes.RouteLocation.Engineering:
       return "https://fms-insight.seedtactics.com/docs/client-engineering.html";
@@ -382,7 +384,7 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Quality_Serials:
     case routes.RouteLocation.Quality_Paths:
     case routes.RouteLocation.Quality_Quarantine:
-      return "https://fms-insight.seedtactics.com/docs/client-quality.html";
+      return "https://fms-insight.seedtactics.com/docs/client-tools-programs.html";
 
     case routes.RouteLocation.Tools_Dashboard:
     case routes.RouteLocation.Tools_Programs:
