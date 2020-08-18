@@ -145,6 +145,38 @@ to determine if there are traffic jams occuring in the pallets. In a lean,
 healthy cell, most pallet cycles should be low and reasonably consistent. If
 pallet cycle times vary wildly, there is likely taffic jams or other flow problems.
 
+## Buffer Occupancy
+
+![Screenshot of buffer occupancy chart](assets/insight-buffer-occupancy.png)
+
+As material moves through the system, it buffers before various operations. It can buffer
+on a pallet waiting on the inbound rotary table, it can buffer on a pallet in the
+stocker waiting for either machining or unloading, or it can buffer between processes
+in a [transfer queue](material-tracking.md). In general, material will buffer right in
+front of the bottleneck operation. The buffer occupancy chart can thus be used to determine
+which operation (machining, loading, unloading) is the current bottleneck and also how the
+bottleneck changes over time.
+
+The buffer occupancy chart calculates a moving average of the quantity of material buffered
+in all these various places. The x-axis is the days of the month. For each time on
+the x-axis, a window around that point is used to calculate the average quantity of material
+in the buffer during the window of time. This average quantity is graphed on the y-axis.
+
+Using a moving average window smooths out the jitter from individual pallet moves,
+for example when a pallet rotates into the machine and another pallet is quickly
+sent to the inbound rotary. The size of the window can be controlled by the slider
+in the top-right. The size of the window should be set so that the major trends are
+visible while short oscillations are smoothed out.
+
+In an efficient, well-running system the bottleneck is always machining. This will be
+reflected in the buffer occupancy chart with the "Stocker[Waiting for unload]" line zero
+or almost zero, the "Rotary" for each machine always above zero, the
+"Stocker[Waiting for machining]" only positive if all rotary tables are full, and any
+in-process transfer queues small. If instead the load stations become the bottleneck,
+the buffer occupancy chart will show a rise either "Stocker[Wating for unload]" or a
+rise in the in-process transfer queue between processes. Also, the rotary buffer
+occupancy will drop to zero.
+
 ## Station Use
 
 ![Screenshot of Station Use Heatmap](assets/insight-analysis-station-oee.png)
