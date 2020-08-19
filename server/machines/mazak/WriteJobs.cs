@@ -60,6 +60,7 @@ namespace MazakMachineInterface
 
     private bool UseStartingOffsetForDueDate;
     private bool CheckPalletsUsedOnce;
+    private readonly bool _reuseFixtures;
     private string ProgramDirectory;
 
     public const int JobLookbackHours = 2 * 24;
@@ -75,6 +76,7 @@ namespace MazakMachineInterface
       FMSSettings settings,
       bool check,
       bool useStarting,
+      bool reuseFixtures,
       string progDir
     )
     {
@@ -83,6 +85,7 @@ namespace MazakMachineInterface
       hold = h;
       CheckPalletsUsedOnce = check;
       UseStartingOffsetForDueDate = useStarting;
+      _reuseFixtures = reuseFixtures;
       fmsSettings = settings;
       ProgramDirectory = progDir;
 
@@ -232,6 +235,7 @@ namespace MazakMachineInterface
         savedParts,
         writeDb.MazakType,
         CheckPalletsUsedOnce,
+        _reuseFixtures,
         fmsSettings,
         (prog, rev) => LookupProgram(jobDB, prog, rev),
         jobErrs);

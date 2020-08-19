@@ -231,6 +231,7 @@ namespace MachineWatchTest
         _settings,
         check: false,
         useStarting: true,
+        reuseFixtures: true,
         progDir: "theprogdir");
 
       jsonSettings = new JsonSerializerSettings();

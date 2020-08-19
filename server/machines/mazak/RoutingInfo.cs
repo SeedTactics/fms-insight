@@ -54,6 +54,7 @@ namespace MazakMachineInterface
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
     private readonly Action<NewJobs> _onNewJobs;
     private readonly Action<CurrentStatus> _onCurStatusChange;
+    public readonly bool _reuseFixtures;
 
     public bool CheckPalletsUsedOnce;
     public Action<NewJobs> NewJobTransform = null;
@@ -69,6 +70,7 @@ namespace MazakMachineInterface
       IQueueSyncFault queueSyncFault,
       IDecrementPlanQty decrement,
       bool check,
+      bool reuseFixtures,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<NewJobs> onNewJobs,
       Action<CurrentStatus> onStatusChange
@@ -87,6 +89,7 @@ namespace MazakMachineInterface
       CheckPalletsUsedOnce = check;
       _onNewJobs = onNewJobs;
       _onCurStatusChange = onStatusChange;
+      _reuseFixtures = reuseFixtures;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
       _copySchedulesTimer.Elapsed += (sender, args) => RecopyJobsToSystem();
@@ -178,6 +181,7 @@ namespace MazakMachineInterface
             new HashSet<string>(),
             writeDb.MazakType,
             CheckPalletsUsedOnce,
+            _reuseFixtures,
             fmsSettings,
             lookupProg,
             logMessages);

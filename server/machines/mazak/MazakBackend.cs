@@ -228,7 +228,9 @@ namespace MazakMachineInterface
       WriteJobs writeJobs;
       using (var jdb = jobDBConfig.OpenConnection())
       {
-        writeJobs = new WriteJobs(_writeDB, _readDB, hold, jdb, st, CheckPalletsUsedOnce, UseStartingOffsetForDueDate, ProgramDirectory);
+        writeJobs = new WriteJobs(
+          d: _writeDB, readDb: _readDB, h: hold, jDB: jdb, settings: st, check: CheckPalletsUsedOnce,
+          useStarting: UseStartingOffsetForDueDate, reuseFixtures: !UseStartingOffsetForDueDate, progDir: ProgramDirectory);
       }
       var decr = new DecrementPlanQty(_writeDB, _readDB);
 
@@ -247,8 +249,12 @@ namespace MazakMachineInterface
 #endif
       }
 
-      routing = new RoutingInfo(_writeDB, writeJobs, _readDB, logDataLoader, jobDBConfig, logDbConfig, writeJobs, queues, decr,
-          CheckPalletsUsedOnce, st,
+      routing = new RoutingInfo(
+        d: _writeDB, machineGroupName: writeJobs, readDb: _readDB, logR: logDataLoader, jDBCfg: jobDBConfig, jLogCfg: logDbConfig,
+        wJobs: writeJobs, queueSyncFault: queues, decrement: decr,
+          check: CheckPalletsUsedOnce,
+          reuseFixtures: !UseStartingOffsetForDueDate,
+          settings: st,
           onNewJobs: j => OnNewJobs?.Invoke(j),
           onStatusChange: s => OnNewCurrentStatus?.Invoke(s)
       );

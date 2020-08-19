@@ -335,48 +335,48 @@
       "PalletNumber": 3,
       "Fixture": "F:0:fixAA:3:1",
       "RecordID": 0,
-      "AngleV1": 2000,
-      "FixtureGroupV2": 2,
+      "AngleV1": 3000,
+      "FixtureGroupV2": 3,
       "Command": "Add"
     },
     {
       "PalletNumber": 4,
       "Fixture": "F:0:fixAA:3:1",
       "RecordID": 0,
+      "AngleV1": 3000,
+      "FixtureGroupV2": 3,
+      "Command": "Add"
+    },
+    {
+      "PalletNumber": 1,
+      "Fixture": "F:0:fixBB:1:1",
+      "RecordID": 0,
+      "AngleV1": 2000,
+      "FixtureGroupV2": 2,
+      "Command": "Add"
+    },
+    {
+      "PalletNumber": 2,
+      "Fixture": "F:0:fixBB:1:1",
+      "RecordID": 0,
       "AngleV1": 2000,
       "FixtureGroupV2": 2,
       "Command": "Add"
     },
     {
       "PalletNumber": 1,
-      "Fixture": "F:0:fixBB:1:1",
-      "RecordID": 0,
-      "AngleV1": 3000,
-      "FixtureGroupV2": 3,
-      "Command": "Add"
-    },
-    {
-      "PalletNumber": 2,
-      "Fixture": "F:0:fixBB:1:1",
-      "RecordID": 0,
-      "AngleV1": 3000,
-      "FixtureGroupV2": 3,
-      "Command": "Add"
-    },
-    {
-      "PalletNumber": 1,
       "Fixture": "F:0:fixBB:1:2",
       "RecordID": 0,
-      "AngleV1": 3000,
-      "FixtureGroupV2": 3,
+      "AngleV1": 2000,
+      "FixtureGroupV2": 2,
       "Command": "Add"
     },
     {
       "PalletNumber": 2,
       "Fixture": "F:0:fixBB:1:2",
       "RecordID": 0,
-      "AngleV1": 3000,
-      "FixtureGroupV2": 3,
+      "AngleV1": 2000,
+      "FixtureGroupV2": 2,
       "Command": "Add"
     },
     {
