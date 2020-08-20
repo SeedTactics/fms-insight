@@ -898,6 +898,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         );
       }
+
+      // check programs
+      _jobDB.LoadProgramContent("aaa1RO", 1).Should().Be("Program content for AAA-1 on RO");
+      var aaa1RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 1 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
+      aaa1RO.Program.Should().Be("aaa1RO");
+      aaa1RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa2RO", 1).Should().Be("Program content for AAA-2 on RO");
+      var aaa2RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 2 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
+      aaa2RO.Program.Should().Be("aaa2RO");
+      aaa2RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa2FC", 1).Should().Be("Program content for AAA-2 on FC");
+      var aaa2FC = logs.First(e => e.Material.FirstOrDefault()?.Process == 2 && e.LogType == LogType.MachineCycle && e.LocationName == "FC");
+      aaa2FC.Program.Should().Be("aaa2FC");
+      aaa2FC.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa3FC", 1).Should().Be("Program content for AAA-3 on FC");
+      var aaa3FC = logs.First(e => e.Material.FirstOrDefault()?.Process == 3 && e.LogType == LogType.MachineCycle && e.LocationName == "FC");
+      aaa3FC.Program.Should().Be("aaa3FC");
+      aaa3FC.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa4RO", 1).Should().Be("Program content for AAA-4 on RO");
+      var aaa4RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 4 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
+      aaa4RO.Program.Should().Be("aaa4RO");
+      aaa4RO.ProgramDetails["ProgramRevision"].Should().Be("1");
     }
   }
 }
