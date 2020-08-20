@@ -795,7 +795,10 @@ namespace BlackMaple.FMSInsight.Niigata
               }
               else
               {
-                if (pallet.Status.CurStation.Location.Location == PalletLocationEnum.Machine && ss.JobStop.Stations.Contains(pallet.Status.CurStation.Location.Num))
+                if (pallet.Status.CurStation.Location.Location == PalletLocationEnum.Machine &&
+                    ss.JobStop.StationGroup == pallet.Status.CurStation.Location.StationGroup &&
+                    ss.JobStop.Stations.Contains(pallet.Status.CurStation.Location.Num)
+                   )
                 {
                   RecordPalletAtMachine(pallet, face, matOnFace, ss, machStart, machEnd, nowUtc, jobDB, logDB, ref palletStateUpdated);
                 }

@@ -46,6 +46,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private readonly TimeSpan ReclampTime = TimeSpan.FromMinutes(4);
 
     private NiigataStatus _status;
+    private NiigataStationNames _statNames;
 
     private Dictionary<int, DateTime> _lastPalTransition = new Dictionary<int, DateTime>();
     private Dictionary<int, DateTime> _lastMachineTransition = new Dictionary<int, DateTime>();
@@ -90,8 +91,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       NewCurrentStatus?.Invoke();
     }
 
-    public IccSimulator(int numPals, int numMachines, int numLoads)
+    public IccSimulator(int numPals, int numMachines, int numLoads, NiigataStationNames statNames)
     {
+      _statNames = statNames;
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
       _status.Programs = new Dictionary<int, ProgramEntry>();
@@ -156,13 +158,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .OrderBy(x => x)
         .ToList()
         ;
-      IEnumerable<int> openMach =
+      IEnumerable<int> openIccMach =
         _status.Machines.Keys
         .Where(m =>
-          _status.Pallets.FirstOrDefault(x => x.CurStation.Location.Location == PalletLocationEnum.MachineQueue && x.CurStation.Location.Num == m)
-          ==
-          null
-        )
+        {
+          var machine = _statNames.IccMachineToJobMachNames[m];
+          var pal = _status.Pallets.FirstOrDefault(x =>
+            x.CurStation.Location.Location == PalletLocationEnum.MachineQueue &&
+            x.CurStation.Location.StationGroup == machine.group &&
+            x.CurStation.Location.Num == machine.num
+          );
+          return pal == null;
+        })
         .OrderBy(x => x)
         .ToList()
         ;
@@ -256,7 +263,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
             {
               var nextStep = (MachiningStep)pal.Master.Routes[pal.Tracking.CurrentStepNum - 1 + 1];
-              var mach = openMach.FirstOrDefault(nextStep.Machines.Contains);
+              var mach = openIccMach.FirstOrDefault(nextStep.Machines.Contains);
               if (mach > 0 && !pal.Master.Skip)
               {
                 transitions.Add(new NextTransition()
@@ -265,7 +272,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = () =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
-                    pal.CurStation = NiigataStationNum.MachineQueue(mach, null);
+                    pal.CurStation = NiigataStationNum.MachineQueue(mach, _statNames);
                     pal.Tracking.CurrentControlNum += 1;
                     pal.Tracking.CurrentStepNum += 1;
                   }
@@ -298,7 +305,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if at buffer and there is open machine, move to cart
             if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
             {
-              var mc = openMach.FirstOrDefault(mach.Machines.Contains);
+              var mc = openIccMach.FirstOrDefault(mach.Machines.Contains);
               if (mc > 0 && !pal.Master.Skip)
               {
                 transitions.Add(new NextTransition()
@@ -315,7 +322,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if on cart, drop at machine
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Cart)
             {
-              var mc = openMach.FirstOrDefault(mach.Machines.Contains);
+              var mc = openIccMach.FirstOrDefault(mach.Machines.Contains);
               if (mc > 0)
               {
                 transitions.Add(new NextTransition()
@@ -324,7 +331,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = () =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum].Add(CartTravelTime);
-                    pal.CurStation = NiigataStationNum.MachineQueue(mc, null);
+                    pal.CurStation = NiigataStationNum.MachineQueue(mc, _statNames);
                   }
                 });
               }
@@ -336,9 +343,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if on rotary queue, consider swap
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.MachineQueue)
             {
-              var mc = pal.CurStation.Location.Num;
+              var group = pal.CurStation.Location.StationGroup;
+              var jobStatNum = pal.CurStation.Location.Num;
               var palInsideMachine = _status.Pallets.FirstOrDefault(p =>
-                p.CurStation.Location.Location == PalletLocationEnum.Machine && p.CurStation.Location.Num == mc
+                p.CurStation.Location.Location == PalletLocationEnum.Machine &&
+                p.CurStation.Location.StationGroup == group &&
+                p.CurStation.Location.Num == jobStatNum
               );
               DateTime swapTime;
               if (palInsideMachine != null)
@@ -353,6 +363,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 swapTime = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
               }
+              var mc = _statNames.JobMachToIcc(group, jobStatNum);
               if (!_status.Machines[mc].Machining)
               {
                 transitions.Add(new NextTransition()
@@ -361,7 +372,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = () =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] = swapTime;
-                    pal.CurStation = NiigataStationNum.Machine(mc, null);
+                    pal.CurStation = NiigataStationNum.Machine(mc, _statNames);
                     _lastMachineTransition[mc] = swapTime;
                     _programsRunOnMachine[mc].Clear();
                     _status.Machines[mc].Machining = true;
@@ -369,7 +380,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     if (palInsideMachine != null)
                     {
                       _lastPalTransition[palInsideMachine.Master.PalletNum] = swapTime;
-                      palInsideMachine.CurStation = NiigataStationNum.MachineQueue(mc, null);
+                      palInsideMachine.CurStation = NiigataStationNum.MachineQueue(mc, _statNames);
                     }
                   }
                 });
@@ -378,7 +389,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // if on the machine, consider starting next program or setting after-MC
             else if (beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Machine)
             {
-              var mc = pal.CurStation.Location.Num;
+              var mc = _statNames.JobMachToIcc(pal.CurStation.Location.StationGroup, pal.CurStation.Location.Num);
               if (!_status.Machines[mc].Machining)
               {
                 throw new Exception("Pallet in Before-MC but not machining");
@@ -410,9 +421,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             //if After-MC and still in machine, consider swap
             else if (!beforeStep && pal.CurStation.Location.Location == PalletLocationEnum.Machine)
             {
-              var mc = pal.CurStation.Location.Num;
+              var group = pal.CurStation.Location.StationGroup;
+              var statNum = pal.CurStation.Location.Num;
               var palOnQueue = _status.Pallets.FirstOrDefault(p =>
-                p.CurStation.Location.Location == PalletLocationEnum.MachineQueue && p.CurStation.Location.Num == mc
+                p.CurStation.Location.Location == PalletLocationEnum.MachineQueue &&
+                p.CurStation.Location.StationGroup == group &&
+                p.CurStation.Location.Num == statNum
               );
               DateTime swapTime;
               if (palOnQueue != null)
@@ -427,6 +441,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 swapTime = _lastPalTransition[pal.Master.PalletNum].Add(RotarySwapTime);
               }
+              var mc = _statNames.JobMachToIcc(group, statNum);
               if (!_status.Machines[mc].Machining && (palOnQueue == null || (palOnQueue.CurrentStep is MachiningStep && palOnQueue.Tracking.BeforeCurrentStep)))
               {
                 transitions.Add(new NextTransition()
@@ -435,7 +450,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   UpdateStatus = () =>
                   {
                     _lastPalTransition[pal.Master.PalletNum] = swapTime;
-                    pal.CurStation = NiigataStationNum.MachineQueue(mc, null);
+                    pal.CurStation = NiigataStationNum.MachineQueue(mc, _statNames);
                     if (palOnQueue != null)
                     {
                       var palOnQueueMach = (MachiningStep)palOnQueue.CurrentStep;
@@ -444,7 +459,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       _status.Machines[mc].Machining = true;
                       _status.Machines[mc].CurrentlyExecutingProgram = palOnQueueMach.ProgramNumsToRun.First();
                       _lastPalTransition[palOnQueue.Master.PalletNum] = swapTime;
-                      palOnQueue.CurStation = NiigataStationNum.Machine(mc, null);
+                      palOnQueue.CurStation = NiigataStationNum.Machine(mc, _statNames);
                     }
                   }
                 });
