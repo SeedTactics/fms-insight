@@ -94,12 +94,16 @@ namespace BlackMaple.FMSInsight.Niigata
           ),
           IccMachineToJobMachNames = string.IsNullOrEmpty(machineNames)
             ? new Dictionary<int, (string group, int num)>()
-            : machineNames.Split(',').Select((machineName, idx) =>
+            : machineNames.Split(',').Select(m => m.Trim()).Select((machineName, idx) =>
             {
-              var lastNumIdx = machineName.LastIndexOfAny(new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' });
-              if (lastNumIdx >= 0 && int.TryParse(machineName.Substring(lastNumIdx), out var num))
+              if (!char.IsDigit(machineName.Last()))
               {
-                return new { iccMc = idx + 1, group = machineName.Substring(0, lastNumIdx), num = num };
+                return null;
+              }
+              var group = new string(machineName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
+              if (int.TryParse(machineName.Substring(group.Length), out var num))
+              {
+                return new { iccMc = idx + 1, group = group, num = num };
               }
               else
               {
@@ -116,7 +120,7 @@ namespace BlackMaple.FMSInsight.Niigata
           string.IsNullOrEmpty(machineIps) ? Enumerable.Empty<string>() : machineIps.Split(',').Select(s => s.Trim())
         );
 
-        var connStr = config.GetValue<string>("Connection String");
+        var connStr = config.GetValue<string>("Connection String", defaultValue: null);
 
         _icc = new NiigataICC(programDir, connStr, StationNames);
         var createLog = new CreateCellState(cfg, StationNames, MachineConnection);

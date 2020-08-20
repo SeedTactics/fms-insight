@@ -36,6 +36,26 @@
       }
     },
     {
+      "name": "Niigata",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceRoot}/server/machines/niigata/bin/Debug/netcoreapp2.1/BlackMaple.FMSInsight.Niigata.dll",
+      "args": [],
+      "cwd": "${workspaceRoot}/server/machines/niigata/bin/Debug/netcoreapp2.1",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "preLaunchTask": "niigata:build",
+      "env": {
+        "Niigata__Connection String": "Host=localhost;Username=niigata;Password=${input:password}",
+        "Niigata__Program Directory": "../../../programs",
+        "Niigata__Machine Names": "RO1, RO2, RO3, RO4, FC1, FC2, FC3, FC4",
+        "QUEUE__Transfer": "-1",
+        "FMS__AutomaticSerials": "true",
+        "FMS__StartingSerial": "abcd",
+        "SERVER__EnableDebugLog": "true"
+      }
+    },
+    {
       "name": "Mock Server",
       "type": "coreclr",
       "request": "launch",
@@ -56,6 +76,14 @@
       "sourceMapPathOverrides": {
         "webpack:///src/*": "${webRoot}/*"
       }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "password",
+      "description": "Password",
+      "type": "promptString",
+      "password": true
     }
   ]
 }
