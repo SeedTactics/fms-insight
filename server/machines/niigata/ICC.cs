@@ -905,7 +905,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     @ProgNum,
                     @Comment,
                     @WorkTime,
-                    @Overwrite
+                    true
                   )
                   ",
             param: new
@@ -915,7 +915,6 @@ namespace BlackMaple.FMSInsight.Niigata
               ProgNum = add.ProgramNum,
               Comment = add.IccProgramComment,
               WorkTime = 0,
-              Overwrite = true
             },
             transaction: trans
           );
@@ -962,7 +961,60 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void DeleteProgram(JobDB jobDB, DeleteProgram delete)
     {
-      // TODO: send to ICC.  Set ProgramFile to null to delete
+      if (_connStr == null)
+      {
+        Log.Error("Unable to set delete program because the PostgreSQL connection string is not defined");
+        return;
+      }
+
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        var RegId = NewId();
+        using (var trans = conn.BeginTransaction())
+        {
+          conn.Execute(
+            $@"INSERT INTO register_program(
+                    registration_id,
+                    file_name,
+                    o_no,
+                    comment,
+                    work_base_time,
+                    overwrite
+                  ) VALUES (
+                    @RegId,
+                    NULL,
+                    @ProgNum,
+                    NULL,
+                    0,
+                    true
+                  )
+                  ",
+            param: new
+            {
+              RegId = RegId,
+              ProgNum = delete.ProgramNum,
+              Overwrite = true
+            },
+            transaction: trans
+          );
+
+          trans.Commit();
+        }
+
+        WaitForCompletion(_programRegistered, delete,
+          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM register_program WHERE registration_id = @RegId", new { RegId }),
+          () =>
+          {
+            using (var trans = conn.BeginTransaction())
+            {
+              conn.Execute("DELETE FROM register_program WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+              conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+              trans.Commit();
+            }
+          }
+        );
+      }
 
       // if we crash after deleting from the icc but before clearing the cell controller program, the above NewProgram check will
       // clear it later.
