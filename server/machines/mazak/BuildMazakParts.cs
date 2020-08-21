@@ -645,8 +645,7 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       ISet<string> savedParts,
       MazakDbType MazakType,
-      bool checkPalletsUsedOnce,
-      bool reuseFixtures,
+      bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, BlackMaple.MachineWatchInterface.ProgramRevision> lookupProgram,
       IList<string> errors)
@@ -654,9 +653,9 @@ namespace MazakMachineInterface
       Validate(jobs, fmsSettings, errors);
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors, lookupProgram);
       var usedMazakFixGroups = new HashSet<int>(mazakData.Pallets.Select(f => f.FixtureGroup));
-      var groups = GroupProcessesIntoFixtures(allParts, usedMazakFixGroups, checkPalletsUsedOnce, errors);
+      var groups = GroupProcessesIntoFixtures(allParts, usedMazakFixGroups, useStartingOffsetForDueDate, errors);
 
-      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, reuseFixtures, errors);
+      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, useStartingOffsetForDueDate, errors);
       var usedProgs = CalculateUsedPrograms(mazakData, allParts);
 
       return new MazakJobs()
@@ -987,7 +986,7 @@ namespace MazakMachineInterface
     #region Fixtures
 
     //group together the processes that use the same fixture
-    private static List<MazakFixture> GroupProcessesIntoFixtures(IEnumerable<MazakPart> allParts, HashSet<int> usedFixGroups, bool checkPalletsUsedOnce, IList<string> logMessages)
+    private static List<MazakFixture> GroupProcessesIntoFixtures(IEnumerable<MazakPart> allParts, HashSet<int> usedFixGroups, bool useStartingOffsetForDueDate, IList<string> logMessages)
     {
       var fixtures = new List<MazakFixture>();
 
@@ -1020,7 +1019,7 @@ namespace MazakMachineInterface
             fixLabel = palsToFixLabel(proc.Pallets());
           }
 
-          if (checkPalletsUsedOnce && !fixtureLabels.Contains(fixLabel))
+          if (!useStartingOffsetForDueDate && !fixtureLabels.Contains(fixLabel))
           {
             foreach (var p in proc.Pallets())
             {
@@ -1109,7 +1108,7 @@ namespace MazakMachineInterface
     }
 
     private static ISet<string> AssignMazakFixtures(
-      IEnumerable<MazakFixture> allFixtures, int downloadUID, MazakSchedulesPartsPallets mazakData, ISet<string> savedParts, bool reuseFixtures,
+      IEnumerable<MazakFixture> allFixtures, int downloadUID, MazakSchedulesPartsPallets mazakData, ISet<string> savedParts, bool useStartingOffsetForDueDate,
       IList<string> log)
     {
       //First calculate the available fixtures
@@ -1132,7 +1131,7 @@ namespace MazakMachineInterface
         fixture.Pallets.Sort();
 
         //check if we can reuse an existing fixture
-        if (reuseFixtures)
+        if (!useStartingOffsetForDueDate)
         {
           Log.Debug("Searching existing fixtures for {@fixture}", fixture);
           CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData);

@@ -58,9 +58,7 @@ namespace MazakMachineInterface
 
     //Settings
     public MazakDbType MazakType { get; }
-    public bool UseStartingOffsetForDueDate { get; set; }
-    public bool CheckPalletsUsedOnce { get; set; }
-    public string ProgramDirectory { get; set; }
+    public string ProgramDirectory { get; }
 
     public IWriteData WriteDB => _writeDB;
     public IReadDataAccess ReadDB => _readDB;
@@ -148,6 +146,7 @@ namespace MazakMachineInterface
       // general config
       string useStarting = cfg.GetValue<string>("Use Starting Offset For Due Date");
       string useStarting2 = cfg.GetValue<string>("Use Starting Offset");
+      bool UseStartingOffsetForDueDate = true;
       if (string.IsNullOrEmpty(useStarting))
       {
         if (string.IsNullOrEmpty(useStarting2))
@@ -163,10 +162,6 @@ namespace MazakMachineInterface
       {
         UseStartingOffsetForDueDate = Convert.ToBoolean(useStarting);
       }
-      //Perhaps this should be a new setting, but if you don't check for pallets used once
-      //then you don't care if all faces on a pallet are full so might as well use priority
-      //which causes pallet positions to go empty.
-      CheckPalletsUsedOnce = !UseStartingOffsetForDueDate;
 
       ProgramDirectory = cfg.GetValue<string>("Program Directory");
       if (string.IsNullOrEmpty(ProgramDirectory))
@@ -229,8 +224,14 @@ namespace MazakMachineInterface
       using (var jdb = jobDBConfig.OpenConnection())
       {
         writeJobs = new WriteJobs(
-          d: _writeDB, readDb: _readDB, h: hold, jDB: jdb, settings: st, check: CheckPalletsUsedOnce,
-          useStarting: UseStartingOffsetForDueDate, reuseFixtures: !UseStartingOffsetForDueDate, progDir: ProgramDirectory);
+          d: _writeDB,
+          readDb: _readDB,
+          h: hold,
+          jDB: jdb,
+          settings: st,
+          useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
+          progDir: ProgramDirectory
+        );
       }
       var decr = new DecrementPlanQty(_writeDB, _readDB);
 
@@ -250,13 +251,19 @@ namespace MazakMachineInterface
       }
 
       routing = new RoutingInfo(
-        d: _writeDB, machineGroupName: writeJobs, readDb: _readDB, logR: logDataLoader, jDBCfg: jobDBConfig, jLogCfg: logDbConfig,
-        wJobs: writeJobs, queueSyncFault: queues, decrement: decr,
-          check: CheckPalletsUsedOnce,
-          reuseFixtures: !UseStartingOffsetForDueDate,
-          settings: st,
-          onNewJobs: j => OnNewJobs?.Invoke(j),
-          onStatusChange: s => OnNewCurrentStatus?.Invoke(s)
+        d: _writeDB,
+        machineGroupName: writeJobs,
+        readDb: _readDB,
+        logR: logDataLoader,
+        jDBCfg: jobDBConfig,
+        jLogCfg: logDbConfig,
+        wJobs: writeJobs,
+        queueSyncFault: queues,
+        decrement: decr,
+        useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
+        settings: st,
+        onNewJobs: j => OnNewJobs?.Invoke(j),
+        onStatusChange: s => OnNewCurrentStatus?.Invoke(s)
       );
 
       MazakMachineControl = new MazakMachineControl(jobDBConfig, _readDB, writeJobs);

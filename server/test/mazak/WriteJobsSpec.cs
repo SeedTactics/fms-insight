@@ -229,9 +229,7 @@ namespace MachineWatchTest
         Substitute.For<IHoldManagement>(),
         _jobDB,
         _settings,
-        check: false,
-        useStarting: true,
-        reuseFixtures: true,
+        useStartingOffsetForDueDate: true,
         progDir: "theprogdir");
 
       jsonSettings = new JsonSerializerSettings();

@@ -54,9 +54,8 @@ namespace MazakMachineInterface
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
     private readonly Action<NewJobs> _onNewJobs;
     private readonly Action<CurrentStatus> _onCurStatusChange;
-    public readonly bool _reuseFixtures;
+    public readonly bool _useStartingOffsetForDueDate;
 
-    public bool CheckPalletsUsedOnce;
     public Action<NewJobs> NewJobTransform = null;
 
     public RoutingInfo(
@@ -69,8 +68,7 @@ namespace MazakMachineInterface
       IWriteJobs wJobs,
       IQueueSyncFault queueSyncFault,
       IDecrementPlanQty decrement,
-      bool check,
-      bool reuseFixtures,
+      bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<NewJobs> onNewJobs,
       Action<CurrentStatus> onStatusChange
@@ -86,10 +84,9 @@ namespace MazakMachineInterface
       _decr = decrement;
       _machineGroupName = machineGroupName;
       queueFault = queueSyncFault;
-      CheckPalletsUsedOnce = check;
+      _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
       _onNewJobs = onNewJobs;
       _onCurStatusChange = onStatusChange;
-      _reuseFixtures = reuseFixtures;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
       _copySchedulesTimer.Elapsed += (sender, args) => RecopyJobsToSystem();
@@ -175,16 +172,15 @@ namespace MazakMachineInterface
           //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
           var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-            jobs,
-            1,
-            mazakData,
-            new HashSet<string>(),
-            writeDb.MazakType,
-            CheckPalletsUsedOnce,
-            _reuseFixtures,
-            fmsSettings,
-            lookupProg,
-            logMessages);
+            jobs: jobs,
+            downloadUID: 1,
+            mazakData: mazakData,
+            savedParts: new HashSet<string>(),
+            MazakType: writeDb.MazakType,
+            useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
+            fmsSettings: fmsSettings,
+            lookupProgram: lookupProg,
+            errors: logMessages);
 #pragma warning restore 168, 219
         }
 

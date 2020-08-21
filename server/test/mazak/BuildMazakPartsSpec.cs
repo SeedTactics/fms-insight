@@ -48,7 +48,7 @@ namespace MachineWatchTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void BasicFromTemplate(bool reuseFixtures)
+    public void BasicFromTemplate(bool useStartingOffset)
     {
       //Test everything copied from the template
       // The JobPlan's have only 1 process but the template has 2 processes so
@@ -107,8 +107,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: reuseFixtures,
+        useStartingOffsetForDueDate: useStartingOffset,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -231,8 +230,7 @@ namespace MachineWatchTest
         dset,
         savedParts,
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: true,
+        useStartingOffsetForDueDate: false,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -277,7 +275,7 @@ namespace MachineWatchTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void MultiProcess(bool reuseFixtures)
+    public void MultiProcess(bool useStartingOffset)
     {
       //A test where Jobs have different number of processes but the same pallet list
       //again, mazak parts are created from template, not the jobplan
@@ -323,8 +321,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: reuseFixtures,
+        useStartingOffsetForDueDate: useStartingOffset,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -378,12 +375,12 @@ namespace MachineWatchTest
     [Fact]
     public void NonOverlappingPallets()
     {
-      CheckNonOverlapping(false);
+      CheckNonOverlapping(useStartingOffsetForDueDate: true);
 
       try
       {
 
-        CheckNonOverlapping(true);
+        CheckNonOverlapping(useStartingOffsetForDueDate: false);
 
         Assert.True(false, "Was expecting an exception");
 
@@ -398,7 +395,7 @@ namespace MachineWatchTest
 
     }
 
-    private void CheckNonOverlapping(bool checkPalletUsedOnce)
+    private void CheckNonOverlapping(bool useStartingOffsetForDueDate)
     {
       var job1 = new JobPlan("Job1", 1, new int[] { 2 });
       job1.PartName = "Part1";
@@ -430,8 +427,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: checkPalletUsedOnce,
-        reuseFixtures: true,
+        useStartingOffsetForDueDate: useStartingOffsetForDueDate,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -475,7 +471,7 @@ namespace MachineWatchTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void BasicFromJob(bool reuseFixtures)
+    public void BasicFromJob(bool useStartingOffset)
     {
       var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
       job1.PartName = "Part1";
@@ -553,8 +549,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: reuseFixtures,
+        useStartingOffsetForDueDate: useStartingOffset,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -614,7 +609,7 @@ namespace MachineWatchTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void FromJobReuseOrIgnoreFixtures(bool reuseFixtures)
+    public void FromJobReuseOrIgnoreFixtures(bool useStartingOffset)
     {
       var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
       job1.PartName = "Part1";
@@ -694,13 +689,14 @@ namespace MachineWatchTest
       savedParts.Add("oldpart1:1");
 
       string pal30fix;
-      if (reuseFixtures)
+      if (useStartingOffset)
       {
-        pal30fix = "F:4:2:30:1";
+        pal30fix = "F:3:2:30:1";
       }
       else
       {
-        pal30fix = "F:3:2:30:1";
+        // reuse the existing one one
+        pal30fix = "F:4:2:30:1";
       }
 
       // pallets 4, 5, 6 doesn't match the exsting so shouldn't be used in either case
@@ -717,29 +713,14 @@ namespace MachineWatchTest
         dset,
         savedParts,
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: reuseFixtures,
+        useStartingOffsetForDueDate: useStartingOffset,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
       if (log.Count > 0) Assert.True(false, log[0]);
 
-      if (reuseFixtures)
-      {
-        CheckNewFixtures(pMap,
-          new string[] {
-            "F:3:0:10:1",
-            "F:3:0:10:2",
-            "F:3:1:20:1",
-            // don't create one for pallets 30 and 31 "F:3:2:30:1",
-            "F:3:3:4:1",
-            "F:3:3:4:2",
-          },
-          new[] { "unusedfixture", "Test" }
-        );
-      }
-      else
+      if (useStartingOffset)
       {
         CheckNewFixtures(pMap,
           new string[] {
@@ -751,6 +732,20 @@ namespace MachineWatchTest
             "F:3:3:4:2",
           },
           new[] { "unusedfixture", "Test", }
+        );
+      }
+      else
+      {
+        CheckNewFixtures(pMap,
+          new string[] {
+            "F:3:0:10:1",
+            "F:3:0:10:2",
+            "F:3:1:20:1",
+            // don't create one for pallets 30 and 31 "F:3:2:30:1",
+            "F:3:3:4:1",
+            "F:3:3:4:2",
+          },
+          new[] { "unusedfixture", "Test" }
         );
       }
 
@@ -786,7 +781,7 @@ namespace MachineWatchTest
 
       CheckPalletGroup(trans, 3, "F:3:0:10", 2, new int[] { 10, 11, 12 });
       CheckPalletGroup(trans, 4, "F:3:1:20", 1, new int[] { 20, 21 });
-      if (!reuseFixtures)
+      if (useStartingOffset)
       {
         CheckPalletGroup(trans, 5, "F:3:2:30", 1, new int[] { 30, 31 });
       }
@@ -798,7 +793,7 @@ namespace MachineWatchTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void DifferentPallets(bool reuseFixtures)
+    public void DifferentPallets(bool useStartingOffset)
     {
       //Test when processes have different pallet lists
       var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
@@ -877,8 +872,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: reuseFixtures,
+        useStartingOffsetForDueDate: useStartingOffset,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -930,10 +924,8 @@ namespace MachineWatchTest
       AssertPartsPalletsDeleted(trans);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void ManualFixtureAssignment(bool reuseFixtures)
+    [Fact]
+    public void ManualFixtureAssignment()
     {
       var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
       job1.PartName = "Part1";
@@ -1028,8 +1020,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: reuseFixtures,
+        useStartingOffsetForDueDate: true,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -1127,8 +1118,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>() { "part2:1:1" },
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: true,
+        useStartingOffsetForDueDate: false,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -1182,8 +1172,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakVersionE,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: true,
+        useStartingOffsetForDueDate: false,
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) =>
         {
@@ -1229,8 +1218,7 @@ namespace MachineWatchTest
           dset,
           new HashSet<string>(),
           MazakDbType.MazakVersionE,
-          checkPalletsUsedOnce: false,
-        reuseFixtures: true,
+          useStartingOffsetForDueDate: false,
           fmsSettings: new FMSSettings(),
           lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
           errors: log
@@ -1296,8 +1284,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakSmooth,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: true,
+        useStartingOffsetForDueDate: false,
         fmsSettings: new FMSSettings(),
         lookupProgram: lookupProgram,
         errors: log
@@ -1378,8 +1365,7 @@ namespace MachineWatchTest
         dset,
         new HashSet<string>(),
         MazakDbType.MazakSmooth,
-        checkPalletsUsedOnce: false,
-        reuseFixtures: true,
+        useStartingOffsetForDueDate: false,
         fmsSettings: new FMSSettings(),
         lookupProgram: lookupProgram,
         errors: log
