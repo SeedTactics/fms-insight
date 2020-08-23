@@ -59,8 +59,6 @@ namespace MazakMachineInterface
     private FMSSettings fmsSettings;
 
     private bool _useStartingOffsetForDueDate;
-    private bool CheckPalletsUsedOnce;
-    private readonly bool _reuseFixtures;
     private string ProgramDirectory;
 
     public const int JobLookbackHours = 2 * 24;
