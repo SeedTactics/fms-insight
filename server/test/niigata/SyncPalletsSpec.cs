@@ -47,14 +47,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private FMSSettings _settings;
     private EventLogDB.Config _logDBCfg;
     private EventLogDB _logDB;
+    private JobDB.Config _jobDBCfg;
     private JobDB _jobDB;
-    private IAssignPallets _assign;
-    private CreateCellState _createLog;
     private IccSimulator _sim;
     private SyncPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
     private bool _debugLogEnabled = false;
     private Action<CurrentStatus> _onCurrentStatus;
+    private Newtonsoft.Json.JsonSerializerSettings jsonSettings;
 
     public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
     {
@@ -63,35 +63,39 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = FMSSettings.ConvertToBase62,
-        ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62
+        ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62,
       };
+      _settings.Queues.Add("Transfer", new QueueSize() { MaxSizeBeforeStopUnloading = -1 });
+      _settings.Queues.Add("sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1 });
 
       _logDBCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings());
       _logDB = _logDBCfg.OpenConnection();
 
-      var jdbCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
-      _jobDB = jdbCfg.OpenConnection();
+      _jobDBCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
+      _jobDB = _jobDBCfg.OpenConnection();
+
+      jsonSettings = new Newtonsoft.Json.JsonSerializerSettings();
+      jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
+      jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+      jsonSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
+      jsonSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+    }
+
+    private void InitSim(NiigataStationNames statNames, int numPals = 10, int numMachines = 6, int numLoads = 2)
+    {
 
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
-      var statNames = new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
-      };
-
-      _assign = new MultiPalletAssign(new IAssignPallets[] {
+      var assign = new MultiPalletAssign(new IAssignPallets[] {
         new AssignNewRoutesOnPallets(statNames),
-        new SizedQueues(new Dictionary<string, QueueSize>() {
-          {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
-        })
+        new SizedQueues(_settings.Queues)
       });
-      _createLog = new CreateCellState(_settings, statNames, machConn);
+      var createLog = new CreateCellState(_settings, statNames, machConn);
 
-      _sim = new IccSimulator(numPals: 10, numMachines: 6, numLoads: 2);
+      _sim = new IccSimulator(numPals: numPals, numMachines: numMachines, numLoads: numLoads, statNames: statNames);
 
       _onCurrentStatus = Substitute.For<Action<CurrentStatus>>();
-      _sync = new SyncPallets(jdbCfg, _logDBCfg, _sim, _assign, _createLog, _settings, onNewCurrentStatus: _onCurrentStatus);
+      _sync = new SyncPallets(_jobDBCfg, _logDBCfg, _sim, assign, createLog, _settings, onNewCurrentStatus: _onCurrentStatus);
 
       _sim.OnNewProgram += (newprog) =>
         _jobDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
@@ -209,7 +213,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private void AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs)
     {
-      _jobDB.AddJobs(new NewJobs()
+      AddJobs(new NewJobs()
       {
         Jobs = jobs.ToList(),
         Programs =
@@ -221,7 +225,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
               ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
             }).ToList()
-      }, null);
+      });
+    }
+
+    private void AddJobs(NewJobs jobs)
+    {
+      _jobDB.AddJobs(jobs, null);
       using (var logMonitor = _logDBCfg.Monitor())
       {
         _sync.SynchronizePallets(false);
@@ -231,13 +240,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     private void CheckSingleMaterial(IEnumerable<LogEntry> logs,
-        long matId, string uniq, string part, int numProc, int[][] pals, string queue = null, bool[] reclamp = null
+        long matId, string uniq, string part, int numProc, int[][] pals, string queue = null, bool[] reclamp = null,
+        string[][] machGroups = null
     )
     {
       var matLogs = logs.Where(e =>
         e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound
       ).ToList();
       matLogs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
+
+      machGroups = machGroups ?? Enumerable.Range(1, numProc).Select(_ => new string[] { "MC" }).ToArray();
 
       var expected = new List<Action<LogEntry>>();
       for (int procNum = 1; procNum <= numProc; procNum++)
@@ -272,20 +284,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           e.StartOfCycle.Should().BeFalse();
           e.Result.Should().Be("LOAD");
         });
-        expected.Add(e =>
+
+        foreach (var group in machGroups[proc - 1])
         {
-          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
-          e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-          e.LogType.Should().Be(LogType.MachineCycle);
-          e.StartOfCycle.Should().BeTrue();
-        });
-        expected.Add(e =>
-        {
-          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
-          e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-          e.LogType.Should().Be(LogType.MachineCycle);
-          e.StartOfCycle.Should().BeFalse();
-        });
+          expected.Add(e =>
+          {
+            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.Should().Be(LogType.MachineCycle);
+            e.LocationName.Should().Be(group);
+            e.StartOfCycle.Should().BeTrue();
+          });
+          expected.Add(e =>
+          {
+            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.Should().Be(LogType.MachineCycle);
+            e.LocationName.Should().Be(group);
+            e.StartOfCycle.Should().BeFalse();
+          });
+        }
 
         if (reclamp != null && reclamp[proc - 1])
         {
@@ -327,6 +345,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           e.Result.Should().Be("UNLOAD");
         });
       }
+
+      //_output.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(matLogs, jsonSettings));
 
       matLogs.Should().SatisfyRespectively(expected);
     }
@@ -423,6 +443,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void OneProcJob()
     {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      });
+
       var j = new JobPlan("uniq1", 1);
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
@@ -457,6 +483,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void MultpleProcsMultiplePathsSeparatePallets()
     {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      });
+
       var j = new JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
@@ -565,6 +597,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void MultipleProcsMultiplePathsSamePallet()
     {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      });
+
       var j = new JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
@@ -677,6 +715,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void SizedQueue()
     {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      });
+
       var j = new JobPlan("uniq1", 2);
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
@@ -735,6 +779,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void SizedQueueWithReclamp()
     {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      });
+
       var j = new JobPlan("uniq1", 2);
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 4);
@@ -795,5 +845,85 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       CheckMaxQueueSize(logs, "sizedQ", 1);
     }
 
+    [Fact]
+    public void TwoMachineStopsSingleProcess()
+    {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { },
+        IccMachineToJobMachNames = new Dictionary<int, (string group, int num)> {
+          {1, (group: "RO", num: 1)},
+          {2, (group: "RO", num: 2)},
+          {3, (group: "RO", num: 3)},
+          {4, (group: "RO", num: 4)},
+          {5, (group: "FC", num: 1)},
+          {6, (group: "FC", num: 2)},
+          {7, (group: "FC", num: 3)},
+          {8, (group: "FC", num: 4)},
+        }
+      },
+      numPals: 16,
+      numLoads: 4,
+      numMachines: 8);
+
+      AddJobs(Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(
+        System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
+        jsonSettings
+      ));
+
+      var logs = Run();
+      var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
+
+      byMat.Count.Should().Be(9);
+      foreach (var m in byMat)
+      {
+        CheckSingleMaterial(
+          m,
+          matId: m.Key,
+          uniq: "aaa-0NovSzGF9VZGS00b_",
+          part: "aaa",
+          numProc: 4,
+          queue: "Transfer",
+          pals: new[] {
+            new[] { 2, 3, 4 },
+            new[] { 5, 6, 7, 8, 9, 10 },
+            new[] { 12, 13, 14, 15, 16},
+            new[] { 11 }
+          },
+          machGroups: new[] {
+            new[] { "RO"},
+            new[] { "RO", "FC"},
+            new[] { "FC"},
+            new[] {"RO"}
+          }
+        );
+      }
+
+      // check programs
+      _jobDB.LoadProgramContent("aaa1RO", 1).Should().Be("Program content for AAA-1 on RO");
+      var aaa1RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 1 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
+      aaa1RO.Program.Should().Be("aaa1RO");
+      aaa1RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa2RO", 1).Should().Be("Program content for AAA-2 on RO");
+      var aaa2RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 2 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
+      aaa2RO.Program.Should().Be("aaa2RO");
+      aaa2RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa2FC", 1).Should().Be("Program content for AAA-2 on FC");
+      var aaa2FC = logs.First(e => e.Material.FirstOrDefault()?.Process == 2 && e.LogType == LogType.MachineCycle && e.LocationName == "FC");
+      aaa2FC.Program.Should().Be("aaa2FC");
+      aaa2FC.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa3FC", 1).Should().Be("Program content for AAA-3 on FC");
+      var aaa3FC = logs.First(e => e.Material.FirstOrDefault()?.Process == 3 && e.LogType == LogType.MachineCycle && e.LocationName == "FC");
+      aaa3FC.Program.Should().Be("aaa3FC");
+      aaa3FC.ProgramDetails["ProgramRevision"].Should().Be("1");
+
+      _jobDB.LoadProgramContent("aaa4RO", 1).Should().Be("Program content for AAA-4 on RO");
+      var aaa4RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 4 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
+      aaa4RO.Program.Should().Be("aaa4RO");
+      aaa4RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+    }
   }
 }

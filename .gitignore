@@ -18,3 +18,4 @@ website/node_modules
 website/i18n
 
 server/machines/mazak/log
+server/machines/niigata/programs

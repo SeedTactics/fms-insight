@@ -1,0 +1,1404 @@
+{
+  "ScheduleId": "NovSzGF9VZGS00b_",
+  "Jobs": [
+    {
+      "RouteStartUTC": "2016-11-05T01:00:00+00:00",
+      "RouteEndUTC": "2016-11-06T01:00:00+00:00",
+      "Archived": false,
+      "CopiedToSystem": false,
+      "PartName": "aaa",
+      "Unique": "aaa-0NovSzGF9VZGS00b_",
+      "Priority": 0,
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "Bookings": [
+        "booking0"
+      ],
+      "ManuallyCreated": false,
+      "CreateMarkingData": false,
+      "CyclesOnFirstProcess": [
+        9
+      ],
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "2",
+                "3",
+                "4"
+              ],
+              "Fixture": "fix",
+              "Face": 1,
+              "Load": [
+                1
+              ],
+              "ExpectedLoadTime": "PT25M",
+              "Unload": [
+                2
+              ],
+              "ExpectedUnloadTime": "PT15M",
+              "Stops": [
+                {
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "aaa1RO",
+                  "Tools": {},
+                  "StationGroup": "RO",
+                  "ExpectedCycleTime": "PT2H46M"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2016-11-05T04:55:00+00:00",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2016-11-05T05:55:00+00:00",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2016-11-05T06:29:00+00:00",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2016-11-05T09:08:00+00:00",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2016-11-05T10:17:00+00:00",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2016-11-05T12:56:00+00:00",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2016-11-05T13:30:00+00:00",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2016-11-05T14:31:00+00:00",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2016-11-05T17:39:00+00:00",
+                  "Quantity": 9
+                }
+              ],
+              "SimulatedStartingUTC": "2016-11-05T04:55:00+00:00",
+              "SimulatedAverageFlowTime": "PT4H5M46.6666666S",
+              "PartsPerPallet": 1,
+              "OutputQueue": "Transfer",
+              "Inspections": []
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10"
+              ],
+              "Fixture": "fix",
+              "Face": 1,
+              "Load": [
+                2
+              ],
+              "ExpectedLoadTime": "PT1M",
+              "Unload": [
+                2
+              ],
+              "ExpectedUnloadTime": "PT15M",
+              "Stops": [
+                {
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "aaa2RO",
+                  "Tools": {},
+                  "StationGroup": "RO",
+                  "ExpectedCycleTime": "PT4H3M"
+                },
+                {
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "aaa2FC",
+                  "Tools": {},
+                  "StationGroup": "FC",
+                  "ExpectedCycleTime": "PT5H"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2016-11-05T15:20:00+00:00",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2016-11-05T16:55:00+00:00",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2016-11-05T18:32:00+00:00",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2016-11-05T22:14:00+00:00",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2016-11-05T22:47:00+00:00",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2016-11-06T02:17:00+00:00",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2016-11-06T03:15:00+00:00",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2016-11-06T05:07:00+00:00",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2016-11-06T07:16:00+00:00",
+                  "Quantity": 9
+                }
+              ],
+              "SimulatedStartingUTC": "2016-11-05T15:20:00+00:00",
+              "SimulatedAverageFlowTime": "PT11H51M6.6666666S",
+              "PartsPerPallet": 1,
+              "InputQueue": "Transfer",
+              "OutputQueue": "Transfer",
+              "Inspections": []
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "12",
+                "13",
+                "14",
+                "15",
+                "16"
+              ],
+              "Fixture": "fix",
+              "Face": 1,
+              "Load": [
+                2
+              ],
+              "ExpectedLoadTime": "PT1M",
+              "Unload": [
+                2
+              ],
+              "ExpectedUnloadTime": "PT15M",
+              "Stops": [
+                {
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "aaa3FC",
+                  "Tools": {},
+                  "StationGroup": "FC",
+                  "ExpectedCycleTime": "PT4H40M"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2016-11-05T20:54:00+00:00",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2016-11-06T00:24:00+00:00",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2016-11-06T03:49:00+00:00",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2016-11-06T07:57:00+00:00",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2016-11-06T08:30:00+00:00",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2016-11-06T09:48:00+00:00",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2016-11-06T12:38:00+00:00",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2016-11-06T13:11:00+00:00",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2016-11-06T13:44:00+00:00",
+                  "Quantity": 9
+                }
+              ],
+              "SimulatedStartingUTC": "2016-11-05T20:54:00+00:00",
+              "SimulatedAverageFlowTime": "PT7H33M46.6666666S",
+              "PartsPerPallet": 1,
+              "InputQueue": "Transfer",
+              "OutputQueue": "Transfer",
+              "Inspections": []
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "11"
+              ],
+              "Fixture": "1",
+              "Face": 1,
+              "Load": [
+                2
+              ],
+              "ExpectedLoadTime": "PT1M",
+              "Unload": [
+                4
+              ],
+              "ExpectedUnloadTime": "PT15M",
+              "Stops": [
+                {
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "aaa4RO",
+                  "Tools": {},
+                  "StationGroup": "RO",
+                  "ExpectedCycleTime": "PT50M"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2016-11-05T22:56:00+00:00",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2016-11-06T02:08:00+00:00",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2016-11-06T05:40:00+00:00",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2016-11-06T10:21:00+00:00",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2016-11-06T12:05:00+00:00",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2016-11-06T15:28:00+00:00",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2016-11-06T17:12:00+00:00",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2016-11-06T18:56:00+00:00",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2016-11-06T20:40:00+00:00",
+                  "Quantity": 9
+                }
+              ],
+              "SimulatedStartingUTC": "2016-11-05T22:56:00+00:00",
+              "SimulatedAverageFlowTime": "PT1H29M33.3333333S",
+              "PartsPerPallet": 1,
+              "InputQueue": "Transfer",
+              "Inspections": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "StationUse": [
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T01:09:00+00:00",
+      "EndUTC": "2016-11-05T01:34:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T01:44:00+00:00",
+      "EndUTC": "2016-11-05T04:30:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T01:52:00+00:00",
+      "EndUTC": "2016-11-05T02:17:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T02:27:00+00:00",
+      "EndUTC": "2016-11-05T05:13:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T02:35:00+00:00",
+      "EndUTC": "2016-11-05T03:00:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T03:10:00+00:00",
+      "EndUTC": "2016-11-05T05:56:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T04:40:00+00:00",
+      "EndUTC": "2016-11-05T04:55:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T05:13:00+00:00",
+      "EndUTC": "2016-11-05T05:14:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T05:22:00+00:00",
+      "EndUTC": "2016-11-05T05:47:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T05:32:00+00:00",
+      "EndUTC": "2016-11-05T09:35:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T05:40:00+00:00",
+      "EndUTC": "2016-11-05T05:55:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T05:57:00+00:00",
+      "EndUTC": "2016-11-05T08:43:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T06:14:00+00:00",
+      "EndUTC": "2016-11-05T06:29:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T06:23:00+00:00",
+      "EndUTC": "2016-11-05T06:48:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T06:47:00+00:00",
+      "EndUTC": "2016-11-05T06:48:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T06:58:00+00:00",
+      "EndUTC": "2016-11-05T09:44:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T07:07:00+00:00",
+      "EndUTC": "2016-11-05T11:10:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T07:15:00+00:00",
+      "EndUTC": "2016-11-05T07:16:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T07:24:00+00:00",
+      "EndUTC": "2016-11-05T07:49:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T08:44:00+00:00",
+      "EndUTC": "2016-11-05T12:47:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T08:53:00+00:00",
+      "EndUTC": "2016-11-05T09:08:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T09:26:00+00:00",
+      "EndUTC": "2016-11-05T09:27:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T09:35:00+00:00",
+      "EndUTC": "2016-11-05T10:00:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T09:45:00+00:00",
+      "EndUTC": "2016-11-05T12:31:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T09:54:00+00:00",
+      "EndUTC": "2016-11-05T14:54:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T10:02:00+00:00",
+      "EndUTC": "2016-11-05T10:17:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T10:12:00+00:00",
+      "EndUTC": "2016-11-05T12:58:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T10:35:00+00:00",
+      "EndUTC": "2016-11-05T10:36:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T10:44:00+00:00",
+      "EndUTC": "2016-11-05T11:09:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T11:19:00+00:00",
+      "EndUTC": "2016-11-05T14:05:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T11:29:00+00:00",
+      "EndUTC": "2016-11-05T16:29:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T12:32:00+00:00",
+      "EndUTC": "2016-11-05T16:35:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T12:41:00+00:00",
+      "EndUTC": "2016-11-05T12:56:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T12:48:00+00:00",
+      "EndUTC": "2016-11-05T16:51:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T12:58:00+00:00",
+      "EndUTC": "2016-11-05T17:58:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T13:15:00+00:00",
+      "EndUTC": "2016-11-05T13:30:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T13:24:00+00:00",
+      "EndUTC": "2016-11-05T13:49:00+00:00",
+      "UtilizationTime": "PT25M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T13:48:00+00:00",
+      "EndUTC": "2016-11-05T13:49:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T13:59:00+00:00",
+      "EndUTC": "2016-11-05T16:45:00+00:00",
+      "UtilizationTime": "PT2H46M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T14:16:00+00:00",
+      "EndUTC": "2016-11-05T14:31:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T15:04:00+00:00",
+      "EndUTC": "2016-11-05T15:20:00+00:00",
+      "UtilizationTime": "PT16M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T15:30:00+00:00",
+      "EndUTC": "2016-11-05T19:33:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T15:38:00+00:00",
+      "EndUTC": "2016-11-05T15:39:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T15:49:00+00:00",
+      "EndUTC": "2016-11-05T20:29:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T16:36:00+00:00",
+      "EndUTC": "2016-11-05T20:39:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T16:39:00+00:00",
+      "EndUTC": "2016-11-05T16:55:00+00:00",
+      "UtilizationTime": "PT16M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T16:49:00+00:00",
+      "EndUTC": "2016-11-05T21:49:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T17:07:00+00:00",
+      "EndUTC": "2016-11-05T21:10:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T17:16:00+00:00",
+      "EndUTC": "2016-11-05T22:16:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T17:24:00+00:00",
+      "EndUTC": "2016-11-05T17:39:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T17:57:00+00:00",
+      "EndUTC": "2016-11-05T17:58:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T18:16:00+00:00",
+      "EndUTC": "2016-11-05T18:32:00+00:00",
+      "UtilizationTime": "PT16M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T18:42:00+00:00",
+      "EndUTC": "2016-11-05T22:45:00+00:00",
+      "UtilizationTime": "PT4H3M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T18:50:00+00:00",
+      "EndUTC": "2016-11-05T18:51:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T19:01:00+00:00",
+      "EndUTC": "2016-11-05T23:41:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T20:39:00+00:00",
+      "EndUTC": "2016-11-05T20:54:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T20:50:00+00:00",
+      "EndUTC": "2016-11-06T01:50:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T21:12:00+00:00",
+      "EndUTC": "2016-11-05T21:13:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T21:31:00+00:00",
+      "EndUTC": "2016-11-05T22:21:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T21:50:00+00:00",
+      "EndUTC": "2016-11-06T02:50:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T21:59:00+00:00",
+      "EndUTC": "2016-11-05T22:14:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 1,
+      "StartUTC": "2016-11-05T22:17:00+00:00",
+      "EndUTC": "2016-11-06T02:57:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T22:32:00+00:00",
+      "EndUTC": "2016-11-05T22:47:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-05T22:41:00+00:00",
+      "EndUTC": "2016-11-05T22:56:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T23:22:00+00:00",
+      "EndUTC": "2016-11-05T23:23:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-05T23:41:00+00:00",
+      "EndUTC": "2016-11-05T23:42:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 3,
+      "StartUTC": "2016-11-05T23:42:00+00:00",
+      "EndUTC": "2016-11-06T04:42:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T00:09:00+00:00",
+      "EndUTC": "2016-11-06T00:24:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T00:42:00+00:00",
+      "EndUTC": "2016-11-06T00:43:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T00:53:00+00:00",
+      "EndUTC": "2016-11-06T01:43:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T01:51:00+00:00",
+      "EndUTC": "2016-11-06T06:51:00+00:00",
+      "UtilizationTime": "PT5H",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T01:53:00+00:00",
+      "EndUTC": "2016-11-06T02:08:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T02:02:00+00:00",
+      "EndUTC": "2016-11-06T02:17:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T02:35:00+00:00",
+      "EndUTC": "2016-11-06T02:36:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T02:51:00+00:00",
+      "EndUTC": "2016-11-06T07:31:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 1,
+      "StartUTC": "2016-11-06T02:58:00+00:00",
+      "EndUTC": "2016-11-06T07:38:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T03:00:00+00:00",
+      "EndUTC": "2016-11-06T03:15:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T03:33:00+00:00",
+      "EndUTC": "2016-11-06T03:49:00+00:00",
+      "UtilizationTime": "PT16M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T04:07:00+00:00",
+      "EndUTC": "2016-11-06T04:08:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T04:18:00+00:00",
+      "EndUTC": "2016-11-06T05:08:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 3,
+      "StartUTC": "2016-11-06T04:43:00+00:00",
+      "EndUTC": "2016-11-06T09:23:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T04:52:00+00:00",
+      "EndUTC": "2016-11-06T05:07:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T05:25:00+00:00",
+      "EndUTC": "2016-11-06T05:40:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T05:34:00+00:00",
+      "EndUTC": "2016-11-06T05:35:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T07:01:00+00:00",
+      "EndUTC": "2016-11-06T07:16:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T07:32:00+00:00",
+      "EndUTC": "2016-11-06T12:12:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 1,
+      "StartUTC": "2016-11-06T07:39:00+00:00",
+      "EndUTC": "2016-11-06T12:19:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T07:41:00+00:00",
+      "EndUTC": "2016-11-06T07:57:00+00:00",
+      "UtilizationTime": "PT16M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "FC",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T08:07:00+00:00",
+      "EndUTC": "2016-11-06T12:47:00+00:00",
+      "UtilizationTime": "PT4H40M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T08:15:00+00:00",
+      "EndUTC": "2016-11-06T08:30:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T08:48:00+00:00",
+      "EndUTC": "2016-11-06T08:49:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T08:59:00+00:00",
+      "EndUTC": "2016-11-06T09:49:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T09:33:00+00:00",
+      "EndUTC": "2016-11-06T09:48:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T10:06:00+00:00",
+      "EndUTC": "2016-11-06T10:21:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T10:39:00+00:00",
+      "EndUTC": "2016-11-06T10:40:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T10:50:00+00:00",
+      "EndUTC": "2016-11-06T11:40:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T11:50:00+00:00",
+      "EndUTC": "2016-11-06T12:05:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T12:23:00+00:00",
+      "EndUTC": "2016-11-06T12:38:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T12:56:00+00:00",
+      "EndUTC": "2016-11-06T13:11:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T13:29:00+00:00",
+      "EndUTC": "2016-11-06T13:44:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T14:02:00+00:00",
+      "EndUTC": "2016-11-06T14:03:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T14:13:00+00:00",
+      "EndUTC": "2016-11-06T15:03:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T15:13:00+00:00",
+      "EndUTC": "2016-11-06T15:28:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T15:46:00+00:00",
+      "EndUTC": "2016-11-06T15:47:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T15:57:00+00:00",
+      "EndUTC": "2016-11-06T16:47:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T16:57:00+00:00",
+      "EndUTC": "2016-11-06T17:12:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T17:30:00+00:00",
+      "EndUTC": "2016-11-06T17:31:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T17:41:00+00:00",
+      "EndUTC": "2016-11-06T18:31:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T18:41:00+00:00",
+      "EndUTC": "2016-11-06T18:56:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T19:14:00+00:00",
+      "EndUTC": "2016-11-06T19:15:00+00:00",
+      "UtilizationTime": "PT1M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "RO",
+      "StationNum": 2,
+      "StartUTC": "2016-11-06T19:25:00+00:00",
+      "EndUTC": "2016-11-06T20:15:00+00:00",
+      "UtilizationTime": "PT50M",
+      "PlannedDownTime": "PT0S"
+    },
+    {
+      "ScheduleId": "NovSzGF9VZGS00b_",
+      "StationGroup": "L/U",
+      "StationNum": 4,
+      "StartUTC": "2016-11-06T20:25:00+00:00",
+      "EndUTC": "2016-11-06T20:40:00+00:00",
+      "UtilizationTime": "PT15M",
+      "PlannedDownTime": "PT0S"
+    }
+  ],
+  "ExtraParts": {},
+  "CurrentUnfilledWorkorders": [],
+  "QueueSizes": {},
+  "Programs": [
+    {
+      "ProgramName": "aaa1RO",
+      "Revision": -1,
+      "Comment": "Comment for aaa-1 on RO",
+      "ProgramContent": "Program content for AAA-1 on RO"
+    },
+    {
+      "ProgramName": "aaa2RO",
+      "Revision": -1,
+      "Comment": "Comment for aaa-2 on RO",
+      "ProgramContent": "Program content for AAA-2 on RO"
+    },
+    {
+      "ProgramName": "aaa2FC",
+      "Revision": -1,
+      "Comment": "Comment for aaa-2 on FC",
+      "ProgramContent": "Program content for AAA-2 on FC"
+    },
+    {
+      "ProgramName": "aaa3FC",
+      "Revision": -1,
+      "Comment": "Comment for aaa-3 on FC",
+      "ProgramContent": "Program content for AAA-3 on FC"
+    },
+    {
+      "ProgramName": "aaa4RO",
+      "Revision": -1,
+      "Comment": "Comment for aaa-4 on RO",
+      "ProgramContent": "Program content for AAA-4 on RO"
+    }
+  ],
+  "ArchiveCompletedJobs": true
+}

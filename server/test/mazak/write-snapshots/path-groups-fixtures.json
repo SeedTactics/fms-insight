@@ -9,42 +9,42 @@
       "Command": "Delete"
     },
     {
-      "FixtureName": "F:0:fixAA:1:1",
+      "FixtureName": "F:0:1:fixAA:1",
       "Comment": "Insight",
       "Command": "Add"
     },
     {
-      "FixtureName": "F:0:fixAA:3:1",
+      "FixtureName": "F:0:2:fixAA:1",
       "Comment": "Insight",
       "Command": "Add"
     },
     {
-      "FixtureName": "F:0:fixBB:1:1",
+      "FixtureName": "F:0:3:fixBB:1",
       "Comment": "Insight",
       "Command": "Add"
     },
     {
-      "FixtureName": "F:0:fixBB:1:2",
+      "FixtureName": "F:0:3:fixBB:2",
       "Comment": "Insight",
       "Command": "Add"
     },
     {
-      "FixtureName": "F:0:fixBB:3:1",
+      "FixtureName": "F:0:4:fixBB:1",
       "Comment": "Insight",
       "Command": "Add"
     },
     {
-      "FixtureName": "F:0:fixBB:3:2",
+      "FixtureName": "F:0:4:fixBB:2",
       "Comment": "Insight",
       "Command": "Add"
     },
     {
-      "FixtureName": "F:0:fixCC:5:1",
+      "FixtureName": "F:0:5:fixCC:1",
       "Comment": "Insight",
       "Command": "Add"
     },
     {
-      "FixtureName": "F:0:fixCC:6:1",
+      "FixtureName": "F:0:6:fixCC:1",
       "Comment": "Insight",
       "Command": "Add"
     }

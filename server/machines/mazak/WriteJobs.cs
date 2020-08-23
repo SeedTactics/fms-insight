@@ -58,8 +58,7 @@ namespace MazakMachineInterface
     private IHoldManagement hold;
     private FMSSettings fmsSettings;
 
-    private bool UseStartingOffsetForDueDate;
-    private bool CheckPalletsUsedOnce;
+    private bool _useStartingOffsetForDueDate;
     private string ProgramDirectory;
 
     public const int JobLookbackHours = 2 * 24;
@@ -73,16 +72,14 @@ namespace MazakMachineInterface
       IHoldManagement h,
       BlackMaple.MachineFramework.JobDB jDB,
       FMSSettings settings,
-      bool check,
-      bool useStarting,
+      bool useStartingOffsetForDueDate,
       string progDir
     )
     {
       writeDb = d;
       readDatabase = readDb;
       hold = h;
-      CheckPalletsUsedOnce = check;
-      UseStartingOffsetForDueDate = useStarting;
+      _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
       fmsSettings = settings;
       ProgramDirectory = progDir;
 
@@ -226,15 +223,15 @@ namespace MazakMachineInterface
 
       var jobErrs = new List<string>();
       var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        newJ.Jobs,
-        UID,
-        mazakData,
-        savedParts,
-        writeDb.MazakType,
-        CheckPalletsUsedOnce,
-        fmsSettings,
-        (prog, rev) => LookupProgram(jobDB, prog, rev),
-        jobErrs);
+        jobs: newJ.Jobs,
+        downloadUID: UID,
+        mazakData: mazakData,
+        savedParts: savedParts,
+        MazakType: writeDb.MazakType,
+        useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
+        fmsSettings: fmsSettings,
+        lookupProgram: (prog, rev) => LookupProgram(jobDB, prog, rev),
+        errors: jobErrs);
       if (jobErrs.Any())
       {
         throw new BlackMaple.MachineFramework.BadRequestException(
@@ -275,7 +272,7 @@ namespace MazakMachineInterface
     private void AddSchedules(JobDB jobDB, IEnumerable<JobPlan> jobs)
     {
       var mazakData = readDatabase.LoadSchedulesPartsPallets();
-      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, UseStartingOffsetForDueDate);
+      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, _useStartingOffsetForDueDate);
       if (transSet.Schedules.Any())
       {
         writeDb.Save(transSet, "Add Schedules");

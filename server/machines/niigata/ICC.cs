@@ -56,10 +56,19 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataICC(string progDir, string connectionStr, NiigataStationNames statNames)
     {
       _programDir = progDir;
-      _connStr = connectionStr;
       _statNames = statNames;
-      _thread = new Thread(NotifyThread);
-      _thread.Start();
+
+      if (string.IsNullOrEmpty(connectionStr))
+      {
+        _connStr = null;
+        Log.Error("PostgreSQL Connection String is not configured");
+      }
+      else
+      {
+        _connStr = connectionStr + ";Database=fms_insight_icc_communication";
+        _thread = new Thread(NotifyThread);
+        _thread.Start();
+      }
     }
 
     #region Notify Thread
@@ -241,6 +250,18 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public NiigataStatus LoadNiigataStatus()
     {
+      if (_connStr == null)
+      {
+        Log.Error("Unable to load Niigata status because the PostgreSQL connection string is not defined");
+        return new NiigataStatus()
+        {
+          Pallets = new List<PalletStatus>(),
+          Programs = new Dictionary<int, ProgramEntry>(),
+          Machines = new Dictionary<int, MachineStatus>(),
+          LoadStations = new Dictionary<int, LoadStatus>(),
+          TimeOfStatusUTC = DateTime.UtcNow
+        };
+      }
       using (var conn = new NpgsqlConnection(_connStr))
       {
         conn.Open();
@@ -438,6 +459,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public Dictionary<int, ProgramEntry> LoadPrograms()
     {
+      if (_connStr == null)
+      {
+        Log.Error("Unable to load Niigata programs because the PostgreSQL connection string is not defined");
+        return new Dictionary<int, ProgramEntry>();
+      }
       using (var conn = new NpgsqlConnection(_connStr))
       {
         conn.Open();
@@ -592,6 +618,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void SetRoute(NewPalletRoute newRoute, EventLogDB logDB)
     {
+      if (_connStr == null)
+      {
+        Log.Error("Unable to set route on pallet because the PostgreSQL connection string is not defined");
+        return;
+      }
+
       // first save the faces
       newRoute.NewMaster.Comment = RecordFacesForPallet.Save(newRoute.NewMaster.PalletNum, DateTime.UtcNow, newRoute.NewFaces, logDB);
 
@@ -783,6 +815,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void UpdatePallet(UpdatePalletQuantities update)
     {
+      if (_connStr == null)
+      {
+        Log.Error("Unable to set route on pallet because the PostgreSQL connection string is not defined");
+        return;
+      }
+
       using (var conn = new NpgsqlConnection(_connStr))
       {
         conn.Open();
@@ -827,6 +865,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void AddProgram(JobDB jobDB, NewProgram add)
     {
+      if (_connStr == null)
+      {
+        Log.Error("Unable to set add program because the PostgreSQL connection string is not defined");
+        return;
+      }
 
       // it is possible that a program was deleted from the ICC but the server crashed/stopped before setting the cell controller program null
       // in the job database.  The Assignment code guarantees that a new program number it picks does not exist in the icc so if it exists
@@ -839,8 +882,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // write (or overwrite) the file to disk
       var progCt = jobDB.LoadProgramContent(add.ProgramName, add.ProgramRevision);
-      var fullPath = System.IO.Path.Combine(_programDir, add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA");
-      System.IO.File.WriteAllText(fullPath, progCt);
+      var filename = add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA";
+      System.IO.File.WriteAllText(System.IO.Path.Combine(_programDir, filename), progCt);
 
       using (var conn = new NpgsqlConnection(_connStr))
       {
@@ -862,17 +905,16 @@ namespace BlackMaple.FMSInsight.Niigata
                     @ProgNum,
                     @Comment,
                     @WorkTime,
-                    @Overwrite
+                    true
                   )
                   ",
             param: new
             {
               RegId = RegId,
-              FileName = fullPath,
+              FileName = filename,
               ProgNum = add.ProgramNum,
               Comment = add.IccProgramComment,
               WorkTime = 0,
-              Overwrite = true
             },
             transaction: trans
           );
@@ -919,7 +961,60 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void DeleteProgram(JobDB jobDB, DeleteProgram delete)
     {
-      // TODO: send to ICC
+      if (_connStr == null)
+      {
+        Log.Error("Unable to set delete program because the PostgreSQL connection string is not defined");
+        return;
+      }
+
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        var RegId = NewId();
+        using (var trans = conn.BeginTransaction())
+        {
+          conn.Execute(
+            $@"INSERT INTO register_program(
+                    registration_id,
+                    file_name,
+                    o_no,
+                    comment,
+                    work_base_time,
+                    overwrite
+                  ) VALUES (
+                    @RegId,
+                    NULL,
+                    @ProgNum,
+                    NULL,
+                    0,
+                    true
+                  )
+                  ",
+            param: new
+            {
+              RegId = RegId,
+              ProgNum = delete.ProgramNum,
+              Overwrite = true
+            },
+            transaction: trans
+          );
+
+          trans.Commit();
+        }
+
+        WaitForCompletion(_programRegistered, delete,
+          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM register_program WHERE registration_id = @RegId", new { RegId }),
+          () =>
+          {
+            using (var trans = conn.BeginTransaction())
+            {
+              conn.Execute("DELETE FROM register_program WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+              conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+              trans.Commit();
+            }
+          }
+        );
+      }
 
       // if we crash after deleting from the icc but before clearing the cell controller program, the above NewProgram check will
       // clear it later.

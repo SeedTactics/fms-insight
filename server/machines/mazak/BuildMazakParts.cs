@@ -407,18 +407,17 @@ namespace MazakMachineInterface
   //distinct processes can run at the same time on a pallet.
   public class MazakFixture
   {
-    public string BaseFixtureName { get; set; }
     public int FixtureGroup { get; set; }
+    public string JobFixtureName { get; set; }
     public string Face { get; set; }
     public List<MazakProcess> Processes = new List<MazakProcess>();
-    public List<string> Pallets = new List<string>();
-
+    public HashSet<string> Pallets = new HashSet<string>();
     public string MazakFixtureName { get; set; }
 
     public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(MazakSchedulesPartsPallets oldData, int downloadUID)
     {
       var ret = new List<MazakPalletRow>();
-      foreach (var pallet in Pallets)
+      foreach (var pallet in Pallets.OrderBy(p => p))
       {
         int palNum = int.Parse(pallet);
 
@@ -433,20 +432,16 @@ namespace MazakMachineInterface
         }
         if (foundExisting) continue;
 
-        //we have the + 1 because UIDs and graphs start at 0, and the user might add other fixture-pallet
-        //on group 0.
-        var fixGroup = (downloadUID * 10 + (FixtureGroup % 10)) + 1;
-
         //Add rows to both V1 and V2.
         var newRow = new MazakPalletRow();
         newRow.Command = MazakWriteCommand.Add;
         newRow.PalletNumber = palNum;
         newRow.Fixture = MazakFixtureName;
         newRow.RecordID = 0;
-        newRow.FixtureGroupV2 = fixGroup;
+        newRow.FixtureGroupV2 = FixtureGroup;
 
         //combos with an angle in the range 0-999, and we don't want to conflict with that
-        newRow.AngleV1 = (fixGroup * 1000);
+        newRow.AngleV1 = (FixtureGroup * 1000);
 
         ret.Add(newRow);
       }
@@ -649,16 +644,17 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       ISet<string> savedParts,
       MazakDbType MazakType,
-      bool checkPalletsUsedOnce,
+      bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, BlackMaple.MachineWatchInterface.ProgramRevision> lookupProgram,
       IList<string> errors)
     {
       Validate(jobs, fmsSettings, errors);
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors, lookupProgram);
-      var groups = GroupProcessesIntoFixtures(allParts, checkPalletsUsedOnce, errors);
+      var usedMazakFixGroups = new HashSet<int>(mazakData.Pallets.Select(f => f.FixtureGroup));
+      var groups = GroupProcessesIntoFixtures(allParts, usedMazakFixGroups, useStartingOffsetForDueDate, errors);
 
-      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, errors);
+      var usedFixtures = AssignMazakFixtures(groups, downloadUID, mazakData, savedParts, useStartingOffsetForDueDate, errors);
       var usedProgs = CalculateUsedPrograms(mazakData, allParts);
 
       return new MazakJobs()
@@ -989,228 +985,207 @@ namespace MazakMachineInterface
     #region Fixtures
 
     //group together the processes that use the same fixture
-    private static List<MazakFixture> GroupProcessesIntoFixtures(IEnumerable<MazakPart> allParts, bool checkPalletsUsedOnce, IList<string> logMessages)
+    private static List<MazakFixture> GroupProcessesIntoFixtures(IEnumerable<MazakPart> allParts, HashSet<int> usedFixGroups, bool useStartingOffsetForDueDate, IList<string> logMessages)
     {
       var fixtures = new List<MazakFixture>();
 
-      string palsToFixGroup(IEnumerable<string> pals)
-      {
-        return "pals:" + string.Join(",", pals.OrderBy(p => p));
-      }
-      string jobFixtureToFixGroup(MazakProcess proc, string fix, IEnumerable<string> pals)
-      {
-        return "fix:" + string.Join(",", pals.OrderBy(p => p)) + ":" + fix;
-      }
-
-      // compute all fixture groups
-      var fixtureGroups = new HashSet<string>();
-      var seenPallets = new Dictionary<string, MazakProcess>();
-      foreach (var part in allParts)
-      {
-        foreach (var proc in part.Processes)
+      var sortedProcs =
+        allParts
+        .SelectMany(p => p.Processes)
+        .GroupBy(p => (uniq: p.Job.UniqueStr, pathGroup: p is MazakProcessFromTemplate ? 0 : p.Job.GetPathGroup(p.ProcessNumber, p.Path)))
+        .OrderBy(pathGroup =>
         {
-
-          string fixGroup;
-          var (plannedFixture, plannedFace) = proc.FixtureFace();
-          if (!string.IsNullOrEmpty(plannedFixture))
+          var minProc = pathGroup.FirstOrDefault(p => p.ProcessNumber == 1);
+          if (minProc != null)
           {
-            fixGroup = jobFixtureToFixGroup(proc, plannedFixture, proc.Pallets());
+            var start = minProc.Job.GetSimulatedStartingTimeUTC(minProc.ProcessNumber, minProc.Path);
+            return start == DateTime.MinValue ? DateTime.MaxValue : start;
           }
           else
           {
-            // fallback to pallet groups
-            fixGroup = palsToFixGroup(proc.Pallets());
+            return DateTime.MaxValue;
           }
+        })
+        .SelectMany(pathGroup => pathGroup);
 
-          if (checkPalletsUsedOnce && !fixtureGroups.Contains(fixGroup))
+      foreach (var proc in sortedProcs)
+      {
+        var (jobFixtureName, face) = proc.FixtureFace();
+        var pallets = new HashSet<string>(proc.Pallets());
+        if (face <= 0) face = proc.ProcessNumber;
+        if (jobFixtureName == "") jobFixtureName = null;
+
+        // search for previous fixture to reuse
+        int? group = null;
+        MazakFixture oldFixture = null;
+        foreach (var fixture in fixtures.ReverseEnumerator())
+        {
+          if (useStartingOffsetForDueDate)
           {
-            foreach (var p in proc.Pallets())
-            {
-              if (seenPallets.ContainsKey(p))
-              {
-                var firstPart = seenPallets[p];
-                throw new BlackMaple.MachineFramework.BadRequestException(
-                    "Invalid pallet->part mapping. " +
-                    firstPart.Part.Job.PartName + "-" + firstPart.ProcessNumber.ToString() +
-                    " and " +
-                    proc.Part.Job.PartName + "-" + proc.ProcessNumber.ToString() +
-                    " do not have matching pallet lists.  " +
-                    firstPart.Part.Job.PartName + "-" + firstPart.ProcessNumber.ToString() +
-                    " is assigned to pallets " + string.Join(",", firstPart.Pallets()) +
-                    " and " +
-                    proc.Part.Job.PartName + "-" + proc.ProcessNumber.ToString() +
-                    " is assigned to pallets " + string.Join(",", proc.Pallets()));
+            // Mazak uses a change in group number as the primary determinant of what to run next.
+            // If a mazak schedule is currently running with group number X on a pallet, the next thing to
+            // run on that pallet will first check everything with group number X.  (This overrides the
+            // due date and priority.)  Thus, if we are using the due date and priority, we can't share
+            // fixtures/groups unless there is a continuous range of identical pallet sets or disjoint
+            // pallet sets.
 
+            if (pallets.Any(fixture.Pallets.Contains))
+            {
+              // potentially shared pallets, break unless exactly equal
+              if (!fixture.Pallets.SetEquals(pallets))
+              {
+                break;
               }
-              seenPallets.Add(p, proc);
+            }
+            else
+            {
+              // disjoint pallet sets, continue to next fixture
+              continue;
             }
           }
+          else
+          {
+            // everything has identical due date and priority so just compare pallet sets for equality.
+            if (!fixture.Pallets.SetEquals(pallets)) continue;
+          }
 
-          fixtureGroups.Add(fixGroup);
+          if (fixture.JobFixtureName != jobFixtureName) continue;
+
+          group = fixture.FixtureGroup;
+          if (fixture.Face == face.ToString())
+          {
+            oldFixture = fixture;
+            break;
+          }
         }
-      }
 
-      //for each fixture group, add one mazak fixture for each face
-      int groupNum = 0;
-      foreach (var fixGroup in fixtureGroups)
-      {
-        var byFace = new Dictionary<string, MazakFixture>();
 
-        foreach (var proc in allParts.SelectMany(p => p.Processes))
+        if (oldFixture != null)
         {
-
-          var (plannedFixture, plannedFace) = proc.FixtureFace();
-
-          string face;
-          string baseFixtureName;
-          if (!string.IsNullOrEmpty(plannedFixture))
-          {
-            //check if correct fixture group
-            if (fixGroup != jobFixtureToFixGroup(proc, plannedFixture, proc.Pallets()))
-              continue;
-            face = plannedFace.ToString();
-            baseFixtureName = plannedFixture + ":" + proc.Pallets().First();
-          }
-          else
-          {
-            // check if pallets match
-            if (fixGroup != palsToFixGroup(proc.Pallets()))
-              continue;
-            face = proc.ProcessNumber.ToString();
-            baseFixtureName = groupNum.ToString() + ":" + proc.Pallets().First();
-          }
-
-          if (byFace.ContainsKey(face))
-          {
-            byFace[face].Processes.Add(proc);
-          }
-          else
-          {
-            //start a new face
-            var fix = new MazakFixture();
-            fix.BaseFixtureName = baseFixtureName;
-            fix.FixtureGroup = groupNum;
-            fix.Face = face;
-            fix.Processes.Add(proc);
-            fix.Pallets.AddRange(proc.Pallets());
-            byFace.Add(fix.Face, fix);
-            fixtures.Add(fix);
-          }
+          oldFixture.Processes.Add(proc);
         }
-
-        groupNum += 1;
+        else
+        {
+          if (!group.HasValue)
+          {
+            group = Enumerable.Range(1, 998).First(i => !usedFixGroups.Contains(i));
+            usedFixGroups.Add(group.Value);
+          }
+          var fix = new MazakFixture()
+          {
+            FixtureGroup = group.Value,
+            JobFixtureName = jobFixtureName,
+            Face = face.ToString(),
+            Processes = new List<MazakProcess> { proc },
+            Pallets = pallets,
+          };
+          fixtures.Add(fix);
+        }
       }
 
       return fixtures;
     }
 
     private static ISet<string> AssignMazakFixtures(
-      IEnumerable<MazakFixture> groups, int downloadUID, MazakSchedulesPartsPallets mazakData, ISet<string> savedParts,
+      IEnumerable<MazakFixture> allFixtures, int downloadUID, MazakSchedulesPartsPallets mazakData, ISet<string> savedParts, bool useStartingOffsetForDueDate,
       IList<string> log)
     {
       //First calculate the available fixtures
-      var usedFixtures = new HashSet<string>();
+      var usedMazakFixtureNames = new HashSet<string>();
       foreach (var partProc in mazakData.Parts.SelectMany(p => p.Processes))
       {
         if (partProc.PartName.IndexOf(':') >= 0)
         {
           if (savedParts.Contains(partProc.PartName))
           {
-            usedFixtures.Add(partProc.Fixture);
+            usedMazakFixtureNames.Add(partProc.Fixture);
           }
         }
       }
-      Log.Debug("Available Fixtures: {fixs}", usedFixtures);
+      Log.Debug("Available Fixtures: {@fixs}", usedMazakFixtureNames);
 
-      //For each group, create (or reuse) a fixture and add parts and pallets using this fixture.
-      foreach (var group in groups)
+      //For each fixture, create (or reuse) a mazak fixture and add parts and pallets using this fixture.
+      foreach (var fixture in allFixtures)
       {
-        group.Pallets.Sort();
-
-        Log.Debug("Searching for fixtures for group {@group}", group);
-
         //check if we can reuse an existing fixture
-        CheckExistingFixture(group, usedFixtures, mazakData);
+        if (!useStartingOffsetForDueDate)
+        {
+          Log.Debug("Searching existing fixtures for {@fixture}", fixture);
+          CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData);
+        }
 
-        if (string.IsNullOrEmpty(group.MazakFixtureName))
+        if (string.IsNullOrEmpty(fixture.MazakFixtureName))
         {
           //create a new fixture
-          var fixture =
+          var mazakFixtureName =
             "F:" +
             downloadUID.ToString() + ":" +
-            group.BaseFixtureName + ":" +
-            group.Face;
-          if (fixture.Length > 20)
+            fixture.FixtureGroup.ToString() + ":" +
+            (string.IsNullOrEmpty(fixture.JobFixtureName) ? "" : fixture.JobFixtureName + ":") +
+            fixture.Face;
+          if (mazakFixtureName.Length > 20)
+          {
+            // take out the fixture name
+            mazakFixtureName =
+              "F:" +
+              downloadUID.ToString() + ":" +
+              fixture.FixtureGroup.ToString() + ":" +
+              fixture.Face;
+          }
+          if (mazakFixtureName.Length > 20)
           {
             throw new BlackMaple.MachineFramework.BadRequestException(
-              "Fixture " + group.BaseFixtureName + " is too long to fit in the Mazak databases");
+              "Fixture " + mazakFixtureName + " is too long to fit in the Mazak databases");
           }
-          group.MazakFixtureName = fixture;
-          Log.Debug("Creating new fixture {fix} for group {@group}", fixture, group);
+          fixture.MazakFixtureName = mazakFixtureName;
+          Log.Debug("Creating new fixture {mazakFixtureName} for {@fixture}", mazakFixtureName, fixture);
         }
 
-        usedFixtures.Add(group.MazakFixtureName);
+        usedMazakFixtureNames.Add(fixture.MazakFixtureName);
       }
 
-      return usedFixtures;
+      return usedMazakFixtureNames;
     }
 
     private static void CheckExistingFixture(
-      MazakFixture group,
-      ISet<string> availableFixtures,
+      MazakFixture fixture,
+      ISet<string> availableMazakFixtures,
       MazakSchedulesPartsPallets mazakData)
     {
       //we need a fixture that exactly matches this pallet list and has all the processes.
       //Also, the fixture must be contained in a saved part.
 
-      foreach (string fixture in availableFixtures)
+      foreach (string mazakFixtureName in availableMazakFixtures)
       {
-        int idx = fixture.LastIndexOf(':');
+        int idx = mazakFixtureName.LastIndexOf(':');
         if (idx < 0) continue; //skip, not one of our fixtures
 
         //try to parse face
-        if (fixture.Substring(idx + 1) != group.Face) continue;
+        if (mazakFixtureName.Substring(idx + 1) != fixture.Face) continue;
 
         //check pallets match
         var onPallets = new HashSet<string>();
         foreach (var palRow in mazakData.Pallets)
         {
-          if (palRow.Fixture == fixture)
+          if (palRow.Fixture == mazakFixtureName)
           {
             onPallets.Add(palRow.PalletNumber.ToString());
           }
         }
 
-        if (!CheckListEqual(onPallets, group.Pallets)) continue;
+        if (!onPallets.SetEquals(fixture.Pallets)) continue;
 
-        group.MazakFixtureName = fixture;
-        Log.Debug("Assigning existing fixture {fix} to group {@group}", fixture, group);
+        fixture.MazakFixtureName = mazakFixtureName;
+        Log.Debug("Assigning existing fixture {fix} to group {@group}", mazakFixtureName, mazakFixtureName);
         return;
       }
     }
 
-    private static bool CheckListEqual<T>(IEnumerable<T> l1, IEnumerable<T> l2)
+    public static IEnumerable<T> ReverseEnumerator<T>(this IList<T> items)
     {
-      var l1Copy = new List<T>(l1);
-      foreach (T i in l2)
+      for (int i = items.Count - 1; i >= 0; i--)
       {
-        if (l1Copy.Contains(i))
-        {
-          l1Copy.Remove(i);
-        }
-        else
-        {
-          return false;
-        }
-      }
-
-      if (l1Copy.Count == 0)
-      {
-        return true;
-      }
-      else
-      {
-        return false;
+        yield return items[i];
       }
     }
     #endregion

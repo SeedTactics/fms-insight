@@ -80,7 +80,17 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (string.IsNullOrEmpty(prog.Value.CellControllerProgramName))
         {
-          return AddProgram(cellSt.Status.Programs, prog.Value);
+          return AddProgram(
+            existing: cellSt.Status.Programs,
+            prog: prog.Value,
+            process:
+              cellSt.UnarchivedJobs
+              .SelectMany(j => Enumerable.Range(1, j.NumProcesses).Select(proc => new { j, proc }))
+              .SelectMany(j => Enumerable.Range(1, j.j.GetNumPaths(j.proc)).Select(path => new { j = j.j, proc = j.proc, path }))
+              .SelectMany(j => j.j.GetMachiningStop(j.proc, j.path).Select(stop => new { stop, proc = j.proc }))
+              .FirstOrDefault(s => s.stop.ProgramName == prog.Key.progName && s.stop.ProgramRevision == prog.Key.revision)
+              ?.proc
+          );
         }
       }
 
@@ -563,9 +573,21 @@ namespace BlackMaple.FMSInsight.Niigata
       return false;
     }
 
-    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, ProgramRevision prog)
+    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, ProgramRevision prog, int? process)
     {
-      int progNum = Enumerable.Range(2000, 9999 - 2000).FirstOrDefault(p => !existing.ContainsKey(p));
+      int progNum = 0;
+      if (process.HasValue && process.Value >= 1 && process.Value <= 9)
+      {
+        progNum = Enumerable.Range(2000 + process.Value * 100, 999).FirstOrDefault(p => !existing.ContainsKey(p));
+      }
+      if (progNum == 0)
+      {
+        progNum = Enumerable.Range(3000, 9999 - 3000).FirstOrDefault(p => !existing.ContainsKey(p));
+      }
+      if (progNum == 0)
+      {
+        throw new Exception("Unable to find unused program number for program " + prog.ProgramName + " rev" + prog.Revision.ToString());
+      }
       return new NewProgram()
       {
         ProgramNum = progNum,

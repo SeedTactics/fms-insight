@@ -204,6 +204,21 @@ namespace MazakMachineInterface
     public int FixtureGroupV2 { get; set; }
     public MazakWriteCommand Command { get; set; } // only for transaction DB
 
+    public int FixtureGroup
+    {
+      get
+      {
+        if (AngleV1 > 1000)
+        {
+          return AngleV1 % 1000;
+        }
+        else
+        {
+          return FixtureGroupV2;
+        }
+      }
+    }
+
     public MazakPalletRow Clone() => (MazakPalletRow)MemberwiseClone();
   }
 
