@@ -1249,7 +1249,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public NewProgram Expected { get; set; }
     }
 
-    public static ExpectedChange ExpectAddNewProgram(int progNum, string name, long rev)
+    public static ExpectedChange ExpectAddNewProgram(int progNum, string name, long rev, int mcMin)
     {
       return new ExpectAddProgram()
       {
@@ -1258,7 +1258,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ProgramNum = progNum,
           ProgramName = name,
           ProgramRevision = rev,
-          IccProgramComment = "Insight:" + rev.ToString() + ":" + name
+          IccProgramComment = "Insight:" + rev.ToString() + ":" + name,
+          ExpectedCuttingTime = TimeSpan.FromMinutes(mcMin)
         }
       };
     }

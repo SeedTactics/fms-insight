@@ -83,13 +83,7 @@ namespace BlackMaple.FMSInsight.Niigata
           return AddProgram(
             existing: cellSt.Status.Programs,
             prog: prog.Value,
-            process:
-              cellSt.UnarchivedJobs
-              .SelectMany(j => Enumerable.Range(1, j.NumProcesses).Select(proc => new { j, proc }))
-              .SelectMany(j => Enumerable.Range(1, j.j.GetNumPaths(j.proc)).Select(path => new { j = j.j, proc = j.proc, path }))
-              .SelectMany(j => j.j.GetMachiningStop(j.proc, j.path).Select(stop => new { stop, proc = j.proc }))
-              .FirstOrDefault(s => s.stop.ProgramName == prog.Key.progName && s.stop.ProgramRevision == prog.Key.revision)
-              ?.proc
+            allJobs: cellSt.UnarchivedJobs
           );
         }
       }
@@ -573,12 +567,19 @@ namespace BlackMaple.FMSInsight.Niigata
       return false;
     }
 
-    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, ProgramRevision prog, int? process)
+    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, ProgramRevision prog, IEnumerable<JobPlan> allJobs)
     {
+      var procAndStop =
+        allJobs
+          .SelectMany(j => Enumerable.Range(1, j.NumProcesses).Select(proc => new { j, proc }))
+          .SelectMany(j => Enumerable.Range(1, j.j.GetNumPaths(j.proc)).Select(path => new { j = j.j, proc = j.proc, path }))
+          .SelectMany(j => j.j.GetMachiningStop(j.proc, j.path).Select(stop => new { stop, proc = j.proc }))
+          .FirstOrDefault(s => s.stop.ProgramName == prog.ProgramName && s.stop.ProgramRevision == prog.Revision);
+
       int progNum = 0;
-      if (process.HasValue && process.Value >= 1 && process.Value <= 9)
+      if (procAndStop != null && procAndStop.proc >= 1 && procAndStop.proc <= 9)
       {
-        progNum = Enumerable.Range(2000 + process.Value * 100, 999).FirstOrDefault(p => !existing.ContainsKey(p));
+        progNum = Enumerable.Range(2000 + procAndStop.proc * 100, 999).FirstOrDefault(p => !existing.ContainsKey(p));
       }
       if (progNum == 0)
       {
@@ -594,6 +595,7 @@ namespace BlackMaple.FMSInsight.Niigata
         IccProgramComment = CreateProgramComment(prog.ProgramName, prog.Revision),
         ProgramName = prog.ProgramName,
         ProgramRevision = prog.Revision,
+        ExpectedCuttingTime = procAndStop == null ? TimeSpan.Zero : procAndStop.stop.ExpectedCycleTime
       };
     }
 

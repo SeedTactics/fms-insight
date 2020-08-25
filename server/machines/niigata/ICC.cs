@@ -942,7 +942,7 @@ namespace BlackMaple.FMSInsight.Niigata
               FileName = filename,
               ProgNum = add.ProgramNum,
               Comment = add.IccProgramComment,
-              WorkTime = 0,
+              WorkTime = (int)Math.Round(add.ExpectedCuttingTime.TotalSeconds),
             },
             transaction: trans
           );
@@ -1052,11 +1052,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void PerformAction(JobDB jobDB, EventLogDB logDB, NiigataAction a)
     {
-      // ICC can't accept actions too fast, so only send one every half-second
+      // ICC can't accept actions too fast, so only send one every second
       var sinceLast = DateTime.UtcNow.Subtract(_lastActionTime);
-      if (sinceLast >= TimeSpan.Zero && sinceLast < TimeSpan.FromSeconds(0.5))
+      if (sinceLast >= TimeSpan.Zero && sinceLast < TimeSpan.FromSeconds(1))
       {
-        Thread.Sleep(TimeSpan.FromSeconds(0.5).Subtract(sinceLast));
+        Thread.Sleep(TimeSpan.FromSeconds(1).Subtract(sinceLast));
       }
 
       try
