@@ -1014,7 +1014,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     @RegId,
                     NULL,
                     @ProgNum,
-                    NULL,
+                    '',
                     0,
                     true
                   )
