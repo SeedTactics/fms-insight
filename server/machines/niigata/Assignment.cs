@@ -101,7 +101,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material.Select(ms => ms.Mat).ToList(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
+          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
         }
       }
 
@@ -120,7 +120,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal.Status, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
+          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
         }
       }
 
@@ -308,19 +308,28 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
-    private NiigataAction SetNewRoute(PalletStatus oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs)
+    private NiigataAction SetNewRoute(PalletAndMaterial oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs)
     {
-      var newMaster = NewPalletMaster(oldPallet.Master.PalletNum, newPaths, progs);
-      if (SimpleQuantityChange(oldPallet.Master, newMaster))
+      var newMaster = NewPalletMaster(oldPallet.Status.Master.PalletNum, newPaths, progs);
+      var newFaces = newPaths.Select(path =>
+        new AssignedJobAndPathForFace()
+        {
+          Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,
+          Unique = path.Job.UniqueStr,
+          Proc = path.Process,
+          Path = path.Path
+        }).ToList();
+
+      if (SimpleQuantityChange(oldPallet.Status.Master, oldPallet.CurrentOrLoadingFaces, newMaster, newFaces))
       {
         int remaining = 1;
-        if (oldPallet.CurrentStep is UnloadStep)
+        if (oldPallet.Status.CurrentStep is UnloadStep)
         {
           remaining = 2;
         }
         return new UpdatePalletQuantities()
         {
-          Pallet = oldPallet.Master.PalletNum,
+          Pallet = oldPallet.Status.Master.PalletNum,
           Priority = 0,
           Cycles = remaining,
           NoWork = false,
@@ -333,15 +342,7 @@ namespace BlackMaple.FMSInsight.Niigata
         return new NewPalletRoute()
         {
           NewMaster = newMaster,
-          NewFaces = newPaths.Select(path =>
-            new AssignedJobAndPathForFace()
-            {
-              Face = path.Job.PlannedFixture(process: path.Process, path: path.Path).face,
-              Unique = path.Job.UniqueStr,
-              Proc = path.Process,
-              Path = path.Path
-            }
-        )
+          NewFaces = newFaces
         };
       }
     }
@@ -501,9 +502,24 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    private bool SimpleQuantityChange(PalletMaster existing, PalletMaster newPal)
+    private bool SimpleQuantityChange(PalletMaster existing, IReadOnlyList<PalletFace> existingFaces,
+                                      PalletMaster newPal, IReadOnlyList<AssignedJobAndPathForFace> newFaces
+    )
     {
+      if (existingFaces.Count != newFaces.Count) return false;
       if (existing.Routes.Count != newPal.Routes.Count) return false;
+
+      if (newFaces.Any(newFace =>
+            existingFaces.FirstOrDefault(existingFace =>
+              newFace.Unique == existingFace.Job.UniqueStr &&
+              newFace.Proc == existingFace.Process &&
+              newFace.Path == existingFace.Path &&
+              newFace.Face == existingFace.Face
+            ) == null)
+         )
+      {
+        return false;
+      }
 
       for (int i = 0; i < existing.Routes.Count - 1; i++)
       {

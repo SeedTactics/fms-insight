@@ -312,69 +312,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Fact]
-    public void ApplysNewQtyAtUnload()
-    {
-      _dsl
-        .AddJobs(new[] {
-          FakeIccDsl.CreateOneProcOnePathJob(
-            unique: "uniq1",
-            part: "part1",
-            qty: 3,
-            priority: 5,
-            partsPerPal: 1,
-            pals: new[] { 1 },
-            luls: new[] { 3, 4 },
-            machs: new[] { 5, 6 },
-            prog: "prog111",
-            progRev: 6,
-            loadMins: 8,
-            unloadMins: 9,
-            machMins: 14,
-            fixture: "fix1",
-            face: 1
-          )},
-          new[] { (prog: "prog111", rev: 6L) }
-        )
-        .DecrJobRemainCnt("uniq1", path: 1)
-        .SetExpectedLoadCastings(new[] {
-          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
-        })
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 6, mcMin: 14),
-          FakeIccDsl.ExpectNewRoute(
-            pal: 1,
-            luls: new[] { 3, 4 },
-            machs: new[] { 5, 6 },
-            progs: new[] { 2100 },
-            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
-          )
-        })
-
-        //should set new route if loads, machines, or progs differ
-        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 100, 200 }, machs: new[] { 5, 6 }, progs: new[] { 2100 })
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2100 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
-        })
-        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 500, 600 }, progs: new[] { 2100 })
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2100 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
-        })
-        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 12345 })
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2100 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
-        })
-
-        // back to correct, just increment
-        .OverrideRoute(pal: 1, comment: "abc", noWork: true, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2100 })
-        .DecrJobRemainCnt("uniq1", path: 1, cnt: -1) // the comment abc does not exist, so no material is marked to be loaded
-        .ClearExpectedLoadCastings()
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 1)
-        })
-         ;
-    }
-
-    [Fact]
     public void IgnoresDecrementedJob()
     {
       _dsl
