@@ -553,7 +553,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (!evt.WaitOne(TimeSpan.FromSeconds(10)))
         {
           // timeout
-          Log.Debug("Change request timeout {@request}", request);
+          Log.Warning("ICC change request timeout {@request}", request);
           try
           {
             clear();
@@ -584,7 +584,7 @@ namespace BlackMaple.FMSInsight.Niigata
             }
             else
             {
-              Log.Debug("Niigata icc returned error {err} for {@request}", ret.Error, request);
+              Log.Error("Niigata icc returned error {err} for {@request}", ret.Error, request);
               throw new Exception("Niigata ICC returned error " + ret.Error);
             }
           }

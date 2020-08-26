@@ -185,6 +185,8 @@ namespace BlackMaple.FMSInsight.Niigata
           NiigataAction action = null;
           do
           {
+            Log.Debug("Syncronizing Pallets, total GC memory {mem}", GC.GetTotalMemory(false));
+
             _newCurStatus.Reset();
             status = _icc.LoadNiigataStatus();
             var jobs = jdb.LoadUnarchivedJobs();

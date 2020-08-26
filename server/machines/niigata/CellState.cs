@@ -1131,7 +1131,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void RecordReclampEnd(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry reclampStart, DateTime nowUtc, EventLogDB logDB, ref bool palletStateUpdated)
     {
-      Log.Debug("Recording machine end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, reclampStart);
+      Log.Debug("Recording reclamp end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, reclampStart);
       palletStateUpdated = true;
 
       int statNum;
