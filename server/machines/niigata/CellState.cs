@@ -1055,16 +1055,20 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           statNum = jobMc.num;
         }
-        toolsAtStart = Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
+        toolsAtStart = null;
       }
       else
       {
         statName = ss.JobStop.StationGroup;
         statNum = 0;
-        toolsAtStart = Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
+        toolsAtStart = null;
       }
 
-      var toolsAtEnd = _machConnection.ToolsForMachine(_stationNames.JobMachToIcc(statName, statNum));
+      IEnumerable<NiigataToolData> toolsAtEnd = null;
+      if (toolsAtStart != null)
+      {
+        toolsAtEnd = _machConnection.ToolsForMachine(_stationNames.JobMachToIcc(statName, statNum));
+      }
 
       logDB.RecordMachineEnd(
         mats: matOnFace.Select(m => new EventLogDB.EventLogMaterial()
@@ -1084,7 +1088,8 @@ namespace BlackMaple.FMSInsight.Niigata
         extraData: !ss.JobStop.ProgramRevision.HasValue ? null : new Dictionary<string, string> {
                 {"ProgramRevision", ss.JobStop.ProgramRevision.Value.ToString()}
         },
-        tools: toolsAtEnd == null ? null : EventLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
+        tools: toolsAtStart == null || toolsAtEnd == null ? null :
+          EventLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
       );
     }
 
@@ -1131,7 +1136,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void RecordReclampEnd(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry reclampStart, DateTime nowUtc, EventLogDB logDB, ref bool palletStateUpdated)
     {
-      Log.Debug("Recording machine end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, reclampStart);
+      Log.Debug("Recording reclamp end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, reclampStart);
       palletStateUpdated = true;
 
       int statNum;

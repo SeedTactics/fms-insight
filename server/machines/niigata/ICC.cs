@@ -50,6 +50,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private string _connStr;
     private Thread _thread;
     private Random _rng = new Random();
+    private DateTime _lastActionTime = DateTime.MinValue;
 
     public event Action NewCurrentStatus;
 
@@ -66,6 +67,17 @@ namespace BlackMaple.FMSInsight.Niigata
       else
       {
         _connStr = connectionStr + ";Database=fms_insight_icc_communication";
+
+        using (var conn = new NpgsqlConnection(_connStr))
+        {
+          conn.Open();
+          using (var trans = conn.BeginTransaction())
+          {
+            ClearProposalTables(conn, trans);
+            trans.Commit();
+          }
+        }
+
         _thread = new Thread(NotifyThread);
         _thread.Start();
       }
@@ -541,7 +553,15 @@ namespace BlackMaple.FMSInsight.Niigata
         if (!evt.WaitOne(TimeSpan.FromSeconds(10)))
         {
           // timeout
-          Log.Debug("Change request timeout {@request}", request);
+          Log.Warning("ICC change request timeout {@request}", request);
+          try
+          {
+            clear();
+          }
+          catch (Exception ex)
+          {
+            Log.Error(ex, "Unable to clear Niigata ICC request tables");
+          }
           throw new Exception("Timeout waiting for Niigata ICC to process change request");
         }
         else
@@ -564,7 +584,7 @@ namespace BlackMaple.FMSInsight.Niigata
             }
             else
             {
-              Log.Debug("Niigata icc returned error {err} for {@request}", ret.Error, request);
+              Log.Error("Niigata icc returned error {err} for {@request}", ret.Error, request);
               throw new Exception("Niigata ICC returned error " + ret.Error);
             }
           }
@@ -592,6 +612,11 @@ namespace BlackMaple.FMSInsight.Niigata
         throw new Exception("Niigata ICC has not processed the new program");
       }
 
+      ClearProposalTables(conn, trans);
+    }
+
+    private void ClearProposalTables(NpgsqlConnection conn, NpgsqlTransaction trans)
+    {
       // now log any errors
       foreach (var ret in conn.Query("SELECT * FROM proposal_pallet_route WHERE Success = False", transaction: trans))
       {
@@ -627,6 +652,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // first save the faces
       newRoute.NewMaster.Comment = RecordFacesForPallet.Save(newRoute.NewMaster.PalletNum, DateTime.UtcNow, newRoute.NewFaces, logDB);
 
+      _proposalRouteChanged.Reset();
       long ProposalId = NewId();
       using (var conn = new NpgsqlConnection(_connStr))
       {
@@ -821,6 +847,7 @@ namespace BlackMaple.FMSInsight.Niigata
         return;
       }
 
+      _proposalPalletChanged.Reset();
       using (var conn = new NpgsqlConnection(_connStr))
       {
         conn.Open();
@@ -885,6 +912,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var filename = add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA";
       System.IO.File.WriteAllText(System.IO.Path.Combine(_programDir, filename), progCt);
 
+      _programRegistered.Reset();
       using (var conn = new NpgsqlConnection(_connStr))
       {
         conn.Open();
@@ -914,7 +942,7 @@ namespace BlackMaple.FMSInsight.Niigata
               FileName = filename,
               ProgNum = add.ProgramNum,
               Comment = add.IccProgramComment,
-              WorkTime = 0,
+              WorkTime = (int)Math.Round(add.ExpectedCuttingTime.TotalSeconds),
             },
             transaction: trans
           );
@@ -967,6 +995,7 @@ namespace BlackMaple.FMSInsight.Niigata
         return;
       }
 
+      _programRegistered.Reset();
       using (var conn = new NpgsqlConnection(_connStr))
       {
         conn.Open();
@@ -985,7 +1014,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     @RegId,
                     NULL,
                     @ProgNum,
-                    NULL,
+                    '',
                     0,
                     true
                   )
@@ -1023,23 +1052,37 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void PerformAction(JobDB jobDB, EventLogDB logDB, NiigataAction a)
     {
-      switch (a)
+      // ICC can't accept actions too fast, so only send one every second
+      var sinceLast = DateTime.UtcNow.Subtract(_lastActionTime);
+      if (sinceLast >= TimeSpan.Zero && sinceLast < TimeSpan.FromSeconds(1))
       {
-        case NewPalletRoute newRoute:
-          SetRoute(newRoute, logDB);
-          break;
+        Thread.Sleep(TimeSpan.FromSeconds(1).Subtract(sinceLast));
+      }
 
-        case UpdatePalletQuantities update:
-          UpdatePallet(update);
-          break;
+      try
+      {
+        switch (a)
+        {
+          case NewPalletRoute newRoute:
+            SetRoute(newRoute, logDB);
+            break;
 
-        case NewProgram add:
-          AddProgram(jobDB, add);
-          break;
+          case UpdatePalletQuantities update:
+            UpdatePallet(update);
+            break;
 
-        case DeleteProgram delete:
-          DeleteProgram(jobDB, delete);
-          break;
+          case NewProgram add:
+            AddProgram(jobDB, add);
+            break;
+
+          case DeleteProgram delete:
+            DeleteProgram(jobDB, delete);
+            break;
+        }
+      }
+      finally
+      {
+        _lastActionTime = DateTime.UtcNow;
       }
     }
     #endregion

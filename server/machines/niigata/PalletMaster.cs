@@ -298,6 +298,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public string IccProgramComment { get; set; } // comment in the cell controller
     public string ProgramName { get; set; } // name inside Insight Job database
     public long ProgramRevision { get; set; } // revision inside Insight Job Database
+    public TimeSpan ExpectedCuttingTime { get; set; }
     public List<int> Tools = new List<int>();
   }
 
