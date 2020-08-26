@@ -1055,16 +1055,20 @@ namespace BlackMaple.FMSInsight.Niigata
           }
           statNum = jobMc.num;
         }
-        toolsAtStart = Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
+        toolsAtStart = null;
       }
       else
       {
         statName = ss.JobStop.StationGroup;
         statNum = 0;
-        toolsAtStart = Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
+        toolsAtStart = null;
       }
 
-      var toolsAtEnd = _machConnection.ToolsForMachine(_stationNames.JobMachToIcc(statName, statNum));
+      IEnumerable<NiigataToolData> toolsAtEnd = null;
+      if (toolsAtStart != null)
+      {
+        toolsAtEnd = _machConnection.ToolsForMachine(_stationNames.JobMachToIcc(statName, statNum));
+      }
 
       logDB.RecordMachineEnd(
         mats: matOnFace.Select(m => new EventLogDB.EventLogMaterial()
@@ -1084,7 +1088,8 @@ namespace BlackMaple.FMSInsight.Niigata
         extraData: !ss.JobStop.ProgramRevision.HasValue ? null : new Dictionary<string, string> {
                 {"ProgramRevision", ss.JobStop.ProgramRevision.Value.ToString()}
         },
-        tools: toolsAtEnd == null ? null : EventLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
+        tools: toolsAtStart == null || toolsAtEnd == null ? null :
+          EventLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
       );
     }
 
