@@ -11,7 +11,7 @@
     "defaults"
   ],
   "scripts": {
-    "postinstall": "echo 'last 2 chrome versions' > node_modules/recoil/.browserslistrc",
+    "postinstall": "echo last 2 chrome versions > node_modules/recoil/.browserslistrc",
     "start": "parcel src/index.html",
     "start-demo": "parcel src/demo.html",
     "build": "tsc --noEmit --composite false && parcel build src/index.html && cp service-worker.js dist",
