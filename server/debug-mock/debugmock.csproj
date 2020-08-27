@@ -4,6 +4,7 @@
     <AssemblyName>BlackMaple.MachineFramework.DebugMock</AssemblyName>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <OutputType>Exe</OutputType>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
   <ItemGroup>

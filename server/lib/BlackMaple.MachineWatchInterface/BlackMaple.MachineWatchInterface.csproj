@@ -18,6 +18,7 @@
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 
     <OutputType>Library</OutputType>
   </PropertyGroup>
