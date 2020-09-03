@@ -1906,7 +1906,7 @@ namespace BlackMaple.MachineFramework
         }
         foreach (var insp in job.GetOldObsoleteInspections() ?? Enumerable.Empty<MachineWatchInterface.JobInspectionData>())
         {
-          cmd.Parameters[1].Value = insp.InspectSingleProcess > 0 ? insp.InspectSingleProcess : job.NumProcesses;
+          cmd.Parameters[1].Value = insp.InspectSingleProcess > 0 ? Math.Min(insp.InspectSingleProcess, job.NumProcesses) : job.NumProcesses;
           cmd.Parameters[2].Value = -1; // Path = -1 is loaded above for all paths
           cmd.Parameters[3].Value = insp.InspectionType;
           cmd.Parameters[4].Value = insp.Counter;
