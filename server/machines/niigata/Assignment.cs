@@ -88,7 +88,27 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      //TODO: check if pallet in BeforeUnload just needs a simple increment before it reaches the load station?
+      // next, check if any pallet needs to be adjusted because a face is missing material
+      foreach (var pal in cellSt.Pallets.Where(pal => pal.CurrentOrLoadingFaces.Any(f => f.FaceIsMissingMaterial)))
+      {
+        if (pal.CurrentOrLoadingFaces.All(f => f.FaceIsMissingMaterial))
+        {
+          return SetNoWork(pal);
+        }
+        else
+        {
+          // can't do anything until at the load station
+          if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
+          if (!(pal.Status.Tracking.BeforeCurrentStep && (pal.Status.CurrentStep is UnloadStep || pal.Status.CurrentStep is LoadStep))) continue;
+
+          // FindMaterialToLoad should correctly (re)detect the faces missing material.
+          var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material.Select(ms => ms.Mat).ToList(), queuedMats: cellSt.QueuedMaterial);
+          if (pathsToLoad != null && pathsToLoad.Count > 0)
+          {
+            return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
+          }
+        }
+      }
 
       // next, check if pallet at load station being unloaded needs something loaded
       foreach (var pal in cellSt.Pallets)
@@ -549,6 +569,19 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return true;
+    }
+
+    private NiigataAction SetNoWork(PalletAndMaterial pal)
+    {
+      return new UpdatePalletQuantities()
+      {
+        Pallet = pal.Status.Master.PalletNum,
+        Priority = pal.Status.Master.Priority,
+        Cycles = pal.Status.Master.RemainingPalletCycles,
+        NoWork = true,
+        Skip = false,
+        LongToolMachine = 0
+      };
     }
     #endregion
 

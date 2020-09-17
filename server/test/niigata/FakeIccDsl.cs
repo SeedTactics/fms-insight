@@ -412,6 +412,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl RemoveFromQueue(IEnumerable<LogMaterial> mats)
+    {
+      foreach (var mat in mats)
+      {
+        _logDB.RecordRemoveMaterialFromAllQueues(EventLogDB.EventLogMaterial.FromLogMat(mat), operatorName: null, _status.TimeOfStatusUTC);
+        _expectedMaterial.Remove(mat.MaterialID);
+      }
+      return this;
+    }
+
     public FakeIccDsl SetExpectedLoadCastings(IEnumerable<(string unique, string part, int pal, int path, int face)> castings)
     {
       _expectedLoadCastings = castings.Select(c => new InProcessMaterial()
@@ -770,6 +780,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Process = face.proc,
             Path = face.path,
             Face = face.face,
+            FaceIsMissingMaterial = false
           }
         ));
         current.Material.Select(m => m.Mat).Should().BeEquivalentTo(
@@ -1046,6 +1057,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return new ExpectPalHold() { Pallet = pal, Hold = hold };
     }
 
+    private class ExpectPalNoWork : ExpectedChange
+    {
+      public int Pallet { get; set; }
+      public bool NoWork { get; set; }
+    }
+
+    public static ExpectedChange ExpectNoWork(int pal, bool noWork)
+    {
+      return new ExpectPalNoWork() { Pallet = pal, NoWork = noWork };
+
+    }
+
     private class ExpectMachineBeginEvent : ExpectedChange
     {
       public int Pallet { get; set; }
@@ -1318,6 +1341,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
         var expectDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
         var expectHold = (ExpectPalHold)expectedChanges.FirstOrDefault(e => e is ExpectPalHold);
+        var expectNoWork = (ExpectPalNoWork)expectedChanges.FirstOrDefault(e => e is ExpectPalNoWork);
 
         if (expectedNewRoute != null)
         {
@@ -1400,6 +1424,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             LongToolMachine = 0
           });
           _status.Pallets[expectHold.Pallet - 1].Master.Skip = expectHold.Hold;
+        }
+        else if (expectNoWork != null)
+        {
+          _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork.Should().Be(!expectNoWork.NoWork);
+          var action = _assign.NewPalletChange(cellSt);
+          action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
+          {
+            Pallet = expectNoWork.Pallet,
+            Priority = _status.Pallets[expectNoWork.Pallet - 1].Master.Priority,
+            Cycles = _status.Pallets[expectNoWork.Pallet - 1].Master.RemainingPalletCycles,
+            NoWork = expectNoWork.NoWork,
+            Skip = _status.Pallets[expectNoWork.Pallet - 1].Master.Skip,
+            LongToolMachine = 0
+          });
+          _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork = expectNoWork.NoWork;
+
+          // reload cell state
+          cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+          cellSt.PalletStateUpdated.Should().Be(true);
+          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
         }
         else
         {

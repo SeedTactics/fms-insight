@@ -45,6 +45,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public int Process { get; set; }
     public int Path { get; set; }
     public int Face { get; set; }
+    public bool FaceIsMissingMaterial { get; set; }
   }
 
   public class InProcessMaterialAndJob
@@ -154,6 +155,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Process = m.Proc,
           Path = m.Path,
           Face = m.Face,
+          FaceIsMissingMaterial = false
         })
         .ToList();
 
@@ -521,17 +523,17 @@ namespace BlackMaple.FMSInsight.Niigata
         if (loadedMatCnt < face.Job.PartsPerPallet(face.Process, face.Path))
         {
           Log.Debug("Unable to find enough in-process parts for {@pallet} and {@face} with {@currentlyLoading}", pallet, face, currentlyLoading);
-          if (allocateNew)
+          if (!allocateNew)
           {
-            Log.Warning("Unable to find enough in-process parts for {@job}-{@proc} on pallet {@pallet}", face.Job.UniqueStr, face.Process, pallet.Status.Master.PalletNum);
+            face.FaceIsMissingMaterial = true;
           }
-          for (int i = loadedMatCnt; i < face.Job.PartsPerPallet(face.Process, face.Path); i++)
+          else
           {
-            long mid = -1;
-            string serial = null;
-            if (allocateNew)
+            Log.Error("Unable to find enough in-process parts for {@job}-{@proc} on pallet {@pallet}", face.Job.UniqueStr, face.Process, pallet.Status.Master.PalletNum);
+            for (int i = loadedMatCnt; i < face.Job.PartsPerPallet(face.Process, face.Path); i++)
             {
-              mid = logDB.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
+              string serial = null;
+              long mid = logDB.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
               if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
               {
                 serial = _settings.ConvertMaterialIDToSerial(mid);
@@ -541,45 +543,45 @@ namespace BlackMaple.FMSInsight.Niigata
                   nowUtc
                   );
               }
-            }
-            pallet.Material.Add(new InProcessMaterialAndJob()
-            {
-              Job = face.Job,
-              Mat = new InProcessMaterial()
+              pallet.Material.Add(new InProcessMaterialAndJob()
               {
-                MaterialID = mid,
-                JobUnique = face.Job.UniqueStr,
-                PartName = face.Job.PartName,
-                Serial = serial,
-                Process = actionIsLoading ? face.Process - 1 : face.Process,
-                Path = actionIsLoading ? 1 : face.Path,
-                Location = actionIsLoading ?
-                    new InProcessMaterialLocation()
+                Job = face.Job,
+                Mat = new InProcessMaterial()
+                {
+                  MaterialID = mid,
+                  JobUnique = face.Job.UniqueStr,
+                  PartName = face.Job.PartName,
+                  Serial = serial,
+                  Process = actionIsLoading ? face.Process - 1 : face.Process,
+                  Path = actionIsLoading ? 1 : face.Path,
+                  Location = actionIsLoading ?
+                      new InProcessMaterialLocation()
+                      {
+                        Type = InProcessMaterialLocation.LocType.Free,
+                      }
+                      : new InProcessMaterialLocation()
+                      {
+                        Type = InProcessMaterialLocation.LocType.OnPallet,
+                        Pallet = pallet.Status.Master.PalletNum.ToString(),
+                        Face = face.Face
+                      },
+                  Action = actionIsLoading ?
+                    new InProcessMaterialAction()
                     {
-                      Type = InProcessMaterialLocation.LocType.Free,
+                      Type = InProcessMaterialAction.ActionType.Loading,
+                      LoadOntoPallet = pallet.Status.Master.PalletNum.ToString(),
+                      ProcessAfterLoad = face.Process,
+                      PathAfterLoad = face.Path,
+                      LoadOntoFace = face.Face,
                     }
-                    : new InProcessMaterialLocation()
+                    :
+                    new InProcessMaterialAction()
                     {
-                      Type = InProcessMaterialLocation.LocType.OnPallet,
-                      Pallet = pallet.Status.Master.PalletNum.ToString(),
-                      Face = face.Face
-                    },
-                Action = actionIsLoading ?
-                  new InProcessMaterialAction()
-                  {
-                    Type = InProcessMaterialAction.ActionType.Loading,
-                    LoadOntoPallet = pallet.Status.Master.PalletNum.ToString(),
-                    ProcessAfterLoad = face.Process,
-                    PathAfterLoad = face.Path,
-                    LoadOntoFace = face.Face,
-                  }
-                  :
-                  new InProcessMaterialAction()
-                  {
-                    Type = InProcessMaterialAction.ActionType.Waiting
-                  }
-              }
-            });
+                      Type = InProcessMaterialAction.ActionType.Waiting
+                    }
+                }
+              });
+            }
           }
         }
       }
