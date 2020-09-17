@@ -117,6 +117,9 @@ class HomeSplash extends React.Component {
               Get Started
             </Button>
             <Button href="/demo/demo.html">View Demo</Button>
+            <Button href="https://www.seedtactics.com/contact">
+              Contact Sales
+            </Button>
           </PromoSection>
         </div>
       </SplashContainer>

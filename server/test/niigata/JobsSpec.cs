@@ -158,6 +158,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Process = 1,
             Path = 1,
             Face = 1,
+            FaceIsMissingMaterial = false
           }
         },
         Material = new List<InProcessMaterialAndJob> {
@@ -205,6 +206,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Process = 2,
             Path = 5,
             Face = 1,
+            FaceIsMissingMaterial = false
           }
         },
         Material = new List<InProcessMaterialAndJob> {
