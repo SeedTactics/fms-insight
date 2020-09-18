@@ -107,7 +107,6 @@ namespace MachineWatchTest
       job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(18));
       job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(125));
       job1.Comment = "Hello there";
-      job1.CreateMarkerData = true;
       job1.ScheduledBookingIds.Add("booking1");
       job1.ScheduledBookingIds.Add("booking2");
       job1.ScheduledBookingIds.Add("booking3");

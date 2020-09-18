@@ -76,7 +76,6 @@ namespace MachineWatchTest
       job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(18));
       job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(125));
       job1.Comment = "Hello there";
-      job1.CreateMarkerData = true;
       job1.ScheduledBookingIds.Add("booking1");
       job1.ScheduledBookingIds.Add("booking2");
       job1.ScheduledBookingIds.Add("booking3");
@@ -339,7 +338,6 @@ namespace MachineWatchTest
       job2.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(533));
       job2.Comment = "this is a test";
       job2.ScheduleId = "Job2tag-hello";
-      job2.CreateMarkerData = false;
       job2.JobCopiedToSystem = false;
       job2.ManuallyCreatedJob = true;
 
@@ -1439,7 +1437,6 @@ namespace MachineWatchTest
       Assert.Equal(job1.PartName, job2.PartName);
       Assert.Equal(job1.UniqueStr, job2.UniqueStr);
       Assert.Equal(job1.NumProcesses, job2.NumProcesses);
-      Assert.Equal(job1.CreateMarkerData, job2.CreateMarkerData);
       Assert.Equal(job1.RouteStartingTimeUTC, job2.RouteStartingTimeUTC);
       Assert.Equal(job1.RouteEndingTimeUTC, job2.RouteEndingTimeUTC);
       Assert.Equal(job1.Archived, job2.Archived);
