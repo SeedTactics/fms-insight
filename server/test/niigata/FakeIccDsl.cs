@@ -976,7 +976,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           NoWork = false,
           Skip = false,
           ForLongToolMaintenance = false,
-          PerformProgramDownload = false,
+          PerformProgramDownload = true,
           Routes = new List<RouteStep> {
             new LoadStep() {
               LoadStations = luls.ToList()
@@ -1008,7 +1008,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           NoWork = false,
           Skip = false,
           ForLongToolMaintenance = false,
-          PerformProgramDownload = false,
+          PerformProgramDownload = true,
           Routes = new List<RouteStep> {
             new LoadStep() {
               LoadStations = loads.ToList()

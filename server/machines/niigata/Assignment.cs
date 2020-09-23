@@ -508,6 +508,7 @@ namespace BlackMaple.FMSInsight.Niigata
         NoWork = false,
         Skip = false,
         ForLongToolMaintenance = false,
+        PerformProgramDownload = true,
         Routes =
           (new RouteStep[] { new LoadStep() { LoadStations = firstPath.Job.LoadStations(firstPath.Process, firstPath.Path).ToList() } })
           .Concat(middleSteps)
