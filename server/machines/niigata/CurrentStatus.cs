@@ -129,7 +129,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // tool loads/unloads
-      foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance))
+      foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance && !p.Status.Master.NoWork))
       {
         switch (pal.Status.CurrentStep)
         {
@@ -139,7 +139,7 @@ namespace BlackMaple.FMSInsight.Niigata
               curStatus.Material.Add(new InProcessMaterial()
               {
                 MaterialID = -1,
-                JobUnique = null,
+                JobUnique = "",
                 PartName = "LongTool",
                 Process = 1,
                 Path = 1,
@@ -164,7 +164,7 @@ namespace BlackMaple.FMSInsight.Niigata
               curStatus.Material.Add(new InProcessMaterial()
               {
                 MaterialID = -1,
-                JobUnique = null,
+                JobUnique = "",
                 PartName = "LongTool",
                 Process = 1,
                 Path = 1,
