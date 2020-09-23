@@ -137,10 +137,6 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   errors.Add("Part " + j.PartName + " has no assigned program");
                 }
-                if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value < 0)
-                {
-                  errors.Add("Part " + j.PartName + " is not allowed to have negative revision");
-                }
                 if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
                 {
                   var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
