@@ -50,6 +50,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private NiigataStatus _status;
     private FMSSettings _settings;
     private NiigataStationNames _statNames;
+    public NiigataStationNames StatNames => _statNames;
 
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
@@ -227,7 +228,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl SetExecutedStationNum(int pal, IEnumerable<int> nums)
+    public FakeIccDsl SetExecutedStationNum(int pal, IEnumerable<NiigataStationNum> nums)
     {
       _status.Pallets[pal - 1].Tracking.ExecutedStationNumber = nums.ToList();
       return this;
