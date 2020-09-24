@@ -129,7 +129,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // tool loads/unloads
-      foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance && !p.Status.Master.NoWork))
+      foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance && p.Status.HasWork))
       {
         switch (pal.Status.CurrentStep)
         {

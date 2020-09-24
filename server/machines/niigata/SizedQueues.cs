@@ -231,7 +231,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var availPallets = new HashSet<string>(
         cellState.Pallets
-        .Where(pal => pal.Status.Master.NoWork)
+        .Where(pal => !pal.Status.HasWork)
         .Select(pal => pal.Status.Master.PalletNum.ToString())
       );
 

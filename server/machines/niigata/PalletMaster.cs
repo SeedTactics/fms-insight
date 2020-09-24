@@ -209,7 +209,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public int AlarmCode { get; set; }
 
     ///<summary>Actual station visisted at each route step in the current cycle.</summary>
-    public List<int> ExecutedStationNumber { get; set; } = new List<int>();
+    public List<NiigataStationNum> ExecutedStationNumber { get; set; } = new List<NiigataStationNum>();
   }
 
   ///<summary>Everything about the current status of a pallet</summary>
@@ -222,6 +222,8 @@ namespace BlackMaple.FMSInsight.Niigata
       Tracking.CurrentStepNum >= 1 && Tracking.CurrentStepNum <= Master.Routes.Count
          ? Master.Routes[Tracking.CurrentStepNum - 1]
          : null;
+
+    public bool HasWork => Master.NoWork == false && Tracking.RouteInvalid == false;
   }
 
   ///<summary>The ICC maintains the collection of programs</summary>

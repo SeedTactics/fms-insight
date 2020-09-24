@@ -112,18 +112,18 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // first, go through loaded pallets because might need to allocate material from queue
       var currentlyLoading = new HashSet<long>();
-      foreach (var pal in pals.Where(p => !p.IsLoading && !p.Status.Master.NoWork))
+      foreach (var pal in pals.Where(p => !p.IsLoading && p.Status.HasWork))
       {
         LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, logDB, ref palletStateUpdated);
       }
 
       // next, go through pallets currently being loaded
-      foreach (var pal in pals.Where(p => p.IsLoading && !p.Status.Master.NoWork))
+      foreach (var pal in pals.Where(p => p.IsLoading && p.Status.HasWork))
       {
         CurrentlyLoadingPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, logDB, ref palletStateUpdated);
       }
 
-      foreach (var pal in pals.Where(p => p.Status.Master.NoWork))
+      foreach (var pal in pals.Where(p => !p.Status.HasWork))
       {
         // need to check if an unload with no load happened and if so record unload end
         LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, logDB, ref palletStateUpdated);
@@ -601,7 +601,7 @@ namespace BlackMaple.FMSInsight.Niigata
         AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc, logDB);
       }
 
-      if (!pallet.Status.Master.NoWork)
+      if (pallet.Status.HasWork)
       {
         EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, jobDB, logDB, ref palletStateUpdated);
       }
@@ -722,7 +722,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // add load-end for material put onto
       var newLoadEvents = new List<LogEntry>();
 
-      if (!pallet.Status.Master.NoWork)
+      if (pallet.Status.HasWork)
       {
         // add 1 seconds to now so the marking of serials and load end happens after the pallet cycle
         SetMaterialToLoadOnFace(
@@ -954,8 +954,10 @@ namespace BlackMaple.FMSInsight.Niigata
     private void RecordPalletAtMachine(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry machineStart, LogEntry machineEnd, DateTime nowUtc, JobDB jobDB, EventLogDB logDB, ref bool palletStateUpdated)
     {
       bool runningProgram = false;
+      bool runningAnyProgram = false;
       if (pallet.MachineStatus != null && pallet.MachineStatus.Machining)
       {
+        runningAnyProgram = true;
         if (ss.JobStop.ProgramRevision.HasValue)
         {
           runningProgram =
@@ -1009,9 +1011,9 @@ namespace BlackMaple.FMSInsight.Niigata
           };
         }
       }
-      else if (runningProgram)
+      else if (runningProgram || (!runningAnyProgram && machineStart != null && machineEnd == null))
       {
-        // update material to be running
+        // update material to be running, since either program is running or paused with nothing running
         var elapsed = machineStart == null ? TimeSpan.Zero : nowUtc.Subtract(machineStart.EndTimeUTC);
         foreach (var m in matOnFace)
         {
@@ -1047,16 +1049,13 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
       {
-        statName = ss.JobStop.StationGroup;
-        statNum = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
-        if (_stationNames != null && _stationNames.IccMachineToJobMachNames.TryGetValue(statNum, out var jobMc))
+        var stat = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
+        if (stat.Location.Location != PalletLocationEnum.Machine || stat.Location.StationGroup != ss.JobStop.StationGroup)
         {
-          if (statName != jobMc.group)
-          {
-            Log.Warning("Mismatched machine group name for {iccMcNum} between job stop {@stop} and {@names}", statNum, ss, _stationNames);
-          }
-          statNum = jobMc.num;
+          Log.Warning("Mismatch between executed station number and job step for {@pal}", pallet);
         }
+        statName = ss.JobStop.StationGroup;
+        statNum = stat.Location.Num;
         toolsAtStart = null;
       }
       else
@@ -1148,7 +1147,12 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
       {
-        statNum = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
+        var niigataStat = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
+        if (niigataStat.Location.Location != PalletLocationEnum.LoadUnload)
+        {
+          Log.Warning("Mismatch between executed station number and job reclamp step for {@pal}", pallet);
+        }
+        statNum = niigataStat.StatNum;
       }
       else
       {

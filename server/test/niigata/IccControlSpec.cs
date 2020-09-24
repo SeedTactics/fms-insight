@@ -174,6 +174,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
         .ExpectNoChanges()
+        .EndMachine(mach: 3)
+        .ExpectNoChanges() // pausing machining without going to AfterMC does nothing
+        .StartMachine(mach: 3, program: 2100) // restart machine
+        .ExpectNoChanges()
         .AdvanceMinutes(5)
         .EndMachine(mach: 3)
         .SetAfterMC(pal: 1)
@@ -2035,7 +2039,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // go straight to after mc
         .MoveToBuffer(pal: 1, buff: 1)
         .SetAfterMC(pal: 1)
-        .SetExecutedStationNum(pal: 1, new[] { 3, 5 }) // load 3, machine 5
+        .SetExecutedStationNum(pal: 1, new[] { NiigataStationNum.LoadStation(3), NiigataStationNum.Machine(5, _dsl.StatNames) }) // load 3, machine 5
         .UpdateExpectedMaterial(sndMats, im =>
         {
           im.LastCompletedMachiningRouteStopIndex = 0;
