@@ -112,18 +112,18 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // first, go through loaded pallets because might need to allocate material from queue
       var currentlyLoading = new HashSet<long>();
-      foreach (var pal in pals.Where(p => !p.IsLoading && !p.Status.Master.NoWork))
+      foreach (var pal in pals.Where(p => !p.IsLoading && p.Status.HasWork))
       {
         LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, logDB, ref palletStateUpdated);
       }
 
       // next, go through pallets currently being loaded
-      foreach (var pal in pals.Where(p => p.IsLoading && !p.Status.Master.NoWork))
+      foreach (var pal in pals.Where(p => p.IsLoading && p.Status.HasWork))
       {
         CurrentlyLoadingPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, logDB, ref palletStateUpdated);
       }
 
-      foreach (var pal in pals.Where(p => p.Status.Master.NoWork))
+      foreach (var pal in pals.Where(p => !p.Status.HasWork))
       {
         // need to check if an unload with no load happened and if so record unload end
         LoadedPallet(pal, status.TimeOfStatusUTC, currentlyLoading, jobDB, logDB, ref palletStateUpdated);
@@ -601,7 +601,7 @@ namespace BlackMaple.FMSInsight.Niigata
         AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc, logDB);
       }
 
-      if (!pallet.Status.Master.NoWork)
+      if (pallet.Status.HasWork)
       {
         EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, jobDB, logDB, ref palletStateUpdated);
       }
@@ -722,7 +722,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // add load-end for material put onto
       var newLoadEvents = new List<LogEntry>();
 
-      if (!pallet.Status.Master.NoWork)
+      if (pallet.Status.HasWork)
       {
         // add 1 seconds to now so the marking of serials and load end happens after the pallet cycle
         SetMaterialToLoadOnFace(

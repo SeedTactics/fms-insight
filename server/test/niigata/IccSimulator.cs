@@ -66,6 +66,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         case NewPalletRoute route:
           route.NewMaster.Comment = RecordFacesForPallet.Save(route.NewMaster.PalletNum, _status.TimeOfStatusUTC, route.NewFaces, logDB);
           _status.Pallets[route.NewMaster.PalletNum - 1].Master = route.NewMaster;
+          _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.RouteInvalid = false;
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentStepNum = 1;
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentControlNum = 1;
           break;
@@ -123,6 +124,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           CurStation = NiigataStationNum.Buffer(pal),
           Tracking = new TrackingInfo()
+          {
+            RouteInvalid = true
+          }
         });
         _lastPalTransition[pal] = _status.TimeOfStatusUTC;
       }

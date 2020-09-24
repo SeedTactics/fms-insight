@@ -105,6 +105,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
 
       _status.Pallets = new List<PalletStatus>();
+      var rng = new Random();
       for (int pal = 1; pal <= numPals; pal++)
       {
         _status.Pallets.Add(new PalletStatus()
@@ -112,10 +113,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Master = new PalletMaster()
           {
             PalletNum = pal,
-            NoWork = true
+            NoWork = rng.NextDouble() > 0.5 // RouteInvalid is true, so all pallets should be considered empty
           },
           CurStation = NiigataStationNum.Buffer(pal),
           Tracking = new TrackingInfo()
+          {
+            RouteInvalid = true
+          }
         });
         _expectedFaces[pal] = new List<(int face, string unique, int proc, int path)>();
       }
@@ -1364,6 +1368,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ((NewPalletRoute)action).NewMaster.Comment =
             RecordFacesForPallet.Save(((NewPalletRoute)action).NewMaster.PalletNum, _status.TimeOfStatusUTC, ((NewPalletRoute)action).NewFaces, _logDB);
           _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
+          _status.Pallets[pal - 1].Tracking.RouteInvalid = false;
           _status.Pallets[pal - 1].Tracking.CurrentControlNum = 1;
           _status.Pallets[pal - 1].Tracking.CurrentStepNum = 1;
           _expectedFaces[pal] = expectedNewRoute.Faces.ToList();

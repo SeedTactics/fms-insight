@@ -222,6 +222,8 @@ namespace BlackMaple.FMSInsight.Niigata
       Tracking.CurrentStepNum >= 1 && Tracking.CurrentStepNum <= Master.Routes.Count
          ? Master.Routes[Tracking.CurrentStepNum - 1]
          : null;
+
+    public bool HasWork => Master.NoWork == false && Tracking.RouteInvalid == false;
   }
 
   ///<summary>The ICC maintains the collection of programs</summary>

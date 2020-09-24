@@ -130,7 +130,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
-        if (!pal.Status.Master.NoWork) continue;
+        if (pal.Status.HasWork) continue;
         if (pal.Material.Any())
         {
           Log.Error("State mismatch! no work on pallet but it has material {@pal}", pal);
@@ -340,7 +340,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Path = path.Path
         }).ToList();
 
-      if (SimpleQuantityChange(oldPallet.Status.Master, oldPallet.CurrentOrLoadingFaces, newMaster, newFaces))
+      if (SimpleQuantityChange(oldPallet.Status, oldPallet.CurrentOrLoadingFaces, newMaster, newFaces))
       {
         int remaining = 1;
         if (oldPallet.Status.CurrentStep is UnloadStep)
@@ -523,12 +523,14 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    private bool SimpleQuantityChange(PalletMaster existing, IReadOnlyList<PalletFace> existingFaces,
+    private bool SimpleQuantityChange(PalletStatus existingStatus, IReadOnlyList<PalletFace> existingFaces,
                                       PalletMaster newPal, IReadOnlyList<AssignedJobAndPathForFace> newFaces
     )
     {
+      var existingMaster = existingStatus.Master;
+      if (existingStatus.Tracking.RouteInvalid) return false;
       if (existingFaces.Count != newFaces.Count) return false;
-      if (existing.Routes.Count != newPal.Routes.Count) return false;
+      if (existingMaster.Routes.Count != newPal.Routes.Count) return false;
 
       if (newFaces.Any(newFace =>
             existingFaces.FirstOrDefault(existingFace =>
@@ -542,26 +544,26 @@ namespace BlackMaple.FMSInsight.Niigata
         return false;
       }
 
-      for (int i = 0; i < existing.Routes.Count - 1; i++)
+      for (int i = 0; i < existingMaster.Routes.Count - 1; i++)
       {
-        if (existing.Routes[i] is LoadStep && newPal.Routes[i] is LoadStep)
+        if (existingMaster.Routes[i] is LoadStep && newPal.Routes[i] is LoadStep)
         {
-          if (!((LoadStep)existing.Routes[i]).LoadStations.SequenceEqual(((LoadStep)newPal.Routes[i]).LoadStations)) return false;
+          if (!((LoadStep)existingMaster.Routes[i]).LoadStations.SequenceEqual(((LoadStep)newPal.Routes[i]).LoadStations)) return false;
         }
-        else if (existing.Routes[i] is MachiningStep && newPal.Routes[i] is MachiningStep)
+        else if (existingMaster.Routes[i] is MachiningStep && newPal.Routes[i] is MachiningStep)
         {
-          var eM = (MachiningStep)existing.Routes[i];
+          var eM = (MachiningStep)existingMaster.Routes[i];
           var nM = (MachiningStep)newPal.Routes[i];
           if (!eM.Machines.SequenceEqual(nM.Machines)) return false;
           if (!eM.ProgramNumsToRun.SequenceEqual(nM.ProgramNumsToRun)) return false;
         }
-        else if (existing.Routes[i] is ReclampStep && newPal.Routes[i] is ReclampStep)
+        else if (existingMaster.Routes[i] is ReclampStep && newPal.Routes[i] is ReclampStep)
         {
-          if (!((ReclampStep)existing.Routes[i]).Reclamp.SequenceEqual(((ReclampStep)newPal.Routes[i]).Reclamp)) return false;
+          if (!((ReclampStep)existingMaster.Routes[i]).Reclamp.SequenceEqual(((ReclampStep)newPal.Routes[i]).Reclamp)) return false;
         }
-        else if (existing.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
+        else if (existingMaster.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
         {
-          if (!((UnloadStep)existing.Routes[i]).UnloadStations.SequenceEqual(((UnloadStep)newPal.Routes[i]).UnloadStations)) return false;
+          if (!((UnloadStep)existingMaster.Routes[i]).UnloadStations.SequenceEqual(((UnloadStep)newPal.Routes[i]).UnloadStations)) return false;
         }
         else
         {
