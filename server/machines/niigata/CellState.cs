@@ -954,8 +954,10 @@ namespace BlackMaple.FMSInsight.Niigata
     private void RecordPalletAtMachine(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry machineStart, LogEntry machineEnd, DateTime nowUtc, JobDB jobDB, EventLogDB logDB, ref bool palletStateUpdated)
     {
       bool runningProgram = false;
+      bool runningAnyProgram = false;
       if (pallet.MachineStatus != null && pallet.MachineStatus.Machining)
       {
+        runningAnyProgram = true;
         if (ss.JobStop.ProgramRevision.HasValue)
         {
           runningProgram =
@@ -1009,9 +1011,9 @@ namespace BlackMaple.FMSInsight.Niigata
           };
         }
       }
-      else if (runningProgram)
+      else if (runningProgram || (!runningAnyProgram && machineStart != null && machineEnd == null))
       {
-        // update material to be running
+        // update material to be running, since either program is running or paused with nothing running
         var elapsed = machineStart == null ? TimeSpan.Zero : nowUtc.Subtract(machineStart.EndTimeUTC);
         foreach (var m in matOnFace)
         {

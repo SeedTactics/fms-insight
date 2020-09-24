@@ -174,6 +174,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
         .ExpectNoChanges()
+        .EndMachine(mach: 3)
+        .ExpectNoChanges() // pausing machining without going to AfterMC does nothing
+        .StartMachine(mach: 3, program: 2100) // restart machine
+        .ExpectNoChanges()
         .AdvanceMinutes(5)
         .EndMachine(mach: 3)
         .SetAfterMC(pal: 1)
