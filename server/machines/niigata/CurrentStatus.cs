@@ -128,6 +128,40 @@ namespace BlackMaple.FMSInsight.Niigata
         curStatus.Material.Add(mat);
       }
 
+      try
+      {
+        SetLongTool(curStatus, status);
+      }
+      catch (Exception ex)
+      {
+        Serilog.Log.Error(ex, "Error setting long tool status");
+      }
+
+      //alarms
+      foreach (var pal in status.Pallets)
+      {
+        if (pal.Status.Tracking.Alarm)
+        {
+          curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + " has alarm " + pal.Status.Tracking.AlarmCode.ToString());
+        }
+      }
+      foreach (var mc in status.Status.Machines.Values)
+      {
+        if (mc.Alarm)
+        {
+          curStatus.Alarms.Add("Machine " + mc.MachineNumber.ToString() + " has an alarm");
+        }
+      }
+      if (status.Status.Alarm)
+      {
+        curStatus.Alarms.Add("ICC has an alarm");
+      }
+
+      return curStatus;
+    }
+
+    private static void SetLongTool(CurrentStatus curStatus, CellState status)
+    {
       // tool loads/unloads
       foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance && p.Status.HasWork))
       {
@@ -182,31 +216,7 @@ namespace BlackMaple.FMSInsight.Niigata
             }
             break;
         }
-
       }
-
-      //alarms
-      foreach (var pal in status.Pallets)
-      {
-        if (pal.Status.Tracking.Alarm)
-        {
-          curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + " has alarm " + pal.Status.Tracking.AlarmCode.ToString());
-        }
-      }
-      foreach (var mc in status.Status.Machines.Values)
-      {
-        if (mc.Alarm)
-        {
-          curStatus.Alarms.Add("Machine " + mc.MachineNumber.ToString() + " has an alarm");
-        }
-      }
-      if (status.Status.Alarm)
-      {
-        curStatus.Alarms.Add("ICC has an alarm");
-      }
-
-      return curStatus;
-
     }
   }
 }
