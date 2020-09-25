@@ -62,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
         throw new Exception("Invalid machine number " + machine.ToString());
       }
       ushort handle;
+      Log.Debug("Connecting to machine {mc} at {ip} on port {port}", machine, _machines[machine - 1].Address.ToString(), _machines[machine - 1].Port);
       var ret = cnc_allclibhndl3(_machines[machine - 1].Address.ToString(), (ushort)_machines[machine - 1].Port, 10 /* seconds */, out handle);
       if (ret != 0)
       {
@@ -139,11 +140,15 @@ namespace BlackMaple.FMSInsight.Niigata
       int port;
       if (ep.Length > 2)
       {
-        if (!System.Net.IPAddress.TryParse(string.Join(":", ep, 0, ep.Length - 1), out ip))
+        throw new FormatException("Too many colons in ip address and port, IPv6 not supported");
+      }
+      else if (ep.Length == 2)
+      {
+        if (!System.Net.IPAddress.TryParse(ep[0], out ip))
         {
           throw new FormatException("Invalid ip-adress");
         }
-        if (!int.TryParse(ep[ep.Length - 1], out port))
+        if (!int.TryParse(ep[1], out port))
         {
           throw new FormatException("Invalid port");
         }
