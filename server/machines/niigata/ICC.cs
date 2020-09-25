@@ -652,7 +652,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // first save the faces
-      newRoute.NewMaster.Comment = RecordFacesForPallet.Save(newRoute.NewMaster.PalletNum, DateTime.UtcNow, newRoute.NewFaces, logDB);
+      if (newRoute.NewFaces != null && newRoute.NewFaces.Any())
+      {
+        newRoute.NewMaster.Comment = RecordFacesForPallet.Save(newRoute.NewMaster.PalletNum, DateTime.UtcNow, newRoute.NewFaces, logDB);
+      }
 
       _proposalRouteChanged.Reset();
       long ProposalId = NewId();
