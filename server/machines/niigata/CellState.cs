@@ -1049,13 +1049,20 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
       {
-        var stat = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
-        if (stat.Location.Location != PalletLocationEnum.Machine || stat.Location.StationGroup != ss.JobStop.StationGroup)
-        {
-          Log.Warning("Mismatch between executed station number and job step for {@pal}", pallet);
-        }
         statName = ss.JobStop.StationGroup;
-        statNum = stat.Location.Num;
+        var stat = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
+        if (stat != null)
+        {
+          if (stat.Location.Location != PalletLocationEnum.Machine || stat.Location.StationGroup != ss.JobStop.StationGroup)
+          {
+            Log.Warning("Mismatch between executed station number and job step for {@pal}", pallet);
+          }
+          statNum = stat.Location.Num;
+        }
+        else
+        {
+          statNum = 0;
+        }
         toolsAtStart = null;
       }
       else
@@ -1148,11 +1155,18 @@ namespace BlackMaple.FMSInsight.Niigata
       else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
       {
         var niigataStat = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
-        if (niigataStat.Location.Location != PalletLocationEnum.LoadUnload)
+        if (niigataStat != null)
         {
-          Log.Warning("Mismatch between executed station number and job reclamp step for {@pal}", pallet);
+          if (niigataStat.Location.Location != PalletLocationEnum.LoadUnload)
+          {
+            Log.Warning("Mismatch between executed station number and job reclamp step for {@pal}", pallet);
+          }
+          statNum = niigataStat.StatNum;
         }
-        statNum = niigataStat.StatNum;
+        else
+        {
+          statNum = 0;
+        }
       }
       else
       {

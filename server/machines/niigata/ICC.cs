@@ -436,7 +436,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
             var pal = pallets[step.PalletNum];
             pal.Master.Routes.Add(route);
-            pal.Tracking.ExecutedStationNumber.Add(new NiigataStationNum(step.ExecutedStationNum, _statNames));
+            pal.Tracking.ExecutedStationNumber.Add(
+              step.ExecutedStationNum > 0 ? new NiigataStationNum(step.ExecutedStationNum, _statNames) : null
+            );
           }
 
           status.Pallets = pallets.Values.ToList();

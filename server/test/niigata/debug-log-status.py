@@ -25,7 +25,7 @@ def printCellState(timestamp, pals):
     msg += " -> ".join([printRouteStep(p, i, step) for i, step in enumerate(p["Master"]["Routes"])])
     executed = p["Tracking"]["ExecutedStationNumber"]
     if (len(executed) > 0):
-      msg += " to " + ",".join(map(str, executed))
+      msg += " to " + ",".join(map(lambda e: str(e) if isinstance(e, int) else e["Location"]["StationGroup"] + str(e["Location"]["Num"]), executed))
     print(msg)
   for num in sorted(pals["Status"]["Machines"]):
     m = pals["Status"]["Machines"][num]
