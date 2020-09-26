@@ -35,7 +35,6 @@ using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
-using System.Threading;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -44,6 +43,11 @@ namespace BlackMaple.FMSInsight.Niigata
     public static CurrentStatus Build(JobDB jobDB, EventLogDB logDB, CellState status, FMSSettings settings)
     {
       var curStatus = new CurrentStatus();
+      if (status == null)
+      {
+        return curStatus;
+      }
+
       foreach (var k in settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
 
       // jobs
@@ -61,7 +65,7 @@ namespace BlackMaple.FMSInsight.Niigata
               if (mat.JobUniqueStr == j.UniqueStr)
               {
                 var details = logDB.GetMaterialDetails(mat.MaterialID);
-                int matPath = details.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
+                int matPath = details?.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
                 curJob.AdjustCompleted(mat.Process, matPath, x => x + 1);
               }
             }
@@ -102,7 +106,6 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-
       // pallets
       foreach (var pal in status.Pallets)
       {
@@ -128,14 +131,7 @@ namespace BlackMaple.FMSInsight.Niigata
         curStatus.Material.Add(mat);
       }
 
-      try
-      {
-        SetLongTool(curStatus, status);
-      }
-      catch (Exception ex)
-      {
-        Serilog.Log.Error(ex, "Error setting long tool status");
-      }
+      SetLongTool(curStatus, status);
 
       //alarms
       foreach (var pal in status.Pallets)
@@ -165,6 +161,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // tool loads/unloads
       foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance && p.Status.HasWork))
       {
+        if (pal.Status.CurrentStep == null) continue;
         switch (pal.Status.CurrentStep)
         {
           case LoadStep load:

@@ -94,79 +94,80 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       try
       {
-        return cnc.WithConnection<List<NiigataToolData>>(machine, handle =>
+        byte[] buff = new byte[10084];
+        cnc.WithConnection<int>(machine, handle =>
         {
-          byte[] buff = new byte[10084];
           CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
             ret: pmc_rdkpm(handle, 51, buff, 10084)
           );
-
-          using (var mem = new MemoryStream(buff))
-          using (var rawReader = new BinaryReader(mem))
-          {
-            var beReader = new BigEndianBinaryReader(rawReader);
-
-            var numTools = beReader.ReadUInt16();
-            Log.Debug("Loading {numTools} tools from {@arr}", numTools, buff.Take(4));
-            if (numTools < 0) numTools = 0;
-            if (numTools > 360) numTools = 360;
-
-            // two bytes are igored
-            beReader.ReadByte(); beReader.ReadByte();
-
-            var tools = new List<NiigataToolData>(numTools);
-            for (int i = 0; i < numTools; i++)
-            {
-              var toolNum = beReader.ReadUInt32();
-              var gNum = beReader.ReadInt16();
-              beReader.ReadInt16(); // dummy
-              var lifeTm = beReader.ReadInt32();
-              var restTm = beReader.ReadInt32();
-              var loadMax = beReader.ReadInt16();
-              var loadMore = beReader.ReadInt16();
-              var meas = beReader.ReadByte();
-              var lifeAlrm = beReader.ReadByte();
-              var brokenAlrm = beReader.ReadByte();
-              var cuttingAlrm = beReader.ReadByte();
-              var checkingAlrm = beReader.ReadByte();
-              var lifeKind = beReader.ReadByte();
-              beReader.ReadByte(); // dummy
-              beReader.ReadByte(); // dummy
-
-              var serialNo = toolNum % 100;
-              var groupNo = toolNum / 100;
-
-              Log.Debug("Tool data for {i}: {@raw} " +
-                "{toolNum}, {gNum}, {lifeTm}, {restTm}, {loadMax}, {loadMore}, {meas}, {lifeAlrm}, {brokenAlrm}, {cuttingAlrm}, {checkingAlrm}, {lifeKind}",
-                (new Span<byte>(buff, 4 + i * 28, 28)).ToArray(),
-                toolNum, gNum, lifeTm, restTm, loadMax, loadMore, meas, lifeAlrm, brokenAlrm, cuttingAlrm, checkingAlrm, lifeKind
-              );
-
-              if (toolNum > 0)
-              {
-                tools.Add(new NiigataToolData()
-                {
-                  ToolNum = toolNum,
-                  Serial = serialNo,
-                  Group = groupNo,
-                  GNum = gNum,
-                  LifeTime = lifeTm,
-                  RestTime = restTm,
-                  LoadMax = loadMax,
-                  LoadMore = loadMore,
-                  Meas = meas,
-                  LifeAlarm = lifeAlrm,
-                  BrokenAlarm = brokenAlrm,
-                  CuttingAlarm = cuttingAlrm,
-                  CheckingAlarm = checkingAlrm,
-                  LifeKind = lifeKind
-                });
-              }
-            }
-
-            return tools;
-          }
+          return 0;
         });
+
+        using (var mem = new MemoryStream(buff))
+        using (var rawReader = new BinaryReader(mem))
+        {
+          var beReader = new BigEndianBinaryReader(rawReader);
+
+          var numTools = beReader.ReadUInt16();
+          Log.Debug("Loading {numTools} tools from {@arr}", numTools, buff.Take(4));
+          if (numTools < 0) numTools = 0;
+          if (numTools > 360) numTools = 360;
+
+          // two bytes are igored
+          beReader.ReadByte(); beReader.ReadByte();
+
+          var tools = new List<NiigataToolData>(numTools);
+          for (int i = 0; i < numTools; i++)
+          {
+            var toolNum = beReader.ReadUInt32();
+            var gNum = beReader.ReadInt16();
+            beReader.ReadInt16(); // dummy
+            var lifeTm = beReader.ReadInt32();
+            var restTm = beReader.ReadInt32();
+            var loadMax = beReader.ReadInt16();
+            var loadMore = beReader.ReadInt16();
+            var meas = beReader.ReadByte();
+            var lifeAlrm = beReader.ReadByte();
+            var brokenAlrm = beReader.ReadByte();
+            var cuttingAlrm = beReader.ReadByte();
+            var checkingAlrm = beReader.ReadByte();
+            var lifeKind = beReader.ReadByte();
+            beReader.ReadByte(); // dummy
+            beReader.ReadByte(); // dummy
+
+            var serialNo = toolNum % 100;
+            var groupNo = toolNum / 100;
+
+            Log.Debug("Tool data for {i}: {@raw} " +
+              "{toolNum}, {gNum}, {lifeTm}, {restTm}, {loadMax}, {loadMore}, {meas}, {lifeAlrm}, {brokenAlrm}, {cuttingAlrm}, {checkingAlrm}, {lifeKind}",
+              (new Span<byte>(buff, 4 + i * 28, 28)).ToArray(),
+              toolNum, gNum, lifeTm, restTm, loadMax, loadMore, meas, lifeAlrm, brokenAlrm, cuttingAlrm, checkingAlrm, lifeKind
+            );
+
+            if (toolNum > 0)
+            {
+              tools.Add(new NiigataToolData()
+              {
+                ToolNum = toolNum,
+                Serial = serialNo,
+                Group = groupNo,
+                GNum = gNum,
+                LifeTime = lifeTm,
+                RestTime = restTm,
+                LoadMax = loadMax,
+                LoadMore = loadMore,
+                Meas = meas,
+                LifeAlarm = lifeAlrm,
+                BrokenAlarm = brokenAlrm,
+                CuttingAlarm = cuttingAlrm,
+                CheckingAlarm = checkingAlrm,
+                LifeKind = lifeKind
+              });
+            }
+          }
+
+          return tools;
+        }
       }
       catch (Exception ex)
       {
