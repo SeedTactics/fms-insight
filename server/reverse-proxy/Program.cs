@@ -60,7 +60,13 @@ namespace BlackMaple.FMSInsight.ReverseProxy
       services
         .AddResponseCompression()
         .AddCors()
-        .AddHttpClient()
+        .AddHttpClient("proxy")
+        .ConfigurePrimaryHttpMessageHandler(() =>
+          new HttpClientHandler()
+          {
+            AllowAutoRedirect = false
+          }
+        )
         ;
 
       if (!string.IsNullOrEmpty(ProxyConfig.OpenIDConnectAuthority))
@@ -249,7 +255,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           }
         }
         msg.Headers.Host = msg.RequestUri.Host;
-        var client = httpFactory.CreateClient();
+        var client = httpFactory.CreateClient("proxy");
         using (var resp = await client.SendAsync(msg, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted))
         {
           context.Response.StatusCode = (int)resp.StatusCode;
