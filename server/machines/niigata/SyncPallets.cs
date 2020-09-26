@@ -64,7 +64,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       lock (_curStLock)
       {
-        return _lastCellState ?? new CellState();
+        return _lastCellState;
       }
     }
 

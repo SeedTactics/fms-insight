@@ -83,6 +83,11 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var errors = new List<string>();
       var cellState = _sync.CurrentCellState();
+      if (cellState == null)
+      {
+        errors.Add("FMS Insight just started and is not yet ready for new jobs");
+        return errors;
+      }
 
       foreach (var j in jobs.Jobs)
       {
