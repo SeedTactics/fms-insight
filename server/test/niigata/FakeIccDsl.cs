@@ -155,6 +155,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl MoveToCart(int pal)
+    {
+      _status.Pallets[pal - 1].CurStation = NiigataStationNum.Cart();
+      return this;
+    }
+
     public FakeIccDsl SetBeforeLoad(int pal)
     {
       var p = _status.Pallets[pal - 1];

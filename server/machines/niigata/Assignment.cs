@@ -131,12 +131,9 @@ namespace BlackMaple.FMSInsight.Niigata
         if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
         if (pal.Status.HasWork) continue;
-        if (pal.Material.Any())
-        {
-          Log.Error("State mismatch! no work on pallet but it has material {@pal}", pal);
-          continue;
-        }
 
+        // use empty matCurrentlyOnPal because if FMS Insight thinks there is material, the operator aborted it by setting no-work, overriding the route.
+        // thus want to record the material as unloaded when it arrives at load station (may already have been unloaded, Insight just don't know it)
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {

@@ -95,11 +95,12 @@ namespace BlackMaple.FMSInsight.Niigata
       try
       {
         byte[] buff = new byte[10084];
-        cnc.WithConnection<List<NiigataToolData>>(machine, handle =>
+        cnc.WithConnection<int>(machine, handle =>
         {
           CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
             ret: pmc_rdkpm(handle, 51, buff, 10084)
           );
+          return 0;
         });
 
         using (var mem = new MemoryStream(buff))

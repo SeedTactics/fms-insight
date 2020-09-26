@@ -2824,5 +2824,129 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         ;
     }
+
+    [Fact]
+    public void OperatorManuallyOverridesWithNoWork()
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            prog: "prog111",
+            progRev: null,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          )
+          .AddInsp(proc: 1, path: 1, inspTy: "InspTy", cntr: "Thecounter", max: 2)
+          },
+          new[] { (prog: "prog111", rev: 5L) }
+        )
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+         })
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            progs: new[] { 2100 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+        .ExpectNoChanges()
+        .MoveToLoad(pal: 1, lul: 1)
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 1) })
+        .AdvanceMinutes(4) // =4
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 4)
+        .ExpectNoChanges()
+        .SetAfterLoad(pal: 1)
+        .ClearExpectedLoadCastings()
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
+          FakeIccDsl.LoadCastingToFace(pal: 1, lul: 1, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 4, activeMins: 8, mats: out var fstMats)
+        })
+        .MoveToMachineQueue(pal: 1, mach: 3)
+        .AdvanceMinutes(2)
+        .SetBeforeMC(pal: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectRotaryStart(pal: 1, mach: 3, mats: fstMats),
+        })
+        .AdvanceMinutes(3)
+
+        // operator aborts
+        .SetNoWork(pal: 1)
+        .SetBeforeLoad(pal: 1)
+        .MoveToCart(pal: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectRotaryEnd(pal: 1, mach: 3, rotate: false, elapMin: 3, mats: fstMats),
+        })
+
+        // when get to buffer, sets a new route
+        .MoveToBuffer(pal: 1, buff: 6)
+        .UpdateExpectedMaterial(fstMats, im =>
+          {
+            im.Action.Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial;
+          }
+        )
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+        })
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 6, waitForMach: true, mats: fstMats),
+          FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 1, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }),
+        })
+
+        // unloads old material
+        .AdvanceMinutes(2)
+        .ExpectNoChanges()
+        .MoveToLoad(pal: 1, lul: 4)
+        .SetExpectedLoadCastings(new[] {
+         (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+        })
+        .UpdateExpectedMaterial(fstMats, im =>
+        {
+          im.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
+          im.LastCompletedMachiningRouteStopIndex = null;
+        })
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 6, waitForMach: true, elapMin: 2, mats: fstMats),
+          FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4),
+        })
+        .AdvanceMinutes(2)
+        .UpdateExpectedMaterial(fstMats, im =>
+        {
+          im.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(2);
+        })
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 2)
+        .ExpectNoChanges()
+        .SetAfterLoad(pal: 1)
+        .ClearExpectedLoadCastings()
+        .RemoveExpectedMaterial(fstMats.Select(m => m.MaterialID))
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 9),
+          FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 2, activeMins: 9, mats: fstMats),
+          FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 2, activeMins: 8, mats: out var sndMats)
+        })
+        .MoveToBuffer(pal: 1, buff: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: sndMats)
+        })
+      ;
+    }
   }
 }
