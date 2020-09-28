@@ -182,6 +182,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public static List<NiigataToolData> ToolsForMachine(this ICncMachineConnection cnc, int machine)
     {
+      /*
       var thread = new Thread(() => LoadAndLog(cnc, machine));
       thread.Start();
       Task.Run(() =>
@@ -189,6 +190,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Thread.Sleep(TimeSpan.FromMinutes(5));
         thread.Abort();
       });
+      */
 
       return null;
     }
