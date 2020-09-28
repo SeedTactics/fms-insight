@@ -38,6 +38,8 @@ using System.Runtime.InteropServices;
 using System.IO;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -90,16 +92,18 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CncMachineConnection>();
 
-    public static List<NiigataToolData> ToolsForMachine(this ICncMachineConnection cnc, int machine)
+    private static List<NiigataToolData> LoadAndLog(ICncMachineConnection cnc, int machine)
     {
       try
       {
         byte[] buff = new byte[10084];
         cnc.WithConnection<int>(machine, handle =>
         {
+          Log.Debug("Starting to load tool data");
           CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
             ret: pmc_rdkpm(handle, 51, buff, 10084)
           );
+          Log.Debug("Loading tool data complete");
           return 0;
         });
 
@@ -172,8 +176,21 @@ namespace BlackMaple.FMSInsight.Niigata
       catch (Exception ex)
       {
         Log.Error(ex, "Error communicatig with machine {machine}", machine);
-        return new List<NiigataToolData>();
+        return null;
       }
+    }
+
+    public static List<NiigataToolData> ToolsForMachine(this ICncMachineConnection cnc, int machine)
+    {
+      var thread = new Thread(() => LoadAndLog(cnc, machine));
+      thread.Start();
+      Task.Run(() =>
+      {
+        Thread.Sleep(TimeSpan.FromMinutes(5));
+        thread.Abort();
+      });
+
+      return null;
     }
 
 

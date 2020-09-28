@@ -89,7 +89,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       return _statNames.IccMachineToJobMachNames
         .SelectMany(k =>
-          _cnc.ToolsForMachine(k.Key).Select(t => t.ToToolInMachine(k.Value.group, k.Value.num))
+          (_cnc.ToolsForMachine(k.Key) ?? new List<NiigataToolData>()).Select(t => t.ToToolInMachine(k.Value.group, k.Value.num))
         ).ToList();
     }
 
