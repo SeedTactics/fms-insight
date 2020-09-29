@@ -584,6 +584,8 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
 interface AddMaterialButtonsProps {
   readonly label: string;
   readonly rawMatQueue: boolean;
+  readonly requireSerialWhenAddingMat: boolean;
+  readonly allowAddMatWithoutJob: boolean;
   openAddToQueue(label: string): void;
   openAddCasting(label: string): void;
 }
@@ -619,7 +621,8 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
           </Fab>
         </Tooltip>
       ) : undefined}
-      {bttnsToShow.hasMatInput ? (
+      {bttnsToShow.hasMatInput ||
+      (props.rawMatQueue && props.allowAddMatWithoutJob && props.requireSerialWhenAddingMat) ? (
         <Tooltip title="Add Assigned Material">
           <IconButton
             onClick={() => props.openAddToQueue(props.label)}
@@ -649,6 +652,8 @@ interface QueueProps {
   readonly usingLabelPrinter: boolean;
   readonly printFromClient: boolean;
   readonly operator: string | null;
+  readonly requireSerialWhenAddingMat: boolean;
+  readonly allowAddMatWithoutJob: boolean;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
@@ -679,6 +684,8 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
               region.free ? undefined : (
                 <AddMaterialButtons
                   label={region.label}
+                  requireSerialWhenAddingMat={props.requireSerialWhenAddingMat}
+                  allowAddMatWithoutJob={props.allowAddMatWithoutJob}
                   rawMatQueue={region.rawMaterialQueue}
                   openAddToQueue={props.openAddToQueue}
                   openAddCasting={setAddCastingQueue}
@@ -775,6 +782,8 @@ export default connect(
     data: buildQueueData(st),
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
     printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
+    requireSerialWhenAddingMat: st.ServerSettings.fmsInfo?.requireSerialWhenAddingMaterialToQueue ?? false,
+    allowAddMatWithoutJob: st.ServerSettings.fmsInfo?.allowAddRawMaterialForNonRunningJobs ?? false,
     operator: currentOperator(st),
   }),
   {

@@ -1846,6 +1846,7 @@ export class FMSInfo implements IFMSInfo {
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
+    requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 
     constructor(data?: IFMSInfo) {
@@ -1876,6 +1877,7 @@ export class FMSInfo implements IFMSInfo {
             this.quarantineQueue = data["QuarantineQueue"];
             this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowAddRawMaterialForNonRunningJobs = data["AllowAddRawMaterialForNonRunningJobs"];
+            this.requireSerialWhenAddingMaterialToQueue = data["RequireSerialWhenAddingMaterialToQueue"];
             this.allowEditJobPlanQuantityFromQueuesPage = data["AllowEditJobPlanQuantityFromQueuesPage"];
         }
     }
@@ -1906,6 +1908,7 @@ export class FMSInfo implements IFMSInfo {
         data["QuarantineQueue"] = this.quarantineQueue;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowAddRawMaterialForNonRunningJobs"] = this.allowAddRawMaterialForNonRunningJobs;
+        data["RequireSerialWhenAddingMaterialToQueue"] = this.requireSerialWhenAddingMaterialToQueue;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         return data; 
     }
@@ -1925,6 +1928,7 @@ export interface IFMSInfo {
     quarantineQueue?: string | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
+    requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 }
 
@@ -3523,9 +3527,9 @@ export interface INewJobs {
 
 export class ProgramEntry implements IProgramEntry {
     programName!: string;
-    revision!: number;
     comment!: string;
     programContent!: string;
+    revision!: number;
 
     constructor(data?: IProgramEntry) {
         if (data) {
@@ -3539,9 +3543,9 @@ export class ProgramEntry implements IProgramEntry {
     init(data?: any) {
         if (data) {
             this.programName = data["ProgramName"];
-            this.revision = data["Revision"];
             this.comment = data["Comment"];
             this.programContent = data["ProgramContent"];
+            this.revision = data["Revision"];
         }
     }
 
@@ -3555,18 +3559,18 @@ export class ProgramEntry implements IProgramEntry {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["ProgramName"] = this.programName;
-        data["Revision"] = this.revision;
         data["Comment"] = this.comment;
         data["ProgramContent"] = this.programContent;
+        data["Revision"] = this.revision;
         return data; 
     }
 }
 
 export interface IProgramEntry {
     programName: string;
-    revision: number;
     comment: string;
     programContent: string;
+    revision: number;
 }
 
 export class QueuePosition implements IQueuePosition {

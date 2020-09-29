@@ -55,9 +55,10 @@ namespace DebugMachineWatchApiServer
           "../../../sample-instructions/"
       ));
       System.Environment.SetEnvironmentVariable("FMS__QuarantineQueue", "Initial Quarantine");
-      System.Environment.SetEnvironmentVariable("FMS__RequireOperatorNamePromptWhenAddingMaterial", "True");
       BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
       {
+        st.RequireSerialWhenAddingMaterialToQueue = true;
+        st.AllowAddRawMaterialForNonRunningJobs = true;
         var backend = new MockServerBackend();
         return new FMSImplementation()
         {
