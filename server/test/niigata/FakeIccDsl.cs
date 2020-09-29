@@ -1046,7 +1046,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<(int face, string unique, int proc, int path)> Faces { get; set; }
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, IEnumerable<(int face, string unique, int proc, int path)> faces, int[] unloads = null)
+    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, int pri, IEnumerable<(int face, string unique, int proc, int path)> faces, int[] unloads = null)
     {
       return new ExpectNewRouteChange()
       {
@@ -1055,7 +1055,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PalletNum = pal,
           Comment = "",
           RemainingPalletCycles = 1,
-          Priority = 5,
+          Priority = pri,
           NoWork = false,
           Skip = false,
           ForLongToolMaintenance = false,
@@ -1078,7 +1078,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] reclamp, int[] unloads, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] reclamp, int[] unloads, int pri, IEnumerable<(int face, string unique, int proc, int path)> faces)
     {
       return new ExpectNewRouteChange()
       {
@@ -1087,7 +1087,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PalletNum = pal,
           Comment = "",
           RemainingPalletCycles = 1,
-          Priority = 5,
+          Priority = pri,
           NoWork = false,
           Skip = false,
           ForLongToolMaintenance = false,
