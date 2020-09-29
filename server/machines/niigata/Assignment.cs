@@ -162,6 +162,8 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(j =>
           j.Process > 1
           ||
+          !string.IsNullOrEmpty(j.Job.GetInputQueue(j.Process, j.Path))
+          ||
           (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.Job.UniqueStr, proc1path: j.Path), out int qty) && qty > 0)
         )
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))

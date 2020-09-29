@@ -138,7 +138,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Pallets = pals,
         QueuedMaterial = QueuedMaterial(new HashSet<long>(
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
-        ), logDB),
+        ), logDB, unarchivedJobs, jobCache, jobDB),
         JobQtyRemainingOnProc1 = CountRemainingQuantity(jobDB, logDB, unarchivedJobs, pals),
         ProgramNums = FindProgramNums(jobDB, unarchivedJobs),
       };
@@ -1338,9 +1338,10 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
     #region Material Computations
-    private List<InProcessMaterial> QueuedMaterial(HashSet<long> matsOnPallets, EventLogDB logDB)
+    private List<InProcessMaterial> QueuedMaterial(HashSet<long> matsOnPallets, EventLogDB logDB, List<JobPlan> unarchivedJobs, Func<string, JobPlan> loadJob, JobDB jobDB)
     {
       var mats = new List<InProcessMaterial>();
+      var jobUniqs = new HashSet<string>(unarchivedJobs.Select(j => j.UniqueStr));
 
       foreach (var mat in logDB.GetMaterialInAllQueues())
       {
@@ -1352,6 +1353,18 @@ namespace BlackMaple.FMSInsight.Niigata
           .Max(m => m.Process);
 
         var matDetails = logDB.GetMaterialDetails(mat.MaterialID);
+
+        if (!string.IsNullOrEmpty(matDetails.JobUnique) && !jobUniqs.Contains(matDetails.JobUnique))
+        {
+          var job = loadJob(matDetails.JobUnique);
+          if (job.Archived)
+          {
+            jobDB.UnarchiveJob(matDetails.JobUnique);
+          }
+          jobUniqs.Add(matDetails.JobUnique);
+          unarchivedJobs.Add(job);
+        }
+
         mats.Add(new InProcessMaterial()
         {
           MaterialID = mat.MaterialID,
