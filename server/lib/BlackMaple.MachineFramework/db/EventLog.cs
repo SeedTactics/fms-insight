@@ -2709,6 +2709,7 @@ namespace BlackMaple.MachineFramework
         }
       }
     }
+
     private MachineWatchInterface.MaterialDetails GetMaterialDetails(long matID, IDbTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
@@ -2747,6 +2748,66 @@ namespace BlackMaple.MachineFramework
         }
 
         return ret;
+      }
+    }
+
+    public IReadOnlyList<MachineWatchInterface.MaterialDetails> GetMaterialDetailsForSerial(string serial)
+    {
+      lock (_config)
+      {
+        var trans = _connection.BeginTransaction();
+        try
+        {
+          using (var cmd = _connection.CreateCommand())
+          using (var cmd2 = _connection.CreateCommand())
+          {
+            ((IDbCommand)cmd).Transaction = trans;
+            ((IDbCommand)cmd2).Transaction = trans;
+            cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Workorder FROM matdetails WHERE Serial = $ser";
+            cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
+
+            cmd2.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
+            cmd2.Parameters.Add("mat", SqliteType.Integer);
+
+            var ret = new List<MachineWatchInterface.MaterialDetails>();
+            using (var reader = cmd.ExecuteReader())
+            {
+              while (reader.Read())
+              {
+                var mat = new MachineWatchInterface.MaterialDetails() { Serial = serial };
+                if (!reader.IsDBNull(0)) mat.MaterialID = reader.GetInt64(0);
+                if (!reader.IsDBNull(1)) mat.JobUnique = reader.GetString(1);
+                if (!reader.IsDBNull(2)) mat.PartName = reader.GetString(2);
+                if (!reader.IsDBNull(3)) mat.NumProcesses = reader.GetInt32(3);
+                if (!reader.IsDBNull(4)) mat.Workorder = reader.GetString(4);
+                ret.Add(mat);
+              }
+            }
+
+            foreach (var mat in ret)
+            {
+              cmd2.Parameters[0].Value = mat.MaterialID;
+              mat.Paths = new Dictionary<int, int>();
+              using (var reader = cmd2.ExecuteReader())
+              {
+                while (reader.Read())
+                {
+                  var proc = reader.GetInt32(0);
+                  var path = reader.GetInt32(1);
+                  mat.Paths[proc] = path;
+                }
+              }
+            }
+
+            trans.Commit();
+            return ret;
+          }
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
       }
     }
 

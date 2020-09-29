@@ -821,6 +821,17 @@ namespace MachineWatchTest
       _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat5), "serial5");
       _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat6), "serial6");
       Assert.Equal("serial1", _jobLog.GetMaterialDetails(mat1_proc2.MaterialID).Serial);
+      _jobLog.GetMaterialDetailsForSerial("serial1").Should().BeEquivalentTo(new[] {
+        new MaterialDetails() {
+          MaterialID = mat1_proc2.MaterialID,
+          JobUnique = "uniq1",
+          PartName = "part1",
+          NumProcesses = 2,
+          Serial = "serial1",
+          Paths = new Dictionary<int, int>()
+        }
+      });
+      _jobLog.GetMaterialDetailsForSerial("waoheufweiuf").Should().BeEmpty();
 
       _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat1_proc2), "work1");
       _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat3), "work1");
