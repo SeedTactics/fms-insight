@@ -1806,6 +1806,9 @@
         "AllowAddRawMaterialForNonRunningJobs": {
           "type": "boolean"
         },
+        "RequireSerialWhenAddingMaterialToQueue": {
+          "type": "boolean"
+        },
         "AllowEditJobPlanQuantityFromQueuesPage": {
           "type": "string"
         }
@@ -2691,23 +2694,23 @@
       "additionalProperties": false,
       "required": [
         "ProgramName",
-        "Revision",
         "Comment",
-        "ProgramContent"
+        "ProgramContent",
+        "Revision"
       ],
       "properties": {
         "ProgramName": {
           "type": "string"
-        },
-        "Revision": {
-          "type": "integer",
-          "format": "int64"
         },
         "Comment": {
           "type": "string"
         },
         "ProgramContent": {
           "type": "string"
+        },
+        "Revision": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },

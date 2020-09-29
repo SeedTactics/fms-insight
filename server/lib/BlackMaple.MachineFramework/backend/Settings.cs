@@ -111,6 +111,7 @@ namespace BlackMaple.MachineFramework
     public string QuarantineQueue { get; set; }
     public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     public bool AllowAddRawMaterialForNonRunningJobs { get; set; }
+    public bool RequireSerialWhenAddingMaterialToQueue { get; set; }
 
     public Dictionary<string, MachineWatchInterface.QueueSize> Queues { get; }
       = new Dictionary<string, MachineWatchInterface.QueueSize>();
@@ -141,6 +142,7 @@ namespace BlackMaple.MachineFramework
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
       RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
       RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
+      RequireSerialWhenAddingMaterialToQueue = fmsSection.GetValue<bool>("RequireSerialWhenAddingMaterialToQueue", false);
       AllowAddRawMaterialForNonRunningJobs = fmsSection.GetValue<bool>("AllowAddRawMaterialForNonRunningJobs", true);
       QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
       AdditionalLogServers =

@@ -2054,7 +2054,7 @@ namespace BlackMaple.MachineFramework
         var trans = _connection.BeginTransaction();
         try
         {
-          ArchiveJobs(trans, new[] { UniqueStr });
+          SetArchived(trans, new[] { UniqueStr }, archived: true);
           trans.Commit();
         }
         catch
@@ -2072,7 +2072,7 @@ namespace BlackMaple.MachineFramework
         var trans = _connection.BeginTransaction();
         try
         {
-          ArchiveJobs(trans, uniqueStrs);
+          SetArchived(trans, uniqueStrs, archived: true);
           if (newDecrements != null)
           {
             AddNewDecrement(trans, newDecrements, nowUTC);
@@ -2087,13 +2087,37 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void ArchiveJobs(IDbTransaction trans, IEnumerable<string> uniqs)
+    public void UnarchiveJob(string UniqueStr)
+    {
+      UnarchiveJobs(new[] { UniqueStr });
+    }
+
+    public void UnarchiveJobs(IEnumerable<string> uniqueStrs, DateTime? nowUTC = null)
+    {
+      lock (_cfg)
+      {
+        var trans = _connection.BeginTransaction();
+        try
+        {
+          SetArchived(trans, uniqueStrs, archived: false);
+          trans.Commit();
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      }
+    }
+
+    private void SetArchived(IDbTransaction trans, IEnumerable<string> uniqs, bool archived)
     {
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.CommandText = "UPDATE jobs SET Archived = 1 WHERE UniqueStr = $uniq";
+        cmd.CommandText = "UPDATE jobs SET Archived = $archived WHERE UniqueStr = $uniq";
         var param = cmd.Parameters.Add("uniq", SqliteType.Text);
+        cmd.Parameters.Add("archived", SqliteType.Integer).Value = archived ? 1 : 0;
         foreach (var uniqStr in uniqs)
         {
           param.Value = uniqStr;

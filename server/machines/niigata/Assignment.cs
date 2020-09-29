@@ -162,6 +162,8 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(j =>
           j.Process > 1
           ||
+          !string.IsNullOrEmpty(j.Job.GetInputQueue(j.Process, j.Path))
+          ||
           (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.Job.UniqueStr, proc1path: j.Path), out int qty) && qty > 0)
         )
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
@@ -325,6 +327,14 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
+    private static int PathsToPriority(IReadOnlyList<JobPath> newPaths)
+    {
+      if (newPaths.Count == 0) return 7;
+      var proc = newPaths.Select(p => p.Process).Max();
+      var numProc = newPaths.Select(p => p.Job.NumProcesses).Max();
+      return Math.Max(1, Math.Min(9, numProc - proc + 1));
+    }
+
     private NiigataAction SetNewRoute(PalletAndMaterial oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs)
     {
       var newMaster = NewPalletMaster(oldPallet.Status.Master.PalletNum, newPaths, progs);
@@ -347,7 +357,7 @@ namespace BlackMaple.FMSInsight.Niigata
         return new UpdatePalletQuantities()
         {
           Pallet = oldPallet.Status.Master.PalletNum,
-          Priority = 0,
+          Priority = PathsToPriority(newPaths),
           Cycles = remaining,
           NoWork = false,
           Skip = false,
@@ -501,7 +511,7 @@ namespace BlackMaple.FMSInsight.Niigata
         PalletNum = pallet,
         Comment = "",
         RemainingPalletCycles = 1,
-        Priority = 0,
+        Priority = PathsToPriority(newPaths),
         NoWork = false,
         Skip = false,
         ForLongToolMaintenance = false,

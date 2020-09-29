@@ -191,12 +191,12 @@ namespace BlackMaple.FMSInsight.Niigata
             status = _icc.LoadNiigataStatus();
             var jobs = jdb.LoadUnarchivedJobs();
 
-            Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs);
+            Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs.Select(j => j.UniqueStr));
 
             cellSt = _createLog.BuildCellState(jdb, logDB, status, jobs);
             raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
 
-            Log.Debug("Computed cell state {@pals}", cellSt);
+            Log.Debug("Computed cell state {@cellSt}", cellSt);
 
             action = _assign.NewPalletChange(cellSt);
 

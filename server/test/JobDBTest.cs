@@ -639,6 +639,11 @@ namespace MachineWatchTest
           Quantity = 50
         }
       });
+
+      _jobDB.UnarchiveJob(job2.UniqueStr);
+      job2.Archived = false;
+      CheckJobs(job2, null, null, job1.ScheduleId, job1ExtraParts, job1unfilledWorks);
+      _jobDB.LoadJob(job2.UniqueStr).Archived.Should().BeFalse();
     }
 
     [Fact]

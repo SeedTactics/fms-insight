@@ -87,6 +87,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 3, 5, 6 },
             progs: new[] { 2100 },
@@ -102,6 +103,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[]{
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 3, 5, 6 },
             progs: new[] { 2100 },
@@ -348,6 +350,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 345 },
@@ -417,7 +420,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2100 }, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
+          FakeIccDsl.ExpectNewRoute(pal: 1, luls: new[] { 3, 4 }, machs: new[] { 5, 6 }, progs: new[] { 2100 }, pri: 1, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) })
         })
         .MoveToLoad(pal: 1, lul: 3)
         .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
@@ -527,6 +530,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2201, name: "prog444", rev: 9, mcMin: 21),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 2,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -608,6 +612,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          .ExpectTransition(new[] {
             FakeIccDsl.ExpectNewRoute(
               pal: 1,
+              pri: 1,
               luls: new[] { 3, 4 },
               machs: new[] { 5, 6 },
               progs: new[] { 2100, 2200 },
@@ -818,6 +823,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2200, 2101 },
@@ -922,6 +928,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2201 },
@@ -1046,6 +1053,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 2,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -1141,6 +1149,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 654 },
@@ -1572,6 +1581,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         FakeIccDsl.ExpectAddNewProgram(progNum: 2200, name: "prog222", rev: 6, mcMin: 10),
         FakeIccDsl.ExpectNewRoute(
           pal: 1,
+          pri: 2,
           luls: new[] { 3 },
           unloads: new[] { 4 },
           machs: new[] { 5, 6 },
@@ -1660,6 +1670,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
         FakeIccDsl.ExpectNewRoute(
           pal: 2,
+          pri: 1,
           luls: new[] { 4 },
           unloads: new[] { 5 },
           machs: new[] { 5, 6},
@@ -1769,6 +1780,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2101, name: "prog222", rev: 6, mcMin: 15),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 1,
             loads: new[] { 3, 4 },
             machs1: new[] { 5, 6 },
             progs1: new[] { 2100 },
@@ -1970,6 +1982,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -2096,6 +2109,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 2,
             luls: new[] { 3 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -2111,6 +2125,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
+            pri: 2,
             luls: new[] { 3 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -2322,6 +2337,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 3, elapsedMin: 3, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var CCCproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 4,
+            pri: 1,
             luls: new[] { 3 },
             machs: new[] { 5, 6 },
             progs: new[] { 654 },
@@ -2465,6 +2481,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2200, name: "prog222", rev: 6, mcMin: 15),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 2,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -2523,6 +2540,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 2,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -2618,6 +2636,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 654 },
@@ -2695,6 +2714,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 2,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
@@ -2790,6 +2810,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 5, 6 },
             progs: new[] { 654 },
@@ -2859,6 +2880,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
+            pri: 1,
             luls: new[] { 3, 4 },
             machs: new[] { 3, 5, 6 },
             progs: new[] { 2100 },
@@ -2947,6 +2969,94 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: sndMats)
         })
       ;
+    }
+
+    [Fact]
+    public void UnarchivesJobWithMaterial()
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 1,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            prog: "prog111",
+            progRev: null,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1,
+            queue: "rawmat"
+          )
+          .AddInsp(proc: 1, path: 1, inspTy: "InspTy", cntr: "Thecounter", max: 2)
+          },
+          new[] { (prog: "prog111", rev: 5L) }
+        )
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
+        })
+        .ArchiveJob("uniq1")
+        .RemoveJobRemainingCnt(unique: "uniq1", path: 1)
+        .ExpectNoChanges()
+        .AddAllocatedCasting(queue: "rawmat", uniq: "uniq1", part: "part1", path: 1, numProc: 1, out var mat1)
+        .UpdateExpectedMaterial(mat1.MaterialID, m =>
+        {
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            LoadOntoPallet = "1",
+            LoadOntoFace = 1,
+            ProcessAfterLoad = 1,
+            PathAfterLoad = 1
+          };
+        })
+        .SetJobRemainCnt(unique: "uniq1", path: 1, cnt: 0)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            progs: new[] { 2100 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+
+        // first process on pallet 1
+        .MoveToLoad(pal: 1, lul: 3)
+        .UpdateExpectedMaterial(mat1.MaterialID, f =>
+        {
+          f.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
+        })
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3) })
+        .AdvanceMinutes(2) // = 2min
+        .SetAfterLoad(pal: 1)
+        .UpdateExpectedMaterial(mat1.MaterialID, f =>
+        {
+          f.Process = 1;
+          f.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          f.Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.OnPallet,
+            Pallet = "1",
+            Face = 1
+          };
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
+          _dsl.LoadToFace(pal: 1, lul: 3, face: 1, unique: "uniq1", elapsedMin: 2, activeMins: 8, loadingMats: new[] { mat1}, loadedMats: out var loadedMat1),
+          FakeIccDsl.RemoveFromQueue(queue: "rawmat", pos: 0, elapMin: 2, mat: loadedMat1)
+        })
+        .MoveToMachineQueue(pal: 1, mach: 6)
+        .ExpectNoChanges()
+        ;
+
     }
   }
 }

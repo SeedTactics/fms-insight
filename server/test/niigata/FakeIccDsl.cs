@@ -423,6 +423,62 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl AddAllocatedCasting(string queue, string uniq, string part, int path, int numProc, out LogMaterial mat)
+    {
+      var matId = _logDB.AllocateMaterialID(unique: uniq, part: part, numProc: numProc);
+      if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+      {
+        _logDB.RecordSerialForMaterialID(
+          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          _settings.ConvertMaterialIDToSerial(matId),
+          _status.TimeOfStatusUTC
+        );
+      }
+      var addLog = _logDB.RecordAddMaterialToQueue(
+        new EventLogDB.EventLogMaterial()
+        {
+          MaterialID = matId,
+          Process = 0,
+          Face = ""
+        },
+        queue,
+        -1,
+        "theoperator",
+        _status.TimeOfStatusUTC
+      );
+      _logDB.RecordPathForProcess(matId, 1, path);
+      _expectedMaterial[matId] = new InProcessMaterial()
+      {
+        MaterialID = matId,
+        JobUnique = uniq,
+        PartName = part,
+        Process = 0,
+        Path = 1,
+        Serial = _settings.ConvertMaterialIDToSerial(matId),
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        },
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = queue,
+          QueuePosition = addLog.First().LocationNum
+        }
+      };
+      mat = new LogMaterial(
+        matID: matId,
+        uniq: uniq,
+        proc: 0,
+        part: part,
+        numProc: 1,
+        serial: _settings.ConvertMaterialIDToSerial(matId),
+        workorder: "",
+        face: ""
+      );
+      return this;
+    }
+
     public FakeIccDsl RemoveFromQueue(IEnumerable<LogMaterial> mats)
     {
       foreach (var mat in mats)
@@ -523,6 +579,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedJobRemainCount[(uniq: unique, proc1path: path)] -= cnt;
       return this;
     }
+    public FakeIccDsl RemoveJobRemainingCnt(string unique, int path)
+    {
+      _expectedJobRemainCount.Remove((uniq: unique, proc1path: path));
+      return this;
+    }
+    public FakeIccDsl SetJobRemainCnt(string unique, int path, int cnt)
+    {
+      _expectedJobRemainCount[(uniq: unique, proc1path: path)] = cnt;
+      return this;
+    }
     public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null)
     {
       if (progs == null)
@@ -565,6 +631,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         _expectedJobRemainCount.Remove(k.Key);
       }
+      return this;
+    }
+
+    public FakeIccDsl ArchiveJob(string uniq)
+    {
+      _jobDB.ArchiveJob(uniq);
       return this;
     }
 
@@ -974,7 +1046,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<(int face, string unique, int proc, int path)> Faces { get; set; }
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, IEnumerable<(int face, string unique, int proc, int path)> faces, int[] unloads = null)
+    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, int pri, IEnumerable<(int face, string unique, int proc, int path)> faces, int[] unloads = null)
     {
       return new ExpectNewRouteChange()
       {
@@ -983,7 +1055,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PalletNum = pal,
           Comment = "",
           RemainingPalletCycles = 1,
-          Priority = 0,
+          Priority = pri,
           NoWork = false,
           Skip = false,
           ForLongToolMaintenance = false,
@@ -1006,7 +1078,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] reclamp, int[] unloads, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] reclamp, int[] unloads, int pri, IEnumerable<(int face, string unique, int proc, int path)> faces)
     {
       return new ExpectNewRouteChange()
       {
@@ -1015,7 +1087,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PalletNum = pal,
           Comment = "",
           RemainingPalletCycles = 1,
-          Priority = 0,
+          Priority = pri,
           NoWork = false,
           Skip = false,
           ForLongToolMaintenance = false,
