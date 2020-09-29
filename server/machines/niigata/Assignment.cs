@@ -347,7 +347,7 @@ namespace BlackMaple.FMSInsight.Niigata
         return new UpdatePalletQuantities()
         {
           Pallet = oldPallet.Status.Master.PalletNum,
-          Priority = 0,
+          Priority = 5,
           Cycles = remaining,
           NoWork = false,
           Skip = false,
@@ -501,7 +501,7 @@ namespace BlackMaple.FMSInsight.Niigata
         PalletNum = pallet,
         Comment = "",
         RemainingPalletCycles = 1,
-        Priority = 0,
+        Priority = 5,
         NoWork = false,
         Skip = false,
         ForLongToolMaintenance = false,
