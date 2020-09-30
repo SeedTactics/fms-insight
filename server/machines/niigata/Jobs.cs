@@ -47,11 +47,11 @@ namespace BlackMaple.FMSInsight.Niigata
     private ISyncPallets _sync;
     private readonly NiigataStationNames _statNames;
     private Action<NewJobs> _onNewJobs;
+    private bool _requireRawMatQueue;
+    private bool _requireInProcessQueues;
 
-    public bool RequireRawMaterialQueue { get; set; } = false;
-    public bool RequireInProcessQueues { get; set; } = false;
-
-    public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames, Action<NewJobs> onNewJobs)
+    public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
+                       bool requireRawMatQ, bool requireInProcQ, Action<NewJobs> onNewJobs)
     {
       _onNewJobs = onNewJobs;
       _jobDbCfg = j;
@@ -59,6 +59,8 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync = sy;
       _settings = st;
       _statNames = statNames;
+      _requireRawMatQueue = requireRawMatQ;
+      _requireInProcessQueues = requireInProcQ;
     }
 
     CurrentStatus IJobControl.GetCurrentStatus()
@@ -129,15 +131,15 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add(" Part " + j.PartName + " has an output queue " + j.GetOutputQueue(proc, path) + " which is not configured as a queue in FMS Insight.");
             }
-            if (RequireRawMaterialQueue && proc == 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
+            if (_requireRawMatQueue && proc == 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
             {
               errors.Add("Input queue is required on process 1 for part " + j.PartName);
             }
-            if (RequireInProcessQueues && proc > 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
+            if (_requireInProcessQueues && proc > 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
             {
               errors.Add("Input queue required for part " + j.PartName + ", process " + proc.ToString());
             }
-            if (RequireInProcessQueues && proc < j.NumProcesses && string.IsNullOrEmpty(j.GetOutputQueue(proc, path)))
+            if (_requireInProcessQueues && proc < j.NumProcesses && string.IsNullOrEmpty(j.GetOutputQueue(proc, path)))
             {
               errors.Add("Output queue required for part " + j.PartName + ", process " + proc.ToString());
             }

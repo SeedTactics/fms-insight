@@ -140,7 +140,14 @@ namespace BlackMaple.FMSInsight.Niigata
           });
         }
         _sync = new SyncPallets(JobDBConfig, LogDBConfig, _icc, assign, createLog, cfg, s => OnNewCurrentStatus?.Invoke(s));
-        _jobControl = new NiigataJobs(JobDBConfig, LogDBConfig, cfg, _sync, StationNames, j => OnNewJobs?.Invoke(j));
+        _jobControl = new NiigataJobs(j: JobDBConfig,
+                                      l: LogDBConfig,
+                                      st: cfg,
+                                      sy: _sync,
+                                      statNames: StationNames,
+                                      requireRawMatQ: config.GetValue<bool>("Require Raw Material Queue", false),
+                                      requireInProcQ: config.GetValue<bool>("Require In-Process Queues", false),
+                                      onNewJobs: j => OnNewJobs?.Invoke(j));
         if (startSyncThread)
         {
           StartSyncThread();
