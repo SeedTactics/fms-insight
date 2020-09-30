@@ -252,6 +252,10 @@ export interface AllQueueData {
   readonly queues: HashMap<string, MaterialList>;
 }
 
+function compareByQueuePos(m1: Readonly<api.IInProcessMaterial>, m2: Readonly<api.IInProcessMaterial>): number {
+  return (m1.location.queuePosition ?? 10000000000) - (m2.location.queuePosition ?? 10000000000);
+}
+
 export function selectQueueData(
   displayFree: boolean,
   queuesToCheck: ReadonlyArray<string>,
@@ -341,7 +345,7 @@ export function selectQueueData(
         label: queueName,
         free: false,
         rawMaterialQueue: true,
-        material: material,
+        material: material.sort(compareByQueuePos),
         groupedRawMat: matGroups,
       });
     } else {
@@ -349,9 +353,9 @@ export function selectQueueData(
         label: queueName,
         free: false,
         rawMaterialQueue: false,
-        material: curSt.material.filter(
-          (m) => m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName
-        ),
+        material: curSt.material
+          .filter((m) => m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName)
+          .sort(compareByQueuePos),
       });
     }
   }
