@@ -48,6 +48,9 @@ namespace BlackMaple.FMSInsight.Niigata
     private readonly NiigataStationNames _statNames;
     private Action<NewJobs> _onNewJobs;
 
+    public bool RequireRawMaterialQueue { get; set; } = false;
+    public bool RequireInProcessQueues { get; set; } = false;
+
     public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames, Action<NewJobs> onNewJobs)
     {
       _onNewJobs = onNewJobs;
@@ -125,6 +128,18 @@ namespace BlackMaple.FMSInsight.Niigata
             if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path)) && !_settings.Queues.ContainsKey(j.GetOutputQueue(proc, path)))
             {
               errors.Add(" Part " + j.PartName + " has an output queue " + j.GetOutputQueue(proc, path) + " which is not configured as a queue in FMS Insight.");
+            }
+            if (RequireRawMaterialQueue && proc == 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
+            {
+              errors.Add("Input queue is required on process 1 for part " + j.PartName);
+            }
+            if (RequireInProcessQueues && proc > 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
+            {
+              errors.Add("Input queue required for part " + j.PartName + ", process " + proc.ToString());
+            }
+            if (RequireInProcessQueues && proc < j.NumProcesses && string.IsNullOrEmpty(j.GetOutputQueue(proc, path)))
+            {
+              errors.Add("Output queue required for part " + j.PartName + ", process " + proc.ToString());
             }
 
             foreach (var stop in j.GetMachiningStop(proc, path))
