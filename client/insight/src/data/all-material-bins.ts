@@ -125,8 +125,13 @@ export function selectAllMaterialIntoBins(
     switch (mat.location.type) {
       case api.LocType.InQueue:
         if (mat.action.type === api.ActionType.Loading) {
-          const lul = curSt.pallets[mat.action.loadOntoPallet ?? ""]?.currentPalletLocation.num;
-          addToMap(loadStations, lul, mat);
+          const pal = curSt.pallets[mat.action.loadOntoPallet ?? ""];
+          if (pal && pal.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload) {
+            const lul = pal.currentPalletLocation.num;
+            addToMap(loadStations, lul, mat);
+          } else {
+            addToMap(queues, mat.location.currentQueue || "Queue", mat);
+          }
         } else {
           addToMap(queues, mat.location.currentQueue || "Queue", mat);
         }
