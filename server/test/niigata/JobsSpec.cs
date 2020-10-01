@@ -64,7 +64,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       settings.Queues.Add("q1", new QueueSize());
 
       _onNewJobs = Substitute.For<Action<NewJobs>>();
-      _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, _onNewJobs);
+      _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, false, false, _onNewJobs);
     }
 
     void IDisposable.Dispose()
