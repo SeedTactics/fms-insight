@@ -349,8 +349,8 @@ namespace MachineWatchTest
       trans.Schedules.Should().BeEmpty();
 
       // now remove one from process 1 and one from process 2
-      _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0]);
-      _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0]);
+      _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0], 1);
+      _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0], 2);
 
       trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
 
@@ -402,8 +402,8 @@ namespace MachineWatchTest
       trans.Schedules.Should().BeEmpty();
 
       // now remove one from process 1 and one from process 2
-      _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0]);
-      _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0]);
+      _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0], 1);
+      _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0], 2);
 
       _logDB.GetMaterialInQueue("castingQ").Should().BeEquivalentTo(new[] {
           new EventLogDB.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
@@ -969,9 +969,9 @@ namespace MachineWatchTest
       trans.Schedules.Should().BeEmpty();
 
       // now remove some material
-      _logDB.RecordRemoveMaterialFromAllQueues(proc1path1[0]);
-      _logDB.RecordRemoveMaterialFromAllQueues(proc2path1[0]);
-      _logDB.RecordRemoveMaterialFromAllQueues(proc2path1[1]);
+      _logDB.RecordRemoveMaterialFromAllQueues(proc1path1[0], 1);
+      _logDB.RecordRemoveMaterialFromAllQueues(proc2path1[0], 2);
+      _logDB.RecordRemoveMaterialFromAllQueues(proc2path1[1], 2);
 
       trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
 

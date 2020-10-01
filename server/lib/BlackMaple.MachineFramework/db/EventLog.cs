@@ -2525,10 +2525,10 @@ namespace BlackMaple.MachineFramework
     }
 
     public IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(
-        long matID, string operatorName = null, DateTime? timeUTC = null)
+        long matID, int process, string operatorName = null, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
-          RemoveFromAllQueues(trans, matID, operatorName, timeUTC ?? DateTime.UtcNow)
+          RemoveFromAllQueues(trans, matID, process, operatorName, timeUTC ?? DateTime.UtcNow)
       );
     }
 
@@ -2973,12 +2973,12 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, string operatorName, DateTime timeUTC)
+    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, int process, string operatorName, DateTime timeUTC)
     {
       var mat = new EventLogMaterial()
       {
         MaterialID = matID,
-        Process = 1,
+        Process = process,
         Face = ""
       };
 

@@ -1142,9 +1142,10 @@ namespace MachineWatchTest
           });
 
       //removing from queue with matid
-      _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, null, start.AddMinutes(60))
-          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat2, 12, "AAAA", 0, 60 - 10, start.AddMinutes(60)) });
-      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2, 12, "AAAA", 0, 60 - 10, start.AddMinutes(60)));
+      var mat2proc8 = new LogMaterial(mat2.MaterialID, mat2.JobUniqueStr, 8, mat2.PartName, mat2.NumProcesses, mat2.Serial, mat2.Workorder, mat2.Face);
+      _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, 8, null, start.AddMinutes(60))
+          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat2proc8, 12, "AAAA", 0, 60 - 10, start.AddMinutes(60)) });
+      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2proc8, 12, "AAAA", 0, 60 - 10, start.AddMinutes(60)));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {

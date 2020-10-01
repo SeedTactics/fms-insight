@@ -497,7 +497,16 @@ namespace MazakMachineInterface
       using (var logDb = logDbCfg.OpenConnection())
       {
         foreach (var materialId in materialIds)
-          logDb.RecordRemoveMaterialFromAllQueues(materialId, operatorName);
+        {
+          var proc =
+            logDb.GetLogForMaterial(materialId)
+            .SelectMany(e => e.Material)
+            .Where(m => m.MaterialID == materialId)
+            .Select(m => m.Process)
+            .DefaultIfEmpty(0)
+            .Max();
+          logDb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
+        }
         logReader.RecheckQueues(wait: true);
 
         using (var jdb = jobDBCfg.OpenConnection())

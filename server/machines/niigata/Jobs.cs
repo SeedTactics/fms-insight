@@ -492,7 +492,16 @@ namespace BlackMaple.FMSInsight.Niigata
       using (var ldb = _logDbCfg.OpenConnection())
       {
         foreach (var materialId in materialIds)
-          ldb.RecordRemoveMaterialFromAllQueues(materialId, operatorName);
+        {
+          var proc =
+            ldb.GetLogForMaterial(materialId)
+            .SelectMany(e => e.Material)
+            .Where(m => m.MaterialID == materialId)
+            .Select(m => m.Process)
+            .DefaultIfEmpty(0)
+            .Max();
+          ldb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
+        }
       }
       _sync.JobsOrQueuesChanged();
     }
