@@ -414,6 +414,17 @@ namespace MazakMachineInterface
     public HashSet<string> Pallets = new HashSet<string>();
     public string MazakFixtureName { get; set; }
 
+    // When a robot is configured in the Mazak software, it can jump ahead when searching
+    // for the next part to load, which can cause parts to run out of sequence (because
+    // the fixture group is used first to determine what to do next, then schedule due date,
+    // then priority).  Setting all groups to zero is dangerous because it could place everything
+    // simulatiously on the pallet, but at least the current version of Mazak won't place things
+    // simulatiously on the pallet if the schedules have different due dates and priorities.
+    // This hack of setting everything to zero is the only workaround on the current mazak version,
+    // although that could change on any future versions.  Thus this must be manually configured
+    // in a plugin after testing with the specific Mazak cell controller version in use.
+    public static bool OverrideFixtureGroupToZero { get; set; } = false;
+
     public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(MazakSchedulesPartsPallets oldData, int downloadUID)
     {
       var ret = new List<MazakPalletRow>();
@@ -438,10 +449,18 @@ namespace MazakMachineInterface
         newRow.PalletNumber = palNum;
         newRow.Fixture = MazakFixtureName;
         newRow.RecordID = 0;
-        newRow.FixtureGroupV2 = FixtureGroup;
 
-        //combos with an angle in the range 0-999, and we don't want to conflict with that
-        newRow.AngleV1 = (FixtureGroup * 1000);
+        if (OverrideFixtureGroupToZero)
+        {
+          newRow.FixtureGroupV2 = 0;
+          newRow.AngleV1 = 0;
+        }
+        else
+        {
+          newRow.FixtureGroupV2 = FixtureGroup;
+          //combos with an angle in the range 0-999, and we don't want to conflict with that
+          newRow.AngleV1 = (FixtureGroup * 1000);
+        }
 
         ret.Add(newRow);
       }
