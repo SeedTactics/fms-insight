@@ -196,6 +196,11 @@ namespace BlackMaple.FMSInsight.Niigata
             cellSt = _createLog.BuildCellState(jdb, logDB, status, jobs);
             raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
 
+            lock (_curStLock)
+            {
+              _lastCellState = cellSt;
+            }
+
             Log.Debug("Computed cell state {@cellSt}", cellSt);
 
             action = _assign.NewPalletChange(cellSt);
@@ -207,11 +212,6 @@ namespace BlackMaple.FMSInsight.Niigata
               _icc.PerformAction(jdb, logDB, action);
             }
           } while (action != null);
-
-          lock (_curStLock)
-          {
-            _lastCellState = cellSt;
-          }
 
           if (raisePalletChanged)
           {

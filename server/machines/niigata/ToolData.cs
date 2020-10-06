@@ -92,18 +92,45 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CncMachineConnection>();
 
-    private static List<NiigataToolData> LoadAndLog(ICncMachineConnection cnc, int machine)
+    public static List<NiigataToolData> ToolsForMachine(this ICncMachineConnection cnc, int machine)
     {
       try
       {
-        byte[] buff = new byte[10084];
+        byte[] buff = new byte[10080];
+        int numTools = 0;
+
         cnc.WithConnection<int>(machine, handle =>
         {
-          Log.Debug("Starting to load tool data");
+          Log.Debug("Starting to load number of tools");
+
+          byte[] header = new byte[4];
+
           CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
-            ret: pmc_rdkpm(handle, 51, buff, 10084)
+            ret: pmc_rdkpm(handle, 51, header, 4)
           );
-          Log.Debug("Loading tool data complete");
+
+          Log.Debug("Network call to load number of tools completed");
+
+          using (var mem = new MemoryStream(header))
+          using (var rawReader = new BinaryReader(mem))
+          {
+            var beReader = new BigEndianBinaryReader(rawReader);
+
+            numTools = beReader.ReadUInt16();
+            Log.Debug("Loading {numTools} tools ({@header})", numTools, header);
+            if (numTools < 0) numTools = 0;
+            if (numTools > 360) numTools = 360;
+          }
+
+          if (numTools == 0) return 0;
+
+          Log.Debug("Starting to load tool data");
+
+          CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
+            ret: pmc_rdkpm(handle, 51 + 4, buff, (ushort)(28 * numTools))
+          );
+
+          Log.Debug("Network call to load tool data complete");
           return 0;
         });
 
@@ -111,14 +138,6 @@ namespace BlackMaple.FMSInsight.Niigata
         using (var rawReader = new BinaryReader(mem))
         {
           var beReader = new BigEndianBinaryReader(rawReader);
-
-          var numTools = beReader.ReadUInt16();
-          Log.Debug("Loading {numTools} tools from {@arr}", numTools, buff.Take(4));
-          if (numTools < 0) numTools = 0;
-          if (numTools > 360) numTools = 360;
-
-          // two bytes are igored
-          beReader.ReadByte(); beReader.ReadByte();
 
           var tools = new List<NiigataToolData>(numTools);
           for (int i = 0; i < numTools; i++)
@@ -144,6 +163,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
             Log.Debug("Tool data for {i}: {@raw} " +
               "{toolNum}, {gNum}, {lifeTm}, {restTm}, {loadMax}, {loadMore}, {meas}, {lifeAlrm}, {brokenAlrm}, {cuttingAlrm}, {checkingAlrm}, {lifeKind}",
+              i,
               (new Span<byte>(buff, 4 + i * 28, 28)).ToArray(),
               toolNum, gNum, lifeTm, restTm, loadMax, loadMore, meas, lifeAlrm, brokenAlrm, cuttingAlrm, checkingAlrm, lifeKind
             );
@@ -180,24 +200,8 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public static List<NiigataToolData> ToolsForMachine(this ICncMachineConnection cnc, int machine)
-    {
-      /*
-      var thread = new Thread(() => LoadAndLog(cnc, machine));
-      thread.Start();
-      Task.Run(() =>
-      {
-        Thread.Sleep(TimeSpan.FromMinutes(5));
-        thread.Abort();
-      });
-      */
-
-      return null;
-    }
-
-
     [DllImport("fwlib32.dll")]
-    private static extern short pmc_rdkpm(ushort handle, ulong offset, [Out] byte[] data, ushort length);
+    private static extern short pmc_rdkpm(ushort handle, uint offset, [Out] byte[] data, ushort length);
 
     public class BigEndianBinaryReader
     {
