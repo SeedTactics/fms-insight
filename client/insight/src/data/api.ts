@@ -779,6 +779,45 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
+    signalMaterialForQuarantine(materialId: number, queue: string, operName: string | null | undefined): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/quarantine?";
+        if (materialId === undefined || materialId === null)
+            throw new Error("The parameter 'materialId' must be defined.");
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(queue);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json", 
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSignalMaterialForQuarantine(_response);
+        });
+    }
+
+    protected processSignalMaterialForQuarantine(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
     bulkRemoveMaterialFromQueues(id: number[] | null, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material?";
         if (id === undefined)
@@ -1847,6 +1886,9 @@ export class FMSInfo implements IFMSInfo {
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
     requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
+    allowQuarantineAtLoadStation?: boolean | undefined;
+    allowChangeSerial?: boolean | undefined;
+    allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 
     constructor(data?: IFMSInfo) {
@@ -1878,6 +1920,9 @@ export class FMSInfo implements IFMSInfo {
             this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowAddRawMaterialForNonRunningJobs = data["AllowAddRawMaterialForNonRunningJobs"];
             this.requireSerialWhenAddingMaterialToQueue = data["RequireSerialWhenAddingMaterialToQueue"];
+            this.allowQuarantineAtLoadStation = data["AllowQuarantineAtLoadStation"];
+            this.allowChangeSerial = data["AllowChangeSerial"];
+            this.allowChangeWorkorderAtLoadStation = data["AllowChangeWorkorderAtLoadStation"];
             this.allowEditJobPlanQuantityFromQueuesPage = data["AllowEditJobPlanQuantityFromQueuesPage"];
         }
     }
@@ -1909,6 +1954,9 @@ export class FMSInfo implements IFMSInfo {
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowAddRawMaterialForNonRunningJobs"] = this.allowAddRawMaterialForNonRunningJobs;
         data["RequireSerialWhenAddingMaterialToQueue"] = this.requireSerialWhenAddingMaterialToQueue;
+        data["AllowQuarantineAtLoadStation"] = this.allowQuarantineAtLoadStation;
+        data["AllowChangeSerial"] = this.allowChangeSerial;
+        data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         return data; 
     }
@@ -1929,6 +1977,9 @@ export interface IFMSInfo {
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
     requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
+    allowQuarantineAtLoadStation?: boolean | undefined;
+    allowChangeSerial?: boolean | undefined;
+    allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 }
 
@@ -2007,7 +2058,6 @@ export class JobPlan implements IJobPlan {
     scheduleId?: string | undefined;
     bookings?: string[] | undefined;
     manuallyCreated!: boolean;
-    createMarkingData!: boolean;
     holdEntireJob?: JobHoldPattern | undefined;
     cyclesOnFirstProcess!: number[];
     procsAndPaths!: ProcessInfo[];
@@ -2041,7 +2091,6 @@ export class JobPlan implements IJobPlan {
                     this.bookings!.push(item);
             }
             this.manuallyCreated = data["ManuallyCreated"];
-            this.createMarkingData = data["CreateMarkingData"];
             this.holdEntireJob = data["HoldEntireJob"] ? JobHoldPattern.fromJS(data["HoldEntireJob"]) : <any>undefined;
             if (data["CyclesOnFirstProcess"] && data["CyclesOnFirstProcess"].constructor === Array) {
                 this.cyclesOnFirstProcess = [] as any;
@@ -2079,7 +2128,6 @@ export class JobPlan implements IJobPlan {
                 data["Bookings"].push(item);
         }
         data["ManuallyCreated"] = this.manuallyCreated;
-        data["CreateMarkingData"] = this.createMarkingData;
         data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
         if (this.cyclesOnFirstProcess && this.cyclesOnFirstProcess.constructor === Array) {
             data["CyclesOnFirstProcess"] = [];
@@ -2106,7 +2154,6 @@ export interface IJobPlan {
     scheduleId?: string | undefined;
     bookings?: string[] | undefined;
     manuallyCreated: boolean;
-    createMarkingData: boolean;
     holdEntireJob?: JobHoldPattern | undefined;
     cyclesOnFirstProcess: number[];
     procsAndPaths: ProcessInfo[];
@@ -3868,6 +3915,7 @@ export enum LogType {
     InspectionForce = "InspectionForce", 
     PalletOnRotaryInbound = "PalletOnRotaryInbound", 
     PalletInStocker = "PalletInStocker", 
+    SignalQuarantine = "SignalQuarantine", 
 }
 
 export class ToolUse implements IToolUse {

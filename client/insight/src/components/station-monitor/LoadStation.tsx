@@ -402,7 +402,11 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly usingLabelPrinter: boolean;
   readonly printFromClient: boolean;
   readonly operator: string | null;
+  readonly quarantineQueue: string | null;
+  readonly allowChangeSerial: boolean;
+  readonly allowChangeWorkorder: boolean;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
+  readonly signalQuarantine: (matId: number, queue: string, operator: string | null) => void;
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
@@ -428,6 +432,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
     props.openSelectWorkorder(props.display_material);
   }
   const displayMat = props.display_material;
+  const quarantineQueue = props.quarantineQueue;
   return (
     <MaterialDialog
       display_material={props.display_material}
@@ -443,9 +448,11 @@ function LoadMatDialog(props: LoadMatDialogProps) {
               pallet={props.pallet}
             />
           ) : undefined}
-          <Button color="primary" onClick={props.openSetSerial}>
-            {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
-          </Button>
+          {props.allowChangeSerial ? (
+            <Button color="primary" onClick={props.openSetSerial}>
+              {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
+            </Button>
+          ) : undefined}
           {displayMat && props.usingLabelPrinter ? (
             props.printFromClient ? (
               <>
@@ -481,12 +488,22 @@ function LoadMatDialog(props: LoadMatDialogProps) {
               </Button>
             )
           ) : undefined}
+          {displayMat && quarantineQueue ? (
+            <Button
+              color="primary"
+              onClick={() => props.signalQuarantine(displayMat.materialID, quarantineQueue, props.operator)}
+            >
+              Quarantine
+            </Button>
+          ) : undefined}
           <Button color="primary" onClick={props.openForceInspection}>
             Signal Inspection
           </Button>
-          <Button color="primary" onClick={openAssignWorkorder}>
-            {props.display_material && props.display_material.workorderId ? "Change Workorder" : "Assign Workorder"}
-          </Button>
+          {props.allowChangeWorkorder ? (
+            <Button color="primary" onClick={openAssignWorkorder}>
+              {props.display_material && props.display_material.workorderId ? "Change Workorder" : "Assign Workorder"}
+            </Button>
+          ) : undefined}
         </>
       }
     />
@@ -499,6 +516,11 @@ const ConnectedMaterialDialog = connect(
     usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
     printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
     operator: currentOperator(st),
+    quarantineQueue: st.ServerSettings.fmsInfo?.allowQuarantineAtLoadStation
+      ? st.ServerSettings.fmsInfo?.quarantineQueue ?? null
+      : null,
+    allowChangeSerial: st.ServerSettings.fmsInfo?.allowChangeSerial ?? false,
+    allowChangeWorkorder: st.ServerSettings.fmsInfo?.allowChangeWorkorderAtLoadStation ?? false,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -519,6 +541,10 @@ const ConnectedMaterialDialog = connect(
       open: true,
     }),
     printLabel: matDetails.printLabel,
+    signalQuarantine: (matId: number, queue: string, operator: string | null) => [
+      matDetails.signalForQuarantine(matId, queue, operator),
+      { type: matDetails.ActionType.CloseMaterialDialog },
+    ],
   }
 )(LoadMatDialog);
 

@@ -146,7 +146,7 @@ namespace BlackMaple.MachineFramework
       RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
       RequireSerialWhenAddingMaterialToQueue = fmsSection.GetValue<bool>("RequireSerialWhenAddingMaterialToQueue", false);
       AllowAddRawMaterialForNonRunningJobs = fmsSection.GetValue<bool>("AllowAddRawMaterialForNonRunningJobs", true);
-      AllowChangeSerial = fmsSection.GetValue<bool>("AllowChangeSerial", true);
+      AllowChangeSerial = fmsSection.GetValue<bool>("AllowChangeSerial", false);
       AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>("AllowChangeWorkorderAtLoadStation", true);
       QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
       AdditionalLogServers =

@@ -313,6 +313,13 @@ export function removeFromQueue(mat: MaterialDetail, operator: string | null): P
   };
 }
 
+export function signalForQuarantine(matId: number, queue: string, operator: string | null): PledgeToPromise<Action> {
+  return {
+    type: ActionType.UpdateMaterial,
+    pledge: JobsBackend.signalMaterialForQuarantine(matId, queue, operator || undefined).then(() => undefined),
+  };
+}
+
 export interface AssignWorkorderData {
   readonly mat: MaterialDetail;
   readonly workorder: string;

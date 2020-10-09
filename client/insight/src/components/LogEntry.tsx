@@ -124,6 +124,9 @@ function logType(entry: api.ILogEntry): string {
     case api.LogType.PalletOnRotaryInbound:
       return "Rotary";
 
+    case api.LogType.SignalQuarantine:
+      return "Quarantine";
+
     default:
       return "Message";
   }
@@ -305,6 +308,9 @@ function display(props: LogEntryProps): JSX.Element {
           </span>
         );
       }
+
+    case api.LogType.SignalQuarantine:
+      return <span>{displayMat(entry.material)} signaled for quarantine after unload</span>;
 
     default:
       return <span>{entry.result}</span>;

@@ -72,6 +72,7 @@ export interface JobAPI {
     serial: string,
     operatorName: string | undefined
   ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
+  signalMaterialForQuarantine(materialId: number, queue: string, operName: string | null | undefined): Promise<void>;
 }
 
 export interface FmsAPI {
@@ -278,6 +279,9 @@ function initMockBackend(data: Promise<MockData>) {
     ): Promise<Readonly<api.IInProcessMaterial> | undefined> {
       // do nothing
       return Promise.resolve(undefined);
+    },
+    signalMaterialForQuarantine(): Promise<void> {
+      return Promise.resolve();
     },
   };
 
