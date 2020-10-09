@@ -54,6 +54,8 @@ namespace BlackMaple.MachineFramework
     event NewLogEntryDelegate NewLogEntry;
     event NewCurrentStatus OnNewCurrentStatus;
     event NewJobsDelegate OnNewJobs;
+
+    bool SupportsQuarantineAtLoadStation { get; }
   }
 
   public interface IBackgroundWorker : IDisposable { }

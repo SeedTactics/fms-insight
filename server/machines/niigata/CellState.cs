@@ -675,7 +675,7 @@ namespace BlackMaple.FMSInsight.Niigata
           mat.Mat.Action = new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
-            UnloadIntoQueue = mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path),
+            UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log),
             ElapsedLoadUnloadTime = elapsedLoadTime
           };
         }
@@ -693,12 +693,12 @@ namespace BlackMaple.FMSInsight.Niigata
         var proc = face.First().Mat.Process;
         var path = face.First().Mat.Path;
         var queues = new Dictionary<long, string>();
-        var queue = job.GetOutputQueue(proc, path);
-        if (!string.IsNullOrEmpty(queue))
+        foreach (var mat in face)
         {
-          foreach (var mat in face)
+          var q = OutputQueueForMaterial(mat, pallet.Log);
+          if (!string.IsNullOrEmpty(q))
           {
-            queues[mat.Mat.MaterialID] = queue;
+            queues[mat.Mat.MaterialID] = q;
           }
         }
 
@@ -1502,6 +1502,20 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return null;
+    }
+
+    private string OutputQueueForMaterial(InProcessMaterialAndJob mat, IReadOnlyList<LogEntry> log)
+    {
+      var signalQuarantine = log.FirstOrDefault(e => e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == mat.Mat.MaterialID));
+
+      if (signalQuarantine != null)
+      {
+        return signalQuarantine.LocationName ?? _settings.QuarantineQueue;
+      }
+      else
+      {
+        return mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path);
+      }
     }
 
     private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, IEnumerable<JobPlan> unarchivedJobs)

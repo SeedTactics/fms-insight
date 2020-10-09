@@ -178,6 +178,8 @@ namespace Makino
     {
       get { return _dataDirectory; }
     }
+
+    public bool SupportsQuarantineAtLoadStation { get; } = false;
   }
   public static class MakinoProgram
   {

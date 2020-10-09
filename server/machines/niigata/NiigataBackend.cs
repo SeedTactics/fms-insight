@@ -55,6 +55,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public ISyncPallets SyncPallets => _sync;
     public NiigataStationNames StationNames { get; }
     public ICncMachineConnection MachineConnection { get; }
+    public bool SupportsQuarantineAtLoadStation { get; } = true;
 
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry;

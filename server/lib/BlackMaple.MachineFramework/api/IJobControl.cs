@@ -94,6 +94,10 @@ namespace BlackMaple.MachineWatchInterface
     /// it will be removed and placed in the given position.
     void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null);
 
+    /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
+    /// If the material is still on a pallet, it will be moved after unload completes.
+    void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null);
+
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
   }
 

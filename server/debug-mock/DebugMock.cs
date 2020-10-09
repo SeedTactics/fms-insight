@@ -99,6 +99,8 @@ namespace DebugMachineWatchApiServer
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry { add { } remove { } }
 
+    public bool SupportsQuarantineAtLoadStation { get; } = true;
+
     public MockServerBackend()
     {
       string path = null; // dataDir
@@ -315,6 +317,28 @@ namespace DebugMachineWatchApiServer
 
       OnNewStatus(CurrentStatus);
     }
+
+    public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null)
+    {
+      var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
+      if (mat == null) throw new BadRequestException("Material does not exist");
+
+      if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+      {
+        LogDB.SignalMaterialForQuarantine(
+          new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
+        );
+      }
+      else if (mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
+      {
+        SetMaterialInQueue(materialId, queue, 0, operatorName);
+      }
+      else
+      {
+        throw new BadRequestException("Material not on pallet or in queue");
+      }
+    }
+
     public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null)
     {
       Serilog.Log.Information("RemoveMaterialFromAllQueues {@matId} {oper}", materialIds, operatorName);

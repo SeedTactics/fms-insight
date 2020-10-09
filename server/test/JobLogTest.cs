@@ -1141,11 +1141,26 @@ namespace MachineWatchTest
                     new EventLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
           });
 
+      _jobLog.SignalMaterialForQuarantine(EventLogDB.EventLogMaterial.FromLogMat(mat1), "pal", "QQQ", start.AddMinutes(59), "theoper")
+        .Should().BeEquivalentTo(SignalQuarantineExpectedEntry(mat1, 12, "pal", "QQQ", start.AddMinutes(59), "theoper"));
+      expectedLogs.Add(SignalQuarantineExpectedEntry(mat1, 12, "pal", "QQQ", start.AddMinutes(59), "theoper"));
+
+      // hasn't moved yet
+      _jobLog.GetMaterialInQueue("AAAA")
+          .Should().BeEquivalentTo(new[] {
+                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
+                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)},
+                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
+                    new EventLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
+          });
+      _jobLog.GetMaterialInQueue("QQQ").Should().BeEmpty();
+
+
       //removing from queue with matid
       var mat2proc8 = new LogMaterial(mat2.MaterialID, mat2.JobUniqueStr, 8, mat2.PartName, mat2.NumProcesses, mat2.Serial, mat2.Workorder, mat2.Face);
       _jobLog.RecordRemoveMaterialFromAllQueues(mat2.MaterialID, 8, null, start.AddMinutes(60))
-          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat2proc8, 12, "AAAA", 0, 60 - 10, start.AddMinutes(60)) });
-      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2proc8, 12, "AAAA", 0, 60 - 10, start.AddMinutes(60)));
+          .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat2proc8, 13, "AAAA", 0, 60 - 10, start.AddMinutes(60)) });
+      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2proc8, 13, "AAAA", 0, 60 - 10, start.AddMinutes(60)));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
@@ -1483,6 +1498,27 @@ namespace MachineWatchTest
           start: false,
           endTime: timeUTC,
           result: "",
+          endOfRoute: false);
+      if (!string.IsNullOrEmpty(operName))
+      {
+        e.ProgramDetails.Add("operator", operName);
+      }
+      return e;
+    }
+
+    private LogEntry SignalQuarantineExpectedEntry(LogMaterial mat, long cntr, string pal, string queue, DateTime timeUTC, string operName = null)
+    {
+      var e = new LogEntry(
+          cntr: cntr,
+          mat: new[] { mat },
+          pal: pal,
+          ty: LogType.SignalQuarantine,
+          locName: queue,
+          locNum: -1,
+          prog: "QuarantineAfterUnload",
+          start: false,
+          endTime: timeUTC,
+          result: "QuarantineAfterUnload",
           endOfRoute: false);
       if (!string.IsNullOrEmpty(operName))
       {

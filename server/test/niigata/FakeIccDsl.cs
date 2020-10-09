@@ -489,6 +489,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl SignalForQuarantine(IEnumerable<LogMaterial> mats, int pal, string q)
+    {
+      foreach (var mat in mats)
+      {
+        _logDB.SignalMaterialForQuarantine(
+          EventLogDB.EventLogMaterial.FromLogMat(mat),
+          pallet: pal.ToString(),
+          queue: q,
+          timeUTC: _status.TimeOfStatusUTC
+        );
+      }
+      return this;
+    }
+
     public FakeIccDsl SetExpectedLoadCastings(IEnumerable<(string unique, string part, int pal, int path, int face)> castings)
     {
       _expectedLoadCastings = castings.Select(c => new InProcessMaterial()

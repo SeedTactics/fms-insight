@@ -505,6 +505,49 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       _sync.JobsOrQueuesChanged();
     }
+
+    void IJobControl.SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
+    {
+      Log.Debug("Signaling {matId} for quarantine", materialId);
+      if (!_settings.Queues.ContainsKey(queue))
+      {
+        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+      }
+
+      var st = _sync.CurrentCellState();
+
+      // first, see if it is on a pallet
+      var palMat = st.Pallets
+        .SelectMany(p => p.Material)
+        .FirstOrDefault(m => m.Mat.MaterialID == materialId);
+      var qMat = st.QueuedMaterial.FirstOrDefault(m => m.MaterialID == materialId);
+
+      if (palMat != null && palMat.Mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+      {
+        using (var ldb = _logDbCfg.OpenConnection())
+        {
+          ldb.SignalMaterialForQuarantine(
+            mat: new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = palMat.Mat.Process, Face = "" },
+            pallet: palMat.Mat.Location.Pallet,
+            queue: queue,
+            timeUTC: null,
+            operatorName: operatorName
+          );
+        }
+
+        _sync.JobsOrQueuesChanged();
+
+        return;
+      }
+      else if (qMat != null || (palMat != null && palMat.Mat.Location.Type == InProcessMaterialLocation.LocType.InQueue))
+      {
+        ((IJobControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
+      }
+      else
+      {
+        throw new BadRequestException("Unable to find material to quarantine");
+      }
+    }
     #endregion
   }
 }

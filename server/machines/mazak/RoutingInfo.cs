@@ -516,6 +516,35 @@ namespace MazakMachineInterface
       }
       _onCurStatusChange(status);
     }
+
+    void IJobControl.SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
+    {
+      Log.Debug("Signaling {matId} for quarantine", materialId);
+      if (!fmsSettings.Queues.ContainsKey(queue))
+      {
+        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+      }
+
+      using (var logDb = logDbCfg.OpenConnection())
+      using (var jdb = jobDBCfg.OpenConnection())
+      {
+        var status = CurrentStatus(jdb, logDb);
+
+        var mat = status.Material.FirstOrDefault(m => m.MaterialID == materialId);
+        if (mat == null)
+        {
+          throw new BlackMaple.MachineFramework.BadRequestException("Unable to find material to quarantine");
+        }
+        else if (mat.Location.Type != InProcessMaterialLocation.LocType.InQueue)
+        {
+          throw new BlackMaple.MachineFramework.BadRequestException("Mazak FMS Insight does not support quarantining material on a pallet");
+        }
+        else
+        {
+          ((IJobControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
+        }
+      }
+    }
     #endregion
   }
 }
