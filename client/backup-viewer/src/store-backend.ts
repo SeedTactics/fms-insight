@@ -108,6 +108,9 @@ export const JobsBackend = {
     // do nothing
     return Promise.resolve(undefined);
   },
+  signalMaterialForQuarantine(): Promise<void> {
+    return Promise.resolve();
+  },
 };
 
 export const LogBackend = {
