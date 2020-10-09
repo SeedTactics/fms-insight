@@ -195,6 +195,19 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
     if (queue === undefined && this.props.queues.length === 1) {
       queue = this.props.queues[0];
     }
+
+    let addProcMsg: string | null = null;
+    if (!this.props.display_material.loading_events)
+    {
+      const lastProc =
+        LazySeq.ofIterable(this.props.display_material.events)
+        .flatMap(e => e.material)
+        .filter(m => m.id === this.props.display_material.materialID)
+        .maxOn(m => m.proc)
+        .map(m => m.proc)
+        .getOrElse(0);
+      addProcMsg = " to run process " + (lastProc + 1).toString();
+    }
     return (
       <>
         <DialogTitle disableTypography>
@@ -235,7 +248,7 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
               })
             }
           >
-            Add To {queue}
+            Add To {queue}{addProcMsg}
           </Button>
           <Button onClick={this.props.onClose} color="primary">
             Cancel
@@ -328,7 +341,7 @@ function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
       </DialogContent>
       <DialogActions>
         <Button color="primary" onClick={addMaterial} disabled={!allowAdd}>
-          Add To {queue}
+          Add To {queue} as Raw Material
         </Button>
         <Button onClick={props.onClose} color="primary">
           Cancel
