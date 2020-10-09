@@ -624,7 +624,6 @@ namespace Makino
           if (!reader.IsDBNull(3))
             job.Comment = reader.GetString(3);
           job.ManuallyCreatedJob = false;
-          job.CreateMarkerData = false;
         });
 
 
