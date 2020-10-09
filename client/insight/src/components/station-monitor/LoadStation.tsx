@@ -358,14 +358,18 @@ const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & 
 
   return (
     <>
-      <WhiteboardRegion label="Raw Material" spaceAround>
-        {props.data.freeLoadingMaterial.map((m, idx) => (
-          <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} material={m}>
-            <InProcMaterial mat={m} onOpen={props.openMat} />
-          </MoveMaterialArrowNode>
-        ))}
-      </WhiteboardRegion>
-      <Divider />
+      {props.data.allJobsHaveRawMatQueue && props.data.freeLoadingMaterial.length === 0 ? undefined : (
+        <>
+          <WhiteboardRegion label="Raw Material" spaceAround>
+            {props.data.freeLoadingMaterial.map((m, idx) => (
+              <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} material={m}>
+                <InProcMaterial mat={m} onOpen={props.openMat} />
+              </MoveMaterialArrowNode>
+            ))}
+          </WhiteboardRegion>
+          <Divider />
+        </>
+      )}
       {props.data.stationStatus ? ( // stationStatus is defined only when no pallet
         <div className={statStatusClass}>
           <StationStatus byStation={props.data.stationStatus} dateOfCurrentStatus={props.dateOfCurrentStatus} />

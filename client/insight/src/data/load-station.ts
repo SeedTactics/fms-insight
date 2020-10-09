@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { HashMap, Vector } from "prelude-ts";
+import { LazySeq } from "./lazyseq";
 
 export interface PalletData {
   pallet: api.IPalletStatus;
@@ -96,6 +97,7 @@ export interface LoadStationAndQueueData {
   readonly freeLoadingMaterial: MaterialList;
   readonly free?: MaterialList;
   readonly queues: HashMap<string, MaterialList>;
+  readonly allJobsHaveRawMatQueue: boolean;
 }
 
 export function selectLoadStationAndQueueProps(
@@ -193,6 +195,11 @@ export function selectLoadStationAndQueueProps(
     }
   }
 
+  const allJobsHaveRawMatQueue =
+    LazySeq.ofObject(curSt.jobs ?? {})
+    .flatMap(([_, j]) => j.procsAndPaths[0]?.paths ?? [])
+    .allMatch(p => !!p.inputQueue && p.inputQueue !== "");
+
   return {
     loadNum,
     pallet: pal,
@@ -201,5 +208,6 @@ export function selectLoadStationAndQueueProps(
     freeLoadingMaterial: freeLoading,
     free: free,
     queues: queueNames.mergeWith(queueMat, (m1, m2) => [...m1, ...m2]),
+    allJobsHaveRawMatQueue
   };
 }
