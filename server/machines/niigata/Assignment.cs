@@ -113,6 +113,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // next, check if pallet at load station being unloaded needs something loaded
       foreach (var pal in cellSt.Pallets)
       {
+        if (pal.ManualControl) continue;
         if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
         if (!(pal.Status.Tracking.BeforeCurrentStep && pal.Status.CurrentStep is UnloadStep)) continue;
@@ -128,6 +129,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // next, check empty stuff in buffer
       foreach (var pal in cellSt.Pallets)
       {
+        if (pal.ManualControl) continue;
         if (pal.Status.Master.Skip) continue;
         if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
         if (pal.Status.HasWork) continue;

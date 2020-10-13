@@ -61,6 +61,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<InProcessMaterialAndJob> Material { get; set; }
     public IReadOnlyList<LogEntry> Log { get; set; }
     public bool IsLoading { get; set; }
+    public bool ManualControl { get; set; }
     public MachineStatus MachineStatus { get; set; } // non-null if pallet is at machine
   }
 
@@ -98,11 +99,12 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var palletStateUpdated = false;
 
-      // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
       var jobCache = Memoize<string, JobPlan>(jobDB.LoadJob);
-      var pals = status.Pallets.Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
+      var pals = status.Pallets
+        .Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
         .OrderBy(p =>
         {
+          // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
           var loadBegin = p.Log.FirstOrDefault(e =>
             e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
           );
@@ -228,6 +230,7 @@ namespace BlackMaple.FMSInsight.Niigata
         machines.TryGetValue(iccMc, out machStatus);
       }
 
+      bool manualControl = (pallet.Master.Comment ?? "").ToLower().Contains("manual");
 
       return new PalletAndMaterial()
       {
@@ -235,9 +238,13 @@ namespace BlackMaple.FMSInsight.Niigata
         CurrentOrLoadingFaces = currentOrLoadingFaces,
         Material = mats,
         Log = log,
-        IsLoading = (pallet.CurrentStep is LoadStep && pallet.Tracking.BeforeCurrentStep)
-                    ||
-                    (pallet.CurrentStep is UnloadStep && pallet.Tracking.BeforeCurrentStep),
+        IsLoading = !manualControl &&
+                    (
+                      (pallet.CurrentStep is LoadStep && pallet.Tracking.BeforeCurrentStep)
+                      ||
+                      (pallet.CurrentStep is UnloadStep && pallet.Tracking.BeforeCurrentStep)
+                    ),
+        ManualControl = manualControl,
         MachineStatus = machStatus,
       };
     }
@@ -589,25 +596,54 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private void LoadedPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, JobDB jobDB, EventLogDB logDB, ref bool palletStateUpdated)
     {
-      // first, check if this is the first time seeing pallet as loaded since a load began
-      var loadBegin =
-        pallet.Log.FirstOrDefault(e =>
-          e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
-        );
-      if (loadBegin != null)
+      if (pallet.ManualControl)
       {
-        // first time seeing pallet after it loaded, record the pallet cycle and adjust the material on the faces
-        palletStateUpdated = true;
-        AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc, logDB);
-      }
+        // move all material to quarantine queue
+        if (!string.IsNullOrEmpty(_settings.QuarantineQueue))
+        {
+          foreach (var m in pallet.Material)
+          {
+            logDB.RecordAddMaterialToQueue(
+              mat: new EventLogDB.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
+              queue: _settings.QuarantineQueue,
+              position: -1,
+              timeUTC: nowUtc
+            );
+          }
+        }
 
-      if (pallet.Status.HasWork)
+        // record pallet cycle so any material is removed from pallet
+        if (pallet.Material.Count > 0)
+        {
+          Log.Debug("Removing material {@mats} from pallet {pal} because it was switched to manual control", pallet.Material, pallet.Status.Master.PalletNum);
+          logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc, foreignID: null);
+          pallet.Material.Clear();
+          palletStateUpdated = true;
+        }
+
+      }
+      else
       {
-        EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, jobDB, logDB, ref palletStateUpdated);
-      }
+        // first, check if this is the first time seeing pallet as loaded since a load began
+        var loadBegin =
+          pallet.Log.FirstOrDefault(e =>
+            e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
+          );
+        if (loadBegin != null)
+        {
+          // first time seeing pallet after it loaded, record the pallet cycle and adjust the material on the faces
+          palletStateUpdated = true;
+          AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc, logDB);
+        }
 
-      EnsurePalletRotaryEvents(pallet, nowUtc, logDB);
-      EnsurePalletStockerEvents(pallet, nowUtc, logDB);
+        if (pallet.Status.HasWork)
+        {
+          EnsureAllNonloadStopsHaveEvents(pallet, nowUtc, jobDB, logDB, ref palletStateUpdated);
+        }
+
+        EnsurePalletRotaryEvents(pallet, nowUtc, logDB);
+        EnsurePalletStockerEvents(pallet, nowUtc, logDB);
+      }
     }
 
     private void CurrentlyLoadingPallet(PalletAndMaterial pallet, DateTime nowUtc, HashSet<long> currentlyLoading, JobDB jobDB, EventLogDB logDB, ref bool palletStateUpdated)
@@ -1236,7 +1272,7 @@ namespace BlackMaple.FMSInsight.Niigata
         && pallet.Status.CurrentStep is MachiningStep
         && pallet.Status.Tracking.BeforeCurrentStep;
 
-      if (start == null && currentlyOnRotary)
+      if (start == null && currentlyOnRotary && !pallet.Status.Tracking.Alarm)
       {
         logDB.RecordPalletArriveRotaryInbound(
           mats: pallet.Material.Select(m => new EventLogDB.EventLogMaterial()

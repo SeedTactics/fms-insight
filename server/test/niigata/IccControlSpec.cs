@@ -1234,8 +1234,49 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, elapMin: 7 + 4, waitForMach: true, mats: BBBproc1),
           FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 5, program: "prog111", rev: 5, mat: BBBproc1)
         })
-        .AdvanceMinutes(4) // = 42min
+
+        // pallet can be moved out of machine for operator to fix fault
+        .AdvanceMinutes(2) // = 40min
         .EndMachine(mach: 5)
+        .SetPalletAlarm(pal: 1, alarm: true)
+        .UpdateExpectedMaterial(BBBproc1, im =>
+        {
+          im.Action.ElapsedMachiningTime = TimeSpan.FromMinutes(2);
+          im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14 - 2);
+        })
+        .UpdateExpectedMaterial(AAAproc2, im =>
+        {
+          im.Action.ElapsedMachiningTime += TimeSpan.FromMinutes(2);
+          im.Action.ExpectedRemainingMachiningTime -= TimeSpan.FromMinutes(2);
+        })
+        .ExpectNoChanges()
+        .MoveToMachineQueue(pal: 1, mach: 5)
+        .UpdateExpectedMaterial(BBBproc1, im =>
+        {
+          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+        })
+        .ExpectNoChanges()
+
+        // now return back to machine
+        .MoveToMachine(pal: 1, mach: 5)
+        .UpdateExpectedMaterial(BBBproc1, im =>
+        {
+          im.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Machining,
+            Program = "prog111 rev5",
+            ElapsedMachiningTime = TimeSpan.FromMinutes(2),
+            ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14 - 2)
+          };
+        })
+        .ExpectNoChanges()
+        .StartMachine(mach: 5, program: 2100)
+        .ExpectNoChanges()
+
+        // program finishes normally
+        .AdvanceMinutes(2) // = 42min
+        .EndMachine(mach: 5)
+        .SetPalletAlarm(pal: 1, alarm: false)
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
@@ -1245,7 +1286,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(AAAproc2, im =>
         {
           im.Action.ElapsedMachiningTime = TimeSpan.FromMinutes(4 + 4);
-          im.Action.ExpectedRemainingMachiningTime -= TimeSpan.FromMinutes(4);
+          im.Action.ExpectedRemainingMachiningTime -= TimeSpan.FromMinutes(2);
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 5, program: "prog111", rev: 5, elapsedMin: 4, activeMin: 14, mats: BBBproc1)
@@ -3201,6 +3242,144 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 5, activeMins: 9, mats: AAAproc1),
           FakeIccDsl.AddToQueue("Quarantine", 0, AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 5, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
+        })
+        ;
+    }
+
+    [Fact]
+    public void PalletMarkedAsManualControl()
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            prog: "prog111",
+            progRev: null,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          )
+          .AddInsp(proc: 1, path: 1, inspTy: "InspTy", cntr: "Thecounter", max: 2)
+          },
+          new[] { (prog: "prog111", rev: 5L) }
+        )
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+         })
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            progs: new[] { 2100 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+
+        .MoveToLoad(pal: 1, lul: 1)
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 1) })
+        .AdvanceMinutes(4) // =4
+        .SetAfterLoad(pal: 1)
+        .ClearExpectedLoadCastings()
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
+          FakeIccDsl.LoadCastingToFace(pal: 1, lul: 1, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 4, activeMins: 8, mats: out var fstMats)
+        })
+
+        .MoveToMachine(pal: 1, mach: 3)
+        .SetBeforeMC(pal: 1)
+        .AdvanceMinutes(1)
+        .StartMachine(mach: 3, program: 2100)
+        .UpdateExpectedMaterial(fstMats, im =>
+          {
+            im.Action.Type = InProcessMaterialAction.ActionType.Machining;
+            im.Action.Program = "prog111 rev5";
+            im.Action.ElapsedMachiningTime = TimeSpan.Zero;
+            im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14);
+          }
+        )
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 3, program: "prog111", rev: 5, mat: fstMats)
+        })
+        .AdvanceMinutes(10)
+        .UpdateExpectedMaterial(fstMats, im =>
+          {
+            im.Action.ElapsedMachiningTime = TimeSpan.FromMinutes(10);
+            im.Action.ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(4);
+          }
+        )
+        .ExpectNoChanges()
+
+        // pallet goes to manual
+        .SetManualControl(pal: 1, manual: true)
+        .UpdateExpectedMaterial(fstMats, m =>
+        {
+          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = "Quarantine",
+            QueuePosition = 0
+          };
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.AddToQueue(queue: "Quarantine", pos: 0, mat: FakeIccDsl.ClearFaces(fstMats)),
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 11)
+        })
+
+        ;
+      _dsl
+        // no longer logs anything
+        .EndMachine(mach: 3)
+        .SetAfterMC(pal: 1)
+        .ExpectNoChanges()
+
+        .MoveToLoad(pal: 1, lul: 3)
+        .SetBeforeUnload(pal: 1)
+        .ExpectNoChanges()
+
+        .SetAfterLoad(pal: 1)
+        .ExpectNoChanges()
+
+        // doesnt set route
+        .SetNoWork(pal: 1)
+        .SetBeforeLoad(pal: 1)
+        .MoveToBuffer(pal: 1, buff: 1)
+
+        // returns pallet to normal
+        .SetManualControl(pal: 1, manual: false)
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .SetExpectedLoadCastings(new[] {
+         (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+        })
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            progs: new[] { 2100 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+
+        .MoveToLoad(pal: 1, lul: 4)
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4),
         })
         ;
     }

@@ -64,9 +64,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = FMSSettings.ConvertToBase62,
         ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62,
+        QuarantineQueue = "Quarantine"
       };
       _settings.Queues.Add("thequeue", new MachineWatchInterface.QueueSize());
       _settings.Queues.Add("qqq", new MachineWatchInterface.QueueSize());
+      _settings.Queues.Add("Quarantine", new MachineWatchInterface.QueueSize());
 
       _logDBCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(_settings);
       _logDB = _logDBCfg.OpenConnection();
@@ -305,6 +307,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var unloadStep = stepIdx + 1;
       p.Tracking.CurrentStepNum = unloadStep;
       p.Tracking.CurrentControlNum = unloadStep * 2;
+      return this;
+    }
+
+    public FakeIccDsl SetPalletAlarm(int pal, bool alarm)
+    {
+      _status.Pallets[pal - 1].Tracking.Alarm = alarm;
+      return this;
+    }
+
+    public FakeIccDsl SetManualControl(int pal, bool manual)
+    {
+      if (manual)
+      {
+        _expectedFaces[pal] = new List<(int face, string unique, int proc, int path)>();
+      }
+      _status.Pallets[pal - 1].Master.Comment = manual ? "aaa Manual yyy" : "";
       return this;
     }
 
@@ -584,6 +602,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       foreach (var mat in mats)
         _expectedMaterial.Remove(mat.MaterialID);
       return this;
+    }
+
+    public static IEnumerable<LogMaterial> ClearFaces(IEnumerable<LogMaterial> mats)
+    {
+      return mats.Select(m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: m.JobUniqueStr,
+        proc: m.Process,
+        part: m.PartName,
+        numProc: m.NumProcesses,
+        serial: m.Serial,
+        workorder: m.Workorder,
+        face: ""
+      )).ToList();
     }
     #endregion
 
