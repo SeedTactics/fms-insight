@@ -167,7 +167,7 @@ namespace BlackMaple.FMSInsight.Niigata
     internal void SynchronizePallets(bool raisePalletChanged)
     {
       NiigataStatus status;
-      CellState cellSt;
+      CellState cellSt = null;
 
       lock (_changeLock)
       {
@@ -181,41 +181,46 @@ namespace BlackMaple.FMSInsight.Niigata
         using (var jdb = _jobDbCfg.OpenConnection())
         using (var logDB = _logDbCfg.OpenConnection())
         {
-
-          NiigataAction action = null;
-          do
+          try
           {
-            Log.Debug("Syncronizing Pallets, total GC memory {mem}", GC.GetTotalMemory(false));
-
-            _newCurStatus.Reset();
-            status = _icc.LoadNiigataStatus();
-            var jobs = jdb.LoadUnarchivedJobs();
-
-            Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs.Select(j => j.UniqueStr));
-
-            cellSt = _createLog.BuildCellState(jdb, logDB, status, jobs);
-            raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
-
-            lock (_curStLock)
+            NiigataAction action = null;
+            do
             {
-              _lastCellState = cellSt;
-            }
+              Log.Debug("Syncronizing Pallets, total GC memory {mem}", GC.GetTotalMemory(false));
 
-            Log.Debug("Computed cell state {@cellSt}", cellSt);
+              _newCurStatus.Reset();
+              status = _icc.LoadNiigataStatus();
+              var jobs = jdb.LoadUnarchivedJobs();
 
-            action = _assign.NewPalletChange(cellSt);
+              Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs.Select(j => j.UniqueStr));
 
-            if (action != null)
-            {
-              Log.Debug("Executing action pallet to {@change}", action);
-              raisePalletChanged = true;
-              _icc.PerformAction(jdb, logDB, action);
-            }
-          } while (action != null);
+              cellSt = _createLog.BuildCellState(jdb, logDB, status, jobs);
+              raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
 
-          if (raisePalletChanged)
+              lock (_curStLock)
+              {
+                _lastCellState = cellSt;
+              }
+
+              Log.Debug("Computed cell state {@cellSt}", cellSt);
+
+              action = _assign.NewPalletChange(cellSt);
+
+              if (action != null)
+              {
+                Log.Debug("Executing action pallet to {@change}", action);
+                raisePalletChanged = true;
+                _icc.PerformAction(jdb, logDB, action);
+              }
+            } while (action != null);
+
+          }
+          finally
           {
-            _onNewCurrentStatus(BuildCurrentStatus.Build(jdb, logDB, cellSt, _settings));
+            if (cellSt != null && raisePalletChanged)
+            {
+              _onNewCurrentStatus(BuildCurrentStatus.Build(jdb, logDB, cellSt, _settings));
+            }
           }
         }
       }
