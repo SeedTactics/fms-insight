@@ -2532,6 +2532,38 @@ namespace BlackMaple.MachineFramework
       );
     }
 
+    public MachineWatchInterface.LogEntry SignalMaterialForQuarantine(
+      EventLogMaterial mat,
+      string pallet,
+      string queue,
+      DateTime? timeUTC = null,
+      string operatorName = null,
+      string foreignId = null,
+      string originalMessage = null
+    )
+    {
+      var log =
+        new NewEventLogEntry()
+        {
+          Material = new[] { mat },
+          Pallet = pallet,
+          LogType = MachineWatchInterface.LogType.SignalQuarantine,
+          LocationName = queue,
+          LocationNum = -1,
+          Program = "QuarantineAfterUnload",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC ?? DateTime.UtcNow,
+          Result = "QuarantineAfterUnload",
+          EndOfRoute = false,
+        };
+
+      if (!string.IsNullOrEmpty(operatorName))
+      {
+        log.ProgramDetails["operator"] = operatorName;
+      }
+      return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+    }
+
     public MachineWatchInterface.LogEntry RecordGeneralMessage(
         EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null,
         string originalMessage = null,

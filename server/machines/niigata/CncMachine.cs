@@ -57,7 +57,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public T WithConnection<T>(int machine, Func<ushort, T> f)
     {
-      if (machine < 1 || machine >= _machines.Count)
+      if (machine < 1 || machine > _machines.Count)
       {
         throw new Exception("Invalid machine number " + machine.ToString());
       }

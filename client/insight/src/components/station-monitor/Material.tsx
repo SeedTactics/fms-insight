@@ -115,6 +115,7 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePall
             return undefined;
           }
       }
+
     case api.ActionType.UnloadToInProcess:
     case api.ActionType.UnloadToCompletedMaterial:
       if (mat.action.unloadIntoQueue) {
@@ -122,6 +123,12 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePall
       } else {
         return "Unload from pallet";
       }
+
+    case api.ActionType.Waiting:
+      if (mat.location.type === api.LocType.InQueue && !!mat.jobUnique && mat.jobUnique !== "") {
+        return "Waiting; next process is #" + (mat.process + 1).toString();
+      }
+      break;
   }
   return undefined;
 }

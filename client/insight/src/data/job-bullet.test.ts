@@ -51,7 +51,6 @@ it("converts events to points", () => {
       partName: "part1",
       unique: "uniq1",
       manuallyCreated: false,
-      createMarkingData: true,
       holdEntireJob: new api.JobHoldPattern(dummyHold),
       cyclesOnFirstProcess: [40, 42],
       completed: [[20, 21], [22]],

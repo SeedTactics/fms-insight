@@ -770,6 +770,50 @@
         }
       }
     },
+    "/api/v1/jobs/material/{materialId}/quarantine": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_SignalMaterialForQuarantine",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
+          {
+            "name": "queue",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/material": {
       "delete": {
         "tags": [
@@ -1809,6 +1853,15 @@
         "RequireSerialWhenAddingMaterialToQueue": {
           "type": "boolean"
         },
+        "AllowQuarantineAtLoadStation": {
+          "type": "boolean"
+        },
+        "AllowChangeSerial": {
+          "type": "boolean"
+        },
+        "AllowChangeWorkorderAtLoadStation": {
+          "type": "boolean"
+        },
         "AllowEditJobPlanQuantityFromQueuesPage": {
           "type": "string"
         }
@@ -1889,7 +1942,6 @@
         "PartName",
         "Unique",
         "ManuallyCreated",
-        "CreateMarkingData",
         "CyclesOnFirstProcess",
         "ProcsAndPaths"
       ],
@@ -1927,9 +1979,6 @@
           }
         },
         "ManuallyCreated": {
-          "type": "boolean"
-        },
-        "CreateMarkingData": {
           "type": "boolean"
         },
         "HoldEntireJob": {
@@ -2897,7 +2946,8 @@
         "RemoveFromQueue",
         "InspectionForce",
         "PalletOnRotaryInbound",
-        "PalletInStocker"
+        "PalletInStocker",
+        "SignalQuarantine"
       ],
       "enum": [
         "LoadUnloadCycle",
@@ -2914,7 +2964,8 @@
         "RemoveFromQueue",
         "InspectionForce",
         "PalletOnRotaryInbound",
-        "PalletInStocker"
+        "PalletInStocker",
+        "SignalQuarantine"
       ]
     },
     "ToolUse": {

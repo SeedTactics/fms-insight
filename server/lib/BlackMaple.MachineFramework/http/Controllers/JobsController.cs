@@ -173,6 +173,13 @@ namespace BlackMaple.MachineFramework.Controllers
       _backend.JobControl.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
     }
 
+    [HttpPut("material/{materialId}/quarantine")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void SignalMaterialForQuarantine(long materialId, [FromBody] string queue, [FromQuery] string operName = null)
+    {
+      _backend.JobControl.SignalMaterialForQuarantine(materialId, queue, operName);
+    }
+
     [HttpDelete("material")]
     [ProducesResponseType(typeof(void), 200)]
     public void BulkRemoveMaterialFromQueues([FromQuery] List<long> id, [FromQuery] string operName = null)

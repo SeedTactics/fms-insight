@@ -58,6 +58,9 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     [DataMember] public bool? AllowAddRawMaterialForNonRunningJobs { get; set; }
     [DataMember] public bool? RequireSerialWhenAddingMaterialToQueue { get; set; }
+    [DataMember] public bool? AllowQuarantineAtLoadStation { get; set; }
+    [DataMember] public bool? AllowChangeSerial { get; set; }
+    [DataMember] public bool? AllowChangeWorkorderAtLoadStation { get; set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; }
@@ -97,7 +100,10 @@ namespace BlackMaple.MachineFramework.Controllers
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
         RequireSerialWhenAddingMaterialToQueue = _cfg.RequireSerialWhenAddingMaterialToQueue,
         AllowAddRawMaterialForNonRunningJobs = _cfg.AllowAddRawMaterialForNonRunningJobs,
-        AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage
+        AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
+        AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
+        AllowChangeSerial = _cfg.AllowChangeSerial,
+        AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation
       };
     }
 

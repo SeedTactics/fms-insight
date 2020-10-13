@@ -471,11 +471,6 @@ namespace BlackMaple.MachineWatchInterface
       get { return _manuallyCreated; }
       set { _manuallyCreated = value; }
     }
-    public bool CreateMarkerData
-    {
-      get { return _createMarker; }
-      set { _createMarker = value; }
-    }
     public ICollection<string> ScheduledBookingIds
     {
       get { return _scheduledIds; }
@@ -1035,7 +1030,6 @@ namespace BlackMaple.MachineWatchInterface
       _uniqueStr = newUniqueStr;
       _comment = job._comment;
       _manuallyCreated = job._manuallyCreated;
-      _createMarker = job._createMarker;
       _holdJob = new JobHoldPattern(job._holdJob);
       _scheduledIds = new List<string>(job._scheduledIds);
 
@@ -1077,7 +1071,6 @@ namespace BlackMaple.MachineWatchInterface
       _uniqueStr = job._uniqueStr;
       _comment = job._comment;
       _manuallyCreated = job._manuallyCreated;
-      _createMarker = job._createMarker;
       _holdJob = new JobHoldPattern(job._holdJob);
       _scheduledIds = new List<string>(job._scheduledIds);
 
@@ -1128,9 +1121,12 @@ namespace BlackMaple.MachineWatchInterface
     private string _uniqueStr;
 
 #pragma warning disable CS0169
-    // priority field is no longer used but this is kept for backwards network compatibility
+    // priority and CreateMarkingData field is no longer used but this is kept for backwards network compatibility
     [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = false), Obsolete]
     private int _priority;
+
+    [DataMember(Name = "CreateMarkingData", IsRequired = false, EmitDefaultValue = true), Obsolete]
+    private bool _createMarker;
 #pragma warning restore CS0169
 
     [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
@@ -1141,9 +1137,6 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(Name = "ManuallyCreated", IsRequired = true)]
     private bool _manuallyCreated;
-
-    [DataMember(Name = "CreateMarkingData", IsRequired = true)]
-    private bool _createMarker;
 
     [DataMember(Name = "Inspections", IsRequired = false, EmitDefaultValue = false), Obsolete]
     private IList<JobInspectionData> _inspections;

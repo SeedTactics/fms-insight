@@ -2,6 +2,7 @@
 
 exports[`load station status load 1 with no queues: load 1 with no queues 1`] = `
 Object {
+  "allJobsHaveRawMatQueue": false,
   "face": Map {
     "1" => Array [
       Object {
@@ -123,6 +124,7 @@ Object {
 
 exports[`load station status load 2 with queue: load 2 with queue 1`] = `
 Object {
+  "allJobsHaveRawMatQueue": false,
   "face": Map {
     "1" => Array [
       Object {
@@ -274,6 +276,7 @@ Object {
 
 exports[`load station status load 3 with empty pallet: load 3 with empty pallet 1`] = `
 Object {
+  "allJobsHaveRawMatQueue": false,
   "face": Map {},
   "free": undefined,
   "freeLoadingMaterial": Array [],
