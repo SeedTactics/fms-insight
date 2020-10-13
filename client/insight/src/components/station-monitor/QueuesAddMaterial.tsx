@@ -177,6 +177,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
 interface AddSerialFoundProps {
   readonly queues: ReadonlyArray<string>;
   readonly queue_name?: string;
+  readonly current_quarantine_queue: string | null;
   readonly display_material: matDetails.MaterialDetail;
   readonly operator: string | null;
   readonly addMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
@@ -192,21 +193,20 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
 
   render() {
     let queue = this.props.queue_name || this.state.selected_queue;
-    if (queue === undefined && this.props.queues.length === 1) {
-      queue = this.props.queues[0];
+    let queueDests = this.props.queues.filter((q) => q !== this.props.current_quarantine_queue);
+    if (queue === undefined && queueDests.length === 1) {
+      queue = queueDests[0];
     }
 
     let addProcMsg: string | null = null;
-    if (!this.props.display_material.loading_events)
-    {
-      const lastProc =
-        LazySeq.ofIterable(this.props.display_material.events)
-        .flatMap(e => e.material)
-        .filter(m => m.id === this.props.display_material.materialID)
-        .maxOn(m => m.proc)
-        .map(m => m.proc)
+    if (!this.props.display_material.loading_events) {
+      const lastProc = LazySeq.ofIterable(this.props.display_material.events)
+        .flatMap((e) => e.material)
+        .filter((m) => m.id === this.props.display_material.materialID)
+        .maxOn((m) => m.proc)
+        .map((m) => m.proc)
         .getOrElse(0);
-      addProcMsg = " to run process " + (lastProc + 1).toString();
+      addProcMsg = " To Run Process " + (lastProc + 1).toString();
     }
     return (
       <>
@@ -217,11 +217,11 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
           />
         </DialogTitle>
         <DialogContent>
-          {this.props.queue_name === undefined && this.props.queues.length > 1 ? (
+          {this.props.queue_name === undefined && queueDests.length > 1 ? (
             <div style={{ marginBottom: "1em" }}>
               <p>Select a queue.</p>
               <List>
-                {this.props.queues.map((q, idx) => (
+                {queueDests.map((q, idx) => (
                   <MenuItem
                     key={idx}
                     selected={q === this.state.selected_queue}
@@ -248,7 +248,11 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
               })
             }
           >
-            Add To {queue}{addProcMsg}
+            {this.props.current_quarantine_queue !== null
+              ? `Move From ${this.props.current_quarantine_queue} To`
+              : "Add To"}{" "}
+            {queue}
+            {addProcMsg}
           </Button>
           <Button onClick={this.props.onClose} color="primary">
             Cancel
@@ -570,9 +574,14 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
   }
 }
 
+export type CurrentlyInQueue =
+  | { readonly type: "NotInQueue" }
+  | { readonly type: "InRegularQueue" }
+  | { readonly type: "InQuarantine"; readonly queue: string };
+
 export interface QueueMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
-  readonly material_currently_in_queue: boolean;
+  readonly material_currently_in_queue: CurrentlyInQueue;
   readonly addMatQueue?: string;
   readonly queueNames: ReadonlyArray<string>;
   readonly quarantineQueue: string | null;
@@ -597,7 +606,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
   if (props.display_material === null) {
     body = <p>None</p>;
   } else {
-    if (props.material_currently_in_queue) {
+    if (props.material_currently_in_queue.type === "InRegularQueue") {
       body = (
         <ExistingMatInQueueDialogBody
           display_material={props.display_material}
@@ -615,6 +624,9 @@ function QueueMatDialog(props: QueueMatDialogProps) {
       body = (
         <AddSerialFound
           queues={props.queueNames}
+          current_quarantine_queue={
+            props.material_currently_in_queue.type === "InQuarantine" ? props.material_currently_in_queue.queue : null
+          }
           display_material={props.display_material}
           queue_name={props.addMatQueue}
           onClose={props.onClose}
@@ -658,20 +670,38 @@ function QueueMatDialog(props: QueueMatDialogProps) {
 
 const selectMatCurrentlyInQueue = createSelector(
   (st: Store) => st.MaterialDetails.material,
-  (st: Store) => st.Current.current_status.material,
-  function (mat: matDetails.MaterialDetail | null, allMats: ReadonlyArray<api.IInProcessMaterial>) {
-    if (mat === null) {
-      return false;
+  (st: Store) => st.Current.current_status,
+  function (mat: matDetails.MaterialDetail | null, currentSt: Readonly<api.ICurrentStatus>): CurrentlyInQueue {
+    if (mat === null || !currentSt || !currentSt.material) {
+      return { type: "NotInQueue" };
     }
     if (mat.materialID < 0) {
-      return false;
+      return { type: "NotInQueue" };
     }
-    for (const inProcMat of allMats) {
+    const activeQueues = LazySeq.ofObject(currentSt.jobs)
+      .flatMap(([_, job]) => job.procsAndPaths)
+      .flatMap((proc) => proc.paths)
+      .flatMap((path) => {
+        const q: string[] = [];
+        if (path.inputQueue !== undefined) q.push(path.inputQueue);
+        if (path.outputQueue !== undefined) q.push(path.outputQueue);
+        return q;
+      })
+      .toSet((x) => x);
+    for (const inProcMat of currentSt.material) {
       if (inProcMat.materialID === mat.materialID) {
-        return inProcMat.location.type === api.LocType.InQueue;
+        if (inProcMat.location.type === api.LocType.InQueue && !!inProcMat.location.currentQueue) {
+          if (activeQueues.contains(inProcMat.location.currentQueue)) {
+            return { type: "InRegularQueue" };
+          } else {
+            return { type: "InQuarantine", queue: inProcMat.location.currentQueue };
+          }
+        } else {
+          return { type: "NotInQueue" };
+        }
       }
     }
-    return false;
+    return { type: "NotInQueue" };
   }
 );
 
