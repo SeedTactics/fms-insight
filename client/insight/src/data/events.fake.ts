@@ -343,3 +343,39 @@ export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILog
     active: "00:00:00",
   };
 }
+
+export function fakeAddToQueue(queue?: string, mat?: LogMaterial): ILogEntry {
+  mat = mat || fakeMaterial();
+  return {
+    counter: 100,
+    material: [mat],
+    pal: "",
+    type: LogType.AddToQueue,
+    startofcycle: false,
+    endUTC: new Date(2017, 9, 5),
+    loc: queue ?? "thequeue",
+    locnum: 1,
+    result: "",
+    program: "",
+    elapsed: "00:00:00",
+    active: "00:00:00",
+  };
+}
+
+export function fakeRemoveFromQueue(queue?: string, mat?: LogMaterial): ILogEntry {
+  mat = mat || fakeMaterial();
+  return {
+    counter: 100,
+    material: [mat],
+    pal: "",
+    type: LogType.RemoveFromQueue,
+    startofcycle: false,
+    endUTC: new Date(2017, 9, 5),
+    loc: queue ?? "thequeue",
+    locnum: 1,
+    result: "",
+    program: "",
+    elapsed: "00:00:00",
+    active: "00:00:00",
+  };
+}

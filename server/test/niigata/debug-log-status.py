@@ -38,5 +38,5 @@ def printCellState(timestamp, pals):
 
 for line in fileinput.input():
   msg = json.loads(line)
-  if msg["@mt"] == "Computed cell state {@pals}":
-    printCellState(msg["@t"], msg["pals"])
+  if msg["@mt"] == "Computed cell state {@cellSt}":
+    printCellState(msg["@t"], msg["cellSt"])

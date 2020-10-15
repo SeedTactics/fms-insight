@@ -416,6 +416,31 @@ export const LogEntry = React.memo(
   })
 );
 
+export function* filterRemoveAddQueue(entries: Iterable<Readonly<api.ILogEntry>>): Iterable<Readonly<api.ILogEntry>> {
+  let prev: Readonly<api.ILogEntry> | null = null;
+
+  for (const e of entries) {
+    if (
+      prev != null &&
+      prev.type === api.LogType.RemoveFromQueue &&
+      e.type === api.LogType.AddToQueue &&
+      prev.loc === e.loc
+    ) {
+      // skip both prev and e
+      prev = null;
+    } else {
+      if (prev !== null) {
+        yield prev;
+      }
+      prev = e;
+    }
+  }
+
+  if (prev !== null) {
+    yield prev;
+  }
+}
+
 export interface LogEntriesProps {
   entries: Iterable<Readonly<api.ILogEntry>>;
   copyToClipboard?: boolean;
@@ -446,7 +471,7 @@ export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps
         </TableRow>
       </TableHead>
       <TableBody>
-        {LazySeq.ofIterable(props.entries).map((e, idx) => (
+        {Array.from(filterRemoveAddQueue(props.entries)).map((e, idx) => (
           <LogEntry key={idx} entry={e} detailLogCounter={curDetail} setDetail={setDetail} />
         ))}
       </TableBody>
