@@ -172,6 +172,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               tools.Add(new NiigataToolData()
               {
+                Pocket = i,
                 ToolNum = toolNum,
                 Serial = serialNo,
                 Group = groupNo,

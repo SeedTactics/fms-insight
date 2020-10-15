@@ -42,11 +42,12 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     public static CurrentStatus Build(JobDB jobDB, EventLogDB logDB, CellState status, FMSSettings settings)
     {
-      var curStatus = new CurrentStatus();
       if (status == null)
       {
-        return curStatus;
+        return new CurrentStatus();
       }
+
+      var curStatus = new CurrentStatus(status.Status.TimeOfStatusUTC);
 
       foreach (var k in settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
 

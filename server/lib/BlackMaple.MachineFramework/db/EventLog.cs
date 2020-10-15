@@ -1523,7 +1523,11 @@ namespace BlackMaple.MachineFramework
       {
         if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
         if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
-        var endPockets = end.ToDictionary(s => (s.PocketNumber, s.Tool));
+        var endPockets = new Dictionary<(int, string), ToolPocketSnapshot>();
+        foreach (var t in end)
+        {
+          endPockets[(t.PocketNumber, t.Tool)] = t;
+        }
 
         var tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
         void addUse(string tool, MachineWatchInterface.ToolUse use)
