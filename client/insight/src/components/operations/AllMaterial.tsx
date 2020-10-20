@@ -203,7 +203,7 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 interface AllMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
   readonly quarantineQueue: boolean;
-  readonly removeFromQueue: (mat: matDetails.MaterialDetail) => void;
+  readonly removeFromQueue: (matId: number) => void;
   readonly onClose: () => void;
 }
 
@@ -217,7 +217,7 @@ function AllMatDialog(props: AllMatDialogProps) {
       buttons={
         <>
           {displayMat && props.quarantineQueue ? (
-            <Button color="primary" onClick={() => props.removeFromQueue(displayMat)}>
+            <Button color="primary" onClick={() => props.removeFromQueue(displayMat.materialID)}>
               Remove From System
             </Button>
           ) : undefined}
@@ -229,9 +229,9 @@ function AllMatDialog(props: AllMatDialogProps) {
 
 const ConnectedAllMatDialog = connect((_) => ({}), {
   onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  removeFromQueue: (mat: matDetails.MaterialDetail) =>
+  removeFromQueue: (matId: number) =>
     [
-      matDetails.removeFromQueue(mat, null),
+      matDetails.removeFromQueue(matId, null),
       { type: matDetails.ActionType.CloseMaterialDialog },
       { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
     ] as AppActionBeforeMiddleware,

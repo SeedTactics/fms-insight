@@ -67,7 +67,8 @@ namespace BlackMaple.FMSInsight.Niigata
       IConfigurationSection config,
       FMSSettings cfg,
       bool startSyncThread,
-      Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null
+      Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
+      IDecrementJobs decrementJobs = null
     )
     {
       try
@@ -140,7 +141,10 @@ namespace BlackMaple.FMSInsight.Niigata
             new SizedQueues(cfg.Queues)
           });
         }
-        _sync = new SyncPallets(JobDBConfig, LogDBConfig, _icc, assign, createLog, cfg, s => OnNewCurrentStatus?.Invoke(s));
+
+        decrementJobs = decrementJobs ?? new DecrementNotYetStartedJobs();
+
+        _sync = new SyncPallets(JobDBConfig, LogDBConfig, _icc, assign, createLog, decrementJobs, cfg, s => OnNewCurrentStatus?.Invoke(s));
         _jobControl = new NiigataJobs(j: JobDBConfig,
                                       l: LogDBConfig,
                                       st: cfg,

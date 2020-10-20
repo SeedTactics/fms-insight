@@ -54,6 +54,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private INiigataCommunication _icc;
     private IAssignPallets _assign;
     private IBuildCellState _createLog;
+    private IDecrementJobs _decrJobs;
     private Action<CurrentStatus> _onNewCurrentStatus;
     private FMSSettings _settings;
 
@@ -68,11 +69,12 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public SyncPallets(JobDB.Config jobDbCfg, EventLogDB.Config log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create, FMSSettings settings, Action<CurrentStatus> onNewCurrentStatus)
+    public SyncPallets(JobDB.Config jobDbCfg, EventLogDB.Config log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create, IDecrementJobs decrementJobs, FMSSettings settings, Action<CurrentStatus> onNewCurrentStatus)
     {
       _settings = settings;
       _onNewCurrentStatus = onNewCurrentStatus;
       _jobDbCfg = jobDbCfg;
+      _decrJobs = decrementJobs;
       _logDbCfg = log;
       _icc = icc;
       _assign = assign;
@@ -236,38 +238,9 @@ namespace BlackMaple.FMSInsight.Niigata
         var jobs = jobDB.LoadUnarchivedJobs();
         var cellSt = _createLog.BuildCellState(jobDB, logDB, _icc.LoadNiigataStatus(), jobs);
 
-        var decrs = new List<JobDB.NewDecrementQuantity>();
-        foreach (var j in jobs)
-        {
-          if (j.ManuallyCreatedJob || jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
+        var changed = _decrJobs.DecrementJobs(jobDB, logDB, cellSt);
 
-          int qtyToDecr = 0;
-          for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
-          {
-            if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
-            {
-              qtyToDecr += qty;
-            }
-          }
-
-          Log.Debug("Job {unique} part {part} calculated {qtyToDecr} to decrement", j.UniqueStr, j.PartName, qtyToDecr);
-          if (qtyToDecr > 0)
-          {
-            decrs.Add(new JobDB.NewDecrementQuantity()
-            {
-              JobUnique = j.UniqueStr,
-              Part = j.PartName,
-              Quantity = qtyToDecr
-            });
-          }
-        }
-
-        if (decrs.Count > 0)
-        {
-          jobDB.AddNewDecrement(decrs);
-        }
-
-        if (decrs.Count > 0 || cellSt.PalletStateUpdated)
+        if (changed || cellSt.PalletStateUpdated)
         {
           _onNewCurrentStatus(BuildCurrentStatus.Build(jobDB, logDB, cellSt, _settings));
         }

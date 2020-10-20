@@ -663,7 +663,18 @@ namespace BlackMaple.FMSInsight.Niigata
     private DeleteProgram CheckForOldPrograms(CellState cellSt)
     {
       // the icc program numbers currently used by schedules
-      var usedIccProgs = new HashSet<string>(cellSt.ProgramNums.Values.Select(p => p.CellControllerProgramName));
+      var usedIccProgs = new HashSet<string>(
+        cellSt.ProgramNums.Values.Select(p => p.CellControllerProgramName)
+        .Concat(
+          cellSt.Status.Pallets
+          .SelectMany(p => p.Master.Routes)
+          .SelectMany(r =>
+            r is MachiningStep
+              ? ((MachiningStep)r).ProgramNumsToRun.Select(p => p.ToString())
+              : Enumerable.Empty<string>()
+          )
+        )
+      );
 
       // we want to keep around the latest revision for each program just so that we don't delete it as soon as a schedule
       // completes in anticipation of a new schedule being downloaded.

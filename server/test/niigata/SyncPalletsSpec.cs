@@ -93,9 +93,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var createLog = new CreateCellState(_settings, statNames, machConn);
 
       _sim = new IccSimulator(numPals: numPals, numMachines: numMachines, numLoads: numLoads, statNames: statNames);
+      var decr = new DecrementNotYetStartedJobs();
 
       _onCurrentStatus = Substitute.For<Action<CurrentStatus>>();
-      _sync = new SyncPallets(_jobDBCfg, _logDBCfg, _sim, assign, createLog, _settings, onNewCurrentStatus: _onCurrentStatus);
+      _sync = new SyncPallets(_jobDBCfg, _logDBCfg, _sim, assign, createLog, decr, _settings, onNewCurrentStatus: _onCurrentStatus);
 
       _sim.OnNewProgram += (newprog) =>
         _jobDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());

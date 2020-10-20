@@ -306,10 +306,10 @@ export function printLabel(
   };
 }
 
-export function removeFromQueue(mat: MaterialDetail, operator: string | null): PledgeToPromise<Action> {
+export function removeFromQueue(matId: number, operator: string | null): PledgeToPromise<Action> {
   return {
     type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(mat.materialID, operator || undefined).then(() => undefined),
+    pledge: JobsBackend.removeMaterialFromAllQueues(matId, operator || undefined).then(() => undefined),
   };
 }
 
