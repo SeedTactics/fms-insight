@@ -73,8 +73,29 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
 
-        foreach (var d in jobDB.LoadDecrementsForJob(j.UniqueStr))
+        var decrs = jobDB.LoadDecrementsForJob(j.UniqueStr);
+
+        foreach (var d in decrs)
           curJob.Decrements.Add(d);
+
+        // take decremented quantity out of the planned cycles
+        // TODO: fix to be per-path
+        int decrQty = decrs.Sum(d => d.Quantity);
+        for (int proc1path = 1; proc1path <= j.GetNumPaths(process: 1); proc1path += 1)
+        {
+          var planned = curJob.GetPlannedCyclesOnFirstProcess(proc1path);
+          if (planned < decrQty)
+          {
+            curJob.SetPlannedCyclesOnFirstProcess(path: proc1path, numCycles: 0);
+            decrQty -= planned;
+          }
+          else
+          {
+            curJob.SetPlannedCyclesOnFirstProcess(path: proc1path, numCycles: planned - decrQty);
+            decrQty = 0;
+            break;
+          }
+        }
       }
 
       // set precedence
