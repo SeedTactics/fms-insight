@@ -69,9 +69,11 @@ import { PrintedLabel } from "./PrintedLabel";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
+  readonly in_proc_material: Readonly<api.IInProcessMaterial>;
+  readonly allowQuarantineAtLoadStation: boolean;
   readonly quarantineQueue: string | null;
   readonly onClose: () => void;
-  readonly removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) => void;
+  readonly removeFromQueue: (matId: number, operator: string | null) => void;
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly usingLabelPrinter: boolean;
   readonly printFromClient: boolean;
@@ -80,18 +82,31 @@ interface ExistingMatInQueueDialogBodyProps {
 }
 
 function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
-  const quarantineQueue = props.quarantineQueue;
   const printRef = React.useRef(null);
+
   const allowRemove = React.useMemo(() => {
-    let currentlyLoading = false;
-    for (const e of props.display_material.events) {
-      if (e.type === api.LogType.LoadUnloadCycle) {
-        currentlyLoading = e.startofcycle;
-      }
+    // first, check if can't remove because material is being loaded
+    if (props.allowQuarantineAtLoadStation === false && props.in_proc_material.action.type === api.ActionType.Loading) {
+      return false;
     }
-    return !currentlyLoading;
-  }, [props.display_material.events]);
-  const matId = props.display_material?.materialID;
+
+    // can remove if no quarantine queue or material is raw material
+    return !props.quarantineQueue || props.quarantineQueue === "" || props.in_proc_material.process === 0;
+  }, [props.in_proc_material, props.quarantineQueue, props.allowQuarantineAtLoadStation]);
+
+  const allowQuarantine = React.useMemo(() => {
+    // can't quarantine if there is no queue defined
+    if (!props.quarantineQueue || props.quarantineQueue === "") return null;
+
+    // check if can't remove because material is being loaded
+    if (props.allowQuarantineAtLoadStation === false && props.in_proc_material.action.type === api.ActionType.Loading) {
+      return null;
+    }
+
+    return props.quarantineQueue;
+  }, [props.in_proc_material, props.quarantineQueue, props.allowQuarantineAtLoadStation]);
+
+  const matId = props.in_proc_material.materialID;
   return (
     <>
       <DialogTitle disableTypography>
@@ -101,7 +116,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
         <MaterialDetailContent mat={props.display_material} />
       </DialogContent>
       <DialogActions>
-        {props.display_material && matId && props.usingLabelPrinter ? (
+        {props.usingLabelPrinter ? (
           props.printFromClient ? (
             <>
               <ReactToPrint
@@ -111,10 +126,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
               />
               <div style={{ display: "none" }}>
                 <div ref={printRef}>
-                  <PrintedLabel
-                    material={props.display_material ? [props.display_material] : []}
-                    oneJobPerPage={false}
-                  />
+                  <PrintedLabel material={[props.display_material]} oneJobPerPage={false} />
                 </div>
               </div>
             </>
@@ -123,19 +135,10 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
               color="primary"
               onClick={() =>
                 props.printLabel(
-                  props.display_material.materialID,
-                  LazySeq.ofIterable(props.display_material.events)
-                    .flatMap((e) => e.material)
-                    .filter((e) => e.id === matId)
-                    .maxOn((e) => e.proc)
-                    .map((e) => e.proc)
-                    .getOrElse(1),
+                  matId,
+                  props.in_proc_material.process,
                   null,
-                  LazySeq.ofIterable(props.display_material.events)
-                    .filter((e) => e.type === api.LogType.AddToQueue)
-                    .last()
-                    .map((e) => e.loc)
-                    .getOrNull()
+                  props.in_proc_material.location.currentQueue ?? null
                 )
               }
             >
@@ -144,27 +147,26 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
           )
         ) : undefined}
         {allowRemove ? (
-          quarantineQueue === null ? (
-            <Button color="primary" onClick={() => props.removeFromQueue(props.display_material, props.operator)}>
-              Remove From System
+          <Button color="primary" onClick={() => props.removeFromQueue(matId, props.operator)}>
+            Remove From System
+          </Button>
+        ) : undefined}
+        {allowQuarantine ? (
+          <Tooltip title={"Move to " + allowQuarantine}>
+            <Button
+              color="primary"
+              onClick={() =>
+                props.addExistingMat({
+                  materialId: matId,
+                  queue: allowQuarantine,
+                  queuePosition: 0,
+                  operator: props.operator,
+                })
+              }
+            >
+              Quarantine Material
             </Button>
-          ) : (
-            <Tooltip title={"Move to " + quarantineQueue}>
-              <Button
-                color="primary"
-                onClick={() =>
-                  props.addExistingMat({
-                    materialId: props.display_material.materialID,
-                    queue: quarantineQueue,
-                    queuePosition: 0,
-                    operator: props.operator,
-                  })
-                }
-              >
-                Quarantine Material
-              </Button>
-            </Tooltip>
-          )
+          </Tooltip>
         ) : undefined}
         <Button onClick={props.onClose} color="primary">
           Close
@@ -576,8 +578,8 @@ class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNew
 
 export type CurrentlyInQueue =
   | { readonly type: "NotInQueue" }
-  | { readonly type: "InRegularQueue" }
-  | { readonly type: "InQuarantine"; readonly queue: string };
+  | { readonly type: "InRegularQueue"; readonly inProcMat: Readonly<api.IInProcessMaterial> }
+  | { readonly type: "InQuarantine"; readonly inProcMat: Readonly<api.IInProcessMaterial>; readonly queue: string };
 
 export interface QueueMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
@@ -591,9 +593,10 @@ export interface QueueMatDialogProps {
   readonly promptForOperator: boolean;
   readonly requireSerialWhenAddingMat: boolean;
   readonly allowAddWithoutJob: boolean;
+  readonly allowQuarantineAtLoadStation: boolean;
 
   readonly onClose: () => void;
-  readonly removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) => void;
+  readonly removeFromQueue: (matId: number, operator: string | null) => void;
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly addNewAssigned: (d: matDetails.AddNewMaterialToQueueData) => void;
   readonly addUnassigned: (d: matDetails.AddNewCastingToQueueData) => void;
@@ -610,8 +613,10 @@ function QueueMatDialog(props: QueueMatDialogProps) {
       body = (
         <ExistingMatInQueueDialogBody
           display_material={props.display_material}
+          in_proc_material={props.material_currently_in_queue.inProcMat}
           onClose={props.onClose}
           quarantineQueue={props.quarantineQueue}
+          allowQuarantineAtLoadStation={props.allowQuarantineAtLoadStation}
           removeFromQueue={props.removeFromQueue}
           addExistingMat={props.addExistingMat}
           operator={props.operator}
@@ -692,9 +697,9 @@ const selectMatCurrentlyInQueue = createSelector(
       if (inProcMat.materialID === mat.materialID) {
         if (inProcMat.location.type === api.LocType.InQueue && !!inProcMat.location.currentQueue) {
           if (activeQueues.contains(inProcMat.location.currentQueue)) {
-            return { type: "InRegularQueue" };
+            return { type: "InRegularQueue", inProcMat };
           } else {
-            return { type: "InQuarantine", queue: inProcMat.location.currentQueue };
+            return { type: "InQuarantine", inProcMat, queue: inProcMat.location.currentQueue };
           }
         } else {
           return { type: "NotInQueue" };
@@ -718,15 +723,16 @@ export const ConnectedMaterialDialog = connect(
     promptForOperator: st.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
     allowAddWithoutJob: st.ServerSettings.fmsInfo?.allowAddRawMaterialForNonRunningJobs ?? false,
     requireSerialWhenAddingMat: st.ServerSettings.fmsInfo?.requireSerialWhenAddingMaterialToQueue ?? false,
+    allowQuarantineAtLoadStation: st.ServerSettings.fmsInfo?.allowQuarantineAtLoadStation ?? false,
   }),
   {
     onClose: () => [
       { type: matDetails.ActionType.CloseMaterialDialog },
       { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
     ],
-    removeFromQueue: (mat: matDetails.MaterialDetail, operator: string | null) =>
+    removeFromQueue: (matId: number, operator: string | null) =>
       [
-        matDetails.removeFromQueue(mat, operator),
+        matDetails.removeFromQueue(matId, operator),
         { type: matDetails.ActionType.CloseMaterialDialog },
         { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
       ] as AppActionBeforeMiddleware,
