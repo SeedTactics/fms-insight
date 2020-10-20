@@ -2091,7 +2091,11 @@ namespace BlackMaple.MachineFramework
           SetArchived(trans, uniqueStrs, archived: true);
           if (newDecrements != null)
           {
-            AddNewDecrement(trans, newDecrements, nowUTC);
+            AddNewDecrement(
+              trans: trans,
+              counts: newDecrements,
+              removedBookings: null,
+              nowUTC: nowUTC);
           }
           trans.Commit();
         }
@@ -2254,14 +2258,26 @@ namespace BlackMaple.MachineFramework
       public string Part { get; set; }
       public int Quantity { get; set; }
     }
-    public void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null)
+
+    public class RemovedBooking
+    {
+      public string JobUnique { get; set; }
+      public string BookingId { get; set; }
+    }
+
+    public void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null, IEnumerable<RemovedBooking> removedBookings = null)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          AddNewDecrement(trans, counts, nowUTC);
+          AddNewDecrement(
+            trans: trans,
+            counts: counts,
+            removedBookings: removedBookings,
+            nowUTC: nowUTC
+          );
           trans.Commit();
         }
         catch
@@ -2273,7 +2289,7 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    private void AddNewDecrement(IDbTransaction trans, IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null)
+    private void AddNewDecrement(IDbTransaction trans, IEnumerable<NewDecrementQuantity> counts, IEnumerable<RemovedBooking> removedBookings, DateTime? nowUTC)
     {
       var now = nowUTC ?? DateTime.UtcNow;
       long decrementId = 0;
@@ -2309,6 +2325,26 @@ namespace BlackMaple.MachineFramework
           cmd.ExecuteNonQuery();
         }
       }
+
+      if (removedBookings != null)
+      {
+        using (var cmd = _connection.CreateCommand())
+        {
+          ((IDbCommand)cmd).Transaction = trans;
+
+          cmd.CommandText = "DELETE FROM scheduled_bookings WHERE UniqueStr = $u AND BookingId = $b";
+          cmd.Parameters.Add("u", SqliteType.Text);
+          cmd.Parameters.Add("b", SqliteType.Text);
+
+          foreach (var b in removedBookings)
+          {
+            cmd.Parameters[0].Value = b.JobUnique;
+            cmd.Parameters[1].Value = b.BookingId;
+            cmd.ExecuteNonQuery();
+          }
+        }
+      }
+
     }
 
     public List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(string unique)

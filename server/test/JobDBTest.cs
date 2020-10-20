@@ -652,10 +652,14 @@ namespace MachineWatchTest
       uniq1.JobCopiedToSystem = false;
       uniq1.RouteStartingTimeUTC = dtime.AddHours(-12);
       uniq1.RouteEndingTimeUTC = dtime.AddHours(12);
+      uniq1.ScheduledBookingIds.Add("AAA");
+      uniq1.ScheduledBookingIds.Add("BBB");
       var uniq2 = new JobPlan("uniq2", 1);
       uniq2.JobCopiedToSystem = true;
       uniq2.RouteStartingTimeUTC = dtime.AddHours(-12);
       uniq2.RouteEndingTimeUTC = dtime.AddHours(12);
+      uniq2.ScheduledBookingIds.Add("CCC");
+      uniq2.ScheduledBookingIds.Add("DDD");
 
       _jobDB.AddJobs(new NewJobs() { Jobs = (new[] { uniq1, uniq2 }).ToList() }, null);
 
@@ -705,6 +709,7 @@ namespace MachineWatchTest
 
       var history = _jobDB.LoadJobHistory(dtime, dtime.AddMinutes(10));
       history.Jobs.Keys.Should().BeEquivalentTo(new[] { "uniq1", "uniq2" });
+      history.Jobs["uniq1"].ScheduledBookingIds.Should().BeEquivalentTo(new[] { "AAA", "BBB" });
       history.Jobs["uniq1"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
@@ -712,6 +717,7 @@ namespace MachineWatchTest
           Quantity = 53
         }
       });
+      history.Jobs["uniq2"].ScheduledBookingIds.Should().BeEquivalentTo(new[] { "CCC", "DDD" });
       history.Jobs["uniq2"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
@@ -733,7 +739,18 @@ namespace MachineWatchTest
           Part = "part2",
           Quantity = 44
         },
-      }, time2);
+      },
+      time2,
+      new[] {
+        new JobDB.RemovedBooking() {
+          JobUnique = "uniq1",
+          BookingId = "BBB"
+        },
+        new JobDB.RemovedBooking() {
+          JobUnique = "uniq2",
+          BookingId = "CCC"
+        }
+      });
 
       var expected2 = new[] {
         new JobAndDecrementQuantity() {
@@ -776,6 +793,7 @@ namespace MachineWatchTest
 
       history = _jobDB.LoadJobHistory(dtime, dtime.AddMinutes(10));
       history.Jobs.Keys.Should().BeEquivalentTo(new[] { "uniq1", "uniq2" });
+      history.Jobs["uniq1"].ScheduledBookingIds.Should().BeEquivalentTo(new[] { "AAA" });
       history.Jobs["uniq1"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
@@ -788,6 +806,7 @@ namespace MachineWatchTest
           Quantity = 26
         }
       });
+      history.Jobs["uniq2"].ScheduledBookingIds.Should().BeEquivalentTo(new[] { "DDD" });
       history.Jobs["uniq2"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
