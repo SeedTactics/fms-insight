@@ -62,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var settings = new FMSSettings();
       settings.Queues.Add("q1", new QueueSize());
+      settings.Queues.Add("q2", new QueueSize());
 
       _onNewJobs = Substitute.For<Action<NewJobs>>();
       _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, false, false, _onNewJobs);
@@ -282,11 +283,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Alarm = true
           }}
         },
-        Alarm = true
+        Alarm = true,
+        TimeOfStatusUTC = DateTime.UtcNow
       };
 
 
-      var expectedSt = new CurrentStatus();
+      var expectedSt = new CurrentStatus(status.TimeOfStatusUTC);
       var expectedJob = new InProcessJob(j);
       expectedJob.SetCompleted(1, 1, 1);
       expectedJob.Decrements.Add(new DecrementQuantity()
@@ -338,9 +340,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         UnarchivedJobs = new List<JobPlan> { j, j2, j3 }
       });
 
-      ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt, config =>
-        config.Excluding(c => c.TimeOfCurrentStatusUTC)
-      );
+      ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt);
     }
 
     [Fact]
@@ -448,7 +448,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void UnallocatedQueues()
     {
       //add a casting
-      ((IJobControl)_jobs).AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, operatorName: "theoper");
+      ((IJobControl)_jobs).AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, operatorName: "theoper")
+        .Should().BeEquivalentTo(new[] {
+          QueuedMat(matId: 1, uniq: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0),
+          QueuedMat(matId: 2, uniq: null, part: "c1", proc: 0, path: 1, serial: null, queue: "q1", pos: 1),
+        });
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -487,10 +491,35 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
+
+      var mat1 = new LogMaterial(matID: 1, uniq: "", proc: 0, part: "c1", numProc: 1, serial: "aaa", workorder: "", face: "");
+      var mat2 = new LogMaterial(matID: 2, uniq: "", proc: 0, part: "c1", numProc: 1, serial: "", workorder: "", face: "");
+
+      _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
+        MarkExpectedEntry(mat1, cntr: 1, serial: "aaa"),
+        AddToQueueExpectedEntry(mat1, cntr: 2, queue: "q1", position: 0, operName: "theoper"),
+        RemoveFromQueueExpectedEntry(mat1, cntr: 4, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
+      }, options => options
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<DateTime>()
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<TimeSpan>()
+      );
+
+      _logDB.GetLogForMaterial(materialID: 2).Should().BeEquivalentTo(new[] {
+        AddToQueueExpectedEntry(mat2, cntr: 3, queue: "q1", position: 1, operName: "theoper"),
+      }, options => options
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<DateTime>()
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<TimeSpan>()
+      );
     }
 
-    [Fact]
-    public void AllocatedQueues()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void UnprocessedMaterial(int lastCompletedProcess)
     {
       var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
       job.PartName = "p1";
@@ -499,7 +528,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
 
       //add an allocated material
-      ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: 1, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper");
+      ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
+        .Should().BeEquivalentTo(
+          QueuedMat(matId: 1, uniq: "uuu1", part: "p1", proc: lastCompletedProcess, path: 2, serial: "aaa", queue: "q1", pos: 0)
+        );
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -538,6 +570,241 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
+      mats = _logDB.GetMaterialInQueue("q1").ToList();
+      mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
+      mats.Should().BeEquivalentTo(new[] {
+          new EventLogDB.QueuedMaterial()
+          { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
+        });
+
+      var logMat = new LogMaterial(matID: 1, uniq: "uuu1", proc: lastCompletedProcess, part: "p1", numProc: 2, serial: "aaa", workorder: "", face: "");
+
+      _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
+        MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
+        AddToQueueExpectedEntry(logMat, cntr: 2, queue: "q1", position: 0, operName: "theoper"),
+        RemoveFromQueueExpectedEntry(logMat, cntr: 3, queue: "q1", position: 0, elapsedMin: 0, operName: "myoper"),
+        AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, operName: "theoper"),
+      }, options => options
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<DateTime>()
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<TimeSpan>()
+      );
+    }
+
+    [Fact]
+    public void QuarantinesMatOnPallet()
+    {
+
+      var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
+      job.PartName = "p1";
+      job.SetPathGroup(1, 1, 50);
+      job.SetPathGroup(1, 2, 60);
+      _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
+
+      _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
+
+      _syncMock.CurrentCellState().Returns(
+        new CellState()
+        {
+          Pallets = new List<PalletAndMaterial>() {
+            new PalletAndMaterial() {
+              Material = new List<InProcessMaterialAndJob>() {
+                new InProcessMaterialAndJob() {
+                  Mat = MatOnPal(matId: 1, uniq: "uuu1", part: "p1", proc: 1, path: 2, serial: "aaa", pal: "4")
+                }
+              }
+            }
+          },
+          QueuedMaterial = new List<InProcessMaterial>()
+        }
+      );
+
+      ((IJobControl)_jobs).SignalMaterialForQuarantine(1, "q1", "theoper");
+
+      _syncMock.Received().JobsOrQueuesChanged();
+      _syncMock.ClearReceivedCalls();
+
+      var logMat = new LogMaterial(matID: 1, uniq: "uuu1", proc: 1, part: "p1", numProc: 2, serial: "", workorder: "", face: "");
+
+      _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
+        SignalQuarantineExpectedEntry(logMat, cntr: 1, pal: "4", queue: "q1", operName: "theoper")
+      }, options => options
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<DateTime>()
+      );
+    }
+
+    [Fact]
+    public void QuarantinesMatInQueue()
+    {
+
+      var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
+      job.PartName = "p1";
+      job.SetPathGroup(1, 1, 50);
+      job.SetPathGroup(1, 2, 60);
+      _jobDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
+
+      _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
+      _logDB.RecordSerialForMaterialID(materialID: 1, proc: 1, serial: "aaa");
+
+      ((IJobControl)_jobs).SetMaterialInQueue(materialId: 1, queue: "q1", position: -1);
+
+      _syncMock.CurrentCellState().Returns(
+        new CellState()
+        {
+          Pallets = new List<PalletAndMaterial>(),
+          QueuedMaterial = new List<InProcessMaterial>() {
+            QueuedMat(matId: 1, uniq: "uuu1", part: "p1", proc: 1, path: 2, serial: "aaa", queue: "q1", pos: 0)
+          }
+        }
+      );
+
+      ((IJobControl)_jobs).SignalMaterialForQuarantine(1, "q2", "theoper");
+
+      _syncMock.Received().JobsOrQueuesChanged();
+      _syncMock.ClearReceivedCalls();
+
+      var logMat = new LogMaterial(matID: 1, uniq: "uuu1", proc: 1, part: "p1", numProc: 2, serial: "aaa", workorder: "", face: "");
+
+      _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
+        MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
+        AddToQueueExpectedEntry(logMat, cntr: 2, queue: "q1", position: 0, operName: null),
+        RemoveFromQueueExpectedEntry(logMat, cntr: 3, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
+        AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q2", position: 0, operName: "theoper")
+      }, options => options
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<DateTime>()
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<TimeSpan>()
+      );
+    }
+
+    private LogEntry MarkExpectedEntry(LogMaterial mat, long cntr, string serial, DateTime? timeUTC = null)
+    {
+      var e = new LogEntry(
+          cntr: cntr,
+          mat: new[] { mat },
+          pal: "",
+          ty: LogType.PartMark,
+          locName: "Mark",
+          locNum: 1,
+          prog: "MARK",
+          start: false,
+          endTime: timeUTC ?? DateTime.UtcNow,
+          result: serial,
+          endOfRoute: false);
+      return e;
+    }
+
+    private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime? timeUTC = null, string operName = null)
+    {
+      var e = new LogEntry(
+          cntr: cntr,
+          mat: new[] { mat },
+          pal: "",
+          ty: LogType.AddToQueue,
+          locName: queue,
+          locNum: position,
+          prog: "",
+          start: false,
+          endTime: timeUTC ?? DateTime.UtcNow,
+          result: "",
+          endOfRoute: false);
+      if (!string.IsNullOrEmpty(operName))
+      {
+        e.ProgramDetails.Add("operator", operName);
+      }
+      return e;
+    }
+
+    private LogEntry SignalQuarantineExpectedEntry(LogMaterial mat, long cntr, string pal, string queue, DateTime? timeUTC = null, string operName = null)
+    {
+      var e = new LogEntry(
+          cntr: cntr,
+          mat: new[] { mat },
+          pal: pal,
+          ty: LogType.SignalQuarantine,
+          locName: queue,
+          locNum: -1,
+          prog: "QuarantineAfterUnload",
+          start: false,
+          endTime: timeUTC ?? DateTime.UtcNow,
+          result: "QuarantineAfterUnload",
+          endOfRoute: false);
+      if (!string.IsNullOrEmpty(operName))
+      {
+        e.ProgramDetails.Add("operator", operName);
+      }
+      return e;
+    }
+
+    private LogEntry RemoveFromQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, int elapsedMin, DateTime? timeUTC = null, string operName = null)
+    {
+      var e = new LogEntry(
+          cntr: cntr,
+          mat: new[] { mat },
+          pal: "",
+          ty: LogType.RemoveFromQueue,
+          locName: queue,
+          locNum: position,
+          prog: "",
+          start: false,
+          endTime: timeUTC ?? DateTime.UtcNow,
+          result: "",
+          endOfRoute: false,
+          elapsed: TimeSpan.FromMinutes(elapsedMin),
+          active: TimeSpan.Zero);
+      if (!string.IsNullOrEmpty(operName))
+      {
+        e.ProgramDetails.Add("operator", operName);
+      }
+      return e;
+    }
+
+    private InProcessMaterial QueuedMat(long matId, string uniq, string part, int proc, int path, string serial, string queue, int pos)
+    {
+      return new InProcessMaterial()
+      {
+        MaterialID = matId,
+        JobUnique = uniq,
+        PartName = part,
+        Process = proc,
+        Path = path,
+        Serial = serial,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = queue,
+          QueuePosition = pos,
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      };
+    }
+
+    private InProcessMaterial MatOnPal(long matId, string uniq, string part, int proc, int path, string serial, string pal)
+    {
+      return new InProcessMaterial()
+      {
+        MaterialID = matId,
+        JobUnique = uniq,
+        PartName = part,
+        Process = proc,
+        Path = path,
+        Serial = serial,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          Pallet = pal,
+        },
+        Action = new InProcessMaterialAction()
+        {
+          Type = InProcessMaterialAction.ActionType.Waiting
+        }
+      };
     }
   }
 }
