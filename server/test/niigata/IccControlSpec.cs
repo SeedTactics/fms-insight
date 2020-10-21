@@ -2476,7 +2476,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
-    [Fact]
+    [Fact(Skip = "Deleting programs disabled for now")]
     public void DeletePrograms()
     {
       _dsl

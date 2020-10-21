@@ -144,7 +144,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // delete old programs
-      return CheckForOldPrograms(cellSt);
+      // ICC currently gives timeout when attempting to delete, disable for now
+      //return CheckForOldPrograms(cellSt);
+
+      return null;
     }
 
     #region Calculate Paths
