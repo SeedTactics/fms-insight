@@ -2529,11 +2529,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
           )
         })
+
+        .OverrideRoute(
+          pal: 5,
+          comment: "manual control",
+          noWork: false,
+          luls: new[] { 1 },
+          machs: new[] { 2, 3 },
+          progs: new[] { 4001 }
+        )
         .SetIccProgram(4000, "non-insight")
-        .SetIccProgram(4001, "Insight:4:prog111") // has newer revision 5, should be deleted
-        .SetIccProgram(4002, "Insight:7:prog222") // shouldn't be deleted since latest revision, even though not used
+        .SetIccProgram(4001, "Insight:3:prog111") // has newer revision, but a custom manual pallet uses it so don't delete
+        .SetIccProgram(4002, "Insight:4:prog111") // has newer revision 5, should be deleted
+        .SetIccProgram(4003, "Insight:7:prog222") // shouldn't be deleted since it is the latest revision, even though not used
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectDeleteProgram(4001, "prog111", 4)
+          FakeIccDsl.ExpectDeleteProgram(4002, "prog111", 4)
         })
         ;
     }
