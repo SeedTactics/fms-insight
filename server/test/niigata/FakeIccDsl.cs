@@ -954,7 +954,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, unarchJobs);
         cellSt.PalletStateUpdated.Should().BeFalse();
-        cellSt.UnarchivedJobs.Should().BeEquivalentTo(unarchJobs);
+        cellSt.UnarchivedJobs.Should().BeEquivalentTo(unarchJobs,
+          options => options.CheckJsonEquals<JobPlan, JobPlan>()
+        );
         CheckCellStMatchesExpected(cellSt);
         _assign.NewPalletChange(cellSt).Should().BeNull();
         logMonitor.Should().NotRaise("NewLogEntry");
@@ -1448,7 +1450,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-        cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
+        cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
+          options => options.CheckJsonEquals<JobPlan, JobPlan>()
+        );
 
         var expectedLogs = new List<LogEntry>();
 
@@ -1469,7 +1473,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           // reload cell state
           cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
+          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
+            options => options.CheckJsonEquals<JobPlan, JobPlan>()
+          );
         }
 
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
@@ -1579,7 +1585,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           // reload cell state
           cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(true);
-          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
+          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
+            options => options.CheckJsonEquals<JobPlan, JobPlan>()
+          );
         }
         else
         {
@@ -1995,5 +2003,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       job.PathInspections(proc, path).Add(new PathInspection() { InspectionType = inspTy, Counter = cntr, MaxVal = max });
       return job;
     }
+
+  }
+
+  public static class FluentAssertionJsonExtension
+  {
+    public static FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> CheckJsonEquals<T, R>(this FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> options)
+    {
+      return options.Using<R>(ctx =>
+      {
+        // JobPlan has private properties which normal Should().BeEquivalentTo() doesn't see, so instead
+        // check json serialized versions are equal
+        var eJ = Newtonsoft.Json.Linq.JToken.Parse(Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Expectation));
+        var aJ = Newtonsoft.Json.Linq.JToken.Parse(Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Subject));
+
+        FluentAssertions.Json.JsonAssertionExtensions.Should(aJ).BeEquivalentTo(eJ);
+      })
+      .WhenTypeIs<R>();
+    }
+
   }
 }

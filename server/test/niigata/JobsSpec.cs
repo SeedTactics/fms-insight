@@ -99,7 +99,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       //job with 1 completed part
       var j = new JobPlan("u1", 1);
       j.PartName = "p1";
-      j.SetPlannedCyclesOnFirstProcess(1, 10);
+      j.SetPlannedCyclesOnFirstProcess(1, 70);
       j.AddProcessOnPallet(1, 1, "pal1");
       j.RouteStartingTimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc);
       j.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 20, 0, 0, DateTimeKind.Utc));
@@ -290,6 +290,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var expectedSt = new CurrentStatus(status.TimeOfStatusUTC);
       var expectedJob = new InProcessJob(j);
+      expectedJob.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 70 - 30);
       expectedJob.SetCompleted(1, 1, 1);
       expectedJob.Decrements.Add(new DecrementQuantity()
       {
@@ -297,15 +298,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
         Quantity = 30
       });
-      expectedJob.SetPrecedence(1, 1, 2); // has last precedence
+      expectedJob.SetPrecedence(1, 1, 3); // has last precedence
       expectedSt.Jobs.Add("u1", expectedJob);
 
       var expectedJob2 = new InProcessJob(j2);
-      expectedJob2.SetPrecedence(1, 1, 1); // has middle precedence
+      expectedJob2.SetPrecedence(1, 1, 2); // has middle precedence
       expectedSt.Jobs.Add("u2", expectedJob2);
 
       var expectedJob3 = new InProcessJob(j3);
-      expectedJob2.SetPrecedence(1, 1, 0); // has first precedence
+      expectedJob3.SetPrecedence(1, 1, 1); // has first precedence
       expectedSt.Jobs.Add("u3", expectedJob3);
 
       expectedSt.Material.Add(pal1.Material[0].Mat);
@@ -331,6 +332,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       expectedSt.Alarms.Add("Machine 2 has an alarm");
       expectedSt.Alarms.Add("ICC has an alarm");
       expectedSt.QueueSizes.Add("q1", new QueueSize());
+      expectedSt.QueueSizes.Add("q2", new QueueSize());
 
       _syncMock.CurrentCellState().Returns(new CellState()
       {
@@ -340,7 +342,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         UnarchivedJobs = new List<JobPlan> { j, j2, j3 }
       });
 
-      ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt);
+      ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt,
+        options => options.CheckJsonEquals<CurrentStatus, InProcessJob>()
+      );
     }
 
     [Fact]
@@ -351,6 +355,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       completedJob.PartName = "oldpart";
       var toKeepJob = new JobPlan("tokeep", 1);
       toKeepJob.PartName = "tokeep";
+      toKeepJob.PathInspections(1, 1).Add(new PathInspection()
+      {
+        InspectionType = "insp",
+        Counter = "cntr",
+        MaxVal = 10,
+      });
       _jobDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = new List<JobPlan> { completedJob, toKeepJob } }, null);
 
       _syncMock.CurrentCellState().Returns(new CellState()
@@ -375,12 +385,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       newJob1.AddProcessOnPallet(2, 1, "6");
       newJob1.SetFixtureFace(1, 1, "fix1", 2);
       newJob1.SetFixtureFace(2, 1, "fix1", 2);
+      newJob1.PathInspections(1, 1).Add(new PathInspection()
+      {
+        InspectionType = "insp",
+        Counter = "cntr1",
+        MaxVal = 11,
+      });
+      newJob1.PathInspections(2, 1).Add(new PathInspection()
+      {
+        InspectionType = "insp",
+        Counter = "cntr2",
+        MaxVal = 22,
+      });
       var newJob2 = new JobPlan("uu2", 1);
       newJob2.PartName = "p2";
       newJob2.AddProcessOnPallet(process: 1, path: 1, pallet: "4");
       newJob2.AddLoadStation(1, 1, 1);
       newJob2.AddUnloadStation(1, 1, 2);
       newJob2.SetFixtureFace(1, 1, "fix1", 2);
+      newJob2.PathInspections(1, 1).Add(new PathInspection()
+      {
+        InspectionType = "insp",
+        Counter = "cntr3",
+        MaxVal = 33,
+      });
 
       var newJobs = new NewJobs()
       {
@@ -390,7 +418,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       ((IJobControl)_jobs).AddJobs(newJobs, null);
 
-      _jobDB.LoadUnarchivedJobs().Should().BeEquivalentTo(new[] { newJob1, newJob2, toKeepJob });
+      _jobDB.LoadUnarchivedJobs().Should().BeEquivalentTo(new[] { toKeepJob, newJob1, newJob2 },
+        options => options.CheckJsonEquals<JobPlan, JobPlan>()
+      );
       _jobDB.LoadJob("old").Archived.Should().BeTrue();
 
       _syncMock.Received().JobsOrQueuesChanged();
