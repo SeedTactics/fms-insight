@@ -83,7 +83,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Programs[newprog.ProgramNum] = new ProgramEntry()
           {
             ProgramNum = newprog.ProgramNum,
-            Comment = "Comment " + newprog.ProgramName + " rev" + newprog.ProgramRevision.ToString(),
+            Comment = newprog.IccProgramComment,
             CycleTime = TimeSpan.FromMinutes(newprog.ProgramRevision),
             Tools = new List<int>()
           };

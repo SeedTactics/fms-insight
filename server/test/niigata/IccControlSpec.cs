@@ -2539,6 +2539,85 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Fact]
+    public void OperatorDeletesPrograms()
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateMultiProcSamePalletJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog1: "prog111",
+            prog1Rev: null,
+            prog2: "prog222",
+            prog2Rev: 6L,
+            loadMins1: 8,
+            unloadMins1: 9,
+            machMins1: 14,
+            loadMins2: 10,
+            unloadMins2: 11,
+            machMins2: 15,
+            fixture: "fix1",
+            face1: 1,
+            face2: 2
+          )},
+          new[] {
+            (prog: "prog111", rev: 4L),
+            (prog: "prog111", rev: 5L),
+            (prog: "prog222", rev: 6L),
+            (prog: "prog222", rev: 7L),
+          }
+        )
+
+        // process 1 only cycle
+        .SetExpectedLoadCastings(new[] {
+              (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+         })
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2200, name: "prog222", rev: 6, mcMin: 15),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 2,
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            progs: new[] { 2100 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+
+        // operator deletes, Insight puts it back
+        .SetNoWork(pal: 1)
+        .RemoveIccProgram(iccProg: 2100)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
+          FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 1)
+        })
+
+        // operator changes it to a non-insight program, Insight creates a new program 2101
+        .SetNoWork(pal: 1)
+        .SetIccProgram(iccProg: 2100, comment: "thecustom program")
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2101, name: "prog111", rev: 5, mcMin: 14),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 2,
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            progs: new[] { 2101 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+        ;
+    }
+
+    [Fact]
     public void RemoveFromQueueDuringLoad()
     {
       _dsl

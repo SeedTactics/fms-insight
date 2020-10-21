@@ -383,6 +383,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
       return this;
     }
+
+    public FakeIccDsl RemoveIccProgram(int iccProg)
+    {
+      _status.Programs.Remove(iccProg);
+      return this;
+    }
     #endregion
 
     #region Material
