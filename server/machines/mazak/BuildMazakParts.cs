@@ -138,7 +138,7 @@ namespace MazakMachineInterface
       }
       public int PathForProc(int proc)
       {
-        if (proc <= paths.Count)
+        if (proc >= 1 && proc <= paths.Count)
           return paths[proc - 1];
         else
         {

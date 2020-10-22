@@ -894,6 +894,10 @@ namespace MachineWatchTest
     [Fact]
     public void SingleMachineCycle()
     {
+      var j = new JobPlan("unique", 1);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
@@ -927,6 +931,10 @@ namespace MachineWatchTest
     [Fact]
     public void MultipleMachineCycles()
     {
+      var j = new JobPlan("unique", 1);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
@@ -977,6 +985,10 @@ namespace MachineWatchTest
     [Fact]
     public void MultipleProcess()
     {
+      var j = new JobPlan("unique", 2);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 2, path: 1);
@@ -1117,6 +1129,10 @@ namespace MachineWatchTest
     [Fact]
     public void LargeFixedQuantites()
     {
+      var j = new JobPlan("uuuu", 2);
+      j.PartName = "pppp";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1);
       AddTestPart(unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1);
@@ -1165,6 +1181,10 @@ namespace MachineWatchTest
     [Fact]
     public void SkipShortMachineCycle()
     {
+      var j = new JobPlan("unique", 1);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
@@ -1209,6 +1229,10 @@ namespace MachineWatchTest
     [Fact]
     public void Remachining()
     {
+      var j = new JobPlan("unique", 1);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
@@ -1559,6 +1583,10 @@ namespace MachineWatchTest
     [Fact]
     public void Tools()
     {
+      var j = new JobPlan("unique", 1);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow;
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
@@ -1613,6 +1641,10 @@ namespace MachineWatchTest
     [Fact]
     public void StockerAndRotaryTable()
     {
+      var j = new JobPlan("unique", 1);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);
@@ -1655,6 +1687,10 @@ namespace MachineWatchTest
     [Fact]
     public void LeaveInboundRotary()
     {
+      var j = new JobPlan("unique", 1);
+      j.PartName = "part1";
+      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+
       var t = DateTime.UtcNow.AddHours(-5);
 
       AddTestPart(unique: "unique", part: "part1", proc: 1, numProc: 1, path: 1);

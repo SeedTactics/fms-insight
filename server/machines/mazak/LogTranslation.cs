@@ -308,8 +308,6 @@ namespace MazakMachineInterface
     #region Material
     private List<EventLogDB.EventLogMaterial> CreateMaterialWithoutIDs(LogEntry e)
     {
-      _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
-
       var ret = new List<EventLogDB.EventLogMaterial>();
       ret.Add(new EventLogDB.EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
       return ret;
@@ -342,6 +340,12 @@ namespace MazakMachineInterface
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
         oldEvents: oldEvents);
       _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+
+      if (GetJob(unique) == null)
+      {
+        unique = "";
+        path = 1;
+      }
 
       var ret = new List<LogMaterialAndPath>();
 
@@ -479,6 +483,11 @@ namespace MazakMachineInterface
         _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
 
         JobPlan job = GetJob(unique);
+        if (job == null)
+        {
+          unique = "";
+          path = 1;
+        }
 
         var mats = new List<EventLogDB.EventLogMaterial>();
         if (job != null && !string.IsNullOrEmpty(job.GetInputQueue(proc, path)))
