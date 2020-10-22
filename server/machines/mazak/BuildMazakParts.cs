@@ -84,8 +84,10 @@ namespace MazakMachineInterface
         return unique + "-Path" + string.Join("-", paths) + "-0";
     }
 
-    public static bool IsSailPart(string partName)
+    public static bool IsSailPart(string partName, string comment)
     {
+      if (partName == null || comment == null || !comment.Contains("-Path")) return false;
+
       //sail parts are those with a colon and a positive integer after the colon
       string[] sSplit = partName.Split(':');
       if (sSplit.Length >= 2)
@@ -613,7 +615,7 @@ namespace MazakMachineInterface
       var transSet = new MazakWriteData();
       foreach (var partRow in OldMazakData.Parts)
       {
-        if (MazakPart.IsSailPart(partRow.PartName))
+        if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
         {
           if (!SavedParts.Contains(partRow.PartName))
           {

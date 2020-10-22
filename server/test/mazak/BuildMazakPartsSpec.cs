@@ -1401,7 +1401,7 @@ namespace MachineWatchTest
 
     private void CreatePart(MazakTestData dset, string unique, string name, int numProc, string fix, string program = null)
     {
-      var pRow = new MazakPartRow() { Comment = "comment", PartName = name };
+      var pRow = new MazakPartRow() { Comment = "comment -Path", PartName = name };
       dset.TestParts.Add(pRow);
 
       for (int proc = 1; proc <= numProc; proc++)

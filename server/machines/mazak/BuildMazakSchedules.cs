@@ -101,7 +101,7 @@ namespace MazakMachineInterface
           string mazakComment = "";
           foreach (var partRow in mazakData.Parts)
           {
-            if (MazakPart.IsSailPart(partRow.PartName))
+            if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
             {
               MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
               if (u == part.UniqueStr && ps.PathForProc(proc: 1) == proc1path)

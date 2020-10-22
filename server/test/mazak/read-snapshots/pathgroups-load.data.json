@@ -44,7 +44,7 @@
   "Parts": [
     {
       "PartName": "part1:1:1",
-      "Comment": "part1-MuGs~DCQLakA05w7-Path1-1-0",
+      "Comment": "part1-schId1234-Path1-1-0",
       "Price": 0.0,
       "TotalProcess": 0,
       "MaterialName": "",
@@ -103,7 +103,7 @@
     },
     {
       "PartName": "part1:1:2",
-      "Comment": "part1-MuGs~DCQLakA05w7-Path2-2-0",
+      "Comment": "part1-schId1234-Path2-2-0",
       "Price": 0.0,
       "TotalProcess": 0,
       "MaterialName": "",
@@ -162,7 +162,7 @@
     },
     {
       "PartName": "part2:1:1",
-      "Comment": "part2-MuGs~DCQLakA05w7-Path1-1-0",
+      "Comment": "part2-schId1234-Path1-1-0",
       "Price": 0.0,
       "TotalProcess": 0,
       "MaterialName": "",
@@ -221,7 +221,7 @@
     },
     {
       "PartName": "part2:1:2",
-      "Comment": "part2-MuGs~DCQLakA05w7-Path2-2-0",
+      "Comment": "part2-schId1234-Path2-2-0",
       "Price": 0.0,
       "TotalProcess": 0,
       "MaterialName": "",
@@ -280,7 +280,7 @@
     },
     {
       "PartName": "part3:1:1",
-      "Comment": "part3-MuGs~DCQLakA05w7-Path1-0",
+      "Comment": "part3-schId1234-Path1-0",
       "Price": 0.0,
       "TotalProcess": 0,
       "MaterialName": "",
@@ -318,7 +318,7 @@
     },
     {
       "PartName": "part3:1:2",
-      "Comment": "part3-MuGs~DCQLakA05w7-Path2-0",
+      "Comment": "part3-schId1234-Path2-0",
       "Price": 0.0,
       "TotalProcess": 0,
       "MaterialName": "",
@@ -516,7 +516,7 @@
     {
       "LoadStation": 1,
       "LoadEvent": true,
-      "Unique": "part1-MuGs~DCQLakA05w7",
+      "Unique": "part1-schId1234",
       "Part": "part1",
       "Process": 1,
       "Path": 1,
@@ -525,7 +525,7 @@
     {
       "LoadStation": 2,
       "LoadEvent": true,
-      "Unique": "part1-MuGs~DCQLakA05w7",
+      "Unique": "part1-schId1234",
       "Part": "part1",
       "Process": 1,
       "Path": 1,
@@ -542,7 +542,7 @@
   "Schedules": [
     {
       "Id": 1,
-      "Comment": "part1-MuGs~DCQLakA05w7-Path1-1-0",
+      "Comment": "part1-schId1234-Path1-1-0",
       "PartName": "part1:1:1",
       "PlanQuantity": 3,
       "CompleteQuantity": 0,
@@ -603,7 +603,7 @@
     },
     {
       "Id": 2,
-      "Comment": "part1-MuGs~DCQLakA05w7-Path2-2-0",
+      "Comment": "part1-schId1234-Path2-2-0",
       "PartName": "part1:1:2",
       "PlanQuantity": 2,
       "CompleteQuantity": 0,
@@ -664,7 +664,7 @@
     },
     {
       "Id": 3,
-      "Comment": "part2-MuGs~DCQLakA05w7-Path1-1-0",
+      "Comment": "part2-schId1234-Path1-1-0",
       "PartName": "part2:1:1",
       "PlanQuantity": 4,
       "CompleteQuantity": 0,
@@ -725,7 +725,7 @@
     },
     {
       "Id": 4,
-      "Comment": "part2-MuGs~DCQLakA05w7-Path2-2-0",
+      "Comment": "part2-schId1234-Path2-2-0",
       "PartName": "part2:1:2",
       "PlanQuantity": 1,
       "CompleteQuantity": 0,
@@ -786,7 +786,7 @@
     },
     {
       "Id": 5,
-      "Comment": "part3-MuGs~DCQLakA05w7-Path1-0",
+      "Comment": "part3-schId1234-Path1-0",
       "PartName": "part3:1:1",
       "PlanQuantity": 3,
       "CompleteQuantity": 0,
@@ -831,7 +831,7 @@
     },
     {
       "Id": 6,
-      "Comment": "part3-MuGs~DCQLakA05w7-Path2-0",
+      "Comment": "part3-schId1234-Path2-0",
       "PartName": "part3:1:2",
       "PlanQuantity": 2,
       "CompleteQuantity": 0,

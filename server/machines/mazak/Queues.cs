@@ -134,7 +134,7 @@ namespace MazakMachineInterface
       var skippedCastings = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
-        if (!MazakPart.IsSailPart(schRow.PartName)) continue;
+        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment)) continue;
 
         MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
 
