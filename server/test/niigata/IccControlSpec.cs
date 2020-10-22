@@ -359,7 +359,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToBuffer(pal: 2, buff: 2)
 
         //normally pal 2 should get a new route, but add a decrement
-        .AddJobDecrement("uniq1")
+        .AddJobDecrement("uniq1", proc1path: 1)
         .ExpectNoChanges();
     }
 

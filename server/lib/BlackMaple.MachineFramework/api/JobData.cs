@@ -1421,6 +1421,7 @@ namespace BlackMaple.MachineWatchInterface
   public class DecrementQuantity
   {
     [DataMember(IsRequired = true)] public long DecrementId { get; set; }
+    [DataMember(IsRequired = true)] public int Proc1Path { get; set; }
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
     [DataMember(IsRequired = true)] public int Quantity { get; set; }
   }

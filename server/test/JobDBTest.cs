@@ -625,6 +625,7 @@ namespace MachineWatchTest
       var archiveTime = DateTime.UtcNow;
       _jobDB.ArchiveJobs(new[] { job1.UniqueStr }, new[] { new JobDB.NewDecrementQuantity() {
         JobUnique = job1.UniqueStr,
+        Proc1Path = 66,
         Part = job1.PartName,
         Quantity = 50
       }}, archiveTime);
@@ -633,6 +634,7 @@ namespace MachineWatchTest
       _jobDB.LoadDecrementsForJob(job1.UniqueStr).Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
+          Proc1Path = 66,
           TimeUTC = archiveTime,
           Quantity = 50
         }
@@ -673,11 +675,19 @@ namespace MachineWatchTest
       _jobDB.AddNewDecrement(new[] {
         new JobDB.NewDecrementQuantity() {
           JobUnique = "uniq1",
+          Proc1Path = 1,
           Part = "part1",
           Quantity = 53
         },
         new JobDB.NewDecrementQuantity() {
+          JobUnique = "uniq1",
+          Proc1Path = 2,
+          Part = "part1",
+          Quantity = 77
+        },
+        new JobDB.NewDecrementQuantity() {
           JobUnique = "uniq2",
+          Proc1Path = 1,
           Part = "part2",
           Quantity = 821
         },
@@ -687,13 +697,23 @@ namespace MachineWatchTest
         new JobAndDecrementQuantity() {
           DecrementId = 0,
           JobUnique = "uniq1",
+          Proc1Path = 1,
           TimeUTC = time1,
           Part = "part1",
           Quantity = 53
         },
         new JobAndDecrementQuantity() {
           DecrementId = 0,
+          JobUnique = "uniq1",
+          Proc1Path = 2,
+          TimeUTC = time1,
+          Part = "part1",
+          Quantity = 77
+        },
+        new JobAndDecrementQuantity() {
+          DecrementId = 0,
           JobUnique = "uniq2",
+          Proc1Path = 1,
           TimeUTC = time1,
           Part = "part2",
           Quantity = 821
@@ -713,14 +733,22 @@ namespace MachineWatchTest
       history.Jobs["uniq1"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
+          Proc1Path = 1,
           TimeUTC = time1,
           Quantity = 53
+        },
+        new DecrementQuantity() {
+          DecrementId = 0,
+          Proc1Path = 2,
+          TimeUTC = time1,
+          Quantity = 77
         }
       });
       history.Jobs["uniq2"].ScheduledBookingIds.Should().BeEquivalentTo(new[] { "CCC", "DDD" });
       history.Jobs["uniq2"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
+          Proc1Path = 1,
           TimeUTC = time1,
           Quantity = 821
         }
@@ -731,11 +759,13 @@ namespace MachineWatchTest
       _jobDB.AddNewDecrement(new[] {
         new JobDB.NewDecrementQuantity() {
           JobUnique = "uniq1",
+          Proc1Path = 1,
           Part = "part1",
           Quantity = 26
         },
         new JobDB.NewDecrementQuantity() {
           JobUnique = "uniq2",
+          Proc1Path = 1,
           Part = "part2",
           Quantity = 44
         },
@@ -756,6 +786,7 @@ namespace MachineWatchTest
         new JobAndDecrementQuantity() {
           DecrementId = 1,
           JobUnique = "uniq1",
+          Proc1Path = 1,
           TimeUTC = time2,
           Part = "part1",
           Quantity = 26
@@ -763,6 +794,7 @@ namespace MachineWatchTest
         new JobAndDecrementQuantity() {
           DecrementId = 1,
           JobUnique = "uniq2",
+          Proc1Path = 1,
           TimeUTC = time2,
           Part = "part2",
           Quantity = 44
@@ -779,10 +811,13 @@ namespace MachineWatchTest
 
       _jobDB.LoadDecrementsForJob("uniq1").Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
-          DecrementId = 0, TimeUTC = time1, Quantity = 53
+          DecrementId = 0, Proc1Path = 1, TimeUTC = time1, Quantity = 53
         },
         new DecrementQuantity() {
-          DecrementId = 1, TimeUTC = time2, Quantity = 26
+          DecrementId = 0, Proc1Path = 2, TimeUTC = time1, Quantity = 77
+        },
+        new DecrementQuantity() {
+          DecrementId = 1, Proc1Path = 1, TimeUTC = time2, Quantity = 26
         }
       });
 
@@ -797,11 +832,19 @@ namespace MachineWatchTest
       history.Jobs["uniq1"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
+          Proc1Path = 1,
           TimeUTC = time1,
           Quantity = 53
         },
         new DecrementQuantity() {
+          DecrementId = 0,
+          Proc1Path = 2,
+          TimeUTC = time1,
+          Quantity = 77
+        },
+        new DecrementQuantity() {
           DecrementId = 1,
+          Proc1Path = 1,
           TimeUTC = time2,
           Quantity = 26
         }
@@ -810,11 +853,13 @@ namespace MachineWatchTest
       history.Jobs["uniq2"].Decrements.Should().BeEquivalentTo(new[] {
         new DecrementQuantity() {
           DecrementId = 0,
+          Proc1Path = 1,
           TimeUTC = time1,
           Quantity = 821
         },
         new DecrementQuantity() {
           DecrementId = 1,
+          Proc1Path = 1,
           TimeUTC = time2,
           Quantity = 44
         }

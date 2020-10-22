@@ -671,12 +671,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
-    public FakeIccDsl AddJobDecrement(string uniq)
+    public FakeIccDsl AddJobDecrement(string uniq, int proc1path)
     {
       var remaining = _expectedJobRemainCount.Where(k => k.Key.uniq == uniq).ToList();
       _jobDB.AddNewDecrement(new[] {
         new JobDB.NewDecrementQuantity() {
         JobUnique = uniq,
+        Proc1Path = proc1path,
         Part = "part",
         Quantity = remaining.Sum(k => k.Value)
       }});

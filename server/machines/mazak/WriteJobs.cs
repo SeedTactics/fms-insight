@@ -338,33 +338,27 @@ namespace MazakMachineInterface
 
       var toArchive = unarchived.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
 
-      var newDecrs = unarchived.Select(j =>
-      {
-        int toDecr = 0;
-        for (int path = 1; path <= j.GetNumPaths(process: 1); path += 1)
+      var newDecrs =
+        unarchived
+        .SelectMany(j => Enumerable.Range(1, j.GetNumPaths(process: 1)).Select(path => new { j, path }))
+        .Select(jobAndPath =>
         {
-          if (completed.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var compCnt))
+          if (completed.TryGetValue((uniq: jobAndPath.j.UniqueStr, proc1path: jobAndPath.path), out var compCnt))
           {
-            if (compCnt < j.GetPlannedCyclesOnFirstProcess(path))
+            if (compCnt < jobAndPath.j.GetPlannedCyclesOnFirstProcess(jobAndPath.path))
             {
-              toDecr += j.GetPlannedCyclesOnFirstProcess(path) - compCnt;
+              return new JobDB.NewDecrementQuantity()
+              {
+                JobUnique = jobAndPath.j.UniqueStr,
+                Proc1Path = jobAndPath.path,
+                Part = jobAndPath.j.PartName,
+                Quantity = jobAndPath.j.GetPlannedCyclesOnFirstProcess(jobAndPath.path) - compCnt
+              };
             }
           }
-        }
-        if (toDecr > 0)
-        {
-          return new JobDB.NewDecrementQuantity()
-          {
-            JobUnique = j.UniqueStr,
-            Part = j.PartName,
-            Quantity = toDecr
-          };
-        }
-        else
-        {
           return null;
-        }
-      }).Where(n => n != null);
+        })
+        .Where(n => n != null);
 
       if (toArchive.Any())
       {
