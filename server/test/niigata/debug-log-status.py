@@ -1,4 +1,5 @@
 import fileinput
+import datetime
 import json
 
 def printRouteStep(pal, i, route):
@@ -18,7 +19,9 @@ def printRouteStep(pal, i, route):
   return str(i)
 
 def printCellState(timestamp, pals):
-  print(timestamp)
+  d = datetime.datetime.fromisoformat(timestamp[0:19] + "+00:00")
+  d = d.astimezone(tz=None)
+  print(d.ctime() + "  (" + timestamp + ")")
   for p in sorted(pals["Status"]["Pallets"], key=lambda x: x["Master"]["PalletNum"]):
     msg = f'Pal {p["Master"]["PalletNum"]} - {p["CurStation"]["Location"]["Location"]} {p["CurStation"]["Location"]["Num"]}'
     msg += f' [cycles {p["Master"]["RemainingPalletCycles"]}, pri {p["Master"]["Priority"]}, nowork {p["Master"]["NoWork"]}, skip {p["Master"]["Skip"]}] '
@@ -29,10 +32,7 @@ def printCellState(timestamp, pals):
     print(msg)
   for num in sorted(pals["Status"]["Machines"]):
     m = pals["Status"]["Machines"][num]
-    if m["Machining"]:
-      print(f'Mach {num} {m["CurrentlyExecutingProgram"]}')
-    else:
-      print(f'Mach {num} off')
+    print(f'Mach {num}: power = {m["Power"]}, link = {m["FMSLinkMode"]}, working = {m["Machining"]}, alarm = {m["Alarm"]}, program = {m["CurrentlyExecutingProgram"]}')
 
   print()
 

@@ -991,7 +991,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       bool runningProgram = false;
       bool runningAnyProgram = false;
-      if (pallet.MachineStatus != null && pallet.MachineStatus.Machining)
+      if (pallet.MachineStatus != null && pallet.MachineStatus.CurrentlyExecutingProgram > 0)
       {
         runningAnyProgram = true;
         if (ss.JobStop.ProgramRevision.HasValue)

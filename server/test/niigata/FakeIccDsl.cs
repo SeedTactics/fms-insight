@@ -328,7 +328,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl StartMachine(int mach, int program)
     {
-      _status.Machines[mach].Machining = true;
+      // ICC sometimes sets Machining = true and sometimes not, so Insight should check only program is non-zero
+      //_status.Machines[mach].Machining = true;
       _status.Machines[mach].CurrentlyExecutingProgram = program;
       return this;
     }
