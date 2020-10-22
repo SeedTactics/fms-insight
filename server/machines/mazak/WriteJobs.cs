@@ -319,9 +319,10 @@ namespace MazakMachineInterface
       var completed = new Dictionary<(string uniq, int proc1path), int>();
       foreach (var sch in schedules.Schedules)
       {
-        if (!MazakPart.IsSailPart(sch.PartName)) continue;
         if (string.IsNullOrEmpty(sch.Comment)) continue;
+        if (!MazakPart.IsSailPart(sch.PartName, sch.Comment)) continue;
         MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
+        if (jobDB.LoadJob(unique) == null) continue;
 
         if (sch.PlanQuantity == sch.CompleteQuantity)
         {

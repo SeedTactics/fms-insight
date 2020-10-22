@@ -242,7 +242,7 @@ namespace MazakMachineInterface
         _parent = parent;
         _schRow = s;
 
-        if (MazakPart.IsSailPart(_schRow.PartName))
+        if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
         {
           MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
           var job = jdb.LoadJob(unique);

@@ -142,7 +142,7 @@ namespace BlackMaple.FMSInsight.Niigata
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
         ), logDB, unarchivedJobs, jobCache, jobDB),
         JobQtyRemainingOnProc1 = CountRemainingQuantity(jobDB, logDB, unarchivedJobs, pals),
-        ProgramNums = FindProgramNums(jobDB, unarchivedJobs),
+        ProgramNums = FindProgramNums(jobDB, unarchivedJobs, status),
       };
     }
 
@@ -991,7 +991,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       bool runningProgram = false;
       bool runningAnyProgram = false;
-      if (pallet.MachineStatus != null && pallet.MachineStatus.Machining)
+      if (pallet.MachineStatus != null && pallet.MachineStatus.CurrentlyExecutingProgram > 0)
       {
         runningAnyProgram = true;
         if (ss.JobStop.ProgramRevision.HasValue)
@@ -1554,7 +1554,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, IEnumerable<JobPlan> unarchivedJobs)
+    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, IEnumerable<JobPlan> unarchivedJobs, NiigataStatus status)
     {
       var stops =
         unarchivedJobs
@@ -1569,7 +1569,18 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (stop.ProgramRevision.HasValue)
         {
-          progs[(stop.ProgramName, stop.ProgramRevision.Value)] = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
+          var prog = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
+          progs[(stop.ProgramName, stop.ProgramRevision.Value)] = prog;
+          if (!string.IsNullOrEmpty(prog.CellControllerProgramName) && int.TryParse(prog.CellControllerProgramName, out var progNum))
+          {
+            // operator might have deleted the program
+            if (!status.Programs.ContainsKey(progNum) || !AssignNewRoutesOnPallets.IsInsightProgram(status.Programs[progNum]))
+            {
+              // clear it, so that the Assignment adds the program back as a new number
+              jobDB.SetCellControllerProgramForProgram(prog.ProgramName, prog.Revision, null);
+              prog.CellControllerProgramName = null;
+            }
+          }
         }
       }
       return progs;

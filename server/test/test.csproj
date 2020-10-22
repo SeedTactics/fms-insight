@@ -11,8 +11,8 @@
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <ProjectReference Include="../machines/mazak/mazak.csproj" />
     <ProjectReference Include="../machines/niigata/niigata.csproj" />
-    <None Update="log.v17.db" CopyToOutputDirectory="Always"/>
-    <None Update="job.v16.db" CopyToOutputDirectory="Always"/>
+    <None Update="log.v17.db" CopyToOutputDirectory="Always" />
+    <None Update="job.v16.db" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,9 +24,10 @@
     <PackageReference Include="System.Reflection" Version="*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="*" />
 
-    <PackageReference Include="FluentAssertions" Version="5.9.*"/>
-    <PackageReference Include="AutoFixture" Version="4.*"/>
-    <PackageReference Include="NSubstitute" Version="4.*"/>
+    <PackageReference Include="FluentAssertions" Version="5.*" />
+    <PackageReference Include="FluentAssertions.Json" Version="5.*" />
+    <PackageReference Include="AutoFixture" Version="4.*" />
+    <PackageReference Include="NSubstitute" Version="4.*" />
   </ItemGroup>
 
 </Project>

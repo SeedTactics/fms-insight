@@ -46,7 +46,7 @@ namespace MazakMachineInterface
     public static CurrentStatus Build(JobDB jobDB, EventLogDB log, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
-      CalculateMaxProcAndPath(mazakData, out var uniqueToMaxPath, out var uniqueToMaxProcess, out var partNameToNumProc);
+      CalculateMaxProcAndPath(mazakData, jobDB, out var uniqueToMaxPath, out var uniqueToMaxProcess, out var partNameToNumProc);
 
       var currentLoads = new List<LoadAction>(mazakData.LoadActions);
 
@@ -75,7 +75,7 @@ namespace MazakMachineInterface
       {
         precedence += 1;
 
-        if (!MazakPart.IsSailPart(schRow.PartName))
+        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
           continue;
 
         MazakPartRow partRow = null;
@@ -364,6 +364,7 @@ namespace MazakMachineInterface
     }
 
     private static void CalculateMaxProcAndPath(MazakSchedulesPartsPallets mazakData,
+                                                JobDB jobDB,
                                                out Dictionary<string, int> uniqueToMaxProc1Path,
                                                out Dictionary<string, int> uniqueToMaxProcess,
                                                out Dictionary<string, int> partNameToNumProc)
@@ -375,13 +376,15 @@ namespace MazakMachineInterface
       {
         partNameToNumProc[MazakPart.ExtractPartNameFromMazakPartName(partRow.PartName)] = partRow.Processes.Count();
 
-        if (MazakPart.IsSailPart(partRow.PartName) && !string.IsNullOrEmpty(partRow.Comment))
+        if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment) && !string.IsNullOrEmpty(partRow.Comment))
         {
           string jobUnique = "";
           bool manual = false;
           int numProc = partRow.Processes.Count;
 
           MazakPart.ParseComment(partRow.Comment, out jobUnique, out var paths, out manual);
+
+          if (jobDB.LoadJob(jobUnique) == null) continue;
 
           if (uniqueToMaxProc1Path.ContainsKey(jobUnique))
           {

@@ -211,6 +211,16 @@ namespace MachineWatchTest
         if (close) logDb.Close();
       }
 
+      /*
+      if (scenario == "pathgroups-load")
+      {
+        File.WriteAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
+          JsonConvert.SerializeObject(status, jsonSettings)
+        );
+      }
+      */
+
       var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json")),
