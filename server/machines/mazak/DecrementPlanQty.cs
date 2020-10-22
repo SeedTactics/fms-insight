@@ -166,40 +166,40 @@ namespace MazakMachineInterface
 
     private void RecordDecrement(JobDB jobDB, List<DecrSchedule> decrs, DateTime? now)
     {
-      var decrAmt = new Dictionary<string, int>();
-      var partNames = new Dictionary<string, string>();
+      var decrAmt = new List<JobDB.NewDecrementQuantity>();
       foreach (var decr in decrs)
       {
         var planned = decr.Job.GetPlannedCyclesOnFirstProcess(path: decr.Proc1Path);
         if (planned > decr.NewPlanQty)
         {
-          if (decrAmt.ContainsKey(decr.Job.UniqueStr))
+          decrAmt.Add(new JobDB.NewDecrementQuantity()
           {
-            decrAmt[decr.Job.UniqueStr] += planned - decr.NewPlanQty;
-          }
-          else
-          {
-            partNames.Add(decr.Job.UniqueStr, decr.Job.PartName);
-            decrAmt.Add(decr.Job.UniqueStr, planned - decr.NewPlanQty);
-          }
+            JobUnique = decr.Job.UniqueStr,
+            Proc1Path = decr.Proc1Path,
+            Part = decr.Job.PartName,
+            Quantity = planned - decr.NewPlanQty
+          });
         }
       }
 
       var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddHours(1), includeDecremented: false);
       foreach (var j in oldJobs)
       {
-        decrAmt[j.UniqueStr] = Enumerable.Range(1, j.GetNumPaths(process: 1)).Select(path => j.GetPlannedCyclesOnFirstProcess(path)).Sum();
-        partNames[j.UniqueStr] = j.PartName;
+        for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
+        {
+          decrAmt.Add(new JobDB.NewDecrementQuantity()
+          {
+            JobUnique = j.UniqueStr,
+            Proc1Path = path,
+            Part = j.PartName,
+            Quantity = j.GetPlannedCyclesOnFirstProcess(path)
+          });
+        }
       }
 
-      if (decrs.Count > 0)
+      if (decrAmt.Count > 0)
       {
-        jobDB.AddNewDecrement(decrAmt.Select(kv => new JobDB.NewDecrementQuantity()
-        {
-          JobUnique = kv.Key,
-          Part = partNames[kv.Key],
-          Quantity = kv.Value
-        }), now);
+        jobDB.AddNewDecrement(decrAmt, now);
       }
     }
 

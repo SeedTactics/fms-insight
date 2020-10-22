@@ -119,6 +119,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _jobDB.AddNewDecrement(new[] {
         new JobDB.NewDecrementQuantity() {
           JobUnique = "u1",
+          Proc1Path = 1,
           Part = "p1",
           Quantity = 30
         }
@@ -295,6 +296,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       expectedJob.Decrements.Add(new DecrementQuantity()
       {
         DecrementId = 0,
+        Proc1Path = 1,
         TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
         Quantity = 30
       });
@@ -435,12 +437,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         new JobDB.NewDecrementQuantity()
         {
           JobUnique = "u1",
+          Proc1Path = 1,
           Part = "p1",
           Quantity = 10
         },
         new JobDB.NewDecrementQuantity()
         {
           JobUnique = "u2",
+          Proc1Path = 2,
           Part = "p2",
           Quantity = 5
         }
@@ -451,6 +455,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           DecrementId = 0,
           JobUnique = "u1",
+          Proc1Path = 1,
           Part = "p1",
           Quantity = 10,
           TimeUTC = now
@@ -458,6 +463,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         new JobAndDecrementQuantity()
         {
           DecrementId = 0,
+          Proc1Path = 2,
           JobUnique = "u2",
           Part = "p2",
           Quantity = 5,

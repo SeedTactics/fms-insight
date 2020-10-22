@@ -1921,6 +1921,10 @@
           "type": "integer",
           "format": "int64"
         },
+        "Proc1Path": {
+          "type": "integer",
+          "format": "int32"
+        },
         "TimeUTC": {
           "type": "string",
           "format": "date-time"
@@ -2797,6 +2801,10 @@
         },
         "JobUnique": {
           "type": "string"
+        },
+        "Proc1Path": {
+          "type": "integer",
+          "format": "int32"
         },
         "TimeUTC": {
           "type": "string",

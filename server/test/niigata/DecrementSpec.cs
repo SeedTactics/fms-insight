@@ -89,9 +89,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         _jobDB.LoadDecrementsForJob("u1").Should().BeEquivalentTo(
           new[] {
-          new DecrementQuantity() {
-            DecrementId = 0, TimeUTC = DateTime.UtcNow, Quantity = 5 + 7
-          }
+            new DecrementQuantity() {
+              DecrementId = 0, Proc1Path = 1, TimeUTC = DateTime.UtcNow, Quantity = 5
+            },
+            new DecrementQuantity() {
+              DecrementId = 0, Proc1Path = 2, TimeUTC = DateTime.UtcNow, Quantity = 7
+            }
           },
           options => options
             .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))

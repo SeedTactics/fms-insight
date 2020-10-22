@@ -53,24 +53,18 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (j.ManuallyCreatedJob || jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
 
-        int qtyToDecr = 0;
         for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
         {
           if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
           {
-            qtyToDecr += qty;
+            decrs.Add(new JobDB.NewDecrementQuantity()
+            {
+              JobUnique = j.UniqueStr,
+              Proc1Path = path,
+              Part = j.PartName,
+              Quantity = qty
+            });
           }
-        }
-
-        Log.Debug("Job {unique} part {part} calculated {qtyToDecr} to decrement", j.UniqueStr, j.PartName, qtyToDecr);
-        if (qtyToDecr > 0)
-        {
-          decrs.Add(new JobDB.NewDecrementQuantity()
-          {
-            JobUnique = j.UniqueStr,
-            Part = j.PartName,
-            Quantity = qtyToDecr
-          });
         }
       }
 

@@ -391,6 +391,7 @@ namespace MachineWatchTest
         new[] {new DecrementQuantity()
         {
           DecrementId = 0,
+          Proc1Path = 1,
           TimeUTC = DateTime.UtcNow,
           Quantity = 5
         }},

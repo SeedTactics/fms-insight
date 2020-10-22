@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -67,6 +67,14 @@ namespace MachineWatchTest
       var actual = _jobs.LoadJob("Unique1");
 
       JobEqualityChecks.CheckJobEqual(expected, actual, true);
+
+      _jobs.LoadDecrementsForJob("Unique1").Should().BeEquivalentTo(new DecrementQuantity()
+      {
+        DecrementId = 12,
+        Proc1Path = 0,
+        TimeUTC = new DateTime(2020, 10, 22, 4, 5, 6, DateTimeKind.Utc),
+        Quantity = 123
+      });
     }
 
     [Fact]
@@ -86,6 +94,25 @@ namespace MachineWatchTest
       }, null);
 
       JobEqualityChecks.CheckJobEqual(newJob, _jobs.LoadJob("mynewunique"), true);
+
+      var now = DateTime.UtcNow;
+      _jobs.AddNewDecrement(new[] {
+        new JobDB.NewDecrementQuantity() {
+          JobUnique = "mynewunique",
+          Proc1Path = 22,
+          Part = "thepart",
+          Quantity = 88
+        }
+      }, now);
+
+      _jobs.LoadDecrementsForJob("mynewunique").Should().BeEquivalentTo(new[] {
+        new DecrementQuantity() {
+          DecrementId = 13, // existing old job had decrement id 12
+          Proc1Path = 22,
+          TimeUTC = now,
+          Quantity = 88
+        }
+      });
     }
 
     private JobPlan CreateJob()
