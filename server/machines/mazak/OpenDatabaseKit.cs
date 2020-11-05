@@ -171,9 +171,70 @@ namespace MazakMachineInterface
       }
     }
 
+    private const int EntriesPerTransaction = 15;
+
+    internal static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
+    {
+      // Open Database Kit can lockup if too many commands are sent at once
+      var cur = new MazakWriteData();
+      var lst = new List<MazakWriteData> { cur };
+      int cnt = 0;
+
+      void incrementCnt()
+      {
+        cnt += 1;
+        if (cnt >= EntriesPerTransaction)
+        {
+          cur = new MazakWriteData();
+          lst.Add(cur);
+          cnt = 0;
+        }
+      }
+
+      foreach (var s in original.Schedules)
+      {
+        cur.Schedules.Add(s);
+        incrementCnt();
+      }
+
+      foreach (var p in original.Parts)
+      {
+        cur.Parts.Add(p);
+        incrementCnt();
+      }
+
+      foreach (var p in original.Pallets)
+      {
+        cur.Pallets.Add(p);
+        incrementCnt();
+      }
+
+      foreach (var f in original.Fixtures)
+      {
+        cur.Fixtures.Add(f);
+        incrementCnt();
+      }
+
+      foreach (var p in original.Programs)
+      {
+        cur.Programs.Add(p);
+        incrementCnt();
+      }
+
+      return lst;
+    }
+
     private const int WaitCount = 5;
 
     public void Save(MazakWriteData data, string prefix)
+    {
+      foreach (var chunk in SplitWriteData(data))
+      {
+        SaveChunck(chunk, prefix);
+      }
+    }
+
+    private void SaveChunck(MazakWriteData data, string prefix)
     {
       CheckReadyForConnect();
 

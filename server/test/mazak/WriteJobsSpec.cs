@@ -515,5 +515,81 @@ namespace MachineWatchTest
 
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
     }
+
+    [Fact]
+    public void SplitsWrites()
+    {
+      //Arrange
+      var orig = new MazakWriteData();
+      var rng = new Random();
+
+      int cnt = rng.Next(10, 20);
+      for (int i = 0; i < cnt; i++)
+      {
+        orig.Schedules.Add(new MazakScheduleRow()
+        {
+          Id = i
+        });
+      }
+
+      cnt = rng.Next(10, 20);
+      for (int i = 0; i < cnt; i++)
+      {
+        orig.Parts.Add(new MazakPartRow()
+        {
+          PartName = "Part" + i.ToString()
+        });
+      }
+
+      cnt = rng.Next(10, 20);
+      for (int i = 0; i < cnt; i++)
+      {
+        orig.Pallets.Add(new MazakPalletRow()
+        {
+          PalletNumber = i
+        });
+      }
+
+      cnt = rng.Next(10, 20);
+      for (int i = 0; i < cnt; i++)
+      {
+        orig.Fixtures.Add(new MazakFixtureRow()
+        {
+          FixtureName = "fix" + i.ToString()
+        });
+      }
+
+      cnt = rng.Next(10, 20);
+      for (int i = 0; i < cnt; i++)
+      {
+        orig.Programs.Add(new NewMazakProgram()
+        {
+          ProgramName = "prog " + i.ToString()
+        });
+      }
+
+
+      //act
+      var chunks = OpenDatabaseKitTransactionDB.SplitWriteData(orig);
+
+      // check
+
+      chunks.SelectMany(c => c.Schedules)
+        .Should().BeEquivalentTo(orig.Schedules);
+      chunks.SelectMany(c => c.Parts)
+        .Should().BeEquivalentTo(orig.Parts);
+      chunks.SelectMany(c => c.Pallets)
+        .Should().BeEquivalentTo(orig.Pallets);
+      chunks.SelectMany(c => c.Fixtures)
+        .Should().BeEquivalentTo(orig.Fixtures);
+      chunks.SelectMany(c => c.Programs)
+        .Should().BeEquivalentTo(orig.Programs);
+
+      foreach (var chunk in chunks)
+      {
+        (chunk.Schedules.Count() + chunk.Parts.Count() + chunk.Pallets.Count() + chunk.Fixtures.Count() + chunk.Programs.Count())
+          .Should().BeLessOrEqualTo(15);
+      }
+    }
   }
 }
