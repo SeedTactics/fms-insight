@@ -939,6 +939,7 @@ namespace MachineWatchTest
       _jobDB.LoadProgramContent("bbb", 6).Should().Be("bbb program content");
       _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
       _jobDB.LoadProgramContent("ccc", 1).Should().BeNull();
+      _jobDB.LoadProgramsInCellController().Should().BeEmpty();
 
       // error on program content mismatch
       _jobDB.Invoking(j => j.AddJobs(new NewJobs
@@ -1034,6 +1035,7 @@ namespace MachineWatchTest
       _jobDB.LoadProgramContent("aaa", 2).Should().Be("aaa program content rev 2");
 
       //now set cell controller names
+      _jobDB.LoadProgramsInCellController().Should().BeEmpty();
       _jobDB.SetCellControllerProgramForProgram("aaa", 1, "aaa-1");
       _jobDB.SetCellControllerProgramForProgram("bbb", 6, "bbb-6");
 
@@ -1066,8 +1068,34 @@ namespace MachineWatchTest
         CellControllerProgramName = "bbb-6"
       });
       _jobDB.ProgramFromCellControllerProgram("aagaiouhgi").Should().BeNull();
+      _jobDB.LoadProgramsInCellController().Should().BeEquivalentTo(new[] {
+        new ProgramRevision()
+          {
+            ProgramName = "aaa",
+            Revision = 1,
+            Comment = "aaa comment",
+            CellControllerProgramName = "aaa-1"
+          },
+        new ProgramRevision()
+          {
+            ProgramName = "bbb",
+            Revision = 6,
+            Comment = "bbb comment",
+            CellControllerProgramName = "bbb-6"
+          }
+      });
 
       _jobDB.SetCellControllerProgramForProgram("aaa", 1, null);
+
+      _jobDB.LoadProgramsInCellController().Should().BeEquivalentTo(new[] {
+        new ProgramRevision()
+          {
+            ProgramName = "bbb",
+            Revision = 6,
+            Comment = "bbb comment",
+            CellControllerProgramName = "bbb-6"
+          }
+      });
 
       _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeNull();
       _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new ProgramRevision()

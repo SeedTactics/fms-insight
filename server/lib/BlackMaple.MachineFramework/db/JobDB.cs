@@ -2765,6 +2765,36 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public List<MachineWatchInterface.ProgramRevision> LoadProgramsInCellController()
+    {
+      lock (_cfg)
+      {
+        using (var cmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
+        {
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
+                            " WHERE CellControllerProgramName IS NOT NULL";
+
+          using (var reader = cmd.ExecuteReader())
+          {
+            var ret = new List<MachineWatchInterface.ProgramRevision>();
+            while (reader.Read())
+            {
+              ret.Add(new MachineWatchInterface.ProgramRevision
+              {
+                ProgramName = reader.GetString(0),
+                Revision = reader.GetInt64(1),
+                Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
+                CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3)
+              });
+            }
+            return ret;
+          }
+        }
+      }
+    }
+
     public void SetCellControllerProgramForProgram(string program, long revision, string cellCtProgName)
     {
       lock (_cfg)
