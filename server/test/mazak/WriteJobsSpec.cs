@@ -51,7 +51,8 @@ namespace MachineWatchTest
     {
       public MazakDbType MazakType => MazakDbType.MazakSmooth;
       public MazakWriteData DeletePartsPals { get; set; }
-      public MazakWriteData Fixtures { get; set; }
+      public MazakWriteData DelFixtures { get; set; }
+      public MazakWriteData AddFixtures { get; set; }
       public MazakWriteData AddParts { get; set; }
       public MazakWriteData AddSchedules { get; set; }
       public MazakWriteData UpdateSchedules { get; set; }
@@ -63,9 +64,13 @@ namespace MachineWatchTest
         {
           DeletePartsPals = data;
         }
-        else if (prefix == "Fixtures")
+        else if (prefix == "Delete Fixtures")
         {
-          Fixtures = data;
+          DelFixtures = data;
+        }
+        else if (prefix == "Add Fixtures")
+        {
+          AddFixtures = data;
         }
         else if (prefix == "Add Parts")
         {
@@ -336,7 +341,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
@@ -378,7 +384,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "path-groups-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "path-groups-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "path-groups-add-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "path-groups-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
 
@@ -434,7 +441,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "managed-progs-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "managed-progs-add-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "managed-progs-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
     }
@@ -456,7 +464,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       _writeMock.AddSchedules.Should().BeNull();
 
@@ -481,7 +490,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.Fixtures, "fixtures-queues-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
@@ -523,7 +533,7 @@ namespace MachineWatchTest
       var orig = new MazakWriteData();
       var rng = new Random();
 
-      int cnt = rng.Next(10, 20);
+      int cnt = rng.Next(15, 25);
       for (int i = 0; i < cnt; i++)
       {
         orig.Schedules.Add(new MazakScheduleRow()
@@ -532,7 +542,7 @@ namespace MachineWatchTest
         });
       }
 
-      cnt = rng.Next(10, 20);
+      cnt = rng.Next(15, 25);
       for (int i = 0; i < cnt; i++)
       {
         orig.Parts.Add(new MazakPartRow()
@@ -541,7 +551,7 @@ namespace MachineWatchTest
         });
       }
 
-      cnt = rng.Next(10, 20);
+      cnt = rng.Next(15, 25);
       for (int i = 0; i < cnt; i++)
       {
         orig.Pallets.Add(new MazakPalletRow()
@@ -550,7 +560,7 @@ namespace MachineWatchTest
         });
       }
 
-      cnt = rng.Next(10, 20);
+      cnt = rng.Next(15, 25);
       for (int i = 0; i < cnt; i++)
       {
         orig.Fixtures.Add(new MazakFixtureRow()
@@ -559,7 +569,7 @@ namespace MachineWatchTest
         });
       }
 
-      cnt = rng.Next(10, 20);
+      cnt = rng.Next(15, 25);
       for (int i = 0; i < cnt; i++)
       {
         orig.Programs.Add(new NewMazakProgram()
@@ -588,7 +598,7 @@ namespace MachineWatchTest
       foreach (var chunk in chunks)
       {
         (chunk.Schedules.Count() + chunk.Parts.Count() + chunk.Pallets.Count() + chunk.Fixtures.Count() + chunk.Programs.Count())
-          .Should().BeLessOrEqualTo(15);
+          .Should().BeLessOrEqualTo(20);
       }
     }
   }

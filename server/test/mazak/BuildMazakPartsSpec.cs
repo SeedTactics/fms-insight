@@ -1292,31 +1292,34 @@ namespace MachineWatchTest
       getProgramCt("aaa", 3).Returns("aaa 3 ct");
       getProgramCt("bbb", 7).Returns("bbb 7 ct");
 
-      var progTrans = pMap.CreateDeleteFixtureAndProgramDatabaseRows(getProgramCt, "theprogdir");
-      progTrans.Programs.Should().BeEquivalentTo(new[] {
-        new NewMazakProgram() {
-          Command = MazakWriteCommand.Add,
-          MainProgram = System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA"),
-          Comment = "Insight:3:aaa",
-          ProgramName = "aaa",
-          ProgramRevision = 3,
-          ProgramContent = "aaa 3 ct"
-        },
-        new NewMazakProgram() {
-          Command = MazakWriteCommand.Add,
-          MainProgram = System.IO.Path.Combine("theprogdir", "bbb_rev7.EIA"),
-          Comment = "Insight:7:bbb",
-          ProgramName = "bbb",
-          ProgramRevision = 7,
-          ProgramContent = "bbb 7 ct"
-        },
-        new NewMazakProgram() {
-          Command = MazakWriteCommand.Delete,
-          MainProgram = System.IO.Path.Combine("theprogdir", "ccc_rev8.EIA"),
-          Comment = "Insight:8:ccc"
-        }
-        // ccc rev9 already exists, should not be added
-      });
+      pMap.AddFixtureAndProgramDatabaseRows(getProgramCt, "theprogdir")
+        .Programs.Should().BeEquivalentTo(new[] {
+          new NewMazakProgram() {
+            Command = MazakWriteCommand.Add,
+            MainProgram = System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA"),
+            Comment = "Insight:3:aaa",
+            ProgramName = "aaa",
+            ProgramRevision = 3,
+            ProgramContent = "aaa 3 ct"
+          },
+          new NewMazakProgram() {
+            Command = MazakWriteCommand.Add,
+            MainProgram = System.IO.Path.Combine("theprogdir", "bbb_rev7.EIA"),
+            Comment = "Insight:7:bbb",
+            ProgramName = "bbb",
+            ProgramRevision = 7,
+            ProgramContent = "bbb 7 ct"
+          },
+        });
+      pMap.DeleteFixtureAndProgramDatabaseRows()
+        .Programs.Should().BeEquivalentTo(new[] {
+          new NewMazakProgram() {
+            Command = MazakWriteCommand.Delete,
+            MainProgram = System.IO.Path.Combine("theprogdir", "ccc_rev8.EIA"),
+            Comment = "Insight:8:ccc"
+          }
+          // ccc rev9 already exists, should not be added
+        });
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -1466,8 +1469,16 @@ namespace MachineWatchTest
           Comment = "Insight",
           Command = MazakWriteCommand.Delete
         });
-      var actions = map.CreateDeleteFixtureAndProgramDatabaseRows((p, r) => throw new Exception("Unexpected program lookup"), "C:\\NCProgs");
-      actions.Fixtures.Should().BeEquivalentTo(add.Concat(del));
+
+      var actions = map.AddFixtureAndProgramDatabaseRows((p, r) => throw new Exception("Unexpected program lookup"), "C:\\NCProgs");
+      actions.Fixtures.Should().BeEquivalentTo(add);
+      actions.Schedules.Should().BeEmpty();
+      actions.Parts.Should().BeEmpty();
+      actions.Pallets.Should().BeEmpty();
+      actions.Programs.Should().BeEmpty();
+
+      actions = map.DeleteFixtureAndProgramDatabaseRows();
+      actions.Fixtures.Should().BeEquivalentTo(del);
       actions.Schedules.Should().BeEmpty();
       actions.Parts.Should().BeEmpty();
       actions.Pallets.Should().BeEmpty();

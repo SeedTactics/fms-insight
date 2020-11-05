@@ -4,11 +4,6 @@
   "Pallets": [],
   "Fixtures": [
     {
-      "FixtureName": "fixtoremove",
-      "Comment": "Insight",
-      "Command": "Delete"
-    },
-    {
       "FixtureName": "F:0:2:fixtureAA1:1",
       "Comment": "Insight",
       "Command": "Add"
@@ -34,11 +29,5 @@
       "Command": "Add"
     }
   ],
-  "Programs": [
-    {
-      "Command": "Delete",
-      "MainProgram": "theprogdir/prog-bbb-1_rev2.EIA",
-      "Comment": "Insight:2:prog-bbb-1"
-    }
-  ]
+  "Programs": []
 }

@@ -171,7 +171,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private const int EntriesPerTransaction = 15;
+    private const int EntriesPerTransaction = 20;
 
     internal static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
     {
