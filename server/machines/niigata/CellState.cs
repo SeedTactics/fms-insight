@@ -73,7 +73,8 @@ namespace BlackMaple.FMSInsight.Niigata
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterial> QueuedMaterial { get; set; }
     public Dictionary<(string uniq, int proc1path), int> JobQtyRemainingOnProc1 { get; set; }
-    public Dictionary<(string progName, long revision), ProgramRevision> ProgramNums { get; set; }
+    public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
+    public List<ProgramRevision> OldUnusedPrograms { get; set; }
   }
 
   public interface IBuildCellState
@@ -132,17 +133,23 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       pals.Sort((p1, p2) => p1.Status.Master.PalletNum.CompareTo(p2.Status.Master.PalletNum));
+
+      // must calculate QueuedMaterial before loading programs, because QueuedMaterial might unarchive a job.
+      var queuedMats = QueuedMaterial(new HashSet<long>(
+          pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
+        ), logDB, unarchivedJobs, jobCache, jobDB);
+      var progsInUse = FindProgramNums(jobDB, unarchivedJobs, status);
+
       return new CellState()
       {
         Status = status,
         UnarchivedJobs = unarchivedJobs,
         PalletStateUpdated = palletStateUpdated,
         Pallets = pals,
-        QueuedMaterial = QueuedMaterial(new HashSet<long>(
-          pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
-        ), logDB, unarchivedJobs, jobCache, jobDB),
+        QueuedMaterial = queuedMats,
         JobQtyRemainingOnProc1 = CountRemainingQuantity(jobDB, logDB, unarchivedJobs, pals),
-        ProgramNums = FindProgramNums(jobDB, unarchivedJobs, status),
+        ProgramsInUse = progsInUse,
+        OldUnusedPrograms = OldUnusedPrograms(jobDB, status, progsInUse)
       };
     }
 
@@ -1605,6 +1612,70 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
       return progs;
+    }
+
+    private List<ProgramRevision> OldUnusedPrograms(
+      JobDB jobDB,
+      NiigataStatus status,
+      Dictionary<(string progName, long revision), ProgramRevision> usedProgs
+    )
+    {
+      // the icc program numbers currently used by schedules
+      var usedIccProgs = new HashSet<string>(
+        usedProgs.Values.Select(p => p.CellControllerProgramName)
+        .Concat(
+          status.Pallets
+          .SelectMany(p => p.Master.Routes)
+          .SelectMany(r =>
+            r is MachiningStep
+              ? ((MachiningStep)r).ProgramNumsToRun.Select(p => p.ToString())
+              : Enumerable.Empty<string>()
+          )
+        )
+      );
+
+      // we want to keep around the latest revision for each program just so that we don't delete it as soon as a schedule
+      // completes in anticipation of a new schedule being downloaded.
+      var maxRevForProg =
+        status.Programs
+          .Select(p => AssignNewRoutesOnPallets.TryParseProgramComment(p.Value, out string pName, out long rev) ? new { pName, rev } : null)
+          .Where(p => p != null)
+          .ToLookup(p => p.pName, p => p.rev)
+          .ToDictionary(ps => ps.Key, ps => ps.Max());
+
+      var progsToDelete = new Dictionary<string, ProgramRevision>();
+
+      // ICC has a bug where it occasionally (about 1 out of 20 time) only partially deletes the program.  It is gone from
+      // the status_program PostgreSQL table but still exists.  So first calculate the programs to delete from our own
+      // database.
+
+      foreach (var prog in jobDB.LoadProgramsInCellController())
+      {
+        if (string.IsNullOrEmpty(prog.CellControllerProgramName)) continue;
+        if (usedIccProgs.Contains(prog.CellControllerProgramName)) continue;
+        if (prog.Revision >= maxRevForProg[prog.ProgramName]) continue;
+        progsToDelete.Add(prog.CellControllerProgramName, prog);
+      }
+
+      // next, check programs in the ICC itself (perhaps the databases were deleted)
+      foreach (var prog in status.Programs)
+      {
+        if (!AssignNewRoutesOnPallets.IsInsightProgram(prog.Value)) continue;
+        if (usedIccProgs.Contains(prog.Key.ToString())) continue;
+        if (progsToDelete.ContainsKey(prog.Key.ToString())) continue;
+        if (!AssignNewRoutesOnPallets.TryParseProgramComment(prog.Value, out string pName, out long rev)) continue;
+        if (rev >= maxRevForProg[pName]) continue;
+
+        progsToDelete.Add(prog.Key.ToString(), new ProgramRevision()
+        {
+          ProgramName = pName,
+          Revision = rev,
+          Comment = "",
+          CellControllerProgramName = prog.Key.ToString(),
+        });
+      }
+
+      return progsToDelete.Values.ToList();
     }
 
     private static Func<A, B> Memoize<A, B>(Func<A, B> f)

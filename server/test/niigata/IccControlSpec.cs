@@ -2489,7 +2489,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
-    [Fact(Skip = "Deleting programs disabled for now")]
+    [Fact]
     public void DeletePrograms()
     {
       _dsl
@@ -2555,8 +2555,59 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetIccProgram(4001, "Insight:3:prog111") // has newer revision, but a custom manual pallet uses it so don't delete
         .SetIccProgram(4002, "Insight:4:prog111") // has newer revision 5, should be deleted
         .SetIccProgram(4003, "Insight:7:prog222") // shouldn't be deleted since it is the latest revision, even though not used
+        .ExpectOldProgram(name: "prog111", rev: 4, num: 4002)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectDeleteProgram(4002, "prog111", 4)
+        })
+
+
+        // add a second job with higher revisions
+        .AddJobs(new[] {
+          FakeIccDsl.CreateMultiProcSamePalletJob(
+            unique: "uniq2",
+            part: "part1",
+            qty: 3,
+            priority: 10,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog1: "prog111",
+            prog1Rev: 100L,
+            prog2: "prog222",
+            prog2Rev: 200L,
+            loadMins1: 8,
+            unloadMins1: 9,
+            machMins1: 14,
+            loadMins2: 10,
+            unloadMins2: 11,
+            machMins2: 15,
+            fixture: "fix1",
+            face1: 1,
+            face2: 2
+          )},
+          new[] {
+            (prog: "prog111", rev: 100L),
+            (prog: "prog222", rev: 200L),
+          }
+        )
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2101, name: "prog111", rev: 100, mcMin: 14),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2201, name: "prog222", rev: 200, mcMin: 15),
+          FakeIccDsl.ExpectDeleteProgram(4003, "prog222", 7) // 4003 now outdated
+        })
+
+        // archive the first job, so old programs
+        .OverrideRoute(pal: 1, comment: "aaa", noWork: false, luls: new int[] { }, machs: new int[] { }, progs: new int[] { })
+        .ClearExpectedLoadCastings()
+        .RemoveJobRemainingCnt("uniq1", path: 1)
+        .ArchiveJob("uniq1")
+        .ExpectOldProgram("prog111", rev: 5, num: 2100)
+        .ExpectOldProgram("prog222", rev: 6, num: 2200)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectDeleteProgram(2100, "prog111", rev: 5),
+          FakeIccDsl.ExpectDeleteProgram(2200, "prog222", rev: 6, fail: true),
+          FakeIccDsl.ExpectDeleteProgram(2200, "prog222", rev: 6)
         })
         ;
     }

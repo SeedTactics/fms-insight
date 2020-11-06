@@ -76,14 +76,13 @@ namespace BlackMaple.FMSInsight.Niigata
       // only need to decide on a single change, SyncPallets will call in a loop until no changes are needed.
 
       // first, check if any programs are needed
-      foreach (var prog in cellSt.ProgramNums)
+      foreach (var prog in cellSt.ProgramsInUse)
       {
         if (string.IsNullOrEmpty(prog.Value.CellControllerProgramName))
         {
           return AddProgram(
-            existing: cellSt.Status.Programs,
-            prog: prog.Value,
-            allJobs: cellSt.UnarchivedJobs
+            cellSt: cellSt,
+            prog: prog.Value
           );
         }
       }
@@ -105,7 +104,7 @@ namespace BlackMaple.FMSInsight.Niigata
           var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material.Select(ms => ms.Mat).ToList(), queuedMats: cellSt.QueuedMaterial);
           if (pathsToLoad != null && pathsToLoad.Count > 0)
           {
-            return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
+            return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse);
           }
         }
       }
@@ -122,7 +121,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material.Select(ms => ms.Mat).ToList(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
+          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse);
         }
       }
 
@@ -139,15 +138,12 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramNums);
+          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse);
         }
       }
 
       // delete old programs
-      // ICC currently gives timeout when attempting to delete, disable for now
-      //return CheckForOldPrograms(cellSt);
-
-      return null;
+      return CheckForOldPrograms(cellSt);
     }
 
     #region Calculate Paths
@@ -631,23 +627,28 @@ namespace BlackMaple.FMSInsight.Niigata
       return false;
     }
 
-    private NewProgram AddProgram(IReadOnlyDictionary<int, ProgramEntry> existing, ProgramRevision prog, IEnumerable<JobPlan> allJobs)
+    private NewProgram AddProgram(CellState cellSt, ProgramRevision prog)
     {
       var procAndStop =
-        allJobs
+        cellSt.UnarchivedJobs
           .SelectMany(j => Enumerable.Range(1, j.NumProcesses).Select(proc => new { j, proc }))
           .SelectMany(j => Enumerable.Range(1, j.j.GetNumPaths(j.proc)).Select(path => new { j = j.j, proc = j.proc, path }))
           .SelectMany(j => j.j.GetMachiningStop(j.proc, j.path).Select(stop => new { stop, proc = j.proc }))
           .FirstOrDefault(s => s.stop.ProgramName == prog.ProgramName && s.stop.ProgramRevision == prog.Revision);
 
+      var existing = new HashSet<int>(
+        cellSt.Status.Programs.Keys.Concat(
+        cellSt.OldUnusedPrograms.Select(p => int.TryParse(p.CellControllerProgramName, out var num) ? num : 0)
+      ));
+
       int progNum = 0;
       if (procAndStop != null && procAndStop.proc >= 1 && procAndStop.proc <= 9)
       {
-        progNum = Enumerable.Range(2000 + procAndStop.proc * 100, 999).FirstOrDefault(p => !existing.ContainsKey(p));
+        progNum = Enumerable.Range(2000 + procAndStop.proc * 100, 999).FirstOrDefault(p => !existing.Contains(p));
       }
       if (progNum == 0)
       {
-        progNum = Enumerable.Range(3000, 9999 - 3000).FirstOrDefault(p => !existing.ContainsKey(p));
+        progNum = Enumerable.Range(3000, 9999 - 3000).FirstOrDefault(p => !existing.Contains(p));
       }
       if (progNum == 0)
       {
@@ -665,41 +666,15 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private DeleteProgram CheckForOldPrograms(CellState cellSt)
     {
-      // the icc program numbers currently used by schedules
-      var usedIccProgs = new HashSet<string>(
-        cellSt.ProgramNums.Values.Select(p => p.CellControllerProgramName)
-        .Concat(
-          cellSt.Status.Pallets
-          .SelectMany(p => p.Master.Routes)
-          .SelectMany(r =>
-            r is MachiningStep
-              ? ((MachiningStep)r).ProgramNumsToRun.Select(p => p.ToString())
-              : Enumerable.Empty<string>()
-          )
-        )
-      );
-
-      // we want to keep around the latest revision for each program just so that we don't delete it as soon as a schedule
-      // completes in anticipation of a new schedule being downloaded.
-      var maxRevForProg =
-        cellSt.Status.Programs
-          .Select(p => TryParseProgramComment(p.Value, out string pName, out long rev) ? new { pName, rev } : null)
-          .Where(p => p != null)
-          .ToLookup(p => p.pName, p => p.rev)
-          .ToDictionary(ps => ps.Key, ps => ps.Max());
-
-      foreach (var prog in cellSt.Status.Programs)
+      foreach (var prog in cellSt.OldUnusedPrograms)
       {
-        if (!IsInsightProgram(prog.Value)) continue;
-        if (usedIccProgs.Contains(prog.Key.ToString())) continue;
-        if (!TryParseProgramComment(prog.Value, out string pName, out long rev)) continue;
-        if (rev >= maxRevForProg[pName]) continue;
+        if (!int.TryParse(prog.CellControllerProgramName, out int progNum)) continue;
 
         return new DeleteProgram()
         {
-          ProgramNum = prog.Key,
-          ProgramName = pName,
-          ProgramRevision = rev
+          ProgramNum = progNum,
+          ProgramName = prog.ProgramName,
+          ProgramRevision = prog.Revision
         };
       }
 
