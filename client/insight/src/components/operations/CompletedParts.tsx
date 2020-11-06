@@ -50,10 +50,12 @@ import { createSelector } from "reselect";
 import { Last30Days } from "../../data/events";
 import { addDays, startOfToday } from "date-fns";
 import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
-import { ICurrentStatus } from "../../data/api";
+import { ICurrentStatus, IInProcessJob } from "../../data/api";
 import { PartIdenticon } from "../station-monitor/Material";
 import { makeStyles, createStyles } from "@material-ui/core/styles";
 import { ConnectedEditNoteDialog } from "../station-monitor/Queues";
+import { MoreHoriz } from "@material-ui/icons";
+import { JobDetailDialog } from "../station-monitor/JobDetails";
 
 interface JobsTableProps {
   readonly jobs: ReadonlyArray<ScheduledJobDisplay>;
@@ -84,6 +86,7 @@ const useTableStyles = makeStyles((theme) =>
 function JobsTable(props: JobsTableProps) {
   const classes = useTableStyles();
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
+  const [jobDetailsToShow, setJobDetailsToShow] = React.useState<Readonly<IInProcessJob> | null>(null);
   return (
     <Card raised>
       <CardHeader
@@ -116,6 +119,7 @@ function JobsTable(props: JobsTableProps) {
               <TableCell align="right">Completed</TableCell>
               <TableCell align="right">In Process</TableCell>
               <TableCell align="right">Remaining To Run</TableCell>
+              <TableCell />
             </TableRow>
           </TableHead>
           <TableBody>
@@ -164,11 +168,21 @@ function JobsTable(props: JobsTableProps) {
                 <TableCell align="right">{job.completedQty}</TableCell>
                 <TableCell align="right">{job.inProcessQty}</TableCell>
                 <TableCell align="right">{job.remainingQty}</TableCell>
+                <TableCell>
+                  {job.inProcJob !== null ? (
+                    <Tooltip title="Show Details">
+                      <IconButton size="small" onClick={() => setJobDetailsToShow(job.inProcJob)}>
+                        <MoreHoriz />
+                      </IconButton>
+                    </Tooltip>
+                  ) : undefined}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
         <ConnectedEditNoteDialog job={curEditNoteJob} closeDialog={() => setCurEditNoteJob(null)} />
+        <JobDetailDialog job={jobDetailsToShow} close={() => setJobDetailsToShow(null)} />
       </CardContent>
     </Card>
   );
