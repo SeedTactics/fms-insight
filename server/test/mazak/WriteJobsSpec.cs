@@ -342,7 +342,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
@@ -385,7 +385,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "path-groups-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "path-groups-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "path-groups-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "path-groups-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
 
@@ -442,7 +442,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "managed-progs-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "managed-progs-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "managed-progs-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
     }
@@ -465,7 +465,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       _writeMock.AddSchedules.Should().BeNull();
 
@@ -491,7 +491,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
