@@ -1235,10 +1235,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 5, program: "prog111", rev: 5, mat: BBBproc1)
         })
 
-        // pallet can be moved out of machine for operator to fix fault
+        // pallet can be moved out of machine for operator to fix fault.  Might go to after MC temporarily
         .AdvanceMinutes(2) // = 40min
         .EndMachine(mach: 5)
         .SetPalletAlarm(pal: 1, alarm: true)
+        .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
           im.Action.ElapsedMachiningTime = TimeSpan.FromMinutes(2);
@@ -1273,10 +1274,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 5, program: 2100)
         .ExpectNoChanges()
 
+        // various combinations of alarms/statuses are ignored
+        .SetPalletAlarm(pal: 1, alarm: false)
+        .SetMachAlarm(mc: 5, link: false, alarm: false)
+        .ExpectNoChanges()
+        .SetMachAlarm(mc: 5, link: true, alarm: true)
+        .ExpectNoChanges()
+
+        // program returns to active w/ no alarms
+        .SetPalletAlarm(pal: 1, alarm: false)
+        .SetBeforeMC(pal: 1)
+        .SetMachAlarm(mc: 5, link: true, alarm: false)
+        .ExpectNoChanges()
+
         // program finishes normally
         .AdvanceMinutes(2) // = 42min
         .EndMachine(mach: 5)
-        .SetPalletAlarm(pal: 1, alarm: false)
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {

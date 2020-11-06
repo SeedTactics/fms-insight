@@ -488,7 +488,7 @@ namespace MazakMachineInterface
     //main programs used by either existing or new parts
     public ISet<string> UsedMainProgramComments { get; set; }
 
-    public MazakWriteData CreateDeleteFixtureAndProgramDatabaseRows(Func<string, long, string> getProgramContent, string programDir)
+    public MazakWriteData DeleteFixtureAndProgramDatabaseRows()
     {
       var ret = new MazakWriteData();
 
@@ -504,26 +504,6 @@ namespace MazakMachineInterface
             ret.Fixtures.Add(newFixRow);
           }
         }
-      }
-
-      //add new fixtures
-      foreach (string fixture in UsedFixtures)
-      {
-        //check if this fixture exists already... could exist already if we reuse fixtures
-        foreach (var fixRow in OldMazakData.Fixtures)
-        {
-          if (fixRow.FixtureName == fixture)
-          {
-            goto found;
-          }
-        }
-
-        var newFixRow = new MazakFixtureRow();
-        newFixRow.Command = MazakWriteCommand.Add;
-        newFixRow.FixtureName = fixture;
-        newFixRow.Comment = "Insight";
-        ret.Fixtures.Add(newFixRow);
-      found:;
       }
 
       // delete old programs, but only if there is a newer revision for this program
@@ -548,6 +528,34 @@ namespace MazakMachineInterface
           Comment = prog.Comment
         });
       }
+
+      return ret;
+    }
+
+    public MazakWriteData AddFixtureAndProgramDatabaseRows(Func<string, long, string> getProgramContent, string programDir)
+    {
+      var ret = new MazakWriteData();
+
+      //add new fixtures
+      foreach (string fixture in UsedFixtures)
+      {
+        //check if this fixture exists already... could exist already if we reuse fixtures
+        foreach (var fixRow in OldMazakData.Fixtures)
+        {
+          if (fixRow.FixtureName == fixture)
+          {
+            goto found;
+          }
+        }
+
+        var newFixRow = new MazakFixtureRow();
+        newFixRow.Command = MazakWriteCommand.Add;
+        newFixRow.FixtureName = fixture;
+        newFixRow.Comment = "Insight";
+        ret.Fixtures.Add(newFixRow);
+      found:;
+      }
+
 
       // add programs
       var newProgs = new Dictionary<(string name, long rev), NewMazakProgram>();

@@ -260,9 +260,11 @@ namespace MazakMachineInterface
       }
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
-      //also, add new fixtures
-      transSet = mazakJobs.CreateDeleteFixtureAndProgramDatabaseRows(jobDB.LoadProgramContent, ProgramDirectory);
-      writeDb.Save(transSet, "Fixtures");
+      transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
+      writeDb.Save(transSet, "Delete Fixtures");
+
+      transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(jobDB.LoadProgramContent, ProgramDirectory);
+      writeDb.Save(transSet, "Add Fixtures");
 
       //now save the pallets and parts
       transSet = mazakJobs.CreatePartPalletDatabaseRows();

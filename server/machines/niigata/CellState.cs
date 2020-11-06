@@ -148,6 +148,17 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private PalletAndMaterial BuildCurrentPallet(IReadOnlyDictionary<int, MachineStatus> machines, Func<string, JobPlan> jobCache, PalletStatus pallet, EventLogDB logDB)
     {
+      MachineStatus machStatus = null;
+      if (pallet.CurStation.Location.Location == PalletLocationEnum.Machine)
+      {
+        var iccMc = pallet.CurStation.Location.Num;
+        if (_stationNames != null)
+        {
+          iccMc = _stationNames.JobMachToIcc(pallet.CurStation.Location.StationGroup, pallet.CurStation.Location.Num);
+        }
+        machines.TryGetValue(iccMc, out machStatus);
+      }
+
       var currentOrLoadingFaces =
         RecordFacesForPallet
         .Load(pallet.Master.Comment, logDB)
@@ -200,9 +211,22 @@ namespace BlackMaple.FMSInsight.Niigata
         if (job != null)
         {
           var stops = job.GetMachiningStop(inProcMat.Process, inProcMat.Path).ToList();
+          var lastCompletedIccIdx = pallet.Tracking.CurrentStepNum - 1;
+          if (
+              pallet.Tracking.BeforeCurrentStep == false
+              && pallet.Tracking.Alarm == false
+              && (
+                  machStatus == null
+                  ||
+                  (machStatus.FMSLinkMode && machStatus.Alarm == false)
+                 )
+            )
+          {
+            lastCompletedIccIdx += 1;
+          }
           var completedMachineSteps =
             pallet.Master.Routes
-            .Take(pallet.Tracking.BeforeCurrentStep ? pallet.Tracking.CurrentStepNum - 1 : pallet.Tracking.CurrentStepNum)
+            .Take(lastCompletedIccIdx)
             .Where(r => r is MachiningStep || r is ReclampStep)
             .Count();
 
@@ -217,17 +241,6 @@ namespace BlackMaple.FMSInsight.Niigata
           Mat = inProcMat,
           Job = job
         });
-      }
-
-      MachineStatus machStatus = null;
-      if (pallet.CurStation.Location.Location == PalletLocationEnum.Machine)
-      {
-        var iccMc = pallet.CurStation.Location.Num;
-        if (_stationNames != null)
-        {
-          iccMc = _stationNames.JobMachToIcc(pallet.CurStation.Location.StationGroup, pallet.CurStation.Location.Num);
-        }
-        machines.TryGetValue(iccMc, out machStatus);
       }
 
       bool manualControl = (pallet.Master.Comment ?? "").ToLower().Contains("manual");
@@ -974,7 +987,15 @@ namespace BlackMaple.FMSInsight.Niigata
           StopCompleted =
             (stepIdx + 1 < pallet.Status.Tracking.CurrentStepNum)
             ||
-            (stepIdx + 1 == pallet.Status.Tracking.CurrentStepNum && !pallet.Status.Tracking.BeforeCurrentStep)
+            (stepIdx + 1 == pallet.Status.Tracking.CurrentStepNum
+              && pallet.Status.Tracking.BeforeCurrentStep == false
+              && pallet.Status.Tracking.Alarm == false
+              && (
+                  pallet.MachineStatus == null
+                  ||
+                  (pallet.MachineStatus.FMSLinkMode && pallet.MachineStatus.Alarm == false)
+                 )
+            )
         });
 
         stepIdx += 1;

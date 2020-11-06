@@ -103,7 +103,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           MachineNumber = mach,
           Machining = false,
-          CurrentlyExecutingProgram = 0
+          CurrentlyExecutingProgram = 0,
+          FMSLinkMode = true,
+          Alarm = false
         });
       }
 
@@ -121,7 +123,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           CurStation = NiigataStationNum.Buffer(pal),
           Tracking = new TrackingInfo()
           {
-            RouteInvalid = true
+            RouteInvalid = true,
+            Alarm = false
           }
         });
         _expectedFaces[pal] = new List<(int face, string unique, int proc, int path)>();
@@ -323,6 +326,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _expectedFaces[pal] = new List<(int face, string unique, int proc, int path)>();
       }
       _status.Pallets[pal - 1].Master.Comment = manual ? "aaa Manual yyy" : "";
+      return this;
+    }
+
+    public FakeIccDsl SetMachAlarm(int mc, bool link, bool alarm)
+    {
+      _status.Machines[mc].FMSLinkMode = link;
+      _status.Machines[mc].Alarm = alarm;
       return this;
     }
 

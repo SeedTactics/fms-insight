@@ -106,7 +106,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           MachineNumber = mach,
           Machining = false,
-          CurrentlyExecutingProgram = 0
+          CurrentlyExecutingProgram = 0,
+          FMSLinkMode = true,
+          Alarm = false
         });
         _lastMachineTransition[mach] = _status.TimeOfStatusUTC;
         _programsRunOnMachine[mach] = new HashSet<int>();
@@ -125,7 +127,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           CurStation = NiigataStationNum.Buffer(pal),
           Tracking = new TrackingInfo()
           {
-            RouteInvalid = true
+            RouteInvalid = true,
+            Alarm = false
           }
         });
         _lastPalTransition[pal] = _status.TimeOfStatusUTC;
