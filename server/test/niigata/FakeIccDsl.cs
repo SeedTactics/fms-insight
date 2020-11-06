@@ -56,6 +56,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
     private Dictionary<int, List<(int face, string unique, int proc, int path)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path)>>(); // key is pallet
     private Dictionary<(string uniq, int proc1path), int> _expectedJobRemainCount = new Dictionary<(string uniq, int proc1path), int>();
+    private List<ProgramRevision> _expectedOldPrograms = new List<ProgramRevision>();
 
     public FakeIccDsl(int numPals, int numMachines)
     {
@@ -909,6 +910,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetInputQueue(2, 1, queue);
       return j;
     }
+
+    public FakeIccDsl ExpectOldProgram(string name, long rev, int num)
+    {
+      _expectedOldPrograms.Add(new ProgramRevision()
+      {
+        ProgramName = name,
+        Revision = rev,
+        CellControllerProgramName = num.ToString()
+      });
+      return this;
+    }
+
+    public FakeIccDsl ClearExpectedOldPrograms()
+    {
+      _expectedOldPrograms.Clear();
+      return this;
+    }
     #endregion
 
     #region Steps
@@ -956,6 +974,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
       ));
       actualSt.JobQtyRemainingOnProc1.Should().BeEquivalentTo(_expectedJobRemainCount);
+      actualSt.OldUnusedPrograms.Should()
+        .BeEquivalentTo(_expectedOldPrograms, options => options.Excluding(p => p.Comment));
     }
 
     public FakeIccDsl ExpectNoChanges()
@@ -1439,9 +1459,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private class ExpectedDeleteProgram : ExpectedChange
     {
       public DeleteProgram Expected { get; set; }
+      public bool IccFailure { get; set; }
     }
 
-    public static ExpectedChange ExpectDeleteProgram(int progNum, string name, long rev)
+    public static ExpectedChange ExpectDeleteProgram(int progNum, string name, long rev, bool fail = false)
     {
       return new ExpectedDeleteProgram()
       {
@@ -1450,7 +1471,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ProgramNum = progNum,
           ProgramName = name,
           ProgramRevision = rev,
-        }
+        },
+        IccFailure = fail
       };
     }
 
@@ -1492,7 +1514,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
-        var expectDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
+        var expectFirstDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
         var expectHold = (ExpectPalHold)expectedChanges.FirstOrDefault(e => e is ExpectPalHold);
         var expectNoWork = (ExpectPalNoWork)expectedChanges.FirstOrDefault(e => e is ExpectPalNoWork);
 
@@ -1558,11 +1580,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _expectedFaces[pal] = expectIncr.Faces.ToList();
           }
         }
-        else if (expectDelete != null)
+        else if (expectFirstDelete != null)
         {
-          var action = _assign.NewPalletChange(cellSt);
-          action.Should().BeEquivalentTo<DeleteProgram>(expectDelete.Expected);
-          _status.Programs.Remove(expectDelete.Expected.ProgramNum);
+          foreach (var expectDelete in expectedChanges.Where(e => e is ExpectedDeleteProgram).Cast<ExpectedDeleteProgram>())
+          {
+            var action = _assign.NewPalletChange(cellSt);
+            action.Should().BeEquivalentTo<DeleteProgram>(expectDelete.Expected);
+            _status.Programs.Remove(expectDelete.Expected.ProgramNum);
+            if (expectDelete.IccFailure == false)
+            {
+              _jobDB.SetCellControllerProgramForProgram(expectDelete.Expected.ProgramName, expectDelete.Expected.ProgramRevision, null);
+              _expectedOldPrograms.RemoveAll(p => p.CellControllerProgramName == expectDelete.Expected.ProgramNum.ToString());
+            }
+            // reload cell state
+            cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+            cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
+            cellSt.OldUnusedPrograms.Should().BeEquivalentTo(_expectedOldPrograms,
+              options => options.Excluding(p => p.Comment)
+            );
+          }
         }
         else if (expectHold != null)
         {

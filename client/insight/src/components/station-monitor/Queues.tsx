@@ -91,12 +91,15 @@ import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import ReactToPrint from "react-to-print";
 import { PrintedLabel } from "./PrintedLabel";
+import { MoreHoriz } from "@material-ui/icons";
+import { JobDetailDialog } from "./JobDetails";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
   readonly addCastings: () => void;
   readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
   readonly editQty: (job: JobRawMaterialData) => void;
+  readonly showDetails: (job: Readonly<api.IInProcessJob>) => void;
 }
 
 const useTableStyles = makeStyles((theme) =>
@@ -158,6 +161,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
           <TableCell align="right">Assigned Raw Material</TableCell>
           <TableCell align="right">Required</TableCell>
           <TableCell align="right">Available Unassigned</TableCell>
+          <TableCell />
         </TableRow>
       </TableHead>
       <TableBody>
@@ -235,6 +239,13 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
               </Tooltip>
             </TableCell>
             <TableCell align="right">{j.availableUnassigned}</TableCell>
+            <TableCell>
+              <Tooltip title="Show Details">
+                <IconButton size="small" onClick={() => props.showDetails(j.job)}>
+                  <MoreHoriz />
+                </IconButton>
+              </Tooltip>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -671,6 +682,8 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     Readonly<api.IInProcessMaterial>
   > | null>(null);
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
+  const [jobDetailToShow, setJobDetailToShow] = React.useState<Readonly<api.IInProcessJob> | null>(null);
+  const closeJobDetailDialog = React.useCallback(() => setJobDetailToShow(null), []);
 
   return (
     <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
@@ -741,6 +754,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                   addCastings={() => setAddCastingQueue(region.label)}
                   editNote={setChangeNoteForJob}
                   editQty={setEditQtyForJob}
+                  showDetails={setJobDetailToShow}
                 />
               </div>
             ) : undefined}
@@ -760,6 +774,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
         operator={props.operator}
         printLabel={props.printLabel}
       />
+      <JobDetailDialog job={jobDetailToShow} close={closeJobDetailDialog} />
     </main>
   );
 });

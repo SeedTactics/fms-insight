@@ -548,7 +548,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public string Error { get; set; }
     }
 
-    private void WaitForCompletion(AutoResetEvent evt, object request, Func<ChangeResponse> check, Action clear)
+    private void WaitForCompletion(AutoResetEvent evt, object request, Func<ChangeResponse> check, Action clear, string ignoreError = null)
     {
       do
       {
@@ -580,8 +580,12 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               Log.Error(ex, "Unable to clear Niigata ICC request tables");
             }
-            if (ret.Success.Value)
+            if (ret.Success.Value || (!string.IsNullOrEmpty(ignoreError) && ret.Error == ignoreError))
             {
+              if (!string.IsNullOrEmpty(ret.Error))
+              {
+                Log.Debug("Ignoring error {err} when deleting {@program}", ret.Error, request);
+              }
               return;
             }
             else
@@ -1046,12 +1050,16 @@ namespace BlackMaple.FMSInsight.Niigata
               conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
               trans.Commit();
             }
-          }
+          },
+          // There is a bug in the ICC which occasionally only partially deletes a program.  It is gone from
+          // the status_program table but still exists and can be fully deleted by a second action.  We can't tell
+          // the difference between that and an Insight crash between a successful ICC delete and the recording
+          // in the jobDB below.  Thus, always re-try a delete and ignore an error if the program doesn't exist.
+          ignoreError: "003 Can not delete"
         );
       }
 
-      // if we crash after deleting from the icc but before clearing the cell controller program, the above NewProgram check will
-      // clear it later.
+      // if we crash after deleting from the icc but before clearing the cell controller program, the delete will be re-tried.
       jobDB.SetCellControllerProgramForProgram(delete.ProgramName, delete.ProgramRevision, null);
     }
 

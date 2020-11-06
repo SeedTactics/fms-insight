@@ -35,11 +35,12 @@ import { HashMap } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { PartCycleData } from "./events.cycles";
 import { ScheduledJob } from "./events.scheduledjobs";
-import { ICurrentStatus } from "./api";
+import { ICurrentStatus, IInProcessJob } from "./api";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
 export interface ScheduledJobDisplay extends ScheduledJob {
+  readonly inProcJob: Readonly<IInProcessJob> | null;
   readonly completedQty: number;
   readonly inProcessQty: number;
   readonly remainingQty: number;
@@ -61,7 +62,7 @@ export function buildScheduledJobs(
 
   for (const [uniq, job] of schJobs) {
     if (job.startingTime >= start && job.startingTime <= end) {
-      result.set(uniq, { ...job, completedQty: 0, inProcessQty: 0, darkRow: false, remainingQty: 0 });
+      result.set(uniq, { ...job, inProcJob: null, completedQty: 0, inProcessQty: 0, darkRow: false, remainingQty: 0 });
     }
   }
 
@@ -93,6 +94,7 @@ export function buildScheduledJobs(
       const plannedQty = LazySeq.ofIterable(curJob.cyclesOnFirstProcess).sumOn((c) => c);
       const completedQty = LazySeq.ofIterable(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumOn((c) => c);
       job.remainingQty = plannedQty - job.inProcessQty - completedQty;
+      job.inProcJob = curJob;
       if (plannedQty < job.scheduledQty) {
         job.decrementedQty = job.scheduledQty - plannedQty;
       }
