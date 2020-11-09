@@ -150,7 +150,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private const int Version = 21;
+    private const int Version = 22;
 
     // the Priority and CreateMarkingData field was removed from the job but old tables had it marked as NOT NULL.  So rather than try and copy
     // all the jobs, we just fill it in with 0 for old job databases.
@@ -333,7 +333,7 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 18) Ver17ToVer18(trans);
           if (curVersion < 19) Ver18ToVer19(trans);
           if (curVersion < 20) Ver19ToVer20(trans);
-          if (curVersion < 21) Ver20ToVer21(trans);
+          if (curVersion < 22) Ver20ToVer22(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -695,7 +695,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private static void Ver20ToVer21(IDbTransaction transaction)
+    private static void Ver20ToVer22(IDbTransaction transaction)
     {
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
