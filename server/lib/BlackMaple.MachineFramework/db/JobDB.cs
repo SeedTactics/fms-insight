@@ -697,9 +697,15 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver20ToVer22(IDbTransaction transaction)
     {
+      // There was an error in the upgrade, so version 21 and 22 are the same.
+      // Also, must check if job_decrements table already exists and don't create it twice.
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
+
+        cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='job_decrements'";
+        var cnt = cmd.ExecuteScalar();
+        if (cnt != null && cnt != DBNull.Value && (long)cnt > 0) return;
 
         cmd.CommandText = "CREATE TABLE job_decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, Proc1Path INTEGER NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique, Proc1Path))";
         cmd.ExecuteNonQuery();
