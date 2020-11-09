@@ -333,7 +333,7 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 18) Ver17ToVer18(trans);
           if (curVersion < 19) Ver18ToVer19(trans);
           if (curVersion < 20) Ver19ToVer20(trans);
-          if (curVersion < 20) Ver20ToVer21(trans);
+          if (curVersion < 21) Ver20ToVer21(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
