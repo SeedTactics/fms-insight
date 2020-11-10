@@ -1184,7 +1184,7 @@
       "MaterialID": -1,
       "JobUnique": "aaa-schId1234",
       "PartName": "aaa",
-      "Process": 1,
+      "Process": 0,
       "Path": 1,
       "SignaledInspections": [],
       "Location": {

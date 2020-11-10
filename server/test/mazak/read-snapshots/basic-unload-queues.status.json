@@ -865,7 +865,7 @@
       "MaterialID": -1,
       "JobUnique": "ccc-schId1234",
       "PartName": "ccc",
-      "Process": 1,
+      "Process": 0,
       "Path": 1,
       "SignaledInspections": [],
       "Location": {
@@ -884,7 +884,7 @@
       "MaterialID": -1,
       "JobUnique": "ccc-schId1234",
       "PartName": "ccc",
-      "Process": 1,
+      "Process": 0,
       "Path": 1,
       "SignaledInspections": [],
       "Location": {

@@ -136,7 +136,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
               onClick={() =>
                 props.printLabel(
                   matId,
-                  props.in_proc_material.process,
+                  props.in_proc_material.action.processAfterLoad ?? props.in_proc_material.process,
                   null,
                   props.in_proc_material.location.currentQueue ?? null
                 )

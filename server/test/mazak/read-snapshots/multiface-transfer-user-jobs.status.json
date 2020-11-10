@@ -89,7 +89,7 @@
       "MaterialID": -1,
       "JobUnique": "",
       "PartName": "zzz",
-      "Process": 1,
+      "Process": 0,
       "Path": 1,
       "SignaledInspections": [],
       "LastCompletedMachiningRouteStopIndex": null,

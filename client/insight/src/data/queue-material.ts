@@ -159,6 +159,30 @@ export interface JobRawMaterialData {
   readonly availableUnassigned: number;
 }
 
+function isMatDuringProc1(unique: string, proc1path: number, m: Readonly<api.IInProcessMaterial>): boolean {
+  if (m.jobUnique !== unique) return false;
+
+  if (m.location.type === api.LocType.OnPallet) {
+    return m.process === 1 && m.path === proc1path;
+  } else {
+    return (
+      m.action.type === api.ActionType.Loading &&
+      m.action.processAfterLoad === 1 &&
+      m.action.pathAfterLoad === proc1path
+    );
+  }
+}
+
+function isMatAssigned(unique: string, proc1path: number, m: Readonly<api.IInProcessMaterial>): boolean {
+  return (
+    m.jobUnique === unique &&
+    m.location.type === api.LocType.InQueue &&
+    m.action.type !== api.ActionType.Loading &&
+    m.process === 0 &&
+    m.path === proc1path
+  );
+}
+
 export function extractJobRawMaterial(
   queue: string,
   jobs: {
@@ -174,40 +198,24 @@ export function extractJobRawMaterial(
     )
     .flatMap(([, j]) =>
       j.procsAndPaths[0].paths
-        .filter((p) => p.inputQueue == queue)
-        .map((path, idx) => {
+        .map((path, idx) => ({ path, pathNum: idx + 1 }))
+        .filter((p) => p.path.inputQueue == queue)
+        .map(({ path, pathNum }) => {
           const rawMatName = path.casting && path.casting !== "" ? path.casting : j.partName;
           return {
             job: j,
-            proc1Path: idx,
+            proc1Path: pathNum,
             path: path,
             rawMatName: rawMatName,
             pathDetails: j.procsAndPaths[0].paths.length === 1 ? null : describePath(path),
-            plannedQty: j.cyclesOnFirstProcess[idx],
+            plannedQty: j.cyclesOnFirstProcess[pathNum - 1] ?? 0,
             startedQty:
-              (j.completed?.[0]?.[idx] || 0) +
+              (j.completed?.[0]?.[pathNum - 1] || 0) +
               LazySeq.ofIterable(mats)
-                .filter(
-                  (m) =>
-                    (m.location.type !== api.LocType.InQueue ||
-                      (m.location.type === api.LocType.InQueue && m.location.currentQueue !== queue) ||
-                      (m.location.type === api.LocType.InQueue &&
-                        m.location.currentQueue === queue &&
-                        m.action.type === api.ActionType.Loading)) &&
-                    m.jobUnique === j.unique &&
-                    m.process === 1 &&
-                    m.path === idx + 1
-                )
+                .filter((m) => isMatDuringProc1(j.unique, pathNum, m))
                 .length(),
             assignedRaw: LazySeq.ofIterable(mats)
-              .filter(
-                (m) =>
-                  m.location.type === api.LocType.InQueue &&
-                  m.location.currentQueue === queue &&
-                  m.jobUnique === j.unique &&
-                  m.process === 0 &&
-                  m.path === idx + 1
-              )
+              .filter((m) => isMatAssigned(j.unique, pathNum, m))
               .length(),
             availableUnassigned: LazySeq.ofIterable(mats)
               .filter(

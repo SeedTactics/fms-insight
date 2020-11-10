@@ -722,10 +722,11 @@ namespace MazakMachineInterface
         for (int i = 0; i < operation.Qty; i++)
         {
 
-          // first, calculate material id, serial, workorder, and location
+          // first, calculate material id, serial, workorder, location, and previous proc path
           long matId = -1;
           string serial = null;
           string workId = null;
+          int prevProcPath = 1;
           var loc = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.Free
@@ -765,6 +766,7 @@ namespace MazakMachineInterface
             var matDetails = log.GetMaterialDetails(matId);
             serial = matDetails?.Serial;
             workId = matDetails?.Workorder;
+            prevProcPath = matDetails.Paths != null && matDetails.Paths.TryGetValue(Math.Max(operation.Process - 1, 1), out var path) ? path : 1;
           }
 
           var inProcMat = new InProcessMaterial()
@@ -772,8 +774,8 @@ namespace MazakMachineInterface
             MaterialID = matId,
             JobUnique = operation.Unique,
             PartName = operation.Part,
-            Process = operation.Process,
-            Path = operation.Path,
+            Process = operation.Process - 1,
+            Path = prevProcPath,
             Serial = serial,
             WorkorderId = workId,
             Location = loc,
