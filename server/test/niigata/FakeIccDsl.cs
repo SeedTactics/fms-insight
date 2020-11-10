@@ -149,6 +149,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _status.Pallets[pal - 1].CurStation = NiigataStationNum.MachineQueue(mach, _statNames);
       return this;
     }
+    public FakeIccDsl MoveToMachineOutboundQueue(int pal, int mach)
+    {
+      _status.Pallets[pal - 1].CurStation = NiigataStationNum.MachineOutboundQueue(mach, _statNames);
+      return this;
+    }
     public FakeIccDsl MoveToMachine(int pal, int mach)
     {
       _status.Pallets[pal - 1].CurStation = NiigataStationNum.Machine(mach, _statNames);

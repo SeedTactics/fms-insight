@@ -1297,6 +1297,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       bool currentlyOnRotary =
           pallet.Status.CurStation.Location.Location == PalletLocationEnum.MachineQueue
+        && pallet.Status.CurStation.IsOutboundMachineQueue == false
         && pallet.Status.CurrentStep is MachiningStep
         && pallet.Status.Tracking.BeforeCurrentStep;
 

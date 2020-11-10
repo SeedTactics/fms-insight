@@ -1893,12 +1893,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 5, program: "prog111", rev: 5, elapsedMin: 5, activeMin: 14, mats: fstMats)
         })
 
+        // I don't know exactly when the pallet goes to BeforeMC on the second step.
+        // Does the pallet always go to the buffer between machining and the transition happens at that time?
+        // Just in case, CellState correctly handles setting BeforeMC as soon as it is on the outbound
+        .SetBeforeMC(pal: 1, machStepOffset: 1)
+        .MoveToMachineOutboundQueue(pal: 1, mach: 5)
+        .ExpectNoChanges()
+
         .MoveToBuffer(pal: 1, buff: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: fstMats)
         })
         .MoveToMachine(pal: 1, mach: 2)
-        .SetBeforeMC(pal: 1, machStepOffset: 1)
         .StartMachine(mach: 2, program: 2101)
         .UpdateExpectedMaterial(fstMats, im =>
         {

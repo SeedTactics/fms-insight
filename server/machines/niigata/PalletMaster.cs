@@ -66,8 +66,13 @@ namespace BlackMaple.FMSInsight.Niigata
     public static NiigataStationNum LoadStation(int i) => new NiigataStationNum(900 + i, null);
     public static NiigataStationNum Machine(int i, NiigataStationNames names) => new NiigataStationNum(800 + i, names);
     public static NiigataStationNum MachineQueue(int i, NiigataStationNames names) => new NiigataStationNum(830 + i, names);
+    public static NiigataStationNum MachineOutboundQueue(int i, NiigataStationNames names) => new NiigataStationNum(860 + i, names);
     public static NiigataStationNum Buffer(int i) => new NiigataStationNum(i, null);
     public static NiigataStationNum Cart() => new NiigataStationNum(990, null);
+
+    // PalletLocation doesn't distinguish between inbound and outbound
+    public bool IsOutboundMachineQueue => StatNum >= 861 && StatNum <= 881;
+
     public PalletLocation Location
     {
       get
@@ -102,7 +107,15 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (StatNum >= 861 && StatNum <= 881)
         {
-          return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", StatNum - 860);
+          var iccMc = StatNum - 860;
+          if (_statNames != null && _statNames.IccMachineToJobMachNames.TryGetValue(iccMc, out var jobMc))
+          {
+            return new PalletLocation(PalletLocationEnum.MachineQueue, jobMc.group, jobMc.num);
+          }
+          else
+          {
+            return new PalletLocation(PalletLocationEnum.MachineQueue, "MC", iccMc);
+          }
         }
         else if (StatNum >= 901 && StatNum <= 910)
         {
