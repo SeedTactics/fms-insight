@@ -410,10 +410,10 @@ function activeMinutes(
   activeTimes: ActiveCycleTime
 ): [number, ActiveCycleTime] {
   const aMins = duration(cycle.active).asMinutes();
-  const activeMinsForSingleMat = aMins / cycle.material.length;
-  if (cycle.active === "" || aMins <= 0) {
+  if (cycle.active === "" || aMins <= 0 || cycle.material.length === 0) {
     return [stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length, activeTimes];
   } else {
+    const activeMinsForSingleMat = aMins / cycle.material.length;
     const partKey = PartAndProcess.ofLogCycle(cycle);
     const oldActive = activeTimes.get(partKey);
     const statKey = StationOperation.ofLogCycle(cycle);
