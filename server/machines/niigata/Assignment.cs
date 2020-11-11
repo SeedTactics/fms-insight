@@ -644,7 +644,20 @@ namespace BlackMaple.FMSInsight.Niigata
       int progNum = 0;
       if (procAndStop != null && procAndStop.proc >= 1 && procAndStop.proc <= 9)
       {
-        progNum = Enumerable.Range(2000 + procAndStop.proc * 100, 999).FirstOrDefault(p => !existing.Contains(p));
+        // start at the max existing number and wrap around, checking for available
+        int maxExisting = Enumerable.Range(2000 + procAndStop.proc * 100, 99).LastOrDefault(p => existing.Contains(p)) % 100;
+        if (maxExisting > 90) maxExisting = 0;
+
+        for (int i = 0; i < 99; i++)
+        {
+          var offset = (maxExisting + i) % 100;
+          var toCheck = 2000 + procAndStop.proc * 100 + offset;
+          if (!existing.Contains(toCheck))
+          {
+            progNum = toCheck;
+            break;
+          }
+        }
       }
       if (progNum == 0)
       {
