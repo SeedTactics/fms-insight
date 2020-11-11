@@ -1654,7 +1654,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (string.IsNullOrEmpty(prog.CellControllerProgramName)) continue;
         if (usedIccProgs.Contains(prog.CellControllerProgramName)) continue;
-        if (prog.Revision >= maxRevForProg[prog.ProgramName]) continue;
+        if (maxRevForProg.ContainsKey(prog.ProgramName) && prog.Revision >= maxRevForProg[prog.ProgramName]) continue;
         progsToDelete.Add(prog.CellControllerProgramName, prog);
       }
 
