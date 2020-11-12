@@ -502,6 +502,14 @@ namespace MachineWatchTest
       job2unfilledWorks.Add(new PartWorkorder()
       {
         WorkorderId = "work" + rnd.Next(0, 10000).ToString(),
+        Part = job1unfilledWorks[0].Part,
+        Quantity = rnd.Next(10000),
+        DueDate = new DateTime(2018, rnd.Next(1, 12), rnd.Next(1, 20)),
+        Priority = rnd.Next(10000)
+      });
+      job2unfilledWorks.Add(new PartWorkorder()
+      {
+        WorkorderId = "work" + rnd.Next(0, 10000).ToString(),
         Part = "Job1",
         Quantity = rnd.Next(10000),
         DueDate = new DateTime(2018, rnd.Next(1, 12), rnd.Next(1, 20)),
@@ -543,8 +551,8 @@ namespace MachineWatchTest
       CheckPlanEqual(job2, newAfter.Jobs["Unique2"], true);
       Assert.Equal(0, _jobDB.LoadJobsAfterScheduleId(job2.ScheduleId).Jobs.Count);
       CheckWorkordersEqual(
-          new[] { job2unfilledWorks[0] },
-          _jobDB.MostRecentUnfilledWorkordersForPart(job2unfilledWorks[0].Part)
+          new[] { job1unfilledWorks[0] }, // job2 is manual, so latest should be from job1
+          _jobDB.MostRecentUnfilledWorkordersForPart(job2unfilledWorks[job2unfilledWorks.Count - 2].Part)
       );
       CheckWorkordersEqual(
           new[] { job2unfilledWorks.Last() },
