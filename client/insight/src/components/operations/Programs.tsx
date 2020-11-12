@@ -73,7 +73,6 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
-import hljs from "highlight.js/lib/core";
 import { useIsDemo } from "../IsDemo";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import { Vector } from "prelude-ts";
@@ -445,17 +444,34 @@ function ProgramSummaryTable() {
 
 function ProgramContentCode() {
   const ct = useRecoilValue(programContent);
-  const preElement = React.useRef<HTMLPreElement>(null);
+  const [highlighted, setHighlighted] = React.useState<string | null>(null);
+
+  const worker = React.useMemo(() => new Worker("./ProgramHighlight.ts"), []);
 
   React.useEffect(() => {
-    if (ct && ct !== "" && preElement.current) {
-      hljs.highlightBlock(preElement.current);
+    let set = (h: string) => setHighlighted(h);
+    worker.onmessage = (e) => set(e.data);
+    return () => {
+      // cleanup
+      set = () => null;
+      worker.terminate();
+      setHighlighted(null);
+    };
+  }, [worker]);
+
+  React.useEffect(() => {
+    if (ct && ct !== "") {
+      worker.postMessage(ct);
     }
-  }, [ct, preElement.current]);
+  }, [ct]);
 
   return (
-    <pre ref={preElement}>
-      <code className="gcode">{ct}</code>
+    <pre>
+      {highlighted === null ? (
+        <code className="gcode">{ct}</code>
+      ) : (
+        <code className="gcode" dangerouslySetInnerHTML={{ __html: highlighted }} />
+      )}
     </pre>
   );
 }
