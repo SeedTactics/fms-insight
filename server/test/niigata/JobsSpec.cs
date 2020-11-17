@@ -198,7 +198,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Tracking = new TrackingInfo()
           {
             Alarm = true,
-            AlarmCode = 40
+            AlarmCode = PalletAlarmCode.RoutingFault
           },
           CurStation = NiigataStationNum.LoadStation(2)
         },
@@ -330,7 +330,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 2),
         NumFaces = 1
       });
-      expectedSt.Alarms.Add("Pallet 2 has alarm 40");
+      expectedSt.Alarms.Add("Pallet 2 has routing fault");
       expectedSt.Alarms.Add("Machine 2 has an alarm");
       expectedSt.Alarms.Add("ICC has an alarm");
       expectedSt.QueueSizes.Add("q1", new QueueSize());

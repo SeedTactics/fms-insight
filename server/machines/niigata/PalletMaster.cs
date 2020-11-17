@@ -219,10 +219,29 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool DummyPallet { get; set; } = false;
 
     public bool Alarm { get; set; } = false;
-    public int AlarmCode { get; set; }
+    public PalletAlarmCode AlarmCode { get; set; }
 
     ///<summary>Actual station visisted at each route step in the current cycle.</summary>
     public List<NiigataStationNum> ExecutedStationNumber { get; set; } = new List<NiigataStationNum>();
+  }
+
+  public enum PalletAlarmCode
+  {
+    NoAlarm = 0,
+    AlarmSetOnScreen = 1,
+    M165 = 2, // abnormal end of program
+    RoutingFault = 3,
+    SPTLRST = 4, // reserved
+    SPTLRD = 5, // reserved
+    SPTLALM = 6, // reserved
+    LoadingFromAutoLULStation = 7,
+    ProgramRequestAlarm = 8,
+    ProgramRespondingAlarm = 9,
+    ProgramTransferAlarm = 10,
+    ProgramTransferFinAlarm = 11,
+    MachineAutoOff = 12,
+    MachinePowerOff = 13,
+    IccExited = 14,
   }
 
   ///<summary>Everything about the current status of a pallet</summary>
