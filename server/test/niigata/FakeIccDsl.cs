@@ -1220,6 +1220,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return new ExpectRouteIncrementChange() { Pallet = pal, NewCycleCount = newCycleCnt, Faces = faces };
     }
 
+    private class ExpectRouteDeleteChange : ExpectedChange
+    {
+      public int Pallet { get; set; }
+    }
+
+    public static ExpectedChange ExpectRouteDelete(int pal)
+    {
+      return new ExpectRouteDeleteChange() { Pallet = pal };
+    }
+
     private class ExpectPalHold : ExpectedChange
     {
       public int Pallet { get; set; }
@@ -1517,11 +1527,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           );
         }
 
+        var expectedDelRoute = (ExpectRouteDeleteChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteDeleteChange);
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
         var expectFirstDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
         var expectHold = (ExpectPalHold)expectedChanges.FirstOrDefault(e => e is ExpectPalHold);
         var expectNoWork = (ExpectPalNoWork)expectedChanges.FirstOrDefault(e => e is ExpectPalNoWork);
+
+        if (expectedDelRoute != null)
+        {
+          var action = _assign.NewPalletChange(cellSt);
+          var pal = expectedDelRoute.Pallet;
+          action.Should().BeEquivalentTo<DeletePalletRoute>(new DeletePalletRoute()
+          {
+            PalletNum = pal
+          });
+          _status.Pallets[pal - 1].Master.NoWork = true;
+          _status.Pallets[pal - 1].Master.Comment = "";
+          _status.Pallets[pal - 1].Master.Routes.Clear();
+          _status.Pallets[pal - 1].Tracking.RouteInvalid = true;
+
+          // reload
+          cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+          cellSt.PalletStateUpdated.Should().Be(true);
+        }
 
         if (expectedNewRoute != null)
         {

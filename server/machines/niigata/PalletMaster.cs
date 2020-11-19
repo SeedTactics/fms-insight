@@ -316,6 +316,11 @@ namespace BlackMaple.FMSInsight.Niigata
     public IEnumerable<AssignedJobAndPathForFace> NewFaces { get; set; }
   }
 
+  public class DeletePalletRoute : NiigataAction
+  {
+    public int PalletNum { get; set; }
+  }
+
   public class UpdatePalletQuantities : NiigataAction
   {
     public int Pallet { get; set; }

@@ -71,6 +71,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[route.NewMaster.PalletNum - 1].Tracking.CurrentControlNum = 1;
           break;
 
+        case DeletePalletRoute del:
+          _status.Pallets[del.PalletNum - 1].Master.NoWork = true;
+          _status.Pallets[del.PalletNum - 1].Master.Comment = "";
+          _status.Pallets[del.PalletNum - 1].Master.Routes.Clear();
+          _status.Pallets[del.PalletNum - 1].Tracking.RouteInvalid = true;
+          _status.Pallets[del.PalletNum - 1].Tracking.CurrentStepNum = 1;
+          _status.Pallets[del.PalletNum - 1].Tracking.CurrentControlNum = 1;
+          break;
+
         case UpdatePalletQuantities update:
           _status.Pallets[update.Pallet - 1].Master.Priority = update.Priority;
           _status.Pallets[update.Pallet - 1].Master.NoWork = update.NoWork;
