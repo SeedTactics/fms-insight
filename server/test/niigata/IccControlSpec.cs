@@ -3556,8 +3556,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 11)
         })
 
-        ;
-      _dsl
         // no longer logs anything
         .EndMachine(mach: 3)
         .SetAfterMC(pal: 1)
@@ -3598,6 +3596,64 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4),
         })
         ;
+    }
+
+    [Fact]
+    public void DeletesPalletRoute()
+    {
+      _dsl
+        .OverrideRoute(
+          pal: 1,
+          comment: "abcdef",
+          noWork: true,
+          luls: new[] { 3 },
+          machs: new[] { 1, 2, 3, 4 },
+          progs: new[] { 2222 },
+          machs2: new[] { 5, 6, 7, 8 },
+          progs2: new[] { 3333 }
+        )
+        .SetBeforeUnload(pal: 1)
+        .MoveToLoad(pal: 1, lul: 3)
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            prog: "1111",
+            progRev: null,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          )
+        })
+
+        // no delete when pallet at load station
+        .ExpectNoChanges()
+
+        .MoveToBuffer(pal: 1, buff: 1)
+
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+         })
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectRouteDelete(pal: 1),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            progs: new[] { 1111 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        });
     }
   }
 }
