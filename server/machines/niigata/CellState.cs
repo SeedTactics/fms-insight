@@ -948,7 +948,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             case MachiningStep machStep:
               if (!string.IsNullOrEmpty(iccMachineProg)
-                  && stop.Stations.All(s =>
+                  && stop.Stations.Any(s =>
                   {
                     var iccMcNum = s;
                     if (_stationNames != null)
@@ -965,7 +965,7 @@ namespace BlackMaple.FMSInsight.Niigata
               break;
 
             case ReclampStep reclampStep:
-              if (isReclamp && stop.Stations.All(s => reclampStep.Reclamp.Contains(s)))
+              if (isReclamp && stop.Stations.Any(s => reclampStep.Reclamp.Contains(s)))
               {
                 goto matchingStep;
               }

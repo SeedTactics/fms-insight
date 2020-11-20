@@ -3655,5 +3655,85 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           )
         });
     }
+
+    [Fact]
+    public void AllowsSubsetsOfMachines()
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 3,
+            priority: 5,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            prog: "1111",
+            progRev: null,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          )
+        })
+
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
+         })
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 3, 5, 6 },
+            progs: new[] { 1111 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }
+          )
+        })
+
+        .MoveToLoad(pal: 1, lul: 4)
+        .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4) })
+        .AdvanceMinutes(4) // =4
+        .SetAfterLoad(pal: 1)
+        .ClearExpectedLoadCastings()
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
+          FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 4, activeMins: 8, mats: out var fstMats)
+        })
+
+        .MoveToBuffer(pal: 1, buff: 1)
+        .SetBeforeMC(pal: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: fstMats)
+        })
+
+        // now override route to only have mach 3, not 3, 5, and 6
+        .AdvanceMinutes(5)
+        .OverrideRouteMachines(pal: 1, stepIdx: 1, machs: new[] { 3 })
+        .ExpectNoChanges()
+
+        .MoveToMachine(pal: 1, mach: 3)
+        .StartMachine(mach: 3, program: 1111)
+        .UpdateExpectedMaterial(fstMats, m =>
+        {
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Machining,
+            Program = "1111",
+            ElapsedMachiningTime = TimeSpan.Zero,
+            ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
+          };
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, elapMin: 5, waitForMach: true, mats: fstMats),
+          FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 3, program: "1111", mat: fstMats)
+        })
+        ;
+    }
   }
 }

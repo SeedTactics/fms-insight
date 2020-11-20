@@ -408,6 +408,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl OverrideRouteMachines(int pal, int stepIdx, IEnumerable<int> machs)
+    {
+      var mach = (MachiningStep)_status.Pallets[pal - 1].Master.Routes[stepIdx];
+      mach.Machines = machs.ToList();
+      return this;
+    }
+
     public FakeIccDsl SetIccProgram(int iccProg, string comment)
     {
       _status.Programs[iccProg] = new ProgramEntry()
