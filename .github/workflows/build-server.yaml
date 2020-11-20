@@ -29,7 +29,7 @@ jobs:
           git branch --track main remotes/origin/main
           git checkout ($Env:GITHUB_REF.Substring(11))
           $ver = (dotnet gitversion server) | ConvertFrom-Json
-          Write-Host ("::set-env name=SEMVER::" + $ver.SemVer)
+          echo "SEMVER=$($ver.SemVer)" >> $Env:GITHUB_ENV
 
       - uses: actions/cache@v2
         with:
