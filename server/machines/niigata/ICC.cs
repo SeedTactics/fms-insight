@@ -848,6 +848,74 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
+    private void DelRoute(DeletePalletRoute del)
+    {
+      if (_connStr == null)
+      {
+        Log.Error("Unable to set route on pallet because the PostgreSQL connection string is not defined");
+        return;
+      }
+
+      _proposalRouteChanged.Reset();
+      long ProposalId = NewId();
+      using (var conn = new NpgsqlConnection(_connStr))
+      {
+        conn.Open();
+        using (var trans = conn.BeginTransaction())
+        {
+          var palParams = new DynamicParameters();
+          palParams.Add("ProposalId", ProposalId);
+          palParams.Add("PalletNum", del.PalletNum);
+
+          conn.Execute(
+            $@"INSERT INTO proposal_pallet_route(
+                    proposal_id,
+                    pallet_no,
+                    comment,
+                    remaining_palette_cycle,
+                    priority,
+                    no_work,
+                    pallet_skip,
+                    program_download,
+                    for_long_tool_maintenance,
+                    delete
+                  ) VALUES (
+                    @ProposalId,
+                    @PalletNum,
+                    '',
+                    0,
+                    0,
+                    true,
+                    false,
+                    false,
+                    false,
+                    true
+                  )
+                ",
+            param: palParams,
+            transaction: trans
+          );
+
+          trans.Commit();
+        }
+
+        WaitForCompletion(_proposalRouteChanged, del,
+          () => conn.QueryFirst<ChangeResponse>(
+            "SELECT Success, Error FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }
+          ),
+          () =>
+          {
+            using (var trans = conn.BeginTransaction())
+            {
+              conn.Execute("DELETE FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
+              trans.Commit();
+            }
+
+          }
+        );
+      }
+    }
+
     private void UpdatePallet(UpdatePalletQuantities update)
     {
       if (_connStr == null)
@@ -1078,6 +1146,10 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           case NewPalletRoute newRoute:
             SetRoute(newRoute, logDB);
+            break;
+
+          case DeletePalletRoute deletePalletRoute:
+            DelRoute(deletePalletRoute);
             break;
 
           case UpdatePalletQuantities update:

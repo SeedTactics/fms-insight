@@ -363,26 +363,45 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl OverrideRoute(int pal, string comment, bool noWork, IEnumerable<int> luls, IEnumerable<int> machs, IEnumerable<int> progs, IEnumerable<(int face, string unique, int proc, int path)> faces = null)
+    public FakeIccDsl OverrideRoute(int pal, string comment, bool noWork, IEnumerable<int> luls, IEnumerable<int> machs, IEnumerable<int> progs, IEnumerable<int> machs2 = null, IEnumerable<int> progs2 = null, IEnumerable<(int face, string unique, int proc, int path)> faces = null)
     {
+      var routes = new List<RouteStep>();
+      routes.Add(
+        new LoadStep()
+        {
+          LoadStations = luls.ToList()
+        });
+      routes.Add(
+        new MachiningStep()
+        {
+          Machines = machs.ToList(),
+          ProgramNumsToRun = progs.ToList()
+        });
+
+      if (machs2 != null && progs2 != null)
+      {
+        routes.Add(
+          new MachiningStep()
+          {
+            Machines = machs2.ToList(),
+            ProgramNumsToRun = progs2.ToList()
+          });
+      }
+
+      routes.Add(new UnloadStep()
+      {
+        UnloadStations = luls.ToList()
+      });
+
+
+      _status.Pallets[pal - 1].Tracking.RouteInvalid = false;
       _status.Pallets[pal - 1].Master = new PalletMaster()
       {
         PalletNum = pal,
         Comment = comment,
         RemainingPalletCycles = 1,
         NoWork = noWork,
-        Routes = new List<RouteStep> {
-          new LoadStep() {
-            LoadStations = luls.ToList()
-          },
-          new MachiningStep() {
-            Machines = machs.ToList(),
-            ProgramNumsToRun = progs.ToList()
-          },
-          new UnloadStep() {
-            UnloadStations = luls.ToList()
-          }
-        }
+        Routes = routes
       };
       _expectedFaces[pal] = faces == null ? new List<(int face, string unique, int proc, int path)>() : faces.ToList();
 
@@ -1220,6 +1239,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return new ExpectRouteIncrementChange() { Pallet = pal, NewCycleCount = newCycleCnt, Faces = faces };
     }
 
+    private class ExpectRouteDeleteChange : ExpectedChange
+    {
+      public int Pallet { get; set; }
+    }
+
+    public static ExpectedChange ExpectRouteDelete(int pal)
+    {
+      return new ExpectRouteDeleteChange() { Pallet = pal };
+    }
+
     private class ExpectPalHold : ExpectedChange
     {
       public int Pallet { get; set; }
@@ -1517,11 +1546,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           );
         }
 
+        var expectedDelRoute = (ExpectRouteDeleteChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteDeleteChange);
         var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
         var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
         var expectFirstDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
         var expectHold = (ExpectPalHold)expectedChanges.FirstOrDefault(e => e is ExpectPalHold);
         var expectNoWork = (ExpectPalNoWork)expectedChanges.FirstOrDefault(e => e is ExpectPalNoWork);
+
+        if (expectedDelRoute != null)
+        {
+          var action = _assign.NewPalletChange(cellSt);
+          var pal = expectedDelRoute.Pallet;
+          action.Should().BeEquivalentTo<DeletePalletRoute>(new DeletePalletRoute()
+          {
+            PalletNum = pal
+          });
+          _status.Pallets[pal - 1].Master.NoWork = true;
+          _status.Pallets[pal - 1].Master.Comment = "";
+          _status.Pallets[pal - 1].Master.Routes.Clear();
+          _status.Pallets[pal - 1].Tracking.RouteInvalid = true;
+
+          // reload
+          cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+          cellSt.PalletStateUpdated.Should().Be(false);
+        }
 
         if (expectedNewRoute != null)
         {

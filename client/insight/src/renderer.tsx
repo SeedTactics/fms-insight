@@ -36,11 +36,7 @@ import * as ReactDOM from "react-dom";
 import "typeface-roboto";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import "react-vis/dist/style.css";
-
-import hljs from "highlight.js/lib/core";
-import gcode from "highlight.js/lib/languages/gcode";
 import "highlight.js/styles/default.css";
-hljs.registerLanguage("gcode", gcode);
 
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";

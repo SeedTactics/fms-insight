@@ -104,7 +104,8 @@ namespace BlackMaple.FMSInsight.Niigata
           var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material.Select(ms => ms.Mat).ToList(), queuedMats: cellSt.QueuedMaterial);
           if (pathsToLoad != null && pathsToLoad.Count > 0)
           {
-            return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse);
+            if (SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse, out var newAction))
+              return newAction;
           }
         }
       }
@@ -121,7 +122,8 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material.Select(ms => ms.Mat).ToList(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse);
+          if (SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse, out var newAction))
+            return newAction;
         }
       }
 
@@ -138,7 +140,8 @@ namespace BlackMaple.FMSInsight.Niigata
         var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterial>(), queuedMats: cellSt.QueuedMaterial);
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          return SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse);
+          if (SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse, out var newAction))
+            return newAction;
         }
       }
 
@@ -336,7 +339,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return Math.Max(1, Math.Min(9, numProc - proc + 1));
     }
 
-    private NiigataAction SetNewRoute(PalletAndMaterial oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs)
+    private bool SetNewRoute(PalletAndMaterial oldPallet, IReadOnlyList<JobPath> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs, out NiigataAction newAction)
     {
       var newMaster = NewPalletMaster(oldPallet.Status.Master.PalletNum, newPaths, progs);
       var newFaces = newPaths.Select(path =>
@@ -355,7 +358,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           remaining = 2;
         }
-        return new UpdatePalletQuantities()
+        newAction = new UpdatePalletQuantities()
         {
           Pallet = oldPallet.Status.Master.PalletNum,
           Priority = PathsToPriority(newPaths),
@@ -364,14 +367,31 @@ namespace BlackMaple.FMSInsight.Niigata
           Skip = false,
           LongToolMachine = 0
         };
+        return true;
       }
-      else
+      else if (AllowOverrideRoute(oldPallet.Status, newMaster))
       {
-        return new NewPalletRoute()
+        newAction = new NewPalletRoute()
         {
           NewMaster = newMaster,
           NewFaces = newFaces
         };
+        return true;
+      }
+      else if (oldPallet.Status.CurStation.Location.Location == PalletLocationEnum.Buffer)
+      {
+        // need to delete first
+        newAction = new DeletePalletRoute()
+        {
+          PalletNum = newMaster.PalletNum
+        };
+        return true;
+      }
+      else
+      {
+        // pallet is at load station, must wait until it gets to the buffer
+        newAction = null;
+        return false;
       }
     }
 
@@ -572,6 +592,37 @@ namespace BlackMaple.FMSInsight.Niigata
         else if (existingMaster.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
         {
           if (!((UnloadStep)existingMaster.Routes[i]).UnloadStations.SequenceEqual(((UnloadStep)newPal.Routes[i]).UnloadStations)) return false;
+        }
+        else
+        {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    private bool AllowOverrideRoute(PalletStatus existingStatus, PalletMaster newPal)
+    {
+      var existingMaster = existingStatus.Master;
+      if (existingStatus.Tracking.RouteInvalid) return true;
+
+      // The ICC can only replace a route if the sequence of steps matches, otherwise the old route needs to be deleted first
+      if (existingMaster.Routes.Count != newPal.Routes.Count) return false;
+
+      for (int i = 0; i < existingMaster.Routes.Count - 1; i++)
+      {
+        if (
+          (existingMaster.Routes[i] is LoadStep && newPal.Routes[i] is LoadStep)
+          ||
+          (existingMaster.Routes[i] is MachiningStep && newPal.Routes[i] is MachiningStep)
+          ||
+          (existingMaster.Routes[i] is ReclampStep && newPal.Routes[i] is ReclampStep)
+          ||
+          (existingMaster.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
+        )
+        {
+          // OK
         }
         else
         {

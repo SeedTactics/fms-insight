@@ -159,7 +159,44 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (pal.Status.Tracking.Alarm)
         {
-          curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + " has alarm " + pal.Status.Tracking.AlarmCode.ToString());
+          string msg = " has alarm code " + pal.Status.Tracking.AlarmCode.ToString();
+          switch (pal.Status.Tracking.AlarmCode)
+          {
+            case PalletAlarmCode.AlarmSetOnScreen:
+              msg = " has alarm set by operator";
+              break;
+            case PalletAlarmCode.M165:
+              msg = " has alarm M165";
+              break;
+            case PalletAlarmCode.RoutingFault:
+              msg = " has routing fault";
+              break;
+            case PalletAlarmCode.LoadingFromAutoLULStation:
+              msg = " is loading from auto L/UL station";
+              break;
+            case PalletAlarmCode.ProgramRequestAlarm:
+              msg = " has program request alarm";
+              break;
+            case PalletAlarmCode.ProgramRespondingAlarm:
+              msg = " has program responding alarm";
+              break;
+            case PalletAlarmCode.ProgramTransferAlarm:
+              msg = " has program transfer alarm";
+              break;
+            case PalletAlarmCode.ProgramTransferFinAlarm:
+              msg = " has program transfer alarm";
+              break;
+            case PalletAlarmCode.MachineAutoOff:
+              msg = " at machine with auto off";
+              break;
+            case PalletAlarmCode.MachinePowerOff:
+              msg = " at machine which is powered off";
+              break;
+            case PalletAlarmCode.IccExited:
+              msg = " can't communicate with ICC";
+              break;
+          }
+          curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + msg);
         }
       }
       foreach (var mc in status.Status.Machines.Values)

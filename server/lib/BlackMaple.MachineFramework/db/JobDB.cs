@@ -1308,10 +1308,9 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-
           var ret = new List<MachineWatchInterface.PartWorkorder>();
           cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders " +
-            "WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL) AND Part = $part";
+            "WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL AND (Manual IS NULL OR Manual == 0)) AND Part = $part";
           cmd.Parameters.Add("part", SqliteType.Text).Value = part;
 
           using (IDataReader reader = cmd.ExecuteReader())
