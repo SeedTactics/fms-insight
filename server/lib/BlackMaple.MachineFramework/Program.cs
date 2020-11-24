@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2018, John Lenz
+﻿/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -77,6 +77,46 @@ namespace BlackMaple.MachineFramework
       return (cfg, s);
     }
 
+    public class CompressSerilogDebugLog : Serilog.Sinks.File.FileLifecycleHooks
+    {
+      public override void OnFileDeleting(string origTxtFile)
+      {
+        try
+        {
+          var newGzFile = Path.Combine(Path.GetDirectoryName(origTxtFile), Path.GetFileName(origTxtFile) + ".gz");
+
+          using (var sourceStream = new FileStream(origTxtFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+          using (var targetStream = new FileStream(newGzFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
+          using (var compressStream = new System.IO.Compression.GZipStream(targetStream, System.IO.Compression.CompressionLevel.Optimal))
+          {
+            sourceStream.CopyTo(compressStream);
+          }
+
+          // delete after 30 days
+          var rx = new System.Text.RegularExpressions.Regex(@"fmsinsight-debug(\d+)\.txt\.gz");
+          foreach (var existingGzFile in Directory.GetFiles(Path.GetDirectoryName(origTxtFile), "*.gz"))
+          {
+            var m = rx.Match(Path.GetFileName(existingGzFile));
+            if (m != null && m.Success && m.Groups.Count >= 2)
+            {
+              if (DateTime.TryParseExact(m.Groups[1].Value, "yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d))
+              {
+                if (DateTime.Today.Subtract(d) > TimeSpan.FromDays(30))
+                {
+                  System.IO.File.Delete(existingGzFile);
+                }
+              }
+            }
+          }
+        }
+        catch (Exception ex)
+        {
+          Serilog.Debugging.SelfLog.WriteLine("Error while archiving debug log " + origTxtFile + ": " + ex.ToString());
+        }
+      }
+
+    }
+
     private static void EnableSerilog(ServerSettings serverSt, bool enableEventLog)
     {
       var logConfig = new LoggerConfiguration()
@@ -102,7 +142,9 @@ namespace BlackMaple.MachineFramework
             new Serilog.Formatting.Compact.CompactJsonFormatter(),
             System.IO.Path.Combine(ServerSettings.ConfigDirectory, "fmsinsight-debug.txt"),
             rollingInterval: RollingInterval.Day,
-            restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug);
+            hooks: new CompressSerilogDebugLog(),
+            restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug,
+            retainedFileCountLimit: 3);
       }
 
       Log.Logger = logConfig.CreateLogger();
