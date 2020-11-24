@@ -185,6 +185,8 @@ namespace MazakMachineInterface
     {
       var mazakData = readDatabase.LoadAllData();
 
+      Log.Debug("Writing new jobs {@newJobs}, existing mazak data is {@mazakData}", newJ, mazakData);
+
       //first allocate a UID to use for this download
       int UID = 0;
       while (UID < int.MaxValue)
@@ -274,6 +276,8 @@ namespace MazakMachineInterface
     private void AddSchedules(JobDB jobDB, IEnumerable<JobPlan> jobs)
     {
       var mazakData = readDatabase.LoadSchedulesPartsPallets();
+      Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
+
       var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, _useStartingOffsetForDueDate);
       if (transSet.Schedules.Any())
       {

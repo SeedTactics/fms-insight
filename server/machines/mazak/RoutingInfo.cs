@@ -154,8 +154,6 @@ namespace MazakMachineInterface
       {
         using (var jobDB = jobDBCfg.OpenConnection())
         {
-          Log.Debug("Check valid routing info");
-
           ProgramRevision lookupProg(string prog, long? rev)
           {
             if (rev.HasValue)

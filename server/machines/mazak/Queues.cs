@@ -95,8 +95,6 @@ namespace MazakMachineInterface
 
     public MazakWriteData CalculateScheduleChanges(JobDB jdb, EventLogDB logDb, MazakSchedulesAndLoadActions mazakData)
     {
-      log.Debug("Starting check for new queued material to add to mazak");
-
       IEnumerable<ScheduleWithQueues> schs;
       schs = LoadSchedules(jdb, logDb, mazakData);
       if (!schs.Any()) return null;
@@ -155,7 +153,6 @@ namespace MazakMachineInterface
           {
             foundJobAtLoad = true;
             skippedCastings.Add(casting);
-            log.Debug("Not editing queued material because {uniq} is in the process of being loaded or unload with action {@action}", job.UniqueStr, action);
             break;
           }
         }
@@ -166,7 +163,6 @@ namespace MazakMachineInterface
           {
             skippedCastings.Add(casting);
             foundJobAtLoad = true;
-            log.Debug("Not editing queued material because found a pending load {@pendingLoad}", pendingLoad);
             break;
           }
         }
