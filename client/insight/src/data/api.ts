@@ -609,6 +609,43 @@ export class JobsClient {
         return Promise.resolve<InProcessMaterial[]>(<any>null);
     }
 
+    getJobPlan(jobUnique: string | null): Promise<JobPlan> {
+        let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/plan";
+        if (jobUnique === undefined || jobUnique === null)
+            throw new Error("The parameter 'jobUnique' must be defined.");
+        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique)); 
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetJobPlan(_response);
+        });
+    }
+
+    protected processGetJobPlan(response: Response): Promise<JobPlan> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = resultData200 ? JobPlan.fromJS(resultData200) : new JobPlan();
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<JobPlan>(<any>null);
+    }
+
     addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, pathGroup: number, queue: string | null, pos: number, serial: string, operName: string | null | undefined): Promise<InProcessMaterial> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
@@ -2202,6 +2239,7 @@ export interface IHistoricJob extends IJobPlan {
 
 export class DecrementQuantity implements IDecrementQuantity {
     decrementId!: number;
+    proc1Path!: number;
     timeUTC!: Date;
     quantity!: number;
 
@@ -2217,6 +2255,7 @@ export class DecrementQuantity implements IDecrementQuantity {
     init(data?: any) {
         if (data) {
             this.decrementId = data["DecrementId"];
+            this.proc1Path = data["Proc1Path"];
             this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
             this.quantity = data["Quantity"];
         }
@@ -2232,6 +2271,7 @@ export class DecrementQuantity implements IDecrementQuantity {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["DecrementId"] = this.decrementId;
+        data["Proc1Path"] = this.proc1Path;
         data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["Quantity"] = this.quantity;
         return data; 
@@ -2240,6 +2280,7 @@ export class DecrementQuantity implements IDecrementQuantity {
 
 export interface IDecrementQuantity {
     decrementId: number;
+    proc1Path: number;
     timeUTC: Date;
     quantity: number;
 }
@@ -3663,6 +3704,7 @@ export interface IQueuePosition {
 export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
     decrementId!: number;
     jobUnique!: string;
+    proc1Path!: number;
     timeUTC!: Date;
     part!: string;
     quantity!: number;
@@ -3680,6 +3722,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
         if (data) {
             this.decrementId = data["DecrementId"];
             this.jobUnique = data["JobUnique"];
+            this.proc1Path = data["Proc1Path"];
             this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
             this.part = data["Part"];
             this.quantity = data["Quantity"];
@@ -3697,6 +3740,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
         data = typeof data === 'object' ? data : {};
         data["DecrementId"] = this.decrementId;
         data["JobUnique"] = this.jobUnique;
+        data["Proc1Path"] = this.proc1Path;
         data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["Part"] = this.part;
         data["Quantity"] = this.quantity;
@@ -3707,6 +3751,7 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
 export interface IJobAndDecrementQuantity {
     decrementId: number;
     jobUnique: string;
+    proc1Path: number;
     timeUTC: Date;
     part: string;
     quantity: number;

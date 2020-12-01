@@ -579,6 +579,37 @@
         }
       }
     },
+    "/api/v1/jobs/job/{jobUnique}/plan": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_GetJobPlan",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "jobUnique",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/JobPlan"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/jobs/job/{jobUnique}/unprocessed-material": {
       "post": {
         "tags": [
@@ -1913,6 +1944,7 @@
       "additionalProperties": false,
       "required": [
         "DecrementId",
+        "Proc1Path",
         "TimeUTC",
         "Quantity"
       ],
@@ -2790,6 +2822,7 @@
       "required": [
         "DecrementId",
         "JobUnique",
+        "Proc1Path",
         "TimeUTC",
         "Part",
         "Quantity"

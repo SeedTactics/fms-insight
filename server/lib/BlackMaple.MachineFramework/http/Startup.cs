@@ -282,6 +282,7 @@ namespace BlackMaple.MachineFramework
         foreach (var w in _fmsImpl.Workers)
           w.Dispose();
         _fmsImpl.Backend?.Dispose();
+        Serilog.Log.CloseAndFlush();
       });
 
 #if SERVE_REMOTING

@@ -196,7 +196,6 @@ namespace MazakMachineInterface
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<FixWork>(qry))
       {
-        Log.Debug("Received load action {@action}", e);
         if (string.IsNullOrEmpty(e.a9_ptnam))
         {
           Log.Warning("Load operation has no part name {@load}", e);
@@ -216,7 +215,6 @@ namespace MazakMachineInterface
 
         ret.Add(new LoadAction(true, stat, part, comment, proc, qty));
       }
-      Log.Debug("Parsed load {@actions}", ret);
       return ret;
     }
 
@@ -238,7 +236,6 @@ namespace MazakMachineInterface
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<RemoveWork>(qry))
       {
-        Log.Debug("Received remove work {@action}", e);
         if (string.IsNullOrEmpty(e.a8_ptnam))
         {
           Log.Warning("Load operation has no part name {@load}", e);
@@ -258,7 +255,6 @@ namespace MazakMachineInterface
 
         ret.Add(new LoadAction(false, stat, part, comment, proc, qty));
       }
-      Log.Debug("Parsed unload actions to {@actions}", ret);
       return ret;
     }
     #endregion

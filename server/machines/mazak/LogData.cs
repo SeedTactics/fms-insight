@@ -429,6 +429,8 @@ namespace MazakMachineInterface
 
           var mazakData = _readDB.LoadSchedulesAndLoadActions();
 
+          Log.Debug("Loaded mazak schedules {@data}", mazakData);
+
           List<LogEntry> logs;
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
           bool queuesChanged;

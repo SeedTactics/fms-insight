@@ -125,10 +125,6 @@ namespace MazakMachineInterface
             }
             else
             {
-
-              Log.Debug("Starting to process load station " + lds.ToString() +
-                               " file " + Path.GetFileName(file));
-
               a = ReadFile(lds, file);
 
               lastWriteTime[lds] = last;
@@ -138,8 +134,6 @@ namespace MazakMachineInterface
 
         if (a == null || a.Count == 0)
           return;
-
-        Log.Debug(a.ToString());
 
         if (a != null)
           _onLoadActions(lds, a);

@@ -138,6 +138,15 @@ namespace BlackMaple.MachineFramework.Controllers
       return _backend.JobControl.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials, operName);
     }
 
+    [HttpGet("job/{jobUnique}/plan")]
+    public JobPlan GetJobPlan(string jobUnique)
+    {
+      using (var db = _backend.OpenJobDatabase())
+      {
+        return db.LoadJob(jobUnique);
+      }
+    }
+
     [HttpPost("job/{jobUnique}/unprocessed-material")]
     public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] int pathGroup, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial, [FromQuery] string operName = null)
     {

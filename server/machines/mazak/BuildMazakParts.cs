@@ -1131,7 +1131,6 @@ namespace MazakMachineInterface
           }
         }
       }
-      Log.Debug("Available Fixtures: {@fixs}", usedMazakFixtureNames);
 
       //For each fixture, create (or reuse) a mazak fixture and add parts and pallets using this fixture.
       foreach (var fixture in allFixtures)
@@ -1139,7 +1138,6 @@ namespace MazakMachineInterface
         //check if we can reuse an existing fixture
         if (!useStartingOffsetForDueDate)
         {
-          Log.Debug("Searching existing fixtures for {@fixture}", fixture);
           CheckExistingFixture(fixture, usedMazakFixtureNames, mazakData);
         }
 
@@ -1167,7 +1165,6 @@ namespace MazakMachineInterface
               "Fixture " + mazakFixtureName + " is too long to fit in the Mazak databases");
           }
           fixture.MazakFixtureName = mazakFixtureName;
-          Log.Debug("Creating new fixture {mazakFixtureName} for {@fixture}", mazakFixtureName, fixture);
         }
 
         usedMazakFixtureNames.Add(fixture.MazakFixtureName);
@@ -1205,7 +1202,6 @@ namespace MazakMachineInterface
         if (!onPallets.SetEquals(fixture.Pallets)) continue;
 
         fixture.MazakFixtureName = mazakFixtureName;
-        Log.Debug("Assigning existing fixture {fix} to group {@group}", mazakFixtureName, mazakFixtureName);
         return;
       }
     }

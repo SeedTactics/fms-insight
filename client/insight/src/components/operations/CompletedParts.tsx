@@ -55,7 +55,7 @@ import { PartIdenticon } from "../station-monitor/Material";
 import { makeStyles, createStyles } from "@material-ui/core/styles";
 import { ConnectedEditNoteDialog } from "../station-monitor/Queues";
 import { MoreHoriz } from "@material-ui/icons";
-import { JobDetailDialog } from "../station-monitor/JobDetails";
+import { JobDetailDialog, JobPlanDialog } from "../station-monitor/JobDetails";
 
 interface JobsTableProps {
   readonly jobs: ReadonlyArray<ScheduledJobDisplay>;
@@ -87,6 +87,7 @@ function JobsTable(props: JobsTableProps) {
   const classes = useTableStyles();
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
   const [jobDetailsToShow, setJobDetailsToShow] = React.useState<Readonly<IInProcessJob> | null>(null);
+  const [jobPlanToLoad, setJobPlanToLoad] = React.useState<string | null>(null);
   return (
     <Card raised>
       <CardHeader
@@ -169,13 +170,16 @@ function JobsTable(props: JobsTableProps) {
                 <TableCell align="right">{job.inProcessQty}</TableCell>
                 <TableCell align="right">{job.remainingQty}</TableCell>
                 <TableCell>
-                  {job.inProcJob !== null ? (
-                    <Tooltip title="Show Details">
-                      <IconButton size="small" onClick={() => setJobDetailsToShow(job.inProcJob)}>
-                        <MoreHoriz />
-                      </IconButton>
-                    </Tooltip>
-                  ) : undefined}
+                  <Tooltip title="Show Details">
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        job.inProcJob !== null ? setJobDetailsToShow(job.inProcJob) : setJobPlanToLoad(job.unique)
+                      }
+                    >
+                      <MoreHoriz />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
@@ -183,6 +187,7 @@ function JobsTable(props: JobsTableProps) {
         </Table>
         <ConnectedEditNoteDialog job={curEditNoteJob} closeDialog={() => setCurEditNoteJob(null)} />
         <JobDetailDialog job={jobDetailsToShow} close={() => setJobDetailsToShow(null)} />
+        <JobPlanDialog unique={jobPlanToLoad} close={() => setJobPlanToLoad(null)} />
       </CardContent>
     </Card>
   );
