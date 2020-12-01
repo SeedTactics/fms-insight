@@ -33,13 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as api from "../../data/api";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@material-ui/core";
+import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle } from "@material-ui/core";
 import { MaterialDetailTitle } from "./Material";
 import { duration } from "moment";
 import { format } from "date-fns";
+import { JobsBackend } from "../../data/backend";
 
 interface JobDisplayProps {
-  readonly job: Readonly<api.IInProcessJob>;
+  readonly job: Readonly<api.IJobPlan>;
 }
 
 function displayDate(d: Date) {
@@ -111,6 +112,57 @@ function JobDisplay(props: JobDisplayProps) {
         ))}
       </dl>
     </div>
+  );
+}
+
+export interface JobPlanDialogProps {
+  readonly unique: string | null;
+  readonly close: () => void;
+}
+
+export function JobPlanDialog(props: JobPlanDialogProps) {
+  const [job, setJob] = React.useState<Readonly<api.IJobPlan> | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (props.unique === null) {
+      setJob(null);
+      setLoading(false);
+    } else if (job === null || props.unique !== job.unique) {
+      setLoading(true);
+      JobsBackend.getJobPlan(props.unique)
+        .then((j) => {
+          setJob(j);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [props.unique]);
+
+  function close() {
+    setJob(null);
+    setLoading(false);
+    props.close();
+  }
+
+  return (
+    <Dialog open={props.unique !== null} onClose={close}>
+      <DialogTitle disableTypography>
+        {job !== null ? <MaterialDetailTitle partName={job.partName} subtitle={job.unique} /> : undefined}
+      </DialogTitle>
+      <DialogContent>
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <CircularProgress />
+          </div>
+        ) : undefined}
+        {job !== null ? <JobDisplay job={job} /> : undefined}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={close} color="primary">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

@@ -40,6 +40,7 @@ export interface JobAPI {
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
   mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
   setJobComment(unique: string, comment: string): Promise<void>;
+  getJobPlan(jobUnique: string | null): Promise<Readonly<api.IJobPlan>>;
 
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
   bulkRemoveMaterialFromQueues(
@@ -235,6 +236,9 @@ function initMockBackend(data: Promise<MockData>) {
     removeMaterialFromAllQueues(_materialId: number, _operName: string | undefined): Promise<void> {
       // do nothing
       return Promise.resolve();
+    },
+    getJobPlan(_uniq: string): Promise<Readonly<api.IJobPlan>> {
+      return Promise.reject("Unable to load job");
     },
     bulkRemoveMaterialFromQueues(
       _materialIds: ReadonlyArray<number> | null,

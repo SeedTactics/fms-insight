@@ -77,6 +77,9 @@ export const JobsBackend = {
     // do nothing
     return Promise.resolve();
   },
+  getJobPlan(_uniq: string): Promise<Readonly<api.IJobPlan>> {
+    return Promise.reject("Unable to load job");
+  },
 
   removeMaterialFromAllQueues(): Promise<void> {
     // do nothing

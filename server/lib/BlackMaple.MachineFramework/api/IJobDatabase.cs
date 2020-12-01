@@ -38,6 +38,8 @@ namespace BlackMaple.MachineWatchInterface
 {
   public interface IJobDatabase : IDisposable
   {
+    JobPlan LoadJob(string uniqueStr);
+
     ///Load all jobs, station, and tool utilization which intersect the given date range.
     HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
 
