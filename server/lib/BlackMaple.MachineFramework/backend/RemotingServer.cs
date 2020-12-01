@@ -172,7 +172,7 @@ namespace BlackMaple.MachineWatch
       return null;
     }
 
-    #region IDisposable Support
+#region IDisposable Support
     private bool disposedValue = false; // To detect redundant calls
 
     // This code added to correctly implement the disposable pattern.
@@ -185,7 +185,7 @@ namespace BlackMaple.MachineWatch
         disposedValue = true;
       }
     }
-    #endregion
+#endregion
 
     public class RemoteSingletons
     {
@@ -332,6 +332,14 @@ namespace BlackMaple.MachineWatch
         using (var jdb = _backend.OpenJobDatabase())
         {
           return jdb.MostRecentUnfilledWorkordersForPart(part);
+        }
+      }
+
+      public JobPlan LoadJob(string uniq)
+      {
+        using (var jdb = _backend.OpenJobDatabase())
+        {
+          return jdb.LoadJob(uniq);
         }
       }
     }
