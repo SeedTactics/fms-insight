@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -818,10 +818,11 @@ namespace MazakMachineInterface
     private string _palPositionSelect;
     private string _mainProgSelect;
     private string _alarmSelect;
+    private string _toolSelect;
 
-    private LoadOperationsFromFile _loadOper;
+    private ICurrentLoadActions _loadOper;
 
-    public OpenDatabaseKitReadDB(string dbConnStr, MazakDbType ty, LoadOperationsFromFile loadOper)
+    public OpenDatabaseKitReadDB(string dbConnStr, MazakDbType ty, ICurrentLoadActions loadOper)
       : base(dbConnStr, ty)
     {
       _loadOper = loadOper;
@@ -986,6 +987,32 @@ namespace MazakMachineInterface
       _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
       _mainProgSelect = "SELECT MainProgram, Comment FROM MainProgram";
       _alarmSelect = "SELECT AlarmNumber, AlarmMessage FROM Alarm";
+
+
+      _toolSelect = @"SELECT
+          MachineNumber,
+          PocketNumber,
+          PocketType,
+          ToolID,
+          ToolNameCode,
+          ToolNumber,
+          IsLengthMeasured,
+          IsToolDataValid,
+          IsToolLifeOver,
+          IsToolLifeBroken,
+          IsDataAccessed,
+          IsBeingUsed,
+          UsableNow,
+          WillBrokenInform,
+          InterferenceType,
+          LifeSpan,
+          LifeUsed,
+          NominalDiameter,
+          SuffixCode,
+          ToolDiameter,
+          GroupNo
+        FROM ToolPocket
+      ";
     }
 
     public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
@@ -1030,47 +1057,29 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    public MazakSchedules LoadSchedules()
+    public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
     {
       return WithReadDBConnection(conn =>
       {
-        var trans = conn.BeginTransaction();
-        try
+        using (var trans = conn.BeginTransaction())
         {
-          var ret = LoadSchedules(conn, trans);
+          var partFixQty = conn.Query<PartProcessFixQty>(_partProcFixQty, transaction: trans);
+          var ret = new MazakSchedulesAndLoadActions()
+          {
+            Schedules = LoadSchedules(conn, trans, partFixQty),
+            LoadActions = _loadOper.CurrentLoadActions(),
+            Tools =
+              MazakType == MazakDbType.MazakSmooth
+                ? conn.Query<ToolPocketRow>(_toolSelect, transaction: trans)
+                : Enumerable.Empty<ToolPocketRow>()
+          };
           trans.Commit();
           return ret;
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
         }
       });
     }
 
-    internal MazakSchedules LoadSchedules(IDbConnection conn, IDbTransaction trans)
-    {
-      var partFixQty = conn.Query<PartProcessFixQty>(_partProcFixQty, transaction: trans);
-      return new MazakSchedules()
-      {
-        Schedules = LoadSchedules(conn, trans, partFixQty)
-      };
-
-    }
-
-    public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
-    {
-      var sch = LoadSchedules();
-      return new MazakSchedulesAndLoadActions()
-      {
-        Schedules = sch.Schedules,
-        LoadActions = _loadOper.CurrentLoadActions(),
-        Tools = Enumerable.Empty<ToolPocketRow>()
-      };
-    }
-
-    private MazakSchedulesPartsPallets LoadSchedulesPartsPallets(IDbConnection conn, IDbTransaction trans)
+    private MazakAllData LoadAllData(IDbConnection conn, IDbTransaction trans)
     {
       var parts = conn.Query<MazakPartRow>(_partSelect, transaction: trans);
       var partsByName = parts.ToDictionary(p => p.PartName, p => p);
@@ -1091,43 +1100,18 @@ namespace MazakMachineInterface
         });
       }
 
-      return new MazakSchedulesPartsPallets()
+      return new MazakAllData()
       {
         Schedules = LoadSchedules(conn, trans, fixQty),
         Parts = parts,
         Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
         PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
         PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
+        LoadActions = _loadOper.CurrentLoadActions(),
         MainPrograms = conn.Query<MazakProgramRow>(_mainProgSelect, transaction: trans),
+        Fixtures = conn.Query<MazakFixtureRow>(_fixtureSelect, transaction: trans),
+        Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans)
       };
-    }
-    public MazakSchedulesPartsPallets LoadSchedulesPartsPallets()
-    {
-      return LoadSchedulesPartsPallets(includeLoadActions: true);
-    }
-    public MazakSchedulesPartsPallets LoadSchedulesPartsPallets(bool includeLoadActions)
-    {
-      var data = WithReadDBConnection(conn =>
-      {
-        var trans = conn.BeginTransaction();
-        try
-        {
-          var ret = LoadSchedulesPartsPallets(conn, trans);
-          trans.Commit();
-          return ret;
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-      });
-
-      if (includeLoadActions)
-      {
-        data.LoadActions = _loadOper.CurrentLoadActions();
-      }
-      return data;
     }
 
     public IEnumerable<MazakProgramRow> LoadPrograms()
@@ -1146,7 +1130,17 @@ namespace MazakMachineInterface
 
     public IEnumerable<ToolPocketRow> LoadTools()
     {
-      return Enumerable.Empty<ToolPocketRow>();
+      if (MazakType == MazakDbType.MazakSmooth)
+      {
+        return WithReadDBConnection(conn =>
+        {
+          return conn.Query<ToolPocketRow>(_toolSelect).ToList();
+        });
+      }
+      else
+      {
+        return Enumerable.Empty<ToolPocketRow>();
+      }
     }
 
     public bool CheckPartExists(string partName)
@@ -1160,29 +1154,12 @@ namespace MazakMachineInterface
 
     public MazakAllData LoadAllData()
     {
-      return LoadAllData(includeLoadActions: true);
-    }
-
-    public MazakAllData LoadAllData(bool includeLoadActions)
-    {
       var data = WithReadDBConnection(conn =>
       {
         var trans = conn.BeginTransaction();
         try
         {
-          var schs = LoadSchedulesPartsPallets(conn, trans);
-          var ret = new MazakAllData()
-          {
-            Schedules = schs.Schedules,
-            Parts = schs.Parts,
-            Pallets = schs.Pallets,
-            PalletSubStatuses = schs.PalletSubStatuses,
-            PalletPositions = schs.PalletPositions,
-            MainPrograms = schs.MainPrograms,
-            Fixtures = conn.Query<MazakFixtureRow>(_fixtureSelect, transaction: trans),
-            Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans)
-          };
-
+          var ret = LoadAllData(conn, trans);
           trans.Commit();
           return ret;
         }
@@ -1193,10 +1170,6 @@ namespace MazakMachineInterface
         }
       });
 
-      if (includeLoadActions)
-      {
-        data.LoadActions = _loadOper.CurrentLoadActions();
-      }
       return data;
     }
   }

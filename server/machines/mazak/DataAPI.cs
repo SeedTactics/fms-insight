@@ -355,7 +355,7 @@ namespace MazakMachineInterface
     public string Comment { get; set; }
   }
 
-  public class MazakSchedulesPartsPallets : MazakSchedules
+  public class MazakAllData : MazakSchedules
   {
     public IEnumerable<MazakPartRow> Parts { get; set; }
     public IEnumerable<MazakPalletRow> Pallets { get; set; }
@@ -363,20 +363,19 @@ namespace MazakMachineInterface
     public IEnumerable<MazakPalletPositionRow> PalletPositions { get; set; }
     public IEnumerable<LoadAction> LoadActions { get; set; }
     public IEnumerable<MazakProgramRow> MainPrograms { get; set; }
-  }
-
-  public class MazakAllData : MazakSchedulesPartsPallets
-  {
     public IEnumerable<MazakFixtureRow> Fixtures { get; set; }
     public IEnumerable<MazakAlarmRow> Alarms { get; set; }
+  }
+
+  public interface ICurrentLoadActions : IDisposable
+  {
+    IEnumerable<LoadAction> CurrentLoadActions();
   }
 
   public interface IReadDataAccess
   {
     MazakDbType MazakType { get; }
-    MazakSchedules LoadSchedules();
     MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions();
-    MazakSchedulesPartsPallets LoadSchedulesPartsPallets();
     MazakAllData LoadAllData();
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();

@@ -427,7 +427,7 @@ namespace MazakMachineInterface
     // in a plugin after testing with the specific Mazak cell controller version in use.
     public static bool OverrideFixtureGroupToZero { get; set; } = false;
 
-    public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(MazakSchedulesPartsPallets oldData, int downloadUID)
+    public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(MazakAllData oldData, int downloadUID)
     {
       var ret = new List<MazakPalletRow>();
       foreach (var pallet in Pallets.OrderBy(p => p))
@@ -753,7 +753,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Parts
-    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakSchedulesPartsPallets mazakData, MazakDbType mazakTy,
+    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakAllData mazakData, MazakDbType mazakTy,
                                                   IList<string> log,
                                                   Func<string, long?, ProgramRevision> lookupProgram)
     {
@@ -853,7 +853,7 @@ namespace MazakMachineInterface
     private delegate bool MatchFunc(int proc, int path);
 
     private static void BuildProcFromPathGroup(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
-                                                   MazakSchedulesPartsPallets mazakData, MatchFunc matchPath,
+                                                   MazakAllData mazakData, MatchFunc matchPath,
                                                    Func<string, long?, ProgramRevision> lookupProgram)
     {
       ErrorDuringCreate = null;
@@ -937,7 +937,7 @@ namespace MazakMachineInterface
     }
 
     private static void BuildProcFromJobWithOneProc(JobPlan job, int proc1path, MazakPart mazak, MazakDbType mazakTy,
-                                                    MazakSchedulesPartsPallets mazakData,
+                                                    MazakAllData mazakData,
                                                     Func<string, long?, ProgramRevision> lookupProgram,
                                                     out string ErrorDuringCreate)
     {
@@ -1116,7 +1116,7 @@ namespace MazakMachineInterface
     }
 
     private static ISet<string> AssignMazakFixtures(
-      IEnumerable<MazakFixture> allFixtures, int downloadUID, MazakSchedulesPartsPallets mazakData, ISet<string> savedParts, bool useStartingOffsetForDueDate,
+      IEnumerable<MazakFixture> allFixtures, int downloadUID, MazakAllData mazakData, ISet<string> savedParts, bool useStartingOffsetForDueDate,
       IList<string> log)
     {
       //First calculate the available fixtures
@@ -1176,7 +1176,7 @@ namespace MazakMachineInterface
     private static void CheckExistingFixture(
       MazakFixture fixture,
       ISet<string> availableMazakFixtures,
-      MazakSchedulesPartsPallets mazakData)
+      MazakAllData mazakData)
     {
       //we need a fixture that exactly matches this pallet list and has all the processes.
       //Also, the fixture must be contained in a saved part.

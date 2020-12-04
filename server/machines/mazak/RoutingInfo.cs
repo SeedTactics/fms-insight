@@ -211,6 +211,7 @@ namespace MazakMachineInterface
         using (var jobDB = jobDBCfg.OpenConnection())
         {
           _writeJobs.AddJobs(jobDB, newJ, expectedPreviousScheduleId);
+          logReader.RecheckQueues(wait: false);
           using (var log = logDbCfg.OpenConnection())
           {
             curSt = CurrentStatus(jobDB, log);
@@ -239,6 +240,7 @@ namespace MazakMachineInterface
           using (var jobDB = jobDBCfg.OpenConnection())
           {
             _writeJobs.RecopyJobsToMazak(jobDB);
+            logReader.RecheckQueues(wait: false);
           }
         }
         finally

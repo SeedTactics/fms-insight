@@ -48,9 +48,8 @@ namespace MazakMachineInterface
     private IReadDataAccess _readDB;
     private OpenDatabaseKitTransactionDB _writeDB;
     private RoutingInfo routing;
-    private HoldPattern hold;
     private MazakQueues queues;
-    private LoadOperationsFromFile loadOper;
+    private ICurrentLoadActions loadOper;
     private IMazakLogReader logDataLoader;
 
     private EventLogDB.Config logDbConfig;
@@ -209,25 +208,20 @@ namespace MazakMachineInterface
       else if (MazakType == MazakDbType.MazakWeb)
         loadOper = new LoadOperationsFromFile(cfg, enableWatcher: false, onLoadActions: (l, a) => { }); // web instead watches the log csv files
       else
-        loadOper = null; // smooth db doesn't use the load operations file
+        loadOper = new LoadOperationsFromDB(dbConnStr); // smooth db doesn't use the load operations file
 
-      var openReadDb = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
-      if (MazakType == MazakDbType.MazakSmooth)
-        _readDB = new SmoothReadOnlyDB(dbConnStr, openReadDb);
-      else
-        _readDB = openReadDb;
+      _readDB = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
 
       queues = new MazakQueues(_writeDB, waitForAllCastings);
       var sendToExternal = new SendMaterialToExternalQueue();
 
-      hold = new HoldPattern(_writeDB, _readDB, jobDBConfig, true);
+      var hold = new HoldPattern(_writeDB);
       WriteJobs writeJobs;
       using (var jdb = jobDBConfig.OpenConnection())
       {
         writeJobs = new WriteJobs(
           d: _writeDB,
           readDb: _readDB,
-          h: hold,
           jDB: jdb,
           settings: st,
           useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
@@ -237,13 +231,13 @@ namespace MazakMachineInterface
       var decr = new DecrementPlanQty(_writeDB, _readDB);
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, logDbConfig, jobDBConfig, writeJobs, sendToExternal, _readDB, queues, st,
+        logDataLoader = new LogDataWeb(logPath, logDbConfig, jobDBConfig, writeJobs, sendToExternal, _readDB, queues, hold, st,
           currentStatusChanged: RaiseCurrentStatusChanged
         );
       else
       {
 #if USE_OLEDB
-				logDataLoader = new LogDataVerE(logDbConfig, jobDBConfig, sendToExternal, writeJobs, _readDB, queues, st,
+				logDataLoader = new LogDataVerE(logDbConfig, jobDBConfig, sendToExternal, writeJobs, _readDB, queues, hold, st,
           currentStatusChanged: RaiseCurrentStatusChanged
         );
 #else
@@ -277,9 +271,8 @@ namespace MazakMachineInterface
       _disposed = true;
       logDbConfig.NewLogEntry -= RaiseNewLogEntry;
       routing.Halt();
-      hold.Shutdown();
       logDataLoader.Halt();
-      if (loadOper != null) loadOper.Halt();
+      if (loadOper != null) loadOper.Dispose();
     }
 
     public IJobControl JobControl { get => routing; }

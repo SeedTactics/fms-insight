@@ -41,7 +41,7 @@ namespace MazakMachineInterface
 {
   public interface IHoldManagement
   {
-    void SignalNewSchedules();
+    TimeSpan CheckForTransition(MazakSchedules schedules, BlackMaple.MachineFramework.JobDB jobDB);
   }
 
   public class HoldPattern : IHoldManagement
@@ -77,127 +77,14 @@ namespace MazakMachineInterface
         return HoldMode.Shift1;
     }
 
-    public void SignalNewSchedules()
-    {
-      _thread.SignalNewSchedules();
-    }
-
     private static Serilog.ILogger Log = Serilog.Log.ForContext<HoldPattern>();
-    private TransitionThread _thread;
     private IWriteData database;
-    private IReadDataAccess readDatabase;
-    private BlackMaple.MachineFramework.JobDB.Config jobDBConfig;
 
-    public HoldPattern(IWriteData d, IReadDataAccess readDb, BlackMaple.MachineFramework.JobDB.Config jdb, bool createThread)
+    public HoldPattern(IWriteData d)
     {
       database = d;
-      readDatabase = readDb;
-      jobDBConfig = jdb;
-
-      if (createThread)
-        _thread = new TransitionThread(this);
     }
 
-    public void Shutdown()
-    {
-      if (_thread != null)
-        _thread.SignalShutdown();
-    }
-    #endregion
-
-    #region Checking for transition thread
-
-    //Instead of using a timer to periodically check for hold transitions,
-    //we spawn a thread which will just sleep and check for transitions.  Mainly we use a thread
-    //so that we can wake the thread when a new download occurs.
-    //
-    //The thread code looks like:
-    //  for (;;) {
-    //     Check for any hold transitions.
-    //     Sleep until there is some transition or a new download occurs.
-    //  }
-    //
-    // We use two AutoResetEvents: one to signal new jobs have appeared and one to shut down.
-
-    private class TransitionThread
-    {
-      public void SignalNewSchedules()
-      {
-        _newSchedules.Set();
-      }
-
-      public void SignalShutdown()
-      {
-        _shutdown.Set();
-
-        if (!_thread.Join(TimeSpan.FromSeconds(15)))
-          _thread.Abort();
-      }
-
-      public TransitionThread(HoldPattern parent)
-      {
-        _parent = parent;
-        _shutdown = new AutoResetEvent(false);
-        _newSchedules = new AutoResetEvent(false);
-
-        _thread = new Thread(new ThreadStart(ThreadFunc));
-        _thread.Start();
-      }
-
-#if DEBUG
-      private const int MaxSleepMinutes = 2;
-#else
-			private const int MaxSleepMinutes = 15;
-#endif
-
-      public void ThreadFunc()
-      {
-        for (; ; )
-        {
-
-          var sleepTime = _parent.CheckForTransition();
-
-          if (sleepTime == TimeSpan.MaxValue)
-          {
-            // -1 milliseconds means infinite wait.
-            sleepTime = TimeSpan.FromMilliseconds(-1);
-
-          }
-          else
-          {
-
-            //sleep 5 seconds longer than the time to the next transition, just so that
-            //we are sure to be after the transition when we wake up.
-            sleepTime = sleepTime.Add(TimeSpan.FromSeconds(5));
-
-            if (sleepTime < TimeSpan.Zero)
-              sleepTime = TimeSpan.FromSeconds(10);
-
-            // The max sleep time is 15 minutes, after which we recalculate.
-            // We could have some time drift or the user could have changed the clock time
-            // so we don't want to sleep too long.
-            if (sleepTime > TimeSpan.FromMinutes(MaxSleepMinutes))
-              sleepTime = TimeSpan.FromMinutes(MaxSleepMinutes);
-          }
-
-          Log.Debug("Sleeping for {time}", sleepTime);
-
-          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newSchedules }, sleepTime, false);
-
-          if (ret == 0)
-          {
-            //Shutdown was fired.
-            Log.Debug("Hold shutdown");
-            return;
-          }
-        }
-      }
-
-      private HoldPattern _parent;
-      private Thread _thread;
-      private AutoResetEvent _shutdown;
-      private AutoResetEvent _newSchedules;
-    }
     #endregion
 
     #region Mazak Schedules
@@ -258,12 +145,11 @@ namespace MazakMachineInterface
       private MazakScheduleRow _schRow;
     }
 
-    private IDictionary<int, MazakSchedule> LoadMazakSchedules(BlackMaple.MachineFramework.JobDB jdb)
+    private IDictionary<int, MazakSchedule> LoadMazakSchedules(BlackMaple.MachineFramework.JobDB jdb, IEnumerable<MazakScheduleRow> schedules)
     {
       var ret = new Dictionary<int, MazakSchedule>();
-      var mazakData = readDatabase.LoadSchedules();
 
-      foreach (var schRow in mazakData.Schedules)
+      foreach (var schRow in schedules)
       {
         ret.Add(schRow.Id, new MazakSchedule(jdb, this, schRow));
       }
@@ -271,79 +157,57 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private TimeSpan CheckForTransition()
+    public TimeSpan CheckForTransition(MazakSchedules schedules, BlackMaple.MachineFramework.JobDB jobDB)
     {
       try
       {
-        if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
+        //Store the current time, this is the time we use to calculate the hold pattern.
+        //It is important that this time be fixed for all schedule calculations, otherwise
+        //we might miss a transition if it occurs while we are running this function.
+        var nowUTC = DateTime.UtcNow;
+
+        IDictionary<int, MazakSchedule> mazakSch;
+        mazakSch = LoadMazakSchedules(jobDB, schedules.Schedules);
+
+        Log.Debug("Checking for hold transitions at {time} ", nowUTC);
+
+        var nextTimeUTC = DateTime.MaxValue;
+
+        foreach (var pair in mazakSch)
         {
-          //Downloads usually take a long time and they hold the db lock,
-          //so we will probably hit this timeout during the download.
-          //For this reason, we wait 3 minutes for the db lock and retry again after only 20 seconds.
-          //Thus during the download most of the waiting will be here for the db lock.
+          bool allHold = false;
+          DateTime allNext = DateTime.MaxValue;
+          bool machHold = false;
+          DateTime machNext = DateTime.MaxValue;
 
-          Log.Debug("Unable to obtain mazak db lock, trying again in 20 seconds.");
-          return TimeSpan.FromSeconds(20);
-        }
+          if (pair.Value.HoldEntireJob != null)
+            pair.Value.HoldEntireJob.HoldInformation(nowUTC, out allHold, out allNext);
+          if (pair.Value.HoldMachining != null)
+            pair.Value.HoldMachining.HoldInformation(nowUTC, out machHold, out machNext);
 
-        try
-        {
-          //Store the current time, this is the time we use to calculate the hold pattern.
-          //It is important that this time be fixed for all schedule calculations, otherwise
-          //we might miss a transition if it occurs while we are running this function.
-          var nowUTC = DateTime.UtcNow;
+          HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
 
-          IDictionary<int, MazakSchedule> mazakSch;
-          using (var jdb = jobDBConfig.OpenConnection())
+          Log.Debug("Checking schedule {sch}, mode {mode}, target {targetMode}, next {allNext}, mach {machNext}",
+            pair.Key, pair.Value.Hold, currentHoldMode, allNext, machNext
+          );
+
+          if (currentHoldMode != pair.Value.Hold)
           {
-            mazakSch = LoadMazakSchedules(jdb);
+            pair.Value.ChangeHoldMode(currentHoldMode);
           }
 
-          Log.Debug("Checking for hold transitions at {time} ", nowUTC);
-
-          var nextTimeUTC = DateTime.MaxValue;
-
-          foreach (var pair in mazakSch)
-          {
-            bool allHold = false;
-            DateTime allNext = DateTime.MaxValue;
-            bool machHold = false;
-            DateTime machNext = DateTime.MaxValue;
-
-            if (pair.Value.HoldEntireJob != null)
-              pair.Value.HoldEntireJob.HoldInformation(nowUTC, out allHold, out allNext);
-            if (pair.Value.HoldMachining != null)
-              pair.Value.HoldMachining.HoldInformation(nowUTC, out machHold, out machNext);
-
-            HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
-
-            Log.Debug("Checking schedule {sch}, mode {mode}, target {targetMode}, next {allNext}, mach {machNext}",
-              pair.Key, pair.Value.Hold, currentHoldMode, allNext, machNext
-            );
-
-            if (currentHoldMode != pair.Value.Hold)
-            {
-              pair.Value.ChangeHoldMode(currentHoldMode);
-            }
-
-            if (allNext < nextTimeUTC)
-              nextTimeUTC = allNext;
-            if (machNext < nextTimeUTC)
-              nextTimeUTC = machNext;
-          }
-
-          Log.Debug("Next hold transition {next}", nextTimeUTC);
-
-          if (nextTimeUTC == DateTime.MaxValue)
-            return TimeSpan.MaxValue;
-          else
-            return nextTimeUTC.Subtract(DateTime.UtcNow);
-
+          if (allNext < nextTimeUTC)
+            nextTimeUTC = allNext;
+          if (machNext < nextTimeUTC)
+            nextTimeUTC = machNext;
         }
-        finally
-        {
-          OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
-        }
+
+        Log.Debug("Next hold transition {next}", nextTimeUTC);
+
+        if (nextTimeUTC == DateTime.MaxValue)
+          return TimeSpan.MaxValue;
+        else
+          return nextTimeUTC.Subtract(DateTime.UtcNow);
       }
       catch (Exception ex)
       {
