@@ -72,9 +72,10 @@ namespace MazakMachineInterface
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry;
     public event NewCurrentStatus OnNewCurrentStatus;
-
     private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId, EventLogDB db) =>
       NewLogEntry?.Invoke(e, foreignId);
+
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.JobDB jobDb, BlackMaple.MachineFramework.EventLogDB logDB)
     {
@@ -258,7 +259,8 @@ namespace MazakMachineInterface
         useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
         settings: st,
         onNewJobs: j => OnNewJobs?.Invoke(j),
-        onStatusChange: s => OnNewCurrentStatus?.Invoke(s)
+        onStatusChange: s => OnNewCurrentStatus?.Invoke(s),
+        onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o)
       );
 
       MazakMachineControl = new MazakMachineControl(jobDBConfig, _readDB, writeJobs);

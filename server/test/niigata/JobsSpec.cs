@@ -49,6 +49,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private NiigataJobs _jobs;
     private ISyncPallets _syncMock;
     private Action<NewJobs> _onNewJobs;
+    private Action<EditMaterialInLogEvents> _onEditMatInLog;
 
     public NiigataJobSpec()
     {
@@ -65,7 +66,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       settings.Queues.Add("q2", new QueueSize());
 
       _onNewJobs = Substitute.For<Action<NewJobs>>();
-      _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, false, false, _onNewJobs);
+      _onEditMatInLog = Substitute.For<Action<EditMaterialInLogEvents>>();
+      _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, false, false, _onNewJobs, _onEditMatInLog);
     }
 
     void IDisposable.Dispose()

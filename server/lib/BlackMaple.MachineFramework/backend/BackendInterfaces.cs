@@ -40,6 +40,7 @@ namespace BlackMaple.MachineFramework
   public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
   public delegate void NewCurrentStatus(CurrentStatus status);
   public delegate void NewJobsDelegate(NewJobs j);
+  public delegate void EditMaterialInLogDelegate(MachineWatchInterface.EditMaterialInLogEvents o);
 
 
   public interface IFMSBackend : IDisposable
@@ -54,6 +55,7 @@ namespace BlackMaple.MachineFramework
     event NewLogEntryDelegate NewLogEntry;
     event NewCurrentStatus OnNewCurrentStatus;
     event NewJobsDelegate OnNewJobs;
+    event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     bool SupportsQuarantineAtLoadStation { get; }
   }

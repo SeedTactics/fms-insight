@@ -54,6 +54,7 @@ namespace MazakMachineInterface
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
     private readonly Action<NewJobs> _onNewJobs;
     private readonly Action<CurrentStatus> _onCurStatusChange;
+    private readonly Action<EditMaterialInLogEvents> _onEditMatInLog;
     public readonly bool _useStartingOffsetForDueDate;
 
     public Action<NewJobs> NewJobTransform = null;
@@ -71,7 +72,8 @@ namespace MazakMachineInterface
       bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<NewJobs> onNewJobs,
-      Action<CurrentStatus> onStatusChange
+      Action<CurrentStatus> onStatusChange,
+      Action<EditMaterialInLogEvents> onEditMatInLog
     )
     {
       writeDb = d;
@@ -87,6 +89,7 @@ namespace MazakMachineInterface
       _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
       _onNewJobs = onNewJobs;
       _onCurStatusChange = onStatusChange;
+      _onEditMatInLog = onEditMatInLog;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
       _copySchedulesTimer.Elapsed += (sender, args) => RecopyJobsToSystem();
@@ -543,6 +546,31 @@ namespace MazakMachineInterface
         {
           ((IJobControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
         }
+      }
+    }
+
+    public void OverrideMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
+
+      using (var logDb = logDbCfg.OpenConnection())
+      using (var jdb = jobDBCfg.OpenConnection())
+      {
+        var o = logDb.OverrideMaterialInCurrentPalletCycle(
+          pallet: pallet,
+          oldMatId: oldMatId,
+          newMatId: newMatId,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+
+        _onEditMatInLog(new EditMaterialInLogEvents()
+        {
+          OldMaterialID = oldMatId,
+          NewMaterialID = newMatId,
+          EditedEvents = o.ChangedLogEntries,
+        });
+        _onCurStatusChange(CurrentStatus(jdb, logDb));
       }
     }
     #endregion

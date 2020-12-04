@@ -752,9 +752,6 @@ namespace BlackMaple.MachineFramework
 
     #endregion
 
-    #region Event
-    #endregion
-
     #region Loading
     private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
     {
@@ -1177,38 +1174,50 @@ namespace BlackMaple.MachineFramework
     {
       lock (_config)
       {
-        using (var cmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
         {
-          cmd.CommandText = "SELECT MAX(Counter) FROM stations where Pallet = $pal AND Result = 'PalletCycle'";
-          cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
+          var ret = CurrentPalletLog(pallet, trans);
+          trans.Commit();
+          return ret;
+        }
+      }
+    }
 
-          var counter = cmd.ExecuteScalar();
+    private List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet, SqliteTransaction trans)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT MAX(Counter) FROM stations where Pallet = $pal AND Result = 'PalletCycle'";
+        cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
 
-          if (counter == DBNull.Value)
+        var counter = cmd.ExecuteScalar();
+
+        if (counter == DBNull.Value)
+        {
+
+          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+              " FROM stations WHERE Pallet = $pal ORDER BY Counter ASC";
+          using (var reader = cmd.ExecuteReader())
           {
-
-            cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-                " FROM stations WHERE Pallet = $pal ORDER BY Counter ASC";
-            using (var reader = cmd.ExecuteReader())
-            {
-              return LoadLog(reader);
-            }
-
+            return LoadLog(reader);
           }
-          else
+
+        }
+        else
+        {
+
+          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+              " FROM stations WHERE Pallet = $pal AND Counter > $cntr ORDER BY Counter ASC";
+          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
+
+          using (var reader = cmd.ExecuteReader())
           {
-
-            cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-                " FROM stations WHERE Pallet = $pal AND Counter > $cntr ORDER BY Counter ASC";
-            cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
-
-            using (var reader = cmd.ExecuteReader())
-            {
-              return LoadLog(reader);
-            }
+            return LoadLog(reader, trans);
           }
         }
       }
+
     }
 
     public IEnumerable<ToolPocketSnapshot> ToolPocketSnapshotForCycle(long counter)
@@ -1903,7 +1912,7 @@ namespace BlackMaple.MachineFramework
       return log;
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> AddEntryInTransaction(Func<IDbTransaction, IEnumerable<MachineWatchInterface.LogEntry>> f, string foreignId = "")
+    private IEnumerable<MachineWatchInterface.LogEntry> AddEntryInTransaction(Func<IDbTransaction, IReadOnlyList<MachineWatchInterface.LogEntry>> f, string foreignId = "")
     {
       IEnumerable<MachineWatchInterface.LogEntry> logs;
       lock (_config)
@@ -1984,12 +1993,16 @@ namespace BlackMaple.MachineFramework
         EndOfRoute = false
       };
       return AddEntryInTransaction(trans =>
-          mats
-          .SelectMany(mat => RemoveFromAllQueues(trans, mat, operatorName: null, timeUTC: timeUTC))
-          .Concat(new[] {
-                    AddLogEntry(trans, log, foreignId, originalMessage)
-          })
-      );
+      {
+        var logs = new List<MachineWatchInterface.LogEntry>();
+        foreach (var mat in mats)
+        {
+          var prevProcMat = new EventLogMaterial() { MaterialID = mat.MaterialID, Process = mat.Process - 1, Face = "" };
+          logs.AddRange(RemoveFromAllQueues(trans, prevProcMat, operatorName: null, timeUTC: timeUTC));
+        }
+        logs.Add(AddLogEntry(trans, log, foreignId, originalMessage));
+        return logs;
+      });
     }
 
     public MachineWatchInterface.LogEntry RecordUnloadStart(
@@ -2645,6 +2658,140 @@ namespace BlackMaple.MachineFramework
     {
       return AddEntryInTransaction(trans => logs.Select(e => AddLogEntry(trans, e, foreignId, origMessage)).ToList(), foreignId);
     }
+
+    public class OverrideMaterialResult
+    {
+      public IEnumerable<MachineWatchInterface.LogEntry> ChangedLogEntries { get; set; }
+      public IEnumerable<MachineWatchInterface.LogEntry> NewLogEntries { get; set; }
+    }
+
+    public OverrideMaterialResult OverrideMaterialInCurrentPalletCycle(
+      string pallet,
+      long oldMatId,
+      long newMatId,
+      string oldMatPutInQueue,
+      string operatorName,
+      DateTime? timeUTC = null
+    )
+    {
+      var newLogEntries = new List<MachineWatchInterface.LogEntry>();
+      var changedLogEntries = new List<MachineWatchInterface.LogEntry>();
+
+      lock (_config)
+      {
+        using (var updateMatsCmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
+        {
+          updateMatsCmd.Transaction = trans;
+
+          // get old material details
+          var oldMatDetails = GetMaterialDetails(oldMatId, trans);
+          if (oldMatDetails == null || oldMatDetails.Paths.Count == 0)
+          {
+            throw new ConflictRequestException("Unable to find material");
+          }
+
+          // load old events
+          var oldEvents = CurrentPalletLog(pallet, trans);
+          var oldMatProcM = oldEvents.SelectMany(e => e.Material).Where(m => m.MaterialID == oldMatId).Max(m => (int?)m.Process);
+          if (!oldMatProcM.HasValue)
+          {
+            throw new ConflictRequestException("Unable to find material, or material not currently on a pallet");
+          }
+          var oldMatProc = oldMatProcM.Value;
+
+          // check new material path matches
+          var newMatDetails = GetMaterialDetails(newMatId, trans);
+          if (newMatDetails == null || oldMatDetails.JobUnique != newMatDetails.JobUnique || newMatDetails.Paths.ContainsKey(oldMatProc))
+          {
+            throw new ConflictRequestException("Overriding material on pallet must use material from the same job");
+          }
+
+          // perform the swap
+          updateMatsCmd.CommandText = "UPDATE stations_mat SET MaterialID = $newmat WHERE Counter = $cntr AND MaterialID = $oldmat";
+          updateMatsCmd.Parameters.Add("newmat", SqliteType.Integer).Value = newMatId;
+          updateMatsCmd.Parameters.Add("cntr", SqliteType.Integer);
+          updateMatsCmd.Parameters.Add("oldmat", SqliteType.Integer).Value = oldMatId;
+
+          foreach (var evt in oldEvents)
+          {
+            if (evt.Material.Any(m => m.MaterialID == oldMatId))
+            {
+              updateMatsCmd.Parameters[1].Value = evt.Counter;
+              updateMatsCmd.ExecuteNonQuery();
+
+              changedLogEntries.Add(new MachineWatchInterface.LogEntry(evt,
+                newMats: evt.Material.Select(m =>
+                  m.MaterialID == oldMatId
+                    ? new MachineWatchInterface.LogMaterial(
+                        matID: newMatId,
+                        uniq: newMatDetails.JobUnique,
+                        proc: oldMatProc,
+                        part: newMatDetails.PartName,
+                        numProc: newMatDetails.NumProcesses,
+                        serial: newMatDetails.Serial ?? "",
+                        workorder: newMatDetails.Workorder ?? "",
+                        face: m.Face)
+                    : m
+                )
+              ));
+            }
+          }
+
+          // Record a message for the override
+          var time = timeUTC ?? DateTime.UtcNow;
+
+          var newMsg = new NewEventLogEntry()
+          {
+            Material = new EventLogMaterial[] {
+              new EventLogMaterial() { MaterialID = oldMatId, Process = oldMatProc - 1, Face = "" },
+              new EventLogMaterial() { MaterialID = newMatId, Process = oldMatProc - 1, Face = "" },
+             },
+            Pallet = pallet,
+            LogType = MachineWatchInterface.LogType.GeneralMessage,
+            LocationName = "Message",
+            LocationNum = 1,
+            Program = "MaterialOverride",
+            StartOfCycle = false,
+            EndTimeUTC = time,
+            Result = "Replace " + (oldMatDetails?.Serial ?? "material") + " with " + (newMatDetails?.Serial ?? "material") + " on pallet " + pallet,
+            EndOfRoute = false
+          };
+          newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
+
+          // update queues
+          newLogEntries.AddRange(RemoveFromAllQueues(trans, matID: newMatId, process: oldMatProc - 1, operatorName: operatorName, time));
+          if (!string.IsNullOrEmpty(oldMatPutInQueue))
+          {
+            newLogEntries.AddRange(AddToQueue(trans, matId: oldMatId, process: oldMatProc - 1, queue: oldMatPutInQueue, position: -1, operatorName: operatorName, time));
+          }
+
+          //update paths
+          if (oldMatDetails.Paths.TryGetValue(oldMatProc, out var oldPath))
+          {
+            using (var newPathCmd = _connection.CreateCommand())
+            {
+              newPathCmd.Transaction = trans;
+              newPathCmd.CommandText = "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
+              newPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = newMatId;
+              newPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
+              newPathCmd.Parameters.Add("path", SqliteType.Integer).Value = oldPath;
+              newPathCmd.ExecuteNonQuery();
+            }
+          }
+
+          trans.Commit();
+        }
+      }
+
+      foreach (var l in newLogEntries) _config.OnNewLogEntry(l, null, this);
+
+      return new OverrideMaterialResult()
+      {
+        ChangedLogEntries = changedLogEntries,
+        NewLogEntries = newLogEntries
+      };
+    }
     #endregion
 
     #region Material IDs
@@ -2954,7 +3101,7 @@ namespace BlackMaple.MachineFramework
 
     #region Queues
 
-    private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC)
     {
       var mat = new EventLogMaterial()
       {
@@ -2966,7 +3113,7 @@ namespace BlackMaple.MachineFramework
       return AddToQueue(trans, mat, queue, position, operatorName, timeUTC);
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC)
     {
       var ret = new List<MachineWatchInterface.LogEntry>();
 
@@ -3035,7 +3182,7 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, int process, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, int process, string operatorName, DateTime timeUTC)
     {
       var mat = new EventLogMaterial()
       {
@@ -3047,7 +3194,7 @@ namespace BlackMaple.MachineFramework
       return RemoveFromAllQueues(trans, mat, operatorName, timeUTC);
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, EventLogMaterial mat, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, EventLogMaterial mat, string operatorName, DateTime timeUTC)
     {
       using (var findCmd = _connection.CreateCommand())
       using (var updatePosCmd = _connection.CreateCommand())

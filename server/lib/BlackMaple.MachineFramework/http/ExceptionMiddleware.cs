@@ -42,42 +42,52 @@ namespace BlackMaple.MachineFramework
 {
   public class BadRequestException : Exception
   {
-    public BadRequestException(string msg) : base(msg) {}
+    public BadRequestException(string msg) : base(msg) { }
+  }
+
+  public class ConflictRequestException : Exception
+  {
+    public ConflictRequestException(string msg) : base(msg) { }
   }
 
   public class ErrorHandlingMiddleware
   {
-      private readonly RequestDelegate next;
+    private readonly RequestDelegate next;
 
-      public ErrorHandlingMiddleware(RequestDelegate next)
+    public ErrorHandlingMiddleware(RequestDelegate next)
+    {
+      this.next = next;
+    }
+
+    public async Task Invoke(HttpContext context)
+    {
+      try
       {
-          this.next = next;
+        await next(context);
+      }
+      catch (Exception ex)
+      {
+        await HandleExceptionAsync(context, ex);
+      }
+    }
+
+    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    {
+      Log.Error(exception, "Request received an exception");
+
+      HttpStatusCode code = HttpStatusCode.InternalServerError;
+      if (exception is BadRequestException)
+      {
+        code = HttpStatusCode.BadRequest;
+      }
+      else if (exception is ConflictRequestException)
+      {
+        code = HttpStatusCode.Conflict;
       }
 
-      public async Task Invoke(HttpContext context)
-      {
-          try
-          {
-              await next(context);
-          }
-          catch (Exception ex)
-          {
-              await HandleExceptionAsync(context, ex);
-          }
-      }
-
-      private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-      {
-        Log.Error(exception, "Request received an exception");
-
-        HttpStatusCode code = HttpStatusCode.InternalServerError;
-        if (exception is BadRequestException) {
-          code = HttpStatusCode.BadRequest;
-        }
-
-        context.Response.ContentType = "text/plain";
-        context.Response.StatusCode = (int)code;
-        return context.Response.WriteAsync(exception.Message);
-      }
+      context.Response.ContentType = "text/plain";
+      context.Response.StatusCode = (int)code;
+      return context.Response.WriteAsync(exception.Message);
+    }
   }
 }

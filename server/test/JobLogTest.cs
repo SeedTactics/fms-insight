@@ -1209,12 +1209,12 @@ namespace MachineWatchTest
       // loading should remove from queue
       var loadEndActual = _jobLog.RecordLoadEnd(new[] { mat1 }.Select(EventLogDB.EventLogMaterial.FromLogMat), "pal1", 16, start.AddMinutes(10), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20));
       loadEndActual.Should().BeEquivalentTo(new[] {
-                new LogEntry(3, new [] {mat1}, "pal1",
+                new LogEntry(4, new [] {mat1}, "pal1",
                     LogType.LoadUnloadCycle, "L/U", 16,
                     "LOAD", false, start.AddMinutes(10), "LOAD", false,
                     TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20)),
 
-                RemoveFromQueueExpectedEntry(mat1, 4, "AAAA", 0, 10, start.AddMinutes(10))
+                RemoveFromQueueExpectedEntry(SetProcInMat(mat1.Process - 1)(mat1), 3, "AAAA", 0, 10, start.AddMinutes(10))
             });
       expectedLogs.AddRange(loadEndActual);
 
@@ -1457,6 +1457,293 @@ namespace MachineWatchTest
       );
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void OverrideMatOnPal(bool firstPalletCycle)
+    {
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      if (!firstPalletCycle)
+      {
+        var firstMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
+        var firstMat = new EventLogDB.EventLogMaterial() { MaterialID = firstMatId, Process = 1, Face = "1" };
+        _jobLog.RecordSerialForMaterialID(firstMat, "aaaa", now);
+        _jobLog.RecordLoadEnd(new[] { firstMat }, pallet: "5", lulNum: 3, timeUTC: now.AddMinutes(1), elapsed: TimeSpan.FromMinutes(5), active: TimeSpan.FromMinutes(4));
+        _jobLog.RecordMachineEnd(new[] { firstMat }, pallet: "5", statName: "Mach", statNum: 4, program: "proggg", result: "proggg", timeUTC: now.AddMinutes(2), elapsed: TimeSpan.FromMinutes(10), active: TimeSpan.FromMinutes(11));
+        _jobLog.CompletePalletCycle(pal: "5", timeUTC: now.AddMinutes(5), foreignID: "");
+
+        now = now.AddMinutes(5).AddSeconds(1);
+      }
+
+      // ------------------------------------------------------
+      // Material
+      // ------------------------------------------------------
+
+      var initiallyLoadedMatProc0 = new EventLogDB.EventLogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
+        Process = 0,
+        Face = ""
+      };
+      var initiallyLoadedMatProc1 = new EventLogDB.EventLogMaterial()
+      {
+        MaterialID = initiallyLoadedMatProc0.MaterialID,
+        Process = 1,
+        Face = "1"
+      };
+
+
+      var initialMatAddToQueueTime = now;
+      _jobLog.RecordAddMaterialToQueue(initiallyLoadedMatProc0, queue: "rawmat", position: -1, timeUTC: now);
+      _jobLog.RecordSerialForMaterialID(initiallyLoadedMatProc0, "bbbb", now);
+      _jobLog.RecordPathForProcess(initiallyLoadedMatProc0.MaterialID, process: 1, path: 5);
+
+      now = now.AddMinutes(1);
+
+      var newMatProc0 = new EventLogDB.EventLogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
+        Process = 0,
+        Face = ""
+      };
+      var newMatProc1 = new EventLogDB.EventLogMaterial()
+      {
+        MaterialID = newMatProc0.MaterialID,
+        Process = 1,
+        Face = "1"
+      };
+
+      var newMatAddToQueueTime = now;
+      _jobLog.RecordAddMaterialToQueue(newMatProc0, queue: "rawmat", position: -1, timeUTC: now);
+      _jobLog.RecordSerialForMaterialID(newMatProc0, "cccc", now);
+
+      now = now.AddMinutes(1);
+
+      // ------------------------------------------------------
+      // Original Events
+      // ------------------------------------------------------
+
+      var origLog = new List<LogEntry>();
+
+      var loadEndOrigEvts = _jobLog.RecordLoadEnd(new[] { initiallyLoadedMatProc1 }, pallet: "5", lulNum: 2, timeUTC: now, elapsed: TimeSpan.FromMinutes(4), active: TimeSpan.FromMinutes(5));
+      loadEndOrigEvts.Count().Should().Be(2);
+      loadEndOrigEvts.First().LogType.Should().Be(LogType.RemoveFromQueue);
+      loadEndOrigEvts.First().Material.First().MaterialID.Should().Be(initiallyLoadedMatProc1.MaterialID);
+      loadEndOrigEvts.First().Material.First().Process.Should().Be(0);
+      loadEndOrigEvts.Last().LogType.Should().Be(LogType.LoadUnloadCycle);
+      origLog.Add(loadEndOrigEvts.Last());
+
+      var initialMatRemoveQueueTime = now;
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordPalletArriveStocker(new[] { initiallyLoadedMatProc1 }, pallet: "5", stockerNum: 5, timeUTC: now, waitForMachine: false)
+      );
+
+      now = now.AddMinutes(2);
+
+      origLog.Add(
+        _jobLog.RecordPalletDepartStocker(new[] { initiallyLoadedMatProc1 }, pallet: "5", stockerNum: 5, timeUTC: now, waitForMachine: false, elapsed: TimeSpan.FromMinutes(2))
+      );
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordPalletArriveRotaryInbound(new[] { initiallyLoadedMatProc1 }, pallet: "5", statName: "Mach", statNum: 3, timeUTC: now)
+      );
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordPalletDepartRotaryInbound(new[] { initiallyLoadedMatProc1 }, pallet: "5", statName: "Mach", statNum: 3, timeUTC: now, elapsed: TimeSpan.FromMinutes(5), rotateIntoWorktable: true)
+      );
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordMachineStart(new[] { initiallyLoadedMatProc1 }, pallet: "5", statName: "Mach", statNum: 3, program: "prog11", timeUTC: now)
+      );
+
+      now = now.AddMinutes(1);
+
+      // ------------------------------------------------------
+      // Do the swap
+      // ------------------------------------------------------
+
+      var result = _jobLog.OverrideMaterialInCurrentPalletCycle(
+        pallet: "5",
+        oldMatId: initiallyLoadedMatProc1.MaterialID,
+        newMatId: newMatProc1.MaterialID,
+        oldMatPutInQueue: "quarantine",
+        operatorName: "theoper",
+        timeUTC: now
+      );
+
+      // ------------------------------------------------------
+      // Check Logs
+      // ------------------------------------------------------
+
+      var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
+      var newLogMatProc0 = new LogMaterial(matID: newMatProc1.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "cccc", workorder: "", face: "");
+
+      var expectedGeneralMsg = new LogEntry(
+        cntr: 0,
+        mat: new[] { initiallyLoadedLogMatProc0, newLogMatProc0 },
+        pal: "5",
+        ty: LogType.GeneralMessage,
+        locName: "Message",
+        locNum: 1,
+        prog: "MaterialOverride",
+        start: false,
+        endTime: now,
+        result: "Replace bbbb with cccc on pallet 5",
+        endOfRoute: false
+      );
+
+      var newLog = origLog.Select(TransformLog(initiallyLoadedMatProc1.MaterialID, mat =>
+        new LogMaterial(matID: newMatProc1.MaterialID, uniq: "uniq1", proc: 1, part: "part1", numProc: 2, serial: "cccc", workorder: "", face: "1")
+      )).ToList();
+
+      result.ChangedLogEntries.Should().BeEquivalentTo(newLog,
+        options => options.Excluding(e => e.Counter)
+      );
+
+      result.NewLogEntries.Should().BeEquivalentTo(new[] {
+        expectedGeneralMsg,
+        AddToQueueExpectedEntry(
+          mat: initiallyLoadedLogMatProc0,
+          cntr: 0,
+          queue: "quarantine",
+          position: 0,
+          timeUTC: now,
+          operName: "theoper"
+        ),
+        RemoveFromQueueExpectedEntry(
+          mat: newLogMatProc0,
+          cntr: 0,
+          queue: "rawmat",
+          position: 0,
+          elapsedMin: now.Subtract(newMatAddToQueueTime).TotalMinutes,
+          timeUTC: now,
+          operName: "theoper"
+        )
+      }, options => options.Excluding(e => e.Counter));
+
+
+      // log for initiallyLoadedMatProc matches, and importantly has only process 0 as max
+      _jobLog.GetLogForMaterial(initiallyLoadedMatProc0.MaterialID).SelectMany(c => c.Material).Select(m => m.Process).Max()
+        .Should().Be(0);
+
+      _jobLog.GetLogForMaterial(initiallyLoadedMatProc0.MaterialID).Should().BeEquivalentTo(new[] {
+        RecordSerialExpectedEntry(mat: initiallyLoadedLogMatProc0, cntr: 0, serial: "bbbb", timeUTC: initialMatAddToQueueTime),
+        AddToQueueExpectedEntry(
+          mat: initiallyLoadedLogMatProc0,
+          cntr: 0,
+          queue: "rawmat",
+          position: 0,
+          timeUTC: initialMatAddToQueueTime
+        ),
+        RemoveFromQueueExpectedEntry(
+          mat: initiallyLoadedLogMatProc0,
+          cntr: 0,
+          queue: "rawmat",
+          position: 0,
+          timeUTC: initialMatRemoveQueueTime,
+          elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
+        ),
+        expectedGeneralMsg,
+        AddToQueueExpectedEntry(
+          mat: initiallyLoadedLogMatProc0,
+          cntr: 0,
+          queue: "quarantine",
+          position: 0,
+          timeUTC: now,
+          operName: "theoper"
+        ),
+      }, options => options.Excluding(e => e.Counter));
+
+      // log for newMat matches
+      _jobLog.GetLogForMaterial(newMatProc1.MaterialID).Should().BeEquivalentTo(
+        newLog.Concat(new[] {
+          RecordSerialExpectedEntry(mat: newLogMatProc0, cntr: 0, serial: "cccc", timeUTC: newMatAddToQueueTime),
+          AddToQueueExpectedEntry(
+            mat: newLogMatProc0,
+            cntr: 0,
+            queue: "rawmat",
+            position: 1,
+            timeUTC: newMatAddToQueueTime
+          ),
+          expectedGeneralMsg,
+          RemoveFromQueueExpectedEntry(
+            mat: newLogMatProc0,
+            cntr: 0,
+            queue: "rawmat",
+            position: 0,
+            elapsedMin: now.Subtract(newMatAddToQueueTime).TotalMinutes,
+            timeUTC: now,
+            operName: "theoper"
+          )
+      }), options => options.Excluding(c => c.Counter));
+
+      _jobLog.GetLogForMaterial(newMatProc1.MaterialID)
+        .Where(e => e.LogType != LogType.MachineCycle && e.LogType != LogType.LoadUnloadCycle && e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound)
+        .SelectMany(e => e.Material)
+        .Select(m => m.Process)
+        .Max()
+        .Should().Be(0);
+
+      _jobLog.GetMaterialDetails(newMatProc0.MaterialID).Paths.Should().BeEquivalentTo(new Dictionary<int, int> {
+        {1, 5}
+      });
+    }
+
+    [Fact]
+    public void ErrorsOnBadOverrideMatOnPal()
+    {
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      var firstMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
+      var firstMatProc0 = new EventLogDB.EventLogMaterial() { MaterialID = firstMatId, Process = 0, Face = "" };
+      var firstMat = new EventLogDB.EventLogMaterial() { MaterialID = firstMatId, Process = 1, Face = "1" };
+      _jobLog.RecordSerialForMaterialID(firstMatProc0, serial: "aaaa", endTimeUTC: now);
+      _jobLog.RecordLoadEnd(new[] { firstMat }, pallet: "5", lulNum: 3, timeUTC: now.AddMinutes(1), elapsed: TimeSpan.FromMinutes(5), active: TimeSpan.FromMinutes(4));
+      _jobLog.RecordMachineEnd(new[] { firstMat }, pallet: "5", statName: "Mach", statNum: 4, program: "proggg", result: "proggg", timeUTC: now.AddMinutes(2), elapsed: TimeSpan.FromMinutes(10), active: TimeSpan.FromMinutes(11));
+      _jobLog.RecordPathForProcess(firstMatId, process: 1, path: 10);
+
+      var differentUniqMatId = _jobLog.AllocateMaterialID("uniq2", "part1", 2);
+
+      now = now.AddMinutes(5).AddSeconds(1);
+
+      _jobLog.Invoking(j => j.OverrideMaterialInCurrentPalletCycle(
+        pallet: "5",
+        oldMatId: 12345,
+        newMatId: 98765,
+        oldMatPutInQueue: null,
+        operatorName: null
+      )).Should().Throw<ConflictRequestException>().WithMessage("Unable to find material");
+
+      _jobLog.Invoking(j => j.OverrideMaterialInCurrentPalletCycle(
+        pallet: "5",
+        oldMatId: firstMatId,
+        newMatId: differentUniqMatId,
+        oldMatPutInQueue: null,
+        operatorName: null
+      )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
+
+      var existingPathMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
+      _jobLog.RecordPathForProcess(existingPathMatId, process: 1, path: 10);
+
+      _jobLog.Invoking(j => j.OverrideMaterialInCurrentPalletCycle(
+        pallet: "5",
+        oldMatId: firstMatId,
+        newMatId: differentUniqMatId,
+        oldMatPutInQueue: null,
+        operatorName: null
+      )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
+    }
+
     #region Helpers
     private LogEntry AddLogEntry(LogEntry l)
     {
@@ -1487,6 +1774,22 @@ namespace MachineWatchTest
         options.Excluding(l => l.Counter)
       );
       return otherLogs.Select(l => l.Counter).Max();
+    }
+
+    private LogEntry RecordSerialExpectedEntry(LogMaterial mat, long cntr, string serial, DateTime timeUTC)
+    {
+      return new LogEntry(
+          cntr: cntr,
+          mat: new[] { mat },
+          pal: "",
+          ty: LogType.PartMark,
+          locName: "Mark",
+          locNum: 1,
+          prog: "MARK",
+          start: false,
+          endTime: timeUTC,
+          result: serial,
+          endOfRoute: false);
     }
 
     private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime timeUTC, string operName = null)
@@ -1531,7 +1834,7 @@ namespace MachineWatchTest
       return e;
     }
 
-    private LogEntry RemoveFromQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, int elapsedMin, DateTime timeUTC, string operName = null)
+    private LogEntry RemoveFromQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, double elapsedMin, DateTime timeUTC, string operName = null)
     {
       var e = new LogEntry(
           cntr: cntr,
@@ -1578,6 +1881,20 @@ namespace MachineWatchTest
         numProc: m.NumProcesses,
         serial: m.Serial,
         workorder: work,
+        face: m.Face
+      );
+    }
+
+    private Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
+    {
+      return m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: m.JobUniqueStr,
+        proc: proc,
+        part: m.PartName,
+        numProc: m.NumProcesses,
+        serial: m.Serial,
+        workorder: m.Workorder,
         face: m.Face
       );
     }

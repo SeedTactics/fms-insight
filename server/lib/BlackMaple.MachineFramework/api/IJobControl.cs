@@ -99,6 +99,14 @@ namespace BlackMaple.MachineWatchInterface
     void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null);
 
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
+
+    void OverrideMaterialOnPallet(
+        string pallet,
+        long oldMatId,
+        long newMatId,
+        string oldMatPutInQueue = null,
+        string operatorName = null
+    );
   }
 
   public interface IOldJobDecrement

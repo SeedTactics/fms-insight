@@ -129,6 +129,7 @@ namespace Makino
     {
       NewLogEntry?.Invoke(entry, foreignId);
     }
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public event NewCurrentStatus OnNewCurrentStatus;
     public event NewJobsDelegate OnNewJobs;

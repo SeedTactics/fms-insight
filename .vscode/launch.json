@@ -72,10 +72,7 @@
       "request": "launch",
       "url": "http://localhost:1234",
       "webRoot": "${workspaceFolder}/client/insight/src",
-      "runtimeExecutable": "/usr/bin/chromium",
-      "sourceMapPathOverrides": {
-        "webpack:///src/*": "${webRoot}/*"
-      }
+      "runtimeExecutable": "/usr/bin/chromium"
     }
   ],
   "inputs": [

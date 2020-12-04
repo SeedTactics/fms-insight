@@ -47,11 +47,12 @@ namespace BlackMaple.FMSInsight.Niigata
     private ISyncPallets _sync;
     private readonly NiigataStationNames _statNames;
     private Action<NewJobs> _onNewJobs;
+    private Action<EditMaterialInLogEvents> _onEditMatInLog;
     private bool _requireRawMatQueue;
     private bool _requireInProcessQueues;
 
     public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
-                       bool requireRawMatQ, bool requireInProcQ, Action<NewJobs> onNewJobs)
+                       bool requireRawMatQ, bool requireInProcQ, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
     {
       _onNewJobs = onNewJobs;
       _jobDbCfg = j;
@@ -61,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _statNames = statNames;
       _requireRawMatQueue = requireRawMatQ;
       _requireInProcessQueues = requireInProcQ;
+      _onEditMatInLog = onEditMatInLog;
     }
 
     CurrentStatus IJobControl.GetCurrentStatus()
@@ -547,6 +549,33 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         throw new BadRequestException("Unable to find material to quarantine");
       }
+    }
+
+    public void OverrideMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
+
+      using (var logDb = _logDbCfg.OpenConnection())
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+
+        var o = logDb.OverrideMaterialInCurrentPalletCycle(
+          pallet: pallet,
+          oldMatId: oldMatId,
+          newMatId: newMatId,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+
+        _onEditMatInLog(new EditMaterialInLogEvents()
+        {
+          OldMaterialID = oldMatId,
+          NewMaterialID = newMatId,
+          EditedEvents = o.ChangedLogEntries,
+        });
+      }
+
+      _sync.JobsOrQueuesChanged();
     }
     #endregion
   }

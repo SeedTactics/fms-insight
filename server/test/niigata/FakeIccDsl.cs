@@ -666,6 +666,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         face: ""
       )).ToList();
     }
+
+    public static IEnumerable<LogMaterial> SetProc(int proc, IEnumerable<LogMaterial> mats)
+    {
+      return mats.Select(m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: m.JobUniqueStr,
+        proc: proc,
+        part: m.PartName,
+        numProc: m.NumProcesses,
+        serial: m.Serial,
+        workorder: m.Workorder,
+        face: m.Face
+      )).ToList();
+    }
     #endregion
 
     #region Jobs

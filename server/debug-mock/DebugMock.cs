@@ -98,6 +98,7 @@ namespace DebugMachineWatchApiServer
     public event NewCurrentStatus OnNewCurrentStatus;
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry { add { } remove { } }
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public bool SupportsQuarantineAtLoadStation { get; } = true;
 
@@ -633,5 +634,21 @@ namespace DebugMachineWatchApiServer
       );
     }
 
+    public void OverrideMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      var o = LogDB.OverrideMaterialInCurrentPalletCycle(
+        pallet: pallet,
+        oldMatId: oldMatId,
+        newMatId: newMatId,
+        oldMatPutInQueue: oldMatPutInQueue,
+        operatorName: operatorName
+      );
+      OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
+      {
+        OldMaterialID = oldMatId,
+        NewMaterialID = newMatId,
+        EditedEvents = o.ChangedLogEntries,
+      });
+    }
   }
 }

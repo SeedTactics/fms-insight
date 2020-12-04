@@ -53,6 +53,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public CurrentStatus NewCurrentStatus { get; set; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public EditMaterialInLogEvents EditMaterialInLog { get; set; }
   }
 
   public class WebsocketManager
@@ -121,6 +124,8 @@ namespace BlackMaple.MachineFramework.Controllers
           Send(new ServerEvent() { NewJobs = jobs });
         backend.OnNewCurrentStatus += (status) =>
           Send(new ServerEvent() { NewCurrentStatus = status });
+        backend.OnEditMaterialInLog += (o) =>
+          Send(new ServerEvent() { EditMaterialInLog = o });
       }
     }
 

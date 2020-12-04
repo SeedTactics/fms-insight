@@ -167,6 +167,11 @@ namespace Makino
     {
       // do nothing
     }
+
+    public void OverrideMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      // do nothing
+    }
     #endregion
   }
 }
