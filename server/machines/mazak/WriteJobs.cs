@@ -55,7 +55,6 @@ namespace MazakMachineInterface
 
     private IWriteData writeDb;
     private IReadDataAccess readDatabase;
-    private IHoldManagement hold;
     private FMSSettings fmsSettings;
 
     private bool _useStartingOffsetForDueDate;
@@ -69,7 +68,6 @@ namespace MazakMachineInterface
     public WriteJobs(
       IWriteData d,
       IReadDataAccess readDb,
-      IHoldManagement h,
       BlackMaple.MachineFramework.JobDB jDB,
       FMSSettings settings,
       bool useStartingOffsetForDueDate,
@@ -78,7 +76,6 @@ namespace MazakMachineInterface
     {
       writeDb = d;
       readDatabase = readDb;
-      hold = h;
       _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
       fmsSettings = settings;
       ProgramDirectory = progDir;
@@ -149,7 +146,6 @@ namespace MazakMachineInterface
 
       AddSchedules(jobDB, newJ.Jobs);
 
-      hold.SignalNewSchedules();
     }
 
     public void RecopyJobsToMazak(JobDB jobDB, DateTime? nowUtc = null)
@@ -166,7 +162,6 @@ namespace MazakMachineInterface
 
       AddSchedules(jobDB, jobs);
 
-      hold.SignalNewSchedules();
     }
 
     private ProgramRevision LookupProgram(JobDB jobDB, string program, long? rev)
@@ -275,7 +270,7 @@ namespace MazakMachineInterface
 
     private void AddSchedules(JobDB jobDB, IEnumerable<JobPlan> jobs)
     {
-      var mazakData = readDatabase.LoadSchedulesPartsPallets();
+      var mazakData = readDatabase.LoadAllData();
       Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
 
       var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, _useStartingOffsetForDueDate);

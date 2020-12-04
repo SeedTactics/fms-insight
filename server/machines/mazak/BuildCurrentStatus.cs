@@ -356,14 +356,14 @@ namespace MazakMachineInterface
 
       foreach (var j in curStatus.Jobs)
       {
-        foreach (var d in jobDB.LoadDecrementsForJob(j.Value.UniqueStr))
-          j.Value.Decrements.Add(d);
+        j.Value.Decrements = jobDB.LoadDecrementsForJob(j.Value.UniqueStr);
+        j.Value.Workorders = log.GetWorkordersForUnique(j.Value.UniqueStr);
       }
 
       return curStatus;
     }
 
-    private static void CalculateMaxProcAndPath(MazakSchedulesPartsPallets mazakData,
+    private static void CalculateMaxProcAndPath(MazakAllData mazakData,
                                                 JobDB jobDB,
                                                out Dictionary<string, int> uniqueToMaxProc1Path,
                                                out Dictionary<string, int> uniqueToMaxProcess,
@@ -410,7 +410,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddRoutingToJob(MazakSchedulesPartsPallets mazakData, MazakPartRow partRow, InProcessJob job, IMachineGroupName machineGroupName, MazakPart.IProcToPath procToPath, MazakDbType mazakTy, long precedence)
+    private static void AddRoutingToJob(MazakAllData mazakData, MazakPartRow partRow, InProcessJob job, IMachineGroupName machineGroupName, MazakPart.IProcToPath procToPath, MazakDbType mazakTy, long precedence)
     {
       //Add routing and pallets
       foreach (var partProcRow in partRow.Processes)
@@ -896,7 +896,7 @@ namespace MazakMachineInterface
       return start;
     }
 
-    private static PalletLocation FindPalletLocation(IMachineGroupName machName, MazakSchedulesPartsPallets mazakData, MazakDbType dbType, int palletNum)
+    private static PalletLocation FindPalletLocation(IMachineGroupName machName, MazakAllData mazakData, MazakDbType dbType, int palletNum)
     {
       foreach (var palLocRow in mazakData.PalletPositions)
       {

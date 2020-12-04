@@ -170,7 +170,7 @@ namespace MachineWatchTest
       job4.SetPlannedCyclesOnFirstProcess(1, 3);
 
       // all the parts, plus a schedule for uniq3
-      var curData = new MazakSchedulesPartsPallets()
+      var curData = new MazakAllData()
       {
         Parts = new[] {
           new MazakPartRow() {

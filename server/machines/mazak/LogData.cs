@@ -106,6 +106,7 @@ namespace MazakMachineInterface
     private MazakQueues _queues;
     private IReadDataAccess _readDB;
     private IMachineGroupName _machGroupName;
+    private IHoldManagement _hold;
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataVerE>();
@@ -122,6 +123,7 @@ namespace MazakMachineInterface
                        IMachineGroupName machGroupName,
                        IReadDataAccess readDB,
                        MazakQueues queues,
+                       IHoldManagement hold,
                        BlackMaple.MachineFramework.FMSSettings settings,
                        Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged
                       )
@@ -129,6 +131,7 @@ namespace MazakMachineInterface
       _logCfg = logCfg;
       _currentStatusChanged = currentStatusChanged;
       _jobDBCfg = jobDBCfg;
+      _hold = hold;
       _readDB = readDB;
       _queues = queues;
       _sendToExternal = send;
@@ -179,6 +182,8 @@ namespace MazakMachineInterface
             }
 
             var queuesChanged = _queues.CheckQueues(jobDB, logDB, mazakData);
+
+            _hold.CheckForTransition(mazakData, jobDB);
 
             if (logs.Count > 0 || queuesChanged)
             {
@@ -340,6 +345,7 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.EventLogDB.Config _logDbCfg;
     private IReadDataAccess _readDB;
     private IMachineGroupName _machGroupName;
+    private IHoldManagement _hold;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private MazakQueues _queues;
@@ -361,6 +367,7 @@ namespace MazakMachineInterface
                       BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
                       IReadDataAccess readDB,
                       MazakQueues queues,
+                      IHoldManagement hold,
                       BlackMaple.MachineFramework.FMSSettings settings,
                       Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged)
     {
@@ -369,6 +376,7 @@ namespace MazakMachineInterface
       _jobDBCfg = jobDBCfg;
       _readDB = readDB;
       _queues = queues;
+      _hold = hold;
       _settings = settings;
       _machGroupName = machineGroupName;
       _currentStatusChanged = currentStatusChanged;
@@ -457,6 +465,8 @@ namespace MazakMachineInterface
             DeleteLog(logDb.MaxForeignID());
 
             queuesChanged = _queues.CheckQueues(jobDB, logDb, mazakData);
+
+            _hold.CheckForTransition(mazakData, jobDB);
 
             if (logs.Count > 0 || queuesChanged)
             {

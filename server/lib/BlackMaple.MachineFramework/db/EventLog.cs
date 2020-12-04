@@ -1491,6 +1491,32 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public List<string> GetWorkordersForUnique(string jobUnique)
+    {
+      lock (_config)
+      {
+        using (var cmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
+        {
+          cmd.CommandText = "SELECT DISTINCT Workorder FROM matdetails WHERE UniqueStr = $uniq AND Workorder IS NOT NULL ORDER BY Workorder ASC";
+          cmd.Transaction = trans;
+          cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
+
+          var ret = new List<string>();
+          using (var reader = cmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              ret.Add(reader.GetString(0));
+            }
+          }
+
+          trans.Commit();
+          return ret;
+        }
+      }
+    }
+
     #endregion
 
     #region Adding

@@ -276,6 +276,24 @@ namespace BlackMaple.MachineWatchInterface
           _decrements = new List<DecrementQuantity>();
         return _decrements;
       }
+      set
+      {
+        _decrements = value;
+      }
+    }
+
+    public IList<string> Workorders
+    {
+      get
+      {
+        if (_workorders == null)
+          _workorders = new List<string>();
+        return _workorders;
+      }
+      set
+      {
+        _workorders = value;
+      }
     }
 
     public InProcessJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths)
@@ -299,11 +317,13 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(Name = "Completed", IsRequired = false)] private int[][] _completed;
 
-    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private List<DecrementQuantity> _decrements;
+    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private IList<DecrementQuantity> _decrements;
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
     [DataMember(Name = "Precedence", IsRequired = false), OptionalField] private long[][] _precedence;
+
+    [DataMember(Name = "AssignedWorkorders", IsRequired = false), OptionalField] private IList<string> _workorders;
   }
 
   [SerializableAttribute, DataContract]

@@ -301,14 +301,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Quantity = 30
       });
       expectedJob.SetPrecedence(1, 1, 3); // has last precedence
+      expectedJob.Workorders = new List<string>() { "work1", "work2", "work4" };
       expectedSt.Jobs.Add("u1", expectedJob);
 
       var expectedJob2 = new InProcessJob(j2);
       expectedJob2.SetPrecedence(1, 1, 2); // has middle precedence
+      expectedJob2.Workorders = new List<string>();
       expectedSt.Jobs.Add("u2", expectedJob2);
 
       var expectedJob3 = new InProcessJob(j3);
       expectedJob3.SetPrecedence(1, 1, 1); // has first precedence
+      expectedJob3.Workorders = new List<string>();
       expectedSt.Jobs.Add("u3", expectedJob3);
 
       expectedSt.Material.Add(pal1.Material[0].Mat);

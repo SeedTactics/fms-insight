@@ -95,6 +95,8 @@ namespace BlackMaple.FMSInsight.Niigata
             }
           }
         }
+
+        curJob.Workorders = logDB.GetWorkordersForUnique(j.UniqueStr);
       }
 
       // set precedence

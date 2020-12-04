@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,15 +31,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
+using System.Data.SqlClient;
+using Dapper;
 
 namespace MazakMachineInterface
 {
-  public class LoadOperationsFromFile
+  public class LoadOperationsFromFile : ICurrentLoadActions
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromFile>();
 
@@ -77,7 +79,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public void Halt()
+    public void Dispose()
     {
       if (_watcher == null)
         return;
@@ -208,6 +210,109 @@ namespace MazakMachineInterface
         }
       }
 
+      return ret;
+    }
+  }
+
+  public class LoadOperationsFromDB : ICurrentLoadActions
+  {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromDB>();
+
+    private string _connStr;
+
+    public LoadOperationsFromDB(string connectionStr)
+    {
+      _connStr = connectionStr + ";Database=PMC_Basic";
+    }
+
+    void IDisposable.Dispose() { }
+
+    public IEnumerable<LoadAction> CurrentLoadActions()
+    {
+      using (var conn = new SqlConnection(_connStr))
+      {
+        return LoadActions(conn).Concat(RemoveActions(conn));
+      }
+    }
+
+
+    private class FixWork
+    {
+      public int OperationID { get; set; }
+      public int a9_prcnum { get; set; }
+      public string a9_ptnam { get; set; }
+      public int a9_fixqty { get; set; }
+      public string a1_schcom { get; set; }
+    }
+
+    private IEnumerable<LoadAction> LoadActions(SqlConnection conn)
+    {
+      var qry = "SELECT OperationID, a9_prcnum, a9_ptnam, a9_fixqty, a1_schcom " +
+                   " FROM A9_FixWork " +
+                   " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
+      var ret = new List<LoadAction>();
+      var elems = conn.Query(qry);
+      foreach (var e in conn.Query<FixWork>(qry))
+      {
+        if (string.IsNullOrEmpty(e.a9_ptnam))
+        {
+          Log.Warning("Load operation has no part name {@load}", e);
+          continue;
+        }
+
+        int stat = e.OperationID;
+        string part = e.a9_ptnam;
+        string comment = e.a1_schcom;
+        int idx = part.IndexOf(':');
+        if (idx >= 0)
+        {
+          part = part.Substring(0, idx);
+        }
+        int proc = e.a9_prcnum;
+        int qty = e.a9_fixqty;
+
+        ret.Add(new LoadAction(true, stat, part, comment, proc, qty));
+      }
+      return ret;
+    }
+
+    private class RemoveWork
+    {
+      public int OperationID { get; set; }
+      public int a8_prcnum { get; set; }
+      public string a8_ptnam { get; set; }
+      public int a8_fixqty { get; set; }
+      public string a1_schcom { get; set; }
+    }
+
+    private IEnumerable<LoadAction> RemoveActions(SqlConnection conn)
+    {
+      var qry = "SELECT OperationID,a8_prcnum,a8_ptnam,a8_fixqty,a1_schcom " +
+          " FROM A8_RemoveWork " +
+          " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
+      var ret = new List<LoadAction>();
+      var elems = conn.Query(qry);
+      foreach (var e in conn.Query<RemoveWork>(qry))
+      {
+        if (string.IsNullOrEmpty(e.a8_ptnam))
+        {
+          Log.Warning("Load operation has no part name {@load}", e);
+          continue;
+        }
+
+        int stat = e.OperationID;
+        string part = e.a8_ptnam;
+        string comment = e.a1_schcom;
+        int idx = part.IndexOf(':');
+        if (idx >= 0)
+        {
+          part = part.Substring(0, idx);
+        }
+        int proc = e.a8_prcnum;
+        int qty = e.a8_fixqty;
+
+        ret.Add(new LoadAction(false, stat, part, comment, proc, qty));
+      }
       return ret;
     }
   }

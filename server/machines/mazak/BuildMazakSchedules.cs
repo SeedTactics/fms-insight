@@ -66,7 +66,7 @@ namespace MazakMachineInterface
     }
 
     public static MazakWriteData AddSchedules(
-      MazakSchedulesPartsPallets mazakData,
+      MazakAllData mazakData,
       IEnumerable<JobPlan> jobs,
       bool UseStartingOffsetForDueDate)
     {
