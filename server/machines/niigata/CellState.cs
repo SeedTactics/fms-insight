@@ -618,29 +618,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (pallet.ManualControl)
       {
-        // move all material to quarantine queue
-        if (!string.IsNullOrEmpty(_settings.QuarantineQueue))
-        {
-          foreach (var m in pallet.Material)
-          {
-            logDB.RecordAddMaterialToQueue(
-              mat: new EventLogDB.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
-              queue: _settings.QuarantineQueue,
-              position: -1,
-              timeUTC: nowUtc
-            );
-          }
-        }
-
-        // record pallet cycle so any material is removed from pallet
-        if (pallet.Material.Count > 0)
-        {
-          Log.Debug("Removing material {@mats} from pallet {pal} because it was switched to manual control", pallet.Material, pallet.Status.Master.PalletNum);
-          logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc, foreignID: null);
-          pallet.Material.Clear();
-          palletStateUpdated = true;
-        }
-
+        QuarantineMatOnPal(pallet, logDB, ref palletStateUpdated, nowUtc);
       }
       else
       {
@@ -663,6 +641,38 @@ namespace BlackMaple.FMSInsight.Niigata
 
         EnsurePalletRotaryEvents(pallet, nowUtc, logDB);
         EnsurePalletStockerEvents(pallet, nowUtc, logDB);
+
+        if (pallet.Status.HasWork == false && pallet.Material.Any())
+        {
+          QuarantineMatOnPal(pallet, logDB, ref palletStateUpdated, nowUtc);
+        }
+
+      }
+    }
+
+    private void QuarantineMatOnPal(PalletAndMaterial pallet, EventLogDB logDB, ref bool palletStateUpdated, DateTime nowUtc)
+    {
+      // move all material to quarantine queue
+      if (!string.IsNullOrEmpty(_settings.QuarantineQueue))
+      {
+        foreach (var m in pallet.Material)
+        {
+          logDB.RecordAddMaterialToQueue(
+            mat: new EventLogDB.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
+            queue: _settings.QuarantineQueue,
+            position: -1,
+            timeUTC: nowUtc
+          );
+        }
+      }
+
+      // record pallet cycle so any material is removed from pallet
+      if (pallet.Material.Count > 0)
+      {
+        Log.Debug("Removing material {@mats} from pallet {pal} because it was switched to manual control", pallet.Material, pallet.Status.Master.PalletNum);
+        logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc, foreignID: null);
+        pallet.Material.Clear();
+        palletStateUpdated = true;
       }
     }
 
