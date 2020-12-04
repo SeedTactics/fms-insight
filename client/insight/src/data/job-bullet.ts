@@ -41,6 +41,7 @@ export interface DataPoint {
   readonly completedCount: number;
   readonly totalPlan: number;
   readonly totalCount: number;
+  readonly workorders: string;
 }
 
 function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
@@ -60,6 +61,7 @@ function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
     completedCount: completed,
     totalPlan: cycleTimeHours * totalPlan,
     totalCount: totalPlan,
+    workorders: (job.assignedWorkorders ?? []).join(", "),
   };
 }
 

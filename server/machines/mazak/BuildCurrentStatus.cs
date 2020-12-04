@@ -356,8 +356,8 @@ namespace MazakMachineInterface
 
       foreach (var j in curStatus.Jobs)
       {
-        foreach (var d in jobDB.LoadDecrementsForJob(j.Value.UniqueStr))
-          j.Value.Decrements.Add(d);
+        j.Value.Decrements = jobDB.LoadDecrementsForJob(j.Value.UniqueStr);
+        j.Value.Workorders = log.GetWorkordersForUnique(j.Value.UniqueStr);
       }
 
       return curStatus;

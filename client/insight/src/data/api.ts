@@ -3043,6 +3043,7 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
     completed?: number[][] | undefined;
     decrements?: DecrementQuantity[] | undefined;
     precedence?: number[][] | undefined;
+    assignedWorkorders?: string[] | undefined;
 
     constructor(data?: IInProcessJob) {
         super(data);
@@ -3065,6 +3066,11 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
                 this.precedence = [] as any;
                 for (let item of data["Precedence"])
                     this.precedence!.push(item);
+            }
+            if (data["AssignedWorkorders"] && data["AssignedWorkorders"].constructor === Array) {
+                this.assignedWorkorders = [] as any;
+                for (let item of data["AssignedWorkorders"])
+                    this.assignedWorkorders!.push(item);
             }
         }
     }
@@ -3093,6 +3099,11 @@ export class InProcessJob extends JobPlan implements IInProcessJob {
             for (let item of this.precedence)
                 data["Precedence"].push(item);
         }
+        if (this.assignedWorkorders && this.assignedWorkorders.constructor === Array) {
+            data["AssignedWorkorders"] = [];
+            for (let item of this.assignedWorkorders)
+                data["AssignedWorkorders"].push(item);
+        }
         super.toJSON(data);
         return data; 
     }
@@ -3102,6 +3113,7 @@ export interface IInProcessJob extends IJobPlan {
     completed?: number[][] | undefined;
     decrements?: DecrementQuantity[] | undefined;
     precedence?: number[][] | undefined;
+    assignedWorkorders?: string[] | undefined;
 }
 
 export class PalletStatus implements IPalletStatus {

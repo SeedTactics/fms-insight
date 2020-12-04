@@ -127,6 +127,8 @@ namespace MachineWatchTest
         Paths = new Dictionary<int, int>()
       });
 
+      _jobLog.GetWorkordersForUnique("U1").Should().BeEmpty();
+
       _jobLog.RecordWorkorderForMaterialID(m1, 1, "work1");
       _jobLog.RecordWorkorderForMaterialID(m2, 1, "work2");
       _jobLog.RecordWorkorderForMaterialID(m3, 1, "work1");
@@ -150,6 +152,8 @@ namespace MachineWatchTest
           Paths = new Dictionary<int, int>()
         }
       });
+
+      _jobLog.GetWorkordersForUnique("U1").Should().BeEquivalentTo(new[] { "work1" });
     }
 
     [Fact]

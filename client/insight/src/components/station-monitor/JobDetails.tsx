@@ -40,11 +40,19 @@ import { format } from "date-fns";
 import { JobsBackend } from "../../data/backend";
 
 interface JobDisplayProps {
-  readonly job: Readonly<api.IJobPlan>;
+  readonly job: Readonly<api.IInProcessJob>;
 }
 
 function displayDate(d: Date) {
   return format(d, "MMM d, yyyy h:mm aa");
+}
+
+function JobCompleted(props: JobDisplayProps & { procIdx: number; pathIdx: number }) {
+  const val = props.job.completed?.[props.procIdx]?.[props.pathIdx];
+  if (val !== undefined) {
+    return <div>Completed: {val}</div>;
+  }
+  return null;
 }
 
 function JobDisplay(props: JobDisplayProps) {
@@ -61,10 +69,10 @@ function JobDisplay(props: JobDisplayProps) {
             <dd>{props.job.comment}</dd>
           </>
         ) : undefined}
-        {props.job.bookings ? (
+        {props.job.assignedWorkorders && props.job.assignedWorkorders.length > 0 ? (
           <>
-            <dt>Bookings</dt>
-            <dd>{props.job.bookings.join(", ")}</dd>
+            <dt>Workorders</dt>
+            <dd>{props.job.assignedWorkorders.join(", ")}</dd>
           </>
         ) : undefined}
         {props.job.procsAndPaths.map((proc, procIdx) => (
@@ -76,6 +84,7 @@ function JobDisplay(props: JobDisplayProps) {
                   {proc.paths.length > 1 ? ", Path " + (pathIdx + 1).toString() : undefined}
                 </dt>
                 <dd>
+                  <JobCompleted job={props.job} procIdx={procIdx} pathIdx={pathIdx} />
                   <div>Estimated Start: {displayDate(path.simulatedStartingUTC)}</div>
                   <div>Pallets: {path.pallets.join(",")}</div>
                   {path.fixture ? (

@@ -2464,6 +2464,12 @@
                   "format": "int64"
                 }
               }
+            },
+            "AssignedWorkorders": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }

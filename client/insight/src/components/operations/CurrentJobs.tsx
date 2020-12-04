@@ -100,8 +100,10 @@ interface JobState {
   readonly hoveredJob?: CompletedDataPoint;
 }
 
-function format_hint(j: CompletedDataPoint) {
-  return [
+function format_hint(
+  j: CompletedDataPoint
+): ReadonlyArray<{ readonly title: string; readonly value: string | number }> {
+  const vals = [
     { title: "Part", value: j.part },
     { title: "Completed", value: j.completedCount },
     { title: "Planned", value: j.totalCount },
@@ -110,6 +112,10 @@ function format_hint(j: CompletedDataPoint) {
       value: (j.totalPlan - j.completed).toFixed(1) + " hours",
     },
   ];
+  if (j.workorders !== "") {
+    vals.push({ title: "Workorders", value: j.workorders });
+  }
+  return vals;
 }
 
 function format_tick(p: CompletedDataPoint) {
