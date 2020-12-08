@@ -242,7 +242,9 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
                 <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
               </div>
             ) : undefined}
-            {props.mat.workorderId === undefined || props.mat.workorderId === "" ? undefined : (
+            {props.mat.workorderId === undefined ||
+            props.mat.workorderId === "" ||
+            props.mat.workorderId === props.mat.serial ? undefined : (
               <div>
                 <small>Workorder: {props.mat.workorderId}</small>
               </div>
