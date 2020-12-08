@@ -33,10 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import "typeface-roboto";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import "react-vis/dist/style.css";
 import "highlight.js/styles/default.css";
+import "fontsource-roboto/300.css";
+import "fontsource-roboto/400.css";
+import "fontsource-roboto/500.css";
+import "fontsource-roboto/700.css";
 
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";

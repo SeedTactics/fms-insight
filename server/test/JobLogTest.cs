@@ -154,6 +154,21 @@ namespace MachineWatchTest
       });
 
       _jobLog.GetWorkordersForUnique("U1").Should().BeEquivalentTo(new[] { "work1" });
+      _jobLog.GetWorkordersForUnique("unused").Should().BeEmpty();
+
+      _jobLog.GetMaterialForJobUnique("U1").Should().BeEquivalentTo(new[] {
+        new MaterialDetails
+        {
+          MaterialID = m1,
+          JobUnique = "U1",
+          PartName = "P1",
+          NumProcesses = 52,
+          Workorder = "work1",
+          Paths = new Dictionary<int, int> { { 1, 60 }, { 2, 88 } }
+        },
+      });
+
+      _jobLog.GetMaterialForJobUnique("unused").Should().BeEmpty();
     }
 
     [Fact]

@@ -47,6 +47,7 @@ namespace BlackMaple.MachineWatchInterface
     List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
     List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorderIds);
     MaterialDetails GetMaterialDetails(long materialID);
+    List<MachineWatchInterface.MaterialDetails> GetMaterialForJobUnique(string jobUnique);
 
     LogEntry RecordSerialForMaterialID(long materialID, int process, string serial);
     LogEntry RecordWorkorderForMaterialID(long materialID, int process, string workorder);

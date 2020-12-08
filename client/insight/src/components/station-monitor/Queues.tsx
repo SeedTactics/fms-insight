@@ -91,7 +91,7 @@ import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import ReactToPrint from "react-to-print";
 import { PrintedLabel } from "./PrintedLabel";
-import { MoreHoriz } from "@material-ui/icons";
+import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { JobDetailDialog } from "./JobDetails";
 
 interface RawMaterialJobTableProps {
