@@ -54,7 +54,7 @@ import { ICurrentStatus, IInProcessJob } from "../../data/api";
 import { PartIdenticon } from "../station-monitor/Material";
 import { makeStyles, createStyles } from "@material-ui/core/styles";
 import { ConnectedEditNoteDialog } from "../station-monitor/Queues";
-import { MoreHoriz } from "@material-ui/icons";
+import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { JobDetailDialog, JobPlanDialog } from "../station-monitor/JobDetails";
 
 interface JobsTableProps {

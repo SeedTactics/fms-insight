@@ -32,7 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Dialog, Button, DialogActions, DialogContent, DialogTitle, TextField } from "@material-ui/core";
+import Dialog from "@material-ui/core/Dialog";
+import Button from "@material-ui/core/Button";
+import DialogActions from "@material-ui/core/DialogActions";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogTitle from "@material-ui/core/DialogTitle";
+import TextField from "@material-ui/core/TextField";
 import { connect } from "../store/store";
 import * as guiState from "../data/gui-state";
 import { openMaterialBySerial } from "../data/material-details";

@@ -52,6 +52,7 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 import TextField from "@material-ui/core/TextField";
 import { makeStyles } from "@material-ui/core/styles";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import Tooltip from "@material-ui/core/Tooltip";
 import ReactToPrint from "react-to-print";
 import clsx from "clsx";
 
@@ -61,7 +62,6 @@ import * as guiState from "../../data/gui-state";
 import { Store, connect, AppActionBeforeMiddleware, useSelector } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { LazySeq } from "../../data/lazyseq";
-import { Tooltip } from "@material-ui/core";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
 import { HashSet } from "prelude-ts";
 import { currentOperator } from "../../data/operators";

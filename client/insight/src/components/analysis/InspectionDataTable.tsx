@@ -46,7 +46,7 @@ import {
   DataTableActionZoomType,
 } from "./DataTable";
 import { InspectionLogEntry } from "../../data/events.inspection";
-import { Typography } from "@material-ui/core";
+import Typography from "@material-ui/core/Typography";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 import { addDays, addHours } from "date-fns";
