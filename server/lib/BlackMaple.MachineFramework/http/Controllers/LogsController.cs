@@ -181,6 +181,15 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
+    [HttpGet("material-for-job/{jobUnique}")]
+    public List<MaterialDetails> MaterialDetailsForJob(string jobUnique)
+    {
+      using (var db = _backend.OpenLogDatabase())
+      {
+        return db.GetMaterialForJobUnique(jobUnique);
+      }
+    }
+
     [HttpGet("workorders")]
     public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
     {

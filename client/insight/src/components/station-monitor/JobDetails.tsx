@@ -33,11 +33,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as api from "../../data/api";
-import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle } from "@material-ui/core";
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@material-ui/core";
+import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { MaterialDetailTitle } from "./Material";
 import { duration } from "moment";
 import { format } from "date-fns";
-import { JobsBackend } from "../../data/backend";
+import { JobsBackend, LogBackend } from "../../data/backend";
+import { MaterialSummary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { LazySeq } from "../../data/lazyseq";
+import { connect } from "../../store/store";
+import { openMaterialDialog } from "../../data/material-details";
+import { HashMap } from "prelude-ts";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IInProcessJob>;
@@ -124,6 +143,128 @@ function JobDisplay(props: JobDisplayProps) {
   );
 }
 
+interface MaterialStatusProps {
+  readonly matSummary: MaterialSummaryAndCompletedData | null;
+  readonly inProcMat: Readonly<api.IInProcessMaterial> | null;
+}
+
+function MaterialStatus(props: MaterialStatusProps) {
+  if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.OnPallet) {
+    return <span>On pallet {props.inProcMat.location.pallet ?? ""}</span>;
+  } else if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.InQueue) {
+    return <span>In queue {props.inProcMat.location.currentQueue ?? ""}</span>;
+  } else if (props.matSummary?.completed_machining) {
+    return <span>Completed</span>;
+  } else if (props.matSummary !== null && props.matSummary.completed_procs.length === 0) {
+    return <span>Not yet started</span>;
+  } else {
+    return <span />;
+  }
+}
+
+interface JobMaterialProps {
+  readonly unique: string;
+  readonly currentMaterial: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
+  readonly matsFromEvents: HashMap<number, MaterialSummaryAndCompletedData>;
+  readonly openDetails: (mat: Readonly<MaterialSummary>) => void;
+}
+
+function JobMaterial(props: JobMaterialProps) {
+  const [mats, setMats] = React.useState<ReadonlyArray<Readonly<api.IMaterialDetails>> | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (props.unique === null) {
+      setMats(null);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      LogBackend.materialDetailsForJob(props.unique)
+        .then((m) => {
+          setMats(m);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [props.unique]);
+
+  if (mats === null || mats.length === 0) {
+    return <div />;
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "1em" }}>
+        <CircularProgress /> Loading material
+      </div>
+    );
+  }
+
+  const matsById = LazySeq.ofIterable(props.currentMaterial).toMap(
+    (m) => [m.materialID, m],
+    (m1, _m2) => m1
+  );
+
+  const anyWorkorder = LazySeq.ofIterable(props.currentMaterial).anyMatch(
+    (m) => m.workorderId !== undefined && m.workorderId !== "" && m.workorderId !== m.serial
+  );
+
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          {anyWorkorder ? <TableCell>Workorder</TableCell> : undefined}
+          <TableCell>Serial</TableCell>
+          <TableCell>Status</TableCell>
+          <TableCell padding="checkbox" />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {mats.map((mat) => (
+          <TableRow key={mat.materialID}>
+            {anyWorkorder ? <TableCell>{mat.workorder ?? ""}</TableCell> : undefined}
+            <TableCell>{mat.serial ?? ""}</TableCell>
+            <TableCell>
+              <MaterialStatus
+                matSummary={props.matsFromEvents.get(mat.materialID).getOrNull()}
+                inProcMat={matsById.get(mat.materialID).getOrNull()}
+              />
+            </TableCell>
+            <TableCell padding="checkbox">
+              <IconButton
+                onClick={() =>
+                  props.openDetails(
+                    props.matsFromEvents.get(mat.materialID).getOrElse({
+                      materialID: mat.materialID,
+                      jobUnique: mat.jobUnique ?? "",
+                      partName: mat.partName ?? "",
+                      completed_procs: [],
+                      serial: mat.serial,
+                      workorderId: mat.workorder,
+                      signaledInspections: [],
+                    })
+                  )
+                }
+              >
+                <MoreHoriz fontSize="inherit" />
+              </IconButton>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+const ConnectedJobMaterial = connect(
+  (st) => ({
+    currentMaterial: st.Current.current_status.material,
+    matsFromEvents: st.Events.last30.mat_summary.matsById,
+  }),
+  {
+    openDetails: openMaterialDialog,
+  }
+)(JobMaterial);
+
 export interface JobPlanDialogProps {
   readonly unique: string | null;
   readonly close: () => void;
@@ -164,7 +305,12 @@ export function JobPlanDialog(props: JobPlanDialogProps) {
             <CircularProgress />
           </div>
         ) : undefined}
-        {job !== null ? <JobDisplay job={job} /> : undefined}
+        {job !== null && props.unique !== null ? (
+          <>
+            <JobDisplay job={job} />
+            <ConnectedJobMaterial unique={props.unique} />
+          </>
+        ) : undefined}
       </DialogContent>
       <DialogActions>
         <Button onClick={close} color="primary">
@@ -188,7 +334,14 @@ export function JobDetailDialog(props: JobDetailDialogProps) {
           <MaterialDetailTitle partName={props.job.partName} subtitle={props.job.unique} />
         ) : undefined}
       </DialogTitle>
-      <DialogContent>{props.job !== null ? <JobDisplay job={props.job} /> : undefined}</DialogContent>
+      <DialogContent>
+        {props.job !== null ? (
+          <>
+            <JobDisplay job={props.job} />
+            <ConnectedJobMaterial unique={props.job.unique} />
+          </>
+        ) : undefined}
+      </DialogContent>
       <DialogActions>
         <Button onClick={props.close} color="primary">
           Close
