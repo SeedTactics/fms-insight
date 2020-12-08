@@ -224,7 +224,7 @@ export function DataTableActions(props: DataTableActionsProps) {
           }
           keepOpenOnDateSelect
           isOutsideRange={(day) =>
-            day.toDate() < zoom.default_date_range[0] || day.toDate >= zoom.default_date_range[1]
+            day.toDate() < zoom.default_date_range[0] || day.toDate() >= zoom.default_date_range[1]
           }
           focusedInput={focusedDateEntry}
           onFocusChange={setFocusedDateEntry}
