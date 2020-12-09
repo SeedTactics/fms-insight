@@ -1759,6 +1759,166 @@ namespace MachineWatchTest
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
     }
 
+    [Fact]
+    public void InvalidatesCycle()
+    {
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      // ------------------------------------------------------
+      // Material
+      // ------------------------------------------------------
+
+      var matProc0 = new EventLogDB.EventLogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
+        Process = 0,
+        Face = ""
+      };
+      var matProc1 = new EventLogDB.EventLogMaterial()
+      {
+        MaterialID = matProc0.MaterialID,
+        Process = 1,
+        Face = "1"
+      };
+
+
+      var initialMatAddToQueueTime = now;
+      _jobLog.RecordAddMaterialToQueue(matProc0, queue: "rawmat", position: -1, timeUTC: now);
+      _jobLog.RecordSerialForMaterialID(matProc0, "bbbb", now);
+      _jobLog.RecordPathForProcess(matProc0.MaterialID, process: 1, path: 5);
+
+      now = now.AddMinutes(1);
+
+      // ------------------------------------------------------
+      // Original Events
+      // ------------------------------------------------------
+
+      var origLog = new List<LogEntry>();
+
+      var loadEndOrigEvts = _jobLog.RecordLoadEnd(new[] { matProc1 }, pallet: "5", lulNum: 2, timeUTC: now, elapsed: TimeSpan.FromMinutes(4), active: TimeSpan.FromMinutes(5));
+      loadEndOrigEvts.Count().Should().Be(2);
+      loadEndOrigEvts.First().LogType.Should().Be(LogType.RemoveFromQueue);
+      loadEndOrigEvts.First().Material.First().MaterialID.Should().Be(matProc1.MaterialID);
+      loadEndOrigEvts.First().Material.First().Process.Should().Be(0);
+      loadEndOrigEvts.Last().LogType.Should().Be(LogType.LoadUnloadCycle);
+      origLog.Add(loadEndOrigEvts.Last());
+
+      var initialMatRemoveQueueTime = now;
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordPalletArriveStocker(new[] { matProc1 }, pallet: "5", stockerNum: 5, timeUTC: now, waitForMachine: false)
+      );
+
+      now = now.AddMinutes(2);
+
+      origLog.Add(
+        _jobLog.RecordPalletDepartStocker(new[] { matProc1 }, pallet: "5", stockerNum: 5, timeUTC: now, waitForMachine: false, elapsed: TimeSpan.FromMinutes(2))
+      );
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordPalletArriveRotaryInbound(new[] { matProc1 }, pallet: "5", statName: "Mach", statNum: 3, timeUTC: now)
+      );
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordPalletDepartRotaryInbound(new[] { matProc1 }, pallet: "5", statName: "Mach", statNum: 3, timeUTC: now, elapsed: TimeSpan.FromMinutes(5), rotateIntoWorktable: true)
+      );
+
+      now = now.AddMinutes(1);
+
+      origLog.Add(
+        _jobLog.RecordMachineStart(new[] { matProc1 }, pallet: "5", statName: "Mach", statNum: 3, program: "prog11", timeUTC: now)
+      );
+
+      now = now.AddMinutes(1);
+
+      // ------------------------------------------------------
+      // Invalidate
+      // ------------------------------------------------------
+
+      var result = _jobLog.InvalidatePalletCycle(
+        eventsToInvalidate: origLog,
+        oldMatPutInQueue: "quarantine",
+        operatorName: "theoper",
+        timeUTC: now
+      );
+
+      // ------------------------------------------------------
+      // Check Logs
+      // ------------------------------------------------------
+
+      var logMatProc0 = new LogMaterial(matID: matProc0.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
+
+      var expectedGeneralMsg = new LogEntry(
+        cntr: 0,
+        mat: new[] { SetProcInMat(proc: 1)(logMatProc0) },
+        pal: "",
+        ty: LogType.GeneralMessage,
+        locName: "Message",
+        locNum: 1,
+        prog: "InvalidateCycle",
+        start: false,
+        endTime: now,
+        result: "Invalidate all events on cycle for pallet 5",
+        endOfRoute: false
+      );
+      expectedGeneralMsg.ProgramDetails["EditedCounters"] = string.Join(",", origLog.Select(e => e.Counter));
+
+      var newLog = origLog.Select(RemoveActiveTime()).Select(evt =>
+      {
+        evt.ProgramDetails["PalletCycleInvalidated"] = "1";
+        return evt;
+      }).ToList();
+
+      result.Should().BeEquivalentTo(new[] {
+        expectedGeneralMsg,
+        AddToQueueExpectedEntry(
+          mat: logMatProc0,
+          cntr: 0,
+          queue: "quarantine",
+          position: 0,
+          timeUTC: now,
+          operName: "theoper"
+        )
+      }, options => options.Excluding(e => e.Counter));
+
+      // log for initiallyLoadedMatProc matches, and importantly has only process 0 as max
+      _jobLog.GetLogForMaterial(matProc0.MaterialID).Should().BeEquivalentTo(
+        newLog.Concat(
+          new[] {
+            RecordSerialExpectedEntry(mat: logMatProc0, cntr: 0, serial: "bbbb", timeUTC: initialMatAddToQueueTime),
+            AddToQueueExpectedEntry(
+              mat: logMatProc0,
+              cntr: 0,
+              queue: "rawmat",
+              position: 0,
+              timeUTC: initialMatAddToQueueTime
+            ),
+            RemoveFromQueueExpectedEntry(
+              mat: logMatProc0,
+              cntr: 0,
+              queue: "rawmat",
+              position: 0,
+              timeUTC: initialMatRemoveQueueTime,
+              elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
+            ),
+            expectedGeneralMsg,
+            AddToQueueExpectedEntry(
+              mat: logMatProc0,
+              cntr: 0,
+              queue: "quarantine",
+              position: 0,
+              timeUTC: now,
+              operName: "theoper"
+            ),
+          }
+        ), options => options.Excluding(e => e.Counter));
+    }
     #region Helpers
     private LogEntry AddLogEntry(LogEntry l)
     {
@@ -1932,6 +2092,33 @@ namespace MachineWatchTest
           endOfRoute: copy.EndOfRoute,
           elapsed: copy.ElapsedTime,
           active: copy.ActiveOperationTime
+        );
+        foreach (var e in copy.ProgramDetails)
+        {
+          l.ProgramDetails[e.Key] = e.Value;
+        }
+        return l;
+      };
+    }
+
+    private static Func<LogEntry, LogEntry> RemoveActiveTime()
+    {
+      return copy =>
+      {
+        var l = new LogEntry(
+          cntr: copy.Counter,
+          mat: copy.Material,
+          pal: copy.Pallet,
+          ty: copy.LogType,
+          locName: copy.LocationName,
+          locNum: copy.LocationNum,
+          prog: copy.Program,
+          start: copy.StartOfCycle,
+          endTime: copy.EndTimeUTC,
+          result: copy.Result,
+          endOfRoute: copy.EndOfRoute,
+          elapsed: copy.ElapsedTime,
+          active: TimeSpan.Zero
         );
         foreach (var e in copy.ProgramDetails)
         {

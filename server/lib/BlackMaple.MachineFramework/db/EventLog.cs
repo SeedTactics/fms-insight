@@ -2792,6 +2792,85 @@ namespace BlackMaple.MachineFramework
         NewLogEntries = newLogEntries
       };
     }
+
+    public IEnumerable<MachineWatchInterface.LogEntry> InvalidatePalletCycle(
+      IEnumerable<MachineWatchInterface.LogEntry> eventsToInvalidate,
+      string oldMatPutInQueue,
+      string operatorName,
+      DateTime? timeUTC = null
+    )
+    {
+      var newLogEntries = new List<MachineWatchInterface.LogEntry>();
+
+      lock (_config)
+      {
+        using (var updateEvtCmd = _connection.CreateCommand())
+        using (var addMessageCmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
+        {
+          updateEvtCmd.CommandText = "UPDATE stations SET ActiveTime = 0 WHERE Counter = $cntr";
+          updateEvtCmd.Parameters.Add("cntr", SqliteType.Integer);
+          updateEvtCmd.Transaction = trans;
+
+          addMessageCmd.CommandText = "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
+          addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
+          addMessageCmd.Transaction = trans;
+
+          // load old events
+          var mats = new Dictionary<long, MachineWatchInterface.LogMaterial>();
+          string pallet = "";
+          var invalidatedCntrs = new List<long>();
+          foreach (var evt in eventsToInvalidate)
+          {
+            pallet = evt.Pallet;
+            foreach (var mat in evt.Material)
+            {
+              mats[mat.MaterialID] = mat;
+            }
+            invalidatedCntrs.Add(evt.Counter);
+
+            updateEvtCmd.Parameters[0].Value = evt.Counter;
+            updateEvtCmd.ExecuteNonQuery();
+
+            addMessageCmd.Parameters[0].Value = evt.Counter;
+            addMessageCmd.ExecuteNonQuery();
+          }
+
+          // record events
+          var time = timeUTC ?? DateTime.UtcNow;
+
+          var newMsg = new NewEventLogEntry()
+          {
+            Material = mats.Values.Select(mat => new EventLogMaterial() { MaterialID = mat.MaterialID, Process = mat.Process, Face = "" }),
+            Pallet = "",
+            LogType = MachineWatchInterface.LogType.GeneralMessage,
+            LocationName = "Message",
+            LocationNum = 1,
+            Program = "InvalidateCycle",
+            StartOfCycle = false,
+            EndTimeUTC = time,
+            Result = "Invalidate all events on cycle for pallet " + pallet.ToString(),
+            EndOfRoute = false
+          };
+          newMsg.ProgramDetails["EditedCounters"] = string.Join(",", invalidatedCntrs);
+          newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
+
+          if (!string.IsNullOrEmpty(oldMatPutInQueue))
+          {
+            foreach (var mat in mats)
+            {
+              newLogEntries.AddRange(AddToQueue(trans, matId: mat.Value.MaterialID, process: mat.Value.Process - 1, queue: oldMatPutInQueue, position: -1, operatorName: operatorName, time));
+            }
+          }
+
+          trans.Commit();
+        }
+      }
+
+      foreach (var l in newLogEntries) _config.OnNewLogEntry(l, null, this);
+
+      return newLogEntries;
+    }
     #endregion
 
     #region Material IDs
