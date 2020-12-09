@@ -47,7 +47,8 @@ import {
 } from "./DataTable";
 import { addDays, addHours } from "date-fns";
 import * as api from "../../data/api";
-import { Menu, MenuItem } from "@material-ui/core";
+import Menu from "@material-ui/core/Menu";
+import MenuItem from "@material-ui/core/MenuItem";
 
 enum ColumnId {
   Date,

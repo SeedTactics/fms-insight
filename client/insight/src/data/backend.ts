@@ -93,6 +93,7 @@ export interface LogAPI {
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
+  materialDetailsForJob(jobUnique: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(
     materialID: number,
@@ -332,6 +333,9 @@ function initMockBackend(data: Promise<MockData>) {
     },
     getWorkorders(_ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
       // no workorder summaries
+      return Promise.resolve([]);
+    },
+    materialDetailsForJob(_jobUniq: string): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
       return Promise.resolve([]);
     },
 

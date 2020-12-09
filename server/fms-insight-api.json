@@ -1249,6 +1249,40 @@
         }
       }
     },
+    "/api/v1/log/material-for-job/{jobUnique}": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_MaterialDetailsForJob",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "jobUnique",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MaterialDetails"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/log/workorders": {
       "get": {
         "tags": [

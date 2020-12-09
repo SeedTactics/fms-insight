@@ -169,6 +169,11 @@ export const LogBackend = {
   getWorkorders(): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
     return Promise.resolve([]);
   },
+  materialDetailsForJob(
+    _jobUniq: string
+  ): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
+    return Promise.resolve([]);
+  },
 
   setInspectionDecision(): Promise<Readonly<api.ILogEntry>> {
     return Promise.reject("Not implemented");

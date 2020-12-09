@@ -481,6 +481,14 @@ namespace BlackMaple.MachineWatch
         }
       }
 
+      public List<MachineWatchInterface.MaterialDetails> GetMaterialForJobUnique(string jobUnique)
+      {
+        using (var ldb = _backend.OpenLogDatabase())
+        {
+          return ldb.GetMaterialForJobUnique(jobUnique);
+        }
+      }
+
       public List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorderIds)
       {
         using (var ldb = _backend.OpenLogDatabase())
