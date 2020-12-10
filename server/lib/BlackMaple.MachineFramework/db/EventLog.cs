@@ -2843,8 +2843,8 @@ namespace BlackMaple.MachineFramework
           {
             Material = mats.Values.Select(mat => new EventLogMaterial() { MaterialID = mat.MaterialID, Process = mat.Process, Face = "" }),
             Pallet = "",
-            LogType = MachineWatchInterface.LogType.GeneralMessage,
-            LocationName = "Message",
+            LogType = MachineWatchInterface.LogType.InvalidateCycle,
+            LocationName = "InvalidateCycle",
             LocationNum = 1,
             Program = "InvalidateCycle",
             StartOfCycle = false,
@@ -3588,6 +3588,38 @@ namespace BlackMaple.MachineFramework
         {
           trans.Rollback();
           throw;
+        }
+      }
+    }
+
+    public int? NextProcessForQueuedMaterial(long matId)
+    {
+      lock (_config)
+      {
+        using (var loadCmd = _connection.CreateCommand())
+        {
+          loadCmd.CommandText = "SELECT MAX(m.Process) FROM " +
+            " stations_mat m " +
+            " WHERE m.MaterialID = $matid AND " +
+            "   NOT EXISTS (" +
+            "    SELECT 1 FROM stations s, program_details d " +
+            "      WHERE s.Counter = m.Counter AND s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
+            "   ) AND " +
+            "   NOT EXISTS (" +
+            "    SELECT 1 FROM stations s WHERE s.Counter = m.Counter AND s.StationLoc = $logty AND s.Program = 'InvalidateCycle'" +
+            "   )";
+          loadCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+          loadCmd.Parameters.Add("logty", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.InvalidateCycle;
+
+          var val = loadCmd.ExecuteScalar();
+          if (val != null && val != DBNull.Value)
+          {
+            return Convert.ToInt32(val) + 1;
+          }
+          else
+          {
+            return null;
+          }
         }
       }
     }

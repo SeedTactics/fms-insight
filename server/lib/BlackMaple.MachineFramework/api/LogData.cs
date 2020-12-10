@@ -100,6 +100,7 @@ namespace BlackMaple.MachineWatchInterface
     [EnumMember] PalletOnRotaryInbound = 108,
     [EnumMember] PalletInStocker = 110,
     [EnumMember] SignalQuarantine = 111,
+    [EnumMember] InvalidateCycle = 112,
   }
 
   [Serializable, DataContract, KnownType(typeof(MaterialProcessActualPath))]
