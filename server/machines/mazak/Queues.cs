@@ -426,19 +426,6 @@ namespace MazakMachineInterface
       };
     }
 
-    private static int FindNextProcess(EventLogDB log, long matId)
-    {
-      var matLog = log.GetLogForMaterial(matId);
-      var lastProc =
-        matLog
-        .SelectMany(e => e.Material)
-        .Where(m => m.MaterialID == matId)
-        .Select(m => m.Process)
-        .DefaultIfEmpty(0)
-        .Max();
-      return lastProc + 1;
-    }
-
     private static int? FindPathGroup(EventLogDB log, JobPlan job, long matId)
     {
       var details = log.GetMaterialDetails(matId);
@@ -460,7 +447,7 @@ namespace MazakMachineInterface
       foreach (var m in materialToSearch)
       {
         if (m.Unique != job.UniqueStr) continue;
-        if (FindNextProcess(log, m.MaterialID) != proc) continue;
+        if ((log.NextProcessForQueuedMaterial(m.MaterialID) ?? 1) != proc) continue;
         if (job.GetNumPaths(proc) > 1)
         {
           if (FindPathGroup(log, job, m.MaterialID) != job.GetPathGroup(proc, path)) continue;

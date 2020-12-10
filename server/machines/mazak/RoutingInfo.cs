@@ -474,13 +474,8 @@ namespace MazakMachineInterface
       CurrentStatus status;
       using (var logDb = logDbCfg.OpenConnection())
       {
-        var proc =
-          logDb.GetLogForMaterial(materialId)
-          .SelectMany(e => e.Material)
-          .Where(m => m.MaterialID == materialId)
-          .Select(m => m.Process)
-          .DefaultIfEmpty(0)
-          .Max();
+        var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
+        var proc = (nextProc ?? 1) - 1;
         logDb.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
         logReader.RecheckQueues(wait: true);
 
@@ -501,13 +496,8 @@ namespace MazakMachineInterface
       {
         foreach (var materialId in materialIds)
         {
-          var proc =
-            logDb.GetLogForMaterial(materialId)
-            .SelectMany(e => e.Material)
-            .Where(m => m.MaterialID == materialId)
-            .Select(m => m.Process)
-            .DefaultIfEmpty(0)
-            .Max();
+          var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
+          var proc = (nextProc ?? 1) - 1;
           logDb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
         }
         logReader.RecheckQueues(wait: true);

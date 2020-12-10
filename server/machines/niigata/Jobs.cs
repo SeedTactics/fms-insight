@@ -475,13 +475,8 @@ namespace BlackMaple.FMSInsight.Niigata
       );
       using (var ldb = _logDbCfg.OpenConnection())
       {
-        var proc =
-          ldb.GetLogForMaterial(materialId)
-          .SelectMany(e => e.Material)
-          .Where(m => m.MaterialID == materialId)
-          .Select(m => m.Process)
-          .DefaultIfEmpty(0)
-          .Max();
+        var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+        var proc = (nextProc ?? 1) - 1;
         ldb.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
       }
 
@@ -495,13 +490,8 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         foreach (var materialId in materialIds)
         {
-          var proc =
-            ldb.GetLogForMaterial(materialId)
-            .SelectMany(e => e.Material)
-            .Where(m => m.MaterialID == materialId)
-            .Select(m => m.Process)
-            .DefaultIfEmpty(0)
-            .Max();
+          var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+          var proc = (nextProc ?? 1) - 1;
           ldb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
         }
       }

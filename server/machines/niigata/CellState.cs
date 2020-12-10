@@ -1422,10 +1422,9 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (matsOnPallets.Contains(mat.MaterialID)) continue;
 
-        var lastProc = logDB.GetLogForMaterial(mat.MaterialID)
-          .SelectMany(m => m.Material)
-          .Where(m => m.MaterialID == mat.MaterialID)
-          .Max(m => m.Process);
+
+        var nextProc = logDB.NextProcessForQueuedMaterial(mat.MaterialID);
+        var lastProc = (nextProc ?? 1) - 1;
 
         var matDetails = logDB.GetMaterialDetails(mat.MaterialID);
 
@@ -1549,12 +1548,8 @@ namespace BlackMaple.FMSInsight.Niigata
       // now check unique, process, and path group match
       if (mat.Unique != face.Job.UniqueStr) return null;
 
-      var proc = logDB.GetLogForMaterial(mat.MaterialID)
-        .SelectMany(m => m.Material)
-        .Where(m => m.MaterialID == mat.MaterialID)
-        .Max(m => m.Process);
-
-      if (proc + 1 != face.Process) return null;
+      var nextProc = logDB.NextProcessForQueuedMaterial(mat.MaterialID);
+      if (nextProc != face.Process) return null;
 
       // now path group
       var details = logDB.GetMaterialDetails(mat.MaterialID);
