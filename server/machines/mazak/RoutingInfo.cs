@@ -549,14 +549,14 @@ namespace MazakMachineInterface
       }
     }
 
-    public void OverrideMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 
       using (var logDb = logDbCfg.OpenConnection())
       using (var jdb = jobDBCfg.OpenConnection())
       {
-        var o = logDb.OverrideMaterialInCurrentPalletCycle(
+        var o = logDb.SwapMaterialInCurrentPalletCycle(
           pallet: pallet,
           oldMatId: oldMatId,
           newMatId: newMatId,

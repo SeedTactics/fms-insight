@@ -1654,7 +1654,7 @@ namespace MachineWatchTest
       // Do the swap
       // ------------------------------------------------------
 
-      var result = _jobLog.OverrideMaterialInCurrentPalletCycle(
+      var result = _jobLog.SwapMaterialInCurrentPalletCycle(
         pallet: "5",
         oldMatId: initiallyLoadedMatProc1.MaterialID,
         newMatId: newMatProc1.MaterialID,
@@ -1799,7 +1799,7 @@ namespace MachineWatchTest
 
       now = now.AddMinutes(5).AddSeconds(1);
 
-      _jobLog.Invoking(j => j.OverrideMaterialInCurrentPalletCycle(
+      _jobLog.Invoking(j => j.SwapMaterialInCurrentPalletCycle(
         pallet: "5",
         oldMatId: 12345,
         newMatId: 98765,
@@ -1807,7 +1807,7 @@ namespace MachineWatchTest
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Unable to find material");
 
-      _jobLog.Invoking(j => j.OverrideMaterialInCurrentPalletCycle(
+      _jobLog.Invoking(j => j.SwapMaterialInCurrentPalletCycle(
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,
@@ -1818,7 +1818,7 @@ namespace MachineWatchTest
       var existingPathMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
       _jobLog.RecordPathForProcess(existingPathMatId, process: 1, path: 10);
 
-      _jobLog.Invoking(j => j.OverrideMaterialInCurrentPalletCycle(
+      _jobLog.Invoking(j => j.SwapMaterialInCurrentPalletCycle(
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,

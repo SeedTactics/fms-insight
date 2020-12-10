@@ -100,7 +100,7 @@ namespace BlackMaple.MachineWatchInterface
 
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
 
-    void OverrideMaterialOnPallet(
+    void SwapMaterialOnPallet(
         string pallet,
         long oldMatId,
         long newMatId,

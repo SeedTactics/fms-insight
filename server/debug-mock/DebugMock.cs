@@ -634,9 +634,9 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public void OverrideMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
     {
-      var o = LogDB.OverrideMaterialInCurrentPalletCycle(
+      var o = LogDB.SwapMaterialInCurrentPalletCycle(
         pallet: pallet,
         oldMatId: oldMatId,
         newMatId: newMatId,

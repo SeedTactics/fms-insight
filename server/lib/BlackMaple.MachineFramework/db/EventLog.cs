@@ -2659,13 +2659,13 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => logs.Select(e => AddLogEntry(trans, e, foreignId, origMessage)).ToList(), foreignId);
     }
 
-    public class OverrideMaterialResult
+    public class SwapMaterialResult
     {
       public IEnumerable<MachineWatchInterface.LogEntry> ChangedLogEntries { get; set; }
       public IEnumerable<MachineWatchInterface.LogEntry> NewLogEntries { get; set; }
     }
 
-    public OverrideMaterialResult OverrideMaterialInCurrentPalletCycle(
+    public SwapMaterialResult SwapMaterialInCurrentPalletCycle(
       string pallet,
       long oldMatId,
       long newMatId,
@@ -2786,7 +2786,7 @@ namespace BlackMaple.MachineFramework
 
       foreach (var l in newLogEntries) _config.OnNewLogEntry(l, null, this);
 
-      return new OverrideMaterialResult()
+      return new SwapMaterialResult()
       {
         ChangedLogEntries = changedLogEntries,
         NewLogEntries = newLogEntries
