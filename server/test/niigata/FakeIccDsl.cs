@@ -455,8 +455,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         },
         queue,
         -1,
-        "theoperator",
-        _status.TimeOfStatusUTC
+        operatorName: "theoperator",
+        reason: "TestAddUnallocated",
+        timeUTC: _status.TimeOfStatusUTC
       );
       _expectedMaterial[matId] = new InProcessMaterial()
       {
@@ -510,8 +511,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         },
         queue,
         -1,
-        "theoperator",
-        _status.TimeOfStatusUTC
+        operatorName: "theoperator",
+        reason: "TestAddCasting",
+        timeUTC: _status.TimeOfStatusUTC
       );
       _logDB.RecordPathForProcess(matId, 1, path);
       _expectedMaterial[matId] = new InProcessMaterial()
@@ -1159,15 +1161,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
       public string ToQueue { get; set; }
       public int Position { get; set; }
+      public string Reason { get; set; }
     }
 
-    public static ExpectedChange AddToQueue(string queue, int pos, IEnumerable<LogMaterial> mat)
+    public static ExpectedChange AddToQueue(string queue, int pos, string reason, IEnumerable<LogMaterial> mat)
     {
       return new ExpectedAddToQueueEvt()
       {
         Material = mat,
         ToQueue = queue,
-        Position = pos
+        Position = pos,
+        Reason = reason
       };
     }
 
@@ -1902,7 +1906,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ty: LogType.AddToQueue,
                 locName: addToQueueEvt.ToQueue,
                 locNum: addToQueueEvt.Position,
-                prog: "",
+                prog: addToQueueEvt.Reason ?? "",
                 start: false,
                 endTime: _status.TimeOfStatusUTC,
                 result: "",

@@ -250,11 +250,43 @@ function display(props: LogEntryProps): JSX.Element {
       return <span>Wash Completed</span>;
 
     case api.LogType.AddToQueue:
-      return (
-        <span>
-          {displayQueueMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
-        </span>
-      );
+      switch (entry.program) {
+        case "Unloaded":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} unloaded into queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        case "SetByOperator":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} set manually into queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        case "SwapMaterial":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} swapped off pallet into queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        case "MaterialMissingOnPallet":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} removed from cell controller, added to queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        default:
+          return (
+            <span>
+              {displayQueueMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
+              {entry.program && entry.program !== "" ? " (" + entry.program + ")" : undefined}
+            </span>
+          );
+      }
 
     case api.LogType.RemoveFromQueue:
       return (

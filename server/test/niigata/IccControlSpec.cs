@@ -1145,7 +1145,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
@@ -1361,7 +1361,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 48 - 27),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 5, activeMins: 9, mats: BBBproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, mat: BBBproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", mat: BBBproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 5, activeMins: 8, mats: out var CCCproc1),
         })
         .MoveToBuffer(pal: 1, buff: 1)
@@ -1547,7 +1547,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 69 - 48),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 3, activeMins: 9, mats: CCCproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, mat: CCCproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", mat: CCCproc1),
           FakeIccDsl.ExpectRouteIncrement(pal: 2, newCycleCnt: 1, faces: new[] {
             (face: 1, unique: "uniq1", proc: 2, path: 1)
           })
@@ -1721,7 +1721,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .ExpectTransition(new[] {
         FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 15 - 1),
         FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 4, activeMins: 9, mats: AAAproc1),
-        FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+        FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
         FakeIccDsl.ExpectNewRoute(
           pal: 2,
           pri: 1,
@@ -2393,7 +2393,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 24 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 3, activeMins: 9, mats: AAAProc1),
-          FakeIccDsl.AddToQueue("sizedQ", 0, AAAProc1),
+          FakeIccDsl.AddToQueue("sizedQ", 0, reason: "Unloaded", AAAProc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 3, elapsedMin: 3, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var CCCproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 4,
@@ -2889,7 +2889,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
@@ -3063,7 +3063,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
@@ -3182,7 +3182,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectRotaryEnd(pal: 1, mach: 3, rotate: false, elapMin: 3, mats: fstMats),
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 5),
-          FakeIccDsl.AddToQueue("Quarantine", 0, FakeIccDsl.ClearFaces(fstMats))
+          FakeIccDsl.AddToQueue("Quarantine", 0, reason: "MaterialMissingOnPallet", FakeIccDsl.ClearFaces(fstMats))
         })
 
         // when get to buffer, sets a new route
@@ -3449,7 +3449,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 17 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 5, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("Quarantine", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("Quarantine", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 5, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
         })
         ;
@@ -3545,7 +3545,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
         })
         .ExpectTransition(new[] {
-          FakeIccDsl.AddToQueue(queue: "Quarantine", pos: 0, mat: FakeIccDsl.ClearFaces(fstMats)),
+          FakeIccDsl.AddToQueue(queue: "Quarantine", pos: 0, reason: "PalletToManualControl", mat: FakeIccDsl.ClearFaces(fstMats)),
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 11)
         })
 

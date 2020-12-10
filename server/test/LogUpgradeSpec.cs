@@ -206,7 +206,7 @@ namespace MachineWatchTest
       var matId = _log.AllocateMaterialID("uuu5", "part5", 1);
       var mat = new LogMaterial(matId, "uuu5", 1, "part5", 1, "", "", "");
 
-      _log.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat), "queue", 5, null, now.AddHours(2));
+      _log.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat), "queue", 5, null, null, now.AddHours(2));
 
       _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new[] {
         new EventLogDB.QueuedMaterial() {

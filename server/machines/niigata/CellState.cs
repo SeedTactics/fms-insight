@@ -618,7 +618,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (pallet.ManualControl)
       {
-        QuarantineMatOnPal(pallet, logDB, ref palletStateUpdated, nowUtc);
+        QuarantineMatOnPal(pallet, "PalletToManualControl", logDB, ref palletStateUpdated, nowUtc);
       }
       else
       {
@@ -644,13 +644,13 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (pallet.Status.HasWork == false && pallet.Material.Any())
         {
-          QuarantineMatOnPal(pallet, logDB, ref palletStateUpdated, nowUtc);
+          QuarantineMatOnPal(pallet, "MaterialMissingOnPallet", logDB, ref palletStateUpdated, nowUtc);
         }
 
       }
     }
 
-    private void QuarantineMatOnPal(PalletAndMaterial pallet, EventLogDB logDB, ref bool palletStateUpdated, DateTime nowUtc)
+    private void QuarantineMatOnPal(PalletAndMaterial pallet, string reason, EventLogDB logDB, ref bool palletStateUpdated, DateTime nowUtc)
     {
       // move all material to quarantine queue
       if (!string.IsNullOrEmpty(_settings.QuarantineQueue))
@@ -661,7 +661,9 @@ namespace BlackMaple.FMSInsight.Niigata
             mat: new EventLogDB.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
             queue: _settings.QuarantineQueue,
             position: -1,
-            timeUTC: nowUtc
+            timeUTC: nowUtc,
+            operatorName: null,
+            reason: reason
           );
         }
       }

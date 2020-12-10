@@ -256,7 +256,9 @@ namespace MazakMachineInterface
                 logDb.RecordAddMaterialToQueue(
                   mat: new EventLogDB.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" },
                   queue: schProc.InputQueue,
-                  position: -1
+                  position: -1,
+                  operatorName: null,
+                  reason: "CreatedToMatchMazakQuantities"
                 );
               }
             }

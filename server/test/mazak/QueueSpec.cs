@@ -131,7 +131,7 @@ namespace MachineWatchTest
     {
       // Same as RoutingInfo.AddUnallocatedCastingToQueue
       var mat = _logDB.AllocateMaterialIDForCasting(casting);
-      _logDB.RecordAddMaterialToQueue(mat, 0, queue, position: -1, timeUTC: _now);
+      _logDB.RecordAddMaterialToQueue(mat, 0, queue, position: -1, timeUTC: _now, operatorName: null, reason: "TestAddCasting");
       return mat;
     }
 
@@ -140,7 +140,7 @@ namespace MachineWatchTest
       // Same as RoutingInfo.AddUnprocessedMaterialToQueue
       var mat = _logDB.AllocateMaterialID(uniq, part, numProc);
       _logDB.RecordPathForProcess(mat, Math.Max(1, lastProc), path);
-      _logDB.RecordAddMaterialToQueue(mat, lastProc, queue, position: -1, timeUTC: _now);
+      _logDB.RecordAddMaterialToQueue(mat, lastProc, queue, position: -1, timeUTC: _now, operatorName: null, reason: "TestAddAssigned");
       return mat;
     }
 

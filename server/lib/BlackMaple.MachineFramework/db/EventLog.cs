@@ -2066,7 +2066,7 @@ namespace BlackMaple.MachineFramework
           {
             if (unloadIntoQueues.ContainsKey(mat.MaterialID))
             {
-              msgs.AddRange(AddToQueue(trans, mat, unloadIntoQueues[mat.MaterialID], -1, operatorName: null, timeUTC: timeUTC));
+              msgs.AddRange(AddToQueue(trans, mat, unloadIntoQueues[mat.MaterialID], -1, operatorName: null, timeUTC: timeUTC, reason: "Unloaded"));
             }
           }
         }
@@ -2543,18 +2543,18 @@ namespace BlackMaple.MachineFramework
     }
 
     public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
-        EventLogMaterial mat, string queue, int position, string operatorName = null, DateTime? timeUTC = null)
+        EventLogMaterial mat, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
-          AddToQueue(trans, mat, queue, position, operatorName, timeUTC ?? DateTime.UtcNow)
+          AddToQueue(trans, mat, queue, position, operatorName: operatorName, timeUTC: timeUTC ?? DateTime.UtcNow, reason: reason)
       );
     }
 
     public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
-        long matID, int process, string queue, int position, string operatorName = null, DateTime? timeUTC = null)
+        long matID, int process, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
-          AddToQueue(trans, matID, process, queue, position, operatorName, timeUTC ?? DateTime.UtcNow)
+          AddToQueue(trans, matID, process, queue, position, operatorName: operatorName, timeUTC: timeUTC ?? DateTime.UtcNow, reason: reason)
       );
     }
 
@@ -2763,7 +2763,15 @@ namespace BlackMaple.MachineFramework
           newLogEntries.AddRange(RemoveFromAllQueues(trans, matID: newMatId, process: oldMatProc - 1, operatorName: operatorName, time));
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
-            newLogEntries.AddRange(AddToQueue(trans, matId: oldMatId, process: oldMatProc - 1, queue: oldMatPutInQueue, position: -1, operatorName: operatorName, time));
+            newLogEntries.AddRange(AddToQueue(trans,
+              matId: oldMatId,
+              process: oldMatProc - 1,
+              queue: oldMatPutInQueue,
+              position: -1,
+              operatorName: operatorName,
+              timeUTC: time,
+              reason: "SwapMaterial"
+            ));
           }
 
           //update paths
@@ -2859,7 +2867,15 @@ namespace BlackMaple.MachineFramework
           {
             foreach (var mat in mats)
             {
-              newLogEntries.AddRange(AddToQueue(trans, matId: mat.Value.MaterialID, process: mat.Value.Process - 1, queue: oldMatPutInQueue, position: -1, operatorName: operatorName, time));
+              newLogEntries.AddRange(AddToQueue(trans,
+                matId: mat.Value.MaterialID,
+                process: mat.Value.Process - 1,
+                queue: oldMatPutInQueue,
+                position: -1,
+                operatorName: operatorName,
+                timeUTC: time,
+                reason: "InvalidateCycle"
+              ));
             }
           }
 
@@ -3227,7 +3243,7 @@ namespace BlackMaple.MachineFramework
 
     #region Queues
 
-    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC, string reason)
     {
       var mat = new EventLogMaterial()
       {
@@ -3236,10 +3252,10 @@ namespace BlackMaple.MachineFramework
         Face = ""
       };
 
-      return AddToQueue(trans, mat, queue, position, operatorName, timeUTC);
+      return AddToQueue(trans, mat, queue, position, operatorName, timeUTC, reason);
     }
 
-    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC, string reason)
     {
       var ret = new List<MachineWatchInterface.LogEntry>();
 
@@ -3292,7 +3308,7 @@ namespace BlackMaple.MachineFramework
         LogType = MachineWatchInterface.LogType.AddToQueue,
         LocationName = queue,
         LocationNum = resultingPosition,
-        Program = "",
+        Program = reason ?? "",
         StartOfCycle = false,
         EndTimeUTC = timeUTC,
         Result = "",

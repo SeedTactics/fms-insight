@@ -321,7 +321,13 @@ namespace BlackMaple.FMSInsight.Niigata
             },
             serial[i]);
         }
-        var logEvt = logDB.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
+        var logEvt = logDB.RecordAddMaterialToQueue(
+          matID: matId,
+          process: 0,
+          queue: queue,
+          position: position >= 0 ? position + i : -1,
+          operatorName: operatorName,
+          reason: "SetByOperator");
         mats.Add(new InProcessMaterial()
         {
           MaterialID = matId,
@@ -437,7 +443,13 @@ namespace BlackMaple.FMSInsight.Niigata
             },
             serial);
         }
-        logEvt = ldb.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
+        logEvt = ldb.RecordAddMaterialToQueue(
+          matID: matId,
+          process: process,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator");
         ldb.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       }
 
@@ -477,7 +489,13 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
         var proc = (nextProc ?? 1) - 1;
-        ldb.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
+        ldb.RecordAddMaterialToQueue(
+          matID: materialId,
+          process: proc,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator");
       }
 
       _sync.JobsOrQueuesChanged();

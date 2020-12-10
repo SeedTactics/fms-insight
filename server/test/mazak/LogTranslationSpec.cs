@@ -827,7 +827,7 @@ namespace MachineWatchTest
             ty: BlackMaple.MachineWatchInterface.LogType.AddToQueue,
             locName: queue,
             locNum: startPos,
-            prog: "",
+            prog: "Unloaded",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset),
             result: "",

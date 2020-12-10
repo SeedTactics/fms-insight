@@ -391,7 +391,14 @@ namespace MazakMachineInterface
           }
           // the add to queue log entry will use the process, so later when we lookup the latest completed process
           // for the material in the queue, it will be correctly computed.
-          logDb.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
+          logDb.RecordAddMaterialToQueue(
+            matID: matId,
+            process: 0,
+            queue: queue,
+            position: position >= 0 ? position + i : -1,
+            operatorName: operatorName,
+            reason: "SetByOperator"
+          );
         }
 
         logReader.RecheckQueues(wait: true);
@@ -449,7 +456,13 @@ namespace MazakMachineInterface
         }
         // the add to queue log entry will use the process, so later when we lookup the latest completed process
         // for the material in the queue, it will be correctly computed.
-        logDb.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
+        logDb.RecordAddMaterialToQueue(
+          matID: matId,
+          process: process,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator");
         logDb.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
 
         logReader.RecheckQueues(wait: true);
@@ -476,7 +489,14 @@ namespace MazakMachineInterface
       {
         var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
         var proc = (nextProc ?? 1) - 1;
-        logDb.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
+        logDb.RecordAddMaterialToQueue(
+          matID: materialId,
+          process: proc,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator"
+        );
         logReader.RecheckQueues(wait: true);
 
         using (var jdb = jobDBCfg.OpenConnection())

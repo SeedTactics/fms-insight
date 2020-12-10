@@ -316,7 +316,12 @@ namespace DebugMachineWatchApiServer
         QueuePosition = position
       };
 
-      LogDB.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" }, queue, position, operatorName);
+      LogDB.RecordAddMaterialToQueue(
+        mat: new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
+        queue: queue,
+        position: position,
+        operatorName: operatorName,
+        reason: "SetByOperator");
 
       OnNewStatus(CurrentStatus);
     }

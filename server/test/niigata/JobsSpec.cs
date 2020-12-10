@@ -270,13 +270,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         MaterialID = mat3,
         Process = 1,
         Face = null
-      }, "q1", 0);
+      }, "q1", 0, operatorName: null, reason: "TestReason");
       _logDB.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial()
       {
         MaterialID = mat4,
         Process = 1,
         Face = null
-      }, "q1", 1);
+      }, "q1", 1, operatorName: null, reason: "TestReason2");
 
       var status = new NiigataStatus()
       {
@@ -538,7 +538,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
         MarkExpectedEntry(mat1, cntr: 1, serial: "aaa"),
-        AddToQueueExpectedEntry(mat1, cntr: 2, queue: "q1", position: 0, operName: "theoper"),
+        AddToQueueExpectedEntry(mat1, cntr: 2, queue: "q1", position: 0, operName: "theoper", reason: "SetByOperator"),
         RemoveFromQueueExpectedEntry(mat1, cntr: 4, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
       }, options => options
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
@@ -548,7 +548,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       );
 
       _logDB.GetLogForMaterial(materialID: 2).Should().BeEquivalentTo(new[] {
-        AddToQueueExpectedEntry(mat2, cntr: 3, queue: "q1", position: 1, operName: "theoper"),
+        AddToQueueExpectedEntry(mat2, cntr: 3, queue: "q1", position: 1, operName: "theoper", reason: "SetByOperator"),
       }, options => options
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<DateTime>()
@@ -622,9 +622,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
         MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
-        AddToQueueExpectedEntry(logMat, cntr: 2, queue: "q1", position: 0, operName: "theoper"),
+        AddToQueueExpectedEntry(logMat, cntr: 2, queue: "q1", position: 0, operName: "theoper", reason: "SetByOperator"),
         RemoveFromQueueExpectedEntry(logMat, cntr: 3, queue: "q1", position: 0, elapsedMin: 0, operName: "myoper"),
-        AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, operName: "theoper"),
+        AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, operName: "theoper", reason: "SetByOperator"),
       }, options => options
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<DateTime>()
@@ -710,9 +710,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
         MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
-        AddToQueueExpectedEntry(logMat, cntr: 2, queue: "q1", position: 0, operName: null),
+        AddToQueueExpectedEntry(logMat, cntr: 2, queue: "q1", position: 0, operName: null, reason: "SetByOperator"),
         RemoveFromQueueExpectedEntry(logMat, cntr: 3, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
-        AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q2", position: 0, operName: "theoper")
+        AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q2", position: 0, operName: "theoper", reason: "SetByOperator")
       }, options => options
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<DateTime>()
@@ -738,7 +738,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return e;
     }
 
-    private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime? timeUTC = null, string operName = null)
+    private LogEntry AddToQueueExpectedEntry(LogMaterial mat, long cntr, string queue, int position, DateTime? timeUTC = null, string operName = null, string reason = null)
     {
       var e = new LogEntry(
           cntr: cntr,
@@ -747,7 +747,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ty: LogType.AddToQueue,
           locName: queue,
           locNum: position,
-          prog: "",
+          prog: reason ?? "",
           start: false,
           endTime: timeUTC ?? DateTime.UtcNow,
           result: "",
