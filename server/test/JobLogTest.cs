@@ -1670,14 +1670,14 @@ namespace MachineWatchTest
       var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
       var newLogMatProc0 = new LogMaterial(matID: newMatProc1.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "cccc", workorder: "", face: "");
 
-      var expectedGeneralMsg = new LogEntry(
+      var expectedSwapMsg = new LogEntry(
         cntr: 0,
         mat: new[] { initiallyLoadedLogMatProc0, newLogMatProc0 },
         pal: "5",
-        ty: LogType.GeneralMessage,
-        locName: "Message",
+        ty: LogType.SwapMaterialOnPallet,
+        locName: "SwapMatOnPallet",
         locNum: 1,
-        prog: "MaterialOverride",
+        prog: "SwapMatOnPallet",
         start: false,
         endTime: now,
         result: "Replace bbbb with cccc on pallet 5",
@@ -1693,7 +1693,7 @@ namespace MachineWatchTest
       );
 
       result.NewLogEntries.Should().BeEquivalentTo(new[] {
-        expectedGeneralMsg,
+        expectedSwapMsg,
         AddToQueueExpectedEntry(
           mat: initiallyLoadedLogMatProc0,
           cntr: 0,
@@ -1736,7 +1736,7 @@ namespace MachineWatchTest
           timeUTC: initialMatRemoveQueueTime,
           elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
         ),
-        expectedGeneralMsg,
+        expectedSwapMsg,
         AddToQueueExpectedEntry(
           mat: initiallyLoadedLogMatProc0,
           cntr: 0,
@@ -1758,7 +1758,7 @@ namespace MachineWatchTest
             position: 1,
             timeUTC: newMatAddToQueueTime
           ),
-          expectedGeneralMsg,
+          expectedSwapMsg,
           RemoveFromQueueExpectedEntry(
             mat: newLogMatProc0,
             cntr: 0,
