@@ -39,7 +39,13 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class LogTranslation
+  public interface ILogTranslation
+  {
+    List<MaterialToSendToExternalQueue> HandleEvent(LogEntry e);
+    bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null);
+  }
+
+  public class LogTranslation : ILogTranslation
   {
     private BlackMaple.MachineFramework.JobDB _jobDB;
     private BlackMaple.MachineFramework.EventLogDB _log;
@@ -48,6 +54,7 @@ namespace MazakMachineInterface
     private Action<LogEntry> _onMazakLog;
     private MazakCurrentStatusAndTools _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
+    private HashSet<long> _queuedMatIds;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
@@ -65,6 +72,7 @@ namespace MazakMachineInterface
       _settings = settings;
       _onMazakLog = onMazakLogMessage;
       _jobs = new Dictionary<string, JobPlan>();
+      _queuedMatIds = new HashSet<long>(_log.GetMaterialInAllQueues().Select(m => m.MaterialID));
     }
 
     private JobPlan GetJob(string unique)
@@ -318,6 +326,7 @@ namespace MazakMachineInterface
       return oldEvents
         .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
         .SelectMany(e => e.Material)
+        .Where(m => !_queuedMatIds.Contains(m.MaterialID))
         .GroupBy(m => m.MaterialID)
         .Select(ms => ms.First())
         .ToList();
@@ -396,7 +405,8 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private SortedList<string, EventLogDB.EventLogMaterial> ParseMaterialFromPreviousEvents(string jobPartName, int proc, int fixQty, bool isUnloadEnd, IList<MWI.LogEntry> oldEvents)
+    private SortedList<string, EventLogDB.EventLogMaterial> ParseMaterialFromPreviousEvents(
+      string jobPartName, int proc, int fixQty, bool isUnloadEnd, IList<MWI.LogEntry> oldEvents)
     {
       var byFace = new SortedList<string, EventLogDB.EventLogMaterial>(); //face -> material
 
@@ -405,7 +415,16 @@ namespace MazakMachineInterface
         // When looking for material for an unload event, we want to skip over load events,
         // since an ending load event might have come through with the new material id that is loaded.
         if (isUnloadEnd && oldEvents[i].Result == "LOAD")
+        {
           continue;
+        }
+
+        // material can be queued if it is removed by the operator from the pallet, which is
+        // detected in CheckPalletStatusMatchesLogs() below
+        if (oldEvents[i].Material.Any(m => _queuedMatIds.Contains(m.MaterialID)))
+        {
+          continue;
+        }
 
         foreach (LogMaterial mat in oldEvents[i].Material)
         {
@@ -656,6 +675,60 @@ namespace MazakMachineInterface
       }
 
       return ret;
+    }
+    #endregion
+
+    #region Compare Status With Events
+    public bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null)
+    {
+      if (string.IsNullOrEmpty(_settings.QuarantineQueue)) return false;
+
+      bool matMovedToQueue = false;
+      foreach (var pal in _mazakSchedules.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
+      {
+        var oldEvts = _log.CurrentPalletLog(pal.PalletNumber.ToString());
+
+        // start with everything on the pallet
+        List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
+
+        foreach (var st in _mazakSchedules.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber))
+        {
+          // remove material from matsOnPal that matches this PalletSubStatus
+          var sch = _mazakSchedules.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
+          if (sch == null) continue;
+          MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
+          if (string.IsNullOrEmpty(unique)) continue;
+
+          var matchingMats = matsOnPal.Where(
+            m => m.JobUniqueStr == unique && m.Process == st.PartProcessNumber
+          ).ToList();
+
+          if (matchingMats.Count < st.FixQuantity)
+          {
+            Log.Warning("Pallet {@pal} has material assigned, but no load event", st);
+          }
+          else
+          {
+            foreach (var mat in matchingMats) matsOnPal.Remove(mat);
+          }
+        }
+
+        // anything left in matsOnPal disappeared from PalletSubStatuses so should be quarantined
+        foreach (var extraMat in matsOnPal)
+        {
+          _log.RecordAddMaterialToQueue(
+            mat: new EventLogDB.EventLogMaterial() { MaterialID = extraMat.MaterialID, Process = extraMat.Process, Face = "" },
+            queue: _settings.QuarantineQueue,
+            position: -1,
+            operatorName: null,
+            reason: "MaterialMissingOnPallet",
+            timeUTC: timeUTC
+          );
+          matMovedToQueue = true;
+        }
+      }
+
+      return matMovedToQueue;
     }
     #endregion
 
