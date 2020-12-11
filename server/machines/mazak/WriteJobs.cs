@@ -314,7 +314,7 @@ namespace MazakMachineInterface
 
     }
 
-    private void ArchiveOldJobs(JobDB jobDB, MazakSchedules schedules)
+    private void ArchiveOldJobs(JobDB jobDB, MazakCurrentStatus schedules)
     {
       var current = new HashSet<string>();
       var completed = new Dictionary<(string uniq, int proc1path), int>();

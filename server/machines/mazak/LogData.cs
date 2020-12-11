@@ -159,7 +159,7 @@ namespace MazakMachineInterface
       {
         try
         {
-          var mazakData = _readDB.LoadSchedulesAndLoadActions();
+          var mazakData = _readDB.LoadStatusAndTools();
           List<LogEntry> logs;
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
 
@@ -435,7 +435,7 @@ namespace MazakMachineInterface
 
           Log.Debug("Waking up log thread for {reason}: total GC memory {mem}", ret, GC.GetTotalMemory(false));
 
-          var mazakData = _readDB.LoadSchedulesAndLoadActions();
+          var mazakData = _readDB.LoadStatusAndTools();
 
           Log.Debug("Loaded mazak schedules {@data}", mazakData);
 

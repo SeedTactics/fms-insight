@@ -46,14 +46,14 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private IMachineGroupName _machGroupName;
     private Action<LogEntry> _onMazakLog;
-    private MazakSchedulesAndLoadActions _mazakSchedules;
+    private MazakCurrentStatusAndTools _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
     public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
                           BlackMaple.MachineFramework.EventLogDB logDB,
-                          MazakSchedulesAndLoadActions mazakSch,
+                          MazakCurrentStatusAndTools mazakSch,
                           IMachineGroupName machineGroupName,
                           BlackMaple.MachineFramework.FMSSettings settings,
                           Action<LogEntry> onMazakLogMessage)

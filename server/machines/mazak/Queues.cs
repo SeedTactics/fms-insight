@@ -61,7 +61,7 @@ namespace MazakMachineInterface
       CurrentQueueMismatch = false;
     }
 
-    public bool CheckQueues(JobDB jobDB, EventLogDB logDB, MazakSchedulesAndLoadActions mazakData)
+    public bool CheckQueues(JobDB jobDB, EventLogDB logDB, MazakCurrentStatus mazakData)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
       {
@@ -93,7 +93,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public MazakWriteData CalculateScheduleChanges(JobDB jdb, EventLogDB logDb, MazakSchedulesAndLoadActions mazakData)
+    public MazakWriteData CalculateScheduleChanges(JobDB jdb, EventLogDB logDb, MazakCurrentStatus mazakData)
     {
       IEnumerable<ScheduleWithQueues> schs;
       schs = LoadSchedules(jdb, logDb, mazakData);
@@ -124,7 +124,7 @@ namespace MazakMachineInterface
       public int? NewPriority { get; set; }
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(JobDB jdb, EventLogDB logDB, MazakSchedulesAndLoadActions mazakData)
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(JobDB jdb, EventLogDB logDB, MazakCurrentStatus mazakData)
     {
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
@@ -216,7 +216,7 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    private void CalculateTargetMatQty(EventLogDB logDb, MazakSchedulesAndLoadActions mazakData, IEnumerable<ScheduleWithQueues> schs)
+    private void CalculateTargetMatQty(EventLogDB logDb, MazakCurrentStatus mazakData, IEnumerable<ScheduleWithQueues> schs)
     {
       // go through each job and process, and distribute the queued material among the various paths
       // for the job and process.

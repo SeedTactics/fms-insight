@@ -83,7 +83,7 @@ namespace MachineWatchTest
     public void SinglePathSingleProc()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
-      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
           new MazakScheduleRow()
@@ -137,7 +137,7 @@ namespace MachineWatchTest
     public void IgnoresManualSchedule()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
-      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
           new MazakScheduleRow()
@@ -178,7 +178,7 @@ namespace MachineWatchTest
     public void IgnoresAlreadyExistingDecrement()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
-      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
           new MazakScheduleRow()
@@ -233,7 +233,7 @@ namespace MachineWatchTest
     public void LoadInProcess()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started.  BUT, one is being loaded at the load station
-      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
           new MazakScheduleRow()
@@ -314,7 +314,7 @@ namespace MachineWatchTest
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
       // a previous decrement already reduced the plan quantity to 35
-      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
           new MazakScheduleRow()
@@ -365,7 +365,7 @@ namespace MachineWatchTest
     {
       // path 1: plan 50, complete 30, 5 in-proc #1, 3 in-proc #2, 2 material proc #2, 0 material proc1 (has input queue).  10 un-started parts
       // path 2: plan 25, complete 3, 2 in-proc #1, 4 in-proc #2, 3 material proc #2, 25 - 3 - 2 - 4 - 3 = 13 un-started parts
-      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
           new MazakScheduleRow()
@@ -464,7 +464,7 @@ namespace MachineWatchTest
     {
       // uuuu plan 50, completed 30, 5 in proc and 15 not yet started
       // vvvv not copied so not returned from LoadSchedulesAndLoadActions
-      _read.LoadSchedulesAndLoadActions().Returns(new MazakSchedulesAndLoadActions()
+      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
           new MazakScheduleRow()

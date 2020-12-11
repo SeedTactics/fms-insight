@@ -52,7 +52,7 @@ namespace MachineWatchTest
     protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> raisedByEvent = new List<MazakMachineInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> expectedMazakLogEntries = new List<MazakMachineInterface.LogEntry>();
-    protected MazakSchedulesAndLoadActions mazakData;
+    protected MazakCurrentStatusAndTools mazakData;
     private List<MazakScheduleRow> _schedules;
 
     protected LogTestBase()
@@ -69,7 +69,7 @@ namespace MachineWatchTest
       jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _schedules = new List<MazakScheduleRow>();
-      mazakData = new MazakSchedulesAndLoadActions()
+      mazakData = new MazakCurrentStatusAndTools()
       {
         Schedules = _schedules,
         LoadActions = Enumerable.Empty<LoadAction>(),

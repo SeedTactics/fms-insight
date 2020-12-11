@@ -68,9 +68,9 @@ namespace MachineWatchTest
       public List<MazakScheduleRow> Schedules { get; } = new List<MazakScheduleRow>();
       public List<LoadAction> LoadActions { get; } = new List<LoadAction>();
 
-      public MazakSchedulesAndLoadActions ToData()
+      public MazakCurrentStatus ToData()
       {
-        return new MazakSchedulesAndLoadActions()
+        return new MazakCurrentStatus()
         {
           Schedules = Schedules,
           LoadActions = LoadActions

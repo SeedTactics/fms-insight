@@ -1041,17 +1041,20 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
+    public MazakCurrentStatusAndTools LoadStatusAndTools()
     {
       return WithReadDBConnection(conn =>
       {
         using (var trans = conn.BeginTransaction())
         {
           var partFixQty = conn.Query<PartProcessFixQty>(_partProcFixQty, transaction: trans);
-          var ret = new MazakSchedulesAndLoadActions()
+          var ret = new MazakCurrentStatusAndTools()
           {
             Schedules = LoadSchedules(conn, trans, partFixQty),
             LoadActions = _loadOper.CurrentLoadActions(),
+            PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
+            PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
+            Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
             Tools =
               MazakType == MazakDbType.MazakSmooth
                 ? conn.Query<ToolPocketRow>(_toolSelect, transaction: trans)
@@ -1087,14 +1090,15 @@ namespace MazakMachineInterface
       return new MazakAllData()
       {
         Schedules = LoadSchedules(conn, trans, fixQty),
-        Parts = parts,
-        Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
+        LoadActions = _loadOper.CurrentLoadActions(),
         PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
         PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
-        LoadActions = _loadOper.CurrentLoadActions(),
+        Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
+
+        Parts = parts,
+        Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
         MainPrograms = conn.Query<MazakProgramRow>(_mainProgSelect, transaction: trans),
         Fixtures = conn.Query<MazakFixtureRow>(_fixtureSelect, transaction: trans),
-        Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans)
       };
     }
 
