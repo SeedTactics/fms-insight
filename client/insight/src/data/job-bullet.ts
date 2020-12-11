@@ -84,8 +84,12 @@ function vectorRange(start: number, count: number): Vector<number> {
 
 export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
   const points = Vector.ofIterable(jobs)
+    .sortOn(
+      (j) => j.routeStartUTC.getTime(),
+      (j) => j.scheduleId ?? "",
+      (j) => j.partName
+    )
     .flatMap((j) => vectorRange(0, j.procsAndPaths.length).map((proc) => displayJob(j, proc)))
-    .sortOn((pt) => pt.part)
     .reverse();
   const completedData = points
     .zipWithIndex()
