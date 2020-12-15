@@ -474,6 +474,13 @@ function LoadMatDialog(props: LoadMatDialogProps) {
                   props.printLabel(
                     displayMat.materialID,
                     LazySeq.ofIterable(displayMat.events)
+                      .filter(
+                        (e) =>
+                          e.details?.["PalletCycleInvalidated"] !== "1" &&
+                          (e.type === api.LogType.LoadUnloadCycle ||
+                            e.type === api.LogType.MachineCycle ||
+                            e.type === api.LogType.AddToQueue)
+                      )
                       .flatMap((e) => e.material)
                       .filter((e) => e.id === displayMat.materialID)
                       .maxOn((e) => e.proc)

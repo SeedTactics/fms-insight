@@ -203,6 +203,13 @@ class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialF
     let addProcMsg: string | null = null;
     if (!this.props.display_material.loading_events) {
       const lastProc = LazySeq.ofIterable(this.props.display_material.events)
+        .filter(
+          (e) =>
+            e.details?.["PalletCycleInvalidated"] !== "1" &&
+            (e.type === api.LogType.LoadUnloadCycle ||
+              e.type === api.LogType.MachineCycle ||
+              e.type === api.LogType.AddToQueue)
+        )
         .flatMap((e) => e.material)
         .filter((m) => m.id === this.props.display_material.materialID)
         .maxOn((m) => m.proc)
