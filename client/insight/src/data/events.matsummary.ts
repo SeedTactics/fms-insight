@@ -39,7 +39,7 @@ export interface MaterialSummary {
   readonly materialID: number;
   readonly jobUnique: string;
   readonly partName: string;
-  readonly completed_procs: ReadonlyArray<number>;
+  readonly startedProcess1: boolean;
 
   readonly serial?: string;
   readonly workorderId?: string;
@@ -73,7 +73,7 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
     materialID: mat.materialID,
     jobUnique: mat.jobUnique,
     partName: mat.partName,
-    completed_procs: LazySeq.ofRange(1, mat.process, 1).toArray(),
+    startedProcess1: mat.process > 0,
     serial: mat.serial,
     workorderId: mat.workorderId,
     signaledInspections: mat.signaledInspections,
@@ -110,7 +110,7 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
           jobUnique: logMat.uniq,
           partName: logMat.part,
           last_event: e.endUTC,
-          completed_procs: [],
+          startedProcess1: false,
           signaledInspections: [],
           completedInspections: {},
         };
@@ -166,18 +166,22 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
             if (logMat.proc === logMat.numproc) {
               mat = {
                 ...mat,
-                completed_procs: [...mat.completed_procs, logMat.proc],
                 last_unload_time: e.endUTC,
                 completed_machining: true,
               };
             } else {
               mat = {
                 ...mat,
-                completed_procs: [...mat.completed_procs, logMat.proc],
                 last_unload_time: e.endUTC,
               };
             }
+          } else if (e.result === "LOAD") {
+            mat = {
+              ...mat,
+              startedProcess1: true,
+            };
           }
+
           break;
 
         case api.LogType.Wash:

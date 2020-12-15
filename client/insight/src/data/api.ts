@@ -855,6 +855,88 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
+    invalidatePalletCycle(materialId: number, process: number, putMatInQueue: string | null | undefined, operName: string | null | undefined): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/invalidate-process?";
+        if (materialId === undefined || materialId === null)
+            throw new Error("The parameter 'materialId' must be defined.");
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
+        if (putMatInQueue !== undefined)
+            url_ += "putMatInQueue=" + encodeURIComponent("" + putMatInQueue) + "&"; 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(process);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json", 
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processInvalidatePalletCycle(_response);
+        });
+    }
+
+    protected processInvalidatePalletCycle(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
+    swapMaterialOnPallet(materialId: number, mat: MatToPutOnPallet, putMatInQueue: string | null | undefined, operName: string | null | undefined): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/swap-off-pallet?";
+        if (materialId === undefined || materialId === null)
+            throw new Error("The parameter 'materialId' must be defined.");
+        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
+        if (putMatInQueue !== undefined)
+            url_ += "putMatInQueue=" + encodeURIComponent("" + putMatInQueue) + "&"; 
+        if (operName !== undefined)
+            url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(mat);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json", 
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSwapMaterialOnPallet(_response);
+        });
+    }
+
+    protected processSwapMaterialOnPallet(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
     bulkRemoveMaterialFromQueues(id: number[] | null, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material?";
         if (id === undefined)
@@ -2061,11 +2143,71 @@ export interface IFMSInfo {
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 }
 
-export class HistoricData implements IHistoricData {
-    jobs!: { [key: string] : HistoricJob; };
-    stationUse!: SimulatedStationUtilization[];
+export class ServerEvent implements IServerEvent {
+    logEntry?: LogEntry | undefined;
+    newJobs?: NewJobs | undefined;
+    newCurrentStatus?: CurrentStatus | undefined;
+    editMaterialInLog?: EditMaterialInLogEvents | undefined;
 
-    constructor(data?: IHistoricData) {
+    constructor(data?: IServerEvent) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.logEntry = data["LogEntry"] ? LogEntry.fromJS(data["LogEntry"]) : <any>undefined;
+            this.newJobs = data["NewJobs"] ? NewJobs.fromJS(data["NewJobs"]) : <any>undefined;
+            this.newCurrentStatus = data["NewCurrentStatus"] ? CurrentStatus.fromJS(data["NewCurrentStatus"]) : <any>undefined;
+            this.editMaterialInLog = data["EditMaterialInLog"] ? EditMaterialInLogEvents.fromJS(data["EditMaterialInLog"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): ServerEvent {
+        data = typeof data === 'object' ? data : {};
+        let result = new ServerEvent();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["LogEntry"] = this.logEntry ? this.logEntry.toJSON() : <any>undefined;
+        data["NewJobs"] = this.newJobs ? this.newJobs.toJSON() : <any>undefined;
+        data["NewCurrentStatus"] = this.newCurrentStatus ? this.newCurrentStatus.toJSON() : <any>undefined;
+        data["EditMaterialInLog"] = this.editMaterialInLog ? this.editMaterialInLog.toJSON() : <any>undefined;
+        return data; 
+    }
+}
+
+export interface IServerEvent {
+    logEntry?: LogEntry | undefined;
+    newJobs?: NewJobs | undefined;
+    newCurrentStatus?: CurrentStatus | undefined;
+    editMaterialInLog?: EditMaterialInLogEvents | undefined;
+}
+
+export class LogEntry implements ILogEntry {
+    details?: { [key: string] : string; } | undefined;
+    counter!: number;
+    material!: LogMaterial[];
+    type!: LogType;
+    startofcycle!: boolean;
+    endUTC!: Date;
+    loc!: string;
+    locnum!: number;
+    pal!: string;
+    program!: string;
+    result!: string;
+    elapsed!: string;
+    active!: string;
+    tools?: { [key: string] : ToolUse; } | undefined;
+
+    constructor(data?: ILogEntry) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -2073,56 +2215,470 @@ export class HistoricData implements IHistoricData {
             }
         }
         if (!data) {
-            this.jobs = {};
-            this.stationUse = [];
+            this.material = [];
         }
     }
 
     init(data?: any) {
         if (data) {
-            if (data["Jobs"]) {
-                this.jobs = {} as any;
-                for (let key in data["Jobs"]) {
-                    if (data["Jobs"].hasOwnProperty(key))
-                        this.jobs![key] = data["Jobs"][key] ? HistoricJob.fromJS(data["Jobs"][key]) : new HistoricJob();
+            if (data["details"]) {
+                this.details = {} as any;
+                for (let key in data["details"]) {
+                    if (data["details"].hasOwnProperty(key))
+                        this.details![key] = data["details"][key];
                 }
             }
-            if (data["StationUse"] && data["StationUse"].constructor === Array) {
-                this.stationUse = [] as any;
-                for (let item of data["StationUse"])
-                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
+            this.counter = data["counter"];
+            if (data["material"] && data["material"].constructor === Array) {
+                this.material = [] as any;
+                for (let item of data["material"])
+                    this.material!.push(LogMaterial.fromJS(item));
+            }
+            this.type = data["type"];
+            this.startofcycle = data["startofcycle"];
+            this.endUTC = data["endUTC"] ? new Date(data["endUTC"].toString()) : <any>undefined;
+            this.loc = data["loc"];
+            this.locnum = data["locnum"];
+            this.pal = data["pal"];
+            this.program = data["program"];
+            this.result = data["result"];
+            this.elapsed = data["elapsed"];
+            this.active = data["active"];
+            if (data["tools"]) {
+                this.tools = {} as any;
+                for (let key in data["tools"]) {
+                    if (data["tools"].hasOwnProperty(key))
+                        this.tools![key] = data["tools"][key] ? ToolUse.fromJS(data["tools"][key]) : new ToolUse();
+                }
             }
         }
     }
 
-    static fromJS(data: any): HistoricData {
+    static fromJS(data: any): LogEntry {
         data = typeof data === 'object' ? data : {};
-        let result = new HistoricData();
+        let result = new LogEntry();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        if (this.jobs) {
-            data["Jobs"] = {};
-            for (let key in this.jobs) {
-                if (this.jobs.hasOwnProperty(key))
-                    data["Jobs"][key] = this.jobs[key] ? this.jobs[key].toJSON() : <any>undefined;
+        if (this.details) {
+            data["details"] = {};
+            for (let key in this.details) {
+                if (this.details.hasOwnProperty(key))
+                    data["details"][key] = this.details[key];
             }
+        }
+        data["counter"] = this.counter;
+        if (this.material && this.material.constructor === Array) {
+            data["material"] = [];
+            for (let item of this.material)
+                data["material"].push(item.toJSON());
+        }
+        data["type"] = this.type;
+        data["startofcycle"] = this.startofcycle;
+        data["endUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
+        data["loc"] = this.loc;
+        data["locnum"] = this.locnum;
+        data["pal"] = this.pal;
+        data["program"] = this.program;
+        data["result"] = this.result;
+        data["elapsed"] = this.elapsed;
+        data["active"] = this.active;
+        if (this.tools) {
+            data["tools"] = {};
+            for (let key in this.tools) {
+                if (this.tools.hasOwnProperty(key))
+                    data["tools"][key] = this.tools[key] ? this.tools[key].toJSON() : <any>undefined;
+            }
+        }
+        return data; 
+    }
+}
+
+export interface ILogEntry {
+    details?: { [key: string] : string; } | undefined;
+    counter: number;
+    material: LogMaterial[];
+    type: LogType;
+    startofcycle: boolean;
+    endUTC: Date;
+    loc: string;
+    locnum: number;
+    pal: string;
+    program: string;
+    result: string;
+    elapsed: string;
+    active: string;
+    tools?: { [key: string] : ToolUse; } | undefined;
+}
+
+export class LogMaterial implements ILogMaterial {
+    id!: number;
+    uniq!: string;
+    part!: string;
+    proc!: number;
+    numproc!: number;
+    face!: string;
+    serial?: string | undefined;
+    workorder?: string | undefined;
+
+    constructor(data?: ILogMaterial) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.id = data["id"];
+            this.uniq = data["uniq"];
+            this.part = data["part"];
+            this.proc = data["proc"];
+            this.numproc = data["numproc"];
+            this.face = data["face"];
+            this.serial = data["serial"];
+            this.workorder = data["workorder"];
+        }
+    }
+
+    static fromJS(data: any): LogMaterial {
+        data = typeof data === 'object' ? data : {};
+        let result = new LogMaterial();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["uniq"] = this.uniq;
+        data["part"] = this.part;
+        data["proc"] = this.proc;
+        data["numproc"] = this.numproc;
+        data["face"] = this.face;
+        data["serial"] = this.serial;
+        data["workorder"] = this.workorder;
+        return data; 
+    }
+}
+
+export interface ILogMaterial {
+    id: number;
+    uniq: string;
+    part: string;
+    proc: number;
+    numproc: number;
+    face: string;
+    serial?: string | undefined;
+    workorder?: string | undefined;
+}
+
+export enum LogType {
+    LoadUnloadCycle = "LoadUnloadCycle", 
+    MachineCycle = "MachineCycle", 
+    PartMark = "PartMark", 
+    Inspection = "Inspection", 
+    OrderAssignment = "OrderAssignment", 
+    GeneralMessage = "GeneralMessage", 
+    PalletCycle = "PalletCycle", 
+    FinalizeWorkorder = "FinalizeWorkorder", 
+    InspectionResult = "InspectionResult", 
+    Wash = "Wash", 
+    AddToQueue = "AddToQueue", 
+    RemoveFromQueue = "RemoveFromQueue", 
+    InspectionForce = "InspectionForce", 
+    PalletOnRotaryInbound = "PalletOnRotaryInbound", 
+    PalletInStocker = "PalletInStocker", 
+    SignalQuarantine = "SignalQuarantine", 
+    InvalidateCycle = "InvalidateCycle", 
+    SwapMaterialOnPallet = "SwapMaterialOnPallet", 
+}
+
+export class ToolUse implements IToolUse {
+    toolUseDuringCycle!: string;
+    totalToolUseAtEndOfCycle!: string;
+    configuredToolLife!: string;
+    toolChangeOccurred?: boolean | undefined;
+
+    constructor(data?: IToolUse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.toolUseDuringCycle = data["ToolUseDuringCycle"];
+            this.totalToolUseAtEndOfCycle = data["TotalToolUseAtEndOfCycle"];
+            this.configuredToolLife = data["ConfiguredToolLife"];
+            this.toolChangeOccurred = data["ToolChangeOccurred"];
+        }
+    }
+
+    static fromJS(data: any): ToolUse {
+        data = typeof data === 'object' ? data : {};
+        let result = new ToolUse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ToolUseDuringCycle"] = this.toolUseDuringCycle;
+        data["TotalToolUseAtEndOfCycle"] = this.totalToolUseAtEndOfCycle;
+        data["ConfiguredToolLife"] = this.configuredToolLife;
+        data["ToolChangeOccurred"] = this.toolChangeOccurred;
+        return data; 
+    }
+}
+
+export interface IToolUse {
+    toolUseDuringCycle: string;
+    totalToolUseAtEndOfCycle: string;
+    configuredToolLife: string;
+    toolChangeOccurred?: boolean | undefined;
+}
+
+export class MaterialProcessActualPath implements IMaterialProcessActualPath {
+    materialID!: number;
+    process!: number;
+    pallet!: string;
+    loadStation!: number;
+    stops!: Stop[];
+    unloadStation!: number;
+
+    constructor(data?: IMaterialProcessActualPath) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.stops = [];
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.materialID = data["MaterialID"];
+            this.process = data["Process"];
+            this.pallet = data["Pallet"];
+            this.loadStation = data["LoadStation"];
+            if (data["Stops"] && data["Stops"].constructor === Array) {
+                this.stops = [] as any;
+                for (let item of data["Stops"])
+                    this.stops!.push(Stop.fromJS(item));
+            }
+            this.unloadStation = data["UnloadStation"];
+        }
+    }
+
+    static fromJS(data: any): MaterialProcessActualPath {
+        data = typeof data === 'object' ? data : {};
+        let result = new MaterialProcessActualPath();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["MaterialID"] = this.materialID;
+        data["Process"] = this.process;
+        data["Pallet"] = this.pallet;
+        data["LoadStation"] = this.loadStation;
+        if (this.stops && this.stops.constructor === Array) {
+            data["Stops"] = [];
+            for (let item of this.stops)
+                data["Stops"].push(item.toJSON());
+        }
+        data["UnloadStation"] = this.unloadStation;
+        return data; 
+    }
+}
+
+export interface IMaterialProcessActualPath {
+    materialID: number;
+    process: number;
+    pallet: string;
+    loadStation: number;
+    stops: Stop[];
+    unloadStation: number;
+}
+
+export class Stop implements IStop {
+    stationName!: string;
+    stationNum!: number;
+
+    constructor(data?: IStop) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.stationName = data["StationName"];
+            this.stationNum = data["StationNum"];
+        }
+    }
+
+    static fromJS(data: any): Stop {
+        data = typeof data === 'object' ? data : {};
+        let result = new Stop();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["StationName"] = this.stationName;
+        data["StationNum"] = this.stationNum;
+        return data; 
+    }
+}
+
+export interface IStop {
+    stationName: string;
+    stationNum: number;
+}
+
+export class NewJobs implements INewJobs {
+    scheduleId!: string;
+    jobs!: JobPlan[];
+    stationUse?: SimulatedStationUtilization[] | undefined;
+    extraParts?: { [key: string] : number; } | undefined;
+    currentUnfilledWorkorders?: PartWorkorder[] | undefined;
+    queueSizes?: { [key: string] : QueueSize; } | undefined;
+    programs?: ProgramEntry[] | undefined;
+    debugMessage?: string | undefined;
+    archiveCompletedJobs!: boolean;
+
+    constructor(data?: INewJobs) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.jobs = [];
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.scheduleId = data["ScheduleId"];
+            if (data["Jobs"] && data["Jobs"].constructor === Array) {
+                this.jobs = [] as any;
+                for (let item of data["Jobs"])
+                    this.jobs!.push(JobPlan.fromJS(item));
+            }
+            if (data["StationUse"] && data["StationUse"].constructor === Array) {
+                this.stationUse = [] as any;
+                for (let item of data["StationUse"])
+                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
+            }
+            if (data["ExtraParts"]) {
+                this.extraParts = {} as any;
+                for (let key in data["ExtraParts"]) {
+                    if (data["ExtraParts"].hasOwnProperty(key))
+                        this.extraParts![key] = data["ExtraParts"][key];
+                }
+            }
+            if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
+                this.currentUnfilledWorkorders = [] as any;
+                for (let item of data["CurrentUnfilledWorkorders"])
+                    this.currentUnfilledWorkorders!.push(PartWorkorder.fromJS(item));
+            }
+            if (data["QueueSizes"]) {
+                this.queueSizes = {} as any;
+                for (let key in data["QueueSizes"]) {
+                    if (data["QueueSizes"].hasOwnProperty(key))
+                        this.queueSizes![key] = data["QueueSizes"][key] ? QueueSize.fromJS(data["QueueSizes"][key]) : new QueueSize();
+                }
+            }
+            if (data["Programs"] && data["Programs"].constructor === Array) {
+                this.programs = [] as any;
+                for (let item of data["Programs"])
+                    this.programs!.push(ProgramEntry.fromJS(item));
+            }
+            this.debugMessage = data["DebugMessage"];
+            this.archiveCompletedJobs = data["ArchiveCompletedJobs"];
+        }
+    }
+
+    static fromJS(data: any): NewJobs {
+        data = typeof data === 'object' ? data : {};
+        let result = new NewJobs();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ScheduleId"] = this.scheduleId;
+        if (this.jobs && this.jobs.constructor === Array) {
+            data["Jobs"] = [];
+            for (let item of this.jobs)
+                data["Jobs"].push(item.toJSON());
         }
         if (this.stationUse && this.stationUse.constructor === Array) {
             data["StationUse"] = [];
             for (let item of this.stationUse)
                 data["StationUse"].push(item.toJSON());
         }
+        if (this.extraParts) {
+            data["ExtraParts"] = {};
+            for (let key in this.extraParts) {
+                if (this.extraParts.hasOwnProperty(key))
+                    data["ExtraParts"][key] = this.extraParts[key];
+            }
+        }
+        if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
+            data["CurrentUnfilledWorkorders"] = [];
+            for (let item of this.currentUnfilledWorkorders)
+                data["CurrentUnfilledWorkorders"].push(item.toJSON());
+        }
+        if (this.queueSizes) {
+            data["QueueSizes"] = {};
+            for (let key in this.queueSizes) {
+                if (this.queueSizes.hasOwnProperty(key))
+                    data["QueueSizes"][key] = this.queueSizes[key] ? this.queueSizes[key].toJSON() : <any>undefined;
+            }
+        }
+        if (this.programs && this.programs.constructor === Array) {
+            data["Programs"] = [];
+            for (let item of this.programs)
+                data["Programs"].push(item.toJSON());
+        }
+        data["DebugMessage"] = this.debugMessage;
+        data["ArchiveCompletedJobs"] = this.archiveCompletedJobs;
         return data; 
     }
 }
 
-export interface IHistoricData {
-    jobs: { [key: string] : HistoricJob; };
-    stationUse: SimulatedStationUtilization[];
+export interface INewJobs {
+    scheduleId: string;
+    jobs: JobPlan[];
+    stationUse?: SimulatedStationUtilization[] | undefined;
+    extraParts?: { [key: string] : number; } | undefined;
+    currentUnfilledWorkorders?: PartWorkorder[] | undefined;
+    queueSizes?: { [key: string] : QueueSize; } | undefined;
+    programs?: ProgramEntry[] | undefined;
+    debugMessage?: string | undefined;
+    archiveCompletedJobs: boolean;
 }
 
 export class JobPlan implements IJobPlan {
@@ -2235,95 +2791,6 @@ export interface IJobPlan {
     holdEntireJob?: JobHoldPattern | undefined;
     cyclesOnFirstProcess: number[];
     procsAndPaths: ProcessInfo[];
-}
-
-export class HistoricJob extends JobPlan implements IHistoricJob {
-    decrements?: DecrementQuantity[] | undefined;
-
-    constructor(data?: IHistoricJob) {
-        super(data);
-    }
-
-    init(data?: any) {
-        super.init(data);
-        if (data) {
-            if (data["Decrements"] && data["Decrements"].constructor === Array) {
-                this.decrements = [] as any;
-                for (let item of data["Decrements"])
-                    this.decrements!.push(DecrementQuantity.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): HistoricJob {
-        data = typeof data === 'object' ? data : {};
-        let result = new HistoricJob();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (this.decrements && this.decrements.constructor === Array) {
-            data["Decrements"] = [];
-            for (let item of this.decrements)
-                data["Decrements"].push(item.toJSON());
-        }
-        super.toJSON(data);
-        return data; 
-    }
-}
-
-export interface IHistoricJob extends IJobPlan {
-    decrements?: DecrementQuantity[] | undefined;
-}
-
-export class DecrementQuantity implements IDecrementQuantity {
-    decrementId!: number;
-    proc1Path!: number;
-    timeUTC!: Date;
-    quantity!: number;
-
-    constructor(data?: IDecrementQuantity) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.decrementId = data["DecrementId"];
-            this.proc1Path = data["Proc1Path"];
-            this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
-            this.quantity = data["Quantity"];
-        }
-    }
-
-    static fromJS(data: any): DecrementQuantity {
-        data = typeof data === 'object' ? data : {};
-        let result = new DecrementQuantity();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["DecrementId"] = this.decrementId;
-        data["Proc1Path"] = this.proc1Path;
-        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["Quantity"] = this.quantity;
-        return data; 
-    }
-}
-
-export interface IDecrementQuantity {
-    decrementId: number;
-    proc1Path: number;
-    timeUTC: Date;
-    quantity: number;
 }
 
 export class JobHoldPattern implements IJobHoldPattern {
@@ -2833,86 +3300,6 @@ export interface ISimulatedStationUtilization {
     plannedDownTime: string;
 }
 
-export class PlannedSchedule implements IPlannedSchedule {
-    latestScheduleId!: string;
-    jobs!: JobPlan[];
-    extraParts!: { [key: string] : number; };
-    currentUnfilledWorkorders?: PartWorkorder[] | undefined;
-
-    constructor(data?: IPlannedSchedule) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.jobs = [];
-            this.extraParts = {};
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.latestScheduleId = data["LatestScheduleId"];
-            if (data["Jobs"] && data["Jobs"].constructor === Array) {
-                this.jobs = [] as any;
-                for (let item of data["Jobs"])
-                    this.jobs!.push(JobPlan.fromJS(item));
-            }
-            if (data["ExtraParts"]) {
-                this.extraParts = {} as any;
-                for (let key in data["ExtraParts"]) {
-                    if (data["ExtraParts"].hasOwnProperty(key))
-                        this.extraParts![key] = data["ExtraParts"][key];
-                }
-            }
-            if (data["CurrentUnfilledWorkorders"] && data["CurrentUnfilledWorkorders"].constructor === Array) {
-                this.currentUnfilledWorkorders = [] as any;
-                for (let item of data["CurrentUnfilledWorkorders"])
-                    this.currentUnfilledWorkorders!.push(PartWorkorder.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): PlannedSchedule {
-        data = typeof data === 'object' ? data : {};
-        let result = new PlannedSchedule();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["LatestScheduleId"] = this.latestScheduleId;
-        if (this.jobs && this.jobs.constructor === Array) {
-            data["Jobs"] = [];
-            for (let item of this.jobs)
-                data["Jobs"].push(item.toJSON());
-        }
-        if (this.extraParts) {
-            data["ExtraParts"] = {};
-            for (let key in this.extraParts) {
-                if (this.extraParts.hasOwnProperty(key))
-                    data["ExtraParts"][key] = this.extraParts[key];
-            }
-        }
-        if (this.currentUnfilledWorkorders && this.currentUnfilledWorkorders.constructor === Array) {
-            data["CurrentUnfilledWorkorders"] = [];
-            for (let item of this.currentUnfilledWorkorders)
-                data["CurrentUnfilledWorkorders"].push(item.toJSON());
-        }
-        return data; 
-    }
-}
-
-export interface IPlannedSchedule {
-    latestScheduleId: string;
-    jobs: JobPlan[];
-    extraParts: { [key: string] : number; };
-    currentUnfilledWorkorders?: PartWorkorder[] | undefined;
-}
-
 export class PartWorkorder implements IPartWorkorder {
     workorderId!: string;
     part!: string;
@@ -2963,6 +3350,90 @@ export interface IPartWorkorder {
     quantity: number;
     dueDate: Date;
     priority: number;
+}
+
+export class QueueSize implements IQueueSize {
+    maxSizeBeforeStopUnloading?: number | undefined;
+
+    constructor(data?: IQueueSize) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.maxSizeBeforeStopUnloading = data["MaxSizeBeforeStopUnloading"];
+        }
+    }
+
+    static fromJS(data: any): QueueSize {
+        data = typeof data === 'object' ? data : {};
+        let result = new QueueSize();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
+        return data; 
+    }
+}
+
+export interface IQueueSize {
+    maxSizeBeforeStopUnloading?: number | undefined;
+}
+
+export class ProgramEntry implements IProgramEntry {
+    programName!: string;
+    comment!: string;
+    programContent!: string;
+    revision!: number;
+
+    constructor(data?: IProgramEntry) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.programName = data["ProgramName"];
+            this.comment = data["Comment"];
+            this.programContent = data["ProgramContent"];
+            this.revision = data["Revision"];
+        }
+    }
+
+    static fromJS(data: any): ProgramEntry {
+        data = typeof data === 'object' ? data : {};
+        let result = new ProgramEntry();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ProgramName"] = this.programName;
+        data["Comment"] = this.comment;
+        data["ProgramContent"] = this.programContent;
+        data["Revision"] = this.revision;
+        return data; 
+    }
+}
+
+export interface IProgramEntry {
+    programName: string;
+    comment: string;
+    programContent: string;
+    revision: number;
 }
 
 export class CurrentStatus implements ICurrentStatus {
@@ -3155,6 +3626,54 @@ export interface IInProcessJob extends IJobPlan {
     decrements?: DecrementQuantity[] | undefined;
     precedence?: number[][] | undefined;
     assignedWorkorders?: string[] | undefined;
+}
+
+export class DecrementQuantity implements IDecrementQuantity {
+    decrementId!: number;
+    proc1Path!: number;
+    timeUTC!: Date;
+    quantity!: number;
+
+    constructor(data?: IDecrementQuantity) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.decrementId = data["DecrementId"];
+            this.proc1Path = data["Proc1Path"];
+            this.timeUTC = data["TimeUTC"] ? new Date(data["TimeUTC"].toString()) : <any>undefined;
+            this.quantity = data["Quantity"];
+        }
+    }
+
+    static fromJS(data: any): DecrementQuantity {
+        data = typeof data === 'object' ? data : {};
+        let result = new DecrementQuantity();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["DecrementId"] = this.decrementId;
+        data["Proc1Path"] = this.proc1Path;
+        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+        data["Quantity"] = this.quantity;
+        return data; 
+    }
+}
+
+export interface IDecrementQuantity {
+    decrementId: number;
+    proc1Path: number;
+    timeUTC: Date;
+    quantity: number;
 }
 
 export class PalletStatus implements IPalletStatus {
@@ -3503,54 +4022,173 @@ export enum ActionType {
     Machining = "Machining", 
 }
 
-export class QueueSize implements IQueueSize {
-    maxSizeBeforeStopUnloading?: number | undefined;
+export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {
+    oldMaterialID!: number;
+    newMaterialID!: number;
+    editedEvents!: LogEntry[];
 
-    constructor(data?: IQueueSize) {
+    constructor(data?: IEditMaterialInLogEvents) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
                     (<any>this)[property] = (<any>data)[property];
             }
         }
+        if (!data) {
+            this.editedEvents = [];
+        }
     }
 
     init(data?: any) {
         if (data) {
-            this.maxSizeBeforeStopUnloading = data["MaxSizeBeforeStopUnloading"];
+            this.oldMaterialID = data["OldMaterialID"];
+            this.newMaterialID = data["NewMaterialID"];
+            if (data["EditedEvents"] && data["EditedEvents"].constructor === Array) {
+                this.editedEvents = [] as any;
+                for (let item of data["EditedEvents"])
+                    this.editedEvents!.push(LogEntry.fromJS(item));
+            }
         }
     }
 
-    static fromJS(data: any): QueueSize {
+    static fromJS(data: any): EditMaterialInLogEvents {
         data = typeof data === 'object' ? data : {};
-        let result = new QueueSize();
+        let result = new EditMaterialInLogEvents();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
+        data["OldMaterialID"] = this.oldMaterialID;
+        data["NewMaterialID"] = this.newMaterialID;
+        if (this.editedEvents && this.editedEvents.constructor === Array) {
+            data["EditedEvents"] = [];
+            for (let item of this.editedEvents)
+                data["EditedEvents"].push(item.toJSON());
+        }
         return data; 
     }
 }
 
-export interface IQueueSize {
-    maxSizeBeforeStopUnloading?: number | undefined;
+export interface IEditMaterialInLogEvents {
+    oldMaterialID: number;
+    newMaterialID: number;
+    editedEvents: LogEntry[];
 }
 
-export class NewJobs implements INewJobs {
-    scheduleId!: string;
-    jobs!: JobPlan[];
-    stationUse?: SimulatedStationUtilization[] | undefined;
-    extraParts?: { [key: string] : number; } | undefined;
-    currentUnfilledWorkorders?: PartWorkorder[] | undefined;
-    queueSizes?: { [key: string] : QueueSize; } | undefined;
-    programs?: ProgramEntry[] | undefined;
-    debugMessage?: string | undefined;
-    archiveCompletedJobs!: boolean;
+export class HistoricData implements IHistoricData {
+    jobs!: { [key: string] : HistoricJob; };
+    stationUse!: SimulatedStationUtilization[];
 
-    constructor(data?: INewJobs) {
+    constructor(data?: IHistoricData) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.jobs = {};
+            this.stationUse = [];
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            if (data["Jobs"]) {
+                this.jobs = {} as any;
+                for (let key in data["Jobs"]) {
+                    if (data["Jobs"].hasOwnProperty(key))
+                        this.jobs![key] = data["Jobs"][key] ? HistoricJob.fromJS(data["Jobs"][key]) : new HistoricJob();
+                }
+            }
+            if (data["StationUse"] && data["StationUse"].constructor === Array) {
+                this.stationUse = [] as any;
+                for (let item of data["StationUse"])
+                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): HistoricData {
+        data = typeof data === 'object' ? data : {};
+        let result = new HistoricData();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (this.jobs) {
+            data["Jobs"] = {};
+            for (let key in this.jobs) {
+                if (this.jobs.hasOwnProperty(key))
+                    data["Jobs"][key] = this.jobs[key] ? this.jobs[key].toJSON() : <any>undefined;
+            }
+        }
+        if (this.stationUse && this.stationUse.constructor === Array) {
+            data["StationUse"] = [];
+            for (let item of this.stationUse)
+                data["StationUse"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IHistoricData {
+    jobs: { [key: string] : HistoricJob; };
+    stationUse: SimulatedStationUtilization[];
+}
+
+export class HistoricJob extends JobPlan implements IHistoricJob {
+    decrements?: DecrementQuantity[] | undefined;
+
+    constructor(data?: IHistoricJob) {
+        super(data);
+    }
+
+    init(data?: any) {
+        super.init(data);
+        if (data) {
+            if (data["Decrements"] && data["Decrements"].constructor === Array) {
+                this.decrements = [] as any;
+                for (let item of data["Decrements"])
+                    this.decrements!.push(DecrementQuantity.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): HistoricJob {
+        data = typeof data === 'object' ? data : {};
+        let result = new HistoricJob();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (this.decrements && this.decrements.constructor === Array) {
+            data["Decrements"] = [];
+            for (let item of this.decrements)
+                data["Decrements"].push(item.toJSON());
+        }
+        super.toJSON(data);
+        return data; 
+    }
+}
+
+export interface IHistoricJob extends IJobPlan {
+    decrements?: DecrementQuantity[] | undefined;
+}
+
+export class PlannedSchedule implements IPlannedSchedule {
+    latestScheduleId!: string;
+    jobs!: JobPlan[];
+    extraParts!: { [key: string] : number; };
+    currentUnfilledWorkorders?: PartWorkorder[] | undefined;
+
+    constructor(data?: IPlannedSchedule) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -3559,21 +4197,17 @@ export class NewJobs implements INewJobs {
         }
         if (!data) {
             this.jobs = [];
+            this.extraParts = {};
         }
     }
 
     init(data?: any) {
         if (data) {
-            this.scheduleId = data["ScheduleId"];
+            this.latestScheduleId = data["LatestScheduleId"];
             if (data["Jobs"] && data["Jobs"].constructor === Array) {
                 this.jobs = [] as any;
                 for (let item of data["Jobs"])
                     this.jobs!.push(JobPlan.fromJS(item));
-            }
-            if (data["StationUse"] && data["StationUse"].constructor === Array) {
-                this.stationUse = [] as any;
-                for (let item of data["StationUse"])
-                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
             }
             if (data["ExtraParts"]) {
                 this.extraParts = {} as any;
@@ -3587,42 +4221,23 @@ export class NewJobs implements INewJobs {
                 for (let item of data["CurrentUnfilledWorkorders"])
                     this.currentUnfilledWorkorders!.push(PartWorkorder.fromJS(item));
             }
-            if (data["QueueSizes"]) {
-                this.queueSizes = {} as any;
-                for (let key in data["QueueSizes"]) {
-                    if (data["QueueSizes"].hasOwnProperty(key))
-                        this.queueSizes![key] = data["QueueSizes"][key] ? QueueSize.fromJS(data["QueueSizes"][key]) : new QueueSize();
-                }
-            }
-            if (data["Programs"] && data["Programs"].constructor === Array) {
-                this.programs = [] as any;
-                for (let item of data["Programs"])
-                    this.programs!.push(ProgramEntry.fromJS(item));
-            }
-            this.debugMessage = data["DebugMessage"];
-            this.archiveCompletedJobs = data["ArchiveCompletedJobs"];
         }
     }
 
-    static fromJS(data: any): NewJobs {
+    static fromJS(data: any): PlannedSchedule {
         data = typeof data === 'object' ? data : {};
-        let result = new NewJobs();
+        let result = new PlannedSchedule();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["ScheduleId"] = this.scheduleId;
+        data["LatestScheduleId"] = this.latestScheduleId;
         if (this.jobs && this.jobs.constructor === Array) {
             data["Jobs"] = [];
             for (let item of this.jobs)
                 data["Jobs"].push(item.toJSON());
-        }
-        if (this.stationUse && this.stationUse.constructor === Array) {
-            data["StationUse"] = [];
-            for (let item of this.stationUse)
-                data["StationUse"].push(item.toJSON());
         }
         if (this.extraParts) {
             data["ExtraParts"] = {};
@@ -3636,82 +4251,15 @@ export class NewJobs implements INewJobs {
             for (let item of this.currentUnfilledWorkorders)
                 data["CurrentUnfilledWorkorders"].push(item.toJSON());
         }
-        if (this.queueSizes) {
-            data["QueueSizes"] = {};
-            for (let key in this.queueSizes) {
-                if (this.queueSizes.hasOwnProperty(key))
-                    data["QueueSizes"][key] = this.queueSizes[key] ? this.queueSizes[key].toJSON() : <any>undefined;
-            }
-        }
-        if (this.programs && this.programs.constructor === Array) {
-            data["Programs"] = [];
-            for (let item of this.programs)
-                data["Programs"].push(item.toJSON());
-        }
-        data["DebugMessage"] = this.debugMessage;
-        data["ArchiveCompletedJobs"] = this.archiveCompletedJobs;
         return data; 
     }
 }
 
-export interface INewJobs {
-    scheduleId: string;
+export interface IPlannedSchedule {
+    latestScheduleId: string;
     jobs: JobPlan[];
-    stationUse?: SimulatedStationUtilization[] | undefined;
-    extraParts?: { [key: string] : number; } | undefined;
+    extraParts: { [key: string] : number; };
     currentUnfilledWorkorders?: PartWorkorder[] | undefined;
-    queueSizes?: { [key: string] : QueueSize; } | undefined;
-    programs?: ProgramEntry[] | undefined;
-    debugMessage?: string | undefined;
-    archiveCompletedJobs: boolean;
-}
-
-export class ProgramEntry implements IProgramEntry {
-    programName!: string;
-    comment!: string;
-    programContent!: string;
-    revision!: number;
-
-    constructor(data?: IProgramEntry) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.programName = data["ProgramName"];
-            this.comment = data["Comment"];
-            this.programContent = data["ProgramContent"];
-            this.revision = data["Revision"];
-        }
-    }
-
-    static fromJS(data: any): ProgramEntry {
-        data = typeof data === 'object' ? data : {};
-        let result = new ProgramEntry();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ProgramName"] = this.programName;
-        data["Comment"] = this.comment;
-        data["ProgramContent"] = this.programContent;
-        data["Revision"] = this.revision;
-        return data; 
-    }
-}
-
-export interface IProgramEntry {
-    programName: string;
-    comment: string;
-    programContent: string;
-    revision: number;
 }
 
 export class QueuePosition implements IQueuePosition {
@@ -3752,6 +4300,46 @@ export class QueuePosition implements IQueuePosition {
 export interface IQueuePosition {
     queue: string;
     position: number;
+}
+
+export class MatToPutOnPallet implements IMatToPutOnPallet {
+    pallet!: string;
+    materialIDToSetOnPallet!: number;
+
+    constructor(data?: IMatToPutOnPallet) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.pallet = data["Pallet"];
+            this.materialIDToSetOnPallet = data["MaterialIDToSetOnPallet"];
+        }
+    }
+
+    static fromJS(data: any): MatToPutOnPallet {
+        data = typeof data === 'object' ? data : {};
+        let result = new MatToPutOnPallet();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Pallet"] = this.pallet;
+        data["MaterialIDToSetOnPallet"] = this.materialIDToSetOnPallet;
+        return data; 
+    }
+}
+
+export interface IMatToPutOnPallet {
+    pallet: string;
+    materialIDToSetOnPallet: number;
 }
 
 export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
@@ -3808,367 +4396,6 @@ export interface IJobAndDecrementQuantity {
     timeUTC: Date;
     part: string;
     quantity: number;
-}
-
-export class LogEntry implements ILogEntry {
-    details?: { [key: string] : string; } | undefined;
-    counter!: number;
-    material!: LogMaterial[];
-    type!: LogType;
-    startofcycle!: boolean;
-    endUTC!: Date;
-    loc!: string;
-    locnum!: number;
-    pal!: string;
-    program!: string;
-    result!: string;
-    elapsed!: string;
-    active!: string;
-    tools?: { [key: string] : ToolUse; } | undefined;
-
-    constructor(data?: ILogEntry) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.material = [];
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            if (data["details"]) {
-                this.details = {} as any;
-                for (let key in data["details"]) {
-                    if (data["details"].hasOwnProperty(key))
-                        this.details![key] = data["details"][key];
-                }
-            }
-            this.counter = data["counter"];
-            if (data["material"] && data["material"].constructor === Array) {
-                this.material = [] as any;
-                for (let item of data["material"])
-                    this.material!.push(LogMaterial.fromJS(item));
-            }
-            this.type = data["type"];
-            this.startofcycle = data["startofcycle"];
-            this.endUTC = data["endUTC"] ? new Date(data["endUTC"].toString()) : <any>undefined;
-            this.loc = data["loc"];
-            this.locnum = data["locnum"];
-            this.pal = data["pal"];
-            this.program = data["program"];
-            this.result = data["result"];
-            this.elapsed = data["elapsed"];
-            this.active = data["active"];
-            if (data["tools"]) {
-                this.tools = {} as any;
-                for (let key in data["tools"]) {
-                    if (data["tools"].hasOwnProperty(key))
-                        this.tools![key] = data["tools"][key] ? ToolUse.fromJS(data["tools"][key]) : new ToolUse();
-                }
-            }
-        }
-    }
-
-    static fromJS(data: any): LogEntry {
-        data = typeof data === 'object' ? data : {};
-        let result = new LogEntry();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (this.details) {
-            data["details"] = {};
-            for (let key in this.details) {
-                if (this.details.hasOwnProperty(key))
-                    data["details"][key] = this.details[key];
-            }
-        }
-        data["counter"] = this.counter;
-        if (this.material && this.material.constructor === Array) {
-            data["material"] = [];
-            for (let item of this.material)
-                data["material"].push(item.toJSON());
-        }
-        data["type"] = this.type;
-        data["startofcycle"] = this.startofcycle;
-        data["endUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
-        data["loc"] = this.loc;
-        data["locnum"] = this.locnum;
-        data["pal"] = this.pal;
-        data["program"] = this.program;
-        data["result"] = this.result;
-        data["elapsed"] = this.elapsed;
-        data["active"] = this.active;
-        if (this.tools) {
-            data["tools"] = {};
-            for (let key in this.tools) {
-                if (this.tools.hasOwnProperty(key))
-                    data["tools"][key] = this.tools[key] ? this.tools[key].toJSON() : <any>undefined;
-            }
-        }
-        return data; 
-    }
-}
-
-export interface ILogEntry {
-    details?: { [key: string] : string; } | undefined;
-    counter: number;
-    material: LogMaterial[];
-    type: LogType;
-    startofcycle: boolean;
-    endUTC: Date;
-    loc: string;
-    locnum: number;
-    pal: string;
-    program: string;
-    result: string;
-    elapsed: string;
-    active: string;
-    tools?: { [key: string] : ToolUse; } | undefined;
-}
-
-export class LogMaterial implements ILogMaterial {
-    id!: number;
-    uniq!: string;
-    part!: string;
-    proc!: number;
-    numproc!: number;
-    face!: string;
-    serial?: string | undefined;
-    workorder?: string | undefined;
-
-    constructor(data?: ILogMaterial) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.id = data["id"];
-            this.uniq = data["uniq"];
-            this.part = data["part"];
-            this.proc = data["proc"];
-            this.numproc = data["numproc"];
-            this.face = data["face"];
-            this.serial = data["serial"];
-            this.workorder = data["workorder"];
-        }
-    }
-
-    static fromJS(data: any): LogMaterial {
-        data = typeof data === 'object' ? data : {};
-        let result = new LogMaterial();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["uniq"] = this.uniq;
-        data["part"] = this.part;
-        data["proc"] = this.proc;
-        data["numproc"] = this.numproc;
-        data["face"] = this.face;
-        data["serial"] = this.serial;
-        data["workorder"] = this.workorder;
-        return data; 
-    }
-}
-
-export interface ILogMaterial {
-    id: number;
-    uniq: string;
-    part: string;
-    proc: number;
-    numproc: number;
-    face: string;
-    serial?: string | undefined;
-    workorder?: string | undefined;
-}
-
-export enum LogType {
-    LoadUnloadCycle = "LoadUnloadCycle", 
-    MachineCycle = "MachineCycle", 
-    PartMark = "PartMark", 
-    Inspection = "Inspection", 
-    OrderAssignment = "OrderAssignment", 
-    GeneralMessage = "GeneralMessage", 
-    PalletCycle = "PalletCycle", 
-    FinalizeWorkorder = "FinalizeWorkorder", 
-    InspectionResult = "InspectionResult", 
-    Wash = "Wash", 
-    AddToQueue = "AddToQueue", 
-    RemoveFromQueue = "RemoveFromQueue", 
-    InspectionForce = "InspectionForce", 
-    PalletOnRotaryInbound = "PalletOnRotaryInbound", 
-    PalletInStocker = "PalletInStocker", 
-    SignalQuarantine = "SignalQuarantine", 
-}
-
-export class ToolUse implements IToolUse {
-    toolUseDuringCycle!: string;
-    totalToolUseAtEndOfCycle!: string;
-    configuredToolLife!: string;
-    toolChangeOccurred?: boolean | undefined;
-
-    constructor(data?: IToolUse) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.toolUseDuringCycle = data["ToolUseDuringCycle"];
-            this.totalToolUseAtEndOfCycle = data["TotalToolUseAtEndOfCycle"];
-            this.configuredToolLife = data["ConfiguredToolLife"];
-            this.toolChangeOccurred = data["ToolChangeOccurred"];
-        }
-    }
-
-    static fromJS(data: any): ToolUse {
-        data = typeof data === 'object' ? data : {};
-        let result = new ToolUse();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ToolUseDuringCycle"] = this.toolUseDuringCycle;
-        data["TotalToolUseAtEndOfCycle"] = this.totalToolUseAtEndOfCycle;
-        data["ConfiguredToolLife"] = this.configuredToolLife;
-        data["ToolChangeOccurred"] = this.toolChangeOccurred;
-        return data; 
-    }
-}
-
-export interface IToolUse {
-    toolUseDuringCycle: string;
-    totalToolUseAtEndOfCycle: string;
-    configuredToolLife: string;
-    toolChangeOccurred?: boolean | undefined;
-}
-
-export class MaterialProcessActualPath implements IMaterialProcessActualPath {
-    materialID!: number;
-    process!: number;
-    pallet!: string;
-    loadStation!: number;
-    stops!: Stop[];
-    unloadStation!: number;
-
-    constructor(data?: IMaterialProcessActualPath) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.stops = [];
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.materialID = data["MaterialID"];
-            this.process = data["Process"];
-            this.pallet = data["Pallet"];
-            this.loadStation = data["LoadStation"];
-            if (data["Stops"] && data["Stops"].constructor === Array) {
-                this.stops = [] as any;
-                for (let item of data["Stops"])
-                    this.stops!.push(Stop.fromJS(item));
-            }
-            this.unloadStation = data["UnloadStation"];
-        }
-    }
-
-    static fromJS(data: any): MaterialProcessActualPath {
-        data = typeof data === 'object' ? data : {};
-        let result = new MaterialProcessActualPath();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaterialID"] = this.materialID;
-        data["Process"] = this.process;
-        data["Pallet"] = this.pallet;
-        data["LoadStation"] = this.loadStation;
-        if (this.stops && this.stops.constructor === Array) {
-            data["Stops"] = [];
-            for (let item of this.stops)
-                data["Stops"].push(item.toJSON());
-        }
-        data["UnloadStation"] = this.unloadStation;
-        return data; 
-    }
-}
-
-export interface IMaterialProcessActualPath {
-    materialID: number;
-    process: number;
-    pallet: string;
-    loadStation: number;
-    stops: Stop[];
-    unloadStation: number;
-}
-
-export class Stop implements IStop {
-    stationName!: string;
-    stationNum!: number;
-
-    constructor(data?: IStop) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(data?: any) {
-        if (data) {
-            this.stationName = data["StationName"];
-            this.stationNum = data["StationNum"];
-        }
-    }
-
-    static fromJS(data: any): Stop {
-        data = typeof data === 'object' ? data : {};
-        let result = new Stop();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["StationName"] = this.stationName;
-        data["StationNum"] = this.stationNum;
-        return data; 
-    }
-}
-
-export interface IStop {
-    stationName: string;
-    stationNum: number;
 }
 
 export class MaterialDetails implements IMaterialDetails {

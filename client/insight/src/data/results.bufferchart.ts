@@ -107,7 +107,7 @@ function addEntryToPoint(
   );
   const endT = Math.min(point.x.getTime() + movingAverageDistanceInMilliseconds, entry.endTime.getTime());
 
-  point.y += ((endT - startT) / (2 * movingAverageDistanceInMilliseconds)) * entry.mats.length;
+  point.y += ((endT - startT) / (2 * movingAverageDistanceInMilliseconds)) * entry.numMaterial;
 }
 
 function calcPoints(
