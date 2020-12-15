@@ -2801,8 +2801,16 @@ namespace BlackMaple.MachineFramework
       };
     }
 
+
+    private static readonly string LogTypesToIgnoreForInvalidation = string.Join(",", new int[] {
+        (int)MachineWatchInterface.LogType.InvalidateCycle,
+        (int)MachineWatchInterface.LogType.PalletInStocker,
+        (int)MachineWatchInterface.LogType.PalletOnRotaryInbound
+      });
+
     public IEnumerable<MachineWatchInterface.LogEntry> InvalidatePalletCycle(
-      IEnumerable<MachineWatchInterface.LogEntry> eventsToInvalidate,
+      long matId,
+      int process,
       string oldMatPutInQueue,
       string operatorName,
       DateTime? timeUTC = null
@@ -2812,10 +2820,29 @@ namespace BlackMaple.MachineFramework
 
       lock (_config)
       {
+        using (var getCycles = _connection.CreateCommand())
+        using (var getMatsCmd = _connection.CreateCommand())
         using (var updateEvtCmd = _connection.CreateCommand())
         using (var addMessageCmd = _connection.CreateCommand())
         using (var trans = _connection.BeginTransaction())
         {
+          getCycles.CommandText = "SELECT s.Counter, s.Pallet FROM stations s WHERE " +
+            " EXISTS (" +
+            "   SELECT 1 FROM stations_mat m WHERE s.Counter = m.Counter AND m.MaterialID = $matid AND m.Process = $proc" +
+            " ) AND " +
+            " s.StationLoc NOT IN (" + LogTypesToIgnoreForInvalidation + ") AND " +
+            " NOT EXISTS(" +
+            "   SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
+            " )"
+          ;
+          getCycles.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+          getCycles.Parameters.Add("proc", SqliteType.Integer).Value = process;
+          getCycles.Transaction = trans;
+
+          getMatsCmd.CommandText = "SELECT MaterialID FROM stations_mat WHERE Counter = $cntr";
+          getMatsCmd.Parameters.Add("cntr", SqliteType.Integer);
+          getMatsCmd.Transaction = trans;
+
           updateEvtCmd.CommandText = "UPDATE stations SET ActiveTime = 0 WHERE Counter = $cntr";
           updateEvtCmd.Parameters.Add("cntr", SqliteType.Integer);
           updateEvtCmd.Transaction = trans;
@@ -2825,23 +2852,29 @@ namespace BlackMaple.MachineFramework
           addMessageCmd.Transaction = trans;
 
           // load old events
-          var mats = new Dictionary<long, MachineWatchInterface.LogMaterial>();
           string pallet = "";
           var invalidatedCntrs = new List<long>();
-          foreach (var evt in eventsToInvalidate)
+          var allMatIds = new HashSet<long>();
+          using (var reader = getCycles.ExecuteReader())
           {
-            pallet = evt.Pallet;
-            foreach (var mat in evt.Material)
+            while (reader.Read())
             {
-              mats[mat.MaterialID] = mat;
+              pallet = reader.IsDBNull(1) ? "" : reader.GetString(1);
+              var cntr = reader.GetInt64(0);
+              invalidatedCntrs.Add(cntr);
+
+              getMatsCmd.Parameters[0].Value = cntr;
+              using (var matIdReader = getMatsCmd.ExecuteReader())
+              {
+                while (matIdReader.Read()) allMatIds.Add(matIdReader.GetInt64(0));
+              }
+
+              updateEvtCmd.Parameters[0].Value = cntr;
+              updateEvtCmd.ExecuteNonQuery();
+
+              addMessageCmd.Parameters[0].Value = cntr;
+              addMessageCmd.ExecuteNonQuery();
             }
-            invalidatedCntrs.Add(evt.Counter);
-
-            updateEvtCmd.Parameters[0].Value = evt.Counter;
-            updateEvtCmd.ExecuteNonQuery();
-
-            addMessageCmd.Parameters[0].Value = evt.Counter;
-            addMessageCmd.ExecuteNonQuery();
           }
 
           // record events
@@ -2849,7 +2882,7 @@ namespace BlackMaple.MachineFramework
 
           var newMsg = new NewEventLogEntry()
           {
-            Material = mats.Values.Select(mat => new EventLogMaterial() { MaterialID = mat.MaterialID, Process = mat.Process, Face = "" }),
+            Material = allMatIds.Select(m => new EventLogMaterial() { MaterialID = m, Process = process, Face = "" }),
             Pallet = "",
             LogType = MachineWatchInterface.LogType.InvalidateCycle,
             LocationName = "InvalidateCycle",
@@ -2861,15 +2894,19 @@ namespace BlackMaple.MachineFramework
             EndOfRoute = false
           };
           newMsg.ProgramDetails["EditedCounters"] = string.Join(",", invalidatedCntrs);
+          if (!string.IsNullOrEmpty(operatorName))
+          {
+            newMsg.ProgramDetails["operator"] = operatorName;
+          }
           newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
 
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
-            foreach (var mat in mats)
+            foreach (var m in allMatIds)
             {
               newLogEntries.AddRange(AddToQueue(trans,
-                matId: mat.Value.MaterialID,
-                process: mat.Value.Process - 1,
+                matId: m,
+                process: process - 1,
                 queue: oldMatPutInQueue,
                 position: -1,
                 operatorName: operatorName,
@@ -3622,10 +3659,9 @@ namespace BlackMaple.MachineFramework
             "      WHERE s.Counter = m.Counter AND s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
             "   ) AND " +
             "   NOT EXISTS (" +
-            "    SELECT 1 FROM stations s WHERE s.Counter = m.Counter AND s.StationLoc = $logty AND s.Program = 'InvalidateCycle'" +
+            "    SELECT 1 FROM stations s WHERE s.Counter = m.Counter AND s.StationLoc IN (" + LogTypesToIgnoreForInvalidation + ")" +
             "   )";
           loadCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
-          loadCmd.Parameters.Add("logty", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.InvalidateCycle;
 
           var val = loadCmd.ExecuteScalar();
           if (val != null && val != DBNull.Value)

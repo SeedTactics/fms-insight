@@ -1864,7 +1864,8 @@ namespace MachineWatchTest
       // Original Events
       // ------------------------------------------------------
 
-      var origLog = new List<LogEntry>();
+      var origMatLog = new List<LogEntry>();
+      var origPalLog = new List<LogEntry>();
 
       var loadEndOrigEvts = _jobLog.RecordLoadEnd(new[] { matProc1 }, pallet: "5", lulNum: 2, timeUTC: now, elapsed: TimeSpan.FromMinutes(4), active: TimeSpan.FromMinutes(5));
       loadEndOrigEvts.Count().Should().Be(2);
@@ -1872,37 +1873,37 @@ namespace MachineWatchTest
       loadEndOrigEvts.First().Material.First().MaterialID.Should().Be(matProc1.MaterialID);
       loadEndOrigEvts.First().Material.First().Process.Should().Be(0);
       loadEndOrigEvts.Last().LogType.Should().Be(LogType.LoadUnloadCycle);
-      origLog.Add(loadEndOrigEvts.Last());
+      origMatLog.Add(loadEndOrigEvts.Last());
 
       var initialMatRemoveQueueTime = now;
 
       now = now.AddMinutes(1);
 
-      origLog.Add(
+      origPalLog.Add(
         _jobLog.RecordPalletArriveStocker(new[] { matProc1 }, pallet: "5", stockerNum: 5, timeUTC: now, waitForMachine: false)
       );
 
       now = now.AddMinutes(2);
 
-      origLog.Add(
+      origPalLog.Add(
         _jobLog.RecordPalletDepartStocker(new[] { matProc1 }, pallet: "5", stockerNum: 5, timeUTC: now, waitForMachine: false, elapsed: TimeSpan.FromMinutes(2))
       );
 
       now = now.AddMinutes(1);
 
-      origLog.Add(
+      origPalLog.Add(
         _jobLog.RecordPalletArriveRotaryInbound(new[] { matProc1 }, pallet: "5", statName: "Mach", statNum: 3, timeUTC: now)
       );
 
       now = now.AddMinutes(1);
 
-      origLog.Add(
+      origPalLog.Add(
         _jobLog.RecordPalletDepartRotaryInbound(new[] { matProc1 }, pallet: "5", statName: "Mach", statNum: 3, timeUTC: now, elapsed: TimeSpan.FromMinutes(5), rotateIntoWorktable: true)
       );
 
       now = now.AddMinutes(1);
 
-      origLog.Add(
+      origMatLog.Add(
         _jobLog.RecordMachineStart(new[] { matProc1 }, pallet: "5", statName: "Mach", statNum: 3, program: "prog11", timeUTC: now)
       );
 
@@ -1915,7 +1916,8 @@ namespace MachineWatchTest
       // ------------------------------------------------------
 
       var result = _jobLog.InvalidatePalletCycle(
-        eventsToInvalidate: origLog,
+        matId: matProc1.MaterialID,
+        process: 1,
         oldMatPutInQueue: "quarantine",
         operatorName: "theoper",
         timeUTC: now
@@ -1940,9 +1942,10 @@ namespace MachineWatchTest
         result: "Invalidate all events on cycle for pallet 5",
         endOfRoute: false
       );
-      expectedInvalidateMsg.ProgramDetails["EditedCounters"] = string.Join(",", origLog.Select(e => e.Counter));
+      expectedInvalidateMsg.ProgramDetails["EditedCounters"] = string.Join(",", origMatLog.Select(e => e.Counter));
+      expectedInvalidateMsg.ProgramDetails["operator"] = "theoper";
 
-      var newLog = origLog.Select(RemoveActiveTime()).Select(evt =>
+      var newMatLog = origMatLog.Select(RemoveActiveTime()).Select(evt =>
       {
         evt.ProgramDetails["PalletCycleInvalidated"] = "1";
         return evt;
@@ -1965,7 +1968,7 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).Should().Be(1);
 
       _jobLog.GetLogForMaterial(matProc0.MaterialID).Should().BeEquivalentTo(
-        newLog.Concat(
+        newMatLog.Concat(origPalLog).Concat(
           new[] {
             RecordSerialExpectedEntry(mat: logMatProc0, cntr: 0, serial: "bbbb", timeUTC: initialMatAddToQueueTime),
             AddToQueueExpectedEntry(
