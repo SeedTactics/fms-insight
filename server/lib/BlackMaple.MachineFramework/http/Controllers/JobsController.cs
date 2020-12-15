@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -187,6 +187,33 @@ namespace BlackMaple.MachineFramework.Controllers
     public void SignalMaterialForQuarantine(long materialId, [FromBody] string queue, [FromQuery] string operName = null)
     {
       _backend.JobControl.SignalMaterialForQuarantine(materialId, queue, operName);
+    }
+
+    [HttpPut("material/{materialId}/invalidate-process")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void InvalidatePalletCycle(long materialId, [FromBody] int process, [FromQuery] string putMatInQueue = null, [FromQuery] string operName = null)
+    {
+      _backend.JobControl.InvalidatePalletCycle(matId: materialId, process: process, oldMatPutInQueue: putMatInQueue, operatorName: operName);
+    }
+
+    [DataContract]
+    public class MatToPutOnPallet
+    {
+      [DataMember(IsRequired = true)] public string Pallet { get; set; }
+      [DataMember(IsRequired = true)] public long MaterialIDToSetOnPallet { get; set; }
+    }
+
+    [HttpPut("material/{materialId}/swap-off-pallet")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void SwapMaterialOnPallet(long materialId, [FromBody] MatToPutOnPallet mat, [FromQuery] string putMatInQueue = null, [FromQuery] string operName = null)
+    {
+      _backend.JobControl.SwapMaterialOnPallet(
+        oldMatId: materialId,
+        newMatId: mat.MaterialIDToSetOnPallet,
+        pallet: mat.Pallet,
+        oldMatPutInQueue: putMatInQueue,
+        operatorName: operName
+      );
     }
 
     [HttpDelete("material")]

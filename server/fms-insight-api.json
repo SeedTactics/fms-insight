@@ -845,6 +845,107 @@
         }
       }
     },
+    "/api/v1/jobs/material/{materialId}/invalidate-process": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_InvalidatePalletCycle",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
+          {
+            "name": "process",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "putMatInQueue",
+            "in": "query",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/material/{materialId}/swap-off-pallet": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_SwapMaterialOnPallet",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
+          {
+            "name": "mat",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MatToPutOnPallet"
+            },
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "putMatInQueue",
+            "in": "query",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/material": {
       "delete": {
         "tags": [
@@ -2086,7 +2187,9 @@
         "InspectionForce",
         "PalletOnRotaryInbound",
         "PalletInStocker",
-        "SignalQuarantine"
+        "SignalQuarantine",
+        "InvalidateCycle",
+        "SwapMaterialOnPallet"
       ],
       "enum": [
         "LoadUnloadCycle",
@@ -2104,7 +2207,9 @@
         "InspectionForce",
         "PalletOnRotaryInbound",
         "PalletInStocker",
-        "SignalQuarantine"
+        "SignalQuarantine",
+        "InvalidateCycle",
+        "SwapMaterialOnPallet"
       ]
     },
     "ToolUse": {
@@ -2746,6 +2851,12 @@
                   "format": "int64"
                 }
               }
+            },
+            "AssignedWorkorders": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
@@ -3021,8 +3132,8 @@
       "additionalProperties": false,
       "required": [
         "OldMaterialID",
-        "EditedEvents",
-        "RemovedEventCounters"
+        "NewMaterialID",
+        "EditedEvents"
       ],
       "properties": {
         "OldMaterialID": {
@@ -3037,13 +3148,6 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/LogEntry"
-          }
-        },
-        "RemovedEventCounters": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int64"
           }
         }
       }
@@ -3136,6 +3240,23 @@
         "Position": {
           "type": "integer",
           "format": "int32"
+        }
+      }
+    },
+    "MatToPutOnPallet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Pallet",
+        "MaterialIDToSetOnPallet"
+      ],
+      "properties": {
+        "Pallet": {
+          "type": "string"
+        },
+        "MaterialIDToSetOnPallet": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
