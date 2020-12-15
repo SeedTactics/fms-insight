@@ -128,6 +128,12 @@ function logType(entry: api.ILogEntry): string {
     case api.LogType.SignalQuarantine:
       return "Quarantine";
 
+    case api.LogType.SwapMaterialOnPallet:
+      return "Swap Serial";
+
+    case api.LogType.InvalidateCycle:
+      return "Invalidate Cycle";
+
     default:
       return "Message";
   }
@@ -344,6 +350,12 @@ function display(props: LogEntryProps): JSX.Element {
 
     case api.LogType.SignalQuarantine:
       return <span>{displayMat(entry.material)} signaled for quarantine after unload</span>;
+
+    case api.LogType.SwapMaterialOnPallet:
+      return <span>{entry.result}</span>;
+
+    case api.LogType.InvalidateCycle:
+      return <span>{entry.result}</span>;
 
     default:
       return <span>{entry.result}</span>;
