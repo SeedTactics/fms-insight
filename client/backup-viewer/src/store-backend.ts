@@ -114,6 +114,12 @@ export const JobsBackend = {
   signalMaterialForQuarantine(): Promise<void> {
     return Promise.resolve();
   },
+  swapMaterialOnPallet(): Promise<void> {
+    return Promise.resolve();
+  },
+  invalidatePalletCycle(): Promise<void> {
+    return Promise.resolve();
+  },
 };
 
 export const LogBackend = {

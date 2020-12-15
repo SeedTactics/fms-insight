@@ -51,8 +51,11 @@ import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
 import { LazySeq } from "../../data/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
-import { IInProcessMaterial } from "../../data/api";
+import { IInProcessMaterial, LocType } from "../../data/api";
 import { HashMap, Ordering } from "prelude-ts";
+import MenuItem from "@material-ui/core/MenuItem";
+import { JobsBackend } from "../../data/backend";
+import TextField from "@material-ui/core/TextField";
 
 enum DragType {
   Material = "DRAG_MATERIAL",
@@ -204,6 +207,8 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 
 interface AllMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
+  readonly current_material: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  readonly quarantineQueueName: string | null;
   readonly quarantineQueue: boolean;
   readonly removeFromQueue: (matId: number) => void;
   readonly onClose: () => void;
@@ -211,16 +216,102 @@ interface AllMatDialogProps {
 
 function AllMatDialog(props: AllMatDialogProps) {
   const displayMat = props.display_material;
+  const [currentlySwapping, setSwapping] = React.useState<boolean>(false);
+  const [selectedMatToSwap, setSelectedMatToSwap] = React.useState<Readonly<IInProcessMaterial> | null>(null);
+  const [updating, setUpdating] = React.useState<boolean>(false);
+
+  const curMat =
+    displayMat !== null ? props.current_material.find((m) => m.materialID === displayMat.materialID) : null;
+
+  function close() {
+    props.onClose();
+    setSwapping(false);
+    setSelectedMatToSwap(null);
+    setUpdating(false);
+  }
+
+  function swapMats() {
+    if (curMat && selectedMatToSwap && curMat.location.type === LocType.OnPallet) {
+      setUpdating(true);
+      JobsBackend.swapMaterialOnPallet(
+        curMat.materialID,
+        {
+          pallet: curMat.location.pallet ?? "",
+          materialIDToSetOnPallet: selectedMatToSwap.materialID,
+        },
+        props.quarantineQueueName,
+        null
+      ).finally(close);
+    }
+  }
+
+  let extra: JSX.Element | undefined;
+
+  if (curMat && currentlySwapping) {
+    const availMats = props.current_material.filter(
+      (m) =>
+        m.location.type !== LocType.OnPallet &&
+        m.jobUnique === curMat.jobUnique &&
+        m.process === curMat.process &&
+        m.path === curMat.path &&
+        m.serial !== ""
+    );
+    if (availMats.length === 0) {
+      extra = (
+        <p style={{ margin: "2em" }}>
+          No material with the same job is available for swapping. You must edit the pallet using the cell controller
+          software to remove the material from the pallet. Insight will automatically refresh once the cell controller
+          software is updated.
+        </p>
+      );
+    } else {
+      extra = (
+        <div style={{ margin: "2em" }}>
+          <p>Swap serial on pallet with material from the same job.</p>
+          <p>
+            (If material on pallet is from a different job, Insight cannot edit the pallet and the material must first
+            be removed from the pallet using the cell controller software.)
+          </p>
+          <TextField
+            value={selectedMatToSwap?.serial ?? ""}
+            select
+            onChange={(e) => setSelectedMatToSwap(availMats.find((m) => m.serial === e.target.value) ?? null)}
+            style={{ width: "20em" }}
+            variant="outlined"
+            label={"Select serial to swap with " + curMat.serial}
+          >
+            {availMats.map((m) => (
+              <MenuItem key={m.materialID} value={m.serial}>
+                {m.serial}
+              </MenuItem>
+            ))}
+          </TextField>
+        </div>
+      );
+    }
+  }
+
   return (
     <MaterialDialog
       display_material={props.display_material}
-      onClose={props.onClose}
+      onClose={close}
       allowNote={props.quarantineQueue}
+      extraDialogElements={extra}
       buttons={
         <>
           {displayMat && props.quarantineQueue ? (
             <Button color="primary" onClick={() => props.removeFromQueue(displayMat.materialID)}>
               Remove From System
+            </Button>
+          ) : undefined}
+          {curMat && currentlySwapping === false && curMat.location.type === LocType.OnPallet ? (
+            <Button color="primary" onClick={() => setSwapping(true)}>
+              Swap Serial
+            </Button>
+          ) : undefined}
+          {curMat && currentlySwapping === true && curMat.location.type === LocType.OnPallet ? (
+            <Button color="primary" onClick={swapMats} disabled={selectedMatToSwap === null || updating}>
+              {selectedMatToSwap === null ? "Swap Serial" : "Swap with " + selectedMatToSwap.serial}
             </Button>
           ) : undefined}
         </>
@@ -229,15 +320,21 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
-const ConnectedAllMatDialog = connect((_) => ({}), {
-  onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  removeFromQueue: (matId: number) =>
-    [
-      matDetails.removeFromQueue(matId, null),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
-    ] as AppActionBeforeMiddleware,
-})(AllMatDialog);
+const ConnectedAllMatDialog = connect(
+  (s) => ({
+    current_material: s.Current.current_status.material,
+    quarantineQueueName: s.ServerSettings.fmsInfo?.quarantineQueue ?? null,
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    removeFromQueue: (matId: number) =>
+      [
+        matDetails.removeFromQueue(matId, null),
+        { type: matDetails.ActionType.CloseMaterialDialog },
+        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
+      ] as AppActionBeforeMiddleware,
+  }
+)(AllMatDialog);
 
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;

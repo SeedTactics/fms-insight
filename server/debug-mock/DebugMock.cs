@@ -641,6 +641,7 @@ namespace DebugMachineWatchApiServer
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
     {
+      Serilog.Log.Information("Swapping {oldMatId} to {newMatId} on pallet {pallet}", oldMatId, newMatId, pallet);
       var o = LogDB.SwapMaterialInCurrentPalletCycle(
         pallet: pallet,
         oldMatId: oldMatId,
@@ -658,6 +659,7 @@ namespace DebugMachineWatchApiServer
 
     public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
     {
+      Serilog.Log.Information("Invalidating {matId} process {process}", matId, process);
       var o = LogDB.InvalidatePalletCycle(
         matId: matId,
         process: process,
