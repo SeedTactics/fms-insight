@@ -172,6 +172,11 @@ namespace Makino
     {
       // do nothing
     }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      // do nothing
+    }
     #endregion
   }
 }

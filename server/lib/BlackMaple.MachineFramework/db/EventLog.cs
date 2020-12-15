@@ -2902,17 +2902,29 @@ namespace BlackMaple.MachineFramework
 
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
-            foreach (var m in allMatIds)
+            using (var checkMatInQueue = _connection.CreateCommand())
             {
-              newLogEntries.AddRange(AddToQueue(trans,
-                matId: m,
-                process: process - 1,
-                queue: oldMatPutInQueue,
-                position: -1,
-                operatorName: operatorName,
-                timeUTC: time,
-                reason: "InvalidateCycle"
-              ));
+              checkMatInQueue.CommandText = "SELECT Queue FROM queues WHERE MaterialID = $matid LIMIT 1";
+              checkMatInQueue.Parameters.Add("matid", SqliteType.Integer);
+              checkMatInQueue.Transaction = trans;
+
+              foreach (var m in allMatIds)
+              {
+                checkMatInQueue.Parameters[0].Value = m;
+                var currentQueue = checkMatInQueue.ExecuteScalar();
+                if (currentQueue == null || currentQueue == DBNull.Value || (string)currentQueue != oldMatPutInQueue)
+                {
+                  newLogEntries.AddRange(AddToQueue(trans,
+                    matId: m,
+                    process: process - 1,
+                    queue: oldMatPutInQueue,
+                    position: -1,
+                    operatorName: operatorName,
+                    timeUTC: time,
+                    reason: "InvalidateCycle"
+                  ));
+                }
+              }
             }
           }
 

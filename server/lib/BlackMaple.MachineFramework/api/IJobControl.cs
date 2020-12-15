@@ -107,6 +107,13 @@ namespace BlackMaple.MachineWatchInterface
         string oldMatPutInQueue = null,
         string operatorName = null
     );
+
+    void InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue = null,
+      string operatorName = null
+    );
   }
 
   public interface IOldJobDecrement

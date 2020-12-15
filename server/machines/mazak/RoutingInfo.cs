@@ -583,6 +583,23 @@ namespace MazakMachineInterface
         _onCurStatusChange(CurrentStatus(jdb, logDb));
       }
     }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
+
+      using (var logDb = logDbCfg.OpenConnection())
+      using (var jdb = jobDBCfg.OpenConnection())
+      {
+        logDb.InvalidatePalletCycle(
+          matId: matId,
+          process: process,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+        _onCurStatusChange(CurrentStatus(jdb, logDb));
+      }
+    }
     #endregion
   }
 }

@@ -585,6 +585,25 @@ namespace BlackMaple.FMSInsight.Niigata
 
       _sync.JobsOrQueuesChanged();
     }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
+
+      using (var logDb = _logDbCfg.OpenConnection())
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+
+        logDb.InvalidatePalletCycle(
+          matId: matId,
+          process: process,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+      }
+
+      _sync.JobsOrQueuesChanged();
+    }
     #endregion
   }
 }

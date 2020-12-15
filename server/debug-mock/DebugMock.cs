@@ -655,5 +655,15 @@ namespace DebugMachineWatchApiServer
         EditedEvents = o.ChangedLogEntries,
       });
     }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      var o = LogDB.InvalidatePalletCycle(
+        matId: matId,
+        process: process,
+        oldMatPutInQueue: oldMatPutInQueue,
+        operatorName: operatorName
+      );
+    }
   }
 }
