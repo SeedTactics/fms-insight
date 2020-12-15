@@ -72,6 +72,7 @@ export interface LogEntryProps extends WithStyles<typeof logStyles> {
   entry: api.ILogEntry;
   detailLogCounter: number | null;
   setDetail: (counter: number | null) => void;
+  readonly highlightProcess?: number;
 }
 
 function logType(entry: api.ILogEntry): string {
@@ -403,7 +404,14 @@ export const LogEntry = React.memo(
 
     return (
       <>
-        <TableRow>
+        <TableRow
+          style={
+            props.highlightProcess !== undefined &&
+            props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0
+              ? { backgroundColor: "#eeeeee" }
+              : undefined
+          }
+        >
           <TableCell size="small">
             <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />
           </TableCell>
@@ -476,6 +484,7 @@ export function* filterRemoveAddQueue(entries: Iterable<Readonly<api.ILogEntry>>
 export interface LogEntriesProps {
   entries: Iterable<Readonly<api.ILogEntry>>;
   copyToClipboard?: boolean;
+  highlightProcess?: number;
 }
 
 export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps) {
@@ -504,7 +513,13 @@ export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps
       </TableHead>
       <TableBody>
         {Array.from(filterRemoveAddQueue(props.entries)).map((e, idx) => (
-          <LogEntry key={idx} entry={e} detailLogCounter={curDetail} setDetail={setDetail} />
+          <LogEntry
+            key={idx}
+            entry={e}
+            detailLogCounter={curDetail}
+            setDetail={setDetail}
+            highlightProcess={props.highlightProcess}
+          />
         ))}
       </TableBody>
     </Table>

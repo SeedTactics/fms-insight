@@ -402,6 +402,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
 
 export interface MaterialDetailProps {
   readonly mat: matDetails.MaterialDetail;
+  readonly highlightProcess?: number;
 }
 
 export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
@@ -437,7 +438,7 @@ export class MaterialDetailContent extends React.PureComponent<MaterialDetailPro
         {mat.loading_events ? (
           <CircularProgress data-testid="material-events-loading" color="secondary" />
         ) : (
-          <LogEntries entries={mat.events} copyToClipboard />
+          <LogEntries entries={mat.events} copyToClipboard highlightProcess={this.props.highlightProcess} />
         )}
       </>
     );
@@ -534,6 +535,7 @@ export interface MaterialDialogProps {
   onClose: () => void;
   allowNote?: boolean;
   extraDialogElements?: JSX.Element;
+  highlightProcess?: number;
 }
 
 export function MaterialDialog(props: MaterialDialogProps) {
@@ -552,7 +554,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
           <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
         </DialogTitle>
         <DialogContent>
-          <MaterialDetailContent mat={mat} />
+          <MaterialDetailContent mat={mat} highlightProcess={props.highlightProcess} />
         </DialogContent>
         {props.extraDialogElements}
         <DialogActions>
