@@ -202,3 +202,69 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
 
   return { ...st, matsById: mats, inspTypes: inspTypesSet };
 }
+
+export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: MatSummaryState): MatSummaryState {
+  let oldMatFromState = st.matsById.get(swap.oldMaterialID).getOrNull();
+  let newMatFromState = st.matsById.get(swap.newMaterialID).getOrNull();
+
+  if (oldMatFromState === null) return st;
+  let oldMat = oldMatFromState;
+
+  let newMat: MaterialSummaryFromEvents;
+  if (newMatFromState === null) {
+    newMat = {
+      materialID: swap.newMaterialID,
+      jobUnique: oldMat.jobUnique,
+      partName: oldMat.partName,
+      last_event: oldMat.last_event,
+      startedProcess1: true,
+      signaledInspections: [],
+      completedInspections: {},
+    };
+  } else {
+    newMat = newMatFromState;
+  }
+
+  for (const evt of swap.editedEvents) {
+    const newMatFromEvt = evt.material.find((m) => m.id === swap.newMaterialID);
+    if (newMatFromEvt) {
+      newMat = {
+        ...newMat,
+        serial: newMatFromEvt.serial ?? newMat.serial,
+        workorderId: newMatFromEvt.workorder ?? newMat.workorderId,
+      };
+    }
+
+    switch (evt.type) {
+      case api.LogType.Inspection:
+      case api.LogType.InspectionForce:
+        const inspType = evt.program;
+        let inspect: boolean;
+        if (evt.result.toLowerCase() === "true" || evt.result === "1") {
+          inspect = true;
+        } else {
+          inspect = false;
+        }
+        if (inspect) {
+          // remove from oldMat, add to newMat
+          oldMat = {
+            ...oldMat,
+            signaledInspections: LazySeq.ofIterable(oldMat.signaledInspections)
+              .filter((i) => i !== inspType)
+              .toArray(),
+          };
+          newMat = {
+            ...newMat,
+            signaledInspections: LazySeq.ofIterable([...newMat.signaledInspections, inspType])
+              .toSet((x) => x)
+              .toArray(),
+          };
+        }
+    }
+  }
+
+  return {
+    matsById: st.matsById.put(oldMat.materialID, oldMat).put(newMat.materialID, newMat),
+    inspTypes: st.inspTypes,
+  };
+}

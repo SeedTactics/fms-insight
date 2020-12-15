@@ -235,6 +235,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -270,6 +271,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 18,
         "activeTotalMachineMinutesForSingleMat": 18,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -305,6 +307,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 18,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -340,6 +343,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -375,6 +379,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -410,6 +415,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -445,6 +451,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -480,6 +487,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -515,6 +523,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -556,6 +565,7 @@ Object {
       \\"part\\": \\"partAAA\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 87097,
           "part": "partAAA",
@@ -568,6 +578,7 @@ Object {
           "workorder": "workx",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 87097,
           "part": "partAAA",
@@ -595,6 +606,7 @@ Object {
           "workorder": "workx",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 87097,
           "part": "partAAA",
@@ -612,6 +624,7 @@ Object {
       \\"part\\": \\"partBBB\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 4419,
           "part": "partBBB",
@@ -639,6 +652,7 @@ Object {
           "workorder": "work0",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 4419,
           "part": "partBBB",
@@ -656,6 +670,7 @@ Object {
       \\"part\\": \\"partCCC\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 13842,
           "part": "partCCC",
@@ -668,6 +683,7 @@ Object {
           "workorder": "work2",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 13842,
           "part": "partCCC",
@@ -695,6 +711,7 @@ Object {
           "workorder": "work2",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 13842,
           "part": "partCCC",
@@ -961,6 +978,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -996,6 +1014,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1031,6 +1050,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1066,6 +1086,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1101,6 +1122,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1136,6 +1158,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1171,6 +1194,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1206,6 +1230,7 @@ Object {
         "MAD_aboveMinutes": 0,
         "activeMinutes": 12,
         "activeTotalMachineMinutesForSingleMat": 42,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1241,6 +1266,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 42,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -1282,6 +1308,7 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 15510,
           "part": "part222",
@@ -1294,6 +1321,7 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 15510,
           "part": "part222",
@@ -1321,6 +1349,7 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 15510,
           "part": "part222",
@@ -1338,6 +1367,7 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 70329,
           "part": "part111",
@@ -1350,6 +1380,7 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 70329,
           "part": "part111",
@@ -1377,6 +1408,7 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 70329,
           "part": "part111",
@@ -1389,6 +1421,7 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 90793,
           "part": "part111",
@@ -1416,6 +1449,7 @@ Object {
           "workorder": "worko",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 90793,
           "part": "part111",
@@ -1442,9 +1476,6 @@ Object {
           "Insp1": 2018-02-08T09:46:05.000Z,
         },
         "completed_inspect_time": 2018-02-08T09:46:05.000Z,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqk",
         "last_event": 2018-02-08T09:46:05.000Z,
         "last_unload_time": 2018-02-08T09:34:05.000Z,
@@ -1453,15 +1484,13 @@ Object {
         "signaledInspections": Array [
           "Insp1",
         ],
+        "startedProcess1": true,
       },
       "70329" => Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqi",
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
@@ -1471,6 +1500,7 @@ Object {
           "Insp1",
           "Insp1",
         ],
+        "startedProcess1": true,
       },
     },
   },
@@ -1967,6 +1997,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2002,6 +2033,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 18,
         "activeTotalMachineMinutesForSingleMat": 18,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2037,6 +2069,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 18,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2072,6 +2105,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2107,6 +2141,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2142,6 +2177,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2177,6 +2213,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2212,6 +2249,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2247,6 +2285,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -2288,6 +2327,7 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 90079,
           "part": "part222",
@@ -2315,6 +2355,7 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 90079,
           "part": "part222",
@@ -2327,6 +2368,7 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 15510,
           "part": "part222",
@@ -2339,6 +2381,7 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 15510,
           "part": "part222",
@@ -2366,6 +2409,7 @@ Object {
           "workorder": "workh",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 15510,
           "part": "part222",
@@ -2383,6 +2427,7 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 70329,
           "part": "part111",
@@ -2395,6 +2440,7 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 70329,
           "part": "part111",
@@ -2422,6 +2468,7 @@ Object {
           "workorder": "work7",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 70329,
           "part": "part111",
@@ -2449,9 +2496,6 @@ Object {
         },
         "completed_inspect_time": 2018-01-31T09:58:10.000Z,
         "completed_machining": true,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqv",
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
@@ -2461,15 +2505,13 @@ Object {
           "Insp1",
           "Insp1",
         ],
+        "startedProcess1": true,
       },
       "70329" => Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqi",
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
@@ -2479,6 +2521,7 @@ Object {
           "Insp1",
           "Insp1",
         ],
+        "startedProcess1": true,
       },
       "90079" => Object {
         "completedInspections": Object {
@@ -2486,9 +2529,6 @@ Object {
         },
         "completed_inspect_time": 2018-01-06T09:52:05.000Z,
         "completed_machining": true,
-        "completed_procs": Array [
-          2,
-        ],
         "jobUnique": "uniqt",
         "last_event": 2018-01-06T09:52:05.000Z,
         "last_unload_time": 2018-01-06T09:40:05.000Z,
@@ -2497,6 +2537,7 @@ Object {
         "signaledInspections": Array [
           "Insp1",
         ],
+        "startedProcess1": true,
       },
     },
   },
@@ -3001,6 +3042,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3036,6 +3078,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3071,6 +3114,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3106,6 +3150,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3141,6 +3186,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3176,6 +3222,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3211,6 +3258,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3246,6 +3294,7 @@ Object {
         "MAD_aboveMinutes": 0,
         "activeMinutes": 12,
         "activeTotalMachineMinutesForSingleMat": 42,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3281,6 +3330,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 42,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -3322,6 +3372,7 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 47261,
           "part": "part222",
@@ -3334,6 +3385,7 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 47261,
           "part": "part222",
@@ -3361,6 +3413,7 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 47261,
           "part": "part222",
@@ -3378,6 +3431,7 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 11231,
           "part": "part111",
@@ -3390,6 +3444,7 @@ Object {
           "workorder": "works",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 11231,
           "part": "part111",
@@ -3417,6 +3472,7 @@ Object {
           "workorder": "works",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 11231,
           "part": "part111",
@@ -3429,6 +3485,7 @@ Object {
           "workorder": "works",
         },
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 88570,
           "part": "part111",
@@ -3456,6 +3513,7 @@ Object {
           "workorder": "work6",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 88570,
           "part": "part111",
@@ -3482,9 +3540,6 @@ Object {
           "Insp1": 2018-02-08T09:46:05.000Z,
         },
         "completed_inspect_time": 2018-02-08T09:46:05.000Z,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqg",
         "last_event": 2018-02-08T09:46:05.000Z,
         "last_unload_time": 2018-02-08T09:34:05.000Z,
@@ -3493,15 +3548,13 @@ Object {
         "signaledInspections": Array [
           "Insp1",
         ],
+        "startedProcess1": true,
       },
       "11231" => Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqk",
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
@@ -3511,6 +3564,7 @@ Object {
           "Insp1",
           "Insp1",
         ],
+        "startedProcess1": true,
       },
     },
   },
@@ -4007,6 +4061,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4042,6 +4097,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 18,
         "activeTotalMachineMinutesForSingleMat": 18,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4077,6 +4133,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 18,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4112,6 +4169,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4147,6 +4205,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4182,6 +4241,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 24,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4217,6 +4277,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
         "activeTotalMachineMinutesForSingleMat": 0,
+        "cntr": 1,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4252,6 +4313,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 3,
         "completed": false,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4287,6 +4349,7 @@ Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
         "activeTotalMachineMinutesForSingleMat": 30,
+        "cntr": 5,
         "completed": true,
         "completedInspections": Map {
           "Insp1" => true,
@@ -4328,6 +4391,7 @@ Object {
       \\"part\\": \\"part222\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 68845,
           "part": "part222",
@@ -4355,6 +4419,7 @@ Object {
           "workorder": "workf",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 68845,
           "part": "part222",
@@ -4367,6 +4432,7 @@ Object {
           "workorder": "workf",
         },
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 47261,
           "part": "part222",
@@ -4379,6 +4445,7 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 47261,
           "part": "part222",
@@ -4406,6 +4473,7 @@ Object {
           "workorder": "workn",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 47261,
           "part": "part222",
@@ -4423,6 +4491,7 @@ Object {
       \\"part\\": \\"part111\\",
     }" => Array [
         Object {
+          "cntr": 6,
           "inspType": "Insp1",
           "materialID": 11231,
           "part": "part111",
@@ -4435,6 +4504,7 @@ Object {
           "workorder": "works",
         },
         Object {
+          "cntr": 7,
           "inspType": "Insp1",
           "materialID": 11231,
           "part": "part111",
@@ -4462,6 +4532,7 @@ Object {
           "workorder": "works",
         },
         Object {
+          "cntr": 8,
           "inspType": "Insp1",
           "materialID": 11231,
           "part": "part111",
@@ -4489,9 +4560,6 @@ Object {
         },
         "completed_inspect_time": 2018-01-06T09:52:05.000Z,
         "completed_machining": true,
-        "completed_procs": Array [
-          2,
-        ],
         "jobUnique": "uniqv",
         "last_event": 2018-01-06T09:52:05.000Z,
         "last_unload_time": 2018-01-06T09:40:05.000Z,
@@ -4500,15 +4568,13 @@ Object {
         "signaledInspections": Array [
           "Insp1",
         ],
+        "startedProcess1": true,
       },
       "47261" => Object {
         "completedInspections": Object {
           "Insp1": 2018-01-31T09:58:10.000Z,
         },
         "completed_inspect_time": 2018-01-31T09:58:10.000Z,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqy",
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
@@ -4518,15 +4584,13 @@ Object {
           "Insp1",
           "Insp1",
         ],
+        "startedProcess1": true,
       },
       "11231" => Object {
         "completedInspections": Object {
           "Insp1": 2018-02-02T10:04:10.000Z,
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
-        "completed_procs": Array [
-          1,
-        ],
         "jobUnique": "uniqk",
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
@@ -4536,6 +4600,7 @@ Object {
           "Insp1",
           "Insp1",
         ],
+        "startedProcess1": true,
       },
     },
   },

@@ -56,6 +56,7 @@ export type InspectionLogResult =
     };
 
 export interface InspectionLogEntry {
+  readonly cntr: number;
   readonly time: Date;
   readonly materialID: number;
   readonly serial?: string;
@@ -152,9 +153,10 @@ export function process_events(
           } else {
             toInspect = false;
           }
-          return {
+          const r: { key: PartAndInspType; entry: InspectionLogEntry } = {
             key: new PartAndInspType(m.part, inspType),
             entry: {
+              cntr: c.counter,
               time: c.endUTC,
               materialID: m.id,
               serial: m.serial,
@@ -166,8 +168,9 @@ export function process_events(
               },
               part: m.part,
               inspType: inspType,
-            } as InspectionLogEntry,
+            },
           };
+          return r;
         } else if (c.type === api.LogType.InspectionForce) {
           let forceInspect: boolean;
           if (c.result.toLowerCase() === "true" || c.result === "1") {
@@ -175,9 +178,10 @@ export function process_events(
           } else {
             forceInspect = false;
           }
-          return {
+          const r: { key: PartAndInspType; entry: InspectionLogEntry } = {
             key: new PartAndInspType(m.part, c.program),
             entry: {
+              cntr: c.counter,
               time: c.endUTC,
               materialID: m.id,
               serial: m.serial,
@@ -188,8 +192,9 @@ export function process_events(
               },
               part: m.part,
               inspType: c.program,
-            } as InspectionLogEntry,
+            },
           };
+          return r;
         } else {
           // api.LogType.InspectionResult
           let success: boolean;
@@ -198,9 +203,10 @@ export function process_events(
           } else {
             success = false;
           }
-          return {
+          const r: { key: PartAndInspType; entry: InspectionLogEntry } = {
             key: new PartAndInspType(m.part, c.program),
             entry: {
+              cntr: c.counter,
               time: c.endUTC,
               materialID: m.id,
               serial: m.serial,
@@ -208,8 +214,9 @@ export function process_events(
               result: { type: InspectionLogResultType.Completed, success },
               part: m.part,
               inspType: c.program,
-            } as InspectionLogEntry,
+            },
           };
+          return r;
         }
       })
     )
@@ -224,5 +231,27 @@ export function process_events(
   return {
     ...st,
     by_part: parts,
+  };
+}
+
+export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: InspectionState): InspectionState {
+  const changedByCntr = LazySeq.ofIterable(swap.editedEvents).toMap(
+    (e) => [e.counter, e],
+    (e, _) => e
+  );
+
+  return {
+    by_part: st.by_part.mapValues((entries) =>
+      entries.map((entry) => {
+        const changed = changedByCntr.get(entry.cntr).getOrNull();
+        // inspection logs have only a single material
+        const mat = changed?.material[0];
+        if (changed && mat) {
+          return { ...entry, materialID: mat.id, serial: mat.serial, workorder: mat.workorder };
+        } else {
+          return entry;
+        }
+      })
+    ),
   };
 }

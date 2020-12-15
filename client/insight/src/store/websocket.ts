@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import ReconnectingWebSocket from "reconnecting-websocket";
 import * as events from "../data/events";
 import * as current from "../data/current-status";
-import { LogEntry, NewJobs, CurrentStatus } from "../data/api";
+import { LogEntry, NewJobs, CurrentStatus, EditMaterialInLogEvents } from "../data/api";
 import { BackendHost } from "../data/backend";
 import { User } from "oidc-client";
 
@@ -134,6 +134,9 @@ export function openWebsocket(user: User | null) {
     } else if (json.NewCurrentStatus) {
       const status = CurrentStatus.fromJS(json.NewCurrentStatus);
       storeDispatch(current.setCurrentStatus(status));
+    } else if (json.EditMaterialInLog) {
+      const swap = EditMaterialInLogEvents.fromJS(json.EditMaterialInLog);
+      storeDispatch(events.onEditMaterialOnPallet(swap));
     }
   };
   // websocket.open();

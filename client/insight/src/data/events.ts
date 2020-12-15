@@ -125,6 +125,7 @@ export enum ActionType {
   ReceiveNewLogEntries = "Events_NewLogEntries",
   ReceiveNewJobs = "Events_ReceiveNewJobs",
   SetJobComment = "Events_SetJobComment",
+  SwapMaterialOnPal = "Events_SwapMatOnPal",
 }
 
 export type Action =
@@ -160,7 +161,8 @@ export type Action =
       now: Date;
       jobs: Readonly<api.IHistoricData>;
     }
-  | { type: ActionType.SetJobComment; uniq: string; comment: string };
+  | { type: ActionType.SetJobComment; uniq: string; comment: string }
+  | { type: ActionType.SwapMaterialOnPal; swap: Readonly<api.IEditMaterialInLogEvents> };
 
 type ABF = ActionBeforeMiddleware<Action>;
 
@@ -211,6 +213,10 @@ export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ABF {
       stationUse: newJobs.stationUse || [],
     },
   };
+}
+
+export function onEditMaterialOnPallet(swap: Readonly<api.IEditMaterialInLogEvents>): ABF {
+  return { type: ActionType.SwapMaterialOnPal, swap };
 }
 
 export function analyzeLast30Days(): ABF {
@@ -466,6 +472,17 @@ export function reducer(s: State | undefined, a: Action): State {
       return {
         ...s,
         last30: { ...s.last30, scheduled_jobs: schJobs.set_job_comment(s.last30.scheduled_jobs, a.uniq, a.comment) },
+      };
+
+    case ActionType.SwapMaterialOnPal:
+      return {
+        ...s,
+        last30: {
+          ...s.last30,
+          inspection: inspection.process_swap(a.swap, s.last30.inspection),
+          mat_summary: matsummary.process_swap(a.swap, s.last30.mat_summary),
+          cycles: cycles.process_swap(a.swap, s.last30.cycles),
+        },
       };
 
     default:
