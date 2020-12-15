@@ -2744,8 +2744,8 @@ namespace BlackMaple.MachineFramework
           var newMsg = new NewEventLogEntry()
           {
             Material = new EventLogMaterial[] {
-              new EventLogMaterial() { MaterialID = oldMatId, Process = oldMatProc - 1, Face = "" },
-              new EventLogMaterial() { MaterialID = newMatId, Process = oldMatProc - 1, Face = "" },
+              new EventLogMaterial() { MaterialID = oldMatId, Process = oldMatProc, Face = "" },
+              new EventLogMaterial() { MaterialID = newMatId, Process = oldMatProc, Face = "" },
              },
             Pallet = pallet,
             LogType = MachineWatchInterface.LogType.SwapMaterialOnPallet,
@@ -2804,6 +2804,7 @@ namespace BlackMaple.MachineFramework
 
     private static readonly string LogTypesToIgnoreForInvalidation = string.Join(",", new int[] {
         (int)MachineWatchInterface.LogType.InvalidateCycle,
+        (int)MachineWatchInterface.LogType.SwapMaterialOnPallet,
         (int)MachineWatchInterface.LogType.PalletInStocker,
         (int)MachineWatchInterface.LogType.PalletOnRotaryInbound
       });

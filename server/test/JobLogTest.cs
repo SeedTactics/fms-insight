@@ -1672,7 +1672,7 @@ namespace MachineWatchTest
 
       var expectedSwapMsg = new LogEntry(
         cntr: 0,
-        mat: new[] { initiallyLoadedLogMatProc0, newLogMatProc0 },
+        mat: new[] { SetProcInMat(1)(initiallyLoadedLogMatProc0), SetProcInMat(1)(newLogMatProc0) },
         pal: "5",
         ty: LogType.SwapMaterialOnPallet,
         locName: "SwapMatOnPallet",
@@ -1715,9 +1715,6 @@ namespace MachineWatchTest
       }, options => options.Excluding(e => e.Counter));
 
 
-      // log for initiallyLoadedMatProc matches, and importantly has only process 0 as max
-      _jobLog.GetLogForMaterial(initiallyLoadedMatProc0.MaterialID).SelectMany(c => c.Material).Select(m => m.Process).Max()
-        .Should().Be(0);
       _jobLog.NextProcessForQueuedMaterial(initiallyLoadedLogMatProc0.MaterialID).Should().Be(1);
 
       _jobLog.GetLogForMaterial(initiallyLoadedMatProc0.MaterialID).Should().BeEquivalentTo(new[] {
@@ -1773,7 +1770,7 @@ namespace MachineWatchTest
       }), options => options.Excluding(c => c.Counter));
 
       _jobLog.GetLogForMaterial(newMatProc1.MaterialID)
-        .Where(e => e.LogType != LogType.MachineCycle && e.LogType != LogType.LoadUnloadCycle && e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound)
+        .Where(e => e.LogType != LogType.MachineCycle && e.LogType != LogType.LoadUnloadCycle && e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound && e.LogType != LogType.SwapMaterialOnPallet)
         .SelectMany(e => e.Material)
         .Select(m => m.Process)
         .Max()
