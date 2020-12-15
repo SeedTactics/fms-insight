@@ -167,6 +167,16 @@ namespace Makino
     {
       // do nothing
     }
+
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      // do nothing
+    }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      // do nothing
+    }
     #endregion
   }
 }

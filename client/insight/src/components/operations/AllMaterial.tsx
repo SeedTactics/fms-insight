@@ -51,8 +51,16 @@ import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
 import { LazySeq } from "../../data/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
-import { IInProcessMaterial } from "../../data/api";
+import { IInProcessMaterial, LocType } from "../../data/api";
 import { HashMap, Ordering } from "prelude-ts";
+import {
+  InvalidateCycleDialogButtons,
+  InvalidateCycleDialogContent,
+  InvalidateCycleState,
+  SwapMaterialButtons,
+  SwapMaterialDialogContent,
+  SwapMaterialState,
+} from "../station-monitor/InvalidateCycle";
 
 enum DragType {
   Material = "DRAG_MATERIAL",
@@ -204,18 +212,45 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 
 interface AllMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
+  readonly current_material: ReadonlyArray<Readonly<IInProcessMaterial>>;
   readonly quarantineQueue: boolean;
   readonly removeFromQueue: (matId: number) => void;
   readonly onClose: () => void;
 }
 
 function AllMatDialog(props: AllMatDialogProps) {
+  const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
+  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState>(null);
+
   const displayMat = props.display_material;
+  const curMat =
+    displayMat !== null ? props.current_material.find((m) => m.materialID === displayMat.materialID) ?? null : null;
+
+  function close() {
+    props.onClose();
+    setSwapSt(null);
+    setInvalidateSt(null);
+  }
+
   return (
     <MaterialDialog
       display_material={props.display_material}
-      onClose={props.onClose}
+      onClose={close}
       allowNote={props.quarantineQueue}
+      highlightProcess={invalidateSt?.process ?? undefined}
+      extraDialogElements={
+        <>
+          <SwapMaterialDialogContent
+            st={swapSt}
+            setState={setSwapSt}
+            curMat={curMat}
+            current_material={props.current_material}
+          />
+          {displayMat && curMat && curMat.location.type === LocType.InQueue ? (
+            <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} events={displayMat.events} />
+          ) : undefined}
+        </>
+      }
       buttons={
         <>
           {displayMat && props.quarantineQueue ? (
@@ -223,21 +258,35 @@ function AllMatDialog(props: AllMatDialogProps) {
               Remove From System
             </Button>
           ) : undefined}
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={null} />
+          {curMat && curMat.location.type === LocType.InQueue ? (
+            <InvalidateCycleDialogButtons
+              st={invalidateSt}
+              setState={setInvalidateSt}
+              curMat={curMat}
+              operator={null}
+            />
+          ) : undefined}
         </>
       }
     />
   );
 }
 
-const ConnectedAllMatDialog = connect((_) => ({}), {
-  onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  removeFromQueue: (matId: number) =>
-    [
-      matDetails.removeFromQueue(matId, null),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
-    ] as AppActionBeforeMiddleware,
-})(AllMatDialog);
+const ConnectedAllMatDialog = connect(
+  (s) => ({
+    current_material: s.Current.current_status.material,
+  }),
+  {
+    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+    removeFromQueue: (matId: number) =>
+      [
+        matDetails.removeFromQueue(matId, null),
+        { type: matDetails.ActionType.CloseMaterialDialog },
+        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
+      ] as AppActionBeforeMiddleware,
+  }
+)(AllMatDialog);
 
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;

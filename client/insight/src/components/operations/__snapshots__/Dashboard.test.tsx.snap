@@ -181,13 +181,13 @@ exports[`renders the dashboard: current jobs plot 1`] = `
           >
             <tspan>
               <tspan>
-                zzz-1
+                xxx-1
               </tspan>
               <tspan
                 dy="1.2em"
                 x="0"
               >
-                17 / 22
+                1 / 3
               </tspan>
             </tspan>
           </text>
@@ -211,13 +211,13 @@ exports[`renders the dashboard: current jobs plot 1`] = `
           >
             <tspan>
               <tspan>
-                yyy-1
+                zzz-1
               </tspan>
               <tspan
                 dy="1.2em"
                 x="0"
               >
-                10 / 28
+                17 / 22
               </tspan>
             </tspan>
           </text>
@@ -241,13 +241,13 @@ exports[`renders the dashboard: current jobs plot 1`] = `
           >
             <tspan>
               <tspan>
-                xxx-1
+                yyy-1
               </tspan>
               <tspan
                 dy="1.2em"
                 x="0"
               >
-                1 / 3
+                10 / 28
               </tspan>
             </tspan>
           </text>
@@ -556,22 +556,22 @@ exports[`renders the dashboard: current jobs plot 1`] = `
       <rect
         height="29.27777777777779"
         style="opacity: 1; stroke: #795548; fill: #795548;"
+        width="0.7231404958677686"
+        x="-0.7231404958677686"
+        y="278.13888888888886"
+      />
+      <rect
+        height="29.27777777777779"
+        style="opacity: 1; stroke: #795548; fill: #795548;"
         width="54.0909090909091"
         x="-54.0909090909091"
-        y="278.13888888888886"
+        y="243.69444444444443"
       />
       <rect
         height="29.27777777777779"
         style="opacity: 1; stroke: #795548; fill: #795548;"
         width="20.661157024793386"
         x="-20.661157024793386"
-        y="243.69444444444443"
-      />
-      <rect
-        height="29.27777777777779"
-        style="opacity: 1; stroke: #795548; fill: #795548;"
-        width="0.7231404958677686"
-        x="-0.7231404958677686"
         y="209.25"
       />
       <rect
@@ -623,7 +623,7 @@ exports[`renders the dashboard: current jobs plot 1`] = `
     >
       <g
         class="rv-xy-plot__series--custom-svg"
-        transform="translate(-70,292.77777777777777)"
+        transform="translate(-2.1694214876033056,292.77777777777777)"
       >
         <rect
           fill="black"
@@ -635,7 +635,7 @@ exports[`renders the dashboard: current jobs plot 1`] = `
       </g>
       <g
         class="rv-xy-plot__series--custom-svg"
-        transform="translate(-57.85123966942149,258.3333333333333)"
+        transform="translate(-70,258.3333333333333)"
       >
         <rect
           fill="black"
@@ -647,7 +647,7 @@ exports[`renders the dashboard: current jobs plot 1`] = `
       </g>
       <g
         class="rv-xy-plot__series--custom-svg"
-        transform="translate(-2.1694214876033056,223.88888888888889)"
+        transform="translate(-57.85123966942149,223.88888888888889)"
       >
         <rect
           fill="black"

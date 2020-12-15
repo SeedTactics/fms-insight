@@ -72,6 +72,7 @@ export interface LogEntryProps extends WithStyles<typeof logStyles> {
   entry: api.ILogEntry;
   detailLogCounter: number | null;
   setDetail: (counter: number | null) => void;
+  readonly highlightProcess?: number;
 }
 
 function logType(entry: api.ILogEntry): string {
@@ -126,6 +127,12 @@ function logType(entry: api.ILogEntry): string {
 
     case api.LogType.SignalQuarantine:
       return "Quarantine";
+
+    case api.LogType.SwapMaterialOnPallet:
+      return "Swap Serial";
+
+    case api.LogType.InvalidateCycle:
+      return "Invalidate Cycle";
 
     default:
       return "Message";
@@ -250,11 +257,43 @@ function display(props: LogEntryProps): JSX.Element {
       return <span>Wash Completed</span>;
 
     case api.LogType.AddToQueue:
-      return (
-        <span>
-          {displayQueueMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
-        </span>
-      );
+      switch (entry.program) {
+        case "Unloaded":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} unloaded into queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        case "SetByOperator":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} set manually into queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        case "SwapMaterial":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} swapped off pallet into queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        case "MaterialMissingOnPallet":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} removed from cell controller, added to queue{" "}
+              <span className={props.classes.queue}>{entry.loc}</span>
+            </span>
+          );
+        default:
+          return (
+            <span>
+              {displayQueueMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
+              {entry.program && entry.program !== "" ? " (" + entry.program + ")" : undefined}
+            </span>
+          );
+      }
 
     case api.LogType.RemoveFromQueue:
       return (
@@ -311,6 +350,12 @@ function display(props: LogEntryProps): JSX.Element {
 
     case api.LogType.SignalQuarantine:
       return <span>{displayMat(entry.material)} signaled for quarantine after unload</span>;
+
+    case api.LogType.SwapMaterialOnPallet:
+      return <span>{entry.result}</span>;
+
+    case api.LogType.InvalidateCycle:
+      return <span>{entry.result}</span>;
 
     default:
       return <span>{entry.result}</span>;
@@ -371,7 +416,14 @@ export const LogEntry = React.memo(
 
     return (
       <>
-        <TableRow>
+        <TableRow
+          style={
+            props.highlightProcess !== undefined &&
+            props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0
+              ? { backgroundColor: "#eeeeee" }
+              : undefined
+          }
+        >
           <TableCell size="small">
             <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />
           </TableCell>
@@ -444,6 +496,7 @@ export function* filterRemoveAddQueue(entries: Iterable<Readonly<api.ILogEntry>>
 export interface LogEntriesProps {
   entries: Iterable<Readonly<api.ILogEntry>>;
   copyToClipboard?: boolean;
+  highlightProcess?: number;
 }
 
 export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps) {
@@ -472,7 +525,13 @@ export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps
       </TableHead>
       <TableBody>
         {Array.from(filterRemoveAddQueue(props.entries)).map((e, idx) => (
-          <LogEntry key={idx} entry={e} detailLogCounter={curDetail} setDetail={setDetail} />
+          <LogEntry
+            key={idx}
+            entry={e}
+            detailLogCounter={curDetail}
+            setDetail={setDetail}
+            highlightProcess={props.highlightProcess}
+          />
         ))}
       </TableBody>
     </Table>

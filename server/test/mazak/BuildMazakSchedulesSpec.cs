@@ -47,7 +47,7 @@ namespace MachineWatchTest
     [Fact]
     public void DeleteCompletedSchedules()
     {
-      var schedules = new MazakSchedules()
+      var schedules = new MazakCurrentStatus()
       {
         Schedules = new[] {
           new MazakScheduleRow()

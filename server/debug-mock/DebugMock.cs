@@ -98,6 +98,7 @@ namespace DebugMachineWatchApiServer
     public event NewCurrentStatus OnNewCurrentStatus;
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry { add { } remove { } }
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public bool SupportsQuarantineAtLoadStation { get; } = true;
 
@@ -315,7 +316,12 @@ namespace DebugMachineWatchApiServer
         QueuePosition = position
       };
 
-      LogDB.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" }, queue, position, operatorName);
+      LogDB.RecordAddMaterialToQueue(
+        mat: new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
+        queue: queue,
+        position: position,
+        operatorName: operatorName,
+        reason: "SetByOperator");
 
       OnNewStatus(CurrentStatus);
     }
@@ -633,5 +639,33 @@ namespace DebugMachineWatchApiServer
       );
     }
 
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Serilog.Log.Information("Swapping {oldMatId} to {newMatId} on pallet {pallet}", oldMatId, newMatId, pallet);
+      var o = LogDB.SwapMaterialInCurrentPalletCycle(
+        pallet: pallet,
+        oldMatId: oldMatId,
+        newMatId: newMatId,
+        oldMatPutInQueue: oldMatPutInQueue,
+        operatorName: operatorName
+      );
+      OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
+      {
+        OldMaterialID = oldMatId,
+        NewMaterialID = newMatId,
+        EditedEvents = o.ChangedLogEntries,
+      });
+    }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Serilog.Log.Information("Invalidating {matId} process {process}", matId, process);
+      var o = LogDB.InvalidatePalletCycle(
+        matId: matId,
+        process: process,
+        oldMatPutInQueue: oldMatPutInQueue,
+        operatorName: operatorName
+      );
+    }
   }
 }

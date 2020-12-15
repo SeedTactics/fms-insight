@@ -39,7 +39,7 @@ export interface MaterialSummary {
   readonly materialID: number;
   readonly jobUnique: string;
   readonly partName: string;
-  readonly completed_procs: ReadonlyArray<number>;
+  readonly startedProcess1: boolean;
 
   readonly serial?: string;
   readonly workorderId?: string;
@@ -73,7 +73,7 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
     materialID: mat.materialID,
     jobUnique: mat.jobUnique,
     partName: mat.partName,
-    completed_procs: LazySeq.ofRange(1, mat.process, 1).toArray(),
+    startedProcess1: mat.process > 0,
     serial: mat.serial,
     workorderId: mat.workorderId,
     signaledInspections: mat.signaledInspections,
@@ -110,7 +110,7 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
           jobUnique: logMat.uniq,
           partName: logMat.part,
           last_event: e.endUTC,
-          completed_procs: [],
+          startedProcess1: false,
           signaledInspections: [],
           completedInspections: {},
         };
@@ -166,18 +166,22 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
             if (logMat.proc === logMat.numproc) {
               mat = {
                 ...mat,
-                completed_procs: [...mat.completed_procs, logMat.proc],
                 last_unload_time: e.endUTC,
                 completed_machining: true,
               };
             } else {
               mat = {
                 ...mat,
-                completed_procs: [...mat.completed_procs, logMat.proc],
                 last_unload_time: e.endUTC,
               };
             }
+          } else if (e.result === "LOAD") {
+            mat = {
+              ...mat,
+              startedProcess1: true,
+            };
           }
+
           break;
 
         case api.LogType.Wash:
@@ -197,4 +201,70 @@ export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>,
   }
 
   return { ...st, matsById: mats, inspTypes: inspTypesSet };
+}
+
+export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: MatSummaryState): MatSummaryState {
+  let oldMatFromState = st.matsById.get(swap.oldMaterialID).getOrNull();
+  let newMatFromState = st.matsById.get(swap.newMaterialID).getOrNull();
+
+  if (oldMatFromState === null) return st;
+  let oldMat = oldMatFromState;
+
+  let newMat: MaterialSummaryFromEvents;
+  if (newMatFromState === null) {
+    newMat = {
+      materialID: swap.newMaterialID,
+      jobUnique: oldMat.jobUnique,
+      partName: oldMat.partName,
+      last_event: oldMat.last_event,
+      startedProcess1: true,
+      signaledInspections: [],
+      completedInspections: {},
+    };
+  } else {
+    newMat = newMatFromState;
+  }
+
+  for (const evt of swap.editedEvents) {
+    const newMatFromEvt = evt.material.find((m) => m.id === swap.newMaterialID);
+    if (newMatFromEvt) {
+      newMat = {
+        ...newMat,
+        serial: newMatFromEvt.serial ?? newMat.serial,
+        workorderId: newMatFromEvt.workorder ?? newMat.workorderId,
+      };
+    }
+
+    switch (evt.type) {
+      case api.LogType.Inspection:
+      case api.LogType.InspectionForce:
+        const inspType = evt.program;
+        let inspect: boolean;
+        if (evt.result.toLowerCase() === "true" || evt.result === "1") {
+          inspect = true;
+        } else {
+          inspect = false;
+        }
+        if (inspect) {
+          // remove from oldMat, add to newMat
+          oldMat = {
+            ...oldMat,
+            signaledInspections: LazySeq.ofIterable(oldMat.signaledInspections)
+              .filter((i) => i !== inspType)
+              .toArray(),
+          };
+          newMat = {
+            ...newMat,
+            signaledInspections: LazySeq.ofIterable([...newMat.signaledInspections, inspType])
+              .toSet((x) => x)
+              .toArray(),
+          };
+        }
+    }
+  }
+
+  return {
+    matsById: st.matsById.put(oldMat.materialID, oldMat).put(newMat.materialID, newMat),
+    inspTypes: st.inspTypes,
+  };
 }

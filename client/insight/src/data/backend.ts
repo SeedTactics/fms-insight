@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -74,6 +74,18 @@ export interface JobAPI {
     operatorName: string | undefined
   ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
   signalMaterialForQuarantine(materialId: number, queue: string, operName: string | null | undefined): Promise<void>;
+  swapMaterialOnPallet(
+    materialId: number,
+    mat: Readonly<api.IMatToPutOnPallet>,
+    putMatInQueue: string | null,
+    operName: string | null | undefined
+  ): Promise<void>;
+  invalidatePalletCycle(
+    materialId: number,
+    process: number,
+    putMatInQueue: string | null,
+    operName: string | null | undefined
+  ): Promise<void>;
 }
 
 export interface FmsAPI {
@@ -286,6 +298,12 @@ function initMockBackend(data: Promise<MockData>) {
       return Promise.resolve(undefined);
     },
     signalMaterialForQuarantine(): Promise<void> {
+      return Promise.resolve();
+    },
+    swapMaterialOnPallet(): Promise<void> {
+      return Promise.resolve();
+    },
+    invalidatePalletCycle(): Promise<void> {
       return Promise.resolve();
     },
   };

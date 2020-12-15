@@ -618,29 +618,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (pallet.ManualControl)
       {
-        // move all material to quarantine queue
-        if (!string.IsNullOrEmpty(_settings.QuarantineQueue))
-        {
-          foreach (var m in pallet.Material)
-          {
-            logDB.RecordAddMaterialToQueue(
-              mat: new EventLogDB.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
-              queue: _settings.QuarantineQueue,
-              position: -1,
-              timeUTC: nowUtc
-            );
-          }
-        }
-
-        // record pallet cycle so any material is removed from pallet
-        if (pallet.Material.Count > 0)
-        {
-          Log.Debug("Removing material {@mats} from pallet {pal} because it was switched to manual control", pallet.Material, pallet.Status.Master.PalletNum);
-          logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc, foreignID: null);
-          pallet.Material.Clear();
-          palletStateUpdated = true;
-        }
-
+        QuarantineMatOnPal(pallet, "PalletToManualControl", logDB, ref palletStateUpdated, nowUtc);
       }
       else
       {
@@ -663,6 +641,40 @@ namespace BlackMaple.FMSInsight.Niigata
 
         EnsurePalletRotaryEvents(pallet, nowUtc, logDB);
         EnsurePalletStockerEvents(pallet, nowUtc, logDB);
+
+        if (pallet.Status.HasWork == false && pallet.Material.Any())
+        {
+          QuarantineMatOnPal(pallet, "MaterialMissingOnPallet", logDB, ref palletStateUpdated, nowUtc);
+        }
+
+      }
+    }
+
+    private void QuarantineMatOnPal(PalletAndMaterial pallet, string reason, EventLogDB logDB, ref bool palletStateUpdated, DateTime nowUtc)
+    {
+      // move all material to quarantine queue
+      if (!string.IsNullOrEmpty(_settings.QuarantineQueue))
+      {
+        foreach (var m in pallet.Material)
+        {
+          logDB.RecordAddMaterialToQueue(
+            mat: new EventLogDB.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
+            queue: _settings.QuarantineQueue,
+            position: -1,
+            timeUTC: nowUtc,
+            operatorName: null,
+            reason: reason
+          );
+        }
+      }
+
+      // record pallet cycle so any material is removed from pallet
+      if (pallet.Material.Count > 0)
+      {
+        Log.Debug("Removing material {@mats} from pallet {pal} because it was switched to manual control", pallet.Material, pallet.Status.Master.PalletNum);
+        logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc, foreignID: null);
+        pallet.Material.Clear();
+        palletStateUpdated = true;
       }
     }
 
@@ -1412,10 +1424,9 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (matsOnPallets.Contains(mat.MaterialID)) continue;
 
-        var lastProc = logDB.GetLogForMaterial(mat.MaterialID)
-          .SelectMany(m => m.Material)
-          .Where(m => m.MaterialID == mat.MaterialID)
-          .Max(m => m.Process);
+
+        var nextProc = logDB.NextProcessForQueuedMaterial(mat.MaterialID);
+        var lastProc = (nextProc ?? 1) - 1;
 
         var matDetails = logDB.GetMaterialDetails(mat.MaterialID);
 
@@ -1539,12 +1550,8 @@ namespace BlackMaple.FMSInsight.Niigata
       // now check unique, process, and path group match
       if (mat.Unique != face.Job.UniqueStr) return null;
 
-      var proc = logDB.GetLogForMaterial(mat.MaterialID)
-        .SelectMany(m => m.Material)
-        .Where(m => m.MaterialID == mat.MaterialID)
-        .Max(m => m.Process);
-
-      if (proc + 1 != face.Process) return null;
+      var nextProc = logDB.NextProcessForQueuedMaterial(mat.MaterialID);
+      if (nextProc != face.Process) return null;
 
       // now path group
       var details = logDB.GetMaterialDetails(mat.MaterialID);

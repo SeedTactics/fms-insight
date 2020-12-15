@@ -451,7 +451,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
           _dsl.LoadToFace(pal: 1, lul: 3, face: 1, unique: "uniq1", elapsedMin: 3, activeMins: 8, loadingMats: new[] {queuedMat}, loadedMats: out var mat1, part: "part1"),
-          FakeIccDsl.RemoveFromQueue("thequeue", pos: 1, elapMin: 3, mat: mat1)
+          FakeIccDsl.RemoveFromQueue("thequeue", pos: 1, elapMin: 3, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1)))
         })
         ;
     }
@@ -1145,7 +1145,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
@@ -1191,7 +1191,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
           _dsl.LoadToFace(pal: 2, face: 1, unique: "uniq1", lul: 3, elapsedMin: 7, activeMins: 11, loadingMats: AAAproc1, loadedMats: out var AAAproc2),
-          FakeIccDsl.RemoveFromQueue("qqq", pos: 0, elapMin: 7, mat: AAAproc2)
+          FakeIccDsl.RemoveFromQueue("qqq", pos: 0, elapMin: 7, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2)))
         })
 
         // machine both pallets 1 and 2
@@ -1361,7 +1361,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 48 - 27),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 5, activeMins: 9, mats: BBBproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, mat: BBBproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", mat: BBBproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 5, activeMins: 8, mats: out var CCCproc1),
         })
         .MoveToBuffer(pal: 1, buff: 1)
@@ -1415,7 +1415,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 60 - 34),
           FakeIccDsl.UnloadFromFace(pal: 2, lul: 3, elapsedMin: 12, activeMins: 12, mats: AAAproc2),
           _dsl.LoadToFace(pal: 2, face: 1, unique: "uniq1", lul: 3, elapsedMin: 12, activeMins: 11, loadingMats: BBBproc1, loadedMats: out var BBBproc2),
-          FakeIccDsl.RemoveFromQueue(queue: "qqq", pos: 0, elapMin: 12, mat: BBBproc2)
+          FakeIccDsl.RemoveFromQueue(queue: "qqq", pos: 0, elapMin: 12, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, BBBproc2)))
         })
         .MoveToBuffer(pal: 2, buff: 2)
 
@@ -1547,7 +1547,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 69 - 48),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 3, activeMins: 9, mats: CCCproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, mat: CCCproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", mat: CCCproc1),
           FakeIccDsl.ExpectRouteIncrement(pal: 2, newCycleCnt: 1, faces: new[] {
             (face: 1, unique: "uniq1", proc: 2, path: 1)
           })
@@ -1581,7 +1581,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 91 - 66),
         _dsl.LoadToFace(pal: 2, face: 1, unique: "uniq1", lul: 4, elapsedMin: 22, activeMins: 11, loadingMats: CCCproc1, loadedMats: out var CCCproc2),
-          FakeIccDsl.RemoveFromQueue(queue: "qqq", pos: 0, elapMin: 22, mat: CCCproc2)
+          FakeIccDsl.RemoveFromQueue(queue: "qqq", pos: 0, elapMin: 22, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, CCCproc2)))
         })
 
         ;
@@ -1721,7 +1721,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .ExpectTransition(new[] {
         FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 15 - 1),
         FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 4, activeMins: 9, mats: AAAproc1),
-        FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+        FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
         FakeIccDsl.ExpectNewRoute(
           pal: 2,
           pri: 1,
@@ -1786,7 +1786,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .ExpectTransition(new[] {
         FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
         _dsl.LoadToFace(pal: 2, face: 1, unique: "uniq1", lul: 4, elapsedMin: 5, activeMins: 11, loadingMats: AAAproc1, loadedMats: out var AAAproc2),
-        FakeIccDsl.RemoveFromQueue("qqq", pos: 0, elapMin: 5, mat: AAAproc2)
+        FakeIccDsl.RemoveFromQueue("qqq", pos: 0, elapMin: 5, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2)))
       })
       ;
 
@@ -2393,7 +2393,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 24 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 3, activeMins: 9, mats: AAAProc1),
-          FakeIccDsl.AddToQueue("sizedQ", 0, AAAProc1),
+          FakeIccDsl.AddToQueue("sizedQ", 0, reason: "Unloaded", AAAProc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 3, elapsedMin: 3, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var CCCproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 4,
@@ -2437,7 +2437,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 4, mins: 0),
           _dsl.LoadToFace(pal: 4, face: 1, unique: "uniq1", lul: 3, elapsedMin: 5, activeMins: 11, loadingMats: AAAProc1, loadedMats: out var AAAproc2),
-          FakeIccDsl.RemoveFromQueue("sizedQ", pos: 0, elapMin: 5, mat: AAAproc2)
+          FakeIccDsl.RemoveFromQueue("sizedQ", pos: 0, elapMin: 5, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2)))
         })
 
         // machine pallet 4
@@ -2889,7 +2889,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
@@ -3063,7 +3063,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("qqq", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("qqq", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 15, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
           FakeIccDsl.ExpectNewRoute(
             pal: 2,
@@ -3169,56 +3169,49 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetNoWork(pal: 1)
         .SetBeforeLoad(pal: 1)
         .MoveToCart(pal: 1)
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+        .UpdateExpectedMaterial(fstMats, im =>
+          {
+            im.Location = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.InQueue,
+              CurrentQueue = "Quarantine",
+              QueuePosition = 0
+            };
+          }
+        )
+        .ExpectTransition(new[] {
           FakeIccDsl.ExpectRotaryEnd(pal: 1, mach: 3, rotate: false, elapMin: 3, mats: fstMats),
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 5),
+          FakeIccDsl.AddToQueue("Quarantine", 0, reason: "MaterialMissingOnPallet", FakeIccDsl.ClearFaces(fstMats))
         })
 
         // when get to buffer, sets a new route
         .MoveToBuffer(pal: 1, buff: 6)
-        .UpdateExpectedMaterial(fstMats, im =>
-          {
-            im.Action.Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial;
-          }
-        )
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
         })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 6, waitForMach: true, mats: fstMats),
           FakeIccDsl.ExpectRouteIncrement(pal: 1, newCycleCnt: 1, faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) }),
         })
 
-        // unloads old material
         .AdvanceMinutes(2)
         .ExpectNoChanges()
         .MoveToLoad(pal: 1, lul: 4)
         .SetExpectedLoadCastings(new[] {
          (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
         })
-        .UpdateExpectedMaterial(fstMats, im =>
-        {
-          im.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
-          im.LastCompletedMachiningRouteStopIndex = null;
-        })
         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
         .ExpectTransition(new[] {
-          FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 6, waitForMach: true, elapMin: 2, mats: fstMats),
           FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4),
         })
         .AdvanceMinutes(2)
-        .UpdateExpectedMaterial(fstMats, im =>
-        {
-          im.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(2);
-        })
         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 2)
         .ExpectNoChanges()
         .SetAfterLoad(pal: 1)
         .ClearExpectedLoadCastings()
-        .RemoveExpectedMaterial(fstMats.Select(m => m.MaterialID))
         .ExpectTransition(new[] {
-          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 9),
-          FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 2, activeMins: 9, mats: fstMats),
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 4),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, face: 1, unique: "uniq1", path: 1, cnt: 1, elapsedMin: 2, activeMins: 8, mats: out var sndMats)
         })
         .MoveToBuffer(pal: 1, buff: 1)
@@ -3308,7 +3301,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
           _dsl.LoadToFace(pal: 1, lul: 3, face: 1, unique: "uniq1", elapsedMin: 2, activeMins: 8, loadingMats: new[] { mat1}, loadedMats: out var loadedMat1),
-          FakeIccDsl.RemoveFromQueue(queue: "rawmat", pos: 0, elapMin: 2, mat: loadedMat1)
+          FakeIccDsl.RemoveFromQueue(queue: "rawmat", pos: 0, elapMin: 2, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, loadedMat1)))
         })
         .MoveToMachineQueue(pal: 1, mach: 6)
         .ExpectNoChanges()
@@ -3456,7 +3449,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 17 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 5, activeMins: 9, mats: AAAproc1),
-          FakeIccDsl.AddToQueue("Quarantine", 0, AAAproc1),
+          FakeIccDsl.AddToQueue("Quarantine", 0, reason: "Unloaded", AAAproc1),
           FakeIccDsl.LoadCastingToFace(pal: 1, lul: 4, elapsedMin: 5, face: 1, unique: "uniq1", path: 1, cnt: 1, activeMins: 8, mats: out var BBBproc1),
         })
         ;
@@ -3552,7 +3545,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
         })
         .ExpectTransition(new[] {
-          FakeIccDsl.AddToQueue(queue: "Quarantine", pos: 0, mat: FakeIccDsl.ClearFaces(fstMats)),
+          FakeIccDsl.AddToQueue(queue: "Quarantine", pos: 0, reason: "PalletToManualControl", mat: FakeIccDsl.ClearFaces(fstMats)),
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 11)
         })
 

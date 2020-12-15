@@ -100,6 +100,8 @@ namespace BlackMaple.MachineWatchInterface
     [EnumMember] PalletOnRotaryInbound = 108,
     [EnumMember] PalletInStocker = 110,
     [EnumMember] SignalQuarantine = 111,
+    [EnumMember] InvalidateCycle = 112,
+    [EnumMember] SwapMaterialOnPallet = 113,
   }
 
   [Serializable, DataContract, KnownType(typeof(MaterialProcessActualPath))]
@@ -206,6 +208,25 @@ namespace BlackMaple.MachineWatchInterface
     {
       Counter = newCounter;
       Material = copy.Material; // ok since material is immutable
+      Pallet = copy.Pallet;
+      LogType = copy.LogType;
+      LocationName = copy.LocationName;
+      LocationNum = copy.LocationNum;
+      Program = copy.Program;
+      StartOfCycle = copy.StartOfCycle;
+      EndTimeUTC = copy.EndTimeUTC;
+      Result = copy.Result;
+      EndOfRoute = copy.EndOfRoute;
+      ElapsedTime = copy.ElapsedTime;
+      ActiveOperationTime = copy.ActiveOperationTime;
+      _details = new Dictionary<string, string>(copy._details);
+      Tools = new Dictionary<string, ToolUse>(copy.Tools);
+    }
+
+    public LogEntry(LogEntry copy, IEnumerable<LogMaterial> newMats)
+    {
+      Counter = copy.Counter;
+      Material = newMats;
       Pallet = copy.Pallet;
       LogType = copy.LogType;
       LocationName = copy.LocationName;
@@ -343,5 +364,18 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(Name = "finalized", IsRequired = false, EmitDefaultValue = false)]
     public DateTime? FinalizedTimeUTC { get; set; }
+  }
+
+  [DataContract]
+  public class EditMaterialInLogEvents
+  {
+    [DataMember(IsRequired = true)]
+    public long OldMaterialID { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public long NewMaterialID { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public IEnumerable<LogEntry> EditedEvents { get; set; }
   }
 }

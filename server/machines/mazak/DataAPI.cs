@@ -319,9 +319,13 @@ namespace MazakMachineInterface
   }
 
 
-  public class MazakSchedules
+  public class MazakCurrentStatus
   {
     public IEnumerable<MazakScheduleRow> Schedules { get; set; }
+    public IEnumerable<LoadAction> LoadActions { get; set; }
+    public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; set; }
+    public IEnumerable<MazakPalletPositionRow> PalletPositions { get; set; }
+    public IEnumerable<MazakAlarmRow> Alarms { get; set; }
 
     public void FindSchedule(string mazakPartName, int proc, out string unique, out int path, out int numProc)
     {
@@ -343,9 +347,8 @@ namespace MazakMachineInterface
     }
   }
 
-  public class MazakSchedulesAndLoadActions : MazakSchedules
+  public class MazakCurrentStatusAndTools : MazakCurrentStatus
   {
-    public IEnumerable<LoadAction> LoadActions { get; set; }
     public IEnumerable<ToolPocketRow> Tools { get; set; }
   }
 
@@ -355,16 +358,12 @@ namespace MazakMachineInterface
     public string Comment { get; set; }
   }
 
-  public class MazakAllData : MazakSchedules
+  public class MazakAllData : MazakCurrentStatus
   {
     public IEnumerable<MazakPartRow> Parts { get; set; }
     public IEnumerable<MazakPalletRow> Pallets { get; set; }
-    public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; set; }
-    public IEnumerable<MazakPalletPositionRow> PalletPositions { get; set; }
-    public IEnumerable<LoadAction> LoadActions { get; set; }
     public IEnumerable<MazakProgramRow> MainPrograms { get; set; }
     public IEnumerable<MazakFixtureRow> Fixtures { get; set; }
-    public IEnumerable<MazakAlarmRow> Alarms { get; set; }
   }
 
   public interface ICurrentLoadActions : IDisposable
@@ -375,7 +374,7 @@ namespace MazakMachineInterface
   public interface IReadDataAccess
   {
     MazakDbType MazakType { get; }
-    MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions();
+    MazakCurrentStatusAndTools LoadStatusAndTools();
     MazakAllData LoadAllData();
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();

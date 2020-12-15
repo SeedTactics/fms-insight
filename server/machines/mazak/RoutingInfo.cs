@@ -54,6 +54,7 @@ namespace MazakMachineInterface
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
     private readonly Action<NewJobs> _onNewJobs;
     private readonly Action<CurrentStatus> _onCurStatusChange;
+    private readonly Action<EditMaterialInLogEvents> _onEditMatInLog;
     public readonly bool _useStartingOffsetForDueDate;
 
     public Action<NewJobs> NewJobTransform = null;
@@ -71,7 +72,8 @@ namespace MazakMachineInterface
       bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<NewJobs> onNewJobs,
-      Action<CurrentStatus> onStatusChange
+      Action<CurrentStatus> onStatusChange,
+      Action<EditMaterialInLogEvents> onEditMatInLog
     )
     {
       writeDb = d;
@@ -87,6 +89,7 @@ namespace MazakMachineInterface
       _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
       _onNewJobs = onNewJobs;
       _onCurStatusChange = onStatusChange;
+      _onEditMatInLog = onEditMatInLog;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
       _copySchedulesTimer.Elapsed += (sender, args) => RecopyJobsToSystem();
@@ -388,7 +391,14 @@ namespace MazakMachineInterface
           }
           // the add to queue log entry will use the process, so later when we lookup the latest completed process
           // for the material in the queue, it will be correctly computed.
-          logDb.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
+          logDb.RecordAddMaterialToQueue(
+            matID: matId,
+            process: 0,
+            queue: queue,
+            position: position >= 0 ? position + i : -1,
+            operatorName: operatorName,
+            reason: "SetByOperator"
+          );
         }
 
         logReader.RecheckQueues(wait: true);
@@ -446,7 +456,13 @@ namespace MazakMachineInterface
         }
         // the add to queue log entry will use the process, so later when we lookup the latest completed process
         // for the material in the queue, it will be correctly computed.
-        logDb.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
+        logDb.RecordAddMaterialToQueue(
+          matID: matId,
+          process: process,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator");
         logDb.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
 
         logReader.RecheckQueues(wait: true);
@@ -471,14 +487,16 @@ namespace MazakMachineInterface
       CurrentStatus status;
       using (var logDb = logDbCfg.OpenConnection())
       {
-        var proc =
-          logDb.GetLogForMaterial(materialId)
-          .SelectMany(e => e.Material)
-          .Where(m => m.MaterialID == materialId)
-          .Select(m => m.Process)
-          .DefaultIfEmpty(0)
-          .Max();
-        logDb.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
+        var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
+        var proc = (nextProc ?? 1) - 1;
+        logDb.RecordAddMaterialToQueue(
+          matID: materialId,
+          process: proc,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator"
+        );
         logReader.RecheckQueues(wait: true);
 
         using (var jdb = jobDBCfg.OpenConnection())
@@ -498,13 +516,8 @@ namespace MazakMachineInterface
       {
         foreach (var materialId in materialIds)
         {
-          var proc =
-            logDb.GetLogForMaterial(materialId)
-            .SelectMany(e => e.Material)
-            .Where(m => m.MaterialID == materialId)
-            .Select(m => m.Process)
-            .DefaultIfEmpty(0)
-            .Max();
+          var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
+          var proc = (nextProc ?? 1) - 1;
           logDb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
         }
         logReader.RecheckQueues(wait: true);
@@ -543,6 +556,48 @@ namespace MazakMachineInterface
         {
           ((IJobControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
         }
+      }
+    }
+
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
+
+      using (var logDb = logDbCfg.OpenConnection())
+      using (var jdb = jobDBCfg.OpenConnection())
+      {
+        var o = logDb.SwapMaterialInCurrentPalletCycle(
+          pallet: pallet,
+          oldMatId: oldMatId,
+          newMatId: newMatId,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+
+        _onEditMatInLog(new EditMaterialInLogEvents()
+        {
+          OldMaterialID = oldMatId,
+          NewMaterialID = newMatId,
+          EditedEvents = o.ChangedLogEntries,
+        });
+        _onCurStatusChange(CurrentStatus(jdb, logDb));
+      }
+    }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
+
+      using (var logDb = logDbCfg.OpenConnection())
+      using (var jdb = jobDBCfg.OpenConnection())
+      {
+        logDb.InvalidatePalletCycle(
+          matId: matId,
+          process: process,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+        _onCurStatusChange(CurrentStatus(jdb, logDb));
       }
     }
     #endregion

@@ -41,7 +41,7 @@ namespace MazakMachineInterface
 {
   public interface IHoldManagement
   {
-    TimeSpan CheckForTransition(MazakSchedules schedules, BlackMaple.MachineFramework.JobDB jobDB);
+    TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.JobDB jobDB);
   }
 
   public class HoldPattern : IHoldManagement
@@ -157,7 +157,7 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    public TimeSpan CheckForTransition(MazakSchedules schedules, BlackMaple.MachineFramework.JobDB jobDB)
+    public TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.JobDB jobDB)
     {
       try
       {

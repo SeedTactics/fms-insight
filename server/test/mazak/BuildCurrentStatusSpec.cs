@@ -251,7 +251,9 @@ namespace MachineWatchTest
       _memoryLog.AddPendingLoad("1", "thekey", 1, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), "foreignid");
 
       var matId = _memoryLog.AllocateMaterialID("aaa-schId1234", "aaa", 2);
-      _memoryLog.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1);
+      _memoryLog.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1,
+        operatorName: null, reason: "TheQueueReason"
+      );
 
       var status = BuildCurrentStatus.Build(_jobDB, _memoryLog, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));

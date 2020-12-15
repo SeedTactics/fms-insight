@@ -61,7 +61,7 @@ namespace MazakMachineInterface
       CurrentQueueMismatch = false;
     }
 
-    public bool CheckQueues(JobDB jobDB, EventLogDB logDB, MazakSchedulesAndLoadActions mazakData)
+    public bool CheckQueues(JobDB jobDB, EventLogDB logDB, MazakCurrentStatus mazakData)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
       {
@@ -93,7 +93,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public MazakWriteData CalculateScheduleChanges(JobDB jdb, EventLogDB logDb, MazakSchedulesAndLoadActions mazakData)
+    public MazakWriteData CalculateScheduleChanges(JobDB jdb, EventLogDB logDb, MazakCurrentStatus mazakData)
     {
       IEnumerable<ScheduleWithQueues> schs;
       schs = LoadSchedules(jdb, logDb, mazakData);
@@ -124,7 +124,7 @@ namespace MazakMachineInterface
       public int? NewPriority { get; set; }
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(JobDB jdb, EventLogDB logDB, MazakSchedulesAndLoadActions mazakData)
+    private IEnumerable<ScheduleWithQueues> LoadSchedules(JobDB jdb, EventLogDB logDB, MazakCurrentStatus mazakData)
     {
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
@@ -216,7 +216,7 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    private void CalculateTargetMatQty(EventLogDB logDb, MazakSchedulesAndLoadActions mazakData, IEnumerable<ScheduleWithQueues> schs)
+    private void CalculateTargetMatQty(EventLogDB logDb, MazakCurrentStatus mazakData, IEnumerable<ScheduleWithQueues> schs)
     {
       // go through each job and process, and distribute the queued material among the various paths
       // for the job and process.
@@ -256,7 +256,9 @@ namespace MazakMachineInterface
                 logDb.RecordAddMaterialToQueue(
                   mat: new EventLogDB.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" },
                   queue: schProc.InputQueue,
-                  position: -1
+                  position: -1,
+                  operatorName: null,
+                  reason: "CreatedToMatchMazakQuantities"
                 );
               }
             }
@@ -426,19 +428,6 @@ namespace MazakMachineInterface
       };
     }
 
-    private static int FindNextProcess(EventLogDB log, long matId)
-    {
-      var matLog = log.GetLogForMaterial(matId);
-      var lastProc =
-        matLog
-        .SelectMany(e => e.Material)
-        .Where(m => m.MaterialID == matId)
-        .Select(m => m.Process)
-        .DefaultIfEmpty(0)
-        .Max();
-      return lastProc + 1;
-    }
-
     private static int? FindPathGroup(EventLogDB log, JobPlan job, long matId)
     {
       var details = log.GetMaterialDetails(matId);
@@ -460,7 +449,7 @@ namespace MazakMachineInterface
       foreach (var m in materialToSearch)
       {
         if (m.Unique != job.UniqueStr) continue;
-        if (FindNextProcess(log, m.MaterialID) != proc) continue;
+        if ((log.NextProcessForQueuedMaterial(m.MaterialID) ?? 1) != proc) continue;
         if (job.GetNumPaths(proc) > 1)
         {
           if (FindPathGroup(log, job, m.MaterialID) != job.GetPathGroup(proc, path)) continue;

@@ -42,6 +42,7 @@ using System.Runtime.Serialization;
 namespace BlackMaple.MachineFramework.Controllers
 {
   [DataContract]
+  [KnownType(typeof(ServerEvent))]
   public class FMSInfo
   {
     [DataMember] public string Name { get; set; }

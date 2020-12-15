@@ -47,11 +47,12 @@ namespace BlackMaple.FMSInsight.Niigata
     private ISyncPallets _sync;
     private readonly NiigataStationNames _statNames;
     private Action<NewJobs> _onNewJobs;
+    private Action<EditMaterialInLogEvents> _onEditMatInLog;
     private bool _requireRawMatQueue;
     private bool _requireInProcessQueues;
 
     public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
-                       bool requireRawMatQ, bool requireInProcQ, Action<NewJobs> onNewJobs)
+                       bool requireRawMatQ, bool requireInProcQ, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
     {
       _onNewJobs = onNewJobs;
       _jobDbCfg = j;
@@ -61,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _statNames = statNames;
       _requireRawMatQueue = requireRawMatQ;
       _requireInProcessQueues = requireInProcQ;
+      _onEditMatInLog = onEditMatInLog;
     }
 
     CurrentStatus IJobControl.GetCurrentStatus()
@@ -319,7 +321,13 @@ namespace BlackMaple.FMSInsight.Niigata
             },
             serial[i]);
         }
-        var logEvt = logDB.RecordAddMaterialToQueue(matId, 0, queue, position >= 0 ? position + i : -1, operatorName: operatorName);
+        var logEvt = logDB.RecordAddMaterialToQueue(
+          matID: matId,
+          process: 0,
+          queue: queue,
+          position: position >= 0 ? position + i : -1,
+          operatorName: operatorName,
+          reason: "SetByOperator");
         mats.Add(new InProcessMaterial()
         {
           MaterialID = matId,
@@ -435,7 +443,13 @@ namespace BlackMaple.FMSInsight.Niigata
             },
             serial);
         }
-        logEvt = ldb.RecordAddMaterialToQueue(matId, process, queue, position, operatorName: operatorName);
+        logEvt = ldb.RecordAddMaterialToQueue(
+          matID: matId,
+          process: process,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator");
         ldb.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       }
 
@@ -473,14 +487,15 @@ namespace BlackMaple.FMSInsight.Niigata
       );
       using (var ldb = _logDbCfg.OpenConnection())
       {
-        var proc =
-          ldb.GetLogForMaterial(materialId)
-          .SelectMany(e => e.Material)
-          .Where(m => m.MaterialID == materialId)
-          .Select(m => m.Process)
-          .DefaultIfEmpty(0)
-          .Max();
-        ldb.RecordAddMaterialToQueue(materialId, proc, queue, position, operatorName);
+        var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+        var proc = (nextProc ?? 1) - 1;
+        ldb.RecordAddMaterialToQueue(
+          matID: materialId,
+          process: proc,
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator");
       }
 
       _sync.JobsOrQueuesChanged();
@@ -493,13 +508,8 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         foreach (var materialId in materialIds)
         {
-          var proc =
-            ldb.GetLogForMaterial(materialId)
-            .SelectMany(e => e.Material)
-            .Where(m => m.MaterialID == materialId)
-            .Select(m => m.Process)
-            .DefaultIfEmpty(0)
-            .Max();
+          var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+          var proc = (nextProc ?? 1) - 1;
           ldb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
         }
       }
@@ -547,6 +557,52 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         throw new BadRequestException("Unable to find material to quarantine");
       }
+    }
+
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
+
+      using (var logDb = _logDbCfg.OpenConnection())
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+
+        var o = logDb.SwapMaterialInCurrentPalletCycle(
+          pallet: pallet,
+          oldMatId: oldMatId,
+          newMatId: newMatId,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+
+        _onEditMatInLog(new EditMaterialInLogEvents()
+        {
+          OldMaterialID = oldMatId,
+          NewMaterialID = newMatId,
+          EditedEvents = o.ChangedLogEntries,
+        });
+      }
+
+      _sync.JobsOrQueuesChanged();
+    }
+
+    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    {
+      Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
+
+      using (var logDb = _logDbCfg.OpenConnection())
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+
+        logDb.InvalidatePalletCycle(
+          matId: matId,
+          process: process,
+          oldMatPutInQueue: oldMatPutInQueue,
+          operatorName: operatorName
+        );
+      }
+
+      _sync.JobsOrQueuesChanged();
     }
     #endregion
   }

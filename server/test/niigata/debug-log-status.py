@@ -24,7 +24,7 @@ def printCellState(timestamp, pals):
   print(d.ctime() + "  (" + timestamp + ")")
   for p in sorted(pals["Status"]["Pallets"], key=lambda x: x["Master"]["PalletNum"]):
     msg = f'Pal {p["Master"]["PalletNum"]} - {p["CurStation"]["Location"]["Location"]} {p["CurStation"]["Location"]["Num"]}'
-    msg += f' [cycles {p["Master"]["RemainingPalletCycles"]}, pri {p["Master"]["Priority"]}, nowork {p["Master"]["NoWork"]}, skip {p["Master"]["Skip"]}] '
+    msg += f' [cycles {p["Master"]["RemainingPalletCycles"]}, pri {p["Master"]["Priority"]}, nowork {p["Master"]["NoWork"]}, skip {p["Master"]["Skip"]}, alarm {p["Tracking"]["Alarm"]}] '
     msg += " -> ".join([printRouteStep(p, i, step) for i, step in enumerate(p["Master"]["Routes"])])
     executed = p["Tracking"]["ExecutedStationNumber"]
     if (len(executed) > 0):

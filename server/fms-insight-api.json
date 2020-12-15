@@ -845,6 +845,107 @@
         }
       }
     },
+    "/api/v1/jobs/material/{materialId}/invalidate-process": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_InvalidatePalletCycle",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
+          {
+            "name": "process",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "putMatInQueue",
+            "in": "query",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/material/{materialId}/swap-off-pallet": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_SwapMaterialOnPallet",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "materialId",
+            "in": "path",
+            "required": true,
+            "format": "int64",
+            "x-nullable": false
+          },
+          {
+            "name": "mat",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MatToPutOnPallet"
+            },
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "putMatInQueue",
+            "in": "query",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "operName",
+            "in": "query",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/material": {
       "delete": {
         "tags": [
@@ -1932,18 +2033,283 @@
         }
       }
     },
-    "HistoricData": {
+    "ServerEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "LogEntry": {
+          "$ref": "#/definitions/LogEntry"
+        },
+        "NewJobs": {
+          "$ref": "#/definitions/NewJobs"
+        },
+        "NewCurrentStatus": {
+          "$ref": "#/definitions/CurrentStatus"
+        },
+        "EditMaterialInLog": {
+          "$ref": "#/definitions/EditMaterialInLogEvents"
+        }
+      }
+    },
+    "LogEntry": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "Jobs",
-        "StationUse"
+        "counter",
+        "material",
+        "type",
+        "startofcycle",
+        "endUTC",
+        "loc",
+        "locnum",
+        "pal",
+        "program",
+        "result",
+        "elapsed",
+        "active"
       ],
       "properties": {
-        "Jobs": {
+        "details": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/HistoricJob"
+            "type": "string"
+          }
+        },
+        "counter": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "material": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LogMaterial"
+          }
+        },
+        "type": {
+          "$ref": "#/definitions/LogType"
+        },
+        "startofcycle": {
+          "type": "boolean"
+        },
+        "endUTC": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "loc": {
+          "type": "string"
+        },
+        "locnum": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pal": {
+          "type": "string"
+        },
+        "program": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        },
+        "elapsed": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "active": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ToolUse"
+          }
+        }
+      }
+    },
+    "LogMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "uniq",
+        "part",
+        "proc",
+        "numproc",
+        "face"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uniq": {
+          "type": "string"
+        },
+        "part": {
+          "type": "string"
+        },
+        "proc": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "numproc": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "face": {
+          "type": "string"
+        },
+        "serial": {
+          "type": "string"
+        },
+        "workorder": {
+          "type": "string"
+        }
+      }
+    },
+    "LogType": {
+      "type": "string",
+      "description": "",
+      "x-enumNames": [
+        "LoadUnloadCycle",
+        "MachineCycle",
+        "PartMark",
+        "Inspection",
+        "OrderAssignment",
+        "GeneralMessage",
+        "PalletCycle",
+        "FinalizeWorkorder",
+        "InspectionResult",
+        "Wash",
+        "AddToQueue",
+        "RemoveFromQueue",
+        "InspectionForce",
+        "PalletOnRotaryInbound",
+        "PalletInStocker",
+        "SignalQuarantine",
+        "InvalidateCycle",
+        "SwapMaterialOnPallet"
+      ],
+      "enum": [
+        "LoadUnloadCycle",
+        "MachineCycle",
+        "PartMark",
+        "Inspection",
+        "OrderAssignment",
+        "GeneralMessage",
+        "PalletCycle",
+        "FinalizeWorkorder",
+        "InspectionResult",
+        "Wash",
+        "AddToQueue",
+        "RemoveFromQueue",
+        "InspectionForce",
+        "PalletOnRotaryInbound",
+        "PalletInStocker",
+        "SignalQuarantine",
+        "InvalidateCycle",
+        "SwapMaterialOnPallet"
+      ]
+    },
+    "ToolUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ToolUseDuringCycle",
+        "TotalToolUseAtEndOfCycle",
+        "ConfiguredToolLife"
+      ],
+      "properties": {
+        "ToolUseDuringCycle": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "TotalToolUseAtEndOfCycle": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "ConfiguredToolLife": {
+          "type": "string",
+          "format": "time-span"
+        },
+        "ToolChangeOccurred": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MaterialProcessActualPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "MaterialID",
+        "Process",
+        "Pallet",
+        "LoadStation",
+        "Stops",
+        "UnloadStation"
+      ],
+      "properties": {
+        "MaterialID": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Process": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Pallet": {
+          "type": "string"
+        },
+        "LoadStation": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "Stops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Stop"
+          }
+        },
+        "UnloadStation": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "Stop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "StationName",
+        "StationNum"
+      ],
+      "properties": {
+        "StationName": {
+          "type": "string"
+        },
+        "StationNum": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "NewJobs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ScheduleId",
+        "Jobs",
+        "ArchiveCompletedJobs"
+      ],
+      "properties": {
+        "ScheduleId": {
+          "type": "string"
+        },
+        "Jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JobPlan"
           }
         },
         "StationUse": {
@@ -1951,53 +2317,38 @@
           "items": {
             "$ref": "#/definitions/SimulatedStationUtilization"
           }
-        }
-      }
-    },
-    "HistoricJob": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/JobPlan"
         },
-        {
+        "ExtraParts": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "Decrements": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/DecrementQuantity"
-              }
-            }
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int32"
           }
-        }
-      ]
-    },
-    "DecrementQuantity": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "DecrementId",
-        "Proc1Path",
-        "TimeUTC",
-        "Quantity"
-      ],
-      "properties": {
-        "DecrementId": {
-          "type": "integer",
-          "format": "int64"
         },
-        "Proc1Path": {
-          "type": "integer",
-          "format": "int32"
+        "CurrentUnfilledWorkorders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PartWorkorder"
+          }
         },
-        "TimeUTC": {
+        "QueueSizes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/QueueSize"
+          }
+        },
+        "Programs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProgramEntry"
+          }
+        },
+        "DebugMessage": {
           "type": "string",
-          "format": "date-time"
+          "format": "byte"
         },
-        "Quantity": {
-          "type": "integer",
-          "format": "int32"
+        "ArchiveCompletedJobs": {
+          "type": "boolean"
         }
       }
     },
@@ -2352,39 +2703,6 @@
         }
       }
     },
-    "PlannedSchedule": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "LatestScheduleId",
-        "Jobs",
-        "ExtraParts"
-      ],
-      "properties": {
-        "LatestScheduleId": {
-          "type": "string"
-        },
-        "Jobs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/JobPlan"
-          }
-        },
-        "ExtraParts": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "CurrentUnfilledWorkorders": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/PartWorkorder"
-          }
-        }
-      }
-    },
     "PartWorkorder": {
       "type": "object",
       "additionalProperties": false,
@@ -2413,6 +2731,41 @@
         "Priority": {
           "type": "integer",
           "format": "int32"
+        }
+      }
+    },
+    "QueueSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "MaxSizeBeforeStopUnloading": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "ProgramEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ProgramName",
+        "Comment",
+        "ProgramContent",
+        "Revision"
+      ],
+      "properties": {
+        "ProgramName": {
+          "type": "string"
+        },
+        "Comment": {
+          "type": "string"
+        },
+        "ProgramContent": {
+          "type": "string"
+        },
+        "Revision": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -2508,6 +2861,34 @@
           }
         }
       ]
+    },
+    "DecrementQuantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "DecrementId",
+        "Proc1Path",
+        "TimeUTC",
+        "Quantity"
+      ],
+      "properties": {
+        "DecrementId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "Proc1Path": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "TimeUTC": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "Quantity": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "PalletStatus": {
       "type": "object",
@@ -2746,38 +3127,88 @@
         "Machining"
       ]
     },
-    "QueueSize": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "MaxSizeBeforeStopUnloading": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    },
-    "NewJobs": {
+    "EditMaterialInLogEvents": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "ScheduleId",
-        "Jobs",
-        "ArchiveCompletedJobs"
+        "OldMaterialID",
+        "NewMaterialID",
+        "EditedEvents"
       ],
       "properties": {
-        "ScheduleId": {
-          "type": "string"
+        "OldMaterialID": {
+          "type": "integer",
+          "format": "int64"
         },
-        "Jobs": {
+        "NewMaterialID": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "EditedEvents": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/JobPlan"
+            "$ref": "#/definitions/LogEntry"
+          }
+        }
+      }
+    },
+    "HistoricData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Jobs",
+        "StationUse"
+      ],
+      "properties": {
+        "Jobs": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/HistoricJob"
           }
         },
         "StationUse": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/SimulatedStationUtilization"
+          }
+        }
+      }
+    },
+    "HistoricJob": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/JobPlan"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "Decrements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DecrementQuantity"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PlannedSchedule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "LatestScheduleId",
+        "Jobs",
+        "ExtraParts"
+      ],
+      "properties": {
+        "LatestScheduleId": {
+          "type": "string"
+        },
+        "Jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JobPlan"
           }
         },
         "ExtraParts": {
@@ -2792,50 +3223,6 @@
           "items": {
             "$ref": "#/definitions/PartWorkorder"
           }
-        },
-        "QueueSizes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/QueueSize"
-          }
-        },
-        "Programs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ProgramEntry"
-          }
-        },
-        "DebugMessage": {
-          "type": "string",
-          "format": "byte"
-        },
-        "ArchiveCompletedJobs": {
-          "type": "boolean"
-        }
-      }
-    },
-    "ProgramEntry": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "ProgramName",
-        "Comment",
-        "ProgramContent",
-        "Revision"
-      ],
-      "properties": {
-        "ProgramName": {
-          "type": "string"
-        },
-        "Comment": {
-          "type": "string"
-        },
-        "ProgramContent": {
-          "type": "string"
-        },
-        "Revision": {
-          "type": "integer",
-          "format": "int64"
         }
       }
     },
@@ -2853,6 +3240,23 @@
         "Position": {
           "type": "integer",
           "format": "int32"
+        }
+      }
+    },
+    "MatToPutOnPallet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Pallet",
+        "MaterialIDToSetOnPallet"
+      ],
+      "properties": {
+        "Pallet": {
+          "type": "string"
+        },
+        "MaterialIDToSetOnPallet": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -2887,245 +3291,6 @@
           "type": "string"
         },
         "Quantity": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    },
-    "LogEntry": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "counter",
-        "material",
-        "type",
-        "startofcycle",
-        "endUTC",
-        "loc",
-        "locnum",
-        "pal",
-        "program",
-        "result",
-        "elapsed",
-        "active"
-      ],
-      "properties": {
-        "details": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "counter": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "material": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/LogMaterial"
-          }
-        },
-        "type": {
-          "$ref": "#/definitions/LogType"
-        },
-        "startofcycle": {
-          "type": "boolean"
-        },
-        "endUTC": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "loc": {
-          "type": "string"
-        },
-        "locnum": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "pal": {
-          "type": "string"
-        },
-        "program": {
-          "type": "string"
-        },
-        "result": {
-          "type": "string"
-        },
-        "elapsed": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "active": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "tools": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/ToolUse"
-          }
-        }
-      }
-    },
-    "LogMaterial": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "uniq",
-        "part",
-        "proc",
-        "numproc",
-        "face"
-      ],
-      "properties": {
-        "id": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "uniq": {
-          "type": "string"
-        },
-        "part": {
-          "type": "string"
-        },
-        "proc": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "numproc": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "face": {
-          "type": "string"
-        },
-        "serial": {
-          "type": "string"
-        },
-        "workorder": {
-          "type": "string"
-        }
-      }
-    },
-    "LogType": {
-      "type": "string",
-      "description": "",
-      "x-enumNames": [
-        "LoadUnloadCycle",
-        "MachineCycle",
-        "PartMark",
-        "Inspection",
-        "OrderAssignment",
-        "GeneralMessage",
-        "PalletCycle",
-        "FinalizeWorkorder",
-        "InspectionResult",
-        "Wash",
-        "AddToQueue",
-        "RemoveFromQueue",
-        "InspectionForce",
-        "PalletOnRotaryInbound",
-        "PalletInStocker",
-        "SignalQuarantine"
-      ],
-      "enum": [
-        "LoadUnloadCycle",
-        "MachineCycle",
-        "PartMark",
-        "Inspection",
-        "OrderAssignment",
-        "GeneralMessage",
-        "PalletCycle",
-        "FinalizeWorkorder",
-        "InspectionResult",
-        "Wash",
-        "AddToQueue",
-        "RemoveFromQueue",
-        "InspectionForce",
-        "PalletOnRotaryInbound",
-        "PalletInStocker",
-        "SignalQuarantine"
-      ]
-    },
-    "ToolUse": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "ToolUseDuringCycle",
-        "TotalToolUseAtEndOfCycle",
-        "ConfiguredToolLife"
-      ],
-      "properties": {
-        "ToolUseDuringCycle": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "TotalToolUseAtEndOfCycle": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "ConfiguredToolLife": {
-          "type": "string",
-          "format": "time-span"
-        },
-        "ToolChangeOccurred": {
-          "type": "boolean"
-        }
-      }
-    },
-    "MaterialProcessActualPath": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "MaterialID",
-        "Process",
-        "Pallet",
-        "LoadStation",
-        "Stops",
-        "UnloadStation"
-      ],
-      "properties": {
-        "MaterialID": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "Process": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "Pallet": {
-          "type": "string"
-        },
-        "LoadStation": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "Stops": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Stop"
-          }
-        },
-        "UnloadStation": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    },
-    "Stop": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "StationName",
-        "StationNum"
-      ],
-      "properties": {
-        "StationName": {
-          "type": "string"
-        },
-        "StationNum": {
           "type": "integer",
           "format": "int32"
         }

@@ -159,7 +159,7 @@ namespace MazakMachineInterface
       {
         try
         {
-          var mazakData = _readDB.LoadSchedulesAndLoadActions();
+          var mazakData = _readDB.LoadStatusAndTools();
           List<LogEntry> logs;
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
 
@@ -181,11 +181,13 @@ namespace MazakMachineInterface
               }
             }
 
+            var palStChanged = trans.CheckPalletStatusMatchesLogs();
+
             var queuesChanged = _queues.CheckQueues(jobDB, logDB, mazakData);
 
             _hold.CheckForTransition(mazakData, jobDB);
 
-            if (logs.Count > 0 || queuesChanged)
+            if (logs.Count > 0 || queuesChanged || palStChanged)
             {
               _currentStatusChanged(jobDB, logDB);
             }
@@ -435,13 +437,12 @@ namespace MazakMachineInterface
 
           Log.Debug("Waking up log thread for {reason}: total GC memory {mem}", ret, GC.GetTotalMemory(false));
 
-          var mazakData = _readDB.LoadSchedulesAndLoadActions();
+          var mazakData = _readDB.LoadStatusAndTools();
 
           Log.Debug("Loaded mazak schedules {@data}", mazakData);
 
           List<LogEntry> logs;
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
-          bool queuesChanged;
 
           using (var logDb = _logDbCfg.OpenConnection())
           using (var jobDB = _jobDBCfg.OpenConnection())
@@ -464,11 +465,13 @@ namespace MazakMachineInterface
 
             DeleteLog(logDb.MaxForeignID());
 
-            queuesChanged = _queues.CheckQueues(jobDB, logDb, mazakData);
+            var palStChanged = trans.CheckPalletStatusMatchesLogs();
+
+            var queuesChanged = _queues.CheckQueues(jobDB, logDb, mazakData);
 
             _hold.CheckForTransition(mazakData, jobDB);
 
-            if (logs.Count > 0 || queuesChanged)
+            if (logs.Count > 0 || queuesChanged || palStChanged)
             {
               _currentStatusChanged(jobDB, logDb);
             }

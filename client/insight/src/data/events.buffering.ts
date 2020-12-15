@@ -46,7 +46,7 @@ export interface BufferEntry {
   readonly buffer: BufferType;
   readonly endTime: Date;
   readonly elapsedSeconds: number;
-  readonly mats: ReadonlyArray<Readonly<api.ILogMaterial>>;
+  readonly numMaterial: number;
 }
 
 export interface BufferingState {
@@ -101,7 +101,7 @@ export function process_events(
           buffer: { type: "Queue", queue: e.loc },
           endTime: e.endUTC,
           elapsedSeconds,
-          mats: e.material,
+          numMaterial: e.material.length,
         });
         break;
       case api.LogType.PalletInStocker:
@@ -110,14 +110,14 @@ export function process_events(
             buffer: { type: "StockerWaitForMC", stockerNum: e.locnum },
             endTime: e.endUTC,
             elapsedSeconds,
-            mats: e.material,
+            numMaterial: e.material.length,
           });
         } else if (!e.startofcycle) {
           entries = entries.append({
             buffer: { type: "StockerWaitForUnload", stockerNum: e.locnum },
             endTime: e.endUTC,
             elapsedSeconds,
-            mats: e.material,
+            numMaterial: e.material.length,
           });
         }
         break;
@@ -127,7 +127,7 @@ export function process_events(
             buffer: { type: "Rotary", machineGroup: e.loc, machineNum: e.locnum },
             endTime: e.endUTC,
             elapsedSeconds,
-            mats: e.material,
+            numMaterial: e.material.length,
           });
         }
         break;

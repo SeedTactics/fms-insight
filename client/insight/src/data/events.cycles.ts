@@ -46,6 +46,7 @@ export interface PalletCycleData extends CycleData {
 }
 
 export interface PartCycleData extends CycleData {
+  readonly cntr: number;
   readonly part: string;
   readonly process: number;
   readonly stationGroup: string;
@@ -547,6 +548,8 @@ export function process_events(
   let activeCycleTimes = st.active_cycle_times;
   let toolUsage = st.tool_usage;
 
+  const invalidateOldCyclesOnEvent = expire.type === ExpireOldDataType.ExpireEarlierThan;
+
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan: {
       // check if nothing to expire and no new data
@@ -624,6 +627,7 @@ export function process_events(
       return {
         x: cycle.endUTC,
         y: elapsed,
+        cntr: cycle.counter,
         activeMinutes: activeMins,
         medianCycleMinutes: stats.map((s) => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
         MAD_aboveMinutes: stats.map((s) => s.MAD_aboveMinutes).getOrElse(0),
@@ -665,8 +669,22 @@ export function process_events(
     );
   pals = pals.mergeWith(newPalCycles, (oldCs, newCs) => oldCs.concat(newCs));
 
-  // merge inspections
+  // merge inspections and clear invalidated cycles
   const inspResult = newInspectionData(newEvts);
+  const invalidatedCycles = invalidateOldCyclesOnEvent
+    ? LazySeq.ofIterable(newEvts)
+        .filter((e) => e.type === api.LogType.InvalidateCycle)
+        .flatMap((e) => {
+          const cntrs = e.details?.["EditedCounters"];
+          if (cntrs) {
+            return cntrs.split(",").map((i) => parseInt(i));
+          } else {
+            return [];
+          }
+        })
+        .toSet((x) => x)
+    : HashSet.empty<number>();
+
   allPartCycles = allPartCycles.appendAll(newCycles).map((x) => {
     for (const mat of x.material) {
       const signaled = inspResult.signaled[mat.id];
@@ -677,6 +695,9 @@ export function process_events(
       if (result) {
         x = { ...x, completedInspections: x.completedInspections.mergeWith(result, (_a, b) => b) };
       }
+    }
+    if (invalidatedCycles.contains(x.cntr)) {
+      x = { ...x, activeMinutes: 0 };
     }
     return x;
   });
@@ -702,4 +723,22 @@ export function process_events(
   } else {
     return newSt;
   }
+}
+
+export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: CycleState): CycleState {
+  const changedByCntr = LazySeq.ofIterable(swap.editedEvents).toMap(
+    (e) => [e.counter, e],
+    (e, _) => e
+  );
+
+  let partCycles = st.part_cycles.map((cycle) => {
+    const changed = changedByCntr.get(cycle.cntr).getOrNull();
+    if (changed) {
+      return { ...cycle, material: changed.material };
+    } else {
+      return cycle;
+    }
+  });
+
+  return { ...st, part_cycles: partCycles };
 }

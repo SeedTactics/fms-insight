@@ -62,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public event NewCurrentStatus OnNewCurrentStatus;
     private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId, EventLogDB db) =>
       NewLogEntry?.Invoke(e, foreignId);
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public NiigataBackend(
       IConfigurationSection config,
@@ -152,7 +153,8 @@ namespace BlackMaple.FMSInsight.Niigata
                                       statNames: StationNames,
                                       requireRawMatQ: config.GetValue<bool>("Require Raw Material Queue", false),
                                       requireInProcQ: config.GetValue<bool>("Require In-Process Queues", false),
-                                      onNewJobs: j => OnNewJobs?.Invoke(j));
+                                      onNewJobs: j => OnNewJobs?.Invoke(j),
+                                      onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o));
         if (startSyncThread)
         {
           StartSyncThread();

@@ -44,7 +44,7 @@ namespace MazakMachineInterface
   {
 
     public static (MazakWriteData, ISet<string>)
-      RemoveCompletedSchedules(MazakSchedules mazakData)
+      RemoveCompletedSchedules(MazakCurrentStatus mazakData)
     {
       //remove all completed production
       var transSet = new MazakWriteData();

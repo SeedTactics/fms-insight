@@ -153,7 +153,7 @@ function MaterialStatus(props: MaterialStatusProps) {
     return <span>In queue {props.inProcMat.location.currentQueue ?? ""}</span>;
   } else if (props.matSummary?.completed_machining) {
     return <span>Completed</span>;
-  } else if (props.matSummary !== null && props.matSummary.completed_procs.length === 0) {
+  } else if (props.matSummary !== null && props.matSummary.startedProcess1 === false) {
     return <span>Not yet started</span>;
   } else {
     return <span />;
@@ -235,7 +235,7 @@ function JobMaterial(props: JobMaterialProps) {
                       materialID: mat.materialID,
                       jobUnique: mat.jobUnique ?? "",
                       partName: mat.partName ?? "",
-                      completed_procs: [],
+                      startedProcess1: false,
                       serial: mat.serial,
                       workorderId: mat.workorder,
                       signaledInspections: [],

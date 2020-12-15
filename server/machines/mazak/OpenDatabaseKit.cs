@@ -224,8 +224,6 @@ namespace MazakMachineInterface
       return lst;
     }
 
-    private const int WaitCount = 5;
-
     public void Save(MazakWriteData data, string prefix)
     {
       foreach (var chunk in SplitWriteData(data))
@@ -237,8 +235,6 @@ namespace MazakMachineInterface
     private void SaveChunck(MazakWriteData data, string prefix)
     {
       CheckReadyForConnect();
-
-      int checkInterval = data.Schedules.Count() + data.Pallets.Count() + 2 * data.Parts.Count() + data.Fixtures.Count() + data.Programs.Count();
 
       Log.Debug("Writing {@data} to transaction db", data);
 
@@ -254,23 +250,17 @@ namespace MazakMachineInterface
       {
         using (var conn = CreateConnection())
         {
-          var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
-          try
+          using (var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted))
           {
 
             ClearTransactionDatabase(conn, trans);
             SaveData(data, conn, trans);
             trans.Commit();
           }
-          catch
-          {
-            trans.Rollback();
-            throw;
-          }
 
-          for (int i = 0; i <= WaitCount; i++)
+          foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30, 30 })
           {
-            System.Threading.Thread.Sleep(TimeSpan.FromSeconds(checkInterval));
+            System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
             if (CheckTransactionErrors(conn, prefix))
             {
               return;
@@ -701,11 +691,10 @@ namespace MazakMachineInterface
     {
       // Once Mazak processes a row, the row in the table is blanked.  If an error occurs, instead
       // the Command is changed to 9 and an error code is put in the TransactionStatus column.
-      var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted);
       bool foundUnprocesssedRow = false;
       var log = new List<string>();
       var partEditErrors = new HashSet<string>();
-      try
+      using (var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted))
       {
         foreach (var table in new[] { "Fixture_t", "Pallet_t", "Schedule_t" })
         {
@@ -750,11 +739,6 @@ namespace MazakMachineInterface
           }
         }
         trans.Commit();
-      }
-      catch (Exception ex)
-      {
-        trans.Rollback();
-        throw ex;
       }
 
       if (log.Any())
@@ -1057,17 +1041,20 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    public MazakSchedulesAndLoadActions LoadSchedulesAndLoadActions()
+    public MazakCurrentStatusAndTools LoadStatusAndTools()
     {
       return WithReadDBConnection(conn =>
       {
         using (var trans = conn.BeginTransaction())
         {
           var partFixQty = conn.Query<PartProcessFixQty>(_partProcFixQty, transaction: trans);
-          var ret = new MazakSchedulesAndLoadActions()
+          var ret = new MazakCurrentStatusAndTools()
           {
             Schedules = LoadSchedules(conn, trans, partFixQty),
             LoadActions = _loadOper.CurrentLoadActions(),
+            PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
+            PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
+            Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
             Tools =
               MazakType == MazakDbType.MazakSmooth
                 ? conn.Query<ToolPocketRow>(_toolSelect, transaction: trans)
@@ -1103,14 +1090,15 @@ namespace MazakMachineInterface
       return new MazakAllData()
       {
         Schedules = LoadSchedules(conn, trans, fixQty),
-        Parts = parts,
-        Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
+        LoadActions = _loadOper.CurrentLoadActions(),
         PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
         PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
-        LoadActions = _loadOper.CurrentLoadActions(),
+        Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
+
+        Parts = parts,
+        Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
         MainPrograms = conn.Query<MazakProgramRow>(_mainProgSelect, transaction: trans),
         Fixtures = conn.Query<MazakFixtureRow>(_fixtureSelect, transaction: trans),
-        Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans)
       };
     }
 
@@ -1156,17 +1144,11 @@ namespace MazakMachineInterface
     {
       var data = WithReadDBConnection(conn =>
       {
-        var trans = conn.BeginTransaction();
-        try
+        using (var trans = conn.BeginTransaction())
         {
           var ret = LoadAllData(conn, trans);
           trans.Commit();
           return ret;
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
         }
       });
 
