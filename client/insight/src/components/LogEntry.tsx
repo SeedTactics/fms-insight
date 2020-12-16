@@ -46,6 +46,7 @@ import ImportExport from "@material-ui/icons/ImportExport";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
 import { duration } from "moment";
+import clsx from "clsx";
 
 const logStyles = createStyles({
   machine: {
@@ -65,6 +66,12 @@ const logStyles = createStyles({
   },
   inspectionSignaled: {
     color: "red",
+  },
+  highlightProcess: {
+    backgroundColor: "#eeeeee",
+  },
+  invalidCycle: {
+    textDecoration: "line-through",
   },
 });
 
@@ -410,6 +417,13 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
   return details;
 }
 
+const logTypesToHighlight = [
+  api.LogType.AddToQueue,
+  api.LogType.RemoveFromQueue,
+  api.LogType.LoadUnloadCycle,
+  api.LogType.MachineCycle,
+];
+
 export const LogEntry = React.memo(
   withStyles(logStyles)((props: LogEntryProps) => {
     const details = detailsForEntry(props.entry);
@@ -417,12 +431,13 @@ export const LogEntry = React.memo(
     return (
       <>
         <TableRow
-          style={
-            props.highlightProcess !== undefined &&
-            props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0
-              ? { backgroundColor: "#eeeeee" }
-              : undefined
-          }
+          className={clsx({
+            [props.classes.highlightProcess]:
+              props.highlightProcess !== undefined &&
+              props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0 &&
+              logTypesToHighlight.indexOf(props.entry.type) >= 0,
+            [props.classes.invalidCycle]: props.entry.details?.["PalletCycleInvalidated"] === "1",
+          })}
         >
           <TableCell size="small">
             <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />

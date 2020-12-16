@@ -96,17 +96,21 @@ export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps
 export interface InvalidateCycleDialogButtonsProps {
   readonly curMat: Readonly<IInProcessMaterial> | null;
   readonly st: InvalidateCycleState;
-  readonly operator: string | null;
+  readonly operator: string | undefined;
   readonly setState: (s: InvalidateCycleState) => void;
+  readonly close: () => void;
 }
 
 export function InvalidateCycleDialogButtons(props: InvalidateCycleDialogButtonsProps) {
   function invalidateCycle() {
     if (props.curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(props.curMat.materialID, props.st.process, null, props.operator).finally(() =>
-        props.setState(null)
-      );
+      JobsBackend.invalidatePalletCycle(
+        props.curMat.materialID,
+        props.st.process,
+        undefined,
+        props.operator
+      ).finally(() => props.close());
     }
   }
 
@@ -152,7 +156,7 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
     (m) =>
       m.location.type !== LocType.OnPallet &&
       m.jobUnique === curMat.jobUnique &&
-      m.process === curMat.process &&
+      m.process === curMat.process - 1 &&
       m.path === curMat.path &&
       m.serial !== ""
   );
@@ -201,13 +205,13 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
 export interface SwapMaterialButtonsProps {
   readonly curMat: Readonly<IInProcessMaterial> | null;
   readonly st: SwapMaterialState;
-  readonly operator: string | null;
+  readonly operator: string | undefined;
   readonly setState: (s: SwapMaterialState) => void;
   readonly close: () => void;
 }
 
 export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
-  const quarantineQueueName = useSelector((s) => s.ServerSettings.fmsInfo?.quarantineQueue) ?? null;
+  const quarantineQueueName = useSelector((s) => s.ServerSettings.fmsInfo?.quarantineQueue);
 
   function swapMats() {
     if (props.curMat && props.st && props.st.selectedMatToSwap && props.curMat.location.type === LocType.OnPallet) {

@@ -73,18 +73,18 @@ export interface JobAPI {
     serial: string,
     operatorName: string | undefined
   ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
-  signalMaterialForQuarantine(materialId: number, queue: string, operName: string | null | undefined): Promise<void>;
+  signalMaterialForQuarantine(materialId: number, queue: string, operName: string | undefined): Promise<void>;
   swapMaterialOnPallet(
     materialId: number,
     mat: Readonly<api.IMatToPutOnPallet>,
-    putMatInQueue: string | null,
-    operName: string | null | undefined
+    putMatInQueue: string | undefined,
+    operName: string | undefined
   ): Promise<void>;
   invalidatePalletCycle(
     materialId: number,
     process: number,
-    putMatInQueue: string | null,
-    operName: string | null | undefined
+    putMatInQueue: string | undefined,
+    operName: string | undefined
   ): Promise<void>;
 }
 
@@ -151,7 +151,7 @@ export interface MachineAPI {
   getProgramRevisionsInDescendingOrderOfRevision(
     programName: string | null,
     count: number,
-    revisionToStart: number | null | undefined
+    revisionToStart: number | undefined
   ): Promise<ReadonlyArray<Readonly<api.IProgramRevision>>>;
 }
 

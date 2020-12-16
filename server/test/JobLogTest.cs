@@ -1906,6 +1906,12 @@ namespace MachineWatchTest
 
       now = now.AddMinutes(1);
 
+      origMatLog.AddRange(
+        _jobLog.RecordAddMaterialToQueue(matProc1, queue: "xyz", position: 0, operatorName: "oper", reason: "SomeReason", timeUTC: now)
+      );
+
+      now = now.AddMinutes(1);
+
       _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).Should().Be(2);
 
       // ------------------------------------------------------
@@ -1950,6 +1956,15 @@ namespace MachineWatchTest
 
       result.Should().BeEquivalentTo(new[] {
         expectedInvalidateMsg,
+        RemoveFromQueueExpectedEntry(
+          mat: logMatProc0,
+          cntr: 0,
+          queue: "xyz",
+          position: 0,
+          timeUTC: now,
+          elapsedMin: 1,
+          operName: "theoper"
+        ),
         AddToQueueExpectedEntry(
           mat: logMatProc0,
           cntr: 0,
@@ -1984,6 +1999,15 @@ namespace MachineWatchTest
               elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
             ),
             expectedInvalidateMsg,
+            RemoveFromQueueExpectedEntry(
+              mat: logMatProc0,
+              cntr: 0,
+              queue: "xyz",
+              position: 0,
+              timeUTC: now,
+              elapsedMin: 1,
+              operName: "theoper"
+            ),
             AddToQueueExpectedEntry(
               mat: logMatProc0,
               cntr: 0,
