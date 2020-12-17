@@ -31,28 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import { HashMap, Option } from "prelude-ts";
+import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { ExpireOldData, ExpireOldDataType } from "./events.cycles";
 
-export interface ScheduledJob {
-  readonly unique: string;
-  readonly scheduleId: string | null;
-  readonly partName: string;
-  readonly startingTime: Date;
-  readonly casting: string | null;
-  readonly comment: string | null;
-  readonly scheduledQty: number;
-  readonly decrementedQty: number;
-}
-
 export interface ScheduledJobsState {
-  readonly jobs: HashMap<string, ScheduledJob>;
+  readonly jobs: HashMap<string, Readonly<api.IHistoricJob>>;
+  readonly matIdsForJob: HashMap<string, HashSet<number>>;
   readonly someJobHasCasting: boolean;
 }
 
 export const initial: ScheduledJobsState = {
   jobs: HashMap.empty(),
+  matIdsForJob: HashMap.empty(),
   someJobHasCasting: false,
 };
 
@@ -62,22 +53,28 @@ export function process_scheduled_jobs(
   st: ScheduledJobsState
 ): ScheduledJobsState {
   let jobs = st.jobs;
+  let matIds = st.matIdsForJob;
   let someJobHasCasting = st.someJobHasCasting;
 
   switch (expire.type) {
     case ExpireOldDataType.ExpireEarlierThan: {
       // check if nothing to expire and no new data
-      const minStat = LazySeq.ofIterable(jobs).minOn(([, e]) => e.startingTime.getTime());
+      const minStat = LazySeq.ofIterable(jobs).minOn(([, e]) => e.routeStartUTC.getTime());
 
       if (
-        (minStat.isNone() || minStat.get()[1].startingTime >= expire.d) &&
+        (minStat.isNone() || minStat.get()[1].routeStartUTC >= expire.d) &&
         Object.keys(newHistory.jobs).length === 0
       ) {
         return st;
       }
 
       // filter old events
-      jobs = jobs.filter((_, j) => j.startingTime >= expire.d);
+      for (const [uniq, j] of jobs) {
+        if (j.routeStartUTC < expire.d) {
+          matIds = matIds.remove(uniq);
+        }
+      }
+      jobs = jobs.filter((_, j) => j.routeStartUTC >= expire.d);
 
       break;
     }
@@ -91,37 +88,62 @@ export function process_scheduled_jobs(
 
   for (const [newUniq, newJob] of LazySeq.ofObject(newHistory.jobs)) {
     if (!jobs.containsKey(newUniq)) {
-      const casting = LazySeq.ofIterable(newJob.procsAndPaths[0]?.paths ?? [])
-        .mapOption((p) =>
-          p.casting !== null && p.casting !== undefined && p.casting !== ""
-            ? Option.some<string>(p.casting)
-            : Option.none<string>()
-        )
-        .head()
-        .getOrNull();
-      if (casting !== null) {
-        someJobHasCasting = true;
+      for (const p of newJob.procsAndPaths[0]?.paths ?? []) {
+        if (p.casting !== null && p.casting !== undefined && p.casting !== "") {
+          someJobHasCasting = true;
+        }
       }
-      jobs = jobs.put(newUniq, {
-        unique: newJob.unique,
-        partName: newJob.partName,
-        scheduleId: newJob.scheduleId ?? null,
-        startingTime: newJob.routeStartUTC,
-        casting: casting,
-        comment: newJob.comment || null,
-        scheduledQty: LazySeq.ofIterable(newJob.cyclesOnFirstProcess).sumOn((c) => c),
-        decrementedQty: LazySeq.ofIterable(newJob.decrements || []).sumOn((d) => d.quantity),
-      });
+      jobs = jobs.put(newUniq, newJob);
     }
   }
 
-  return { jobs, someJobHasCasting };
+  return { jobs, matIdsForJob: matIds, someJobHasCasting };
+}
+
+export function process_events(
+  evts: Iterable<Readonly<api.ILogEntry>>,
+  initial_load: boolean,
+  st: ScheduledJobsState
+): ScheduledJobsState {
+  let matIdsForJob = st.matIdsForJob;
+
+  for (const evt of evts) {
+    for (const mat of evt.material) {
+      const uniq = mat.uniq;
+      if (uniq !== null && uniq !== undefined && uniq !== "") {
+        if (initial_load || st.jobs.containsKey(uniq)) {
+          let matIds = matIdsForJob.get(uniq).getOrNull();
+          if (!matIds) {
+            matIds = HashSet.empty<number>();
+          }
+          if (!matIds.contains(mat.id)) {
+            matIds = matIds.add(mat.id);
+            matIdsForJob = matIdsForJob.put(uniq, matIds);
+          }
+        }
+      }
+    }
+  }
+
+  if (matIdsForJob === st.matIdsForJob) {
+    return st;
+  } else {
+    return {
+      jobs: st.jobs,
+      matIdsForJob,
+      someJobHasCasting: st.someJobHasCasting,
+    };
+  }
 }
 
 export function set_job_comment(st: ScheduledJobsState, uniq: string, comment: string | null): ScheduledJobsState {
   const old = st.jobs.get(uniq);
   if (old.isSome()) {
-    return { jobs: st.jobs.put(uniq, { ...old.get(), comment: comment }), someJobHasCasting: st.someJobHasCasting };
+    return {
+      jobs: st.jobs.put(uniq, { ...old.get(), comment: comment ?? undefined }),
+      matIdsForJob: st.matIdsForJob,
+      someJobHasCasting: st.someJobHasCasting,
+    };
   } else {
     return st;
   }

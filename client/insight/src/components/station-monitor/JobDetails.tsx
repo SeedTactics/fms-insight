@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import * as api from "../../data/api";
 import Button from "@material-ui/core/Button";
-import CircularProgress from "@material-ui/core/CircularProgress";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
@@ -49,15 +48,19 @@ import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { MaterialDetailTitle } from "./Material";
 import { duration } from "moment";
 import { format } from "date-fns";
-import { JobsBackend, LogBackend } from "../../data/backend";
 import { MaterialSummary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 import { connect } from "../../store/store";
 import { openMaterialDialog } from "../../data/material-details";
-import { HashMap } from "prelude-ts";
+import { HashMap, HashSet } from "prelude-ts";
+
+interface JobDetailsToDisplay extends Readonly<api.IJobPlan> {
+  completed?: number[][];
+  assignedWorkorders?: string[];
+}
 
 interface JobDisplayProps {
-  readonly job: Readonly<api.IInProcessJob>;
+  readonly job: Readonly<JobDetailsToDisplay>;
 }
 
 function displayDate(d: Date) {
@@ -164,37 +167,18 @@ interface JobMaterialProps {
   readonly unique: string;
   readonly currentMaterial: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly matsFromEvents: HashMap<number, MaterialSummaryAndCompletedData>;
+  readonly matIdsForJob: HashMap<string, HashSet<number>>;
+  readonly fullWidth: boolean;
   readonly openDetails: (mat: Readonly<MaterialSummary>) => void;
 }
 
 function JobMaterial(props: JobMaterialProps) {
-  const [mats, setMats] = React.useState<ReadonlyArray<Readonly<api.IMaterialDetails>> | null>(null);
-  const [loading, setLoading] = React.useState<boolean>(false);
-
-  React.useEffect(() => {
-    if (props.unique === null) {
-      setMats(null);
-      setLoading(false);
-    } else {
-      setLoading(true);
-      LogBackend.materialDetailsForJob(props.unique)
-        .then((m) => {
-          setMats(m);
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [props.unique]);
+  const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique).getOrElse(HashSet.empty<number>()))
+    .mapOption((matId) => props.matsFromEvents.get(matId))
+    .toArray();
 
   if (mats === null || mats.length === 0) {
     return <div />;
-  }
-
-  if (loading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", marginTop: "1em" }}>
-        <CircularProgress /> Loading material
-      </div>
-    );
   }
 
   const matsById = LazySeq.ofIterable(props.currentMaterial).toMap(
@@ -207,7 +191,7 @@ function JobMaterial(props: JobMaterialProps) {
   );
 
   return (
-    <Table size="small">
+    <Table size="small" style={{ width: props.fullWidth ? "100%" : "auto" }}>
       <TableHead>
         <TableRow>
           {anyWorkorder ? <TableCell>Workorder</TableCell> : undefined}
@@ -219,7 +203,7 @@ function JobMaterial(props: JobMaterialProps) {
       <TableBody>
         {mats.map((mat) => (
           <TableRow key={mat.materialID}>
-            {anyWorkorder ? <TableCell>{mat.workorder ?? ""}</TableCell> : undefined}
+            {anyWorkorder ? <TableCell>{mat.workorderId ?? ""}</TableCell> : undefined}
             <TableCell>{mat.serial ?? ""}</TableCell>
             <TableCell>
               <MaterialStatus
@@ -237,7 +221,7 @@ function JobMaterial(props: JobMaterialProps) {
                       partName: mat.partName ?? "",
                       startedProcess1: false,
                       serial: mat.serial,
-                      workorderId: mat.workorder,
+                      workorderId: mat.workorderId,
                       signaledInspections: [],
                     })
                   )
@@ -257,70 +241,32 @@ const ConnectedJobMaterial = connect(
   (st) => ({
     currentMaterial: st.Current.current_status.material,
     matsFromEvents: st.Events.last30.mat_summary.matsById,
+    matIdsForJob: st.Events.last30.scheduled_jobs.matIdsForJob,
   }),
   {
     openDetails: openMaterialDialog,
   }
 )(JobMaterial);
 
-export interface JobPlanDialogProps {
-  readonly unique: string | null;
-  readonly close: () => void;
+export interface JobDetailsProps {
+  readonly job: Readonly<JobDetailsToDisplay> | null;
 }
 
-export function JobPlanDialog(props: JobPlanDialogProps) {
-  const [job, setJob] = React.useState<Readonly<api.IJobPlan> | null>(null);
-  const [loading, setLoading] = React.useState<boolean>(false);
-
-  React.useEffect(() => {
-    if (props.unique === null) {
-      setJob(null);
-      setLoading(false);
-    } else if (job === null || props.unique !== job.unique) {
-      setLoading(true);
-      JobsBackend.getJobPlan(props.unique)
-        .then((j) => {
-          setJob(j);
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [props.unique]);
-
-  function close() {
-    setJob(null);
-    setLoading(false);
-    props.close();
-  }
-
+export function JobDetails(props: JobDetailsProps) {
   return (
-    <Dialog open={props.unique !== null} onClose={close}>
-      <DialogTitle disableTypography>
-        {job !== null ? <MaterialDetailTitle partName={job.partName} subtitle={job.unique} /> : undefined}
-      </DialogTitle>
-      <DialogContent>
-        {loading ? (
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <CircularProgress />
-          </div>
-        ) : undefined}
-        {job !== null && props.unique !== null ? (
-          <>
-            <JobDisplay job={job} />
-            <ConnectedJobMaterial unique={props.unique} />
-          </>
-        ) : undefined}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={close} color="primary">
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <div style={{ display: "flex", justifyContent: "space-evenly" }}>
+      {props.job !== null ? (
+        <>
+          <JobDisplay job={props.job} />
+          <ConnectedJobMaterial unique={props.job.unique} fullWidth={false} />
+        </>
+      ) : undefined}
+    </div>
   );
 }
 
 export interface JobDetailDialogProps {
-  readonly job: Readonly<api.IInProcessJob> | null;
+  readonly job: Readonly<JobDetailsToDisplay> | null;
   readonly close: () => void;
 }
 
@@ -336,7 +282,7 @@ export function JobDetailDialog(props: JobDetailDialogProps) {
         {props.job !== null ? (
           <>
             <JobDisplay job={props.job} />
-            <ConnectedJobMaterial unique={props.job.unique} />
+            <ConnectedJobMaterial unique={props.job.unique} fullWidth={true} />
           </>
         ) : undefined}
       </DialogContent>

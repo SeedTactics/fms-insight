@@ -1751,6 +1751,17 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
+    "matIdsForJob": Map {
+      "uniqi" => Array [
+        70329,
+      ],
+      "uniqt" => Array [
+        90079,
+      ],
+      "uniqv" => Array [
+        15510,
+      ],
+    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -2788,6 +2799,17 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
+    "matIdsForJob": Map {
+      "uniqi" => Array [
+        70329,
+      ],
+      "uniqt" => Array [
+        90079,
+      ],
+      "uniqv" => Array [
+        15510,
+      ],
+    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -3815,6 +3837,17 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
+    "matIdsForJob": Map {
+      "uniqk" => Array [
+        11231,
+      ],
+      "uniqv" => Array [
+        68845,
+      ],
+      "uniqy" => Array [
+        47261,
+      ],
+    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -4851,6 +4884,17 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
+    "matIdsForJob": Map {
+      "uniqk" => Array [
+        11231,
+      ],
+      "uniqv" => Array [
+        68845,
+      ],
+      "uniqy" => Array [
+        47261,
+      ],
+    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {

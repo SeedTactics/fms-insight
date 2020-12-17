@@ -40,7 +40,6 @@ export interface JobAPI {
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
   mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
   setJobComment(unique: string, comment: string): Promise<void>;
-  getJobPlan(jobUnique: string | null): Promise<Readonly<api.IJobPlan>>;
 
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
   bulkRemoveMaterialFromQueues(
@@ -105,7 +104,6 @@ export interface LogAPI {
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
-  materialDetailsForJob(jobUnique: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(
     materialID: number,
@@ -250,9 +248,6 @@ function initMockBackend(data: Promise<MockData>) {
       // do nothing
       return Promise.resolve();
     },
-    getJobPlan(_uniq: string): Promise<Readonly<api.IJobPlan>> {
-      return Promise.reject("Unable to load job");
-    },
     bulkRemoveMaterialFromQueues(
       _materialIds: ReadonlyArray<number> | null,
       _operName: string | undefined
@@ -351,9 +346,6 @@ function initMockBackend(data: Promise<MockData>) {
     },
     getWorkorders(_ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
       // no workorder summaries
-      return Promise.resolve([]);
-    },
-    materialDetailsForJob(_jobUniq: string): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
       return Promise.resolve([]);
     },
 
