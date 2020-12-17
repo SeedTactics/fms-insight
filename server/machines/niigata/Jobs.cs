@@ -564,7 +564,6 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 
       using (var logDb = _logDbCfg.OpenConnection())
-      using (var jdb = _jobDbCfg.OpenConnection())
       {
 
         var o = logDb.SwapMaterialInCurrentPalletCycle(
@@ -591,9 +590,7 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
 
       using (var logDb = _logDbCfg.OpenConnection())
-      using (var jdb = _jobDbCfg.OpenConnection())
       {
-
         logDb.InvalidatePalletCycle(
           matId: matId,
           process: process,

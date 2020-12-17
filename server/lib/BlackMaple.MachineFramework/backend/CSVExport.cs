@@ -137,7 +137,7 @@ namespace BlackMaple.MachineFramework
 
     public static void WriteCSV(TextWriter writer, IEnumerable<LogEntry> es)
     {
-      var csv = new CsvHelper.CsvWriter(writer);
+      var csv = new CsvHelper.CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture);
       csv.WriteRecords(es.SelectMany(ConvertLogToCSV));
     }
   }
@@ -146,7 +146,7 @@ namespace BlackMaple.MachineFramework
   {
     public static void WriteCSV(TextWriter writer, IEnumerable<WorkorderSummary> ws)
     {
-      var csv = new CsvHelper.CsvWriter(writer);
+      var csv = new CsvHelper.CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture);
       csv.WriteField("ID");
       csv.WriteField("CompletedTimeUTC");
       csv.WriteField("Part");

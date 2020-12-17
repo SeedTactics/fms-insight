@@ -36,17 +36,17 @@
   </ItemGroup>
 
   <Choose>
-      <When Condition="$(OS) == 'Unix'">
-          <PropertyGroup>
-              <TargetFramework>netstandard2.0</TargetFramework>
-          </PropertyGroup>
-      </When>
+    <When Condition="$(OS) == 'Unix'">
+      <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+      </PropertyGroup>
+    </When>
 
-      <When Condition="$(OS) == 'Windows_NT'">
-          <PropertyGroup>
-              <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
-          </PropertyGroup>
-      </When>
+    <When Condition="$(OS) == 'Windows_NT'">
+      <PropertyGroup>
+        <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
+      </PropertyGroup>
+    </When>
   </Choose>
 
   <ItemGroup>
@@ -69,7 +69,7 @@
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.*"/>
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
-    <PackageReference Include="CsvHelper" Version="12.1.2"/>
+    <PackageReference Include="CsvHelper" Version="18.0.0"/>
 
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>

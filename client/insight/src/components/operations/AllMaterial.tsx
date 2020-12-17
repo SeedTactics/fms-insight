@@ -258,13 +258,14 @@ function AllMatDialog(props: AllMatDialogProps) {
               Remove From System
             </Button>
           ) : undefined}
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={null} />
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={undefined} />
           {curMat && curMat.location.type === LocType.InQueue ? (
             <InvalidateCycleDialogButtons
               st={invalidateSt}
               setState={setInvalidateSt}
               curMat={curMat}
-              operator={null}
+              operator={undefined}
+              close={close}
             />
           ) : undefined}
         </>

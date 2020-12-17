@@ -31,16 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashMap } from "prelude-ts";
+import { HashMap, Option } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { PartCycleData } from "./events.cycles";
-import { ScheduledJob } from "./events.scheduledjobs";
-import { ICurrentStatus, IInProcessJob } from "./api";
+import { ICurrentStatus, IHistoricJob, IInProcessJob } from "./api";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
-export interface ScheduledJobDisplay extends ScheduledJob {
+export interface ScheduledJobDisplay {
+  readonly historicJob: Readonly<IHistoricJob>;
   readonly inProcJob: Readonly<IInProcessJob> | null;
+  readonly casting: string;
+  readonly scheduledQty: number;
+  readonly decrementedQty: number;
   readonly completedQty: number;
   readonly inProcessQty: number;
   readonly remainingQty: number;
@@ -53,7 +56,7 @@ export function buildScheduledJobs(
   start: Date,
   end: Date,
   cycles: Iterable<PartCycleData>,
-  schJobs: HashMap<string, ScheduledJob>,
+  schJobs: HashMap<string, Readonly<IHistoricJob>>,
   currentSt: Readonly<ICurrentStatus>
 ): ReadonlyArray<ScheduledJobDisplay> {
   const filteredCycles = LazySeq.ofIterable(cycles).filter((e) => e.x >= start && e.x <= end);
@@ -61,8 +64,28 @@ export function buildScheduledJobs(
   const result = new Map<string, WritableScheduledJob>();
 
   for (const [uniq, job] of schJobs) {
-    if (job.startingTime >= start && job.startingTime <= end) {
-      result.set(uniq, { ...job, inProcJob: null, completedQty: 0, inProcessQty: 0, darkRow: false, remainingQty: 0 });
+    if (job.routeStartUTC >= start && job.routeStartUTC <= end) {
+      const casting = LazySeq.ofIterable(job.procsAndPaths[0]?.paths ?? [])
+        .mapOption((p) =>
+          p.casting !== null && p.casting !== undefined && p.casting !== ""
+            ? Option.some<string>(p.casting)
+            : Option.none<string>()
+        )
+        .head()
+        .getOrNull();
+
+      result.set(uniq, {
+        ...job,
+        historicJob: job,
+        inProcJob: null,
+        casting: casting ?? "",
+        scheduledQty: LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((c) => c),
+        decrementedQty: LazySeq.ofIterable(job.decrements || []).sumOn((d) => d.quantity),
+        completedQty: 0,
+        inProcessQty: 0,
+        darkRow: false,
+        remainingQty: 0,
+      });
     }
   }
 
@@ -103,9 +126,9 @@ export function buildScheduledJobs(
 
   const sorted = Array.from(result.values()).sort((j1, j2) => {
     // sort starting time high to low, then by part
-    const timeDiff = j2.startingTime.getTime() - j1.startingTime.getTime();
+    const timeDiff = j2.historicJob.routeStartUTC.getTime() - j1.historicJob.routeStartUTC.getTime();
     if (timeDiff == 0) {
-      return j1.partName.localeCompare(j2.partName);
+      return j1.historicJob.partName.localeCompare(j2.historicJob.partName);
     } else {
       return timeDiff;
     }
@@ -114,9 +137,9 @@ export function buildScheduledJobs(
   let lastSchId: string | null = null;
   let curDark = true;
   for (const job of sorted) {
-    if (lastSchId != job.scheduleId) {
+    if (lastSchId != (job.historicJob.scheduleId ?? null)) {
       curDark = !curDark;
-      lastSchId = job.scheduleId;
+      lastSchId = job.historicJob.scheduleId ?? null;
     }
     job.darkRow = curDark;
   }
@@ -143,12 +166,12 @@ export function buildScheduledJobsTable(jobs: ReadonlyArray<ScheduledJobDisplay>
   table += "</tr></thead>\n<tbody>\n";
 
   for (const s of jobs) {
-    table += "<tr><td>" + s.startingTime.toString() + "</td>";
-    table += "<td>" + s.partName + "</td>";
+    table += "<tr><td>" + s.historicJob.routeStartUTC.toString() + "</td>";
+    table += "<td>" + s.historicJob.partName + "</td>";
     if (showMaterial) {
-      table += "<td>" + (s.casting ?? s.partName) + "</td>";
+      table += "<td>" + (s.casting ?? s.historicJob.partName) + "</td>";
     }
-    table += "<td>" + (s.comment ?? "") + "</td>";
+    table += "<td>" + (s.historicJob.comment ?? "") + "</td>";
     table += "<td>" + s.scheduledQty.toFixed(0) + "</td>";
     table += "<td>" + s.decrementedQty.toFixed(0) + "</td>";
     table += "<td>" + s.completedQty.toFixed(0) + "</td>";

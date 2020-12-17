@@ -296,6 +296,7 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
       evts,
       s.buffering
     ),
+    scheduled_jobs: schJobs.process_events(evts, initialLoad, s.scheduled_jobs),
   });
 }
 

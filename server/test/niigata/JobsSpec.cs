@@ -679,7 +679,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void QuarantinesMatInQueue()
     {
-
       var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
       job.PartName = "p1";
       job.SetPathGroup(1, 1, 50);
@@ -688,6 +687,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
       _logDB.RecordSerialForMaterialID(materialID: 1, proc: 1, serial: "aaa");
+      _logDB.RecordLoadStart(new[] { new EventLogDB.EventLogMaterial() { MaterialID = 1, Process = 1, Face = "" } }, "3", 2, DateTime.UtcNow);
 
       ((IJobControl)_jobs).SetMaterialInQueue(materialId: 1, queue: "q1", position: -1);
 
@@ -710,9 +710,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
         MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
-        AddToQueueExpectedEntry(logMat, cntr: 2, queue: "q1", position: 0, operName: null, reason: "SetByOperator"),
-        RemoveFromQueueExpectedEntry(logMat, cntr: 3, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
-        AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q2", position: 0, operName: "theoper", reason: "SetByOperator")
+        LoadStartExpectedEntry(logMat, cntr: 2, pal: "3", lul: 2),
+        AddToQueueExpectedEntry(logMat, cntr: 3, queue: "q1", position: 0, operName: null, reason: "SetByOperator"),
+        RemoveFromQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
+        AddToQueueExpectedEntry(logMat, cntr: 5, queue: "q2", position: 0, operName: "theoper", reason: "SetByOperator")
       }, options => options
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<DateTime>()
@@ -734,6 +735,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           start: false,
           endTime: timeUTC ?? DateTime.UtcNow,
           result: serial,
+          endOfRoute: false);
+      return e;
+    }
+
+    private LogEntry LoadStartExpectedEntry(LogMaterial mat, long cntr, string pal, int lul, DateTime? timeUTC = null)
+    {
+      var e = new LogEntry(
+          cntr: cntr,
+          mat: new[] { mat },
+          pal: pal,
+          ty: LogType.LoadUnloadCycle,
+          locName: "L/U",
+          locNum: lul,
+          prog: "LOAD",
+          start: true,
+          endTime: timeUTC ?? DateTime.UtcNow,
+          result: "LOAD",
           endOfRoute: false);
       return e;
     }

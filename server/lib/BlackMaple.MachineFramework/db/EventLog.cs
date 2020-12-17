@@ -2801,12 +2801,11 @@ namespace BlackMaple.MachineFramework
       };
     }
 
-
-    private static readonly string LogTypesToIgnoreForInvalidation = string.Join(",", new int[] {
-        (int)MachineWatchInterface.LogType.InvalidateCycle,
-        (int)MachineWatchInterface.LogType.SwapMaterialOnPallet,
-        (int)MachineWatchInterface.LogType.PalletInStocker,
-        (int)MachineWatchInterface.LogType.PalletOnRotaryInbound
+    private static readonly string LogTypesToCheckForNextProcess = string.Join(",", new int[] {
+        (int)MachineWatchInterface.LogType.AddToQueue,
+        (int)MachineWatchInterface.LogType.RemoveFromQueue,
+        (int)MachineWatchInterface.LogType.LoadUnloadCycle,
+        (int)MachineWatchInterface.LogType.MachineCycle
       });
 
     public IEnumerable<MachineWatchInterface.LogEntry> InvalidatePalletCycle(
@@ -2831,7 +2830,7 @@ namespace BlackMaple.MachineFramework
             " EXISTS (" +
             "   SELECT 1 FROM stations_mat m WHERE s.Counter = m.Counter AND m.MaterialID = $matid AND m.Process = $proc" +
             " ) AND " +
-            " s.StationLoc NOT IN (" + LogTypesToIgnoreForInvalidation + ") AND " +
+            " s.StationLoc IN (" + LogTypesToCheckForNextProcess + ") AND " +
             " NOT EXISTS(" +
             "   SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
             " )"
@@ -2860,7 +2859,10 @@ namespace BlackMaple.MachineFramework
           {
             while (reader.Read())
             {
-              pallet = reader.IsDBNull(1) ? "" : reader.GetString(1);
+              if (!reader.IsDBNull(1) && !string.IsNullOrEmpty(reader.GetString(1)))
+              {
+                pallet = reader.GetString(1);
+              }
               var cntr = reader.GetInt64(0);
               invalidatedCntrs.Add(cntr);
 
@@ -3671,8 +3673,8 @@ namespace BlackMaple.MachineFramework
             "    SELECT 1 FROM stations s, program_details d " +
             "      WHERE s.Counter = m.Counter AND s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
             "   ) AND " +
-            "   NOT EXISTS (" +
-            "    SELECT 1 FROM stations s WHERE s.Counter = m.Counter AND s.StationLoc IN (" + LogTypesToIgnoreForInvalidation + ")" +
+            "   EXISTS (" +
+            "    SELECT 1 FROM stations s WHERE s.Counter = m.Counter AND s.StationLoc IN (" + LogTypesToCheckForNextProcess + ")" +
             "   )";
           loadCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
 

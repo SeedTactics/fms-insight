@@ -30,8 +30,10 @@
         "Mazak__Program Directory": ".",
         "QUEUE__castingQ": "-1",
         "QUEUE__transQ": "-1",
+        "QUEUE__QuarantineQ": "-1",
         "FMS__AutomaticSerials": "true",
         "FMS__StartingSerial": "abcd",
+        "FMS__QuarantineQueue": "QuarantineQ",
         "SERVER__EnableDebugLog": "true"
       }
     },

@@ -77,9 +77,6 @@ export const JobsBackend = {
     // do nothing
     return Promise.resolve();
   },
-  getJobPlan(_uniq: string): Promise<Readonly<api.IJobPlan>> {
-    return Promise.reject("Unable to load job");
-  },
 
   removeMaterialFromAllQueues(): Promise<void> {
     // do nothing
@@ -173,11 +170,6 @@ export const LogBackend = {
     return entries.map(api.LogEntry.fromJS);
   },
   getWorkorders(): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
-    return Promise.resolve([]);
-  },
-  materialDetailsForJob(
-    _jobUniq: string
-  ): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
     return Promise.resolve([]);
   },
 

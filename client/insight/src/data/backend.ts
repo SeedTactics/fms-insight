@@ -40,7 +40,6 @@ export interface JobAPI {
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
   mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>>;
   setJobComment(unique: string, comment: string): Promise<void>;
-  getJobPlan(jobUnique: string | null): Promise<Readonly<api.IJobPlan>>;
 
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
   bulkRemoveMaterialFromQueues(
@@ -73,18 +72,18 @@ export interface JobAPI {
     serial: string,
     operatorName: string | undefined
   ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
-  signalMaterialForQuarantine(materialId: number, queue: string, operName: string | null | undefined): Promise<void>;
+  signalMaterialForQuarantine(materialId: number, queue: string, operName: string | undefined): Promise<void>;
   swapMaterialOnPallet(
     materialId: number,
     mat: Readonly<api.IMatToPutOnPallet>,
-    putMatInQueue: string | null,
-    operName: string | null | undefined
+    putMatInQueue: string | undefined,
+    operName: string | undefined
   ): Promise<void>;
   invalidatePalletCycle(
     materialId: number,
     process: number,
-    putMatInQueue: string | null,
-    operName: string | null | undefined
+    putMatInQueue: string | undefined,
+    operName: string | undefined
   ): Promise<void>;
 }
 
@@ -105,7 +104,6 @@ export interface LogAPI {
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
-  materialDetailsForJob(jobUnique: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(
     materialID: number,
@@ -151,7 +149,7 @@ export interface MachineAPI {
   getProgramRevisionsInDescendingOrderOfRevision(
     programName: string | null,
     count: number,
-    revisionToStart: number | null | undefined
+    revisionToStart: number | undefined
   ): Promise<ReadonlyArray<Readonly<api.IProgramRevision>>>;
 }
 
@@ -249,9 +247,6 @@ function initMockBackend(data: Promise<MockData>) {
     removeMaterialFromAllQueues(_materialId: number, _operName: string | undefined): Promise<void> {
       // do nothing
       return Promise.resolve();
-    },
-    getJobPlan(_uniq: string): Promise<Readonly<api.IJobPlan>> {
-      return Promise.reject("Unable to load job");
     },
     bulkRemoveMaterialFromQueues(
       _materialIds: ReadonlyArray<number> | null,
@@ -351,9 +346,6 @@ function initMockBackend(data: Promise<MockData>) {
     },
     getWorkorders(_ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
       // no workorder summaries
-      return Promise.resolve([]);
-    },
-    materialDetailsForJob(_jobUniq: string): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
       return Promise.resolve([]);
     },
 

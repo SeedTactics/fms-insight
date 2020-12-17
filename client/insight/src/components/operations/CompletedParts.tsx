@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -50,12 +50,15 @@ import { createSelector } from "reselect";
 import { Last30Days } from "../../data/events";
 import { addDays, startOfToday } from "date-fns";
 import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
-import { ICurrentStatus, IInProcessJob } from "../../data/api";
+import { ICurrentStatus } from "../../data/api";
 import { PartIdenticon } from "../station-monitor/Material";
 import { makeStyles, createStyles } from "@material-ui/core/styles";
 import { ConnectedEditNoteDialog } from "../station-monitor/Queues";
-import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import { JobDetailDialog, JobPlanDialog } from "../station-monitor/JobDetails";
+import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
+import { JobDetails } from "../station-monitor/JobDetails";
+import Collapse from "@material-ui/core/Collapse";
+import clsx from "clsx";
 
 interface JobsTableProps {
   readonly jobs: ReadonlyArray<ScheduledJobDisplay>;
@@ -64,6 +67,11 @@ interface JobsTableProps {
 
 const useTableStyles = makeStyles((theme) =>
   createStyles({
+    mainRow: {
+      "& > *": {
+        borderBottom: "unset",
+      },
+    },
     labelContainer: {
       display: "flex",
       alignItems: "center",
@@ -75,19 +83,96 @@ const useTableStyles = makeStyles((theme) =>
       maxWidth: "20em",
     },
     darkRow: {
-      backgroundColor: "#E0E0E0",
+      backgroundColor: "#F5F5F5",
     },
     highlightedCell: {
       backgroundColor: "#FF8A65",
     },
+    collapseCell: {
+      paddingBottom: 0,
+      paddingTop: 0,
+    },
   })
 );
 
-function JobsTable(props: JobsTableProps) {
+interface JobsRowProps {
+  readonly job: ScheduledJobDisplay;
+  readonly showMaterial: boolean;
+  readonly setCurEditNoteJob: (j: ScheduledJobDisplay) => void;
+}
+
+function JobsRow(props: JobsRowProps) {
   const classes = useTableStyles();
+  const [open, setOpen] = React.useState<boolean>(false);
+
+  const job = props.job;
+  return (
+    <>
+      <TableRow className={clsx({ [classes.mainRow]: true, [classes.darkRow]: job.darkRow })}>
+        <TableCell>{job.historicJob.routeStartUTC.toLocaleString()}</TableCell>
+        <TableCell>
+          <div className={classes.labelContainer}>
+            <div className={classes.identicon}>
+              <PartIdenticon part={job.historicJob.partName} size={25} />
+            </div>
+            <div>
+              <Typography variant="body2" component="span" display="block">
+                {job.historicJob.partName}
+              </Typography>
+            </div>
+          </div>
+        </TableCell>
+        {props.showMaterial ? (
+          <TableCell>
+            {job.casting ? (
+              <div className={classes.labelContainer}>
+                <div className={classes.identicon}>
+                  <PartIdenticon part={job.casting} size={25} />
+                </div>
+                <Typography variant="body2" display="block">
+                  {job.casting}
+                </Typography>
+              </div>
+            ) : undefined}
+          </TableCell>
+        ) : undefined}
+        <TableCell>
+          {job.historicJob.comment}
+
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => props.setCurEditNoteJob(job)}>
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+        </TableCell>
+        <TableCell align="right">{job.scheduledQty}</TableCell>
+        <TableCell align="right" className={job.decrementedQty > 0 ? classes.highlightedCell : undefined}>
+          {job.decrementedQty}
+        </TableCell>
+        <TableCell align="right">{job.completedQty}</TableCell>
+        <TableCell align="right">{job.inProcessQty}</TableCell>
+        <TableCell align="right">{job.remainingQty}</TableCell>
+        <TableCell>
+          <Tooltip title="Show Details">
+            <IconButton size="small" onClick={() => setOpen(!open)}>
+              {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+          </Tooltip>
+        </TableCell>
+      </TableRow>
+      <TableRow className={job.darkRow ? classes.darkRow : undefined}>
+        <TableCell className={classes.collapseCell} colSpan={props.showMaterial ? 10 : 9}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <JobDetails job={job.inProcJob ? job.inProcJob : job.historicJob} />
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+}
+
+function JobsTable(props: JobsTableProps) {
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
-  const [jobDetailsToShow, setJobDetailsToShow] = React.useState<Readonly<IInProcessJob> | null>(null);
-  const [jobPlanToLoad, setJobPlanToLoad] = React.useState<string | null>(null);
   return (
     <Card raised>
       <CardHeader
@@ -125,69 +210,14 @@ function JobsTable(props: JobsTableProps) {
           </TableHead>
           <TableBody>
             {props.jobs.map((job, jobIdx) => (
-              <TableRow key={jobIdx} className={job.darkRow ? classes.darkRow : undefined}>
-                <TableCell>{job.startingTime.toLocaleString()}</TableCell>
-                <TableCell>
-                  <div className={classes.labelContainer}>
-                    <div className={classes.identicon}>
-                      <PartIdenticon part={job.partName} size={25} />
-                    </div>
-                    <div>
-                      <Typography variant="body2" component="span" display="block">
-                        {job.partName}
-                      </Typography>
-                    </div>
-                  </div>
-                </TableCell>
-                {props.showMaterial ? (
-                  <TableCell>
-                    {job.casting ? (
-                      <div className={classes.labelContainer}>
-                        <div className={classes.identicon}>
-                          <PartIdenticon part={job.casting} size={25} />
-                        </div>
-                        <Typography variant="body2" display="block">
-                          {job.casting}
-                        </Typography>
-                      </div>
-                    ) : undefined}
-                  </TableCell>
-                ) : undefined}
-                <TableCell>
-                  {job.comment}
-
-                  <Tooltip title="Edit">
-                    <IconButton size="small" onClick={() => setCurEditNoteJob(job)}>
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-                <TableCell align="right">{job.scheduledQty}</TableCell>
-                <TableCell align="right" className={job.decrementedQty > 0 ? classes.highlightedCell : undefined}>
-                  {job.decrementedQty}
-                </TableCell>
-                <TableCell align="right">{job.completedQty}</TableCell>
-                <TableCell align="right">{job.inProcessQty}</TableCell>
-                <TableCell align="right">{job.remainingQty}</TableCell>
-                <TableCell>
-                  <Tooltip title="Show Details">
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        job.inProcJob !== null ? setJobDetailsToShow(job.inProcJob) : setJobPlanToLoad(job.unique)
-                      }
-                    >
-                      <MoreHoriz />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
+              <JobsRow key={jobIdx} job={job} showMaterial={props.showMaterial} setCurEditNoteJob={setCurEditNoteJob} />
             ))}
           </TableBody>
         </Table>
-        <ConnectedEditNoteDialog job={curEditNoteJob} closeDialog={() => setCurEditNoteJob(null)} />
-        <JobDetailDialog job={jobDetailsToShow} close={() => setJobDetailsToShow(null)} />
-        <JobPlanDialog unique={jobPlanToLoad} close={() => setJobPlanToLoad(null)} />
+        <ConnectedEditNoteDialog
+          job={curEditNoteJob?.historicJob ?? null}
+          closeDialog={() => setCurEditNoteJob(null)}
+        />
       </CardContent>
     </Card>
   );
