@@ -236,13 +236,13 @@ namespace MazakMachineInterface
         );
       }
 
-      //delete everything
-      transSet = mazakJobs.DeleteOldPartPalletRows();
-      if (transSet.Parts.Any() || transSet.Pallets.Any())
+      //delete parts
+      transSet = mazakJobs.DeleteOldPartRows();
+      if (transSet.Parts.Any())
       {
         try
         {
-          writeDb.Save(transSet, "Delete Parts Pallets");
+          writeDb.Save(transSet, "Delete Parts");
         }
         catch (ErrorModifyingParts e)
         {
@@ -255,6 +255,10 @@ namespace MazakMachineInterface
           }
         }
       }
+
+      // delete pallets
+      transSet = mazakJobs.DeleteOldPalletRows();
+      writeDb.Save(transSet, "Delete Pallets");
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();

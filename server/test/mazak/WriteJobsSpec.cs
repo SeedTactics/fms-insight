@@ -50,7 +50,8 @@ namespace MachineWatchTest
     private class WriteMock : IWriteData
     {
       public MazakDbType MazakType => MazakDbType.MazakSmooth;
-      public MazakWriteData DeletePartsPals { get; set; }
+      public MazakWriteData DeleteParts { get; set; }
+      public MazakWriteData DeletePallets { get; set; }
       public MazakWriteData DelFixtures { get; set; }
       public MazakWriteData AddFixtures { get; set; }
       public MazakWriteData AddParts { get; set; }
@@ -60,9 +61,13 @@ namespace MachineWatchTest
 
       public void Save(MazakWriteData data, string prefix)
       {
-        if (prefix == "Delete Parts Pallets")
+        if (prefix == "Delete Parts")
         {
-          DeletePartsPals = data;
+          DeleteParts = data;
+        }
+        else if (prefix == "Delete Pallets")
+        {
+          DeletePallets = data;
         }
         else if (prefix == "Delete Fixtures")
         {
@@ -343,7 +348,8 @@ namespace MachineWatchTest
 
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
+      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
       ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
@@ -386,7 +392,8 @@ namespace MachineWatchTest
       _writeJobs.AddJobs(_jobDB, newJobs, null);
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "path-groups-delparts.json");
+      ShouldMatchSnapshot(_writeMock.DeleteParts, "path-groups-delparts.json");
+      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
       ShouldMatchSnapshot(_writeMock.AddFixtures, "path-groups-add-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.DelFixtures, "path-groups-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
@@ -443,7 +450,7 @@ namespace MachineWatchTest
       _writeJobs.AddJobs(_jobDB, newJobs, null);
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "managed-progs-add-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.DelFixtures, "managed-progs-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json", AdjustProgramPath);
@@ -466,7 +473,7 @@ namespace MachineWatchTest
         .WithMessage("Sample error");
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
@@ -492,7 +499,7 @@ namespace MachineWatchTest
         .WithMessage("Sample error");
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeletePartsPals, "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
       ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");

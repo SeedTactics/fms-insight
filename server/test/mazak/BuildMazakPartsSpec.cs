@@ -1158,7 +1158,7 @@ namespace MachineWatchTest
       );
       if (log.Count > 0) Assert.True(false, log[0]);
 
-      var del = pMap.DeleteOldPartPalletRows();
+      var del = pMap.DeleteOldPalletRows();
       del.Pallets.Should().BeEquivalentTo(new[] {
         new MazakPalletRow()
         {
@@ -1168,12 +1168,18 @@ namespace MachineWatchTest
           FixtureGroupV2 = 1
         }
       });
+      del.Parts.Should().BeEmpty();
+      del.Fixtures.Should().BeEmpty();
+      del.Schedules.Should().BeEmpty();
+
+      del = pMap.DeleteOldPartRows();
       dset.TestParts[0].Command = MazakWriteCommand.Delete;
       dset.TestParts[0].TotalProcess = dset.TestParts[0].Processes.Count;
       dset.TestParts[0].Processes.Clear();
       del.Parts.Should().BeEquivalentTo(new[] {
         dset.TestParts[0]
       });
+      del.Pallets.Should().BeEmpty();
       del.Fixtures.Should().BeEmpty();
       del.Schedules.Should().BeEmpty();
     }

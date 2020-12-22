@@ -618,7 +618,7 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    public MazakWriteData DeleteOldPartPalletRows()
+    public MazakWriteData DeleteOldPartRows()
     {
       var transSet = new MazakWriteData();
       foreach (var partRow in OldMazakData.Parts)
@@ -635,7 +635,12 @@ namespace MazakMachineInterface
           }
         }
       }
+      return transSet;
+    }
 
+    public MazakWriteData DeleteOldPalletRows()
+    {
+      var transSet = new MazakWriteData();
       foreach (var palRow in OldMazakData.Pallets)
       {
         int idx = palRow.Fixture.IndexOf(':');
