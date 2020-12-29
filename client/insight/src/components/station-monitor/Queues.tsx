@@ -368,11 +368,11 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
         }),
         body: JSON.stringify({
           Unique: props.job.job.unique,
-          Proc1Path: props.job.proc1Path + 1,
+          Proc1Path: props.job.proc1Path,
           Quantity: newQty,
         }),
       });
-      props.setJobQty({ uniq: props.job.job.unique, proc1path: props.job.proc1Path + 1, qty: newQty });
+      props.setJobQty({ uniq: props.job.job.unique, proc1path: props.job.proc1Path, qty: newQty });
       props.closeDialog();
       setNewQty(null);
     } finally {
