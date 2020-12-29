@@ -42,17 +42,24 @@ export interface PartCost {
   readonly part: string;
   readonly parts_completed: number;
 
-  // sum of machine costs over all cycles.  Must be divided by parts_completed to get cost/piece
-  readonly machine_cost: number;
+  // accumulation of machine costs over all cycles.  Cost be divided by parts_completed to get cost/piece
+  readonly machine: { readonly cost: number; readonly pctPerStat: ReadonlyMap<string, number> };
 
-  // sum of labor costs over all cycles.  Must be divided by parts_completed to get cost/piece
-  readonly labor_cost: number;
+  // accumulation of labor costs over all cycles.  Cost must be divided by parts_completed to get cost/piece
+  readonly labor: { readonly cost: number; readonly percent: number };
 
-  // split of yearly automation cost over all use
-  readonly automation_cost: number;
+  // percent split of yearly automation cost over all use
+  readonly automation_pct: number;
 }
 
 export type MachineCostPerYear = { readonly [stationGroup: string]: number };
+
+export interface CostData {
+  readonly totalLaborCostForPeriod: number;
+  readonly automationCostForPeriod: number;
+  readonly machineCostForPeriod: ReadonlyMap<string, number>;
+  readonly parts: ReadonlyArray<PartCost>;
+}
 
 export function compute_monthly_cost(
   machineCostPerYear: MachineCostPerYear,
@@ -60,7 +67,7 @@ export function compute_monthly_cost(
   totalLaborCostForPeriod: number,
   cycles: Vector<PartCycleData>,
   month: Date | null
-): ReadonlyArray<PartCost> {
+): CostData {
   const days = month ? getDaysInMonth(month) : 30;
 
   let totalPalletCycles = 0;
@@ -83,9 +90,13 @@ export function compute_monthly_cost(
     }
   }
 
-  const autoCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
+  const automationCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
+  const machineCostForPeriod = LazySeq.ofIterable(stationCount).toRMap(
+    ([statGroup, cnt]) => [statGroup, ((machineCostPerYear[statGroup] ?? 0) * cnt.size * days) / 365],
+    (x, y) => x + y
+  );
 
-  return Array.from(
+  const parts = Array.from(
     cycles
       .groupBy((c) => c.part)
       .map((partName, forPart) => [
@@ -97,38 +108,44 @@ export function compute_monthly_cost(
             .flatMap((c) => c.material)
             .filter((m) => m.proc === m.numproc)
             .length(),
-          machine_cost: LazySeq.ofIterable(forPart)
+          machine: LazySeq.ofIterable(forPart)
             .filter((c) => !c.isLabor)
             .toMap(
               (c) => [c.stationGroup, c.activeMinutes],
               (a1, a2) => a1 + a2
             )
-            .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
-              const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
-              const numMachines = stationCount.get(statGroup)?.size ?? 0;
-              const totalMachineCost = ((machineCostPerYear[statGroup] ?? 0) * numMachines * days) / 365;
-              return x + (minutes / totalUse) * totalMachineCost;
-            }),
-          labor_cost: LazySeq.ofIterable(forPart)
+            .foldLeft(
+              { cost: 0, pctPerStat: new Map<string, number>() },
+              (x, [statGroup, minutes]: [string, number]) => {
+                const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
+                const totalMachineCost = machineCostForPeriod.get(statGroup) ?? 0;
+                x.pctPerStat.set(statGroup, minutes / totalUse + (x.pctPerStat.get(statGroup) ?? 0));
+                return { cost: x.cost + (minutes / totalUse) * totalMachineCost, pctPerStat: x.pctPerStat };
+              }
+            ),
+          labor: LazySeq.ofIterable(forPart)
             .filter((c) => c.isLabor)
             .toMap(
               (c) => [c.stationGroup, c.activeMinutes],
               (a1, a2) => a1 + a2
             )
-            .foldLeft(0, (x: number, [statGroup, minutes]: [string, number]) => {
+            .foldLeft({ cost: 0, percent: 0 }, (x, [statGroup, minutes]: [string, number]) => {
               const total = totalStatUseMinutes.get(statGroup) ?? 1;
-              return x + (minutes / total) * totalLaborCostForPeriod;
+              return {
+                cost: x.cost + (minutes / total) * totalLaborCostForPeriod,
+                percent: x.percent + minutes / total,
+              };
             }),
-          automation_cost: automationCostPerYear
-            ? (cycles.sumOn((v) => (v.completed ? 1 : 0)) / totalPalletCycles) * autoCostForPeriod
-            : 0,
+          automation_pct: automationCostPerYear ? forPart.sumOn((v) => (v.completed ? 1 : 0)) / totalPalletCycles : 0,
         },
       ])
       .valueIterable()
   );
+
+  return { parts, totalLaborCostForPeriod, automationCostForPeriod, machineCostForPeriod };
 }
 
-export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>) {
+export function buildCostPerPieceTable(costs: CostData) {
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";
   table += "<th>Completed Quantity</th>";
@@ -138,7 +155,7 @@ export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>) {
   table += "<th>Total</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const rows = Vector.ofIterable(costs).sortOn((c) => c.part);
+  const rows = Vector.ofIterable(costs.parts).sortOn((c) => c.part);
   const format = Intl.NumberFormat(undefined, {
     maximumFractionDigits: 1,
   });
@@ -146,16 +163,21 @@ export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>) {
   for (const c of rows) {
     table += "<tr><td>" + c.part + "</td>";
     table += "<td>" + c.parts_completed.toString() + "</td>";
-    table += "<td>" + (c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0) + "</td>";
-    table += "<td>" + (c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0) + "</td>";
-    table += "<td>" + (c.parts_completed > 0 ? format.format(c.automation_cost / c.parts_completed) : 0) + "</td>";
+    table += "<td>" + (c.parts_completed > 0 ? format.format(c.machine.cost / c.parts_completed) : 0) + "</td>";
+    table += "<td>" + (c.parts_completed > 0 ? format.format(c.labor.cost / c.parts_completed) : 0) + "</td>";
+    table +=
+      "<td>" +
+      (c.parts_completed > 0
+        ? format.format((c.automation_pct * costs.automationCostForPeriod) / c.parts_completed)
+        : 0) +
+      "</td>";
     table +=
       "<td>" +
       (c.parts_completed > 0
         ? format.format(
-            c.machine_cost / c.parts_completed +
-              c.labor_cost / c.parts_completed +
-              c.automation_cost / c.parts_completed
+            c.machine.cost / c.parts_completed +
+              c.labor.cost / c.parts_completed +
+              (c.automation_pct * costs.automationCostForPeriod) / c.parts_completed
           )
         : "") +
       "</td>";
@@ -166,6 +188,6 @@ export function buildCostPerPieceTable(costs: ReadonlyArray<PartCost>) {
   return table;
 }
 
-export function copyCostPerPieceToClipboard(costs: ReadonlyArray<PartCost>): void {
+export function copyCostPerPieceToClipboard(costs: CostData): void {
   copy(buildCostPerPieceTable(costs));
 }

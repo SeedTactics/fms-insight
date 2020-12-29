@@ -54,9 +54,10 @@ import * as localForage from "localforage";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import {
   MachineCostPerYear,
-  PartCost,
   compute_monthly_cost,
   copyCostPerPieceToClipboard,
+  CostData,
+  PartCost,
 } from "../../data/cost-per-piece";
 import { format } from "date-fns";
 import Tooltip from "@material-ui/core/Tooltip";
@@ -290,16 +291,43 @@ const useTableStyles = makeStyles((theme) =>
   })
 );
 
+const decimalFormat = Intl.NumberFormat(undefined, {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+const pctFormat = new Intl.NumberFormat(undefined, {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+function MachineCostTooltip({
+  part,
+  machineCostForPeriod,
+}: {
+  readonly part: PartCost;
+  readonly machineCostForPeriod: ReadonlyMap<string, number>;
+}) {
+  return (
+    <div>
+      {LazySeq.ofIterable(part.machine.pctPerStat)
+        .sortOn(([stat]) => stat)
+        .map(([stat, pct]) => (
+          <div key={stat}>
+            {stat}: {pctFormat.format(pct)} of {decimalFormat.format(machineCostForPeriod.get(stat) ?? 0)} total machine
+            cost
+          </div>
+        ))}
+    </div>
+  );
+}
+
 interface CostPerPieceOutputProps {
-  readonly costs: ReadonlyArray<PartCost>;
+  readonly costs: CostData;
 }
 
 function CostOutputCard(props: CostPerPieceOutputProps) {
   const classes = useTableStyles();
-  const format = Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
   return (
     <Card style={{ marginTop: "2em" }}>
       <CardHeader
@@ -332,7 +360,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {Vector.ofIterable(props.costs)
+            {Vector.ofIterable(props.costs.parts)
               .sortOn((c) => c.part)
               .transform((x) => LazySeq.ofIterable(x))
               .map((c, idx) => (
@@ -351,20 +379,50 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
                   </TableCell>
                   <TableCell align="right">{c.parts_completed}</TableCell>
                   <TableCell align="right">
-                    {c.parts_completed > 0 ? format.format(c.machine_cost / c.parts_completed) : 0}
+                    <Tooltip
+                      title={<MachineCostTooltip part={c} machineCostForPeriod={props.costs.machineCostForPeriod} />}
+                    >
+                      <span>
+                        {c.parts_completed > 0 ? decimalFormat.format(c.machine.cost / c.parts_completed) : 0}
+                      </span>
+                    </Tooltip>
                   </TableCell>
                   <TableCell align="right">
-                    {c.parts_completed > 0 ? format.format(c.labor_cost / c.parts_completed) : 0}
+                    <Tooltip
+                      title={
+                        pctFormat.format(c.labor.percent) +
+                        " of " +
+                        decimalFormat.format(props.costs.totalLaborCostForPeriod) +
+                        " total labor cost"
+                      }
+                    >
+                      <span>{c.parts_completed > 0 ? decimalFormat.format(c.labor.cost / c.parts_completed) : 0}</span>
+                    </Tooltip>
                   </TableCell>
                   <TableCell align="right">
-                    {c.parts_completed > 0 ? format.format(c.automation_cost / c.parts_completed) : 0}
+                    <Tooltip
+                      title={
+                        pctFormat.format(c.automation_pct) +
+                        " of " +
+                        decimalFormat.format(props.costs.automationCostForPeriod) +
+                        " total automation cost"
+                      }
+                    >
+                      <span>
+                        {c.parts_completed > 0
+                          ? decimalFormat.format(
+                              (c.automation_pct * props.costs.automationCostForPeriod) / c.parts_completed
+                            )
+                          : 0}
+                      </span>
+                    </Tooltip>
                   </TableCell>
                   <TableCell align="right">
                     {c.parts_completed > 0
-                      ? format.format(
-                          c.machine_cost / c.parts_completed +
-                            c.labor_cost / c.parts_completed +
-                            c.automation_cost / c.parts_completed
+                      ? decimalFormat.format(
+                          c.machine.cost / c.parts_completed +
+                            c.labor.cost / c.parts_completed +
+                            (c.automation_pct * props.costs.automationCostForPeriod) / c.parts_completed
                         )
                       : ""}
                   </TableCell>
@@ -442,7 +500,12 @@ function CostPerPiecePage(props: CostPerPieceProps) {
 
   const computedCosts = React.useMemo(() => {
     if (loading) {
-      return [];
+      return {
+        totalLaborCostForPeriod: 0,
+        automationCostForPeriod: 0,
+        machineCostForPeriod: new Map<string, number>(),
+        parts: [],
+      };
     }
     let totalLaborCost = 0;
     if (props.month) {

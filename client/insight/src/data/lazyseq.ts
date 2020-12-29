@@ -417,6 +417,20 @@ export class LazySeq<T> {
     return m;
   }
 
+  toRMap<K, S>(f: (x: T) => [K, S], merge: (v1: S, v2: S) => S): ReadonlyMap<K, S> {
+    const m = new Map<K, S>();
+    for (const x of this.iter) {
+      const [k, s] = f(x);
+      const old = m.get(k);
+      if (old) {
+        m.set(k, merge(old, s));
+      } else {
+        m.set(k, s);
+      }
+    }
+    return m;
+  }
+
   toSet<S>(converter: (x: T) => S & WithEquality): HashSet<S> {
     const iter = this.iter;
     return HashSet.ofIterable({
