@@ -272,13 +272,13 @@ namespace BlackMaple.MachineWatchInterface
     {
       get
       {
-        if (_decrements == null)
-          _decrements = new List<DecrementQuantity>();
-        return _decrements;
+        if (_decrQtys == null)
+          _decrQtys = new List<DecrementQuantity>();
+        return _decrQtys;
       }
       set
       {
-        _decrements = value;
+        _decrQtys = value;
       }
     }
 
@@ -317,7 +317,7 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(Name = "Completed", IsRequired = false)] private int[][] _completed;
 
-    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private IList<DecrementQuantity> _decrements;
+    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private IList<DecrementQuantity> _decrQtys;
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
