@@ -1427,23 +1427,6 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   [Serializable, DataContract]
-  public class HistoricJob : JobPlan
-  {
-    public HistoricJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths) { }
-    public HistoricJob(JobPlan job) : base(job) { }
-    private HistoricJob() { } //for json deserialization
-
-    [DataMember(Name = "Decrements", IsRequired = false)] public List<DecrementQuantity> Decrements { get; set; }
-  }
-
-  [Serializable, DataContract]
-  public struct HistoricData
-  {
-    [DataMember(IsRequired = true)] public IDictionary<string, HistoricJob> Jobs;
-    [DataMember(IsRequired = true)] public ICollection<SimulatedStationUtilization> StationUse;
-  }
-
-  [Serializable, DataContract]
   public struct PlannedSchedule
   {
     [DataMember(IsRequired = true)] public string LatestScheduleId;

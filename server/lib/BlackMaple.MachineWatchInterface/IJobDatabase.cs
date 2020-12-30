@@ -36,19 +36,9 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-  public interface IJobDatabase : IDisposable
+  public interface IJobDatabase
   {
-    JobPlan LoadJob(string uniqueStr);
-
-    ///Load all jobs, station, and tool utilization which intersect the given date range.
-    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
-
-    ///Loads all jobs which have a unique strictly larger than the given unique
-    HistoricData LoadJobsAfterScheduleId(string scheduleId);
-
     ///Loads all jobs for the most recent schedule
     PlannedSchedule LoadMostRecentSchedule();
-
-    List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
   }
 }

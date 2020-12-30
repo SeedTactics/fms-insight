@@ -362,17 +362,6 @@ namespace BlackMaple.MachineWatchInterface
     private Dictionary<string, QueueSize> _queues;
   }
 
-  [Serializable, DataContract]
-  public struct JobAndDecrementQuantity
-  {
-    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; set; }
-    [DataMember(IsRequired = true)] public int Proc1Path { get; set; }
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
-    [DataMember(IsRequired = true)] public string Part { get; set; }
-    [DataMember(IsRequired = true)] public int Quantity { get; set; }
-  }
-
   // The following is only used for old decrement for backwards compatibility,
   // and shouldn't be used for anything else.
   [Serializable]

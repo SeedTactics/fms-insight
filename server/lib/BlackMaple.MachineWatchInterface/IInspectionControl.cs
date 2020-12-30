@@ -45,11 +45,8 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)] public DateTime LastUTC;
   }
 
-  public interface IInspectionControl : IDisposable
+  public interface IInspectionControl
   {
-    ///Forces the given materialID to be inspected
-    void ForceInspection(long materialID, string inspectionType);
-
     ///Forces the next piece that runs on the given location to be inspected
     void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType);
 
