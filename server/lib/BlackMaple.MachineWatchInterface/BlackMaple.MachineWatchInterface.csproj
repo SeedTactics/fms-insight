@@ -24,24 +24,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../BlackMaple.MachineFramework/api/*.cs"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
 
   <Choose>
-      <When Condition="$(OS) == 'Unix'">
-          <PropertyGroup>
-              <TargetFramework>netstandard2.0</TargetFramework>
-          </PropertyGroup>
-      </When>
-      <When Condition="$(OS) == 'Windows_NT'">
-          <PropertyGroup>
-              <TargetFrameworks>net35;net461;netstandard2.0</TargetFrameworks>
-          </PropertyGroup>
-          <ItemGroup Condition="$(TargetFramework) == 'net461'">
-            <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-          </ItemGroup>
-      </When>
+    <When Condition="$(OS) == 'Unix'">
+      <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OS) == 'Windows_NT'">
+      <PropertyGroup>
+        <TargetFrameworks>net35;net461;netstandard2.0</TargetFrameworks>
+      </PropertyGroup>
+      <ItemGroup Condition="$(TargetFramework) == 'net461'">
+        <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+      </ItemGroup>
+    </When>
   </Choose>
 
   <PropertyGroup Condition="$(TargetFramework) == 'net35'">
