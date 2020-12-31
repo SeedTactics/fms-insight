@@ -35,9 +35,12 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 
 import { connect, Store } from "../store/store";
 import Tooltip from "@material-ui/core/Tooltip";
+import { websocketReconnecting } from "../store/websocket";
+import { useRecoilValue } from "recoil";
 
 function LoadingIcon({ loading }: { loading: boolean }) {
-  if (loading) {
+  const websocketLoading = useRecoilValue(websocketReconnecting);
+  if (loading || websocketLoading) {
     return (
       <Tooltip title="Loading">
         <CircularProgress data-testid="loading-icon" color="secondary" />
@@ -55,7 +58,6 @@ export default connect((st: Store) => ({
     st.Current.loading ||
     st.Events.loading_analysis_month_log ||
     st.Events.loading_analysis_month_jobs ||
-    st.Websocket.websocket_reconnecting ||
     st.MaterialDetails.add_mat_in_progress ||
     (st.MaterialDetails.material
       ? st.MaterialDetails.material.loading_events ||

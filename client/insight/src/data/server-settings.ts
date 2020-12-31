@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { User, UserManager } from "oidc-client";
 import * as api from "./api";
 import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend";
-import { openWebsocket } from "../store/websocket";
 import { selector } from "recoil";
 
 export interface FMSInfoAndUser extends Readonly<api.IFMSInfo> {
@@ -82,10 +81,7 @@ async function loadInfo(): Promise<FMSInfoAndUser> {
     if (user) {
       setUserToken(user);
       localStorage.setItem("current-operator", user.profile.name || user.profile.sub);
-      openWebsocket(user);
     }
-  } else {
-    openWebsocket(user);
   }
 
   return { ...fmsInfo, user: user === null ? undefined : user };

@@ -36,7 +36,6 @@ import * as gui from "../data/gui-state";
 import * as routes from "../data/routes";
 import * as mat from "../data/material-details";
 import * as paths from "../data/path-lookup";
-import * as websocket from "./websocket";
 import { initBarcodeListener } from "./barcode";
 
 import { createStore, StoreState, StoreActions, ACPayload, mkACF } from "./typed-redux";
@@ -82,7 +81,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       MaterialDetails: mat.reducer,
       PathLookup: paths.reducer,
       Route: routes.reducer,
-      Websocket: websocket.reducer,
       location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
     },
     middleware,

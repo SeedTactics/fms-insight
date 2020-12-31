@@ -103,6 +103,7 @@ import Queues from "./station-monitor/Queues";
 import { ToolReportPage } from "./operations/ToolReport";
 import { ProgramReportPage } from "./operations/Programs";
 import { enableMapSet } from "immer";
+import { WebsocketConnection } from "../store/websocket";
 enableMapSet();
 
 const tabsStyle = {
@@ -751,6 +752,7 @@ const App = React.memo(function App(props: AppConnectedProps) {
       <SerialScanner />
       <ManualScan />
       {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
+      {props.demo ? undefined : <WebsocketConnection />}
     </div>
   );
 });
