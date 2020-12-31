@@ -44,23 +44,20 @@ import TextField from "@material-ui/core/TextField";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogActions from "@material-ui/core/DialogActions";
 import Button from "@material-ui/core/Button";
-import { User } from "oidc-client";
-import { HashSet } from "prelude-ts";
 
-import { connect, DispatchAction, mkAC } from "../store/store";
-import * as operators from "../data/operators";
-
-interface OperatorSelectProps {
-  readonly currentUser: User | null;
-  readonly operators: HashSet<string>;
-  readonly currentOperator: string | null;
-  readonly setOperator: DispatchAction<operators.ActionType.SetOperator>;
-  readonly removeOperator: DispatchAction<operators.ActionType.RemoveOperator>;
-}
+import { useRecoilState, useRecoilValue } from "recoil";
+import { allOperators, currentOperator } from "../data/operators";
+import { fmsInformation } from "../data/server-settings";
+import { LazySeq } from "../data/lazyseq";
+import { useRecoilStateDraft } from "../store/recoil-util";
 
 const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__" as const;
 
-export const OperatorSelect = React.memo(function OperatorSelectF(props: OperatorSelectProps) {
+export const OperatorSelect = React.memo(function OperatorSelectF() {
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const [operator, setOperator] = useRecoilState(currentOperator);
+  const [allOpers, setAllOpers] = useRecoilStateDraft(allOperators);
+
   const [newOperOpen, setNewOperOpen] = React.useState(false);
   const [newOperName, setNewOperName] = React.useState("");
 
@@ -68,27 +65,42 @@ export const OperatorSelect = React.memo(function OperatorSelectF(props: Operato
     if (evt.target.value === NewOper) {
       setNewOperOpen(true);
     } else {
-      props.setOperator({ operator: evt.target.value });
+      setOperator(evt.target.value as string);
     }
   }
 
-  if (props.currentUser) {
-    return <div>{props.currentUser.profile.name || props.currentUser.profile.sub}</div>;
+  function removeOperator(oper: string) {
+    setAllOpers((s) => s.delete(oper));
+  }
+
+  function addOperator() {
+    if (newOperName !== "") {
+      setAllOpers((s) => s.add(newOperName));
+      setOperator(newOperName);
+      setNewOperName("");
+      setNewOperOpen(false);
+    }
+  }
+
+  if (fmsInfo.user) {
+    return <div>{fmsInfo.user.profile.name || fmsInfo.user.profile.sub}</div>;
   }
   return (
     <>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Select value={props.currentOperator || ""} onChange={changeOper} renderValue={((x: any) => x) as any}>
-        {props.operators.toArray({ sortOn: (x) => x }).map((oper, idx) => (
-          <MenuItem key={idx} value={oper}>
-            <ListItemText primary={oper} />
-            <ListItemSecondaryAction>
-              <IconButton edge="end" onClick={() => props.removeOperator({ operator: oper })}>
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </MenuItem>
-        ))}
+      <Select value={operator || ""} onChange={changeOper} renderValue={((x: any) => x) as any}>
+        {LazySeq.ofIterable(allOpers)
+          .sortOn((x) => x)
+          .map((oper, idx) => (
+            <MenuItem key={idx} value={oper}>
+              <ListItemText primary={oper} />
+              <ListItemSecondaryAction>
+                <IconButton edge="end" onClick={() => removeOperator(oper)}>
+                  <DeleteIcon />
+                </IconButton>
+              </ListItemSecondaryAction>
+            </MenuItem>
+          ))}
         <MenuItem key="new" value={NewOper}>
           <em>Create New Operator</em>
         </MenuItem>
@@ -110,22 +122,13 @@ export const OperatorSelect = React.memo(function OperatorSelectF(props: Operato
             autoFocus
             onKeyUp={(evt) => {
               if (evt.keyCode === 13) {
-                props.setOperator({ operator: newOperName });
-                setNewOperName("");
-                setNewOperOpen(false);
+                addOperator();
               }
             }}
           />
         </DialogContent>
         <DialogActions>
-          <Button
-            disabled={newOperName === ""}
-            onClick={() => {
-              props.setOperator({ operator: newOperName });
-              setNewOperName("");
-              setNewOperOpen(false);
-            }}
-          >
+          <Button disabled={newOperName === ""} onClick={addOperator}>
             Create {newOperName}
           </Button>
           <Button
@@ -141,15 +144,3 @@ export const OperatorSelect = React.memo(function OperatorSelectF(props: Operato
     </>
   );
 });
-
-export default connect(
-  (st) => ({
-    operators: st.Operators.operators,
-    currentOperator: st.Operators.current || null,
-    currentUser: st.ServerSettings.user || null,
-  }),
-  {
-    setOperator: mkAC(operators.ActionType.SetOperator),
-    removeOperator: mkAC(operators.ActionType.RemoveOperator),
-  }
-)(OperatorSelect);

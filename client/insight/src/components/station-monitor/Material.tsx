@@ -61,6 +61,7 @@ import { inproc_mat_to_summary, MaterialSummaryAndCompletedData, MaterialSummary
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { instructionUrl } from "../../data/backend";
+import { useRecoilValue } from "recoil";
 
 /*
 function getPosition(el: Element) {
@@ -478,13 +479,13 @@ export function InstructionButton({
 
 interface NotesDialogBodyProps {
   mat: matDetails.MaterialDetail;
-  operator: string | null;
   setNotesOpen: (o: boolean) => void;
   addNote: (matId: number, process: number, operator: string | null, notes: string) => void;
 }
 
 function NotesDialogBody(props: NotesDialogBodyProps) {
   const [curNote, setCurNote] = React.useState<string>("");
+  const operator = useRecoilValue(currentOperator);
 
   return (
     <>
@@ -504,7 +505,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
       <DialogActions>
         <Button
           onClick={() => {
-            props.addNote(props.mat.materialID, 0, props.operator, curNote);
+            props.addNote(props.mat.materialID, 0, operator, curNote);
             props.setNotesOpen(false);
             setCurNote("");
           }}
@@ -527,14 +528,9 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
   );
 }
 
-const ConnectedNotesDialogBody = connect(
-  (st) => ({
-    operator: currentOperator(st),
-  }),
-  {
-    addNote: matDetails.addNote,
-  }
-)(NotesDialogBody);
+const ConnectedNotesDialogBody = connect((st) => ({}), {
+  addNote: matDetails.addNote,
+})(NotesDialogBody);
 
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;

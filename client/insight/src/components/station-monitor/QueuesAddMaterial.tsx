@@ -66,45 +66,50 @@ import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
 import { HashSet } from "prelude-ts";
 import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
+import { useRecoilValue } from "recoil";
+import { fmsInformation } from "../../data/server-settings";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
   readonly in_proc_material: Readonly<api.IInProcessMaterial>;
-  readonly allowQuarantineAtLoadStation: boolean;
-  readonly quarantineQueue: string | null;
   readonly onClose: () => void;
   readonly removeFromQueue: (matId: number, operator: string | null) => void;
   readonly addExistingMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
-  readonly usingLabelPrinter: boolean;
-  readonly printFromClient: boolean;
-  readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
   const printRef = React.useRef(null);
+  const operator = useRecoilValue(currentOperator);
+  const fmsInfo = useRecoilValue(fmsInformation);
 
   const allowRemove = React.useMemo(() => {
     // first, check if can't remove because material is being loaded
-    if (props.allowQuarantineAtLoadStation === false && props.in_proc_material.action.type === api.ActionType.Loading) {
+    if (
+      (fmsInfo.allowQuarantineAtLoadStation ?? false) === false &&
+      props.in_proc_material.action.type === api.ActionType.Loading
+    ) {
       return false;
     }
 
     // can remove if no quarantine queue or material is raw material
-    return !props.quarantineQueue || props.quarantineQueue === "" || props.in_proc_material.process === 0;
-  }, [props.in_proc_material, props.quarantineQueue, props.allowQuarantineAtLoadStation]);
+    return !fmsInfo.quarantineQueue || fmsInfo.quarantineQueue === "" || props.in_proc_material.process === 0;
+  }, [props.in_proc_material, fmsInfo]);
 
   const allowQuarantine = React.useMemo(() => {
     // can't quarantine if there is no queue defined
-    if (!props.quarantineQueue || props.quarantineQueue === "") return null;
+    if (!fmsInfo.quarantineQueue || fmsInfo.quarantineQueue === "") return null;
 
     // check if can't remove because material is being loaded
-    if (props.allowQuarantineAtLoadStation === false && props.in_proc_material.action.type === api.ActionType.Loading) {
+    if (
+      (fmsInfo.allowQuarantineAtLoadStation ?? false) === false &&
+      props.in_proc_material.action.type === api.ActionType.Loading
+    ) {
       return null;
     }
 
-    return props.quarantineQueue;
-  }, [props.in_proc_material, props.quarantineQueue, props.allowQuarantineAtLoadStation]);
+    return fmsInfo.quarantineQueue;
+  }, [props.in_proc_material, fmsInfo]);
 
   const matId = props.in_proc_material.materialID;
   return (
@@ -116,8 +121,8 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
         <MaterialDetailContent mat={props.display_material} />
       </DialogContent>
       <DialogActions>
-        {props.usingLabelPrinter ? (
-          props.printFromClient ? (
+        {fmsInfo.usingLabelPrinterForSerials ? (
+          fmsInfo.useClientPrinterForLabels ? (
             <>
               <ReactToPrint
                 content={() => printRef.current}
@@ -147,7 +152,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
           )
         ) : undefined}
         {allowRemove ? (
-          <Button color="primary" onClick={() => props.removeFromQueue(matId, props.operator)}>
+          <Button color="primary" onClick={() => props.removeFromQueue(matId, operator)}>
             Remove From System
           </Button>
         ) : undefined}
@@ -160,7 +165,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
                   materialId: matId,
                   queue: allowQuarantine,
                   queuePosition: 0,
-                  operator: props.operator,
+                  operator: operator,
                 })
               }
             >
@@ -181,108 +186,94 @@ interface AddSerialFoundProps {
   readonly queue_name?: string;
   readonly current_quarantine_queue: string | null;
   readonly display_material: matDetails.MaterialDetail;
-  readonly operator: string | null;
   readonly addMat: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly onClose: () => void;
 }
 
-interface AddSerialFoundState {
-  readonly selected_queue?: string;
-}
+function AddSerialFound(props: AddSerialFoundProps) {
+  const [selected_queue, setSelectedQueue] = React.useState<string | null>(null);
+  const operator = useRecoilValue(currentOperator);
 
-class AddSerialFound extends React.PureComponent<AddSerialFoundProps, AddSerialFoundState> {
-  state: AddSerialFoundState = {};
-
-  render() {
-    let queue = this.props.queue_name || this.state.selected_queue;
-    let queueDests = this.props.queues.filter((q) => q !== this.props.current_quarantine_queue);
-    if (queue === undefined && queueDests.length === 1) {
-      queue = queueDests[0];
-    }
-
-    let addProcMsg: string | null = null;
-    if (!this.props.display_material.loading_events) {
-      const lastProc = LazySeq.ofIterable(this.props.display_material.events)
-        .filter(
-          (e) =>
-            e.details?.["PalletCycleInvalidated"] !== "1" &&
-            (e.type === api.LogType.LoadUnloadCycle ||
-              e.type === api.LogType.MachineCycle ||
-              e.type === api.LogType.AddToQueue)
-        )
-        .flatMap((e) => e.material)
-        .filter((m) => m.id === this.props.display_material.materialID)
-        .maxOn((m) => m.proc)
-        .map((m) => m.proc)
-        .getOrElse(0);
-      addProcMsg = " To Run Process " + (lastProc + 1).toString();
-    }
-    return (
-      <>
-        <DialogTitle disableTypography>
-          <MaterialDetailTitle
-            partName={this.props.display_material.partName}
-            serial={this.props.display_material.serial}
-          />
-        </DialogTitle>
-        <DialogContent>
-          {this.props.queue_name === undefined && queueDests.length > 1 ? (
-            <div style={{ marginBottom: "1em" }}>
-              <p>Select a queue.</p>
-              <List>
-                {queueDests.map((q, idx) => (
-                  <MenuItem
-                    key={idx}
-                    selected={q === this.state.selected_queue}
-                    onClick={() => this.setState({ selected_queue: q })}
-                  >
-                    {q}
-                  </MenuItem>
-                ))}
-              </List>
-            </div>
-          ) : undefined}
-          <MaterialDetailContent mat={this.props.display_material} />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            color="primary"
-            disabled={this.props.display_material.loading_events || queue === undefined}
-            onClick={() =>
-              this.props.addMat({
-                materialId: this.props.display_material.materialID,
-                queue: queue || "",
-                queuePosition: -1,
-                operator: this.props.operator,
-              })
-            }
-          >
-            {this.props.current_quarantine_queue !== null
-              ? `Move From ${this.props.current_quarantine_queue} To`
-              : "Add To"}{" "}
-            {queue}
-            {addProcMsg}
-          </Button>
-          <Button onClick={this.props.onClose} color="primary">
-            Cancel
-          </Button>
-        </DialogActions>
-      </>
-    );
+  let queue = props.queue_name || selected_queue;
+  let queueDests = props.queues.filter((q) => q !== props.current_quarantine_queue);
+  if (queue === undefined && queueDests.length === 1) {
+    queue = queueDests[0];
   }
+
+  let addProcMsg: string | null = null;
+  if (!props.display_material.loading_events) {
+    const lastProc = LazySeq.ofIterable(props.display_material.events)
+      .filter(
+        (e) =>
+          e.details?.["PalletCycleInvalidated"] !== "1" &&
+          (e.type === api.LogType.LoadUnloadCycle ||
+            e.type === api.LogType.MachineCycle ||
+            e.type === api.LogType.AddToQueue)
+      )
+      .flatMap((e) => e.material)
+      .filter((m) => m.id === props.display_material.materialID)
+      .maxOn((m) => m.proc)
+      .map((m) => m.proc)
+      .getOrElse(0);
+    addProcMsg = " To Run Process " + (lastProc + 1).toString();
+  }
+  return (
+    <>
+      <DialogTitle disableTypography>
+        <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
+      </DialogTitle>
+      <DialogContent>
+        {props.queue_name === undefined && queueDests.length > 1 ? (
+          <div style={{ marginBottom: "1em" }}>
+            <p>Select a queue.</p>
+            <List>
+              {queueDests.map((q, idx) => (
+                <MenuItem key={idx} selected={q === selected_queue} onClick={() => setSelectedQueue(q)}>
+                  {q}
+                </MenuItem>
+              ))}
+            </List>
+          </div>
+        ) : undefined}
+        <MaterialDetailContent mat={props.display_material} />
+      </DialogContent>
+      <DialogActions>
+        <Button
+          color="primary"
+          disabled={props.display_material.loading_events || queue === undefined}
+          onClick={() =>
+            props.addMat({
+              materialId: props.display_material.materialID,
+              queue: queue || "",
+              queuePosition: -1,
+              operator: operator,
+            })
+          }
+        >
+          {props.current_quarantine_queue !== null ? `Move From ${props.current_quarantine_queue} To` : "Add To"}{" "}
+          {queue}
+          {addProcMsg}
+        </Button>
+        <Button onClick={props.onClose} color="primary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </>
+  );
 }
 
 interface AddUnassignedRawMatProps {
   readonly queues: ReadonlyArray<string>;
   readonly queue_name?: string;
   readonly not_found_serial?: string;
-  readonly operator: string | null;
-  readonly promptForOperator: boolean;
   readonly onClose: () => void;
   readonly addUnassigned: (d: matDetails.AddNewCastingToQueueData) => void;
 }
 
 function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
+  const selectedOperator = useRecoilValue(currentOperator);
+  const promptForOperator = useRecoilValue(fmsInformation).requireOperatorNamePromptWhenAddingMaterial ?? false;
+
   const [operator, setOperator] = React.useState<string | null>(null);
   const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
   const initialRawMatQueues = useSelector((s) => s.Events.last30.sim_use.rawMaterialQueues);
@@ -304,7 +295,7 @@ function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
     queue = props.queues[0];
   }
 
-  const allowAdd = queue && rawMatQueues.contains(queue) && (!props.promptForOperator || (operator && operator !== ""));
+  const allowAdd = queue && rawMatQueues.contains(queue) && (!promptForOperator || (operator && operator !== ""));
 
   function addMaterial() {
     if (queue) {
@@ -316,7 +307,7 @@ function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
         queue: queue,
         queuePosition: -1,
         serials: props.not_found_serial ? [props.not_found_serial] : undefined,
-        operator: operator,
+        operator: promptForOperator ? operator : selectedOperator,
       });
     }
   }
@@ -339,7 +330,7 @@ function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
               </List>
             </div>
           ) : undefined}
-          {props.promptForOperator ? (
+          {promptForOperator ? (
             <div style={{ marginLeft: "1em" }}>
               <TextField
                 fullWidth
@@ -469,8 +460,6 @@ interface AddNewMaterialProps {
   readonly queues: ReadonlyArray<string>;
   readonly queue_name?: string;
   readonly not_found_serial?: string;
-  readonly operator: string | null;
-  readonly promptForOperator: boolean;
   readonly onClose: () => void;
   readonly addAssigned: (d: matDetails.AddNewMaterialToQueueData) => void;
 }
@@ -481,106 +470,86 @@ interface AddNewJobProcessState {
   readonly path_group: number;
 }
 
-interface AddNewMaterialState {
-  readonly selected_job?: AddNewJobProcessState;
-  readonly selected_queue?: string;
-  readonly operator?: string;
-}
+function AddNewMaterialBody(props: AddNewMaterialProps) {
+  const selectedOperator = useRecoilValue(currentOperator);
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const [selected_job, setSelectedJob] = React.useState<AddNewJobProcessState | undefined>(undefined);
+  const [selected_queue, setSelectedQueue] = React.useState<string | undefined>(undefined);
+  const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
 
-class AddNewMaterialBody extends React.PureComponent<AddNewMaterialProps, AddNewMaterialState> {
-  state: AddNewMaterialState = {};
-
-  onSelectJob = (j: AddNewJobProcessState | undefined) => {
-    if (j) {
-      this.setState({ selected_job: j });
-    } else {
-      this.setState({ selected_job: undefined });
-    }
-  };
-
-  addMaterial = (queue?: string) => {
+  function addMaterial(queue?: string) {
     if (queue === undefined) {
       return;
     }
 
-    if (this.state.selected_job !== undefined) {
-      this.props.addAssigned({
-        jobUnique: this.state.selected_job.job.unique,
-        lastCompletedProcess: this.state.selected_job.last_proc,
-        pathGroup: this.state.selected_job.path_group,
+    if (selected_job !== undefined) {
+      props.addAssigned({
+        jobUnique: selected_job.job.unique,
+        lastCompletedProcess: selected_job.last_proc,
+        pathGroup: selected_job.path_group,
         queue: queue,
         queuePosition: -1,
-        serial: this.props.not_found_serial,
-        operator: this.props.promptForOperator ? this.state.operator || null : this.props.operator,
+        serial: props.not_found_serial,
+        operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator || null : selectedOperator,
       });
-      this.setState({
-        selected_job: undefined,
-        selected_queue: undefined,
-        operator: undefined,
-      });
+      setSelectedJob(undefined);
+      setSelectedQueue(undefined);
+      setEnteredOperator(null);
     }
-  };
-
-  render() {
-    let queue = this.props.queue_name || this.state.selected_queue;
-    if (queue === undefined && this.props.queues.length === 1) {
-      queue = this.props.queues[0];
-    }
-
-    const allowAdd =
-      this.state.selected_job !== undefined &&
-      (!this.props.promptForOperator || (this.state.operator && this.state.operator !== ""));
-
-    return (
-      <>
-        <DialogTitle>{this.props.not_found_serial ? this.props.not_found_serial : "Add New Material"}</DialogTitle>
-        <DialogContent>
-          {this.props.not_found_serial ? (
-            <p>
-              The serial {this.props.not_found_serial} was not found. Specify the job and process to add to the queue.
-            </p>
-          ) : undefined}
-          <div style={{ display: "flex" }}>
-            {this.props.queue_name === undefined && this.props.queues.length > 1 ? (
-              <div style={{ marginRight: "1em" }}>
-                <p>Select a queue.</p>
-                <List>
-                  {this.props.queues.map((q, idx) => (
-                    <MenuItem
-                      key={idx}
-                      selected={q === this.state.selected_queue}
-                      onClick={() => this.setState({ selected_queue: q })}
-                    >
-                      {q}
-                    </MenuItem>
-                  ))}
-                </List>
-              </div>
-            ) : undefined}
-            <ConnectedSelectJob selected_job={this.state.selected_job} onSelectJob={this.onSelectJob} queue={queue} />
-            {this.props.promptForOperator ? (
-              <div style={{ marginLeft: "1em" }}>
-                <TextField
-                  fullWidth
-                  label="Operator"
-                  value={this.state.operator || ""}
-                  onChange={(e) => this.setState({ operator: e.target.value })}
-                />
-              </div>
-            ) : undefined}
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button color="primary" onClick={() => this.addMaterial(queue)} disabled={!allowAdd}>
-            Add To {queue}
-          </Button>
-          <Button onClick={this.props.onClose} color="primary">
-            Cancel
-          </Button>
-        </DialogActions>
-      </>
-    );
   }
+
+  let queue = props.queue_name || selected_queue;
+  if (queue === undefined && props.queues.length === 1) {
+    queue = props.queues[0];
+  }
+
+  const allowAdd =
+    selected_job !== undefined &&
+    (!fmsInfo.requireOperatorNamePromptWhenAddingMaterial || (enteredOperator && enteredOperator !== ""));
+
+  return (
+    <>
+      <DialogTitle>{props.not_found_serial ? props.not_found_serial : "Add New Material"}</DialogTitle>
+      <DialogContent>
+        {props.not_found_serial ? (
+          <p>The serial {props.not_found_serial} was not found. Specify the job and process to add to the queue.</p>
+        ) : undefined}
+        <div style={{ display: "flex" }}>
+          {props.queue_name === undefined && props.queues.length > 1 ? (
+            <div style={{ marginRight: "1em" }}>
+              <p>Select a queue.</p>
+              <List>
+                {props.queues.map((q, idx) => (
+                  <MenuItem key={idx} selected={q === selected_queue} onClick={() => setSelectedQueue(q)}>
+                    {q}
+                  </MenuItem>
+                ))}
+              </List>
+            </div>
+          ) : undefined}
+          <ConnectedSelectJob selected_job={selected_job} onSelectJob={setSelectedJob} queue={queue} />
+          {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
+            <div style={{ marginLeft: "1em" }}>
+              <TextField
+                fullWidth
+                label="Operator"
+                value={enteredOperator || ""}
+                onChange={(e) => setEnteredOperator(e.target.value)}
+              />
+            </div>
+          ) : undefined}
+        </div>
+      </DialogContent>
+      <DialogActions>
+        <Button color="primary" onClick={() => addMaterial(queue)} disabled={!allowAdd}>
+          Add To {queue}
+        </Button>
+        <Button onClick={props.onClose} color="primary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </>
+  );
 }
 
 export type CurrentlyInQueue =
@@ -593,14 +562,6 @@ export interface QueueMatDialogProps {
   readonly material_currently_in_queue: CurrentlyInQueue;
   readonly addMatQueue?: string;
   readonly queueNames: ReadonlyArray<string>;
-  readonly quarantineQueue: string | null;
-  readonly usingLabelPrinter: boolean;
-  readonly printFromClient: boolean;
-  readonly operator: string | null;
-  readonly promptForOperator: boolean;
-  readonly requireSerialWhenAddingMat: boolean;
-  readonly allowAddWithoutJob: boolean;
-  readonly allowQuarantineAtLoadStation: boolean;
 
   readonly onClose: () => void;
   readonly removeFromQueue: (matId: number, operator: string | null) => void;
@@ -611,6 +572,7 @@ export interface QueueMatDialogProps {
 }
 
 function QueueMatDialog(props: QueueMatDialogProps) {
+  const fmsInfo = useRecoilValue(fmsInformation);
   let body: JSX.Element | undefined;
 
   if (props.display_material === null) {
@@ -622,13 +584,8 @@ function QueueMatDialog(props: QueueMatDialogProps) {
           display_material={props.display_material}
           in_proc_material={props.material_currently_in_queue.inProcMat}
           onClose={props.onClose}
-          quarantineQueue={props.quarantineQueue}
-          allowQuarantineAtLoadStation={props.allowQuarantineAtLoadStation}
           removeFromQueue={props.removeFromQueue}
           addExistingMat={props.addExistingMat}
-          operator={props.operator}
-          usingLabelPrinter={props.usingLabelPrinter}
-          printFromClient={props.printFromClient}
           printLabel={props.printLabel}
         />
       );
@@ -643,10 +600,9 @@ function QueueMatDialog(props: QueueMatDialogProps) {
           queue_name={props.addMatQueue}
           onClose={props.onClose}
           addMat={props.addExistingMat}
-          operator={props.operator}
         />
       );
-    } else if (props.requireSerialWhenAddingMat && props.allowAddWithoutJob) {
+    } else if (fmsInfo.requireSerialWhenAddingMaterialToQueue && fmsInfo.allowAddRawMaterialForNonRunningJobs) {
       body = (
         <AddUnassignedRawMat
           queues={props.queueNames}
@@ -654,8 +610,6 @@ function QueueMatDialog(props: QueueMatDialogProps) {
           queue_name={props.addMatQueue}
           onClose={props.onClose}
           addUnassigned={props.addUnassigned}
-          operator={props.operator}
-          promptForOperator={props.promptForOperator}
         />
       );
     } else {
@@ -666,8 +620,6 @@ function QueueMatDialog(props: QueueMatDialogProps) {
           queue_name={props.addMatQueue}
           onClose={props.onClose}
           addAssigned={props.addNewAssigned}
-          operator={props.operator}
-          promptForOperator={props.promptForOperator}
         />
       );
     }
@@ -723,14 +675,6 @@ export const ConnectedMaterialDialog = connect(
     material_currently_in_queue: selectMatCurrentlyInQueue(st),
     addMatQueue: st.Gui.add_mat_to_queue,
     queueNames: st.Route.standalone_queues,
-    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
-    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
-    printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
-    operator: currentOperator(st),
-    promptForOperator: st.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
-    allowAddWithoutJob: st.ServerSettings.fmsInfo?.allowAddRawMaterialForNonRunningJobs ?? false,
-    requireSerialWhenAddingMat: st.ServerSettings.fmsInfo?.requireSerialWhenAddingMaterialToQueue ?? false,
-    allowQuarantineAtLoadStation: st.ServerSettings.fmsInfo?.allowQuarantineAtLoadStation ?? false,
   }),
   {
     onClose: () => [
@@ -764,7 +708,6 @@ export const ConnectedMaterialDialog = connect(
 
 interface ChooseSerialOrDirectJobProps {
   readonly dialog_open: boolean;
-  readonly requireSerialWhenAddingMat: boolean;
   readonly lookupSerial: (s: string) => void;
   readonly selectJobWithoutSerial: () => void;
   readonly onClose: () => void;
@@ -772,6 +715,7 @@ interface ChooseSerialOrDirectJobProps {
 
 const ChooseSerialOrDirectJob = React.memo(function ChooseSerialOrJob(props: ChooseSerialOrDirectJobProps) {
   const [serial, setSerial] = React.useState<string | undefined>(undefined);
+  const fmsInfo = useRecoilValue(fmsInformation);
   function lookup() {
     if (serial && serial !== "") {
       props.lookupSerial(serial);
@@ -790,7 +734,7 @@ const ChooseSerialOrDirectJob = React.memo(function ChooseSerialOrJob(props: Cho
     <Dialog open={props.dialog_open} onClose={close} maxWidth="md">
       <DialogTitle>Lookup Material</DialogTitle>
       <DialogContent>
-        {props.requireSerialWhenAddingMat ? undefined : (
+        {fmsInfo.requireSerialWhenAddingMaterialToQueue ? undefined : (
           <div style={{ maxWidth: "25em" }}>
             <p>
               To find the details of the material to add, you can either scan a part&apos;s serial, lookup a serial, or
@@ -816,7 +760,7 @@ const ChooseSerialOrDirectJob = React.memo(function ChooseSerialOrJob(props: Cho
               </Button>
             </div>
           </div>
-          {props.requireSerialWhenAddingMat ? undefined : (
+          {fmsInfo.requireSerialWhenAddingMaterialToQueue ? undefined : (
             <div style={{ paddingLeft: "8px", borderLeft: "1px solid rgba(0,0,0,0.2)" }}>
               <Button variant="contained" color="secondary" onClick={manualSelect}>
                 Manually Select Job
@@ -837,7 +781,6 @@ const ChooseSerialOrDirectJob = React.memo(function ChooseSerialOrJob(props: Cho
 export const ConnectedChooseSerialOrDirectJobDialog = connect(
   (st) => ({
     dialog_open: st.Gui.queue_dialog_mode_open,
-    requireSerialWhenAddingMat: st.ServerSettings.fmsInfo?.requireSerialWhenAddingMaterialToQueue ?? false,
   }),
   {
     onClose: () =>
@@ -871,10 +814,6 @@ interface AddCastingProps {
   readonly queue: string | null;
   readonly jobs: { [key: string]: Readonly<api.IInProcessJob> };
   readonly castingNames: HashSet<string>;
-  readonly operator: string | null;
-  readonly promptForOperator: boolean;
-  readonly allowAddWithoutJob: boolean;
-  readonly printOnAdd: boolean;
   readonly addNewCasting: (
     c: matDetails.AddNewCastingToQueueData,
     onAddNew?: (mats: ReadonlyArray<Readonly<api.IInProcessMaterial>>) => void,
@@ -884,6 +823,10 @@ interface AddCastingProps {
 }
 
 const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingProps) {
+  const operator = useRecoilValue(currentOperator);
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const printOnAdd = (fmsInfo.usingLabelPrinterForSerials ?? false) && (fmsInfo.useClientPrinterForLabels ?? false);
+
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
   const [qty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
@@ -899,7 +842,9 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
         .filter((p) => p.casting !== undefined && p.casting !== "")
         .map((p) => ({ casting: p.casting as string, cnt: 1 }))
         .appendAll(
-          props.allowAddWithoutJob ? LazySeq.ofIterable(props.castingNames).map((c) => ({ casting: c, cnt: 0 })) : []
+          fmsInfo.allowAddRawMaterialForNonRunningJobs
+            ? LazySeq.ofIterable(props.castingNames).map((c) => ({ casting: c, cnt: 0 }))
+            : []
         )
         .toMap(
           (c) => [c.casting, c.cnt],
@@ -935,7 +880,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
         quantity: qty,
         queue: props.queue,
         queuePosition: -1,
-        operator: props.promptForOperator ? enteredOperator : props.operator,
+        operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
       });
     }
     close();
@@ -951,7 +896,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
             quantity: qty,
             queue: props.queue,
             queuePosition: -1,
-            operator: props.promptForOperator ? enteredOperator : props.operator,
+            operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
           },
           (mats) => {
             setMaterialToPrint(mats);
@@ -970,7 +915,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
   return (
     <>
-      <Dialog open={props.queue !== null} onClose={() => (adding && props.printOnAdd ? undefined : close())}>
+      <Dialog open={props.queue !== null} onClose={() => (adding && printOnAdd ? undefined : close())}>
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
           <FormControl>
@@ -1016,7 +961,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
               onChange={(e) => setQty(parseInt(e.target.value))}
             />
           </div>
-          {props.promptForOperator ? (
+          {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
             <div style={{ marginBottom: "2em" }}>
               <TextField
                 style={{ marginTop: "1em" }}
@@ -1029,7 +974,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
           ) : undefined}
         </DialogContent>
         <DialogActions>
-          {props.printOnAdd ? (
+          {printOnAdd ? (
             <ReactToPrint
               onBeforeGetContent={addAndPrint}
               onAfterPrint={close}
@@ -1043,7 +988,8 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
                     adding ||
                     qty === null ||
                     isNaN(qty) ||
-                    (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
+                    (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                      (enteredOperator === null || enteredOperator === ""))
                   }
                 >
                   {adding ? <CircularProgress size={10} /> : undefined}
@@ -1058,14 +1004,15 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
                 selectedCasting === null ||
                 qty === null ||
                 isNaN(qty) ||
-                (props.promptForOperator && (enteredOperator === null || enteredOperator === ""))
+                (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                  (enteredOperator === null || enteredOperator === ""))
               }
               onClick={add}
             >
               Add to {props.queue}
             </Button>
           )}
-          <Button color="primary" disabled={adding && props.printOnAdd} onClick={close}>
+          <Button color="primary" disabled={adding && printOnAdd} onClick={close}>
             Cancel
           </Button>
         </DialogActions>
@@ -1090,12 +1037,6 @@ export const ConnectedAddCastingDialog = connect(
       [key: string]: Readonly<api.IInProcessJob>;
     },
     castingNames: s.Events.last30.sim_use.castingNames,
-    operator: currentOperator(s),
-    promptForOperator: s.ServerSettings.fmsInfo?.requireOperatorNamePromptWhenAddingMaterial ?? false,
-    allowAddWithoutJob: s.ServerSettings.fmsInfo?.allowAddRawMaterialForNonRunningJobs ?? false,
-    printOnAdd:
-      (s.ServerSettings.fmsInfo?.usingLabelPrinterForSerials ?? false) &&
-      (s.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false),
   }),
   {
     addNewCasting: matDetails.addNewCastingToQueue,

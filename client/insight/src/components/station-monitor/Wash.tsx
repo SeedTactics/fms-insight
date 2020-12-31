@@ -41,23 +41,25 @@ import { Store, connect, mkAC } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import * as guiState from "../../data/gui-state";
-import * as api from "../../data/api";
 import SelectWorkorderDialog from "./SelectWorkorder";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import Tooltip from "@material-ui/core/Tooltip";
 import { HashMap } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
+import { fmsInformation } from "../../data/server-settings";
+import { useRecoilValue } from "recoil";
 
 interface WashDialogProps extends MaterialDialogProps {
-  readonly operator: string | null;
-  readonly fmsInfo?: Readonly<api.IFMSInfo>;
   readonly completeWash: (mat: matDetails.CompleteWashData) => void;
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
   readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function WashDialog(props: WashDialogProps) {
+  const operator = useRecoilValue(currentOperator);
+  const fmsInfo = useRecoilValue(fmsInformation);
+
   function markWashComplete() {
     if (!props.display_material) {
       return;
@@ -65,7 +67,7 @@ function WashDialog(props: WashDialogProps) {
 
     props.completeWash({
       mat: props.display_material,
-      operator: props.operator,
+      operator: operator,
     });
   }
   function openAssignWorkorder() {
@@ -75,8 +77,8 @@ function WashDialog(props: WashDialogProps) {
     props.openSelectWorkorder(props.display_material);
   }
 
-  const requireScan = props.fmsInfo ? props.fmsInfo.requireScanAtWash : false;
-  const requireWork = props.fmsInfo ? props.fmsInfo.requireWorkorderBeforeAllowWashComplete : false;
+  const requireScan = fmsInfo.requireScanAtWash;
+  const requireWork = fmsInfo.requireWorkorderBeforeAllowWashComplete;
   let disallowCompleteReason: string | undefined;
 
   if (requireScan && props.display_material && !props.display_material.openedViaBarcodeScanner) {
@@ -87,7 +89,7 @@ function WashDialog(props: WashDialogProps) {
     }
   }
 
-  const quarantineQueue = props.fmsInfo?.quarantineQueue || null;
+  const quarantineQueue = fmsInfo.quarantineQueue || null;
 
   return (
     <MaterialDialog
@@ -97,7 +99,7 @@ function WashDialog(props: WashDialogProps) {
       buttons={
         <>
           {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton material={props.display_material} type="wash" operator={props.operator} pallet={null} />
+            <InstructionButton material={props.display_material} type="wash" operator={operator} pallet={null} />
           ) : undefined}
           {props.display_material && quarantineQueue !== null ? (
             <Tooltip title={"Move to " + quarantineQueue}>
@@ -109,7 +111,7 @@ function WashDialog(props: WashDialogProps) {
                         materialId: props.display_material.materialID,
                         queue: quarantineQueue,
                         queuePosition: 0,
-                        operator: props.operator,
+                        operator: operator,
                       })
                     : undefined
                 }
@@ -143,8 +145,6 @@ function WashDialog(props: WashDialogProps) {
 const ConnectedWashDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
-    operator: currentOperator(st),
-    fmsInfo: st.ServerSettings.fmsInfo,
   }),
   {
     completeWash: (d: matDetails.CompleteWashData) => [

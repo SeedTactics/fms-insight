@@ -35,7 +35,6 @@ import { initStore } from "./store/store";
 import { registerMockBackend } from "./data/backend";
 import * as events from "./data/events";
 import * as currentStatus from "./data/current-status";
-import * as serverSettings from "./data/server-settings";
 import * as routes from "./data/routes";
 import { render } from "./renderer";
 
@@ -47,6 +46,5 @@ store.dispatch({ type: routes.RouteLocation.Operations_Dashboard });
 registerMockBackend();
 store.dispatch(events.loadLast30Days());
 store.dispatch(currentStatus.loadCurrentStatus());
-store.dispatch(serverSettings.loadServerSettings());
 
 render({ demo: true }, store, document.getElementById("root"));

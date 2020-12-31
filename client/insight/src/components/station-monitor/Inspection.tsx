@@ -46,17 +46,20 @@ import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/eve
 import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
+import { useRecoilValue } from "recoil";
+import { fmsInformation } from "../../data/server-settings";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
-  readonly operator: string | null;
   readonly inspection_type: string;
-  readonly quarantineQueue: string | null;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
   readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function InspButtons(props: InspButtonsProps) {
+  const operator = useRecoilValue(currentOperator);
+  const quarantineQueue = useRecoilValue(fmsInformation).quarantineQueue ?? null;
+
   function markInspComplete(success: boolean) {
     if (!props.display_material) {
       return;
@@ -66,7 +69,7 @@ function InspButtons(props: InspButtonsProps) {
       mat: props.display_material,
       inspType: props.inspection_type,
       success,
-      operator: props.operator,
+      operator: operator,
     });
   }
 
@@ -76,21 +79,21 @@ function InspButtons(props: InspButtonsProps) {
         <InstructionButton
           material={props.display_material}
           type={props.inspection_type}
-          operator={props.operator}
+          operator={operator}
           pallet={null}
         />
       ) : undefined}
-      {props.display_material && props.quarantineQueue !== null ? (
-        <Tooltip title={"Move to " + props.quarantineQueue}>
+      {props.display_material && quarantineQueue !== null ? (
+        <Tooltip title={"Move to " + quarantineQueue}>
           <Button
             color="primary"
             onClick={() =>
-              props.display_material && props.quarantineQueue
+              props.display_material && quarantineQueue
                 ? props.moveToQueue({
                     materialId: props.display_material.materialID,
-                    queue: props.quarantineQueue,
+                    queue: quarantineQueue,
                     queuePosition: 0,
-                    operator: props.operator || null,
+                    operator: operator || null,
                   })
                 : undefined
             }
@@ -110,9 +113,7 @@ function InspButtons(props: InspButtonsProps) {
 }
 
 interface InspDialogProps extends MaterialDialogProps {
-  readonly operator: string | null;
   readonly focusInspectionType: string;
-  readonly quarantineQueue: string | null;
   readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
   readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
@@ -142,10 +143,8 @@ function InspDialog(props: InspDialogProps) {
               <DialogActions key={i}>
                 <InspButtons
                   display_material={displayMat}
-                  operator={props.operator}
                   inspection_type={i}
                   completeInspection={props.completeInspection}
-                  quarantineQueue={props.quarantineQueue}
                   moveToQueue={props.moveToQueue}
                 />
               </DialogActions>
@@ -157,10 +156,8 @@ function InspDialog(props: InspDialogProps) {
         !singleInspectionType || !displayMat ? undefined : (
           <InspButtons
             display_material={displayMat}
-            operator={props.operator}
             inspection_type={singleInspectionType}
             completeInspection={props.completeInspection}
-            quarantineQueue={props.quarantineQueue}
             moveToQueue={props.moveToQueue}
           />
         )
@@ -173,8 +170,6 @@ const ConnectedInspDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
     focusInspectionType: st.Route.selected_insp_type || "",
-    operator: currentOperator(st),
-    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),

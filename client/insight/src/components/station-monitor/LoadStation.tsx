@@ -73,6 +73,8 @@ import ReactToPrint from "react-to-print";
 import { instructionUrl } from "../../data/backend";
 import Tooltip from "@material-ui/core/Tooltip";
 import Fab from "@material-ui/core/Fab";
+import { useRecoilValue } from "recoil";
+import { fmsInformation } from "../../data/server-settings";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -399,12 +401,6 @@ interface LoadMatDialogProps extends MaterialDialogProps {
   readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
   readonly openSetSerial: () => void;
   readonly openForceInspection: () => void;
-  readonly usingLabelPrinter: boolean;
-  readonly printFromClient: boolean;
-  readonly operator: string | null;
-  readonly quarantineQueue: string | null;
-  readonly allowChangeSerial: boolean;
-  readonly allowChangeWorkorder: boolean;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
   readonly signalQuarantine: (matId: number, queue: string, operator: string | null) => void;
 }
@@ -424,15 +420,20 @@ function instructionType(mat: matDetails.MaterialDetail): string {
 }
 
 function LoadMatDialog(props: LoadMatDialogProps) {
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const quarantineQueue = fmsInfo.allowQuarantineAtLoadStation ? fmsInfo.quarantineQueue ?? null : null;
+  const operator = useRecoilValue(currentOperator);
+  const displayMat = props.display_material;
+
   const printRef = React.useRef(null);
+
   function openAssignWorkorder() {
     if (!props.display_material) {
       return;
     }
     props.openSelectWorkorder(props.display_material);
   }
-  const displayMat = props.display_material;
-  const quarantineQueue = props.quarantineQueue;
+
   return (
     <MaterialDialog
       display_material={props.display_material}
@@ -444,17 +445,17 @@ function LoadMatDialog(props: LoadMatDialogProps) {
             <InstructionButton
               material={props.display_material}
               type={instructionType(props.display_material)}
-              operator={props.operator}
+              operator={operator}
               pallet={props.pallet}
             />
           ) : undefined}
-          {props.allowChangeSerial ? (
+          {fmsInfo.allowChangeSerial ? (
             <Button color="primary" onClick={props.openSetSerial}>
               {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
             </Button>
           ) : undefined}
-          {displayMat && props.usingLabelPrinter ? (
-            props.printFromClient ? (
+          {displayMat && fmsInfo.usingLabelPrinterForSerials ? (
+            fmsInfo.useClientPrinterForLabels ? (
               <>
                 <ReactToPrint
                   content={() => printRef.current}
@@ -498,7 +499,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
           {displayMat && quarantineQueue ? (
             <Button
               color="primary"
-              onClick={() => props.signalQuarantine(displayMat.materialID, quarantineQueue, props.operator)}
+              onClick={() => props.signalQuarantine(displayMat.materialID, quarantineQueue, operator)}
             >
               Quarantine
             </Button>
@@ -506,7 +507,7 @@ function LoadMatDialog(props: LoadMatDialogProps) {
           <Button color="primary" onClick={props.openForceInspection}>
             Signal Inspection
           </Button>
-          {props.allowChangeWorkorder ? (
+          {fmsInfo.allowChangeWorkorderAtLoadStation ? (
             <Button color="primary" onClick={openAssignWorkorder}>
               {props.display_material && props.display_material.workorderId ? "Change Workorder" : "Assign Workorder"}
             </Button>
@@ -520,14 +521,6 @@ function LoadMatDialog(props: LoadMatDialogProps) {
 const ConnectedMaterialDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
-    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
-    printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
-    operator: currentOperator(st),
-    quarantineQueue: st.ServerSettings.fmsInfo?.allowQuarantineAtLoadStation
-      ? st.ServerSettings.fmsInfo?.quarantineQueue ?? null
-      : null,
-    allowChangeSerial: st.ServerSettings.fmsInfo?.allowChangeSerial ?? false,
-    allowChangeWorkorder: st.ServerSettings.fmsInfo?.allowChangeWorkorderAtLoadStation ?? false,
   }),
   {
     onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
@@ -595,7 +588,6 @@ const loadStyles = createStyles({
 interface LoadStationProps {
   readonly data: LoadStationAndQueueData;
   readonly dateOfCurrentStatus: Date;
-  readonly operator: string | null;
   openMat: (m: Readonly<MaterialSummary>) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
@@ -605,6 +597,8 @@ interface LoadStationDisplayProps extends LoadStationProps {
 }
 
 const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
+  const operator = useRecoilValue(currentOperator);
+
   const palProps = { ...props, classes: undefined };
 
   const queues = props.data.queues
@@ -637,7 +631,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
         <div className={props.classes.palCol}>
           <PalletColumn {...palProps} />
           <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
-            <MultiInstructionButton loadData={props.data} operator={props.operator} />
+            <MultiInstructionButton loadData={props.data} operator={operator} />
           </div>
         </div>
         {col1.length() === 0 ? undefined : (
@@ -662,7 +656,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       materialId: mat.material[se.oldIndex].materialID,
                       queue: mat.label,
                       queuePosition: se.newIndex,
-                      operator: props.operator,
+                      operator: operator,
                     })
                   }
                 >
@@ -707,7 +701,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       materialId: mat.material[se.oldIndex].materialID,
                       queue: mat.label,
                       queuePosition: se.newIndex,
-                      operator: props.operator,
+                      operator: operator,
                     })
                   }
                 >
@@ -772,7 +766,6 @@ export default connect(
   (st: Store) => ({
     data: buildLoadData(st),
     dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC,
-    operator: currentOperator(st),
   }),
   {
     openMat: matDetails.openMaterialDialog,

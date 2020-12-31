@@ -36,10 +36,10 @@ import * as ReactDOM from "react-dom";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import "react-vis/dist/style.css";
 import "highlight.js/styles/default.css";
-import "fontsource-roboto/300.css";
-import "fontsource-roboto/400.css";
-import "fontsource-roboto/500.css";
-import "fontsource-roboto/700.css";
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
 
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";

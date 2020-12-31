@@ -93,6 +93,8 @@ import ReactToPrint from "react-to-print";
 import { PrintedLabel } from "./PrintedLabel";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { JobDetailDialog } from "./JobDetails";
+import { useRecoilValue } from "recoil";
+import { fmsInformation } from "../../data/server-settings";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -144,9 +146,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName) >= 0;
   }, [hasOldCastings, jobs]);
   const classes = useTableStyles();
-  const allowEditQty = useSelector(
-    (s) => (s.ServerSettings.fmsInfo?.allowEditJobPlanQuantityFromQueuesPage ?? null) !== null
-  );
+  const allowEditQty = (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
 
   return (
     <Table size="small">
@@ -334,7 +334,6 @@ export const ConnectedEditNoteDialog = connect((s) => ({}), {
 })(EditNoteDialog);
 
 interface EditJobPlanQtyProps {
-  readonly allowEditJobPlanQuantityFromQueuesPage: string | null;
   readonly job: JobRawMaterialData | null;
   readonly closeDialog: () => void;
   readonly setJobQty: DispatchAction<currentSt.ActionType.SetJobPlannedQty>;
@@ -343,6 +342,7 @@ interface EditJobPlanQtyProps {
 const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: EditJobPlanQtyProps) {
   const [running, setRunning] = React.useState(false);
   const [newQty, setNewQty] = React.useState<number | null>(null);
+  const allowEditQtyUrl = useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null;
 
   function close() {
     if (running) return;
@@ -351,17 +351,12 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
   }
 
   async function setQty() {
-    if (
-      props.allowEditJobPlanQuantityFromQueuesPage === null ||
-      props.job === null ||
-      newQty == null ||
-      isNaN(newQty)
-    ) {
+    if (allowEditQtyUrl === null || props.job === null || newQty == null || isNaN(newQty)) {
       return;
     }
     setRunning(true);
     try {
-      await fetch((BackendUrl ?? "") + props.allowEditJobPlanQuantityFromQueuesPage, {
+      await fetch((BackendUrl ?? "") + allowEditQtyUrl, {
         method: "PUT",
         headers: new Headers({
           "Content-Type": "application/json",
@@ -381,7 +376,7 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
   }
 
   return (
-    <Dialog open={props.allowEditJobPlanQuantityFromQueuesPage != null && props.job !== null} onClose={close}>
+    <Dialog open={allowEditQtyUrl != null && props.job !== null} onClose={close}>
       {props.job !== null ? (
         <>
           <DialogTitle>
@@ -421,20 +416,13 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
   );
 });
 
-const ConnectedEditJobPlanQtyDialog = connect(
-  (s) => ({
-    allowEditJobPlanQuantityFromQueuesPage: s.ServerSettings.fmsInfo?.allowEditJobPlanQuantityFromQueuesPage ?? null,
-  }),
-  {
-    setJobQty: mkAC(currentSt.ActionType.SetJobPlannedQty),
-  }
-)(EditJobPlanQtyDialog);
+const ConnectedEditJobPlanQtyDialog = connect((s) => ({}), {
+  setJobQty: mkAC(currentSt.ActionType.SetJobPlannedQty),
+})(EditJobPlanQtyDialog);
 
 interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
   readonly closeDialog: () => void;
-  readonly usingLabelPrinter: boolean;
-  readonly printFromClient: boolean;
   readonly operator: string | null;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
@@ -447,6 +435,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   const [lastOperator, setLastOperator] = React.useState<string | undefined>(undefined);
   const jobs = useSelector((s) => s.Current.current_status.jobs);
   const printRef = React.useRef(null);
+  const fmsInfo = useRecoilValue(fmsInformation);
 
   React.useEffect(() => {
     if (props.material === null) return;
@@ -540,8 +529,8 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
         ) : undefined}
       </DialogContent>
       <DialogActions>
-        {props.material && props.material.length > 0 && props.usingLabelPrinter ? (
-          props.printFromClient ? (
+        {props.material && props.material.length > 0 && fmsInfo.usingLabelPrinterForSerials ? (
+          fmsInfo.useClientPrinterForLabels ? (
             <>
               <ReactToPrint
                 content={() => printRef.current}
@@ -595,8 +584,6 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
 interface AddMaterialButtonsProps {
   readonly label: string;
   readonly rawMatQueue: boolean;
-  readonly requireSerialWhenAddingMat: boolean;
-  readonly allowAddMatWithoutJob: boolean;
   openAddToQueue(label: string): void;
   openAddCasting(label: string): void;
 }
@@ -604,6 +591,7 @@ interface AddMaterialButtonsProps {
 const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
   const currentJobs = useSelector((s) => s.Current.current_status.jobs);
   const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
+  const fmsInfo = useRecoilValue(fmsInformation);
   const bttnsToShow = React.useMemo(() => {
     return {
       hasCastings:
@@ -633,7 +621,9 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
         </Tooltip>
       ) : undefined}
       {bttnsToShow.hasMatInput ||
-      (props.rawMatQueue && props.allowAddMatWithoutJob && props.requireSerialWhenAddingMat) ? (
+      (props.rawMatQueue &&
+        fmsInfo.allowAddRawMaterialForNonRunningJobs &&
+        fmsInfo.requireSerialWhenAddingMaterialToQueue) ? (
         <Tooltip title="Add Assigned Material">
           <IconButton
             onClick={() => props.openAddToQueue(props.label)}
@@ -660,11 +650,6 @@ interface QueueProps {
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
   moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
-  readonly usingLabelPrinter: boolean;
-  readonly printFromClient: boolean;
-  readonly operator: string | null;
-  readonly requireSerialWhenAddingMat: boolean;
-  readonly allowAddMatWithoutJob: boolean;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
@@ -672,6 +657,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   React.useEffect(() => {
     document.title = "Material Queues - FMS Insight";
   }, []);
+  const operator = useRecoilValue(currentOperator);
   const [addCastingQueue, setAddCastingQueue] = React.useState<string | null>(null);
   const closeAddCastingDialog = React.useCallback(() => setAddCastingQueue(null), []);
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
@@ -697,8 +683,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
               region.free ? undefined : (
                 <AddMaterialButtons
                   label={region.label}
-                  requireSerialWhenAddingMat={props.requireSerialWhenAddingMat}
-                  allowAddMatWithoutJob={props.allowAddMatWithoutJob}
                   rawMatQueue={region.rawMaterialQueue}
                   openAddToQueue={props.openAddToQueue}
                   openAddCasting={setAddCastingQueue}
@@ -712,7 +696,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 materialId: region.material[se.oldIndex].materialID,
                 queue: region.label,
                 queuePosition: se.newIndex,
-                operator: props.operator,
+                operator: operator,
               })
             }
           >
@@ -769,9 +753,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <MultiMaterialDialog
         material={multiMaterialDialog}
         closeDialog={closeMultiMatDialog}
-        usingLabelPrinter={props.usingLabelPrinter}
-        printFromClient={props.printFromClient}
-        operator={props.operator}
+        operator={operator}
         printLabel={props.printLabel}
       />
       <JobDetailDialog job={jobDetailToShow} close={closeJobDetailDialog} />
@@ -795,11 +777,6 @@ const buildQueueData = createSelector(
 export default connect(
   (st: Store) => ({
     data: buildQueueData(st),
-    usingLabelPrinter: st.ServerSettings.fmsInfo ? st.ServerSettings.fmsInfo.usingLabelPrinterForSerials : false,
-    printFromClient: st.ServerSettings.fmsInfo?.useClientPrinterForLabels ?? false,
-    requireSerialWhenAddingMat: st.ServerSettings.fmsInfo?.requireSerialWhenAddingMaterialToQueue ?? false,
-    allowAddMatWithoutJob: st.ServerSettings.fmsInfo?.allowAddRawMaterialForNonRunningJobs ?? false,
-    operator: currentOperator(st),
   }),
   {
     openAddToQueue: (queueName: string) =>

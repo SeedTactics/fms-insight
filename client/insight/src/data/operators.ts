@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,77 +31,50 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashSet } from "prelude-ts";
-import * as serverSettings from "./server-settings";
+import { atom, DefaultValue, selector } from "recoil";
+import { LazySeq } from "./lazyseq";
+import { fmsInformation } from "./server-settings";
 
-export enum ActionType {
-  SetOperator = "Operators_SetOperator",
-  RemoveOperator = "Operators_Remove",
-}
+const selectedOperator = atom<string | null>({
+  key: "selected-operator",
+  default: localStorage.getItem("current-operator") || null,
+  effects_UNSTABLE: [
+    ({ onSet }) => {
+      onSet((newVal) => {
+        if (newVal instanceof DefaultValue || newVal === null) {
+          localStorage.removeItem("current-operator");
+        } else {
+          localStorage.setItem("current-operator", newVal);
+        }
+      });
+    },
+  ],
+});
 
-export type Action =
-  | { type: ActionType.SetOperator; operator: string }
-  | { type: ActionType.RemoveOperator; operator: string };
+export const allOperators = atom<ReadonlySet<string>>({
+  key: "all-operators",
+  default: LazySeq.ofIterable<string>(JSON.parse(localStorage.getItem("operators") || "[]")).toRSet((x) => x),
+  effects_UNSTABLE: [
+    ({ onSet }) => {
+      onSet((newVal) => {
+        if (newVal instanceof DefaultValue) {
+          localStorage.removeItem("operators");
+        } else {
+          localStorage.setItem("operators", JSON.stringify(Array.from(newVal)));
+        }
+      });
+    },
+  ],
+});
 
-export interface State {
-  readonly operators: HashSet<string>;
-  readonly current?: string;
-}
-
-export function currentOperator(st: {
-  readonly Operators: State;
-  readonly ServerSettings: serverSettings.State;
-}): string | null {
-  return st.ServerSettings.user
-    ? st.ServerSettings.user.profile.name || st.ServerSettings.user.profile.sub || null
-    : st.Operators.current || null;
-}
-
-export const initial = {
-  operators: HashSet.ofIterable<string>(JSON.parse(localStorage.getItem("operators") || "[]")),
-  current: localStorage.getItem("current-operator") || undefined,
-};
-
-export function createOnStateChange(): (s: State) => void {
-  let lastOpers = initial.operators;
-  let lastCurrent = initial.current;
-  return (s) => {
-    if (s.operators !== lastOpers) {
-      lastOpers = s.operators;
-      localStorage.setItem("operators", JSON.stringify(s.operators.toArray()));
-    }
-    if (s.current !== lastCurrent) {
-      lastCurrent = s.current;
-      if (s.current) {
-        localStorage.setItem("current-operator", s.current);
-      } else {
-        localStorage.removeItem("current-operator");
-      }
-    }
-  };
-}
-
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) {
-    return initial;
-  }
-
-  switch (a.type) {
-    case ActionType.SetOperator:
-      return {
-        operators: s.operators.contains(a.operator) ? s.operators : s.operators.add(a.operator),
-        current: a.operator,
-      };
-    case ActionType.RemoveOperator:
-      if (s.operators.contains(a.operator)) {
-        return {
-          operators: s.operators.remove(a.operator),
-          current: s.current === a.operator ? undefined : s.current,
-        };
-      } else {
-        return s;
-      }
-    default:
-      return s;
-  }
-}
+export const currentOperator = selector<string | null>({
+  key: "current-operator",
+  get: ({ get }) => {
+    const selected = get(selectedOperator);
+    const fmsInfo = get(fmsInformation);
+    return fmsInfo.user ? fmsInfo.user.profile.name || fmsInfo.user.profile.sub || null : selected;
+  },
+  set: ({ set }, newVal) => {
+    set(selectedOperator, newVal);
+  },
+});

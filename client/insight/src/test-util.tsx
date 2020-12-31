@@ -38,7 +38,6 @@ import { differenceInSeconds } from "date-fns";
 import { registerMockBackend } from "./data/backend";
 import * as events from "./data/events";
 import * as currentStatus from "./data/current-status";
-import * as serverSettings from "./data/server-settings";
 
 export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
   return function MockedComponent(props) {
@@ -61,7 +60,6 @@ export async function createTestStore() {
   registerMockBackend();
   store.dispatch(events.loadLast30Days());
   store.dispatch(currentStatus.loadCurrentStatus());
-  store.dispatch(serverSettings.loadServerSettings());
 
   // offset is such that all events fall within July no matter the timezone, so
   // selecting July 2018 as the month loads the same set of data
