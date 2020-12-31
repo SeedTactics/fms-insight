@@ -35,17 +35,15 @@ import * as React from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import {
   selectAllMaterialIntoBins,
-  MaterialBin,
   MaterialBinType,
   moveMaterialBin,
-  MaterialBinId,
+  currentMaterialBinOrder,
 } from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
-import { connect, Store, AppActionBeforeMiddleware, mkAC } from "../../store/store";
+import { connect, AppActionBeforeMiddleware, mkAC, useSelector } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as currentSt from "../../data/current-status";
 import * as guiState from "../../data/gui-state";
-import { createSelector } from "reselect";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
@@ -61,6 +59,7 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle";
+import { useRecoilState } from "recoil";
 
 enum DragType {
   Material = "DRAG_MATERIAL",
@@ -291,21 +290,22 @@ const ConnectedAllMatDialog = connect(
 
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;
-  readonly allBins: ReadonlyArray<MaterialBin>;
   readonly display_material: matDetails.MaterialDetail | null;
   readonly openMat: (mat: MaterialSummary) => void;
   readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
-  readonly moveMaterialBin: (curBinOrder: ReadonlyArray<MaterialBinId>, oldIdx: number, newIdx: number) => void;
 }
 
 function AllMaterial(props: AllMaterialProps) {
   React.useEffect(() => {
     document.title = "All Material - FMS Insight";
   }, []);
+  const st = useSelector((s) => s.Current.current_status);
+  const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
+  const allBins = React.useMemo(() => selectAllMaterialIntoBins(st, matBinOrder), [st, matBinOrder]);
 
   const curBins = props.displaySystemBins
-    ? props.allBins
-    : props.allBins.filter((bin) => bin.type === MaterialBinType.QuarantineQueues);
+    ? allBins
+    : allBins.filter((bin) => bin.type === MaterialBinType.QuarantineQueues);
 
   const onDragEnd = (result: DropResult): void => {
     if (!result.destination) return;
@@ -317,10 +317,12 @@ function AllMaterial(props: AllMaterialProps) {
       const queuePosition = result.destination.index;
       props.moveMaterialInQueue({ materialId, queue, queuePosition, operator: null });
     } else if (result.type === DragType.Queue) {
-      props.moveMaterialBin(
-        curBins.map((b) => b.binId),
-        result.source.index,
-        result.destination.index
+      setMatBinOrder(
+        moveMaterialBin(
+          curBins.map((b) => b.binId),
+          result.source.index,
+          result.destination.index
+        )
       );
     }
   };
@@ -400,15 +402,8 @@ function AllMaterial(props: AllMaterialProps) {
   );
 }
 
-const extractMaterialRegions = createSelector(
-  (st: Store) => st.Current.current_status,
-  (st: Store) => st.AllMatBins.curBinOrder,
-  selectAllMaterialIntoBins
-);
-
 export default connect(
   (st) => ({
-    allBins: extractMaterialRegions(st),
     display_material: st.MaterialDetails.material,
   }),
   {
@@ -422,6 +417,5 @@ export default connect(
       },
       matDetails.addExistingMaterialToQueue(d),
     ],
-    moveMaterialBin: moveMaterialBin,
   }
 )(AllMaterial);

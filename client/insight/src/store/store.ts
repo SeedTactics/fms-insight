@@ -36,7 +36,6 @@ import * as gui from "../data/gui-state";
 import * as routes from "../data/routes";
 import * as mat from "../data/material-details";
 import * as paths from "../data/path-lookup";
-import * as allMatBins from "../data/all-material-bins";
 import * as websocket from "./websocket";
 import { initBarcodeListener } from "./barcode";
 
@@ -82,7 +81,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       Gui: gui.reducer,
       MaterialDetails: mat.reducer,
       PathLookup: paths.reducer,
-      AllMatBins: allMatBins.reducer,
       Route: routes.reducer,
       Websocket: websocket.reducer,
       location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
@@ -94,11 +92,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
   );
 
   initBarcodeListener(store.dispatch.bind(store));
-
-  const matBinsOnStateChange = allMatBins.createOnStateChange();
-  store.subscribe(() => {
-    matBinsOnStateChange(store.getState().AllMatBins);
-  });
 
   reduxStore = store as any;
   return store;
