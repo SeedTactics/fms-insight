@@ -35,7 +35,8 @@ import * as React from "react";
 import JsBarcode from "jsbarcode";
 import { LazySeq } from "../../data/lazyseq";
 import { format } from "date-fns";
-import { useSelector } from "../../store/store";
+import { useRecoilValue } from "recoil";
+import { currentStatus } from "../../data/current-status";
 
 interface BarcodeProps {
   readonly text: string;
@@ -139,7 +140,7 @@ function tuple<T extends any[]>(...data: T) {
 }
 
 function OneJobPerPage(props: PrintedLabelProps) {
-  const allJobs = useSelector((s) => s.Current.current_status.jobs);
+  const allJobs = useRecoilValue(currentStatus).jobs;
 
   const assignments = React.useMemo(
     () =>
@@ -212,7 +213,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
     [props.material]
   );
 
-  const allJobs = useSelector((s) => s.Current.current_status.jobs);
+  const allJobs = useRecoilValue(currentStatus).jobs;
 
   const notes = React.useMemo(
     () =>

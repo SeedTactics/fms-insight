@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ReconnectingWebSocket from "reconnecting-websocket";
 import * as events from "../data/events";
-import * as current from "../data/current-status";
 import { LogEntry, NewJobs, CurrentStatus, EditMaterialInLogEvents } from "../data/api";
-import { BackendHost } from "../data/backend";
+import { BackendHost, JobsBackend } from "../data/backend";
 import { User } from "oidc-client";
 import { fmsInformation } from "../data/server-settings";
 import { atom, RecoilValue, useRecoilCallback, useRecoilValueLoadable } from "recoil";
 import { useEffect, useRef } from "react";
+import { currentStatus, processEventsIntoCurrentStatus } from "../data/current-status";
 
 const websocketReconnectingAtom = atom<boolean>({
   key: "websocket-reconnecting",
@@ -87,7 +87,6 @@ export function WebsocketConnection(): null {
         if (!storeDispatch || !getEvtState) {
           return;
         }
-        set(websocketReconnectingAtom, false);
 
         const st = getEvtState();
         if (st.last30.latest_log_counter !== undefined) {
@@ -96,7 +95,10 @@ export function WebsocketConnection(): null {
           storeDispatch(events.loadLast30Days());
         }
 
-        storeDispatch(current.loadCurrentStatus());
+        JobsBackend.currentStatus().then((st) => {
+          set(currentStatus, st);
+          set(websocketReconnectingAtom, false);
+        });
       };
       websocket.onclose = () => {
         if (!storeDispatch) {
@@ -112,13 +114,13 @@ export function WebsocketConnection(): null {
         if (json.LogEntry) {
           const entry = LogEntry.fromJS(json.LogEntry);
           storeDispatch(events.receiveNewEvents([entry]));
-          storeDispatch(current.receiveNewLogEntry(entry));
+          set(currentStatus, processEventsIntoCurrentStatus(entry));
         } else if (json.NewJobs) {
           const newJobs = NewJobs.fromJS(json.NewJobs);
           storeDispatch(events.receiveNewJobs(newJobs));
         } else if (json.NewCurrentStatus) {
           const status = CurrentStatus.fromJS(json.NewCurrentStatus);
-          storeDispatch(current.setCurrentStatus(status));
+          set(currentStatus, status);
         } else if (json.EditMaterialInLog) {
           const swap = EditMaterialInLogEvents.fromJS(json.EditMaterialInLog);
           storeDispatch(events.onEditMaterialOnPallet(swap));

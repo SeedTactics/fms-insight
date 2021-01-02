@@ -55,7 +55,6 @@ export default connect((st: Store) => ({
   loading:
     st.Events.loading_log_entries ||
     st.Events.loading_job_history ||
-    st.Current.loading ||
     st.Events.loading_analysis_month_log ||
     st.Events.loading_analysis_month_jobs ||
     st.MaterialDetails.add_mat_in_progress ||

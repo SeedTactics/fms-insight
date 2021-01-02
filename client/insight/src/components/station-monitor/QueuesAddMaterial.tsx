@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { createStyles } from "@material-ui/core/styles";
-import { createSelector } from "reselect";
 import Button from "@material-ui/core/Button";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
@@ -59,7 +58,7 @@ import clsx from "clsx";
 import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material";
 import * as api from "../../data/api";
 import * as guiState from "../../data/gui-state";
-import { Store, connect, AppActionBeforeMiddleware, useSelector } from "../../store/store";
+import { connect, AppActionBeforeMiddleware, useSelector } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { LazySeq } from "../../data/lazyseq";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
@@ -68,6 +67,7 @@ import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import { useRecoilValue } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
+import { currentStatus } from "../../data/current-status";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -277,7 +277,7 @@ function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
   const [operator, setOperator] = React.useState<string | null>(null);
   const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
   const initialRawMatQueues = useSelector((s) => s.Events.last30.sim_use.rawMaterialQueues);
-  const allJobs = useSelector((s) => s.Current.current_status.jobs);
+  const allJobs = useRecoilValue(currentStatus).jobs;
   const rawMatQueues = React.useMemo(() => {
     let rawQ = initialRawMatQueues;
     for (const [, j] of LazySeq.ofObject(allJobs)) {
@@ -374,20 +374,20 @@ const useSelectJobStyles = makeStyles((theme) =>
 
 interface SelectJobProps {
   readonly queue: string | undefined;
-  readonly jobs: { [key: string]: Readonly<api.IInProcessJob> };
   readonly selected_job?: AddNewJobProcessState;
   readonly onSelectJob: (j: AddNewJobProcessState | undefined) => void;
 }
 
 function SelectJob(props: SelectJobProps) {
   const [selectedJob, setSelectedJob] = React.useState<string | null>(null);
+  const currentSt = useRecoilValue(currentStatus);
   const jobs: ReadonlyArray<JobAndGroups> = React.useMemo(
     () =>
-      LazySeq.ofObject(props.jobs)
+      LazySeq.ofObject(currentSt.jobs)
         .map(([_uniq, j]) => extractJobGroups(j))
         .sortOn((j) => j.job.partName)
         .toArray(),
-    [props.jobs]
+    [currentSt.jobs]
   );
   const classes = useSelectJobStyles();
 
@@ -449,12 +449,6 @@ function SelectJob(props: SelectJobProps) {
     </List>
   );
 }
-
-const ConnectedSelectJob = connect((s) => ({
-  jobs: s.Current.current_status.jobs as {
-    [key: string]: Readonly<api.IInProcessJob>;
-  },
-}))(SelectJob);
 
 interface AddNewMaterialProps {
   readonly queues: ReadonlyArray<string>;
@@ -527,7 +521,7 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
               </List>
             </div>
           ) : undefined}
-          <ConnectedSelectJob selected_job={selected_job} onSelectJob={setSelectedJob} queue={queue} />
+          <SelectJob selected_job={selected_job} onSelectJob={setSelectedJob} queue={queue} />
           {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
             <div style={{ marginLeft: "1em" }}>
               <TextField
@@ -552,14 +546,49 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
   );
 }
 
-export type CurrentlyInQueue =
+type CurrentlyInQueue =
   | { readonly type: "NotInQueue" }
   | { readonly type: "InRegularQueue"; readonly inProcMat: Readonly<api.IInProcessMaterial> }
   | { readonly type: "InQuarantine"; readonly inProcMat: Readonly<api.IInProcessMaterial>; readonly queue: string };
 
+function matCurrentlyInQueue(
+  mat: matDetails.MaterialDetail | null,
+  currentSt: Readonly<api.ICurrentStatus>
+): CurrentlyInQueue {
+  if (mat === null || !currentSt || !currentSt.material) {
+    return { type: "NotInQueue" };
+  }
+  if (mat.materialID < 0) {
+    return { type: "NotInQueue" };
+  }
+  const activeQueues = LazySeq.ofObject(currentSt.jobs)
+    .flatMap(([_, job]) => job.procsAndPaths)
+    .flatMap((proc) => proc.paths)
+    .flatMap((path) => {
+      const q: string[] = [];
+      if (path.inputQueue !== undefined) q.push(path.inputQueue);
+      if (path.outputQueue !== undefined) q.push(path.outputQueue);
+      return q;
+    })
+    .toSet((x) => x);
+  for (const inProcMat of currentSt.material) {
+    if (inProcMat.materialID === mat.materialID) {
+      if (inProcMat.location.type === api.LocType.InQueue && !!inProcMat.location.currentQueue) {
+        if (activeQueues.contains(inProcMat.location.currentQueue)) {
+          return { type: "InRegularQueue", inProcMat };
+        } else {
+          return { type: "InQuarantine", inProcMat, queue: inProcMat.location.currentQueue };
+        }
+      } else {
+        return { type: "NotInQueue" };
+      }
+    }
+  }
+  return { type: "NotInQueue" };
+}
+
 export interface QueueMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
-  readonly material_currently_in_queue: CurrentlyInQueue;
   readonly addMatQueue?: string;
   readonly queueNames: ReadonlyArray<string>;
 
@@ -573,16 +602,22 @@ export interface QueueMatDialogProps {
 
 function QueueMatDialog(props: QueueMatDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
+  const currentSt = useRecoilValue(currentStatus);
+  const matInQueue = React.useMemo(() => matCurrentlyInQueue(props.display_material, currentSt), [
+    props.display_material,
+    currentSt,
+  ]);
+
   let body: JSX.Element | undefined;
 
   if (props.display_material === null) {
     body = <p>None</p>;
   } else {
-    if (props.material_currently_in_queue.type === "InRegularQueue") {
+    if (matInQueue.type === "InRegularQueue") {
       body = (
         <ExistingMatInQueueDialogBody
           display_material={props.display_material}
-          in_proc_material={props.material_currently_in_queue.inProcMat}
+          in_proc_material={matInQueue.inProcMat}
           onClose={props.onClose}
           removeFromQueue={props.removeFromQueue}
           addExistingMat={props.addExistingMat}
@@ -593,9 +628,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
       body = (
         <AddSerialFound
           queues={props.queueNames}
-          current_quarantine_queue={
-            props.material_currently_in_queue.type === "InQuarantine" ? props.material_currently_in_queue.queue : null
-          }
+          current_quarantine_queue={matInQueue.type === "InQuarantine" ? matInQueue.queue : null}
           display_material={props.display_material}
           queue_name={props.addMatQueue}
           onClose={props.onClose}
@@ -632,47 +665,9 @@ function QueueMatDialog(props: QueueMatDialogProps) {
   );
 }
 
-const selectMatCurrentlyInQueue = createSelector(
-  (st: Store) => st.MaterialDetails.material,
-  (st: Store) => st.Current.current_status,
-  function (mat: matDetails.MaterialDetail | null, currentSt: Readonly<api.ICurrentStatus>): CurrentlyInQueue {
-    if (mat === null || !currentSt || !currentSt.material) {
-      return { type: "NotInQueue" };
-    }
-    if (mat.materialID < 0) {
-      return { type: "NotInQueue" };
-    }
-    const activeQueues = LazySeq.ofObject(currentSt.jobs)
-      .flatMap(([_, job]) => job.procsAndPaths)
-      .flatMap((proc) => proc.paths)
-      .flatMap((path) => {
-        const q: string[] = [];
-        if (path.inputQueue !== undefined) q.push(path.inputQueue);
-        if (path.outputQueue !== undefined) q.push(path.outputQueue);
-        return q;
-      })
-      .toSet((x) => x);
-    for (const inProcMat of currentSt.material) {
-      if (inProcMat.materialID === mat.materialID) {
-        if (inProcMat.location.type === api.LocType.InQueue && !!inProcMat.location.currentQueue) {
-          if (activeQueues.contains(inProcMat.location.currentQueue)) {
-            return { type: "InRegularQueue", inProcMat };
-          } else {
-            return { type: "InQuarantine", inProcMat, queue: inProcMat.location.currentQueue };
-          }
-        } else {
-          return { type: "NotInQueue" };
-        }
-      }
-    }
-    return { type: "NotInQueue" };
-  }
-);
-
 export const ConnectedMaterialDialog = connect(
   (st) => ({
     display_material: st.MaterialDetails.material,
-    material_currently_in_queue: selectMatCurrentlyInQueue(st),
     addMatQueue: st.Gui.add_mat_to_queue,
     queueNames: st.Route.standalone_queues,
   }),
@@ -812,7 +807,6 @@ export const ConnectedChooseSerialOrDirectJobDialog = connect(
 
 interface AddCastingProps {
   readonly queue: string | null;
-  readonly jobs: { [key: string]: Readonly<api.IInProcessJob> };
   readonly castingNames: HashSet<string>;
   readonly addNewCasting: (
     c: matDetails.AddNewCastingToQueueData,
@@ -823,6 +817,7 @@ interface AddCastingProps {
 }
 
 const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingProps) {
+  const currentSt = useRecoilValue(currentStatus);
   const operator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
   const printOnAdd = (fmsInfo.usingLabelPrinterForSerials ?? false) && (fmsInfo.useClientPrinterForLabels ?? false);
@@ -837,7 +832,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
   const [adding, setAdding] = React.useState<boolean>(false);
   const castings: ReadonlyArray<[string, number]> = React.useMemo(
     () =>
-      LazySeq.ofObject(props.jobs)
+      LazySeq.ofObject(currentSt.jobs)
         .flatMap(([, j]) => j.procsAndPaths[0].paths)
         .filter((p) => p.casting !== undefined && p.casting !== "")
         .map((p) => ({ casting: p.casting as string, cnt: 1 }))
@@ -861,7 +856,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
           }
         })
         .toArray(),
-    [props.jobs, props.castingNames]
+    [currentSt.jobs, props.castingNames]
   );
 
   function close() {
@@ -1033,9 +1028,6 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
 export const ConnectedAddCastingDialog = connect(
   (s) => ({
-    jobs: s.Current.current_status.jobs as {
-      [key: string]: Readonly<api.IInProcessJob>;
-    },
     castingNames: s.Events.last30.sim_use.castingNames,
   }),
   {

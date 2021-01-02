@@ -40,7 +40,7 @@ import {
   currentMaterialBinOrder,
 } from "../../data/all-material-bins";
 import { MaterialSummary } from "../../data/events.matsummary";
-import { connect, AppActionBeforeMiddleware, mkAC, useSelector } from "../../store/store";
+import { connect, AppActionBeforeMiddleware, mkAC } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as currentSt from "../../data/current-status";
 import * as guiState from "../../data/gui-state";
@@ -59,7 +59,7 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 
 enum DragType {
   Material = "DRAG_MATERIAL",
@@ -211,7 +211,6 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 
 interface AllMatDialogProps {
   readonly display_material: matDetails.MaterialDetail | null;
-  readonly current_material: ReadonlyArray<Readonly<IInProcessMaterial>>;
   readonly quarantineQueue: boolean;
   readonly removeFromQueue: (matId: number) => void;
   readonly onClose: () => void;
@@ -220,10 +219,11 @@ interface AllMatDialogProps {
 function AllMatDialog(props: AllMatDialogProps) {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState>(null);
+  const currentMaterial = useRecoilValue(currentSt.currentStatus).material;
 
   const displayMat = props.display_material;
   const curMat =
-    displayMat !== null ? props.current_material.find((m) => m.materialID === displayMat.materialID) ?? null : null;
+    displayMat !== null ? currentMaterial.find((m) => m.materialID === displayMat.materialID) ?? null : null;
 
   function close() {
     props.onClose();
@@ -243,7 +243,7 @@ function AllMatDialog(props: AllMatDialogProps) {
             st={swapSt}
             setState={setSwapSt}
             curMat={curMat}
-            current_material={props.current_material}
+            current_material={currentMaterial}
           />
           {displayMat && curMat && curMat.location.type === LocType.InQueue ? (
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} events={displayMat.events} />
@@ -273,33 +273,28 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
-const ConnectedAllMatDialog = connect(
-  (s) => ({
-    current_material: s.Current.current_status.material,
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-    removeFromQueue: (matId: number) =>
-      [
-        matDetails.removeFromQueue(matId, null),
-        { type: matDetails.ActionType.CloseMaterialDialog },
-        { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
-      ] as AppActionBeforeMiddleware,
-  }
-)(AllMatDialog);
+const ConnectedAllMatDialog = connect((s) => ({}), {
+  onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
+  removeFromQueue: (matId: number) =>
+    [
+      matDetails.removeFromQueue(matId, null),
+      { type: matDetails.ActionType.CloseMaterialDialog },
+      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
+    ] as AppActionBeforeMiddleware,
+})(AllMatDialog);
 
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;
   readonly display_material: matDetails.MaterialDetail | null;
   readonly openMat: (mat: MaterialSummary) => void;
-  readonly moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+  readonly addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function AllMaterial(props: AllMaterialProps) {
   React.useEffect(() => {
     document.title = "All Material - FMS Insight";
   }, []);
-  const st = useSelector((s) => s.Current.current_status);
+  const [st, setCurrentSt] = useRecoilState(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
   const allBins = React.useMemo(() => selectAllMaterialIntoBins(st, matBinOrder), [st, matBinOrder]);
 
@@ -315,7 +310,8 @@ function AllMaterial(props: AllMaterialProps) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
-      props.moveMaterialInQueue({ materialId, queue, queuePosition, operator: null });
+      props.addExistingMaterialToQueue({ materialId, queue, queuePosition, operator: null });
+      setCurrentSt(currentSt.reorder_queued_mat(queue, materialId, queuePosition));
     } else if (result.type === DragType.Queue) {
       setMatBinOrder(
         moveMaterialBin(
@@ -408,14 +404,6 @@ export default connect(
   }),
   {
     openMat: matDetails.openMaterialDialog,
-    moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => [
-      {
-        type: currentSt.ActionType.ReorderQueuedMaterial,
-        queue: d.queue,
-        materialId: d.materialId,
-        newIdx: d.queuePosition,
-      },
-      matDetails.addExistingMaterialToQueue(d),
-    ],
+    addExistingMaterialToQueue: matDetails.addExistingMaterialToQueue,
   }
 )(AllMaterial);

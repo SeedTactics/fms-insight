@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import Divider from "@material-ui/core/Divider";
 import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
-import { createSelector } from "reselect";
 import Button from "@material-ui/core/Button";
 import Hidden from "@material-ui/core/Hidden";
 import FolderOpenIcon from "@material-ui/icons/FolderOpen";
@@ -57,7 +56,6 @@ import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
 import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
 import * as matDetails from "../../data/material-details";
-import * as currentSt from "../../data/current-status";
 import SelectWorkorderDialog from "./SelectWorkorder";
 import SetSerialDialog from "./EnterSerial";
 import SelectInspTypeDialog from "./SelectInspType";
@@ -73,8 +71,9 @@ import ReactToPrint from "react-to-print";
 import { instructionUrl } from "../../data/backend";
 import Tooltip from "@material-ui/core/Tooltip";
 import Fab from "@material-ui/core/Fab";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
+import { currentStatus, reorder_queued_mat } from "../../data/current-status";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -293,7 +292,15 @@ function showArrow(m: Readonly<api.IInProcessMaterial>): boolean {
   }
 }
 
-const PalletColumn = withStyles(palletStyles)((props: LoadStationDisplayProps & WithStyles<typeof palletStyles>) => {
+interface PalletColumnProps {
+  readonly dateOfCurrentStatus: Date;
+  readonly data: LoadStationAndQueueData;
+  readonly fillViewPort: boolean;
+  readonly openMat: (m: Readonly<MaterialSummary>) => void;
+  //readonly addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+}
+
+const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithStyles<typeof palletStyles>) => {
   let palletClass: string;
   let statStatusClass: string;
   if (props.fillViewPort) {
@@ -586,10 +593,9 @@ const loadStyles = createStyles({
 });
 
 interface LoadStationProps {
-  readonly data: LoadStationAndQueueData;
-  readonly dateOfCurrentStatus: Date;
-  openMat: (m: Readonly<MaterialSummary>) => void;
-  moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+  readonly route: routes.State;
+  readonly openMat: (m: Readonly<MaterialSummary>) => void;
+  readonly addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 interface LoadStationDisplayProps extends LoadStationProps {
@@ -598,10 +604,19 @@ interface LoadStationDisplayProps extends LoadStationProps {
 
 const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
   const operator = useRecoilValue(currentOperator);
+  const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
+  const data = React.useMemo(
+    () =>
+      selectLoadStationAndQueueProps(
+        props.route.selected_load_id,
+        props.route.load_queues,
+        props.route.load_free_material,
+        currentSt
+      ),
+    [currentSt, props.route]
+  );
 
-  const palProps = { ...props, classes: undefined };
-
-  const queues = props.data.queues
+  const queues = data.queues
     .toVector()
     .sortOn(([q, _]) => q)
     .map(([q, mats]) => ({
@@ -611,10 +626,10 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
     }));
 
   let cells = queues;
-  if (props.data.free) {
+  if (data.free) {
     cells = queues.prepend({
       label: "In Process Material",
-      material: props.data.free,
+      material: data.free,
       isFree: true,
     });
   }
@@ -629,9 +644,14 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
         className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}
       >
         <div className={props.classes.palCol}>
-          <PalletColumn {...palProps} />
+          <PalletColumn
+            fillViewPort={props.fillViewPort}
+            data={data}
+            openMat={props.openMat}
+            dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
+          />
           <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
-            <MultiInstructionButton loadData={props.data} operator={operator} />
+            <MultiInstructionButton loadData={data} operator={operator} />
           </div>
         </div>
         {col1.length() === 0 ? undefined : (
@@ -651,26 +671,27 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                   axis="y"
                   distance={5}
                   shouldCancelStart={() => false}
-                  onSortEnd={(se: SortEnd) =>
-                    props.moveMaterialInQueue({
+                  onSortEnd={(se: SortEnd) => {
+                    props.addExistingMaterialToQueue({
                       materialId: mat.material[se.oldIndex].materialID,
                       queue: mat.label,
                       queuePosition: se.newIndex,
                       operator: operator,
-                    })
-                  }
+                    });
+                    setCurrentStatus(reorder_queued_mat(mat.label, mat.material[se.oldIndex].materialID, se.newIndex));
+                  }}
                 >
                   {mat.material.map((m, matIdx) => (
                     <MoveMaterialArrowNode
                       key={matIdx}
                       type={MoveMaterialNodeKindType.Material}
-                      material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
+                      material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
                     >
                       <SortableInProcMaterial
                         index={matIdx}
                         mat={m}
                         onOpen={props.openMat}
-                        displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                        displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
                       />
                     </MoveMaterialArrowNode>
                   ))}
@@ -696,26 +717,27 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                   axis="y"
                   distance={5}
                   shouldCancelStart={() => false}
-                  onSortEnd={(se: SortEnd) =>
-                    props.moveMaterialInQueue({
+                  onSortEnd={(se: SortEnd) => {
+                    props.addExistingMaterialToQueue({
                       materialId: mat.material[se.oldIndex].materialID,
                       queue: mat.label,
                       queuePosition: se.newIndex,
                       operator: operator,
-                    })
-                  }
+                    });
+                    setCurrentStatus(reorder_queued_mat(mat.label, mat.material[se.oldIndex].materialID, se.newIndex));
+                  }}
                 >
                   {mat.material.map((m, matIdx) => (
                     <MoveMaterialArrowNode
                       key={matIdx}
                       type={MoveMaterialNodeKindType.Material}
-                      material={props.data.pallet && m.action.loadOntoPallet === props.data.pallet.pallet ? m : null}
+                      material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
                     >
                       <SortableInProcMaterial
                         index={matIdx}
                         mat={m}
                         onOpen={props.openMat}
-                        displaySinglePallet={props.data.pallet ? props.data.pallet.pallet : ""}
+                        displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
                       />
                     </MoveMaterialArrowNode>
                   ))}
@@ -727,29 +749,16 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
         <SelectWorkorderDialog />
         <SetSerialDialog />
         <SelectInspTypeDialog />
-        <ConnectedMaterialDialog loadNum={props.data.loadNum} pallet={props.data.pallet?.pallet ?? null} />
+        <ConnectedMaterialDialog loadNum={data.loadNum} pallet={data.pallet?.pallet ?? null} />
       </main>
     </MoveMaterialArrowContainer>
   );
 });
 
-const buildLoadData = createSelector(
-  (st: Store) => st.Current.current_status,
-  (st: Store) => st.Route,
-  (curStatus: Readonly<api.ICurrentStatus>, route: routes.State): LoadStationAndQueueData => {
-    return selectLoadStationAndQueueProps(
-      route.selected_load_id,
-      route.load_queues,
-      route.load_free_material,
-      curStatus
-    );
-  }
-);
-
 function LoadStationCheckWidth(props: LoadStationProps) {
   React.useEffect(() => {
-    document.title = "Load " + props.data.loadNum.toString() + " - FMS Insight";
-  }, [props.data.loadNum]);
+    document.title = "Load " + props.route.selected_load_id.toString() + " - FMS Insight";
+  }, [props.route.selected_load_id]);
   return (
     <div>
       <Hidden mdDown>
@@ -762,21 +771,7 @@ function LoadStationCheckWidth(props: LoadStationProps) {
   );
 }
 
-export default connect(
-  (st: Store) => ({
-    data: buildLoadData(st),
-    dateOfCurrentStatus: st.Current.current_status.timeOfCurrentStatusUTC,
-  }),
-  {
-    openMat: matDetails.openMaterialDialog,
-    moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => [
-      {
-        type: currentSt.ActionType.ReorderQueuedMaterial,
-        queue: d.queue,
-        materialId: d.materialId,
-        newIdx: d.queuePosition,
-      },
-      matDetails.addExistingMaterialToQueue(d),
-    ],
-  }
-)(LoadStationCheckWidth);
+export default connect((st: Store) => ({ route: st.Route }), {
+  openMat: matDetails.openMaterialDialog,
+  addExistingMaterialToQueue: matDetails.addExistingMaterialToQueue,
+})(LoadStationCheckWidth);

@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { WithStyles, createStyles, withStyles, makeStyles } from "@material-ui/core/styles";
-import { createSelector } from "reselect";
 import { SortEnd } from "react-sortable-hoc";
 import { HashSet } from "prelude-ts";
 import Table from "@material-ui/core/Table";
@@ -68,8 +67,7 @@ import {
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
 import * as guiState from "../../data/gui-state";
-import * as currentSt from "../../data/current-status";
-import { Store, connect, AppActionBeforeMiddleware, useSelector, DispatchAction, mkAC } from "../../store/store";
+import { Store, connect, AppActionBeforeMiddleware, useSelector } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as events from "../../data/events";
 import { MaterialSummary } from "../../data/events.matsummary";
@@ -79,7 +77,6 @@ import {
   ConnectedAddCastingDialog,
 } from "./QueuesAddMaterial";
 import {
-  QueueData,
   selectQueueData,
   extractJobRawMaterial,
   loadRawMaterialEvents,
@@ -93,8 +90,9 @@ import ReactToPrint from "react-to-print";
 import { PrintedLabel } from "./PrintedLabel";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { JobDetailDialog } from "./JobDetails";
-import { useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
+import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../data/current-status";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -134,13 +132,11 @@ function highlightRow(j: Readonly<api.IInProcessJob>): boolean {
 }
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
-  const currentJobs = useSelector((s) => s.Current.current_status.jobs);
-  const mats = useSelector((s) => s.Current.current_status.material);
+  const currentSt = useRecoilValue(currentStatus);
   const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
-  const jobs = React.useMemo(() => extractJobRawMaterial(props.queue, currentJobs, mats), [
+  const jobs = React.useMemo(() => extractJobRawMaterial(props.queue, currentSt.jobs, currentSt.material), [
     props.queue,
-    currentJobs,
-    mats,
+    currentSt,
   ]);
   const hasCastings = React.useMemo(() => {
     return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName) >= 0;
@@ -268,11 +264,14 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
 interface EditNoteDialogProps {
   readonly job: { readonly unique: string; readonly partName: string; readonly comment?: string | null } | null;
   readonly closeDialog: () => void;
-  readonly saveNote: (uniq: string, comment: string) => void;
+  readonly updateCommentInEvents: (uniq: string, comment: string) => void;
 }
+
+const nullCommentAtom = atom<string | null>({ key: "null-comment-atom", default: null });
 
 const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogProps) {
   const [note, setNote] = React.useState<string | null>(null);
+  const setJobComment = useSetRecoilState(props.job ? currentStatusJobComment(props.job.unique) : nullCommentAtom);
 
   function close() {
     props.closeDialog();
@@ -281,7 +280,8 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
 
   function save() {
     if (note === null || props.job === null || note === props.job.comment) return;
-    props.saveNote(props.job.unique, note);
+    props.updateCommentInEvents(props.job.unique, note);
+    setJobComment(note);
     close();
   }
 
@@ -327,16 +327,16 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
 });
 
 export const ConnectedEditNoteDialog = connect((s) => ({}), {
-  saveNote: (uniq: string, comment: string) => [
-    currentSt.setJobComment(uniq, comment),
-    { type: events.ActionType.SetJobComment, uniq: uniq, comment: comment },
-  ],
+  updateCommentInEvents: (uniq: string, comment: string) => ({
+    type: events.ActionType.SetJobComment,
+    uniq: uniq,
+    comment: comment,
+  }),
 })(EditNoteDialog);
 
 interface EditJobPlanQtyProps {
   readonly job: JobRawMaterialData | null;
   readonly closeDialog: () => void;
-  readonly setJobQty: DispatchAction<currentSt.ActionType.SetJobPlannedQty>;
 }
 
 const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: EditJobPlanQtyProps) {
@@ -367,7 +367,6 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
           Quantity: newQty,
         }),
       });
-      props.setJobQty({ uniq: props.job.job.unique, proc1path: props.job.proc1Path, qty: newQty });
       props.closeDialog();
       setNewQty(null);
     } finally {
@@ -416,10 +415,6 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
   );
 });
 
-const ConnectedEditJobPlanQtyDialog = connect((s) => ({}), {
-  setJobQty: mkAC(currentSt.ActionType.SetJobPlannedQty),
-})(EditJobPlanQtyDialog);
-
 interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
   readonly closeDialog: () => void;
@@ -428,14 +423,15 @@ interface MultiMaterialDialogProps {
 }
 
 const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const jobs = useRecoilValue(currentStatus).jobs;
+
   const [loading, setLoading] = React.useState(false);
   const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
   const [showRemove, setShowRemove] = React.useState(false);
   const [removeCnt, setRemoveCnt] = React.useState<number>(NaN);
   const [lastOperator, setLastOperator] = React.useState<string | undefined>(undefined);
-  const jobs = useSelector((s) => s.Current.current_status.jobs);
   const printRef = React.useRef(null);
-  const fmsInfo = useRecoilValue(fmsInformation);
 
   React.useEffect(() => {
     if (props.material === null) return;
@@ -589,7 +585,7 @@ interface AddMaterialButtonsProps {
 }
 
 const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
-  const currentJobs = useSelector((s) => s.Current.current_status.jobs);
+  const currentJobs = useRecoilValue(currentStatus).jobs;
   const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
   const fmsInfo = useRecoilValue(fmsInformation);
   const bttnsToShow = React.useMemo(() => {
@@ -646,10 +642,11 @@ const queueStyles = createStyles({
 });
 
 interface QueueProps {
-  readonly data: ReadonlyArray<QueueData>;
+  readonly route: routes.State;
+  readonly rawMaterialQueues: HashSet<string>;
   openMat: (m: Readonly<MaterialSummary>) => void;
   openAddToQueue: (queueName: string) => void;
-  moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
+  addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
   readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
@@ -658,6 +655,18 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     document.title = "Material Queues - FMS Insight";
   }, []);
   const operator = useRecoilValue(currentOperator);
+  const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
+  const data = React.useMemo(
+    () =>
+      selectQueueData(
+        props.route.standalone_free_material,
+        props.route.standalone_queues,
+        currentSt,
+        props.rawMaterialQueues
+      ),
+    [currentSt, props.route, props.rawMaterialQueues]
+  );
+
   const [addCastingQueue, setAddCastingQueue] = React.useState<string | null>(null);
   const closeAddCastingDialog = React.useCallback(() => setAddCastingQueue(null), []);
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
@@ -673,8 +682,8 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
 
   return (
     <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
-      {props.data.map((region, idx) => (
-        <div style={idx < props.data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined} key={idx}>
+      {data.map((region, idx) => (
+        <div style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined} key={idx}>
           <SortableWhiteboardRegion
             axis="xy"
             label={region.label}
@@ -691,14 +700,15 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             }
             distance={5}
             shouldCancelStart={() => false}
-            onSortEnd={(se: SortEnd) =>
-              props.moveMaterialInQueue({
+            onSortEnd={(se: SortEnd) => {
+              props.addExistingMaterialToQueue({
                 materialId: region.material[se.oldIndex].materialID,
                 queue: region.label,
                 queuePosition: se.newIndex,
                 operator: operator,
-              })
-            }
+              });
+              setCurrentStatus(reorder_queued_mat(region.label, region.material[se.oldIndex].materialID, se.newIndex));
+            }}
           >
             {region.material.map((m, matIdx) => (
               <SortableInProcMaterial
@@ -749,7 +759,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedChooseSerialOrDirectJobDialog />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
-      <ConnectedEditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
+      <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog
         material={multiMaterialDialog}
         closeDialog={closeMultiMatDialog}
@@ -761,22 +771,10 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   );
 });
 
-const buildQueueData = createSelector(
-  (st: Store) => st.Current.current_status,
-  (st: Store) => st.Events.last30.sim_use.rawMaterialQueues,
-  (st: Store) => st.Route,
-  (
-    curStatus: Readonly<api.ICurrentStatus>,
-    rawMatQueues: HashSet<string>,
-    route: routes.State
-  ): ReadonlyArray<QueueData> => {
-    return selectQueueData(route.standalone_free_material, route.standalone_queues, curStatus, rawMatQueues);
-  }
-);
-
 export default connect(
   (st: Store) => ({
-    data: buildQueueData(st),
+    rawMaterialQueues: st.Events.last30.sim_use.rawMaterialQueues,
+    route: st.Route,
   }),
   {
     openAddToQueue: (queueName: string) =>
@@ -788,15 +786,7 @@ export default connect(
         { type: guiState.ActionType.SetAddMatToQueueName, queue: queueName },
       ] as AppActionBeforeMiddleware,
     openMat: matDetails.openMaterialDialog,
-    moveMaterialInQueue: (d: matDetails.AddExistingMaterialToQueueData) => [
-      {
-        type: currentSt.ActionType.ReorderQueuedMaterial,
-        queue: d.queue,
-        materialId: d.materialId,
-        newIdx: d.queuePosition,
-      },
-      matDetails.addExistingMaterialToQueue(d),
-    ],
+    addExistingMaterialToQueue: matDetails.addExistingMaterialToQueue,
     printLabel: matDetails.printLabel,
   }
 )(Queues);

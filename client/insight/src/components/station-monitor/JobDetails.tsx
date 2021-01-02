@@ -53,6 +53,8 @@ import { LazySeq } from "../../data/lazyseq";
 import { connect } from "../../store/store";
 import { openMaterialDialog } from "../../data/material-details";
 import { HashMap, HashSet } from "prelude-ts";
+import { useRecoilValue } from "recoil";
+import { currentStatus } from "../../data/current-status";
 
 interface JobDetailsToDisplay extends Readonly<api.IJobPlan> {
   completed?: number[][];
@@ -165,7 +167,6 @@ function MaterialStatus(props: MaterialStatusProps) {
 
 interface JobMaterialProps {
   readonly unique: string;
-  readonly currentMaterial: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly matsFromEvents: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly matIdsForJob: HashMap<string, HashSet<number>>;
   readonly fullWidth: boolean;
@@ -173,6 +174,8 @@ interface JobMaterialProps {
 }
 
 function JobMaterial(props: JobMaterialProps) {
+  const currentMaterial = useRecoilValue(currentStatus).material;
+
   const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique).getOrElse(HashSet.empty<number>()))
     .mapOption((matId) => props.matsFromEvents.get(matId))
     .toArray();
@@ -181,12 +184,12 @@ function JobMaterial(props: JobMaterialProps) {
     return <div />;
   }
 
-  const matsById = LazySeq.ofIterable(props.currentMaterial).toMap(
+  const matsById = LazySeq.ofIterable(currentMaterial).toMap(
     (m) => [m.materialID, m],
     (m1, _m2) => m1
   );
 
-  const anyWorkorder = LazySeq.ofIterable(props.currentMaterial).anyMatch(
+  const anyWorkorder = LazySeq.ofIterable(currentMaterial).anyMatch(
     (m) => m.workorderId !== undefined && m.workorderId !== "" && m.workorderId !== m.serial
   );
 
@@ -239,7 +242,6 @@ function JobMaterial(props: JobMaterialProps) {
 
 const ConnectedJobMaterial = connect(
   (st) => ({
-    currentMaterial: st.Current.current_status.material,
     matsFromEvents: st.Events.last30.mat_summary.matsById,
     matIdsForJob: st.Events.last30.scheduled_jobs.matIdsForJob,
   }),

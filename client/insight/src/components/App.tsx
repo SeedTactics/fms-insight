@@ -68,7 +68,7 @@ import CheckIcon from "@material-ui/icons/CheckCircle";
 import PersonIcon from "@material-ui/icons/Person";
 import ProgramIcon from "@material-ui/icons/Receipt";
 import ToolIcon from "@material-ui/icons/Dns";
-import { useRecoilValueLoadable } from "recoil";
+import { useRecoilCallback, useRecoilValue, useRecoilValueLoadable } from "recoil";
 
 import OperationDashboard from "./operations/Dashboard";
 import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview";
@@ -103,6 +103,8 @@ import { ToolReportPage } from "./operations/ToolReport";
 import { ProgramReportPage } from "./operations/Programs";
 import { enableMapSet } from "immer";
 import { WebsocketConnection } from "../store/websocket";
+import { currentStatus } from "../data/current-status";
+import { JobsBackend } from "../data/backend";
 enableMapSet();
 
 const tabsStyle = {
@@ -409,7 +411,6 @@ interface HeaderProps {
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
-  alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   readonly openQrCodeScan: () => void;
   readonly openManualSerial: () => void;
@@ -417,12 +418,13 @@ interface HeaderProps {
 
 function Header(p: HeaderProps) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const alarms = useRecoilValue(currentStatus).alarms;
 
-  const alarmTooltip = p.alarms ? p.alarms.join(". ") : "No Alarms";
+  const alarmTooltip = alarms ? alarms.join(". ") : "No Alarms";
   const Alarms = () => (
     <Tooltip title={alarmTooltip}>
-      <Badge badgeContent={p.alarms ? p.alarms.length : 0}>
-        <Notifications color={p.alarms ? "error" : undefined} />
+      <Badge badgeContent={alarms ? alarms.length : 0}>
+        <Notifications color={alarms ? "error" : undefined} />
       </Badge>
     </Tooltip>
   );
@@ -537,6 +539,17 @@ function Header(p: HeaderProps) {
   );
 }
 
+function LoadDemoData() {
+  const load = useRecoilCallback(({ set }) => () => {
+    JobsBackend.currentStatus().then((st) => set(currentStatus, st));
+  });
+  React.useEffect(() => {
+    load();
+  }, []);
+
+  return null;
+}
+
 export interface AppProps {
   demo: boolean;
   backupViewerOnRequestOpenFile?: () => void;
@@ -545,7 +558,6 @@ export interface AppProps {
 interface AppConnectedProps extends AppProps {
   route: routes.State;
   backupFileOpened: boolean;
-  alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
   readonly openQrCodeScan: () => void;
   readonly openManualSerial: () => void;
@@ -730,7 +742,6 @@ const App = React.memo(function App(props: AppConnectedProps) {
         showLogout={showLogout}
         showOperator={showOperator}
         setRoute={props.setRoute}
-        alarms={props.alarms}
         openManualSerial={props.openManualSerial}
         openQrCodeScan={props.openQrCodeScan}
       >
@@ -751,24 +762,15 @@ const App = React.memo(function App(props: AppConnectedProps) {
       <SerialScanner />
       <ManualScan />
       {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
-      {props.demo ? undefined : <WebsocketConnection />}
+      {props.demo ? <LoadDemoData /> : <WebsocketConnection />}
     </div>
   );
 });
-
-function emptyToNull<T>(s: ReadonlyArray<T> | null): ReadonlyArray<T> | null {
-  if (!s || s.length === 0) {
-    return null;
-  } else {
-    return s;
-  }
-}
 
 export default connect(
   (s: Store) => ({
     route: s.Route,
     backupFileOpened: s.Gui.backup_file_opened,
-    alarms: emptyToNull(s.Current.current_status.alarms),
   }),
   {
     setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => [

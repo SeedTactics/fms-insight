@@ -37,7 +37,7 @@ import CardContent from "@material-ui/core/CardContent";
 import Hidden from "@material-ui/core/Hidden";
 
 import StationOEEs from "./OEESummary";
-import CurrentJobs from "./CurrentJobs";
+import { CurrentJobs } from "./CurrentJobs";
 
 function FillViewportDashboard() {
   return (

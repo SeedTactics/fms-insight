@@ -30,7 +30,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as currentStatus from "../data/current-status";
 import * as events from "../data/events";
 import * as gui from "../data/gui-state";
 import * as routes from "../data/routes";
@@ -74,7 +73,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
 
   const store = createStore(
     {
-      Current: currentStatus.reducer,
       Events: events.reducer,
       Gui: gui.reducer,
       MaterialDetails: mat.reducer,
