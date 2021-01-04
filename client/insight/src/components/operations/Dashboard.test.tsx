@@ -38,6 +38,20 @@ import "@testing-library/jest-dom/extend-expect";
 
 import Dashboard from "./Dashboard";
 import { createTestStore } from "../../test-util";
+import { RecoilRoot, useRecoilCallback } from "recoil";
+import { JobsBackend } from "../../data/backend";
+import { currentStatus } from "../../data/current-status";
+
+function RegisterData() {
+  const load = useRecoilCallback(
+    ({ set }) => () => {
+      JobsBackend.currentStatus().then((st) => set(currentStatus, st));
+    },
+    []
+  );
+  React.useEffect(() => load(), []);
+  return null;
+}
 
 it("renders the dashboard", async () => {
   window.matchMedia = (query) =>
@@ -51,9 +65,12 @@ it("renders the dashboard", async () => {
   const store = await createTestStore();
 
   const result = render(
-    <store.Provider>
-      <Dashboard />
-    </store.Provider>
+    <RecoilRoot>
+      <store.Provider>
+        <RegisterData />
+        <Dashboard />
+      </store.Provider>
+    </RecoilRoot>
   );
 
   await waitFor(() => result.container.querySelector("div.rv-xy-plot svg"));
