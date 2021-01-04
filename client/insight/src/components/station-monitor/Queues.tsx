@@ -66,16 +66,9 @@ import {
 } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
-import * as guiState from "../../data/gui-state";
-import { Store, connect, AppActionBeforeMiddleware, useSelector } from "../../store/store";
-import * as matDetails from "../../data/material-details";
+import { Store, connect, useSelector } from "../../store/store";
 import * as events from "../../data/events";
-import { MaterialSummary } from "../../data/events.matsummary";
-import {
-  ConnectedMaterialDialog,
-  ConnectedChooseSerialOrDirectJobDialog,
-  ConnectedAddCastingDialog,
-} from "./QueuesAddMaterial";
+import { ConnectedMaterialDialog, ChooseSerialOrDirectJobDialog, ConnectedAddCastingDialog } from "./QueuesAddMaterial";
 import {
   selectQueueData,
   extractJobRawMaterial,
@@ -93,6 +86,7 @@ import { JobDetailDialog } from "./JobDetails";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../data/current-status";
+import { useAddExistingMaterialToQueue, usePrintLabel } from "../../data/material-details";
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
@@ -419,12 +413,12 @@ interface MultiMaterialDialogProps {
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
   readonly closeDialog: () => void;
   readonly operator: string | null;
-  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const jobs = useRecoilValue(currentStatus).jobs;
+  const [printLabel, printingLabel] = usePrintLabel();
 
   const [loading, setLoading] = React.useState(false);
   const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
@@ -547,14 +541,15 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
           ) : (
             <Button
               color="primary"
+              disabled={printingLabel}
               onClick={() =>
                 props.material && props.material.length > 0
-                  ? props.printLabel(
-                      props.material[0].materialID,
-                      0,
-                      null,
-                      props.material[0].location.currentQueue || null
-                    )
+                  ? printLabel({
+                      materialId: props.material[0].materialID,
+                      proc: 0,
+                      loadStation: null,
+                      queue: props.material[0].location.currentQueue || null,
+                    })
                   : void 0
               }
             >
@@ -644,10 +639,6 @@ const queueStyles = createStyles({
 interface QueueProps {
   readonly route: routes.State;
   readonly rawMaterialQueues: HashSet<string>;
-  openMat: (m: Readonly<MaterialSummary>) => void;
-  openAddToQueue: (queueName: string) => void;
-  addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
-  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
 }
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
@@ -679,6 +670,9 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
   const [jobDetailToShow, setJobDetailToShow] = React.useState<Readonly<api.IInProcessJob> | null>(null);
   const closeJobDetailDialog = React.useCallback(() => setJobDetailToShow(null), []);
+  const [chooseSerialOrJobOpen, setChooseSerialOrJobOpen] = React.useState<boolean>(false);
+  const closeChooseSerialOrJob = React.useCallback(() => setChooseSerialOrJobOpen(false), []);
+  const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
   return (
     <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
@@ -693,7 +687,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 <AddMaterialButtons
                   label={region.label}
                   rawMatQueue={region.rawMaterialQueue}
-                  openAddToQueue={props.openAddToQueue}
+                  openAddToQueue={() => setChooseSerialOrJobOpen(true)}
                   openAddCasting={setAddCastingQueue}
                 />
               )
@@ -701,7 +695,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             distance={5}
             shouldCancelStart={() => false}
             onSortEnd={(se: SortEnd) => {
-              props.addExistingMaterialToQueue({
+              addExistingMatToQueue({
                 materialId: region.material[se.oldIndex].materialID,
                 queue: region.label,
                 queuePosition: se.newIndex,
@@ -716,7 +710,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 index={matIdx}
                 mat={m}
                 hideEmptySerial
-                onOpen={props.openMat}
                 displayJob={region.rawMaterialQueue}
               />
             ))}
@@ -726,7 +719,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                     <InProcMaterial
                       key={idx}
                       mat={matGroup.material[0]}
-                      onOpen={props.openMat}
                       hideEmptySerial
                       displayJob={region.rawMaterialQueue}
                     />
@@ -755,38 +747,20 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
           </SortableWhiteboardRegion>
         </div>
       ))}
-      <ConnectedMaterialDialog />
-      <ConnectedChooseSerialOrDirectJobDialog />
+      <ConnectedMaterialDialog
+        initialQueue={props.route.standalone_queues.length === 1 ? props.route.standalone_queues[0] : null}
+      />
+      <ChooseSerialOrDirectJobDialog dialog_open={chooseSerialOrJobOpen} onClose={closeChooseSerialOrJob} />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
-      <MultiMaterialDialog
-        material={multiMaterialDialog}
-        closeDialog={closeMultiMatDialog}
-        operator={operator}
-        printLabel={props.printLabel}
-      />
+      <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />
       <JobDetailDialog job={jobDetailToShow} close={closeJobDetailDialog} />
     </main>
   );
 });
 
-export default connect(
-  (st: Store) => ({
-    rawMaterialQueues: st.Events.last30.sim_use.rawMaterialQueues,
-    route: st.Route,
-  }),
-  {
-    openAddToQueue: (queueName: string) =>
-      [
-        {
-          type: guiState.ActionType.SetAddMatToQueueModeDialogOpen,
-          open: true,
-        },
-        { type: guiState.ActionType.SetAddMatToQueueName, queue: queueName },
-      ] as AppActionBeforeMiddleware,
-    openMat: matDetails.openMaterialDialog,
-    addExistingMaterialToQueue: matDetails.addExistingMaterialToQueue,
-    printLabel: matDetails.printLabel,
-  }
-)(Queues);
+export default connect((st: Store) => ({
+  rawMaterialQueues: st.Events.last30.sim_use.rawMaterialQueues,
+  route: st.Route,
+}))(Queues);

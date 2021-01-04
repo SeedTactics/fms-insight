@@ -50,6 +50,8 @@ import Typography from "@material-ui/core/Typography";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 import { addDays, addHours } from "date-fns";
+import { useSetRecoilState } from "recoil";
+import { materialToShowInDialog } from "../../data/material-details";
 
 enum ColumnId {
   Date,
@@ -97,12 +99,11 @@ export interface InspectionDataTableProps {
   readonly points: ReadonlyArray<InspectionLogEntry>;
   readonly default_date_range: Date[];
   readonly zoomType?: DataTableActionZoomType;
-  readonly openDetails: ((matId: number) => void) | undefined;
   readonly extendDateRange?: (numDays: number) => void;
 }
 
 export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
-  const openDetails = props.openDetails;
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
   const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
@@ -188,12 +189,25 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                     onRequestSort={handleRequestSort}
                     orderBy={orderBy}
                     order={order}
-                    showDetailsCol={props.openDetails !== undefined}
+                    showDetailsCol
                   />
                   <DataTableBody
                     columns={columns}
                     pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
-                    onClickDetails={openDetails ? (_, row) => openDetails(row.materialID) : undefined}
+                    onClickDetails={(_, row) =>
+                      setMatToShow({
+                        type: "MatSummary",
+                        summary: {
+                          materialID: row.materialID,
+                          jobUnique: "",
+                          partName: row.partName,
+                          startedProcess1: true,
+                          serial: row.serial,
+                          workorderId: row.workorder,
+                          signaledInspections: [],
+                        },
+                      })
+                    }
                   />
                 </Table>
                 <DataTableActions

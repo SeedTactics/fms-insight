@@ -31,10 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as events from "../data/events";
-import * as gui from "../data/gui-state";
 import * as routes from "../data/routes";
-import * as mat from "../data/material-details";
-import { initBarcodeListener } from "./barcode";
 
 import { createStore, StoreState, StoreActions, ACPayload, mkACF } from "./typed-redux";
 import * as redux from "redux";
@@ -74,8 +71,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
   const store = createStore(
     {
       Events: events.reducer,
-      Gui: gui.reducer,
-      MaterialDetails: mat.reducer,
       Route: routes.reducer,
       location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
     },
@@ -84,8 +79,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       ? (m) => composeEnhancers(router.enhancer, redux.applyMiddleware(m, router.middleware))
       : (m) => composeEnhancers(redux.applyMiddleware(m))
   );
-
-  initBarcodeListener(store.dispatch.bind(store));
 
   reduxStore = store as any;
   return store;

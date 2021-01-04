@@ -56,11 +56,5 @@ export default connect((st: Store) => ({
     st.Events.loading_log_entries ||
     st.Events.loading_job_history ||
     st.Events.loading_analysis_month_log ||
-    st.Events.loading_analysis_month_jobs ||
-    st.MaterialDetails.add_mat_in_progress ||
-    (st.MaterialDetails.material
-      ? st.MaterialDetails.material.loading_events ||
-        st.MaterialDetails.material.loading_workorders ||
-        st.MaterialDetails.material.updating_material
-      : false),
+    st.Events.loading_analysis_month_jobs,
 }))(LoadingIcon);

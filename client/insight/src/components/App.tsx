@@ -51,8 +51,6 @@ import Button from "@material-ui/core/Button";
 import Badge from "@material-ui/core/Badge";
 import Notifications from "@material-ui/icons/Notifications";
 import Drawer from "@material-ui/core/Drawer";
-import CameraAlt from "@material-ui/icons/CameraAlt";
-import SearchIcon from "@material-ui/icons/Search";
 import ShoppingBasket from "@material-ui/icons/ShoppingBasket";
 import DirectionsIcon from "@material-ui/icons/Directions";
 import StarIcon from "@material-ui/icons/StarRate";
@@ -82,16 +80,14 @@ import * as routes from "../data/routes";
 import { Store, connect } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
-import * as guiState from "../data/gui-state";
-import * as matDetails from "../data/material-details";
 import logo from "../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
-import SerialScanner from "./QRScan";
-import ManualScan from "./ManualScan";
+import { SerialScannerButton } from "./QRScan";
+import { ManualScanButton } from "./ManualScan";
 import { OperatorSelect } from "./ChooseOperator";
 import { BasicMaterialDialog } from "./station-monitor/Material";
 import { CompletedParts } from "./operations/CompletedParts";
-import AllMaterial from "./operations/AllMaterial";
+import { AllMaterial } from "./operations/AllMaterial";
 import { FailedPartLookup } from "./quality/FailedPartLookup";
 import { QualityPaths } from "./quality/QualityPaths";
 import { QualityDashboard } from "./quality/RecentFailedInspections";
@@ -101,11 +97,10 @@ import Wash from "./station-monitor/Wash";
 import Queues from "./station-monitor/Queues";
 import { ToolReportPage } from "./operations/ToolReport";
 import { ProgramReportPage } from "./operations/Programs";
-import { enableMapSet } from "immer";
 import { WebsocketConnection } from "../store/websocket";
 import { currentStatus } from "../data/current-status";
 import { JobsBackend } from "../data/backend";
-enableMapSet();
+import { BarcodeListener } from "../store/barcode";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -412,8 +407,6 @@ interface HeaderProps {
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
-  readonly openQrCodeScan: () => void;
-  readonly openManualSerial: () => void;
 }
 
 function Header(p: HeaderProps) {
@@ -448,17 +441,9 @@ function Header(p: HeaderProps) {
   const SearchButtons = () => (
     <>
       {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
-        <Tooltip title="Scan QR Code">
-          <IconButton onClick={p.openQrCodeScan}>
-            <CameraAlt />
-          </IconButton>
-        </Tooltip>
+        <SerialScannerButton />
       ) : undefined}
-      <Tooltip title="Enter Serial">
-        <IconButton onClick={p.openManualSerial}>
-          <SearchIcon />
-        </IconButton>
-      </Tooltip>
+      <ManualScanButton />
     </>
   );
 
@@ -559,8 +544,6 @@ interface AppConnectedProps extends AppProps {
   route: routes.State;
   backupFileOpened: boolean;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
-  readonly openQrCodeScan: () => void;
-  readonly openManualSerial: () => void;
 }
 
 const App = React.memo(function App(props: AppConnectedProps) {
@@ -742,8 +725,6 @@ const App = React.memo(function App(props: AppConnectedProps) {
         showLogout={showLogout}
         showOperator={showOperator}
         setRoute={props.setRoute}
-        openManualSerial={props.openManualSerial}
-        openQrCodeScan={props.openQrCodeScan}
       >
         {navigation}
       </Header>
@@ -759,10 +740,9 @@ const App = React.memo(function App(props: AppConnectedProps) {
       ) : (
         page
       )}
-      <SerialScanner />
-      <ManualScan />
       {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
       {props.demo ? <LoadDemoData /> : <WebsocketConnection />}
+      <BarcodeListener />
     </div>
   );
 });
@@ -770,20 +750,9 @@ const App = React.memo(function App(props: AppConnectedProps) {
 export default connect(
   (s: Store) => ({
     route: s.Route,
-    backupFileOpened: s.Gui.backup_file_opened,
+    backupFileOpened: false,
   }),
   {
-    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => [
-      routes.displayPage(ty, curSt),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-    ],
-    openQrCodeScan: () => ({
-      type: guiState.ActionType.SetScanQrCodeDialog,
-      open: true,
-    }),
-    openManualSerial: () => ({
-      type: guiState.ActionType.SetManualSerialEntryDialog,
-      open: true,
-    }),
+    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => routes.displayPage(ty, curSt),
   }
 )(App);

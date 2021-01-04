@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -48,22 +48,18 @@ import {
   SortableInProcMaterial,
   WhiteboardRegion,
   SortableWhiteboardRegion,
-  MaterialDialogProps,
   InstructionButton,
 } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
-import * as guiState from "../../data/gui-state";
-import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
+import { Store, connect } from "../../store/store";
 import * as matDetails from "../../data/material-details";
-import SelectWorkorderDialog from "./SelectWorkorder";
-import SetSerialDialog from "./EnterSerial";
-import SelectInspTypeDialog from "./SelectInspType";
+import { SelectWorkorderDialog } from "./SelectWorkorder";
+import SelectInspTypeDialog, { selectInspTypeDialogOpen } from "./SelectInspType";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
 import { HashMap, Option } from "prelude-ts";
-import { MaterialSummary } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
@@ -71,7 +67,7 @@ import ReactToPrint from "react-to-print";
 import { instructionUrl } from "../../data/backend";
 import Tooltip from "@material-ui/core/Tooltip";
 import Fab from "@material-ui/core/Fab";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, reorder_queued_mat } from "../../data/current-status";
 
@@ -296,8 +292,6 @@ interface PalletColumnProps {
   readonly dateOfCurrentStatus: Date;
   readonly data: LoadStationAndQueueData;
   readonly fillViewPort: boolean;
-  readonly openMat: (m: Readonly<MaterialSummary>) => void;
-  //readonly addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithStyles<typeof palletStyles>) => {
@@ -330,7 +324,7 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
                 type={MoveMaterialNodeKindType.Material}
                 material={showArrow(m) ? m : null}
               >
-                <InProcMaterial mat={m} onOpen={props.openMat} />
+                <InProcMaterial mat={m} />
               </MoveMaterialArrowNode>
             ))}
           </WhiteboardRegion>
@@ -353,7 +347,7 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
                       type={MoveMaterialNodeKindType.Material}
                       material={showArrow(m) ? m : null}
                     >
-                      <InProcMaterial mat={m} onOpen={props.openMat} />
+                      <InProcMaterial mat={m} />
                     </MoveMaterialArrowNode>
                   ))}
                 </WhiteboardRegion>
@@ -372,7 +366,7 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
           <WhiteboardRegion label="Raw Material" spaceAround>
             {props.data.freeLoadingMaterial.map((m, idx) => (
               <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} material={m}>
-                <InProcMaterial mat={m} onOpen={props.openMat} />
+                <InProcMaterial mat={m} />
               </MoveMaterialArrowNode>
             ))}
           </WhiteboardRegion>
@@ -402,14 +396,9 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
   );
 });
 
-interface LoadMatDialogProps extends MaterialDialogProps {
+interface LoadMatDialogProps {
   readonly loadNum: number;
   readonly pallet: string | null;
-  readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
-  readonly openSetSerial: () => void;
-  readonly openForceInspection: () => void;
-  readonly printLabel: (matId: number, proc: number, loadStation: number | null, queue: string | null) => void;
-  readonly signalQuarantine: (matId: number, queue: string, operator: string | null) => void;
 }
 
 function instructionType(mat: matDetails.MaterialDetail): string {
@@ -426,40 +415,40 @@ function instructionType(mat: matDetails.MaterialDetail): string {
   return ty;
 }
 
-function LoadMatDialog(props: LoadMatDialogProps) {
+const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const quarantineQueue = fmsInfo.allowQuarantineAtLoadStation ? fmsInfo.quarantineQueue ?? null : null;
   const operator = useRecoilValue(currentOperator);
-  const displayMat = props.display_material;
+  const displayMat = useRecoilValue(matDetails.materialDetail);
+  const setWorkorderDialogOpen = useSetRecoilState(matDetails.loadWorkordersForMaterialInDialog);
+  const setMatToDisplay = useSetRecoilState(matDetails.materialToShowInDialog);
+  const [printLabel, printingLabel] = matDetails.usePrintLabel();
+  const [signalQuarantine, signalingQuarantine] = matDetails.useSignalForQuarantine();
+  const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
 
   const printRef = React.useRef(null);
 
   function openAssignWorkorder() {
-    if (!props.display_material) {
+    if (displayMat) {
       return;
     }
-    props.openSelectWorkorder(props.display_material);
+    setWorkorderDialogOpen(true);
   }
 
   return (
     <MaterialDialog
-      display_material={props.display_material}
-      onClose={props.onClose}
+      display_material={displayMat}
+      onClose={() => setMatToDisplay(null)}
       allowNote
       buttons={
         <>
-          {props.display_material && props.display_material.partName !== "" ? (
+          {displayMat && displayMat.partName !== "" ? (
             <InstructionButton
-              material={props.display_material}
-              type={instructionType(props.display_material)}
+              material={displayMat}
+              type={instructionType(displayMat)}
               operator={operator}
               pallet={props.pallet}
             />
-          ) : undefined}
-          {fmsInfo.allowChangeSerial ? (
-            <Button color="primary" onClick={props.openSetSerial}>
-              {props.display_material && props.display_material.serial ? "Change Serial" : "Assign Serial"}
-            </Button>
           ) : undefined}
           {displayMat && fmsInfo.usingLabelPrinterForSerials ? (
             fmsInfo.useClientPrinterForLabels ? (
@@ -478,10 +467,11 @@ function LoadMatDialog(props: LoadMatDialogProps) {
             ) : (
               <Button
                 color="primary"
+                disabled={printingLabel}
                 onClick={() =>
-                  props.printLabel(
-                    displayMat.materialID,
-                    LazySeq.ofIterable(displayMat.events)
+                  printLabel({
+                    materialId: displayMat.materialID,
+                    proc: LazySeq.ofIterable(displayMat.events)
                       .filter(
                         (e) =>
                           e.details?.["PalletCycleInvalidated"] !== "1" &&
@@ -494,9 +484,9 @@ function LoadMatDialog(props: LoadMatDialogProps) {
                       .maxOn((e) => e.proc)
                       .map((e) => e.proc)
                       .getOrElse(1),
-                    props.loadNum,
-                    null
-                  )
+                    loadStation: props.loadNum,
+                    queue: null,
+                  })
                 }
               >
                 Print Label
@@ -506,54 +496,25 @@ function LoadMatDialog(props: LoadMatDialogProps) {
           {displayMat && quarantineQueue ? (
             <Button
               color="primary"
-              onClick={() => props.signalQuarantine(displayMat.materialID, quarantineQueue, operator)}
+              disabled={signalingQuarantine}
+              onClick={() => signalQuarantine(displayMat.materialID, quarantineQueue, operator)}
             >
               Quarantine
             </Button>
           ) : undefined}
-          <Button color="primary" onClick={props.openForceInspection}>
+          <Button color="primary" onClick={() => setForceInspOpen(true)}>
             Signal Inspection
           </Button>
           {fmsInfo.allowChangeWorkorderAtLoadStation ? (
             <Button color="primary" onClick={openAssignWorkorder}>
-              {props.display_material && props.display_material.workorderId ? "Change Workorder" : "Assign Workorder"}
+              {displayMat && displayMat.workorderId ? "Change Workorder" : "Assign Workorder"}
             </Button>
           ) : undefined}
         </>
       }
     />
   );
-}
-
-const ConnectedMaterialDialog = connect(
-  (st) => ({
-    display_material: st.MaterialDetails.material,
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-    openSelectWorkorder: (mat: matDetails.MaterialDetail) =>
-      [
-        {
-          type: guiState.ActionType.SetWorkorderDialogOpen,
-          open: true,
-        },
-        matDetails.loadWorkorders(mat),
-      ] as AppActionBeforeMiddleware,
-    openSetSerial: () => ({
-      type: guiState.ActionType.SetSerialDialogOpen,
-      open: true,
-    }),
-    openForceInspection: () => ({
-      type: guiState.ActionType.SetInspTypeDialogOpen,
-      open: true,
-    }),
-    printLabel: matDetails.printLabel,
-    signalQuarantine: (matId: number, queue: string, operator: string | null) => [
-      matDetails.signalForQuarantine(matId, queue, operator),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-    ],
-  }
-)(LoadMatDialog);
+});
 
 const loadStyles = createStyles({
   mainFillViewport: {
@@ -594,8 +555,6 @@ const loadStyles = createStyles({
 
 interface LoadStationProps {
   readonly route: routes.State;
-  readonly openMat: (m: Readonly<MaterialSummary>) => void;
-  readonly addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 interface LoadStationDisplayProps extends LoadStationProps {
@@ -615,6 +574,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
       ),
     [currentSt, props.route]
   );
+  const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
 
   const queues = data.queues
     .toVector()
@@ -647,7 +607,6 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
           <PalletColumn
             fillViewPort={props.fillViewPort}
             data={data}
-            openMat={props.openMat}
             dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
           />
           <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
@@ -672,7 +631,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                   distance={5}
                   shouldCancelStart={() => false}
                   onSortEnd={(se: SortEnd) => {
-                    props.addExistingMaterialToQueue({
+                    addExistingMatToQueue({
                       materialId: mat.material[se.oldIndex].materialID,
                       queue: mat.label,
                       queuePosition: se.newIndex,
@@ -690,7 +649,6 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       <SortableInProcMaterial
                         index={matIdx}
                         mat={m}
-                        onOpen={props.openMat}
                         displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
                       />
                     </MoveMaterialArrowNode>
@@ -718,7 +676,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                   distance={5}
                   shouldCancelStart={() => false}
                   onSortEnd={(se: SortEnd) => {
-                    props.addExistingMaterialToQueue({
+                    addExistingMatToQueue({
                       materialId: mat.material[se.oldIndex].materialID,
                       queue: mat.label,
                       queuePosition: se.newIndex,
@@ -736,7 +694,6 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
                       <SortableInProcMaterial
                         index={matIdx}
                         mat={m}
-                        onOpen={props.openMat}
                         displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
                       />
                     </MoveMaterialArrowNode>
@@ -747,9 +704,8 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
           </div>
         )}
         <SelectWorkorderDialog />
-        <SetSerialDialog />
         <SelectInspTypeDialog />
-        <ConnectedMaterialDialog loadNum={data.loadNum} pallet={data.pallet?.pallet ?? null} />
+        <LoadMatDialog loadNum={data.loadNum} pallet={data.pallet?.pallet ?? null} />
       </main>
     </MoveMaterialArrowContainer>
   );
@@ -771,7 +727,4 @@ function LoadStationCheckWidth(props: LoadStationProps) {
   );
 }
 
-export default connect((st: Store) => ({ route: st.Route }), {
-  openMat: matDetails.openMaterialDialog,
-  addExistingMaterialToQueue: matDetails.addExistingMaterialToQueue,
-})(LoadStationCheckWidth);
+export default connect((st: Store) => ({ route: st.Route }))(LoadStationCheckWidth);

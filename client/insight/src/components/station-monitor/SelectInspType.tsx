@@ -46,109 +46,89 @@ import TextField from "@material-ui/core/TextField";
 import { HashSet } from "prelude-ts";
 
 import { MaterialDetailTitle } from "./Material";
-import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
+import { Store, connect } from "../../store/store";
 import * as matDetails from "../../data/material-details";
-import * as guiState from "../../data/gui-state";
+import { atom, useRecoilState, useRecoilValue } from "recoil";
 
-interface ManualInspTypeEntryProps {
-  readonly mat: matDetails.MaterialDetail;
-  readonly forceInspection: (data: matDetails.ForceInspectionData) => void;
+function ManualInspTypeEntry() {
+  const [inspType, setInspType] = React.useState<string | null>(null);
+  const mat = useRecoilValue(matDetails.materialDetail);
+  const [forceInsp] = matDetails.useForceInspection();
+  return (
+    <TextField
+      label={inspType === "" || inspType === null ? "Inspection Type" : "Inspection Type (press enter)"}
+      value={inspType ?? ""}
+      onChange={(e) => setInspType(e.target.value)}
+      onKeyPress={(e) => {
+        if (e.key === "Enter" && mat && inspType && inspType !== "") {
+          e.preventDefault();
+          forceInsp({
+            mat: mat,
+            inspType: inspType,
+            inspect: true,
+          });
+        }
+      }}
+    />
+  );
 }
 
-interface ManualInspTypeEntryState {
-  readonly inspType: string;
-}
-
-class ManualInspTypeEntry extends React.PureComponent<ManualInspTypeEntryProps, ManualInspTypeEntryState> {
-  state = { inspType: "" };
-
-  render() {
-    return (
-      <TextField
-        label={this.state.inspType === "" ? "Inspection Type" : "Inspection Type (press enter)"}
-        value={this.state.inspType}
-        onChange={(e) => this.setState({ inspType: e.target.value })}
-        onKeyPress={(e) => {
-          if (e.key === "Enter" && this.state.inspType && this.state.inspType !== "") {
-            e.preventDefault();
-            this.props.forceInspection({
-              mat: this.props.mat,
-              inspType: this.state.inspType,
-              inspect: true,
-            });
-          }
-        }}
-      />
-    );
-  }
-}
+export const selectInspTypeDialogOpen = atom<boolean>({
+  key: "select-insp-dialog-open",
+  default: false,
+});
 
 interface SelectInspTypeProps {
   readonly inspTypes: HashSet<string>;
-  readonly mats: matDetails.MaterialDetail | null;
-  readonly onClose: DispatchAction<guiState.ActionType.SetInspTypeDialogOpen>;
-  readonly forceInspection: (data: matDetails.ForceInspectionData) => void;
 }
 
 function SelectInspTypeDialog(props: SelectInspTypeProps) {
+  const mat = useRecoilValue(matDetails.materialDetail);
+  const [forceInsp] = matDetails.useForceInspection();
+  const [dialogOpen, setDialogOpen] = useRecoilState(selectInspTypeDialogOpen);
+
   let body: JSX.Element | undefined;
 
-  if (props.mats === null) {
+  if (mat === null) {
     body = <p>None</p>;
   } else {
-    const mat = props.mats;
-    if (mat === null) {
-      body = <p>None</p>;
-    } else {
-      const inspList = (
-        <List>
-          {props.inspTypes.toArray({ sortOn: (x) => x }).map((iType) => (
-            <ListItem key={iType} button onClick={() => props.forceInspection({ mat, inspType: iType, inspect: true })}>
-              <ListItemIcon>
-                <SearchIcon />
-              </ListItemIcon>
-              <ListItemText primary={iType} />
-            </ListItem>
-          ))}
-        </List>
-      );
+    const inspList = (
+      <List>
+        {props.inspTypes.toArray({ sortOn: (x) => x }).map((iType) => (
+          <ListItem key={iType} button onClick={() => forceInsp({ mat, inspType: iType, inspect: true })}>
+            <ListItemIcon>
+              <SearchIcon />
+            </ListItemIcon>
+            <ListItemText primary={iType} />
+          </ListItem>
+        ))}
+      </List>
+    );
 
-      body = (
-        <>
-          <DialogTitle disableTypography>
-            <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
-          </DialogTitle>
-          <DialogContent>
-            <ManualInspTypeEntry mat={mat} forceInspection={props.forceInspection} />
-            {inspList}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => props.onClose({ open: false })} color="primary">
-              Cancel
-            </Button>
-          </DialogActions>
-        </>
-      );
-    }
+    body = (
+      <>
+        <DialogTitle disableTypography>
+          <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
+        </DialogTitle>
+        <DialogContent>
+          <ManualInspTypeEntry />
+          {inspList}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+        </DialogActions>
+      </>
+    );
   }
   return (
-    <Dialog open={props.mats !== null} onClose={() => props.onClose({ open: false })} maxWidth="md">
+    <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md">
       {body}
     </Dialog>
   );
 }
 
-export default connect(
-  (st: Store) => ({
-    inspTypes: st.Events.last30.mat_summary.inspTypes,
-    mats: st.Gui.insptype_dialog_open ? st.MaterialDetails.material : null,
-  }),
-  {
-    onClose: mkAC(guiState.ActionType.SetInspTypeDialogOpen),
-    forceInspection: (data: matDetails.ForceInspectionData) =>
-      [
-        matDetails.forceInspection(data),
-        { type: guiState.ActionType.SetInspTypeDialogOpen, open: false },
-      ] as AppActionBeforeMiddleware,
-  }
-)(SelectInspTypeDialog);
+export default connect((st: Store) => ({
+  inspTypes: st.Events.last30.mat_summary.inspTypes,
+}))(SelectInspTypeDialog);

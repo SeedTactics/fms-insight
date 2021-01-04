@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -37,79 +37,58 @@ import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
+import SearchIcon from "@material-ui/icons/Search";
 import TextField from "@material-ui/core/TextField";
-import { connect } from "../store/store";
-import * as guiState from "../data/gui-state";
-import { openMaterialBySerial } from "../data/material-details";
+import { materialToShowInDialog } from "../data/material-details";
+import { useSetRecoilState } from "recoil";
+import Tooltip from "@material-ui/core/Tooltip";
+import IconButton from "@material-ui/core/IconButton";
 
-interface ManualScanProps {
-  readonly dialogOpen: boolean;
-  readonly onClose: () => void;
-  readonly onScan: (s: string) => void;
-}
+export const ManualScanButton = React.memo(function ManualScan() {
+  const [serial, setSerial] = React.useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
+  const setMatToShowDialog = useSetRecoilState(materialToShowInDialog);
 
-interface ManualScanState {
-  serial: string;
-}
+  function open() {
+    if (serial && serial !== "") {
+      setMatToShowDialog({ type: "Serial", serial });
+      setDialogOpen(false);
+    }
+  }
 
-class ManualScan extends React.PureComponent<ManualScanProps, ManualScanState> {
-  state = { serial: "" };
-
-  render() {
-    return (
-      <Dialog open={this.props.dialogOpen} onClose={this.props.onClose} maxWidth="md">
+  return (
+    <>
+      <Tooltip title="Enter Serial">
+        <IconButton onClick={() => setDialogOpen(true)}>
+          <SearchIcon />
+        </IconButton>
+      </Tooltip>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md">
         <DialogTitle>Enter a part&apos;s serial</DialogTitle>
         <DialogContent>
           <div style={{ minWidth: "20em" }}>
             <TextField
-              label={this.state.serial === "" ? "Serial" : "Serial (press enter)"}
-              value={this.state.serial}
-              onChange={(e) => this.setState({ serial: e.target.value })}
+              label={serial === null || serial === "" ? "Serial" : "Serial (press enter)"}
+              value={serial ?? ""}
+              onChange={(e) => setSerial(e.target.value)}
               onKeyPress={(e) => {
-                if (e.key === "Enter" && this.state.serial && this.state.serial !== "") {
+                if (e.key === "Enter" && serial && serial !== "") {
                   e.preventDefault();
-                  this.props.onScan(this.state.serial);
+                  open();
                 }
               }}
             />
           </div>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => this.props.onScan(this.state.serial)}
-            disabled={this.state.serial === ""}
-            color="secondary"
-          >
+          <Button onClick={open} disabled={serial === null || serial === ""} color="secondary">
             Open
           </Button>
-          <Button onClick={this.props.onClose} color="secondary">
+          <Button onClick={() => setDialogOpen(false)} color="secondary">
             Cancel
           </Button>
         </DialogActions>
       </Dialog>
-    );
-  }
-}
-
-export default connect(
-  (s) => ({
-    dialogOpen: s.Gui.manual_serial_entry_dialog_open,
-  }),
-  {
-    onClose: () => ({
-      type: guiState.ActionType.SetManualSerialEntryDialog,
-      open: false,
-    }),
-    onScan: (s: string) => [
-      ...openMaterialBySerial(s, true),
-      {
-        type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined,
-      },
-      {
-        type: guiState.ActionType.SetManualSerialEntryDialog,
-        open: false,
-      },
-    ],
-  }
-)(ManualScan);
+    </>
+  );
+});

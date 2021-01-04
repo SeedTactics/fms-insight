@@ -119,7 +119,7 @@ export function filterStationCycles(
 }
 
 export interface LoadCycleData extends PartCycleData {
-  readonly operations?: ReadonlyArray<{ readonly id: number; readonly serial?: string; readonly operation: string }>;
+  readonly operations?: ReadonlyArray<{ readonly mat: Readonly<api.ILogMaterial>; readonly operation: string }>;
 }
 
 export interface FilteredLoadCycles {
@@ -165,8 +165,7 @@ export function loadOccupancyCycles(
                 operations: LazySeq.ofIterable(chunk)
                   .flatMap((e) =>
                     e.material.map((mat) => ({
-                      id: mat.id,
-                      serial: mat.serial,
+                      mat,
                       operation: e.operation,
                     }))
                   )
@@ -225,8 +224,7 @@ export function estimateLulOperations(
                 operations: LazySeq.ofIterable(chunk)
                   .flatMap((e) =>
                     e.material.map((mat) => ({
-                      id: mat.id,
-                      serial: mat.serial,
+                      mat,
                       operation: e.operation + (e === splitCycle.cycle ? "*" : ""),
                     }))
                   )

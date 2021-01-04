@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { connect } from "../../store/store";
 import { addDays, startOfToday } from "date-fns";
-import { openMaterialById } from "../../data/material-details";
 import { InspectionSankey } from "../analysis/InspectionSankey";
 import { Last30Days } from "../../data/events";
 import { HashMap } from "prelude-ts";
@@ -50,16 +49,11 @@ const filterLogSelector = createSelector(
   }
 );
 
-const ConnectedInspection = connect(
-  (st) => ({
-    inspectionlogs: filterLogSelector(st.Events.last30, startOfToday()),
-    default_date_range: [addDays(startOfToday(), -6), addDays(startOfToday(), 1)],
-    defaultToTable: false,
-  }),
-  {
-    openMaterialDetails: openMaterialById,
-  }
-)(InspectionSankey);
+const ConnectedInspection = connect((st) => ({
+  inspectionlogs: filterLogSelector(st.Events.last30, startOfToday()),
+  default_date_range: [addDays(startOfToday(), -6), addDays(startOfToday(), 1)],
+  defaultToTable: false,
+}))(InspectionSankey);
 
 export function QualityPaths() {
   React.useEffect(() => {

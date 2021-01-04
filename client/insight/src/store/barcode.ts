@@ -31,72 +31,73 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { AppActionBeforeMiddleware } from "./store";
-import { openMaterialBySerial } from "../data/material-details";
-import * as guiState from "../data/gui-state";
+import { materialToShowInDialog } from "../data/material-details";
+import { useEffect } from "react";
+import { useSetRecoilState } from "recoil";
 
-export function initBarcodeListener(dispatch: (a: AppActionBeforeMiddleware) => void): void {
-  let timeout: number | undefined;
-  let scanActive = false;
-  let scannedTxt = "";
+export function BarcodeListener() {
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+  useEffect(() => {
+    let timeout: number | undefined;
+    let scanActive = false;
+    let scannedTxt = "";
 
-  function cancelDetection() {
-    scannedTxt = "";
-    scanActive = false;
-  }
-
-  function startDetection() {
-    scannedTxt = "";
-    scanActive = true;
-    timeout = window.setTimeout(cancelDetection, 10 * 1000);
-  }
-
-  function success() {
-    if (timeout) {
-      clearTimeout(timeout);
-      timeout = undefined;
-    }
-    scanActive = false;
-
-    let serial = scannedTxt;
-    const commaIdx = serial.indexOf(",");
-    const semiIdx = serial.indexOf(";");
-    if (commaIdx >= 0 && semiIdx >= 0) {
-      serial = serial.substring(0, Math.min(commaIdx, semiIdx));
-    } else if (commaIdx >= 0) {
-      serial = serial.substring(0, commaIdx);
-    } else if (semiIdx >= 0) {
-      serial = serial.substring(0, semiIdx);
+    function cancelDetection() {
+      scannedTxt = "";
+      scanActive = false;
     }
 
-    dispatch([
-      ...openMaterialBySerial(serial, true),
-      {
-        type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined,
-      },
-    ]);
-  }
+    function startDetection() {
+      scannedTxt = "";
+      scanActive = true;
+      timeout = window.setTimeout(cancelDetection, 10 * 1000);
+    }
 
-  function onKeyDown(k: KeyboardEvent) {
-    if (k.keyCode === 112) {
-      // F1
-      startDetection();
-      k.stopPropagation();
-      k.preventDefault();
-    } else if (scanActive && k.keyCode === 13) {
-      // Enter
-      success();
-      k.stopPropagation();
-      k.preventDefault();
-    } else if (scanActive && k.key && k.key.length === 1) {
-      if (/[a-zA-Z0-9-_,;]/.test(k.key)) {
-        scannedTxt += k.key;
+    function success() {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = undefined;
+      }
+      scanActive = false;
+
+      let serial = scannedTxt;
+      const commaIdx = serial.indexOf(",");
+      const semiIdx = serial.indexOf(";");
+      if (commaIdx >= 0 && semiIdx >= 0) {
+        serial = serial.substring(0, Math.min(commaIdx, semiIdx));
+      } else if (commaIdx >= 0) {
+        serial = serial.substring(0, commaIdx);
+      } else if (semiIdx >= 0) {
+        serial = serial.substring(0, semiIdx);
+      }
+
+      setMatToShow({ type: "Serial", serial });
+    }
+
+    function onKeyDown(k: KeyboardEvent) {
+      if (k.keyCode === 112) {
+        // F1
+        startDetection();
         k.stopPropagation();
         k.preventDefault();
+      } else if (scanActive && k.keyCode === 13) {
+        // Enter
+        success();
+        k.stopPropagation();
+        k.preventDefault();
+      } else if (scanActive && k.key && k.key.length === 1) {
+        if (/[a-zA-Z0-9-_,;]/.test(k.key)) {
+          scannedTxt += k.key;
+          k.stopPropagation();
+          k.preventDefault();
+        }
       }
     }
-  }
 
-  document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => document.removeEventListener("keydown", onKeyDown);
+  });
+
+  return null;
 }

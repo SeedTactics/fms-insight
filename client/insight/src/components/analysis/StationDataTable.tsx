@@ -49,6 +49,8 @@ import { addDays, addHours } from "date-fns";
 import * as api from "../../data/api";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
+import { useSetRecoilState } from "recoil";
+import { materialToShowInDialog } from "../../data/material-details";
 
 enum ColumnId {
   Date,
@@ -148,7 +150,6 @@ interface StationDataTableProps {
   readonly last30_days: boolean;
   readonly showWorkorderAndInspect: boolean;
   readonly hideMedian?: boolean;
-  readonly openDetails: (matId: number) => void;
 }
 
 function extractData(
@@ -203,6 +204,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [detailMenu, setDetailMenu] = React.useState<DetailMenuData | null>(null);
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
   function handleRequestSort(property: ColumnId) {
     if (orderBy === property) {
@@ -270,7 +272,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
           onClickDetails={(e, row) => {
             if (row.material.length === 0) return;
             if (row.material.length === 1) {
-              props.openDetails(row.material[0].id);
+              setMatToShow({ type: "LogMat", logMat: row.material[0] });
             } else {
               setDetailMenu({ anchorEl: e.currentTarget, material: row.material });
             }
@@ -291,7 +293,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
               <MenuItem
                 key={idx}
                 onClick={() => {
-                  props.openDetails(mat.id);
+                  setMatToShow({ type: "LogMat", logMat: mat });
                   setDetailMenu(null);
                 }}
               >

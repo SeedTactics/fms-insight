@@ -46,6 +46,8 @@ import brown from "@material-ui/core/colors/brown";
 import { ThemeProvider } from "@material-ui/core/styles";
 import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
 import { RecoilRoot } from "recoil";
+import { enableMapSet } from "immer";
+enableMapSet();
 
 import App, { AppProps } from "./components/App";
 import { Store } from "./store/typed-redux";

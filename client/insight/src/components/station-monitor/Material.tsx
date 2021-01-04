@@ -56,12 +56,11 @@ import { DraggableProvided } from "react-beautiful-dnd";
 import * as api from "../../data/api";
 import * as matDetails from "../../data/material-details";
 import { LogEntries } from "../LogEntry";
-import { connect, mkAC } from "../../store/store";
-import { inproc_mat_to_summary, MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
+import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { instructionUrl } from "../../data/backend";
-import { useRecoilValue } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 
 /*
 function getPosition(el: Element) {
@@ -175,10 +174,11 @@ export interface MaterialSummaryProps {
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
   readonly isDragging?: boolean;
-  onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
 const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps & WithStyles<typeof matStyles>) => {
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+
   const inspections = props.mat.signaledInspections.join(", ");
   const completed = props.mat.completedInspections || {};
 
@@ -224,7 +224,7 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
           <DragIndicator fontSize="large" color={props.isDragging ? "primary" : "action"} />
         </div>
       ) : undefined}
-      <ButtonBase focusRipple onClick={() => props.onOpen(props.mat)}>
+      <ButtonBase focusRipple onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}>
         <div className={props.classes.container}>
           <PartIdenticon part={props.mat.partName} />
           <div className={props.classes.mainContent}>
@@ -295,7 +295,6 @@ export interface InProcMaterialProps {
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
   readonly isDragging?: boolean;
-  onOpen: (m: Readonly<MaterialSummary>) => void;
 }
 
 export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
@@ -304,7 +303,6 @@ export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
       <MatSummaryWithStyles
         mat={inproc_mat_to_summary(this.props.mat)}
         action={materialAction(this.props.mat, this.props.displaySinglePallet)}
-        onOpen={this.props.onOpen}
         draggableProvided={this.props.draggableProvided}
         hideAvatar={this.props.hideAvatar}
         displayJob={this.props.displayJob}
@@ -480,12 +478,12 @@ export function InstructionButton({
 interface NotesDialogBodyProps {
   mat: matDetails.MaterialDetail;
   setNotesOpen: (o: boolean) => void;
-  addNote: (matId: number, process: number, operator: string | null, notes: string) => void;
 }
 
 function NotesDialogBody(props: NotesDialogBodyProps) {
   const [curNote, setCurNote] = React.useState<string>("");
   const operator = useRecoilValue(currentOperator);
+  const [addNote] = matDetails.useAddNote();
 
   return (
     <>
@@ -505,7 +503,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
       <DialogActions>
         <Button
           onClick={() => {
-            props.addNote(props.mat.materialID, 0, operator, curNote);
+            addNote({ matId: props.mat.materialID, process: 0, operator: operator, notes: curNote });
             props.setNotesOpen(false);
             setCurNote("");
           }}
@@ -527,10 +525,6 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
     </>
   );
 }
-
-const ConnectedNotesDialogBody = connect((st) => ({}), {
-  addNote: matDetails.addNote,
-})(NotesDialogBody);
 
 export interface MaterialDialogProps {
   display_material: matDetails.MaterialDetail | null;
@@ -574,7 +568,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
       </>
     );
     if (props.allowNote) {
-      notesBody = <ConnectedNotesDialogBody mat={mat} setNotesOpen={setNotesOpen} />;
+      notesBody = <NotesDialogBody mat={mat} setNotesOpen={setNotesOpen} />;
     }
   }
   return (
@@ -591,14 +585,12 @@ export function MaterialDialog(props: MaterialDialogProps) {
   );
 }
 
-export const BasicMaterialDialog = connect(
-  (st) => ({
-    display_material: st.MaterialDetails.material,
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  }
-)(MaterialDialog);
+export const BasicMaterialDialog = React.memo(function BasicMaterialDialog() {
+  const mat = useRecoilValue(matDetails.materialDetail);
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const close = React.useCallback(() => setMatToShow(null), []);
+  return <MaterialDialog display_material={mat} onClose={close} />;
+});
 
 const whiteboardRegionStyle = createStyles({
   container: {

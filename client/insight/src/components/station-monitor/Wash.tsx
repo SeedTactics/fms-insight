@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -37,54 +37,58 @@ import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import { createSelector } from "reselect";
 
-import { Store, connect, mkAC } from "../../store/store";
-import { MaterialDialog, WhiteboardRegion, MatSummary, MaterialDialogProps, InstructionButton } from "./Material";
-import * as matDetails from "../../data/material-details";
-import * as guiState from "../../data/gui-state";
-import SelectWorkorderDialog from "./SelectWorkorder";
-import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
+import { Store, connect } from "../../store/store";
+import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material";
+import { SelectWorkorderDialog } from "./SelectWorkorder";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import Tooltip from "@material-ui/core/Tooltip";
 import { HashMap } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { fmsInformation } from "../../data/server-settings";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import {
+  loadWorkordersForMaterialInDialog,
+  materialDetail,
+  materialToShowInDialog,
+  useAddExistingMaterialToQueue,
+  useCompleteWash,
+} from "../../data/material-details";
 
-interface WashDialogProps extends MaterialDialogProps {
-  readonly completeWash: (mat: matDetails.CompleteWashData) => void;
-  readonly openSelectWorkorder: (mat: matDetails.MaterialDetail) => void;
-  readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
-}
-
-function WashDialog(props: WashDialogProps) {
+const WashDialog = React.memo(function WashDialog() {
   const operator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
+  const displayMat = useRecoilValue(materialDetail);
+  const [matToDisplay, setMatToDisplay] = useRecoilState(materialToShowInDialog);
+  const [completeWash, completingWash] = useCompleteWash();
+  const [addToQueue, addingToQueue] = useAddExistingMaterialToQueue();
+  const setWorkorderDialogOpen = useSetRecoilState(loadWorkordersForMaterialInDialog);
 
   function markWashComplete() {
-    if (!props.display_material) {
+    if (!displayMat) {
       return;
     }
 
-    props.completeWash({
-      mat: props.display_material,
+    completeWash({
+      mat: displayMat,
       operator: operator,
     });
   }
   function openAssignWorkorder() {
-    if (!props.display_material) {
+    if (!displayMat) {
       return;
     }
-    props.openSelectWorkorder(props.display_material);
+    setWorkorderDialogOpen(true);
   }
 
   const requireScan = fmsInfo.requireScanAtWash;
   const requireWork = fmsInfo.requireWorkorderBeforeAllowWashComplete;
   let disallowCompleteReason: string | undefined;
 
-  if (requireScan && props.display_material && !props.display_material.openedViaBarcodeScanner) {
+  if (requireScan && displayMat && matToDisplay?.type !== "Serial") {
     disallowCompleteReason = "Scan required at wash";
-  } else if (requireWork && props.display_material) {
-    if (props.display_material.workorderId === undefined || props.display_material.workorderId === "") {
+  } else if (requireWork && displayMat) {
+    if (displayMat.workorderId === undefined || displayMat.workorderId === "") {
       disallowCompleteReason = "No workorder assigned";
     }
   }
@@ -93,22 +97,23 @@ function WashDialog(props: WashDialogProps) {
 
   return (
     <MaterialDialog
-      display_material={props.display_material}
-      onClose={props.onClose}
+      display_material={displayMat}
+      onClose={() => setMatToDisplay(null)}
       allowNote
       buttons={
         <>
-          {props.display_material && props.display_material.partName !== "" ? (
-            <InstructionButton material={props.display_material} type="wash" operator={operator} pallet={null} />
+          {displayMat && displayMat.partName !== "" ? (
+            <InstructionButton material={displayMat} type="wash" operator={operator} pallet={null} />
           ) : undefined}
-          {props.display_material && quarantineQueue !== null ? (
+          {displayMat && quarantineQueue !== null ? (
             <Tooltip title={"Move to " + quarantineQueue}>
               <Button
                 color="primary"
+                disabled={addingToQueue}
                 onClick={() =>
-                  props.display_material
-                    ? props.moveToQueue({
-                        materialId: props.display_material.materialID,
+                  displayMat
+                    ? addToQueue({
+                        materialId: displayMat.materialID,
                         queue: quarantineQueue,
                         queuePosition: 0,
                         operator: operator,
@@ -129,43 +134,21 @@ function WashDialog(props: WashDialogProps) {
               </div>
             </Tooltip>
           ) : (
-            <Button color="primary" onClick={markWashComplete}>
+            <Button color="primary" disabled={completingWash} onClick={markWashComplete}>
               Mark Wash Complete
             </Button>
           )}
           <Button color="primary" onClick={openAssignWorkorder}>
-            {props.display_material && props.display_material.workorderId ? "Change Workorder" : "Assign Workorder"}
+            {displayMat && displayMat.workorderId ? "Change Workorder" : "Assign Workorder"}
           </Button>
         </>
       }
     />
   );
-}
-
-const ConnectedWashDialog = connect(
-  (st) => ({
-    display_material: st.MaterialDetails.material,
-  }),
-  {
-    completeWash: (d: matDetails.CompleteWashData) => [
-      matDetails.completeWash(d),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-    ],
-    openSelectWorkorder: (mat: matDetails.MaterialDetail) => [
-      {
-        type: guiState.ActionType.SetWorkorderDialogOpen,
-        open: true,
-      },
-      matDetails.loadWorkorders(mat),
-    ],
-    moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => matDetails.addExistingMaterialToQueue(d),
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  }
-)(WashDialog);
+});
 
 interface WashProps {
   readonly recent_completed: ReadonlyArray<MaterialSummaryAndCompletedData>;
-  readonly openMat: (mat: MaterialSummary) => void;
 }
 
 function Wash(props: WashProps) {
@@ -182,20 +165,20 @@ function Wash(props: WashProps) {
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
             {unwashed.map((m, idx) => (
-              <MatSummary key={idx} mat={m} onOpen={props.openMat} />
+              <MatSummary key={idx} mat={m} />
             ))}
           </WhiteboardRegion>
         </Grid>
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
             {washed.map((m, idx) => (
-              <MatSummary key={idx} mat={m} onOpen={props.openMat} />
+              <MatSummary key={idx} mat={m} />
             ))}
           </WhiteboardRegion>
         </Grid>
       </Grid>
       <SelectWorkorderDialog />
-      <ConnectedWashDialog />
+      <WashDialog />
     </main>
   );
 }
@@ -215,11 +198,6 @@ const extractRecentCompleted = createSelector(
   }
 );
 
-export default connect(
-  (st: Store) => ({
-    recent_completed: extractRecentCompleted(st),
-  }),
-  {
-    openMat: matDetails.openMaterialDialog,
-  }
-)(Wash);
+export default connect((st: Store) => ({
+  recent_completed: extractRecentCompleted(st),
+}))(Wash);

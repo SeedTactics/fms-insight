@@ -134,7 +134,6 @@ export interface InspectionSankeyProps {
   readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
   readonly default_date_range: Date[];
   readonly zoomType?: DataTableActionZoomType;
-  readonly openMaterialDetails?: (matId: number) => void;
   readonly subtitle?: string;
   readonly restrictToPart?: string;
   readonly defaultToTable: boolean;
@@ -255,7 +254,6 @@ export function InspectionSankey(props: InspectionSankeyProps) {
                 points={curData}
                 default_date_range={props.default_date_range}
                 extendDateRange={props.extendDateRange}
-                openDetails={props.openMaterialDetails}
               />
             ) : (
               <ConvertInspectionDataToSankey data={curData} />

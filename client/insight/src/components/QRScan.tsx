@@ -38,17 +38,16 @@ import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import { connect } from "../store/store";
-import * as guiState from "../data/gui-state";
-import { openMaterialBySerial } from "../data/material-details";
+import CameraAlt from "@material-ui/icons/CameraAlt";
+import { materialToShowInDialog } from "../data/material-details";
+import { useSetRecoilState } from "recoil";
+import Tooltip from "@material-ui/core/Tooltip";
+import IconButton from "@material-ui/core/IconButton";
 
-interface QrScanProps {
-  readonly dialogOpen: boolean;
-  readonly onClose: () => void;
-  readonly onScan: (s: string) => void;
-}
+export const SerialScannerButton = React.memo(function SerialScanner() {
+  const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
+  const setMatToShowDialog = useSetRecoilState(materialToShowInDialog);
 
-function SerialScanner(props: QrScanProps) {
   function onScan(serial: string | undefined | null): void {
     if (serial === undefined || serial == null) {
       return;
@@ -61,40 +60,29 @@ function SerialScanner(props: QrScanProps) {
     if (serial === "") {
       return;
     }
-    props.onScan(serial);
+    setMatToShowDialog({ type: "Serial", serial });
+    setDialogOpen(false);
   }
   return (
-    <Dialog open={props.dialogOpen} onClose={props.onClose} maxWidth="md">
-      <DialogTitle>Scan a part&apos;s serial</DialogTitle>
-      <DialogContent>
-        <div style={{ minWidth: "20em" }}>
-          {props.dialogOpen ? <QrReader onScan={onScan} onError={() => 0} /> : undefined}
-        </div>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={props.onClose} color="secondary">
-          Cancel
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md">
+        <DialogTitle>Scan a part&apos;s serial</DialogTitle>
+        <DialogContent>
+          <div style={{ minWidth: "20em" }}>
+            {dialogOpen ? <QrReader onScan={onScan} onError={() => 0} /> : undefined}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)} color="secondary">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Tooltip title="Scan QR Code">
+        <IconButton onClick={() => setDialogOpen(true)}>
+          <CameraAlt />
+        </IconButton>
+      </Tooltip>
+    </>
   );
-}
-
-export default connect(
-  (s) => ({
-    dialogOpen: s.Gui.scan_qr_dialog_open,
-  }),
-  {
-    onClose: () => ({
-      type: guiState.ActionType.SetScanQrCodeDialog,
-      open: false,
-    }),
-    onScan: (s: string) => [
-      ...openMaterialBySerial(s, true),
-      {
-        type: guiState.ActionType.SetAddMatToQueueName,
-        queue: undefined,
-      },
-    ],
-  }
-)(SerialScanner);
+});

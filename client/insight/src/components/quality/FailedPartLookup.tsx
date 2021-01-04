@@ -38,7 +38,6 @@ import Step from "@material-ui/core/Step";
 import StepLabel from "@material-ui/core/StepLabel";
 import StepContent from "@material-ui/core/StepContent";
 
-import { connect } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material";
 import { buildPathString, extractPath } from "../../data/results.inspection";
@@ -119,22 +118,17 @@ function PathLookup(props: PathLookupProps) {
   );
 }
 
-interface PartLookupStepperProps {
-  readonly mat: matDetails.MaterialDetail | null;
-  readonly openMaterialBySerial: (s: string) => void;
-  readonly close: () => void;
-}
-
-function PartLookupStepper(props: PartLookupStepperProps) {
+function PartLookupStepper() {
   const [origStep, setStep] = React.useState(0);
+  const mat = useRecoilValue(matDetails.materialDetail);
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
 
   const setSearchRange = useSetRecoilState(pathLookupRange);
 
   let step = origStep;
-  if (step === 0 && props.mat) {
+  if (step === 0 && mat) {
     step = 1;
   }
-  const mat = props.mat;
   return (
     <Stepper activeStep={step} orientation="vertical">
       <Step>
@@ -142,7 +136,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
         <StepContent>
           <SerialLookup
             onSelect={(s) => {
-              props.openMaterialBySerial(s);
+              setMatToShow({ type: "Serial", serial: s });
               setStep(1);
             }}
           />
@@ -184,7 +178,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
                   variant="contained"
                   style={{ marginLeft: "2em" }}
                   onClick={() => {
-                    props.close();
+                    setMatToShow(null);
                     setSearchRange(null);
                     setStep(0);
                   }}
@@ -208,7 +202,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
             variant="contained"
             style={{ marginTop: "2em" }}
             onClick={() => {
-              props.close();
+              setMatToShow(null);
               setSearchRange(null);
               setStep(0);
             }}
@@ -221,18 +215,6 @@ function PartLookupStepper(props: PartLookupStepperProps) {
   );
 }
 
-const ConnectedStepper = connect(
-  (st) => ({
-    mat: st.MaterialDetails.material,
-  }),
-  {
-    openMaterialBySerial: (s: string) => matDetails.openMaterialBySerial(s, true),
-    close: () => ({
-      type: matDetails.ActionType.CloseMaterialDialog,
-    }),
-  }
-)(PartLookupStepper);
-
 export function FailedPartLookup() {
   React.useEffect(() => {
     document.title = "Failed Part Lookup - FMS Insight";
@@ -240,7 +222,7 @@ export function FailedPartLookup() {
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="failed-parts">
-        <ConnectedStepper />
+        <PartLookupStepper />
       </div>
     </main>
   );

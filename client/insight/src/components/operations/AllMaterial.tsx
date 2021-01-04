@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -39,11 +39,8 @@ import {
   moveMaterialBin,
   currentMaterialBinOrder,
 } from "../../data/all-material-bins";
-import { MaterialSummary } from "../../data/events.matsummary";
-import { connect, AppActionBeforeMiddleware, mkAC } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import * as currentSt from "../../data/current-status";
-import * as guiState from "../../data/gui-state";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
@@ -59,7 +56,7 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
 enum DragType {
   Material = "DRAG_MATERIAL",
@@ -81,7 +78,6 @@ interface MaterialQueueProps {
   readonly queue: string;
   readonly idx: number;
   readonly material: ReadonlyArray<Readonly<IInProcessMaterial>>;
-  readonly openMat: (mat: MaterialSummary) => void;
 }
 
 const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: MaterialQueueProps) {
@@ -113,7 +109,6 @@ const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: Materia
                     {(provided, snapshot) => (
                       <InProcMaterial
                         mat={mat}
-                        onOpen={props.openMat}
                         draggableProvided={provided}
                         hideAvatar
                         isDragging={snapshot.isDragging}
@@ -138,7 +133,6 @@ interface SystemMaterialProps<T> {
   readonly material: HashMap<T, ReadonlyArray<Readonly<IInProcessMaterial>>>;
   readonly renderLabel: (label: T) => string;
   readonly compareLabel: (l1: T, l2: T) => Ordering;
-  readonly openMat: (mat: MaterialSummary) => void;
 }
 
 function renderLul(lul: number) {
@@ -197,7 +191,7 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
                   <div key={idx}>
                     <Typography variant="caption">{this.props.renderLabel(label)}</Typography>
                     {material.map((mat, idx) => (
-                      <InProcMaterial key={idx} mat={mat} onOpen={this.props.openMat} hideAvatar />
+                      <InProcMaterial key={idx} mat={mat} hideAvatar />
                     ))}
                   </div>
                 ))}
@@ -210,10 +204,7 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
 }
 
 interface AllMatDialogProps {
-  readonly display_material: matDetails.MaterialDetail | null;
   readonly quarantineQueue: boolean;
-  readonly removeFromQueue: (matId: number) => void;
-  readonly onClose: () => void;
 }
 
 function AllMatDialog(props: AllMatDialogProps) {
@@ -221,19 +212,21 @@ function AllMatDialog(props: AllMatDialogProps) {
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState>(null);
   const currentMaterial = useRecoilValue(currentSt.currentStatus).material;
 
-  const displayMat = props.display_material;
+  const displayMat = useRecoilValue(matDetails.materialDetail);
+  const setMatToDisplay = useSetRecoilState(matDetails.materialToShowInDialog);
+  const [removeFromQueue] = matDetails.useRemoveFromQueue();
   const curMat =
     displayMat !== null ? currentMaterial.find((m) => m.materialID === displayMat.materialID) ?? null : null;
 
   function close() {
-    props.onClose();
+    setMatToDisplay(null);
     setSwapSt(null);
     setInvalidateSt(null);
   }
 
   return (
     <MaterialDialog
-      display_material={props.display_material}
+      display_material={displayMat}
       onClose={close}
       allowNote={props.quarantineQueue}
       highlightProcess={invalidateSt?.process ?? undefined}
@@ -253,7 +246,7 @@ function AllMatDialog(props: AllMatDialogProps) {
       buttons={
         <>
           {displayMat && props.quarantineQueue ? (
-            <Button color="primary" onClick={() => props.removeFromQueue(displayMat.materialID)}>
+            <Button color="primary" onClick={() => removeFromQueue(displayMat.materialID, null)}>
               Remove From System
             </Button>
           ) : undefined}
@@ -273,30 +266,19 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
-const ConnectedAllMatDialog = connect((s) => ({}), {
-  onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-  removeFromQueue: (matId: number) =>
-    [
-      matDetails.removeFromQueue(matId, null),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: guiState.ActionType.SetAddMatToQueueName, queue: undefined },
-    ] as AppActionBeforeMiddleware,
-})(AllMatDialog);
-
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;
-  readonly display_material: matDetails.MaterialDetail | null;
-  readonly openMat: (mat: MaterialSummary) => void;
-  readonly addExistingMaterialToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
-function AllMaterial(props: AllMaterialProps) {
+export function AllMaterial(props: AllMaterialProps) {
   React.useEffect(() => {
     document.title = "All Material - FMS Insight";
   }, []);
   const [st, setCurrentSt] = useRecoilState(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
   const allBins = React.useMemo(() => selectAllMaterialIntoBins(st, matBinOrder), [st, matBinOrder]);
+  const displayMaterial = useRecoilValue(matDetails.materialDetail);
+  const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
 
   const curBins = props.displaySystemBins
     ? allBins
@@ -310,7 +292,7 @@ function AllMaterial(props: AllMaterialProps) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
-      props.addExistingMaterialToQueue({ materialId, queue, queuePosition, operator: null });
+      addExistingMatToQueue({ materialId, queue, queuePosition, operator: null });
       setCurrentSt(currentSt.reorder_queued_mat(queue, materialId, queuePosition));
     } else if (result.type === DragType.Queue) {
       setMatBinOrder(
@@ -324,11 +306,11 @@ function AllMaterial(props: AllMaterialProps) {
   };
 
   const curDisplayQuarantine =
-    props.display_material !== null &&
+    displayMaterial !== null &&
     curBins.findIndex(
       (bin) =>
         bin.type === MaterialBinType.QuarantineQueues &&
-        bin.material.findIndex((mat) => mat.materialID === props.display_material?.materialID) >= 0
+        bin.material.findIndex((mat) => mat.materialID === displayMaterial?.materialID) >= 0
     ) >= 0;
 
   return (
@@ -348,7 +330,6 @@ function AllMaterial(props: AllMaterialProps) {
                       renderLabel={renderLul}
                       compareLabel={compareLul}
                       material={matBin.byLul}
-                      openMat={props.openMat}
                     />
                   );
                 case MaterialBinType.Pallets:
@@ -361,7 +342,6 @@ function AllMaterial(props: AllMaterialProps) {
                       renderLabel={renderPal}
                       compareLabel={comparePal}
                       material={matBin.byPallet}
-                      openMat={props.openMat}
                     />
                   );
                 case MaterialBinType.ActiveQueues:
@@ -374,18 +354,11 @@ function AllMaterial(props: AllMaterialProps) {
                       renderLabel={renderQueue}
                       compareLabel={compareQueue}
                       material={matBin.byQueue}
-                      openMat={props.openMat}
                     />
                   );
                 case MaterialBinType.QuarantineQueues:
                   return (
-                    <MaterialQueue
-                      key={matBin.binId}
-                      idx={idx}
-                      queue={matBin.queueName}
-                      material={matBin.material}
-                      openMat={props.openMat}
-                    />
+                    <MaterialQueue key={matBin.binId} idx={idx} queue={matBin.queueName} material={matBin.material} />
                   );
               }
             })}
@@ -393,17 +366,7 @@ function AllMaterial(props: AllMaterialProps) {
           </div>
         )}
       </Droppable>
-      <ConnectedAllMatDialog display_material={props.display_material} quarantineQueue={curDisplayQuarantine} />
+      <AllMatDialog quarantineQueue={curDisplayQuarantine} />
     </DragDropContext>
   );
 }
-
-export default connect(
-  (st) => ({
-    display_material: st.MaterialDetails.material,
-  }),
-  {
-    openMat: matDetails.openMaterialDialog,
-    addExistingMaterialToQueue: matDetails.addExistingMaterialToQueue,
-  }
-)(AllMaterial);
