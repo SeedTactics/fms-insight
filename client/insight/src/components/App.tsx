@@ -348,8 +348,8 @@ function BackupTabs(p: HeaderNavProps) {
       value={p.routeState.current}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
-      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
-      <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
+      <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
     </Tabs>
   );
 }
@@ -383,6 +383,7 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Quality_Serials:
     case routes.RouteLocation.Quality_Paths:
     case routes.RouteLocation.Quality_Quarantine:
+    case routes.RouteLocation.Backup_PartLookup:
       return "https://fms-insight.seedtactics.com/docs/client-tools-programs.html";
 
     case routes.RouteLocation.Tools_Dashboard:
@@ -392,7 +393,11 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Analysis_Efficiency:
     case routes.RouteLocation.Analysis_CostPerPiece:
     case routes.RouteLocation.Analysis_DataExport:
+    case routes.RouteLocation.Backup_Efficiency:
       return "https://fms-insight.seedtactics.com/docs/client-flexibility-analysis.html";
+
+    case routes.RouteLocation.Backup_InitialOpen:
+      return "https://fms-insight.seedtactics.com/docs/client-backup-viewer.html";
   }
 }
 
@@ -542,7 +547,6 @@ export interface AppProps {
 
 interface AppConnectedProps extends AppProps {
   route: routes.State;
-  backupFileOpened: boolean;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
 }
 
@@ -559,20 +563,7 @@ const App = React.memo(function App(props: AppConnectedProps) {
   let showSearch = true;
   let showOperator = false;
   let addBasicMaterialDialog = true;
-  if (props.backupViewerOnRequestOpenFile) {
-    if (props.backupFileOpened) {
-      if (props.route.current === routes.RouteLocation.Quality_Serials) {
-        page = <FailedPartLookup />;
-        addBasicMaterialDialog = false;
-      } else {
-        page = <Efficiency allowSetType={false} />;
-      }
-      navigation = BackupTabs;
-    } else {
-      page = <BackupViewer onRequestOpenFile={props.backupViewerOnRequestOpenFile} />;
-    }
-    showAlarms = false;
-  } else if (fmsInfo && (!serverSettings.requireLogin(fmsInfo) || fmsInfo.user)) {
+  if (fmsInfo && (!serverSettings.requireLogin(fmsInfo) || fmsInfo.user)) {
     switch (props.route.current) {
       case routes.RouteLocation.Station_LoadMonitor:
         page = <LoadStation />;
@@ -683,6 +674,23 @@ const App = React.memo(function App(props: AppConnectedProps) {
         navigation = ToolsTabs;
         break;
 
+      case routes.RouteLocation.Backup_InitialOpen:
+        navigation = BackupTabs;
+        page = <BackupViewer onRequestOpenFile={props.backupViewerOnRequestOpenFile} />;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Backup_Efficiency:
+        navigation = BackupTabs;
+        page = <Efficiency allowSetType={false} />;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Backup_PartLookup:
+        navigation = BackupTabs;
+        page = <FailedPartLookup />;
+        addBasicMaterialDialog = false;
+        showAlarms = false;
+        break;
+
       case routes.RouteLocation.ChooseMode:
       default:
         if (props.demo) {
@@ -750,7 +758,6 @@ const App = React.memo(function App(props: AppConnectedProps) {
 export default connect(
   (s: Store) => ({
     route: s.Route,
-    backupFileOpened: false,
   }),
   {
     setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => routes.displayPage(ty, curSt),

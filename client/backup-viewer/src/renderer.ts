@@ -34,30 +34,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { initStore } from "../../insight/src/store/store";
 import {
   registerBackend,
-  FmsServerBackend
+  FmsServerBackend,
 } from "../../insight/src/data/backend";
 import { render } from "../../insight/src/renderer";
 import { loadLast30Days } from "../../insight/src/data/events";
-import { loadServerSettings } from "../../insight/src/data/server-settings";
 import { LogBackend, JobsBackend } from "./store-backend";
 import { AppProps } from "../../insight/src/components/App";
-import * as gui from "../../insight/src/data/gui-state";
 import * as routes from "../../insight/src/data/routes";
 
 const store = initStore({ useRouter: false });
 registerBackend(LogBackend, JobsBackend, FmsServerBackend);
-store.dispatch(loadServerSettings());
-store.dispatch({ type: routes.RouteLocation.Analysis_Efficiency });
+store.dispatch({ type: routes.RouteLocation.Backup_InitialOpen });
 
 const props: AppProps = {
   demo: false,
   backupViewerOnRequestOpenFile: () => {
     window.electronIpc.send("open-file");
-  }
+  },
 };
 
 window.electronIpc.on("file-opened", () => {
-  store.dispatch({ type: gui.ActionType.SetBackupFileOpenened, open: true });
+  store.dispatch({ type: routes.RouteLocation.Backup_Efficiency });
   store.dispatch(loadLast30Days());
 });
 
