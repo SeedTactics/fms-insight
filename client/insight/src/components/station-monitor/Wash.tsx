@@ -73,6 +73,7 @@ const WashDialog = React.memo(function WashDialog() {
       mat: displayMat,
       operator: operator,
     });
+    setMatToDisplay(null);
   }
   function openAssignWorkorder() {
     if (!displayMat) {
@@ -110,16 +111,17 @@ const WashDialog = React.memo(function WashDialog() {
               <Button
                 color="primary"
                 disabled={addingToQueue}
-                onClick={() =>
-                  displayMat
-                    ? addToQueue({
-                        materialId: displayMat.materialID,
-                        queue: quarantineQueue,
-                        queuePosition: 0,
-                        operator: operator,
-                      })
-                    : undefined
-                }
+                onClick={() => {
+                  if (displayMat) {
+                    addToQueue({
+                      materialId: displayMat.materialID,
+                      queue: quarantineQueue,
+                      queuePosition: 0,
+                      operator: operator,
+                    });
+                  }
+                  setMatToDisplay(null);
+                }}
               >
                 Quarantine Material
               </Button>

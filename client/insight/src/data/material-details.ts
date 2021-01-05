@@ -53,7 +53,7 @@ import { useCallback, useState } from "react";
 export type MaterialToShow =
   | { type: "MatSummary"; summary: Readonly<MaterialSummary> }
   | { type: "LogMat"; logMat: Readonly<ILogMaterial> }
-  | { type: "Serial"; serial: string | null };
+  | { type: "Serial"; serial: string | null; addToQueue?: string };
 
 const matToShow = atom<MaterialToShow | null>({
   key: "mat-to-show-in-dialog",

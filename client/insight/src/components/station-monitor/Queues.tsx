@@ -670,8 +670,8 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
   const [jobDetailToShow, setJobDetailToShow] = React.useState<Readonly<api.IInProcessJob> | null>(null);
   const closeJobDetailDialog = React.useCallback(() => setJobDetailToShow(null), []);
-  const [chooseSerialOrJobOpen, setChooseSerialOrJobOpen] = React.useState<boolean>(false);
-  const closeChooseSerialOrJob = React.useCallback(() => setChooseSerialOrJobOpen(false), []);
+  const [chooseSerialOrJobOpen, setChooseSerialOrJobOpen] = React.useState<string | null>(null);
+  const closeChooseSerialOrJob = React.useCallback(() => setChooseSerialOrJobOpen(null), []);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
   return (
@@ -687,7 +687,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 <AddMaterialButtons
                   label={region.label}
                   rawMatQueue={region.rawMaterialQueue}
-                  openAddToQueue={() => setChooseSerialOrJobOpen(true)}
+                  openAddToQueue={() => setChooseSerialOrJobOpen(region.label)}
                   openAddCasting={setAddCastingQueue}
                 />
               )
@@ -750,7 +750,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedMaterialDialog
         initialQueue={props.route.standalone_queues.length === 1 ? props.route.standalone_queues[0] : null}
       />
-      <ChooseSerialOrDirectJobDialog dialog_open={chooseSerialOrJobOpen} onClose={closeChooseSerialOrJob} />
+      <ChooseSerialOrDirectJobDialog dialogOpenForQueue={chooseSerialOrJobOpen} onClose={closeChooseSerialOrJob} />
       <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />

@@ -497,7 +497,10 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
             <Button
               color="primary"
               disabled={signalingQuarantine}
-              onClick={() => signalQuarantine(displayMat.materialID, quarantineQueue, operator)}
+              onClick={() => {
+                signalQuarantine(displayMat.materialID, quarantineQueue, operator);
+                setMatToDisplay(null);
+              }}
             >
               Quarantine
             </Button>

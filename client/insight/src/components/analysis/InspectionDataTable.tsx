@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import Table from "@material-ui/core/Table";
-import ExpansionPanel from "@material-ui/core/ExpansionPanel";
-import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails";
-import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
+import Accordian from "@material-ui/core/Accordion";
+import AccordianDetails from "@material-ui/core/AccordionDetails";
+import AccordianSummary from "@material-ui/core/AccordionSummary";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 
 import {
@@ -100,6 +100,7 @@ export interface InspectionDataTableProps {
   readonly default_date_range: Date[];
   readonly zoomType?: DataTableActionZoomType;
   readonly extendDateRange?: (numDays: number) => void;
+  readonly hideOpenDetailColumn?: boolean;
 }
 
 export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
@@ -168,20 +169,20 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
         const points = groups.get(path).getOrThrow();
         const page = Math.min(pages.get(path).getOrElse(0), Math.ceil(points.material.length() / rowsPerPage));
         return (
-          <ExpansionPanel
+          <Accordian
             expanded={path === curPath}
             key={path}
             onChange={(_evt, open) => setCurPathOpen(open ? path : undefined)}
           >
-            <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+            <AccordianSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" style={{ flexBasis: "33.33%", flexShrink: 0 }}>
                 {path}
               </Typography>
               <Typography variant="caption">
                 {points.material.length()} total parts, {points.failedCnt} failed
               </Typography>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails>
+            </AccordianSummary>
+            <AccordianDetails>
               <div style={{ width: "100%" }}>
                 <Table>
                   <DataTableHead
@@ -194,19 +195,22 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   <DataTableBody
                     columns={columns}
                     pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
-                    onClickDetails={(_, row) =>
-                      setMatToShow({
-                        type: "MatSummary",
-                        summary: {
-                          materialID: row.materialID,
-                          jobUnique: "",
-                          partName: row.partName,
-                          startedProcess1: true,
-                          serial: row.serial,
-                          workorderId: row.workorder,
-                          signaledInspections: [],
-                        },
-                      })
+                    onClickDetails={
+                      props.hideOpenDetailColumn
+                        ? undefined
+                        : (_, row) =>
+                            setMatToShow({
+                              type: "MatSummary",
+                              summary: {
+                                materialID: row.materialID,
+                                jobUnique: "",
+                                partName: row.partName,
+                                startedProcess1: true,
+                                serial: row.serial,
+                                workorderId: row.workorder,
+                                signaledInspections: [],
+                              },
+                            })
                     }
                   />
                 </Table>
@@ -219,8 +223,8 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   zoom={zoom}
                 />
               </div>
-            </ExpansionPanelDetails>
-          </ExpansionPanel>
+            </AccordianDetails>
+          </Accordian>
         );
       })}
     </div>

@@ -114,6 +114,7 @@ function PathLookup(props: PathLookupProps) {
       zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
       extendDateRange={extendDateRange}
       defaultToTable
+      hideOpenDetailColumn
     />
   );
 }

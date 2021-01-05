@@ -32,9 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { HashMap } from "prelude-ts";
 import { JobsBackend } from "./backend";
-import { InProcessMaterial, ICurrentStatus, IInProcessMaterial, ILogEntry, LogType, LocType } from "./api";
+import {
+  InProcessMaterial,
+  ICurrentStatus,
+  IInProcessMaterial,
+  ILogEntry,
+  LogType,
+  LocType,
+  InProcessJob,
+} from "./api";
 import { atom, DefaultValue, selectorFamily } from "recoil";
-import produce from "immer";
 
 export const currentStatus = atom<Readonly<ICurrentStatus>>({
   key: "current-status",
@@ -54,14 +61,16 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
   set: (uniq) => async ({ set }, newVal) => {
     const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
 
-    set(currentStatus, (st) =>
-      produce(st, (s) => {
-        const j = s.jobs[uniq];
-        if (j) {
-          j.comment = newComment;
-        }
-      })
-    );
+    set(currentStatus, (st) => {
+      const oldJob = st.jobs[uniq];
+      if (oldJob) {
+        var newJob = new InProcessJob(oldJob);
+        newJob.comment = newComment;
+        return { ...st, jobs: { ...st.jobs, [uniq]: newJob } };
+      } else {
+        return st;
+      }
+    });
 
     await JobsBackend.setJobComment(uniq, newComment);
   },

@@ -50,7 +50,11 @@ import { Store, connect } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { atom, useRecoilState, useRecoilValue } from "recoil";
 
-function ManualInspTypeEntry() {
+interface ManualInpTypeEntryProps {
+  readonly close: () => void;
+}
+
+function ManualInspTypeEntry(props: ManualInpTypeEntryProps) {
   const [inspType, setInspType] = React.useState<string | null>(null);
   const mat = useRecoilValue(matDetails.materialDetail);
   const [forceInsp] = matDetails.useForceInspection();
@@ -67,6 +71,7 @@ function ManualInspTypeEntry() {
             inspType: inspType,
             inspect: true,
           });
+          props.close();
         }
       }}
     />
@@ -95,7 +100,14 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
     const inspList = (
       <List>
         {props.inspTypes.toArray({ sortOn: (x) => x }).map((iType) => (
-          <ListItem key={iType} button onClick={() => forceInsp({ mat, inspType: iType, inspect: true })}>
+          <ListItem
+            key={iType}
+            button
+            onClick={() => {
+              forceInsp({ mat, inspType: iType, inspect: true });
+              setDialogOpen(false);
+            }}
+          >
             <ListItemIcon>
               <SearchIcon />
             </ListItemIcon>
@@ -111,7 +123,7 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
           <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
         </DialogTitle>
         <DialogContent>
-          <ManualInspTypeEntry />
+          <ManualInspTypeEntry close={() => setDialogOpen(false)} />
           {inspList}
         </DialogContent>
         <DialogActions>

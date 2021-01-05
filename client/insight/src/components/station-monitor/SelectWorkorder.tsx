@@ -44,7 +44,7 @@ import DialogTitle from "@material-ui/core/DialogTitle";
 import CheckmarkIcon from "@material-ui/icons/Check";
 import ShoppingBasketIcon from "@material-ui/icons/ShoppingBasket";
 import TextField from "@material-ui/core/TextField";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
 import * as matDetails from "../../data/material-details";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
@@ -75,6 +75,7 @@ function ManualWorkorderEntry() {
   const [workorder, setWorkorder] = React.useState<string | null>(null);
   const mat = useRecoilValue(matDetails.materialDetail);
   const [assignWorkorder] = matDetails.useAssignWorkorder();
+  const setWorkDialogOpen = useSetRecoilState(matDetails.loadWorkordersForMaterialInDialog);
   return (
     <TextField
       label={workorder === null || workorder === "" ? "Workorder" : "Workorder (press enter)"}
@@ -84,6 +85,7 @@ function ManualWorkorderEntry() {
         if (e.key === "Enter" && mat && workorder && workorder !== "") {
           e.preventDefault();
           assignWorkorder(mat, workorder);
+          setWorkDialogOpen(false);
         }
       }}
     />
@@ -93,6 +95,7 @@ function ManualWorkorderEntry() {
 function WorkorderList() {
   const mat = useRecoilValue(matDetails.materialDetail);
   const workorders = useRecoilValue(matDetails.possibleWorkordersForMaterialInDialog);
+  const setWorkDialogOpen = useSetRecoilState(matDetails.loadWorkordersForMaterialInDialog);
   const [assignWorkorder] = matDetails.useAssignWorkorder();
   return (
     <List>
@@ -100,7 +103,12 @@ function WorkorderList() {
         <ListItem
           key={w.plan.workorderId}
           button
-          onClick={() => (mat ? assignWorkorder(mat, w.plan.workorderId) : undefined)}
+          onClick={() => {
+            if (mat) {
+              assignWorkorder(mat, w.plan.workorderId);
+            }
+            setWorkDialogOpen(false);
+          }}
         >
           <ListItemIcon>
             <WorkorderIcon work={w} />

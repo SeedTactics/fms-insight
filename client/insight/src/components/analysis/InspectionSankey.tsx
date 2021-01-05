@@ -138,6 +138,7 @@ export interface InspectionSankeyProps {
   readonly restrictToPart?: string;
   readonly defaultToTable: boolean;
   readonly extendDateRange?: (numDays: number) => void;
+  readonly hideOpenDetailColumn?: boolean;
 }
 
 export function InspectionSankey(props: InspectionSankeyProps) {
@@ -254,6 +255,7 @@ export function InspectionSankey(props: InspectionSankeyProps) {
                 points={curData}
                 default_date_range={props.default_date_range}
                 extendDateRange={props.extendDateRange}
+                hideOpenDetailColumn={props.hideOpenDetailColumn}
               />
             ) : (
               <ConvertInspectionDataToSankey data={curData} />

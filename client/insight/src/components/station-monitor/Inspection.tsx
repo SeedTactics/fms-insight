@@ -59,6 +59,7 @@ function InspButtons(props: InspButtonsProps) {
   const quarantineQueue = useRecoilValue(fmsInformation).quarantineQueue ?? null;
   const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
   const [addExistingToQueue, addExistingToQueueUpdating] = matDetails.useAddExistingMaterialToQueue();
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
 
   function markInspComplete(success: boolean) {
     if (!props.display_material) {
@@ -71,6 +72,8 @@ function InspButtons(props: InspButtonsProps) {
       success,
       operator: operator,
     });
+
+    setMatToShow(null);
   }
 
   return (
@@ -88,16 +91,17 @@ function InspButtons(props: InspButtonsProps) {
           <Button
             color="primary"
             disabled={addExistingToQueueUpdating}
-            onClick={() =>
-              props.display_material && quarantineQueue
-                ? addExistingToQueue({
-                    materialId: props.display_material.materialID,
-                    queue: quarantineQueue,
-                    queuePosition: 0,
-                    operator: operator || null,
-                  })
-                : undefined
-            }
+            onClick={() => {
+              if (props.display_material && quarantineQueue) {
+                addExistingToQueue({
+                  materialId: props.display_material.materialID,
+                  queue: quarantineQueue,
+                  queuePosition: 0,
+                  operator: operator || null,
+                });
+              }
+              setMatToShow(null);
+            }}
           >
             Quarantine Material
           </Button>

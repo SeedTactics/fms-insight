@@ -205,6 +205,7 @@ namespace DebugMachineWatchApiServer
 
     public void SetJobComment(string jobUnique, string comment)
     {
+      Serilog.Log.Information("Setting comment for {job} to {comment}", jobUnique, comment);
       JobDB.SetJobComment(jobUnique, comment);
       if (CurrentStatus.Jobs.TryGetValue(jobUnique, out var job))
       {

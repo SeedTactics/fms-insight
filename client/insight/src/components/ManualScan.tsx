@@ -53,7 +53,13 @@ export const ManualScanButton = React.memo(function ManualScan() {
     if (serial && serial !== "") {
       setMatToShowDialog({ type: "Serial", serial });
       setDialogOpen(false);
+      setSerial(null);
     }
+  }
+
+  function close() {
+    setDialogOpen(false);
+    setSerial(null);
   }
 
   return (
@@ -63,7 +69,7 @@ export const ManualScanButton = React.memo(function ManualScan() {
           <SearchIcon />
         </IconButton>
       </Tooltip>
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md">
+      <Dialog open={dialogOpen} onClose={close} maxWidth="md">
         <DialogTitle>Enter a part&apos;s serial</DialogTitle>
         <DialogContent>
           <div style={{ minWidth: "20em" }}>
@@ -84,7 +90,7 @@ export const ManualScanButton = React.memo(function ManualScan() {
           <Button onClick={open} disabled={serial === null || serial === ""} color="secondary">
             Open
           </Button>
-          <Button onClick={() => setDialogOpen(false)} color="secondary">
+          <Button onClick={close} color="secondary">
             Cancel
           </Button>
         </DialogActions>

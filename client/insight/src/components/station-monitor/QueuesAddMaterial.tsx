@@ -64,7 +64,7 @@ import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
 import { HashSet } from "prelude-ts";
 import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus } from "../../data/current-status";
 import { useAddNewCastingToQueue } from "../../data/material-details";
@@ -154,7 +154,14 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
           )
         ) : undefined}
         {allowRemove ? (
-          <Button color="primary" disabled={removingFromQueue} onClick={() => removeFromQueue(matId, operator)}>
+          <Button
+            color="primary"
+            disabled={removingFromQueue}
+            onClick={() => {
+              removeFromQueue(matId, operator);
+              setMatToShow(null);
+            }}
+          >
             Remove From System
           </Button>
         ) : undefined}
@@ -163,14 +170,15 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
             <Button
               color="primary"
               disabled={addingMat}
-              onClick={() =>
+              onClick={() => {
                 addMat({
                   materialId: matId,
                   queue: allowQuarantine,
                   queuePosition: 0,
                   operator: operator,
-                })
-              }
+                });
+                setMatToShow(null);
+              }}
             >
               Quarantine Material
             </Button>
@@ -197,9 +205,9 @@ function AddSerialFound(props: AddSerialFoundProps) {
   const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const [addMat, addingMat] = matDetails.useAddExistingMaterialToQueue();
 
-  let queue = props.initial_queue || selected_queue;
+  let queue = props.initial_queue ?? selected_queue;
   let queueDests = props.queues.filter((q) => q !== props.current_quarantine_queue);
-  if (queue === undefined && queueDests.length === 1) {
+  if (queue === null && queueDests.length === 1) {
     queue = queueDests[0];
   }
 
@@ -226,7 +234,7 @@ function AddSerialFound(props: AddSerialFoundProps) {
         <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
       </DialogTitle>
       <DialogContent>
-        {props.initial_queue === undefined && queueDests.length > 1 ? (
+        {props.initial_queue === null && queueDests.length > 1 ? (
           <div style={{ marginBottom: "1em" }}>
             <p>Select a queue.</p>
             <List>
@@ -243,15 +251,16 @@ function AddSerialFound(props: AddSerialFoundProps) {
       <DialogActions>
         <Button
           color="primary"
-          disabled={props.display_material.loading_events || queue === undefined || addingMat === true}
-          onClick={() =>
+          disabled={props.display_material.loading_events || queue === null || addingMat === true}
+          onClick={() => {
             addMat({
               materialId: props.display_material.materialID,
-              queue: queue || "",
+              queue: queue ?? "",
               queuePosition: -1,
               operator: operator,
-            })
-          }
+            });
+            setMatToShow(null);
+          }}
         >
           {props.current_quarantine_queue !== null ? `Move From ${props.current_quarantine_queue} To` : "Add To"}{" "}
           {queue}
@@ -317,6 +326,7 @@ function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
         serials: props.not_found_serial ? [props.not_found_serial] : undefined,
         operator: promptForOperator ? operator : selectedOperator,
       });
+      setMatToShow(null);
     }
   }
 
@@ -326,7 +336,7 @@ function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
       <DialogContent>
         {props.not_found_serial ? <p>The serial {props.not_found_serial} was not found.</p> : undefined}
         <div style={{ display: "flex" }}>
-          {props.initial_queue === undefined && props.queues.length > 1 ? (
+          {props.initial_queue === null && props.queues.length > 1 ? (
             <div style={{ marginRight: "1em" }}>
               <p>Select a queue.</p>
               <List>
@@ -605,7 +615,9 @@ function QueueMatDialog(props: QueueMatDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const currentSt = useRecoilValue(currentStatus);
   const displayMat = useRecoilValue(matDetails.materialDetail);
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const [matToShow, setMatToShow] = useRecoilState(matDetails.materialToShowInDialog);
+  const initialQueue =
+    (matToShow !== null && matToShow.type === "Serial" ? matToShow.addToQueue : null) ?? props.initialQueue;
 
   const matInQueue = React.useMemo(() => matCurrentlyInQueue(displayMat, currentSt), [displayMat, currentSt]);
 
@@ -620,7 +632,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
       body = (
         <AddSerialFound
           queues={props.queueNames}
-          initial_queue={props.initialQueue}
+          initial_queue={initialQueue}
           current_quarantine_queue={matInQueue.type === "InQuarantine" ? matInQueue.queue : null}
           display_material={displayMat}
         />
@@ -630,7 +642,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
         <AddUnassignedRawMat
           queues={props.queueNames}
           not_found_serial={displayMat.serial}
-          initial_queue={props.initialQueue}
+          initial_queue={initialQueue}
         />
       );
     } else {
@@ -638,7 +650,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
         <AddNewMaterialBody
           queues={props.queueNames}
           not_found_serial={displayMat.serial}
-          initial_queue={props.initialQueue}
+          initial_queue={initialQueue}
         />
       );
     }
@@ -656,7 +668,7 @@ export const ConnectedMaterialDialog = connect((st) => ({
 }))(QueueMatDialog);
 
 interface ChooseSerialOrDirectJobProps {
-  readonly dialog_open: boolean;
+  readonly dialogOpenForQueue: string | null;
   readonly onClose: () => void;
 }
 
@@ -669,7 +681,8 @@ export const ChooseSerialOrDirectJobDialog = React.memo(function ChooseSerialOrJ
 
   function lookup() {
     if (serial && serial !== "") {
-      setMatToDisplay({ type: "Serial", serial });
+      setMatToDisplay({ type: "Serial", serial, addToQueue: props.dialogOpenForQueue ?? undefined });
+      props.onClose();
       setSerial(undefined);
     }
   }
@@ -679,10 +692,11 @@ export const ChooseSerialOrDirectJobDialog = React.memo(function ChooseSerialOrJ
   }
   function manualSelect() {
     setMatToDisplay({ type: "Serial", serial: null });
+    props.onClose();
     setSerial(undefined);
   }
   return (
-    <Dialog open={props.dialog_open} onClose={close} maxWidth="md">
+    <Dialog open={props.dialogOpenForQueue !== null} onClose={close} maxWidth="md">
       <DialogTitle>Lookup Material</DialogTitle>
       <DialogContent>
         {fmsInfo.requireSerialWhenAddingMaterialToQueue ? undefined : (
