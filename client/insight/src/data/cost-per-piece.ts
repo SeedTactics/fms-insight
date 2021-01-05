@@ -57,7 +57,8 @@ export type MachineCostPerYear = { readonly [stationGroup: string]: number };
 export interface CostData {
   readonly totalLaborCostForPeriod: number;
   readonly automationCostForPeriod: number;
-  readonly machineCostForPeriod: ReadonlyMap<string, number>;
+  readonly stationCostForPeriod: ReadonlyMap<string, number>;
+  readonly machineCostGroups: ReadonlyArray<string>;
   readonly parts: ReadonlyArray<PartCost>;
 }
 
@@ -91,7 +92,7 @@ export function compute_monthly_cost(
   }
 
   const automationCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
-  const machineCostForPeriod = LazySeq.ofIterable(stationCount).toRMap(
+  const stationCostForPeriod = LazySeq.ofIterable(stationCount).toRMap(
     ([statGroup, cnt]) => [statGroup, ((machineCostPerYear[statGroup] ?? 0) * cnt.size * days) / 365],
     (x, y) => x + y
   );
@@ -118,7 +119,7 @@ export function compute_monthly_cost(
               { cost: 0, pctPerStat: new Map<string, number>() },
               (x, [statGroup, minutes]: [string, number]) => {
                 const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
-                const totalMachineCost = machineCostForPeriod.get(statGroup) ?? 0;
+                const totalMachineCost = stationCostForPeriod.get(statGroup) ?? 0;
                 x.pctPerStat.set(statGroup, minutes / totalUse + (x.pctPerStat.get(statGroup) ?? 0));
                 return { cost: x.cost + (minutes / totalUse) * totalMachineCost, pctPerStat: x.pctPerStat };
               }
@@ -142,7 +143,20 @@ export function compute_monthly_cost(
       .valueIterable()
   );
 
-  return { parts, totalLaborCostForPeriod, automationCostForPeriod, machineCostForPeriod };
+  const machineCostGroups = Array.from(
+    LazySeq.ofIterable(parts)
+      .flatMap((p) => p.machine.pctPerStat.keys())
+      .toRSet((s) => s)
+  );
+  machineCostGroups.sort((a, b) => a.localeCompare(b));
+
+  return {
+    parts,
+    totalLaborCostForPeriod,
+    automationCostForPeriod,
+    stationCostForPeriod: stationCostForPeriod,
+    machineCostGroups,
+  };
 }
 
 export function buildCostPerPieceTable(costs: CostData) {
@@ -190,4 +204,41 @@ export function buildCostPerPieceTable(costs: CostData) {
 
 export function copyCostPerPieceToClipboard(costs: CostData): void {
   copy(buildCostPerPieceTable(costs));
+}
+
+export function buildCostBreakdownTable(costs: CostData) {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Part</th>";
+  table += "<th>Completed Quantity</th>";
+  for (const m of costs.machineCostGroups) {
+    table += "<th>" + m + " Cost %</th>";
+  }
+  table += "<th>Labor Cost %</th>";
+  table += "<th>Automation Cost %</th>";
+  table += "</tr></thead>\n<tbody>\n";
+
+  const rows = Vector.ofIterable(costs.parts).sortOn((c) => c.part);
+  const pctFormat = new Intl.NumberFormat(undefined, {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+
+  for (const c of rows) {
+    table += "<tr><td>" + c.part + "</td>";
+    table += "<td>" + c.parts_completed.toString() + "</td>";
+    for (const m of costs.machineCostGroups) {
+      table += "<td>" + pctFormat.format(c.machine.pctPerStat.get(m) ?? 0) + "</td>";
+    }
+    table += "<td>" + pctFormat.format(c.labor.percent) + "</td>";
+    table += "<td>" + pctFormat.format(c.automation_pct) + "</td>";
+    table += "</tr>\n";
+  }
+
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyCostBreakdownToClipboard(costs: CostData): void {
+  copy(buildCostBreakdownTable(costs));
 }
