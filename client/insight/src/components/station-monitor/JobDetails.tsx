@@ -48,11 +48,13 @@ import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { MaterialDetailTitle } from "./Material";
 import { duration } from "moment";
 import { format } from "date-fns";
-import { MaterialSummary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
 import { connect } from "../../store/store";
-import { openMaterialDialog } from "../../data/material-details";
+import { materialToShowInDialog } from "../../data/material-details";
 import { HashMap, HashSet } from "prelude-ts";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { currentStatus } from "../../data/current-status";
 
 interface JobDetailsToDisplay extends Readonly<api.IJobPlan> {
   completed?: number[][];
@@ -165,14 +167,15 @@ function MaterialStatus(props: MaterialStatusProps) {
 
 interface JobMaterialProps {
   readonly unique: string;
-  readonly currentMaterial: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   readonly matsFromEvents: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly matIdsForJob: HashMap<string, HashSet<number>>;
   readonly fullWidth: boolean;
-  readonly openDetails: (mat: Readonly<MaterialSummary>) => void;
 }
 
 function JobMaterial(props: JobMaterialProps) {
+  const currentMaterial = useRecoilValue(currentStatus).material;
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+
   const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique).getOrElse(HashSet.empty<number>()))
     .mapOption((matId) => props.matsFromEvents.get(matId))
     .toArray();
@@ -181,12 +184,12 @@ function JobMaterial(props: JobMaterialProps) {
     return <div />;
   }
 
-  const matsById = LazySeq.ofIterable(props.currentMaterial).toMap(
+  const matsById = LazySeq.ofIterable(currentMaterial).toMap(
     (m) => [m.materialID, m],
     (m1, _m2) => m1
   );
 
-  const anyWorkorder = LazySeq.ofIterable(props.currentMaterial).anyMatch(
+  const anyWorkorder = LazySeq.ofIterable(currentMaterial).anyMatch(
     (m) => m.workorderId !== undefined && m.workorderId !== "" && m.workorderId !== m.serial
   );
 
@@ -214,8 +217,9 @@ function JobMaterial(props: JobMaterialProps) {
             <TableCell padding="checkbox">
               <IconButton
                 onClick={() =>
-                  props.openDetails(
-                    props.matsFromEvents.get(mat.materialID).getOrElse({
+                  setMatToShow({
+                    type: "MatSummary",
+                    summary: props.matsFromEvents.get(mat.materialID).getOrElse({
                       materialID: mat.materialID,
                       jobUnique: mat.jobUnique ?? "",
                       partName: mat.partName ?? "",
@@ -223,8 +227,8 @@ function JobMaterial(props: JobMaterialProps) {
                       serial: mat.serial,
                       workorderId: mat.workorderId,
                       signaledInspections: [],
-                    })
-                  )
+                    }),
+                  })
                 }
               >
                 <MoreHoriz fontSize="inherit" />
@@ -237,16 +241,10 @@ function JobMaterial(props: JobMaterialProps) {
   );
 }
 
-const ConnectedJobMaterial = connect(
-  (st) => ({
-    currentMaterial: st.Current.current_status.material,
-    matsFromEvents: st.Events.last30.mat_summary.matsById,
-    matIdsForJob: st.Events.last30.scheduled_jobs.matIdsForJob,
-  }),
-  {
-    openDetails: openMaterialDialog,
-  }
-)(JobMaterial);
+const ConnectedJobMaterial = connect((st) => ({
+  matsFromEvents: st.Events.last30.mat_summary.matsById,
+  matIdsForJob: st.Events.last30.scheduled_jobs.matIdsForJob,
+}))(JobMaterial);
 
 export interface JobDetailsProps {
   readonly job: Readonly<JobDetailsToDisplay> | null;

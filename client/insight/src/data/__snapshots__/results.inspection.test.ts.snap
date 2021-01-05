@@ -5389,6 +5389,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1657,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M2",
         "serial": "00000000qJ",
         "time": 2018-08-03T13:50:30.996Z,
@@ -5398,6 +5399,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1682,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M2",
         "serial": "00000000r8",
         "time": 2018-08-03T23:40:05.080Z,
@@ -5412,6 +5414,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1591,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000pF",
         "time": 2018-08-02T16:39:29.002Z,
@@ -5421,6 +5424,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1597,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000pL",
         "time": 2018-08-02T18:16:54.250Z,
@@ -5430,6 +5434,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1606,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000pU",
         "time": 2018-08-02T19:54:44.155Z,
@@ -5439,6 +5444,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1609,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000pX",
         "time": 2018-08-02T22:27:07.253Z,
@@ -5448,6 +5454,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1583,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000px",
         "time": 2018-08-02T12:12:58.221Z,
@@ -5457,6 +5464,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1614,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000q2",
         "time": 2018-08-03T00:03:54.593Z,
@@ -5466,6 +5474,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1620,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000q8",
         "time": 2018-08-03T01:41:31.140Z,
@@ -5475,6 +5484,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1652,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000qE",
         "time": 2018-08-03T10:41:30.892Z,
@@ -5484,6 +5494,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1626,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000qe",
         "time": 2018-08-03T03:19:14.512Z,
@@ -5493,6 +5504,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1631,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000qj",
         "time": 2018-08-03T04:56:26.687Z,
@@ -5502,6 +5514,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1637,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000qp",
         "time": 2018-08-03T06:32:55.198Z,
@@ -5511,6 +5524,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1642,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000qu",
         "time": 2018-08-03T08:09:43.162Z,
@@ -5520,6 +5534,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1647,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000qz",
         "time": 2018-08-03T09:47:20.234Z,
@@ -5529,6 +5544,7 @@ Map {
       Object {
         "failed": true,
         "materialID": 1678,
+        "partName": "aaa",
         "path": "P2,M1 -> P2,M1",
         "serial": "00000000r4",
         "time": 2018-08-03T21:46:25.842Z,
@@ -5543,6 +5559,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1587,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000pB",
         "time": 2018-08-02T13:31:01.516Z,
@@ -5552,6 +5569,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1601,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000pP",
         "time": 2018-08-02T22:46:27.840Z,
@@ -5561,6 +5579,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1611,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000pZ",
         "time": 2018-08-03T00:23:34.523Z,
@@ -5570,6 +5589,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1648,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000qA",
         "time": 2018-08-03T10:08:15.433Z,
@@ -5579,6 +5599,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1668,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000qU",
         "time": 2018-08-03T17:45:20.240Z,
@@ -5588,6 +5609,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1622,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000qa",
         "time": 2018-08-03T02:00:14.778Z,
@@ -5597,6 +5619,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1627,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000qf",
         "time": 2018-08-03T03:38:16.996Z,
@@ -5606,6 +5629,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1632,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000qk",
         "time": 2018-08-03T05:15:45.940Z,
@@ -5615,6 +5639,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1638,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000qq",
         "time": 2018-08-03T06:52:46.917Z,
@@ -5624,6 +5649,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1644,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M2",
         "serial": "00000000qw",
         "time": 2018-08-03T08:31:15.627Z,
@@ -5638,6 +5664,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1670,
+        "partName": "aaa",
         "path": "P2,M2 -> P2,M2",
         "serial": "00000000qW",
         "time": 2018-08-03T18:41:06.507Z,
@@ -5652,6 +5679,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1676,
+        "partName": "aaa",
         "path": "P1,M1 -> P1,M1",
         "serial": "00000000r2",
         "time": 2018-08-03T20:53:20.918Z,
@@ -5661,6 +5689,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1681,
+        "partName": "aaa",
         "path": "P1,M1 -> P1,M1",
         "serial": "00000000r7",
         "time": 2018-08-03T22:29:22.723Z,
@@ -5675,6 +5704,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1673,
+        "partName": "aaa",
         "path": "P2,M2 -> P2,M1",
         "serial": "00000000qZ",
         "time": 2018-08-03T20:11:09.146Z,
@@ -5689,6 +5719,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1654,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M1",
         "serial": "00000000qG",
         "time": 2018-08-03T13:58:39.944Z,
@@ -5698,6 +5729,7 @@ Map {
       Object {
         "failed": false,
         "materialID": 1671,
+        "partName": "aaa",
         "path": "P1,M2 -> P1,M1",
         "serial": "00000000qX",
         "time": 2018-08-03T19:28:19.410Z,

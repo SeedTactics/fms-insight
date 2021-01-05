@@ -102,6 +102,7 @@ namespace BlackMaple.MachineWatchInterface
     [EnumMember] SignalQuarantine = 111,
     [EnumMember] InvalidateCycle = 112,
     [EnumMember] SwapMaterialOnPallet = 113,
+    // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
   }
 
   [Serializable, DataContract, KnownType(typeof(MaterialProcessActualPath))]

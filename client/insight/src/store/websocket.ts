@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -33,40 +33,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ReconnectingWebSocket from "reconnecting-websocket";
 import * as events from "../data/events";
-import * as current from "../data/current-status";
 import { LogEntry, NewJobs, CurrentStatus, EditMaterialInLogEvents } from "../data/api";
-import { BackendHost } from "../data/backend";
+import { BackendHost, JobsBackend } from "../data/backend";
 import { User } from "oidc-client";
+import { fmsInformation } from "../data/server-settings";
+import { atom, RecoilValue, useRecoilCallback, useRecoilValueLoadable } from "recoil";
+import { useEffect, useRef } from "react";
+import { currentStatus, processEventsIntoCurrentStatus } from "../data/current-status";
 
-export interface State {
-  websocket_reconnecting: boolean;
-}
+const websocketReconnectingAtom = atom<boolean>({
+  key: "websocket-reconnecting",
+  default: false,
+});
 
-export const initial: State = {
-  websocket_reconnecting: false,
-};
-
-export enum ActionType {
-  WebsocketOpen = "Websocket_Open",
-  WebsocketClose = "Websocket_Close",
-}
-
-export type Action = { type: ActionType.WebsocketOpen } | { type: ActionType.WebsocketClose };
-
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) {
-    return initial;
-  }
-  switch (a.type) {
-    case ActionType.WebsocketOpen:
-      return { websocket_reconnecting: false };
-    case ActionType.WebsocketClose:
-      return { websocket_reconnecting: true };
-
-    default:
-      return s;
-  }
-}
+export const websocketReconnecting: RecoilValue<boolean> = websocketReconnectingAtom;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let storeDispatch: ((a: any) => void) | undefined;
@@ -78,66 +58,93 @@ export function configureWebsocket(d: (a: any) => void, ges: () => events.State)
   getEvtState = ges;
 }
 
-export function openWebsocket(user: User | null) {
-  if (!storeDispatch || !getEvtState) {
-    return;
-  }
+export function WebsocketConnection(): null {
+  const fmsInfoLoadable = useRecoilValueLoadable(fmsInformation);
+  const websocketRef = useRef<ReconnectingWebSocket | null>(null);
 
-  storeDispatch({ type: ActionType.WebsocketClose }); // set initial loading spinner
-  const loc = window.location;
-  let uri: string;
-  if (loc.protocol === "https:") {
-    uri = "wss:";
-  } else {
-    uri = "ws:";
-  }
-  uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
+  const open = useRecoilCallback(
+    ({ set }) => (user: User | null) => {
+      if (!storeDispatch || !getEvtState) {
+        return;
+      }
 
-  if (user) {
-    uri += "?token=" + encodeURIComponent(user.access_token || user.id_token);
-  }
+      set(websocketReconnectingAtom, true);
+      const loc = window.location;
+      let uri: string;
+      if (loc.protocol === "https:") {
+        uri = "wss:";
+      } else {
+        uri = "ws:";
+      }
+      uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
 
-  const websocket = new ReconnectingWebSocket(uri);
-  websocket.onopen = () => {
-    if (!storeDispatch || !getEvtState) {
-      return;
-    }
-    storeDispatch({ type: ActionType.WebsocketOpen });
+      if (user) {
+        uri += "?token=" + encodeURIComponent(user.access_token || user.id_token);
+      }
 
-    const st = getEvtState();
-    if (st.last30.latest_log_counter !== undefined) {
-      storeDispatch(events.refreshLogEntries(st.last30.latest_log_counter));
-    } else {
-      storeDispatch(events.loadLast30Days());
-    }
+      const websocket = new ReconnectingWebSocket(uri);
+      websocket.onopen = () => {
+        if (!storeDispatch || !getEvtState) {
+          return;
+        }
 
-    storeDispatch(current.loadCurrentStatus());
-  };
-  websocket.onclose = () => {
-    if (!storeDispatch) {
-      return;
-    }
-    storeDispatch({ type: ActionType.WebsocketClose });
-  };
-  websocket.onmessage = (evt) => {
-    if (!storeDispatch) {
-      return;
-    }
-    const json = JSON.parse(evt.data);
-    if (json.LogEntry) {
-      const entry = LogEntry.fromJS(json.LogEntry);
-      storeDispatch(events.receiveNewEvents([entry]));
-      storeDispatch(current.receiveNewLogEntry(entry));
-    } else if (json.NewJobs) {
-      const newJobs = NewJobs.fromJS(json.NewJobs);
-      storeDispatch(events.receiveNewJobs(newJobs));
-    } else if (json.NewCurrentStatus) {
-      const status = CurrentStatus.fromJS(json.NewCurrentStatus);
-      storeDispatch(current.setCurrentStatus(status));
-    } else if (json.EditMaterialInLog) {
-      const swap = EditMaterialInLogEvents.fromJS(json.EditMaterialInLog);
-      storeDispatch(events.onEditMaterialOnPallet(swap));
-    }
-  };
-  // websocket.open();
+        const st = getEvtState();
+        if (st.last30.latest_log_counter !== undefined) {
+          storeDispatch(events.refreshLogEntries(st.last30.latest_log_counter));
+        } else {
+          storeDispatch(events.loadLast30Days());
+        }
+
+        JobsBackend.currentStatus().then((st) => {
+          set(currentStatus, st);
+          set(websocketReconnectingAtom, false);
+        });
+      };
+      websocket.onclose = () => {
+        if (!storeDispatch) {
+          return;
+        }
+        set(websocketReconnectingAtom, true);
+      };
+      websocket.onmessage = (evt) => {
+        if (!storeDispatch) {
+          return;
+        }
+        const json = JSON.parse(evt.data);
+        if (json.LogEntry) {
+          const entry = LogEntry.fromJS(json.LogEntry);
+          storeDispatch(events.receiveNewEvents([entry]));
+          set(currentStatus, processEventsIntoCurrentStatus(entry));
+        } else if (json.NewJobs) {
+          const newJobs = NewJobs.fromJS(json.NewJobs);
+          storeDispatch(events.receiveNewJobs(newJobs));
+        } else if (json.NewCurrentStatus) {
+          const status = CurrentStatus.fromJS(json.NewCurrentStatus);
+          set(currentStatus, status);
+        } else if (json.EditMaterialInLog) {
+          const swap = EditMaterialInLogEvents.fromJS(json.EditMaterialInLog);
+          storeDispatch(events.onEditMaterialOnPallet(swap));
+        }
+      };
+
+      websocketRef.current = websocket;
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (fmsInfoLoadable.state !== "hasValue") return;
+    if (websocketRef.current) return;
+
+    open(fmsInfoLoadable.valueOrThrow().user ?? null);
+
+    return () => {
+      if (websocketRef.current) {
+        websocketRef.current.close();
+        websocketRef.current = null;
+      }
+    };
+  }, [fmsInfoLoadable]);
+
+  return null;
 }

@@ -68,6 +68,7 @@ import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChar
 import { OEEProps, OEEChart, OEETable } from "./OEEChart";
 import { copyOeeToClipboard, buildOeeSeries, OEEBarSeries } from "../../data/results.oee";
 import { LazySeq } from "../../data/lazyseq";
+import { useSetRecoilState } from "recoil";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -77,7 +78,6 @@ interface OutlierCycleProps {
   readonly showLabor: boolean;
   readonly points: FilteredStationCycles;
   readonly default_date_range: Date[];
-  readonly openMaterial: (matId: number) => void;
 }
 
 function OutlierCycles(props: OutlierCycleProps) {
@@ -111,7 +111,6 @@ function OutlierCycles(props: OutlierCycleProps) {
           current_date_zoom={{ start: props.default_date_range[0], end: props.default_date_range[1] }}
           set_date_zoom_range={undefined}
           last30_days={true}
-          openDetails={props.openMaterial}
           showWorkorderAndInspect={false}
         />
       </CardContent>
@@ -137,27 +136,17 @@ const outlierMachinePointsSelector = createSelector(
   }
 );
 
-const ConnectedOutlierLabor = connect(
-  (st) => ({
-    showLabor: true,
-    points: outlierLaborPointsSelector(st, true, startOfToday()),
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
-  }),
-  {
-    openMaterial: matDetails.openMaterialById,
-  }
-)(OutlierCycles);
+const ConnectedOutlierLabor = connect((st) => ({
+  showLabor: true,
+  points: outlierLaborPointsSelector(st, true, startOfToday()),
+  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+}))(OutlierCycles);
 
-const ConnectedOutlierMachines = connect(
-  (st) => ({
-    showLabor: false,
-    points: outlierMachinePointsSelector(st, false, startOfToday()),
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
-  }),
-  {
-    openMaterial: matDetails.openMaterialById,
-  }
-)(OutlierCycles);
+const ConnectedOutlierMachines = connect((st) => ({
+  showLabor: false,
+  points: outlierMachinePointsSelector(st, false, startOfToday()),
+  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+}))(OutlierCycles);
 
 // -----------------------------------------------------------------------------------
 // OEE/Hours
@@ -239,10 +228,10 @@ const ConnectedMachineOEE = connect((st: Store) => {
 interface PartStationCycleChartProps {
   readonly showLabor: boolean;
   readonly default_date_range: Date[];
-  readonly openMaterial: (matId: number) => void;
 }
 
 function PartStationCycleChart(props: PartStationCycleChartProps) {
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;
@@ -250,9 +239,9 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       if (partC.operations) {
         for (const mat of partC.operations) {
           ret.push({
-            title: (mat.serial ? mat.serial : "Material") + " " + mat.operation,
+            title: (mat.mat.serial ? mat.mat.serial : "Material") + " " + mat.operation,
             value: "Open Card",
-            link: () => props.openMaterial(mat.id),
+            link: () => setMatToShow({ type: "LogMat", logMat: mat.mat }),
           });
         }
       } else {
@@ -260,13 +249,13 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
           ret.push({
             title: mat.serial ? mat.serial : "Material",
             value: "Open Card",
-            link: () => props.openMaterial(mat.id),
+            link: () => setMatToShow({ type: "LogMat", logMat: mat }),
           });
         }
       }
       return ret;
     },
-    [props.openMaterial]
+    [setMatToShow]
   );
 
   const [showGraph, setShowGraph] = React.useState(true);
@@ -459,7 +448,6 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             current_date_zoom={undefined}
             set_date_zoom_range={undefined}
             last30_days={true}
-            openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
             hideMedian={props.showLabor}
           />
@@ -469,25 +457,15 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   );
 }
 
-const ConnectedLaborCycleChart = connect(
-  (st) => ({
-    showLabor: true,
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
-  }),
-  {
-    openMaterial: matDetails.openMaterialById,
-  }
-)(PartStationCycleChart);
+const ConnectedLaborCycleChart = connect((st) => ({
+  showLabor: true,
+  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+}))(PartStationCycleChart);
 
-const ConnectedMachineCycleChart = connect(
-  (st) => ({
-    showLabor: false,
-    default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
-  }),
-  {
-    openMaterial: matDetails.openMaterialById,
-  }
-)(PartStationCycleChart);
+const ConnectedMachineCycleChart = connect((st) => ({
+  showLabor: false,
+  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+}))(PartStationCycleChart);
 
 // -----------------------------------------------------------------------------------
 // Main

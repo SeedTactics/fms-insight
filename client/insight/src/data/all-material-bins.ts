@@ -34,8 +34,50 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "./api";
 import { HashMap } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
+import { atom } from "recoil";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
+
+export type MaterialBinId = string;
+export const LoadStationBinId: MaterialBinId = "__FMS_INSIGHT_LOAD_STATION_BIN__";
+export const PalletsBinId: MaterialBinId = "__FMS_INSIGHT_PALLETS_BIN__";
+export const ActiveQueuesBinId: MaterialBinId = "__FMS_INSIGHT_ACTIVE_QUEUE_BIN__";
+
+export interface MaterialBinState {
+  readonly curBinOrder: ReadonlyArray<MaterialBinId>;
+}
+
+export const currentMaterialBinOrder = atom<ReadonlyArray<MaterialBinId>>({
+  key: "current-material-bin-order",
+  default: JSON.parse(localStorage.getItem("material-bins") || "[]"),
+  effects_UNSTABLE: [
+    ({ onSet }) => {
+      onSet((newBins) => {
+        localStorage.setItem("material-bins", JSON.stringify(newBins));
+      });
+    },
+  ],
+});
+
+export function moveMaterialBin(
+  curBinOrder: ReadonlyArray<MaterialBinId>,
+  oldIdx: number,
+  newIdx: number
+): ReadonlyArray<MaterialBinId> {
+  const newBinOrder = Array.from(curBinOrder);
+  const [removed] = newBinOrder.splice(oldIdx, 1);
+  newBinOrder.splice(newIdx, 0, removed);
+  return newBinOrder;
+}
+
+function addToMap<T>(m: Map<T, Array<Readonly<api.IInProcessMaterial>>>, k: T, mat: Readonly<api.IInProcessMaterial>) {
+  const mats = m.get(k);
+  if (mats) {
+    mats.push(mat);
+  } else {
+    m.set(k, [mat]);
+  }
+}
 
 export enum MaterialBinType {
   LoadStations = "Bin_LoadStations",
@@ -67,48 +109,7 @@ export type MaterialBin =
       readonly material: MaterialList;
     };
 
-export enum MaterialBinActionType {
-  Move = "MaterialBin_Move",
-}
-
-export type MaterialBinId = string;
-export const LoadStationBinId: MaterialBinId = "__FMS_INSIGHT_LOAD_STATION_BIN__";
-export const PalletsBinId: MaterialBinId = "__FMS_INSIGHT_PALLETS_BIN__";
-export const ActiveQueuesBinId: MaterialBinId = "__FMS_INSIGHT_ACTIVE_QUEUE_BIN__";
-
-export type MaterialBinAction = {
-  readonly type: MaterialBinActionType.Move;
-  readonly newBinOrder: ReadonlyArray<MaterialBinId>;
-};
-
-export interface MaterialBinState {
-  readonly curBinOrder: ReadonlyArray<MaterialBinId>;
-}
-
-export const initial: MaterialBinState = {
-  curBinOrder: JSON.parse(localStorage.getItem("material-bins") || "[]"),
-};
-
-export function moveMaterialBin(
-  curBinOrder: ReadonlyArray<MaterialBinId>,
-  oldIdx: number,
-  newIdx: number
-): MaterialBinAction {
-  const newBinOrder = Array.from(curBinOrder);
-  const [removed] = newBinOrder.splice(oldIdx, 1);
-  newBinOrder.splice(newIdx, 0, removed);
-  return { type: MaterialBinActionType.Move, newBinOrder };
-}
-
-function addToMap<T>(m: Map<T, Array<Readonly<api.IInProcessMaterial>>>, k: T, mat: Readonly<api.IInProcessMaterial>) {
-  const mats = m.get(k);
-  if (mats) {
-    mats.push(mat);
-  } else {
-    m.set(k, [mat]);
-  }
-}
-
+// TODO: switch to recoil selector
 export function selectAllMaterialIntoBins(
   curSt: Readonly<api.ICurrentStatus>,
   curBinOrder: ReadonlyArray<MaterialBinId>
@@ -229,27 +230,4 @@ export function selectAllMaterialIntoBins(
       };
     }
   });
-}
-
-export function createOnStateChange(): (s: MaterialBinState) => void {
-  let lastBins = initial.curBinOrder;
-  return (s) => {
-    if (s.curBinOrder !== lastBins) {
-      lastBins = s.curBinOrder;
-      localStorage.setItem("material-bins", JSON.stringify(s.curBinOrder));
-    }
-  };
-}
-
-export function reducer(s: MaterialBinState | undefined, a: MaterialBinAction): MaterialBinState {
-  if (!s) {
-    return initial;
-  }
-
-  switch (a.type) {
-    case MaterialBinActionType.Move:
-      return { curBinOrder: a.newBinOrder };
-    default:
-      return s;
-  }
 }

@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import Table from "@material-ui/core/Table";
-import ExpansionPanel from "@material-ui/core/ExpansionPanel";
-import ExpansionPanelDetails from "@material-ui/core/ExpansionPanelDetails";
-import ExpansionPanelSummary from "@material-ui/core/ExpansionPanelSummary";
+import Accordian from "@material-ui/core/Accordion";
+import AccordianDetails from "@material-ui/core/AccordionDetails";
+import AccordianSummary from "@material-ui/core/AccordionSummary";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 
 import {
@@ -50,6 +50,8 @@ import Typography from "@material-ui/core/Typography";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 import { addDays, addHours } from "date-fns";
+import { useSetRecoilState } from "recoil";
+import { materialToShowInDialog } from "../../data/material-details";
 
 enum ColumnId {
   Date,
@@ -97,12 +99,12 @@ export interface InspectionDataTableProps {
   readonly points: ReadonlyArray<InspectionLogEntry>;
   readonly default_date_range: Date[];
   readonly zoomType?: DataTableActionZoomType;
-  readonly openDetails: ((matId: number) => void) | undefined;
   readonly extendDateRange?: (numDays: number) => void;
+  readonly hideOpenDetailColumn?: boolean;
 }
 
 export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
-  const openDetails = props.openDetails;
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
   const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
@@ -167,20 +169,20 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
         const points = groups.get(path).getOrThrow();
         const page = Math.min(pages.get(path).getOrElse(0), Math.ceil(points.material.length() / rowsPerPage));
         return (
-          <ExpansionPanel
+          <Accordian
             expanded={path === curPath}
             key={path}
             onChange={(_evt, open) => setCurPathOpen(open ? path : undefined)}
           >
-            <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+            <AccordianSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" style={{ flexBasis: "33.33%", flexShrink: 0 }}>
                 {path}
               </Typography>
               <Typography variant="caption">
                 {points.material.length()} total parts, {points.failedCnt} failed
               </Typography>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails>
+            </AccordianSummary>
+            <AccordianDetails>
               <div style={{ width: "100%" }}>
                 <Table>
                   <DataTableHead
@@ -188,12 +190,28 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                     onRequestSort={handleRequestSort}
                     orderBy={orderBy}
                     order={order}
-                    showDetailsCol={props.openDetails !== undefined}
+                    showDetailsCol
                   />
                   <DataTableBody
                     columns={columns}
                     pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
-                    onClickDetails={openDetails ? (_, row) => openDetails(row.materialID) : undefined}
+                    onClickDetails={
+                      props.hideOpenDetailColumn
+                        ? undefined
+                        : (_, row) =>
+                            setMatToShow({
+                              type: "MatSummary",
+                              summary: {
+                                materialID: row.materialID,
+                                jobUnique: "",
+                                partName: row.partName,
+                                startedProcess1: true,
+                                serial: row.serial,
+                                workorderId: row.workorder,
+                                signaledInspections: [],
+                              },
+                            })
+                    }
                   />
                 </Table>
                 <DataTableActions
@@ -205,8 +223,8 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   zoom={zoom}
                 />
               </div>
-            </ExpansionPanelDetails>
-          </ExpansionPanel>
+            </AccordianDetails>
+          </Accordian>
         );
       })}
     </div>

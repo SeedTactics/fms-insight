@@ -51,8 +51,6 @@ import Button from "@material-ui/core/Button";
 import Badge from "@material-ui/core/Badge";
 import Notifications from "@material-ui/icons/Notifications";
 import Drawer from "@material-ui/core/Drawer";
-import CameraAlt from "@material-ui/icons/CameraAlt";
-import SearchIcon from "@material-ui/icons/Search";
 import ShoppingBasket from "@material-ui/icons/ShoppingBasket";
 import DirectionsIcon from "@material-ui/icons/Directions";
 import StarIcon from "@material-ui/icons/StarRate";
@@ -68,7 +66,7 @@ import CheckIcon from "@material-ui/icons/CheckCircle";
 import PersonIcon from "@material-ui/icons/Person";
 import ProgramIcon from "@material-ui/icons/Receipt";
 import ToolIcon from "@material-ui/icons/Dns";
-import { User } from "oidc-client";
+import { useRecoilCallback, useRecoilValue, useRecoilValueLoadable } from "recoil";
 
 import OperationDashboard from "./operations/Dashboard";
 import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview";
@@ -79,20 +77,17 @@ import DataExport from "./analysis/DataExport";
 import ChooseMode from "./ChooseMode";
 import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
-import { Store, connect, mkAC } from "../store/store";
+import { Store, connect } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
-import * as guiState from "../data/gui-state";
-import * as pathLookup from "../data/path-lookup";
-import * as matDetails from "../data/material-details";
 import logo from "../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
-import SerialScanner from "./QRScan";
-import ManualScan from "./ManualScan";
-import ChooseOperator from "./ChooseOperator";
+import { SerialScannerButton } from "./QRScan";
+import { ManualScanButton } from "./ManualScan";
+import { OperatorSelect } from "./ChooseOperator";
 import { BasicMaterialDialog } from "./station-monitor/Material";
 import { CompletedParts } from "./operations/CompletedParts";
-import AllMaterial from "./operations/AllMaterial";
+import { AllMaterial } from "./operations/AllMaterial";
 import { FailedPartLookup } from "./quality/FailedPartLookup";
 import { QualityPaths } from "./quality/QualityPaths";
 import { QualityDashboard } from "./quality/RecentFailedInspections";
@@ -102,6 +97,10 @@ import Wash from "./station-monitor/Wash";
 import Queues from "./station-monitor/Queues";
 import { ToolReportPage } from "./operations/ToolReport";
 import { ProgramReportPage } from "./operations/Programs";
+import { WebsocketConnection } from "../store/websocket";
+import { currentStatus } from "../data/current-status";
+import { JobsBackend } from "../data/backend";
+import { BarcodeListener } from "../store/barcode";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -349,8 +348,8 @@ function BackupTabs(p: HeaderNavProps) {
       value={p.routeState.current}
       onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
     >
-      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
-      <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
+      <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
     </Tabs>
   );
 }
@@ -384,6 +383,7 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Quality_Serials:
     case routes.RouteLocation.Quality_Paths:
     case routes.RouteLocation.Quality_Quarantine:
+    case routes.RouteLocation.Backup_PartLookup:
       return "https://fms-insight.seedtactics.com/docs/client-tools-programs.html";
 
     case routes.RouteLocation.Tools_Dashboard:
@@ -393,7 +393,11 @@ function helpUrl(r: routes.RouteLocation): string {
     case routes.RouteLocation.Analysis_Efficiency:
     case routes.RouteLocation.Analysis_CostPerPiece:
     case routes.RouteLocation.Analysis_DataExport:
+    case routes.RouteLocation.Backup_Efficiency:
       return "https://fms-insight.seedtactics.com/docs/client-flexibility-analysis.html";
+
+    case routes.RouteLocation.Backup_InitialOpen:
+      return "https://fms-insight.seedtactics.com/docs/client-backup-viewer.html";
   }
 }
 
@@ -407,21 +411,18 @@ interface HeaderProps {
 
   routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
-  alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
-  onLogout: () => void;
-  readonly openQrCodeScan: () => void;
-  readonly openManualSerial: () => void;
 }
 
 function Header(p: HeaderProps) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const alarms = useRecoilValue(currentStatus).alarms;
 
-  const alarmTooltip = p.alarms ? p.alarms.join(". ") : "No Alarms";
+  const alarmTooltip = alarms ? alarms.join(". ") : "No Alarms";
   const Alarms = () => (
     <Tooltip title={alarmTooltip}>
-      <Badge badgeContent={p.alarms ? p.alarms.length : 0}>
-        <Notifications color={p.alarms ? "error" : undefined} />
+      <Badge badgeContent={alarms ? alarms.length : 0}>
+        <Notifications color={alarms ? "error" : undefined} />
       </Badge>
     </Tooltip>
   );
@@ -436,7 +437,7 @@ function Header(p: HeaderProps) {
 
   const LogoutButton = () => (
     <Tooltip title="Logout">
-      <IconButton aria-label="Logout" onClick={p.onLogout}>
+      <IconButton aria-label="Logout" onClick={serverSettings.logout}>
         <ExitToApp />
       </IconButton>
     </Tooltip>
@@ -445,17 +446,9 @@ function Header(p: HeaderProps) {
   const SearchButtons = () => (
     <>
       {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
-        <Tooltip title="Scan QR Code">
-          <IconButton onClick={p.openQrCodeScan}>
-            <CameraAlt />
-          </IconButton>
-        </Tooltip>
+        <SerialScannerButton />
       ) : undefined}
-      <Tooltip title="Enter Serial">
-        <IconButton onClick={p.openManualSerial}>
-          <SearchIcon />
-        </IconButton>
-      </Tooltip>
+      <ManualScanButton />
     </>
   );
 
@@ -487,7 +480,7 @@ function Header(p: HeaderProps) {
               <div style={{ flexGrow: 1 }} />
             )}
             <LoadingIcon />
-            {p.showOperator ? <ChooseOperator /> : undefined}
+            {p.showOperator ? <OperatorSelect /> : undefined}
             {p.showSearch ? <SearchButtons /> : undefined}
             <HelpButton />
             {p.showLogout ? <LogoutButton /> : undefined}
@@ -536,6 +529,17 @@ function Header(p: HeaderProps) {
   );
 }
 
+function LoadDemoData() {
+  const load = useRecoilCallback(({ set }) => () => {
+    JobsBackend.currentStatus().then((st) => set(currentStatus, st));
+  });
+  React.useEffect(() => {
+    load();
+  }, []);
+
+  return null;
+}
+
 export interface AppProps {
   demo: boolean;
   backupViewerOnRequestOpenFile?: () => void;
@@ -543,250 +547,219 @@ export interface AppProps {
 
 interface AppConnectedProps extends AppProps {
   route: routes.State;
-  fmsInfo: Readonly<api.IFMSInfo> | null;
-  user: User | null;
-  backupFileOpened: boolean;
-  alarms: ReadonlyArray<string> | null;
   setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
-  onLogin: () => void;
-  onLogout: () => void;
-  readonly openQrCodeScan: () => void;
-  readonly openManualSerial: () => void;
 }
 
-class App extends React.PureComponent<AppConnectedProps> {
-  render() {
-    let page: JSX.Element;
-    let navigation: ((p: HeaderNavProps) => JSX.Element) | undefined = undefined;
-    let showAlarms = true;
-    const showLogout = !!this.props.user;
-    let showSearch = true;
-    let showOperator = false;
-    let addBasicMaterialDialog = true;
-    if (this.props.backupViewerOnRequestOpenFile) {
-      if (this.props.backupFileOpened) {
-        if (this.props.route.current === routes.RouteLocation.Quality_Serials) {
-          page = <FailedPartLookup />;
-          addBasicMaterialDialog = false;
-        } else {
-          page = <Efficiency allowSetType={false} />;
-        }
+const App = React.memo(function App(props: AppConnectedProps) {
+  const fmsInfoLoadable = useRecoilValueLoadable(serverSettings.fmsInformation);
+
+  // BaseLoadable<T>.valueMaybe() has the wrong type so hard to use :(
+  const fmsInfo = fmsInfoLoadable.state === "hasValue" ? fmsInfoLoadable.valueOrThrow() : null;
+
+  let page: JSX.Element;
+  let navigation: ((p: HeaderNavProps) => JSX.Element) | undefined = undefined;
+  let showAlarms = true;
+  const showLogout = fmsInfo !== null && fmsInfo.user !== null && fmsInfo.user !== undefined;
+  let showSearch = true;
+  let showOperator = false;
+  let addBasicMaterialDialog = true;
+  if (fmsInfo && (!serverSettings.requireLogin(fmsInfo) || fmsInfo.user)) {
+    switch (props.route.current) {
+      case routes.RouteLocation.Station_LoadMonitor:
+        page = <LoadStation />;
+        navigation = (p) => <StationToolbar full={p.full} />;
+        showOperator = true;
+        addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Station_InspectionMonitor:
+        page = <Inspection />;
+        navigation = (p) => <StationToolbar full={p.full} />;
+        showOperator = true;
+        addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Station_WashMonitor:
+        page = <Wash />;
+        navigation = (p) => <StationToolbar full={p.full} />;
+        showOperator = true;
+        addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Station_Queues:
+        page = <Queues />;
+        navigation = (p) => <StationToolbar full={p.full} />;
+        showOperator = true;
+        addBasicMaterialDialog = false;
+        break;
+
+      case routes.RouteLocation.Analysis_CostPerPiece:
+        page = <CostPerPiece />;
+        navigation = AnalysisTabs;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_Efficiency:
+        page = <Efficiency allowSetType={true} />;
+        navigation = AnalysisTabs;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_DataExport:
+        page = <DataExport />;
+        navigation = AnalysisTabs;
+        showAlarms = false;
+        break;
+
+      case routes.RouteLocation.Operations_Dashboard:
+        page = <OperationDashboard />;
+        navigation = OperationsTabs;
+        break;
+      case routes.RouteLocation.Operations_LoadStation:
+        page = <OperationLoadUnload />;
+        navigation = OperationsTabs;
+        break;
+      case routes.RouteLocation.Operations_Machines:
+        page = <OperationMachines />;
+        navigation = OperationsTabs;
+        break;
+      case routes.RouteLocation.Operations_AllMaterial:
+        page = <AllMaterial displaySystemBins />;
+        navigation = OperationsTabs;
+        addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Operations_CompletedParts:
+        page = <CompletedParts />;
+        navigation = OperationsTabs;
+        break;
+      case routes.RouteLocation.Operations_Tools:
+        page = <ToolReportPage />;
+        navigation = OperationsTabs;
+        break;
+      case routes.RouteLocation.Operations_Programs:
+        page = <ProgramReportPage />;
+        navigation = OperationsTabs;
+        break;
+
+      case routes.RouteLocation.Engineering:
+        page = <OperationMachines />;
+        showAlarms = false;
+        break;
+
+      case routes.RouteLocation.Quality_Dashboard:
+        page = <QualityDashboard />;
+        navigation = QualityTabs;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Quality_Serials:
+        page = <FailedPartLookup />;
+        navigation = QualityTabs;
+        addBasicMaterialDialog = false;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Quality_Paths:
+        page = <QualityPaths />;
+        navigation = QualityTabs;
+        showAlarms = false;
+        break;
+
+      case routes.RouteLocation.Quality_Quarantine:
+        page = <AllMaterial displaySystemBins={false} />;
+        navigation = QualityTabs;
+        showAlarms = false;
+        addBasicMaterialDialog = false;
+        break;
+
+      case routes.RouteLocation.Tools_Dashboard:
+        page = <ToolReportPage />;
+        navigation = ToolsTabs;
+        break;
+      case routes.RouteLocation.Tools_Programs:
+        page = <ProgramReportPage />;
+        navigation = ToolsTabs;
+        break;
+
+      case routes.RouteLocation.Backup_InitialOpen:
         navigation = BackupTabs;
-      } else {
-        page = <BackupViewer onRequestOpenFile={this.props.backupViewerOnRequestOpenFile} />;
-      }
-      showAlarms = false;
-    } else if (this.props.fmsInfo && (!serverSettings.requireLogin(this.props.fmsInfo) || this.props.user)) {
-      switch (this.props.route.current) {
-        case routes.RouteLocation.Station_LoadMonitor:
-          page = <LoadStation />;
-          navigation = (p) => <StationToolbar full={p.full} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
-        case routes.RouteLocation.Station_InspectionMonitor:
-          page = <Inspection />;
-          navigation = (p) => <StationToolbar full={p.full} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
-        case routes.RouteLocation.Station_WashMonitor:
-          page = <Wash />;
-          navigation = (p) => <StationToolbar full={p.full} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
-        case routes.RouteLocation.Station_Queues:
-          page = <Queues />;
-          navigation = (p) => <StationToolbar full={p.full} />;
-          showOperator = true;
-          addBasicMaterialDialog = false;
-          break;
+        page = <BackupViewer onRequestOpenFile={props.backupViewerOnRequestOpenFile} />;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Backup_Efficiency:
+        navigation = BackupTabs;
+        page = <Efficiency allowSetType={false} />;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Backup_PartLookup:
+        navigation = BackupTabs;
+        page = <FailedPartLookup />;
+        addBasicMaterialDialog = false;
+        showAlarms = false;
+        break;
 
-        case routes.RouteLocation.Analysis_CostPerPiece:
-          page = <CostPerPiece />;
-          navigation = AnalysisTabs;
-          showAlarms = false;
-          break;
-        case routes.RouteLocation.Analysis_Efficiency:
-          page = <Efficiency allowSetType={true} />;
-          navigation = AnalysisTabs;
-          showAlarms = false;
-          break;
-        case routes.RouteLocation.Analysis_DataExport:
-          page = <DataExport />;
-          navigation = AnalysisTabs;
-          showAlarms = false;
-          break;
-
-        case routes.RouteLocation.Operations_Dashboard:
+      case routes.RouteLocation.ChooseMode:
+      default:
+        if (props.demo) {
           page = <OperationDashboard />;
-          navigation = OperationsTabs;
-          break;
-        case routes.RouteLocation.Operations_LoadStation:
-          page = <OperationLoadUnload />;
-          navigation = OperationsTabs;
-          break;
-        case routes.RouteLocation.Operations_Machines:
-          page = <OperationMachines />;
-          navigation = OperationsTabs;
-          break;
-        case routes.RouteLocation.Operations_AllMaterial:
-          page = <AllMaterial displaySystemBins />;
-          navigation = OperationsTabs;
-          addBasicMaterialDialog = false;
-          break;
-        case routes.RouteLocation.Operations_CompletedParts:
-          page = <CompletedParts />;
-          navigation = OperationsTabs;
-          break;
-        case routes.RouteLocation.Operations_Tools:
-          page = <ToolReportPage />;
-          navigation = OperationsTabs;
-          break;
-        case routes.RouteLocation.Operations_Programs:
-          page = <ProgramReportPage />;
-          navigation = OperationsTabs;
-          break;
-
-        case routes.RouteLocation.Engineering:
-          page = <OperationMachines />;
+        } else {
+          page = <ChooseMode />;
+          showSearch = false;
           showAlarms = false;
-          break;
-
-        case routes.RouteLocation.Quality_Dashboard:
-          page = <QualityDashboard />;
-          navigation = QualityTabs;
-          showAlarms = false;
-          break;
-        case routes.RouteLocation.Quality_Serials:
-          page = <FailedPartLookup />;
-          navigation = QualityTabs;
-          addBasicMaterialDialog = false;
-          showAlarms = false;
-          break;
-        case routes.RouteLocation.Quality_Paths:
-          page = <QualityPaths />;
-          navigation = QualityTabs;
-          showAlarms = false;
-          break;
-
-        case routes.RouteLocation.Quality_Quarantine:
-          page = <AllMaterial displaySystemBins={false} />;
-          navigation = QualityTabs;
-          showAlarms = false;
-          addBasicMaterialDialog = false;
-          break;
-
-        case routes.RouteLocation.Tools_Dashboard:
-          page = <ToolReportPage />;
-          navigation = ToolsTabs;
-          break;
-        case routes.RouteLocation.Tools_Programs:
-          page = <ProgramReportPage />;
-          navigation = ToolsTabs;
-          break;
-
-        case routes.RouteLocation.ChooseMode:
-        default:
-          if (this.props.demo) {
-            page = <OperationDashboard />;
-          } else {
-            page = <ChooseMode />;
-            showSearch = false;
-            showAlarms = false;
-          }
-      }
-    } else if (this.props.fmsInfo && serverSettings.requireLogin(this.props.fmsInfo)) {
-      page = (
-        <div style={{ textAlign: "center", marginTop: "4em" }}>
-          <h3>Please Login</h3>
-          <Button variant="contained" color="primary" onClick={this.props.onLogin}>
-            Login
-          </Button>
-        </div>
-      );
-      showAlarms = false;
-      showSearch = false;
-    } else {
-      page = (
-        <div style={{ textAlign: "center", marginTop: "4em" }}>
-          <CircularProgress />
-          <p>Loading</p>
-        </div>
-      );
-      showAlarms = false;
-      showSearch = false;
+        }
     }
-    return (
-      <div id="App">
-        <Header
-          routeState={this.props.route}
-          fmsInfo={this.props.fmsInfo}
-          demo={this.props.demo}
-          showAlarms={showAlarms}
-          showSearch={showSearch}
-          showLogout={showLogout}
-          showOperator={showOperator}
-          setRoute={this.props.setRoute}
-          onLogout={this.props.onLogout}
-          alarms={this.props.alarms}
-          openManualSerial={this.props.openManualSerial}
-          openQrCodeScan={this.props.openQrCodeScan}
-        >
-          {navigation}
-        </Header>
-        {this.props.demo ? (
-          <div style={{ display: "flex" }}>
-            <Hidden smDown>
-              <div style={{ borderRight: "1px solid" }}>
-                <DemoNav full={false} setRoute={this.props.setRoute} demo={true} routeState={this.props.route} />
-              </div>
-            </Hidden>
-            <div style={{ width: "100%" }}>{page}</div>
-          </div>
-        ) : (
-          page
-        )}
-        <SerialScanner />
-        <ManualScan />
-        {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
+  } else if (fmsInfo && serverSettings.requireLogin(fmsInfo)) {
+    page = (
+      <div style={{ textAlign: "center", marginTop: "4em" }}>
+        <h3>Please Login</h3>
+        <Button variant="contained" color="primary" onClick={() => serverSettings.login(fmsInfo)}>
+          Login
+        </Button>
       </div>
     );
-  }
-}
-
-function emptyToNull<T>(s: ReadonlyArray<T> | null): ReadonlyArray<T> | null {
-  if (!s || s.length === 0) {
-    return null;
+    showAlarms = false;
+    showSearch = false;
   } else {
-    return s;
+    page = (
+      <div style={{ textAlign: "center", marginTop: "4em" }}>
+        <CircularProgress />
+        <p>Loading</p>
+      </div>
+    );
+    showAlarms = false;
+    showSearch = false;
   }
-}
+  return (
+    <div id="App">
+      <Header
+        routeState={props.route}
+        fmsInfo={fmsInfo}
+        demo={props.demo}
+        showAlarms={showAlarms}
+        showSearch={showSearch}
+        showLogout={showLogout}
+        showOperator={showOperator}
+        setRoute={props.setRoute}
+      >
+        {navigation}
+      </Header>
+      {props.demo ? (
+        <div style={{ display: "flex" }}>
+          <Hidden smDown>
+            <div style={{ borderRight: "1px solid" }}>
+              <DemoNav full={false} setRoute={props.setRoute} demo={true} routeState={props.route} />
+            </div>
+          </Hidden>
+          <div style={{ width: "100%" }}>{page}</div>
+        </div>
+      ) : (
+        page
+      )}
+      {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
+      {props.demo ? <LoadDemoData /> : <WebsocketConnection />}
+      <BarcodeListener />
+    </div>
+  );
+});
 
 export default connect(
   (s: Store) => ({
     route: s.Route,
-    fmsInfo: s.ServerSettings.fmsInfo || null,
-    user: s.ServerSettings.user || null,
-    backupFileOpened: s.Gui.backup_file_opened,
-    alarms: emptyToNull(s.Current.current_status.alarms),
   }),
   {
-    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => [
-      routes.displayPage(ty, curSt),
-      { type: matDetails.ActionType.CloseMaterialDialog },
-      { type: pathLookup.ActionType.Clear },
-    ],
-    onLogin: mkAC(serverSettings.ActionType.Login),
-    onLogout: mkAC(serverSettings.ActionType.Logout),
-    openQrCodeScan: () => ({
-      type: guiState.ActionType.SetScanQrCodeDialog,
-      open: true,
-    }),
-    openManualSerial: () => ({
-      type: guiState.ActionType.SetManualSerialEntryDialog,
-      open: true,
-    }),
+    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => routes.displayPage(ty, curSt),
   }
 )(App);

@@ -47,6 +47,7 @@ import {
 } from "./events.cycles";
 import { reduxStore } from "../store/store";
 import { MachineBackend } from "./backend";
+import { currentStatus } from "./current-status";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -223,7 +224,7 @@ export const currentToolReport = selector<Vector<ToolReport> | null>({
       return null;
     } else {
       if (reduxStore === null) return null;
-      const currentSt = reduxStore.getState().Current.current_status;
+      const currentSt = get(currentStatus);
       const usage = reduxStore.getState().Events.last30.cycles.tool_usage;
       return await calcToolReport(currentSt, usage);
     }

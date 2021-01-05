@@ -46,11 +46,9 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableBody from "@material-ui/core/TableBody";
 import { connect } from "../../store/store";
-import { createSelector } from "reselect";
-import { Last30Days } from "../../data/events";
 import { addDays, startOfToday } from "date-fns";
 import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
-import { ICurrentStatus } from "../../data/api";
+import { IHistoricJob } from "../../data/api";
 import { PartIdenticon } from "../station-monitor/Material";
 import { makeStyles, createStyles } from "@material-ui/core/styles";
 import { ConnectedEditNoteDialog } from "../station-monitor/Queues";
@@ -59,9 +57,14 @@ import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import { JobDetails } from "../station-monitor/JobDetails";
 import Collapse from "@material-ui/core/Collapse";
 import clsx from "clsx";
+import { HashMap, Vector } from "prelude-ts";
+import { PartCycleData } from "../../data/events.cycles";
+import { useRecoilValue } from "recoil";
+import { currentStatus } from "../../data/current-status";
 
 interface JobsTableProps {
-  readonly jobs: ReadonlyArray<ScheduledJobDisplay>;
+  readonly partCycles: Vector<PartCycleData>;
+  readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
   readonly showMaterial: boolean;
 }
 
@@ -173,6 +176,15 @@ function JobsRow(props: JobsRowProps) {
 
 function JobsTable(props: JobsTableProps) {
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
+  const currentSt = useRecoilValue(currentStatus);
+
+  const jobs = React.useMemo(() => {
+    const today = startOfToday();
+    const start = addDays(today, -6);
+    const end = addDays(today, 1);
+    return buildScheduledJobs(start, end, props.partCycles, props.schJobs, currentSt);
+  }, [props.partCycles, props.schJobs, currentSt]);
+
   return (
     <Card raised>
       <CardHeader
@@ -184,7 +196,7 @@ function JobsTable(props: JobsTableProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyScheduledJobsToClipboard(props.jobs, props.showMaterial)}
+                onClick={() => copyScheduledJobsToClipboard(jobs, props.showMaterial)}
               >
                 <ImportExport />
               </IconButton>
@@ -209,7 +221,7 @@ function JobsTable(props: JobsTableProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {props.jobs.map((job, jobIdx) => (
+            {jobs.map((job, jobIdx) => (
               <JobsRow key={jobIdx} job={job} showMaterial={props.showMaterial} setCurEditNoteJob={setCurEditNoteJob} />
             ))}
           </TableBody>
@@ -223,20 +235,9 @@ function JobsTable(props: JobsTableProps) {
   );
 }
 
-const scheduledJobsSelector = createSelector(
-  (last30: Last30Days, _s: Readonly<ICurrentStatus>, _: Date) => last30.cycles.part_cycles,
-  (last30: Last30Days, _s: Readonly<ICurrentStatus>, _: Date) => last30.scheduled_jobs.jobs,
-  (_: Last30Days, st: Readonly<ICurrentStatus>, _d: Date) => st,
-  (_: Last30Days, _s: Readonly<ICurrentStatus>, today: Date) => today,
-  (cycles, jobs, st, today): ReadonlyArray<ScheduledJobDisplay> => {
-    const start = addDays(today, -6);
-    const end = addDays(today, 1);
-    return buildScheduledJobs(start, end, cycles, jobs, st);
-  }
-);
-
 const ConnectedJobsTable = connect((st) => ({
-  jobs: scheduledJobsSelector(st.Events.last30, st.Current.current_status, startOfToday()),
+  partCycles: st.Events.last30.cycles.part_cycles,
+  schJobs: st.Events.last30.scheduled_jobs.jobs,
   showMaterial: st.Events.last30.scheduled_jobs.someJobHasCasting,
 }))(JobsTable);
 

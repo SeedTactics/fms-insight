@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -30,21 +30,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "./api";
 import { HashMap } from "prelude-ts";
-import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
 import { JobsBackend } from "./backend";
-import { InProcessMaterial } from "./api";
+import {
+  InProcessMaterial,
+  ICurrentStatus,
+  IInProcessMaterial,
+  ILogEntry,
+  LogType,
+  LocType,
+  InProcessJob,
+} from "./api";
+import { atom, DefaultValue, selectorFamily } from "recoil";
 
-export interface State {
-  readonly loading: boolean;
-  readonly loading_error?: Error;
-  readonly current_status: Readonly<api.ICurrentStatus>; // TODO: DeepReadonly
-}
-
-export const initial: State = {
-  loading: false,
-  current_status: {
+export const currentStatus = atom<Readonly<ICurrentStatus>>({
+  key: "current-status",
+  default: {
     timeOfCurrentStatusUTC: new Date(),
     jobs: {},
     pallets: {},
@@ -52,252 +53,148 @@ export const initial: State = {
     alarms: [],
     queues: {},
   },
-};
+});
 
-export enum ActionType {
-  LoadCurrentStatus = "CurStatus_LoadCurrentStatus",
-  SetCurrentStatus = "CurStatus_SetCurrentStatus",
-  ReceiveNewLogEntry = "Events_NewLogEntry",
-  ReorderQueuedMaterial = "CurStatus_ReorderQueuedMaterial",
-  SetJobComment = "CurStatus_SetJobComment",
-  SetJobPlannedQty = "CurStatus_SetJobPlannedQty",
-}
+export const currentStatusJobComment = selectorFamily<string | null, string>({
+  key: "current-status-job-comment",
+  get: (uniq) => ({ get }) => get(currentStatus).jobs[uniq]?.comment ?? null,
+  set: (uniq) => async ({ set }, newVal) => {
+    const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
 
-export type Action =
-  | {
-      type: ActionType.LoadCurrentStatus;
-      pledge: Pledge<Readonly<api.ICurrentStatus>>;
-    }
-  | {
-      type: ActionType.SetCurrentStatus;
-      st: Readonly<api.ICurrentStatus>;
-    }
-  | { type: ActionType.ReceiveNewLogEntry; entry: Readonly<api.ILogEntry> }
-  | {
-      type: ActionType.ReorderQueuedMaterial;
-      materialId: number;
-      queue: string;
-      newIdx: number;
-    }
-  | { type: ActionType.SetJobComment; uniq: string; comment: string; pledge: Pledge<void> }
-  | { type: ActionType.SetJobPlannedQty; uniq: string; proc1path: number; qty: number };
-
-type ABF = ActionBeforeMiddleware<Action>;
-
-export function loadCurrentStatus(): ABF {
-  return {
-    type: ActionType.LoadCurrentStatus,
-    pledge: JobsBackend.currentStatus(),
-  };
-}
-
-export function setCurrentStatus(st: Readonly<api.ICurrentStatus>): ABF {
-  return {
-    type: ActionType.SetCurrentStatus,
-    st,
-  };
-}
-
-export function receiveNewLogEntry(entry: Readonly<api.ILogEntry>): ABF {
-  return {
-    type: ActionType.ReceiveNewLogEntry,
-    entry,
-  };
-}
-
-export function setJobComment(uniq: string, comment: string): ABF {
-  return {
-    type: ActionType.SetJobComment,
-    uniq,
-    comment,
-    pledge: JobsBackend.setJobComment(uniq, comment),
-  };
-}
-
-function process_new_events(entry: Readonly<api.ILogEntry>, s: State): State {
-  let mats: HashMap<number, Readonly<api.InProcessMaterial>> | undefined;
-  function adjustMat(id: number, f: (mat: Readonly<api.IInProcessMaterial>) => Readonly<api.IInProcessMaterial>) {
-    if (mats === undefined) {
-      mats = s.current_status.material.reduce(
-        (map, mat) => map.put(mat.materialID, mat),
-        HashMap.empty<number, Readonly<api.InProcessMaterial>>()
-      );
-    }
-    const oldMat = mats.get(id);
-    if (oldMat.isSome()) {
-      mats = mats.put(id, new api.InProcessMaterial(f(oldMat.get())));
-    }
-  }
-
-  switch (entry.type) {
-    case api.LogType.PartMark:
-      for (const m of entry.material) {
-        adjustMat(m.id, (inmat) => ({ ...inmat, serial: entry.result }));
+    set(currentStatus, (st) => {
+      const oldJob = st.jobs[uniq];
+      if (oldJob) {
+        var newJob = new InProcessJob(oldJob);
+        newJob.comment = newComment;
+        return { ...st, jobs: { ...st.jobs, [uniq]: newJob } };
+      } else {
+        return st;
       }
-      break;
+    });
 
-    case api.LogType.OrderAssignment:
-      for (const m of entry.material) {
-        adjustMat(m.id, (inmat) => ({ ...inmat, workorderId: entry.result }));
+    await JobsBackend.setJobComment(uniq, newComment);
+  },
+});
+
+export function processEventsIntoCurrentStatus(
+  entry: Readonly<ILogEntry>
+): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
+  return (curSt) => {
+    let mats: HashMap<number, Readonly<InProcessMaterial>> | undefined;
+    function adjustMat(id: number, f: (mat: Readonly<IInProcessMaterial>) => Readonly<IInProcessMaterial>) {
+      if (mats === undefined) {
+        mats = curSt.material.reduce(
+          (map, mat) => map.put(mat.materialID, mat),
+          HashMap.empty<number, Readonly<InProcessMaterial>>()
+        );
       }
-      break;
+      const oldMat = mats.get(id);
+      if (oldMat.isSome()) {
+        mats = mats.put(id, new InProcessMaterial(f(oldMat.get())));
+      }
+    }
 
-    case api.LogType.Inspection:
-    case api.LogType.InspectionForce:
-      if (entry.result.toLowerCase() === "true" || entry.result === "1") {
-        let inspType: string;
-        if (entry.type === api.LogType.InspectionForce) {
-          inspType = entry.program;
-        } else {
-          inspType = (entry.details || {}).InspectionType;
+    switch (entry.type) {
+      case LogType.PartMark:
+        for (const m of entry.material) {
+          adjustMat(m.id, (inmat) => ({ ...inmat, serial: entry.result }));
         }
-        if (inspType) {
-          for (const m of entry.material) {
-            adjustMat(m.id, (inmat) => ({
-              ...inmat,
-              signaledInspections: [...inmat.signaledInspections, inspType],
-            }));
+        break;
+
+      case LogType.OrderAssignment:
+        for (const m of entry.material) {
+          adjustMat(m.id, (inmat) => ({ ...inmat, workorderId: entry.result }));
+        }
+        break;
+
+      case LogType.Inspection:
+      case LogType.InspectionForce:
+        if (entry.result.toLowerCase() === "true" || entry.result === "1") {
+          let inspType: string;
+          if (entry.type === LogType.InspectionForce) {
+            inspType = entry.program;
+          } else {
+            inspType = (entry.details || {}).InspectionType;
+          }
+          if (inspType) {
+            for (const m of entry.material) {
+              adjustMat(m.id, (inmat) => ({
+                ...inmat,
+                signaledInspections: [...inmat.signaledInspections, inspType],
+              }));
+            }
           }
         }
-      }
-      break;
-  }
+        break;
+    }
 
-  if (mats === undefined) {
-    return s;
-  } else {
-    return {
-      ...s,
-      current_status: {
-        ...s.current_status,
+    if (mats === undefined) {
+      return curSt;
+    } else {
+      return {
+        ...curSt,
         material: Array.from(mats.valueIterable()),
-      },
-    };
-  }
+      };
+    }
+  };
 }
 
-function reorder_queued_mat(
+export function reorder_queued_mat(
   queue: string,
   matId: number,
-  newIdx: number,
-  oldMats: InProcessMaterial[]
-): InProcessMaterial[] {
-  const oldMat = oldMats.find((i) => i.materialID === matId);
-  if (!oldMat || oldMat.location.type !== api.LocType.InQueue) {
-    return oldMats;
-  }
-  if (oldMat.location.currentQueue === queue && oldMat.location.queuePosition === newIdx) {
-    return oldMats;
-  }
-
-  const oldQueue = oldMat.location.currentQueue;
-  const oldIdx = oldMat.location.queuePosition;
-  if (oldIdx === undefined || oldQueue === undefined) {
-    return oldMats;
-  }
-
-  return oldMats.map((m) => {
-    if (
-      m.location.type !== api.LocType.InQueue ||
-      m.location.queuePosition === undefined ||
-      m.location.currentQueue === undefined
-    ) {
-      return m;
+  newIdx: number
+): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
+  return (curSt) => {
+    const oldMat = curSt.material.find((i) => i.materialID === matId);
+    if (!oldMat || oldMat.location.type !== LocType.InQueue) {
+      return curSt;
+    }
+    if (oldMat.location.currentQueue === queue && oldMat.location.queuePosition === newIdx) {
+      return curSt;
     }
 
-    if (m.materialID === matId) {
-      return new InProcessMaterial({
-        ...m,
-        location: { type: api.LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
-      } as api.IInProcessMaterial);
+    const oldQueue = oldMat.location.currentQueue;
+    const oldIdx = oldMat.location.queuePosition;
+    if (oldIdx === undefined || oldQueue === undefined) {
+      return curSt;
     }
 
-    let idx = m.location.queuePosition;
-    // old queue material is moved down
-    if (m.location.currentQueue === oldQueue && m.location.queuePosition > oldIdx) {
-      idx -= 1;
-    }
-    // new queue material is moved up to make room
-    if (m.location.currentQueue === queue && idx >= newIdx) {
-      idx += 1;
-    }
-
-    if (idx !== m.location.queuePosition) {
-      return new InProcessMaterial({
-        ...m,
-        location: { ...m.location, queuePosition: idx },
-      } as api.IInProcessMaterial);
-    } else {
-      return m;
-    }
-  });
-}
-
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) {
-    return initial;
-  }
-  switch (a.type) {
-    case ActionType.LoadCurrentStatus:
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          return { ...s, loading: true, loading_error: undefined };
-        case PledgeStatus.Completed:
-          return {
-            ...s,
-            loading: false,
-            current_status: a.pledge.result,
-          };
-        case PledgeStatus.Error:
-          return { ...s, loading_error: a.pledge.error };
-
-        default:
-          return s;
-      }
-    case ActionType.SetCurrentStatus:
-      return { ...s, current_status: a.st };
-
-    case ActionType.ReceiveNewLogEntry:
-      return process_new_events(a.entry, s);
-
-    case ActionType.ReorderQueuedMaterial:
-      return {
-        ...s,
-        current_status: {
-          ...s.current_status,
-          material: reorder_queued_mat(a.queue, a.materialId, a.newIdx, s.current_status.material),
-        },
-      };
-
-    case ActionType.SetJobComment:
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          let newSt = s.current_status;
-          const oldJob = s.current_status.jobs[a.uniq];
-          if (oldJob) {
-            var newJob = new api.InProcessJob(oldJob);
-            newJob.comment = a.comment;
-            newSt = { ...newSt, jobs: { ...newSt.jobs, [a.uniq]: newJob } };
-          }
-          return { ...s, loading: true, loading_error: undefined, current_status: newSt };
-        case PledgeStatus.Error:
-          return { ...s, loading: false, loading_error: a.pledge.error };
-        case PledgeStatus.Completed:
-          return { ...s, loading: false };
+    const newMats = curSt.material.map((m) => {
+      if (
+        m.location.type !== LocType.InQueue ||
+        m.location.queuePosition === undefined ||
+        m.location.currentQueue === undefined
+      ) {
+        return m;
       }
 
-    case ActionType.SetJobPlannedQty: {
-      const oldJob = s.current_status.jobs[a.uniq];
-      if (oldJob) {
-        var newJob = new api.InProcessJob(oldJob);
-        newJob.cyclesOnFirstProcess[a.proc1path - 1] = a.qty;
-        return { ...s, current_status: { ...s.current_status, jobs: { ...s.current_status.jobs, [a.uniq]: newJob } } };
+      if (m.materialID === matId) {
+        return new InProcessMaterial({
+          ...m,
+          location: { type: LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
+        } as IInProcessMaterial);
+      }
+
+      let idx = m.location.queuePosition;
+      // old queue material is moved down
+      if (m.location.currentQueue === oldQueue && m.location.queuePosition > oldIdx) {
+        idx -= 1;
+      }
+      // new queue material is moved up to make room
+      if (m.location.currentQueue === queue && idx >= newIdx) {
+        idx += 1;
+      }
+
+      if (idx !== m.location.queuePosition) {
+        return new InProcessMaterial({
+          ...m,
+          location: { ...m.location, queuePosition: idx },
+        } as IInProcessMaterial);
       } else {
-        return s;
+        return m;
       }
-    }
+    });
 
-    default:
-      return s;
-  }
+    return { ...curSt, material: newMats };
+  };
 }

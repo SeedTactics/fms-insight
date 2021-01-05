@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -44,12 +44,10 @@ import DialogTitle from "@material-ui/core/DialogTitle";
 import CheckmarkIcon from "@material-ui/icons/Check";
 import ShoppingBasketIcon from "@material-ui/icons/ShoppingBasket";
 import TextField from "@material-ui/core/TextField";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
-import { MaterialDetailTitle } from "./Material";
-import { Store, connect, mkAC, AppActionBeforeMiddleware, DispatchAction } from "../../store/store";
 import * as matDetails from "../../data/material-details";
-import * as guiState from "../../data/gui-state";
-import CircularProgress from "@material-ui/core/CircularProgress";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 
 function workorderComplete(w: matDetails.WorkorderPlanAndSummary): string {
   let completed = 0;
@@ -73,106 +71,82 @@ function WorkorderIcon({ work }: { work: matDetails.WorkorderPlanAndSummary }) {
   }
 }
 
-interface ManualWorkorderEntryProps {
-  readonly mat: matDetails.MaterialDetail;
-  readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
-}
-
-interface ManualWorkorderEntryState {
-  readonly workorder: string;
-}
-
-class ManualWorkorderEntry extends React.PureComponent<ManualWorkorderEntryProps, ManualWorkorderEntryState> {
-  state = { workorder: "" };
-
-  render() {
-    return (
-      <TextField
-        label={this.state.workorder === "" ? "Workorder" : "Workorder (press enter)"}
-        value={this.state.workorder}
-        onChange={(e) => this.setState({ workorder: e.target.value })}
-        onKeyPress={(e) => {
-          if (e.key === "Enter" && this.state.workorder && this.state.workorder !== "") {
-            e.preventDefault();
-            this.props.assignWorkorder({
-              mat: this.props.mat,
-              workorder: this.state.workorder,
-            });
-          }
-        }}
-      />
-    );
-  }
-}
-
-interface SelectWorkorderProps {
-  readonly mats: matDetails.MaterialDetail | null;
-  readonly onClose: DispatchAction<guiState.ActionType.SetWorkorderDialogOpen>;
-  readonly assignWorkorder: (data: matDetails.AssignWorkorderData) => void;
-}
-
-function SelectWorkorderDialog(props: SelectWorkorderProps) {
-  let body: JSX.Element | undefined;
-
-  if (props.mats === null) {
-    body = <p>None</p>;
-  } else {
-    const mat = props.mats;
-    if (mat === null) {
-      body = <p>None</p>;
-    } else {
-      const workList = (
-        <List>
-          {mat.workorders.map((w) => (
-            <ListItem
-              key={w.plan.workorderId}
-              button
-              onClick={() => props.assignWorkorder({ mat, workorder: w.plan.workorderId })}
-            >
-              <ListItemIcon>
-                <WorkorderIcon work={w} />
-              </ListItemIcon>
-              <ListItemText primary={w.plan.workorderId} secondary={workorderComplete(w)} />
-            </ListItem>
-          ))}
-        </List>
-      );
-
-      body = (
-        <>
-          <DialogTitle disableTypography>
-            <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
-          </DialogTitle>
-          <DialogContent>
-            <ManualWorkorderEntry mat={mat} assignWorkorder={props.assignWorkorder} />
-            {mat.loading_workorders ? <CircularProgress /> : workList}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => props.onClose({ open: false })} color="primary">
-              Cancel
-            </Button>
-          </DialogActions>
-        </>
-      );
-    }
-  }
+function ManualWorkorderEntry() {
+  const [workorder, setWorkorder] = React.useState<string | null>(null);
+  const mat = useRecoilValue(matDetails.materialDetail);
+  const [assignWorkorder] = matDetails.useAssignWorkorder();
+  const setWorkDialogOpen = useSetRecoilState(matDetails.loadWorkordersForMaterialInDialog);
   return (
-    <Dialog open={props.mats !== null} onClose={() => props.onClose({ open: false })} maxWidth="md">
-      {body}
-    </Dialog>
+    <TextField
+      label={workorder === null || workorder === "" ? "Workorder" : "Workorder (press enter)"}
+      value={workorder ?? ""}
+      onChange={(e) => setWorkorder(e.target.value)}
+      onKeyPress={(e) => {
+        if (e.key === "Enter" && mat && workorder && workorder !== "") {
+          e.preventDefault();
+          assignWorkorder(mat, workorder);
+          setWorkDialogOpen(false);
+        }
+      }}
+    />
   );
 }
 
-export default connect(
-  (st: Store) => ({
-    mats: st.Gui.workorder_dialog_open ? st.MaterialDetails.material : null,
-  }),
-  {
-    onClose: mkAC(guiState.ActionType.SetWorkorderDialogOpen),
-    assignWorkorder: (data: matDetails.AssignWorkorderData) =>
-      [
-        matDetails.assignWorkorder(data),
-        { type: guiState.ActionType.SetWorkorderDialogOpen, open: false },
-      ] as AppActionBeforeMiddleware,
+function WorkorderList() {
+  const mat = useRecoilValue(matDetails.materialDetail);
+  const workorders = useRecoilValue(matDetails.possibleWorkordersForMaterialInDialog);
+  const setWorkDialogOpen = useSetRecoilState(matDetails.loadWorkordersForMaterialInDialog);
+  const [assignWorkorder] = matDetails.useAssignWorkorder();
+  return (
+    <List>
+      {workorders.map((w) => (
+        <ListItem
+          key={w.plan.workorderId}
+          button
+          onClick={() => {
+            if (mat) {
+              assignWorkorder(mat, w.plan.workorderId);
+            }
+            setWorkDialogOpen(false);
+          }}
+        >
+          <ListItemIcon>
+            <WorkorderIcon work={w} />
+          </ListItemIcon>
+          <ListItemText primary={w.plan.workorderId} secondary={workorderComplete(w)} />
+        </ListItem>
+      ))}
+    </List>
+  );
+}
+
+export const SelectWorkorderDialog = React.memo(function SelectWorkorderDialog() {
+  const [workDialogOpen, setWorkDialogOpen] = useRecoilState(matDetails.loadWorkordersForMaterialInDialog);
+  let body: JSX.Element | undefined;
+
+  if (workDialogOpen === false) {
+    body = <p>None</p>;
+  } else {
+    body = (
+      <>
+        <DialogTitle>Select Workorder</DialogTitle>
+        <DialogContent>
+          <ManualWorkorderEntry />
+          <DisplayLoadingAndErrorCard>
+            <WorkorderList />
+          </DisplayLoadingAndErrorCard>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWorkDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+        </DialogActions>
+      </>
+    );
   }
-)(SelectWorkorderDialog);
+  return (
+    <Dialog open={workDialogOpen} onClose={() => setWorkDialogOpen(false)} maxWidth="md">
+      {body}
+    </Dialog>
+  );
+});

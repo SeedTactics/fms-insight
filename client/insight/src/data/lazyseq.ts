@@ -442,6 +442,15 @@ export class LazySeq<T> {
     });
   }
 
+  toRSet<S>(converter: (x: T) => S): ReadonlySet<S> {
+    const iter = this.iter;
+    const s = new Set<S>();
+    for (const x of iter) {
+      s.add(converter(x));
+    }
+    return s;
+  }
+
   toVector(): Vector<T> {
     return Vector.ofIterable(this.iter);
   }

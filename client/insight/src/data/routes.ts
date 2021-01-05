@@ -62,6 +62,10 @@ export enum RouteLocation {
   Analysis_Efficiency = "ROUTE_Analysis_Efficiency",
   Analysis_CostPerPiece = "ROUTE_Analysis_CostPerPiece",
   Analysis_DataExport = "ROUTE_Analysis_DataExport",
+
+  Backup_InitialOpen = "ROUTE_Backup_Initial",
+  Backup_Efficiency = "ROUTE_Backup_Efficiency",
+  Backup_PartLookup = "ROUTE_Backup_PartLookup",
 }
 
 export const routeMap = {
@@ -93,6 +97,10 @@ export const routeMap = {
   [RouteLocation.Analysis_Efficiency]: "/analysis/efficiency",
   [RouteLocation.Analysis_CostPerPiece]: "/analysis/cost",
   [RouteLocation.Analysis_DataExport]: "/analysis/data-export",
+
+  [RouteLocation.Backup_InitialOpen]: "/backup/open",
+  [RouteLocation.Backup_Efficiency]: "/backup/efficiency",
+  [RouteLocation.Backup_PartLookup]: "/backup/lookup",
 };
 
 export type Action =
@@ -144,6 +152,9 @@ export type Action =
   | { type: RouteLocation.Analysis_Efficiency }
   | { type: RouteLocation.Analysis_CostPerPiece }
   | { type: RouteLocation.Analysis_DataExport }
+  | { type: RouteLocation.Backup_InitialOpen }
+  | { type: RouteLocation.Backup_Efficiency }
+  | { type: RouteLocation.Backup_PartLookup }
   | { type: typeof NOT_FOUND };
 
 export interface State {
@@ -290,6 +301,9 @@ export function reducer(s: State, a: Action): State {
     case RouteLocation.Analysis_CostPerPiece:
     case RouteLocation.Analysis_Efficiency:
     case RouteLocation.Analysis_DataExport:
+    case RouteLocation.Backup_InitialOpen:
+    case RouteLocation.Backup_Efficiency:
+    case RouteLocation.Backup_PartLookup:
       return {
         ...s,
         current: a.type,

@@ -39,7 +39,8 @@ import { HashSet } from "prelude-ts";
 
 import * as routes from "../../data/routes";
 import { Store, connect } from "../../store/store";
-import * as api from "../../data/api";
+import { useRecoilValue } from "recoil";
+import { currentStatus } from "../../data/current-status";
 
 const toolbarStyle = {
   display: "flex",
@@ -61,7 +62,6 @@ const inHeaderStyle = {
 interface StationToolbarProps {
   readonly full: boolean;
   readonly current_route: routes.State;
-  readonly queues: { [key: string]: api.IQueueSize };
   readonly insp_types: HashSet<string>;
 
   readonly displayLoadStation: (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
@@ -83,7 +83,7 @@ enum StationMonitorType {
 }
 
 function StationToolbar(props: StationToolbarProps) {
-  const queueNames = Object.keys(props.queues).sort();
+  const queueNames = Object.keys(useRecoilValue(currentStatus).queues).sort();
 
   function setLoadNumber(valStr: string) {
     const val = parseFloat(valStr);
@@ -258,7 +258,6 @@ function StationToolbar(props: StationToolbarProps) {
 export default connect(
   (st: Store) => ({
     current_route: st.Route,
-    queues: st.Current.current_status.queues,
     insp_types: st.Events.last30.mat_summary.inspTypes,
   }),
   {
