@@ -111,6 +111,16 @@ function convertLogType(t: number): LogType {
       return LogType.RemoveFromQueue;
     case 107:
       return LogType.InspectionForce;
+    case 108:
+      return LogType.PalletOnRotaryInbound;
+    case 110:
+      return LogType.PalletInStocker;
+    case 111:
+      return LogType.SignalQuarantine;
+    case 112:
+      return LogType.InvalidateCycle;
+    case 113:
+      return LogType.SwapMaterialOnPallet;
     default:
       return LogType.GeneralMessage;
   }
