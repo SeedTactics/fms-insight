@@ -33,11 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as api from "../../data/api";
-import Button from "@material-ui/core/Button";
-import Dialog from "@material-ui/core/Dialog";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogTitle from "@material-ui/core/DialogTitle";
 import IconButton from "@material-ui/core/IconButton";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -45,7 +40,6 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import { MaterialDetailTitle } from "./Material";
 import { duration } from "moment";
 import { format } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
@@ -260,35 +254,5 @@ export function JobDetails(props: JobDetailsProps) {
         </>
       ) : undefined}
     </div>
-  );
-}
-
-export interface JobDetailDialogProps {
-  readonly job: Readonly<JobDetailsToDisplay> | null;
-  readonly close: () => void;
-}
-
-export function JobDetailDialog(props: JobDetailDialogProps) {
-  return (
-    <Dialog open={props.job !== null} onClose={props.close}>
-      <DialogTitle disableTypography>
-        {props.job !== null ? (
-          <MaterialDetailTitle partName={props.job.partName} subtitle={props.job.unique} />
-        ) : undefined}
-      </DialogTitle>
-      <DialogContent>
-        {props.job !== null ? (
-          <>
-            <JobDisplay job={props.job} />
-            <ConnectedJobMaterial unique={props.job.unique} fullWidth={true} />
-          </>
-        ) : undefined}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={props.close} color="primary">
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
   );
 }

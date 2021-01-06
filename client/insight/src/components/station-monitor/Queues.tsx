@@ -48,6 +48,8 @@ import EditIcon from "@material-ui/icons/Edit";
 import Dialog from "@material-ui/core/Dialog";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import DialogContent from "@material-ui/core/DialogContent";
+import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import TextField from "@material-ui/core/TextField";
 import DialogActions from "@material-ui/core/DialogActions";
 import Fab from "@material-ui/core/Fab";
@@ -81,23 +83,20 @@ import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import ReactToPrint from "react-to-print";
 import { PrintedLabel } from "./PrintedLabel";
-import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import { JobDetailDialog } from "./JobDetails";
+import { JobDetails } from "./JobDetails";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../data/current-status";
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../data/material-details";
-
-interface RawMaterialJobTableProps {
-  readonly queue: string;
-  readonly addCastings: () => void;
-  readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
-  readonly editQty: (job: JobRawMaterialData) => void;
-  readonly showDetails: (job: Readonly<api.IInProcessJob>) => void;
-}
+import Collapse from "@material-ui/core/Collapse";
 
 const useTableStyles = makeStyles((theme) =>
   createStyles({
+    mainRow: {
+      "& > *": {
+        borderBottom: "unset",
+      },
+    },
     labelContainer: {
       display: "flex",
       alignItems: "center",
@@ -114,6 +113,10 @@ const useTableStyles = makeStyles((theme) =>
     noncompletedRow: {
       backgroundColor: "#E0E0E0",
     },
+    collapseCell: {
+      paddingBottom: 0,
+      paddingTop: 0,
+    },
   })
 );
 
@@ -123,6 +126,114 @@ function highlightRow(j: Readonly<api.IInProcessJob>): boolean {
   const comment = j.comment;
   if (!comment || comment === "") return false;
   return LazySeq.ofIterable(highlightedComments).anyMatch((r) => r.test(comment));
+}
+
+export interface RawMaterialJobRowProps {
+  readonly job: JobRawMaterialData;
+  readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
+  readonly editQty: (job: JobRawMaterialData) => void;
+}
+
+function RawMaterialJobRow(props: RawMaterialJobRowProps) {
+  const classes = useTableStyles();
+  const allowEditQty = (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
+  const [open, setOpen] = React.useState<boolean>(false);
+
+  const j = props.job;
+  const bgClass = highlightRow(j.job)
+    ? classes.highlightedRow
+    : j.plannedQty - j.startedQty - j.assignedRaw > 0
+    ? classes.noncompletedRow
+    : undefined;
+
+  return (
+    <>
+      <TableRow className={bgClass ? classes.mainRow + " " + bgClass : classes.mainRow}>
+        <TableCell>
+          <div className={classes.labelContainer}>
+            <div className={classes.identicon}>
+              <PartIdenticon part={j.job.partName} size={j.pathDetails === null ? 25 : 40} />
+            </div>
+            <div>
+              <Typography variant="body2" component="span" display="block">
+                {j.job.unique}
+              </Typography>
+              {j.pathDetails !== null ? (
+                <Typography variant="body2" color="textSecondary" display="block" className={classes.pathDetails}>
+                  {j.pathDetails}
+                </Typography>
+              ) : undefined}
+            </div>
+          </div>
+        </TableCell>
+        <TableCell>{j.path.simulatedStartingUTC.toLocaleString()}</TableCell>
+        <TableCell>
+          {j.rawMatName === j.job.partName ? (
+            j.rawMatName
+          ) : (
+            <div className={classes.labelContainer}>
+              <div className={classes.identicon}>
+                <PartIdenticon part={j.rawMatName} size={25} />
+              </div>
+              <Typography variant="body2" display="block">
+                {j.rawMatName}
+              </Typography>
+            </div>
+          )}
+        </TableCell>
+        <TableCell>
+          {j.job.comment}
+
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => props.editNote(j.job)}>
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+        </TableCell>
+        <TableCell align="right">
+          {j.plannedQty}
+          {allowEditQty ? (
+            <Tooltip title="Edit">
+              <IconButton size="small" onClick={() => props.editQty(j)}>
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+          ) : undefined}
+        </TableCell>
+        <TableCell align="right">{j.startedQty}</TableCell>
+        <TableCell align="right">{j.assignedRaw}</TableCell>
+        <TableCell align="right">
+          <Tooltip
+            title={j.startedQty > 0 || j.assignedRaw > 0 ? `${j.plannedQty} - ${j.startedQty} - ${j.assignedRaw}` : ""}
+          >
+            <span>{j.plannedQty - j.startedQty - j.assignedRaw}</span>
+          </Tooltip>
+        </TableCell>
+        <TableCell align="right">{j.availableUnassigned}</TableCell>
+        <TableCell>
+          <Tooltip title="Show Details">
+            <IconButton size="small" onClick={() => setOpen(!open)}>
+              {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+          </Tooltip>
+        </TableCell>
+      </TableRow>
+      <TableRow className={bgClass}>
+        <TableCell className={classes.collapseCell} colSpan={10}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <JobDetails job={j.job} />
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+}
+
+interface RawMaterialJobTableProps {
+  readonly queue: string;
+  readonly addCastings: () => void;
+  readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
+  readonly editQty: (job: JobRawMaterialData) => void;
 }
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
@@ -135,8 +246,6 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const hasCastings = React.useMemo(() => {
     return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName) >= 0;
   }, [hasOldCastings, jobs]);
-  const classes = useTableStyles();
-  const allowEditQty = (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
 
   return (
     <Table size="small">
@@ -156,87 +265,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
       </TableHead>
       <TableBody>
         {jobs.map((j, idx) => (
-          <TableRow
-            key={idx}
-            className={
-              highlightRow(j.job)
-                ? classes.highlightedRow
-                : j.plannedQty - j.startedQty - j.assignedRaw > 0
-                ? classes.noncompletedRow
-                : undefined
-            }
-          >
-            <TableCell>
-              <div className={classes.labelContainer}>
-                <div className={classes.identicon}>
-                  <PartIdenticon part={j.job.partName} size={j.pathDetails === null ? 25 : 40} />
-                </div>
-                <div>
-                  <Typography variant="body2" component="span" display="block">
-                    {j.job.unique}
-                  </Typography>
-                  {j.pathDetails !== null ? (
-                    <Typography variant="body2" color="textSecondary" display="block" className={classes.pathDetails}>
-                      {j.pathDetails}
-                    </Typography>
-                  ) : undefined}
-                </div>
-              </div>
-            </TableCell>
-            <TableCell>{j.path.simulatedStartingUTC.toLocaleString()}</TableCell>
-            <TableCell>
-              {j.rawMatName === j.job.partName ? (
-                j.rawMatName
-              ) : (
-                <div className={classes.labelContainer}>
-                  <div className={classes.identicon}>
-                    <PartIdenticon part={j.rawMatName} size={25} />
-                  </div>
-                  <Typography variant="body2" display="block">
-                    {j.rawMatName}
-                  </Typography>
-                </div>
-              )}
-            </TableCell>
-            <TableCell>
-              {j.job.comment}
-
-              <Tooltip title="Edit">
-                <IconButton size="small" onClick={() => props.editNote(j.job)}>
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-            </TableCell>
-            <TableCell align="right">
-              {j.plannedQty}
-              {allowEditQty ? (
-                <Tooltip title="Edit">
-                  <IconButton size="small" onClick={() => props.editQty(j)}>
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-              ) : undefined}
-            </TableCell>
-            <TableCell align="right">{j.startedQty}</TableCell>
-            <TableCell align="right">{j.assignedRaw}</TableCell>
-            <TableCell align="right">
-              <Tooltip
-                title={
-                  j.startedQty > 0 || j.assignedRaw > 0 ? `${j.plannedQty} - ${j.startedQty} - ${j.assignedRaw}` : ""
-                }
-              >
-                <span>{j.plannedQty - j.startedQty - j.assignedRaw}</span>
-              </Tooltip>
-            </TableCell>
-            <TableCell align="right">{j.availableUnassigned}</TableCell>
-            <TableCell>
-              <Tooltip title="Show Details">
-                <IconButton size="small" onClick={() => props.showDetails(j.job)}>
-                  <MoreHoriz />
-                </IconButton>
-              </Tooltip>
-            </TableCell>
-          </TableRow>
+          <RawMaterialJobRow key={idx} job={j} editNote={props.editNote} editQty={props.editQty} />
         ))}
       </TableBody>
       {hasCastings ? (
@@ -668,8 +697,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     Readonly<api.IInProcessMaterial>
   > | null>(null);
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
-  const [jobDetailToShow, setJobDetailToShow] = React.useState<Readonly<api.IInProcessJob> | null>(null);
-  const closeJobDetailDialog = React.useCallback(() => setJobDetailToShow(null), []);
   const [chooseSerialOrJobOpen, setChooseSerialOrJobOpen] = React.useState<string | null>(null);
   const closeChooseSerialOrJob = React.useCallback(() => setChooseSerialOrJobOpen(null), []);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
@@ -740,7 +767,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                   addCastings={() => setAddCastingQueue(region.label)}
                   editNote={setChangeNoteForJob}
                   editQty={setEditQtyForJob}
-                  showDetails={setJobDetailToShow}
                 />
               </div>
             ) : undefined}
@@ -755,7 +781,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />
-      <JobDetailDialog job={jobDetailToShow} close={closeJobDetailDialog} />
     </main>
   );
 });
