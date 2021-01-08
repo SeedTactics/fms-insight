@@ -38,6 +38,8 @@ import {
   MaterialBinType,
   moveMaterialBin,
   currentMaterialBinOrder,
+  MaterialBin,
+  moveMaterialInBin,
 } from "../../data/all-material-bins";
 import * as matDetails from "../../data/material-details";
 import * as currentSt from "../../data/current-status";
@@ -46,7 +48,7 @@ import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
 import { LazySeq } from "../../data/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
-import { IInProcessMaterial, LocType } from "../../data/api";
+import { IInProcessMaterial, LocType, QueuePosition } from "../../data/api";
 import { HashMap, Ordering } from "prelude-ts";
 import {
   InvalidateCycleDialogButtons,
@@ -57,6 +59,7 @@ import {
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { JobsBackend } from "../../data/backend";
 
 enum DragType {
   Material = "DRAG_MATERIAL",
@@ -74,13 +77,13 @@ function getQueueStyle(isDraggingOver: boolean, draggingFromThisWith: string | u
   };
 }
 
-interface MaterialQueueProps {
+interface QuarantineQueueProps {
   readonly queue: string;
   readonly idx: number;
   readonly material: ReadonlyArray<Readonly<IInProcessMaterial>>;
 }
 
-const MaterialQueue = React.memo(function DraggableMaterialQueueF(props: MaterialQueueProps) {
+const QuarantineQueue = React.memo(function QuarantineQueue(props: QuarantineQueueProps) {
   return (
     <Draggable draggableId={props.queue} index={props.idx}>
       {(provided, snapshot) => (
@@ -274,11 +277,16 @@ export function AllMaterial(props: AllMaterialProps) {
   React.useEffect(() => {
     document.title = "All Material - FMS Insight";
   }, []);
-  const [st, setCurrentSt] = useRecoilState(currentSt.currentStatus);
+  const st = useRecoilValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
-  const allBins = React.useMemo(() => selectAllMaterialIntoBins(st, matBinOrder), [st, matBinOrder]);
   const displayMaterial = useRecoilValue(matDetails.materialDetail);
-  const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
+
+  const binsFromSt = React.useMemo(() => selectAllMaterialIntoBins(st, matBinOrder), [st, matBinOrder]);
+  const [tempBinsDuringUpdate, setTempBinsDuringUpdate] = React.useState<ReadonlyArray<MaterialBin> | null>(null);
+  React.useEffect(() => {
+    setTempBinsDuringUpdate(null);
+  }, [st]);
+  const allBins = tempBinsDuringUpdate ?? binsFromSt;
 
   const curBins = props.displaySystemBins
     ? allBins
@@ -292,8 +300,17 @@ export function AllMaterial(props: AllMaterialProps) {
       const queue = result.destination.droppableId;
       const materialId = parseInt(result.draggableId);
       const queuePosition = result.destination.index;
-      addExistingMatToQueue({ materialId, queue, queuePosition, operator: null });
-      setCurrentSt(currentSt.reorder_queued_mat(queue, materialId, queuePosition));
+      const mat = st.material.find((m) => m.materialID === materialId);
+      if (mat) {
+        setTempBinsDuringUpdate(moveMaterialInBin(allBins, mat, queue, queuePosition));
+        JobsBackend.setMaterialInQueue(
+          materialId,
+          new QueuePosition({ queue, position: queuePosition }),
+          undefined
+        ).catch(() => {
+          setTempBinsDuringUpdate(null);
+        });
+      }
     } else if (result.type === DragType.Queue) {
       setMatBinOrder(
         moveMaterialBin(
@@ -358,7 +375,7 @@ export function AllMaterial(props: AllMaterialProps) {
                   );
                 case MaterialBinType.QuarantineQueues:
                   return (
-                    <MaterialQueue key={matBin.binId} idx={idx} queue={matBin.queueName} material={matBin.material} />
+                    <QuarantineQueue key={matBin.binId} idx={idx} queue={matBin.queueName} material={matBin.material} />
                   );
               }
             })}
