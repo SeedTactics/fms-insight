@@ -350,7 +350,7 @@
       }
     },
     "/api/v1/jobs/check-valid": {
-      "get": {
+      "post": {
         "tags": [
           "jobs"
         ],
