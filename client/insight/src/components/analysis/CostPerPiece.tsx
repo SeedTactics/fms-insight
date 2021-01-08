@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -47,6 +47,7 @@ import ImportExport from "@material-ui/icons/ImportExport";
 import { makeStyles, createStyles } from "@material-ui/core/styles";
 import { PartCycleData } from "../../data/events.cycles";
 import BuildIcon from "@material-ui/icons/Build";
+import CallSplit from "@material-ui/icons/CallSplit";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { HashSet, Vector } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
@@ -58,6 +59,7 @@ import {
   copyCostPerPieceToClipboard,
   CostData,
   PartCost,
+  copyCostBreakdownToClipboard,
 } from "../../data/cost-per-piece";
 import { format } from "date-fns";
 import Tooltip from "@material-ui/core/Tooltip";
@@ -301,6 +303,82 @@ const pctFormat = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 });
 
+interface CostBreakdownProps {
+  readonly costs: CostData;
+}
+
+function CostBreakdown(props: CostBreakdownProps) {
+  const classes = useTableStyles();
+
+  return (
+    <Card style={{ marginTop: "2em" }}>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <CallSplit style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Part Cost Percentage Breakdown</div>
+            <div style={{ flexGrow: 1 }} />
+            <Tooltip title="Copy to Clipboard">
+              <IconButton
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                onClick={() => copyCostBreakdownToClipboard(props.costs)}
+              >
+                <ImportExport />
+              </IconButton>
+            </Tooltip>
+          </div>
+        }
+      />
+      <CardContent>
+        <Table data-testid="part-cost-pct-table">
+          <TableHead>
+            <TableRow>
+              <TableCell>Part</TableCell>
+              <TableCell align="right">Completed Quantity</TableCell>
+              {props.costs.machineCostGroups.map((m) => (
+                <TableCell align="right" key={m}>
+                  {m} Cost %
+                </TableCell>
+              ))}
+              <TableCell align="right">Labor Cost %</TableCell>
+              <TableCell align="right">Automation Cost %</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Vector.ofIterable(props.costs.parts)
+              .sortOn((c) => c.part)
+              .transform((x) => LazySeq.ofIterable(x))
+              .map((c, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>
+                    <div className={classes.labelContainer}>
+                      <div className={classes.identicon}>
+                        <PartIdenticon part={c.part} size={25} />
+                      </div>
+                      <div>
+                        <Typography variant="body2" component="span" display="block">
+                          {c.part}
+                        </Typography>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell align="right">{c.parts_completed}</TableCell>
+                  {props.costs.machineCostGroups.map((m) => (
+                    <TableCell align="right" key={m}>
+                      {pctFormat.format(c.machine.pctPerStat.get(m) ?? 0)}
+                    </TableCell>
+                  ))}
+                  <TableCell align="right">{pctFormat.format(c.labor.percent)}</TableCell>
+                  <TableCell align="right">{pctFormat.format(c.automation_pct)}</TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
 function MachineCostTooltip({
   part,
   machineCostForPeriod,
@@ -380,7 +458,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
                   <TableCell align="right">{c.parts_completed}</TableCell>
                   <TableCell align="right">
                     <Tooltip
-                      title={<MachineCostTooltip part={c} machineCostForPeriod={props.costs.machineCostForPeriod} />}
+                      title={<MachineCostTooltip part={c} machineCostForPeriod={props.costs.stationCostForPeriod} />}
                     >
                       <span>
                         {c.parts_completed > 0 ? decimalFormat.format(c.machine.cost / c.parts_completed) : 0}
@@ -437,7 +515,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
 
 function CostInputCard(props: { children: React.ReactNode }) {
   return (
-    <Card style={{ maxWidth: "45em", width: "100%" }}>
+    <Card style={{ maxWidth: "45em", width: "100%", marginTop: "2em" }}>
       <CardHeader
         title={
           <div
@@ -503,7 +581,8 @@ function CostPerPiecePage(props: CostPerPieceProps) {
       return {
         totalLaborCostForPeriod: 0,
         automationCostForPeriod: 0,
-        machineCostForPeriod: new Map<string, number>(),
+        stationCostForPeriod: new Map<string, number>(),
+        machineCostGroups: [],
         parts: [],
       };
     }
@@ -535,6 +614,7 @@ function CostPerPiecePage(props: CostPerPieceProps) {
 
   return (
     <>
+      <CostBreakdown costs={computedCosts} />
       <div style={{ display: "flex", justifyContent: "center" }}>
         <CostInputCard>
           <div style={{ display: "flex", flexDirection: "column" }}>

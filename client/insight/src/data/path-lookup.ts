@@ -31,157 +31,96 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
 import { LogBackend, OtherLogBackends } from "./backend";
 import { HashMap } from "prelude-ts";
 import { InspectionLogEntry } from "./events.inspection";
 import * as insp from "./events.inspection";
 import { addDays } from "date-fns";
+import { atom, selector, waitForAny } from "recoil";
 
-export enum ActionType {
-  SearchDateRange = "PathLookup_Search",
-  LoadLogFromOtherServer = "PathLookup_LoadFromOtherServer",
-  Clear = "PathLookup_Clear",
+export type PathLookupLogEntries = HashMap<insp.PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+
+export interface PathLookupRange {
+  readonly part: string;
+  readonly curStart: Date;
+  readonly curEnd: Date;
 }
 
-export type Action =
-  | {
-      type: ActionType.Clear;
+export const pathLookupRange = atom<PathLookupRange | null>({
+  key: "path-lookup-range",
+  default: null,
+});
+
+const localLogEntries = selector<PathLookupLogEntries>({
+  key: "path-lookup-local",
+  get: async ({ get }) => {
+    const range = get(pathLookupRange);
+    if (range == null) return HashMap.empty();
+
+    const events = await LogBackend.get(range.curStart, range.curEnd);
+    return insp.process_events({ type: insp.ExpireOldDataType.NoExpire }, events, range.part, {
+      by_part: HashMap.empty(),
+    }).by_part;
+  },
+});
+
+const otherLogEntries = selector<PathLookupLogEntries>({
+  key: "path-lookup-other",
+  get: async ({ get }) => {
+    const range = get(pathLookupRange);
+    if (range == null) return HashMap.empty();
+
+    let st: insp.InspectionState = { by_part: HashMap.empty() };
+
+    for (const b of OtherLogBackends) {
+      const events = await b.get(range.curStart, range.curEnd);
+      st = insp.process_events({ type: insp.ExpireOldDataType.NoExpire }, events, range.part, st);
     }
-  | {
-      type: ActionType.SearchDateRange;
-      part: string;
-      initialLoad: boolean;
-      curStart: Date;
-      curEnd: Date;
-      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>;
+
+    return st.by_part;
+  },
+});
+
+export const inspectionLogEntries = selector<PathLookupLogEntries>({
+  key: "path-lookup-logs",
+  get: ({ get }) => {
+    const entries = get(waitForAny([localLogEntries, otherLogEntries]));
+
+    const vals = entries
+      .filter((e) => e.state === "hasValue")
+      .map((e) => e.valueOrThrow())
+      .filter((e) => !e.isEmpty());
+    if (vals.length === 0) {
+      return HashMap.empty();
+    } else if (vals.length === 1) {
+      return vals[0];
+    } else {
+      let m = vals[0];
+      for (let i = 1; i < vals.length; i++) {
+        m = m.mergeWith(vals[i], (oldEntries, newEntries) =>
+          oldEntries.concat(newEntries).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
+        );
+      }
+      return m;
     }
-  | {
-      type: ActionType.LoadLogFromOtherServer;
-      part: string;
-      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>;
-    };
+  },
+});
 
-export function searchForPaths(part: string, start: Date, end: Date): ReadonlyArray<PledgeToPromise<Action>> {
-  const mainLoad = {
-    type: ActionType.SearchDateRange,
-    part,
-    initialLoad: true,
-    curStart: start,
-    curEnd: end,
-    pledge: LogBackend.get(start, end),
-  } as PledgeToPromise<Action>;
-
-  const extra = OtherLogBackends.map(
-    (b) =>
-      ({
-        type: ActionType.LoadLogFromOtherServer,
-        part,
-        pledge: b.get(start, end),
-      } as PledgeToPromise<Action>)
-  );
-  return [mainLoad].concat(extra);
-}
-
-export function extendRange(
-  part: string,
-  oldStart: Date,
-  oldEnd: Date,
-  numDays: number
-): ReadonlyArray<PledgeToPromise<Action>> {
-  let start: Date, end: Date;
-  let newStart: Date | undefined, newEnd: Date | undefined;
-  if (numDays < 0) {
-    start = addDays(oldStart, numDays);
-    end = oldStart;
-    newStart = start;
-  } else {
-    start = oldEnd;
-    end = addDays(oldEnd, numDays);
-    newEnd = end;
-  }
-  const mainLoad = {
-    type: ActionType.SearchDateRange,
-    part,
-    initialLoad: false,
-    curStart: newStart,
-    curEnd: newEnd,
-    pledge: LogBackend.get(start, end),
-  } as PledgeToPromise<Action>;
-
-  const extra = OtherLogBackends.map(
-    (b) =>
-      ({
-        type: ActionType.LoadLogFromOtherServer,
-        part,
-        pledge: b.get(start, end),
-      } as PledgeToPromise<Action>)
-  );
-  return [mainLoad].concat(extra);
-}
-
-export interface State {
-  readonly entries: HashMap<insp.PartAndInspType, ReadonlyArray<InspectionLogEntry>> | undefined;
-  readonly loading: boolean;
-  readonly curStart?: Date;
-  readonly curEnd?: Date;
-  readonly load_error?: Error;
-}
-
-export const initial: State = {
-  entries: undefined,
-  loading: false,
-};
-
-function processEvents(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>, partToSearch: string, old: State): State {
-  return {
-    ...old,
-    entries: insp.process_events({ type: insp.ExpireOldDataType.NoExpire }, newEvts, partToSearch, {
-      by_part: old.entries || HashMap.empty(),
-    }).by_part,
+export function extendRange(numDays: number): (range: PathLookupRange | null) => PathLookupRange | null {
+  return (range) => {
+    if (range === null) return null;
+    if (numDays < 0) {
+      return {
+        curStart: addDays(range.curStart, numDays),
+        curEnd: range.curEnd,
+        part: range.part,
+      };
+    } else {
+      return {
+        curStart: range.curStart,
+        curEnd: addDays(range.curEnd, numDays),
+        part: range.part,
+      };
+    }
   };
-}
-
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) {
-    return initial;
-  }
-  switch (a.type) {
-    case ActionType.SearchDateRange:
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          return {
-            entries: a.initialLoad ? HashMap.empty() : s.entries,
-            loading: true,
-            curStart: a.curStart || s.curStart,
-            curEnd: a.curEnd || s.curEnd,
-          };
-        case PledgeStatus.Error:
-          return { entries: HashMap.empty(), loading: false, load_error: a.pledge.error };
-        case PledgeStatus.Completed:
-          return {
-            ...processEvents(a.pledge.result, a.part, s),
-            loading: false,
-          };
-        default:
-          return s;
-      }
-    case ActionType.LoadLogFromOtherServer:
-      if (a.pledge.status === PledgeStatus.Completed) {
-        if (s.entries) {
-          return processEvents(a.pledge.result, a.part, s);
-        } else {
-          return s; // happens if the data is cleared before the response arrives
-        }
-      } else {
-        return s; // ignore starting and errors for other servers
-      }
-
-    case ActionType.Clear:
-      return initial;
-
-    default:
-      return s;
-  }
 }

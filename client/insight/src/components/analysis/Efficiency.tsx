@@ -92,16 +92,14 @@ import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
 import { BufferChart } from "./BufferChart";
 import { useIsDemo } from "../IsDemo";
+import { useSetRecoilState } from "recoil";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
 // --------------------------------------------------------------------------------
 
-interface PartStationCycleChartProps {
-  readonly openMaterial: (matId: number) => void;
-}
-
-function PartMachineCycleChart(props: PartStationCycleChartProps) {
+function PartMachineCycleChart() {
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as PartCycleData;
@@ -110,12 +108,12 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
         ret.push({
           title: mat.serial ? mat.serial : "Material",
           value: "Open Card",
-          link: () => props.openMaterial(mat.id),
+          link: () => setMatToShow({ type: "LogMat", logMat: mat }),
         });
       }
       return ret;
     },
-    [props.openMaterial]
+    [setMatToShow]
   );
 
   // values which user can select to be filtered on
@@ -368,7 +366,6 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
-            openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
           />
         )}
@@ -377,17 +374,14 @@ function PartMachineCycleChart(props: PartStationCycleChartProps) {
   );
 }
 
-const ConnectedPartMachineCycleChart = connect((st) => ({}), {
-  openMaterial: matDetails.openMaterialById,
-})(PartMachineCycleChart);
-
 // --------------------------------------------------------------------------------
 // Load Cycles
 // --------------------------------------------------------------------------------
 
 type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
-function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
+function PartLoadStationCycleChart() {
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const extraLoadCycleTooltip = React.useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;
@@ -395,15 +389,15 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
       if (partC.operations) {
         for (const mat of partC.operations) {
           ret.push({
-            title: (mat.serial ? mat.serial : "Material") + " " + mat.operation,
+            title: (mat.mat.serial ? mat.mat.serial : "Material") + " " + mat.operation,
             value: "Open Card",
-            link: () => props.openMaterial(mat.id),
+            link: () => setMatToShow({ type: "LogMat", logMat: mat.mat }),
           });
         }
       }
       return ret;
     },
-    [props.openMaterial]
+    [setMatToShow]
   );
 
   const allParts = useSelector((st) =>
@@ -597,7 +591,6 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
-            openDetails={props.openMaterial}
             showWorkorderAndInspect={true}
             hideMedian={selectedOperation === "LULOccupancy"}
           />
@@ -606,10 +599,6 @@ function PartLoadStationCycleChart(props: PartStationCycleChartProps) {
     </Card>
   );
 }
-
-const ConnectedPartLoadStationCycleChart = connect((st) => ({}), {
-  openMaterial: matDetails.openMaterialById,
-})(PartLoadStationCycleChart);
 
 // --------------------------------------------------------------------------------
 // Pallet Cycles
@@ -885,26 +874,21 @@ function CompletedCountHeatmap(props: CompletedHeatmapProps) {
 // Inspection
 // --------------------------------------------------------------------------------
 
-const ConnectedInspection = connect(
-  (st) => ({
-    inspectionlogs:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? st.Events.last30.inspection.by_part
-        : st.Events.selected_month.inspection.by_part,
-    zoomType:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? DataTableActionZoomType.Last30Days
-        : DataTableActionZoomType.ZoomIntoRange,
-    default_date_range:
-      st.Events.analysis_period === AnalysisPeriod.Last30Days
-        ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-        : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-    defaultToTable: false,
-  }),
-  {
-    openMaterialDetails: matDetails.openMaterialById,
-  }
-)(InspectionSankey);
+const ConnectedInspection = connect((st) => ({
+  inspectionlogs:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.inspection.by_part
+      : st.Events.selected_month.inspection.by_part,
+  zoomType:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? DataTableActionZoomType.Last30Days
+      : DataTableActionZoomType.ZoomIntoRange,
+  default_date_range:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+      : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
+  defaultToTable: false,
+}))(InspectionSankey);
 
 // --------------------------------------------------------------------------------
 // Efficiency
@@ -919,10 +903,10 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
       <AnalysisSelectToolbar />
       <main style={{ padding: "24px" }}>
         <div data-testid="part-cycle-chart">
-          <ConnectedPartMachineCycleChart />
+          <PartMachineCycleChart />
         </div>
         <div data-testid="part-load-cycle-chart" style={{ marginTop: "3em" }}>
-          <ConnectedPartLoadStationCycleChart />
+          <PartLoadStationCycleChart />
         </div>
         <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
           <ConnectedPalletCycleChart />

@@ -3,10 +3,9 @@
 exports[`computes part costs: cost calcs 1`] = `
 Object {
   "automationCostForPeriod": 821.917808219178,
-  "machineCostForPeriod": Map {
-    "L/U" => 0,
-    "Machine" => 405.6986301369863,
-  },
+  "machineCostGroups": Array [
+    "Machine",
+  ],
   "parts": Array [
     Object {
       "automation_pct": 0.17792543373938724,
@@ -99,6 +98,10 @@ Object {
       "parts_completed": 247,
     },
   ],
+  "stationCostForPeriod": Map {
+    "L/U" => 0,
+    "Machine" => 405.6986301369863,
+  },
   "totalLaborCostForPeriod": 7822080,
 }
 `;

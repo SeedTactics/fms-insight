@@ -39,16 +39,19 @@ import "@testing-library/jest-dom/extend-expect";
 import Efficiency from "./Efficiency";
 import { createTestStore } from "../../test-util";
 import LoadingIcon from "../LoadingIcon";
+import { RecoilRoot } from "recoil";
 
 it("renders the efficiency page", async () => {
   const store = await createTestStore();
 
   const result = render(
     <store.Provider>
-      <div>
-        <LoadingIcon />
-        <Efficiency allowSetType={true} />
-      </div>
+      <RecoilRoot>
+        <div>
+          <LoadingIcon />
+          <Efficiency allowSetType={true} />
+        </div>
+      </RecoilRoot>
     </store.Provider>
   );
 

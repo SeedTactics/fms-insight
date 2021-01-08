@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -36,20 +36,22 @@ import * as ReactDOM from "react-dom";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import "react-vis/dist/style.css";
 import "highlight.js/styles/default.css";
-import "fontsource-roboto/300.css";
-import "fontsource-roboto/400.css";
-import "fontsource-roboto/500.css";
-import "fontsource-roboto/700.css";
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
 
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";
 import { ThemeProvider } from "@material-ui/core/styles";
 import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
-import { RecoilRoot } from "recoil";
+import { MutableSnapshot, RecoilRoot } from "recoil";
+import { enableMapSet } from "immer";
+enableMapSet();
 
 import App, { AppProps } from "./components/App";
 import { Store } from "./store/typed-redux";
-import { IsDemoProvider } from "./components/IsDemo";
+import { isDemo } from "./components/IsDemo";
 
 export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null) {
   const theme = createMuiTheme({
@@ -59,18 +61,20 @@ export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElem
     },
   });
 
+  function init(s: MutableSnapshot): void {
+    s.set(isDemo, props.demo);
+  }
+
   ReactDOM.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <IsDemoProvider value={props.demo}>
-        <RecoilRoot>
-          <store.Provider>
-            {/* <React.StrictMode> */}
-            <App {...props} />
-            {/* </React.StrictMode> */}
-          </store.Provider>
-        </RecoilRoot>
-      </IsDemoProvider>
+      <RecoilRoot initializeState={init}>
+        <store.Provider>
+          {/* <React.StrictMode> */}
+          <App {...props} />
+          {/* </React.StrictMode> */}
+        </store.Provider>
+      </RecoilRoot>
     </ThemeProvider>,
     elem
   );

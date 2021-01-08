@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -31,196 +31,286 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { Pledge, PledgeStatus, PledgeToPromise } from "../store/middleware";
 import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "./backend";
 import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { MaterialSummary } from "./events.matsummary";
+import { atom, DefaultValue, selector, useSetRecoilState, waitForNone } from "recoil";
+import {
+  IInProcessMaterial,
+  ILogEntry,
+  ILogMaterial,
+  IPartWorkorder,
+  IWorkorderPartSummary,
+  IWorkorderSummary,
+  LogType,
+  NewInspectionCompleted,
+  NewWash,
+  QueuePosition,
+} from "./api";
+import { useCallback, useState } from "react";
 
-export enum ActionType {
-  OpenMaterialDialog = "MaterialDetails_Open",
-  OpenMaterialDialogWithoutLoad = "MaterialDetails_OpenWithoutLoad",
-  LoadLogFromOtherServer = "MaterialDetails_LoadLogFromOtherServer",
-  CloseMaterialDialog = "MaterialDetails_Close",
-  UpdateMaterial = "MaterialDetails_UpdateMaterial",
-  LoadWorkorders = "OrderAssign_LoadWorkorders",
-  AddNewMaterialToQueue = "MaterialDetails_AddNewMaterialToQueue",
-}
+export type MaterialToShow =
+  | { type: "MatSummary"; summary: Readonly<MaterialSummary> }
+  | { type: "LogMat"; logMat: Readonly<ILogMaterial> }
+  | { type: "Serial"; serial: string | null; addToQueue?: string };
 
-export interface WorkorderPlanAndSummary {
-  readonly plan: Readonly<api.IPartWorkorder>;
-  readonly summary?: Readonly<api.IWorkorderPartSummary>;
-}
+const matToShow = atom<MaterialToShow | null>({
+  key: "mat-to-show-in-dialog",
+  default: null,
+});
+
+export const loadWorkordersForMaterialInDialog = atom<boolean>({
+  key: "load-workorders-for-mat-in-dialog",
+  default: false,
+});
+
+const extraLogEventsFromUpdates = atom<ReadonlyArray<ILogEntry>>({
+  key: "extra-mat-events",
+  default: [],
+});
+
+export const materialToShowInDialog = selector<MaterialToShow | null>({
+  key: "mat-to-show-in-dialog-sel",
+  get: ({ get }) => get(matToShow),
+  set: ({ set }, newVal) => {
+    if (newVal instanceof DefaultValue || newVal === null) {
+      set(matToShow, null);
+      set(loadWorkordersForMaterialInDialog, false);
+      set(extraLogEventsFromUpdates, []);
+    } else {
+      set(matToShow, newVal);
+    }
+  },
+});
+
+//--------------------------------------------------------------------------------
+// Material Details
+//--------------------------------------------------------------------------------
+
+const localMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
+  key: "mat-to-show-local-evts",
+  get: async ({ get }) => {
+    const mat = get(matToShow);
+    if (mat === null) return [];
+
+    switch (mat.type) {
+      case "MatSummary":
+        return await LogBackend.logForMaterial(mat.summary.materialID);
+      case "LogMat":
+        return await LogBackend.logForMaterial(mat.logMat.id);
+      case "Serial":
+        if (mat.serial && mat.serial !== "") {
+          return await LogBackend.logForSerial(mat.serial);
+        } else {
+          return [];
+        }
+    }
+  },
+});
+
+const otherMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
+  key: "mat-to-show-other-evts",
+  get: async ({ get }) => {
+    const mat = get(matToShow);
+    if (mat === null) return [];
+
+    const evts: Array<Readonly<ILogEntry>> = [];
+
+    for (const b of OtherLogBackends) {
+      switch (mat.type) {
+        case "MatSummary":
+          evts.push.apply(await b.logForMaterial(mat.summary.materialID));
+          break;
+        case "LogMat":
+          evts.push.apply(await b.logForMaterial(mat.logMat.id));
+          break;
+        case "Serial":
+          if (mat.serial && mat.serial !== "") {
+            evts.push.apply(await b.logForSerial(mat.serial));
+          }
+          break;
+      }
+    }
+
+    return evts;
+  },
+});
 
 export interface MaterialDetail {
   readonly materialID: number;
-  readonly partName: string;
   readonly jobUnique: string;
+  readonly partName: string;
+  readonly startedProcess1: boolean;
+
   readonly serial?: string;
   readonly workorderId?: string;
+
   readonly signaledInspections: ReadonlyArray<string>;
   readonly completedInspections: ReadonlyArray<string>;
-  readonly openedViaBarcodeScanner: boolean;
-
-  readonly updating_material: boolean;
 
   readonly loading_events: boolean;
-  readonly events: Vector<Readonly<api.ILogEntry>>;
-
-  readonly loading_workorders: boolean;
-  readonly workorders: Vector<WorkorderPlanAndSummary>;
+  readonly events: Vector<Readonly<ILogEntry>>;
 }
 
-export type Action =
-  | {
-      type: ActionType.CloseMaterialDialog;
+export const materialDetail = selector<MaterialDetail | null>({
+  key: "material-detail",
+  get: ({ get }) => {
+    const curMat = get(matToShow);
+    if (curMat === null) return null;
+
+    const [localEvts, otherEvts] = get(waitForNone([localMatEvents, otherMatEvents]));
+    const evtsFromUpdate = get(extraLogEventsFromUpdates);
+    const loading = localEvts.state === "loading" || otherEvts.state === "loading";
+    const allEvents = Vector.ofIterable(localEvts.state === "hasValue" ? localEvts.valueOrThrow() : [])
+      .appendAll(otherEvts.state === "hasValue" ? otherEvts.valueOrThrow() : [])
+      .sortOn(
+        (e) => e.endUTC.getTime(),
+        (e) => e.counter
+      )
+      .appendAll(evtsFromUpdate);
+
+    let mat: MaterialDetail;
+    switch (curMat.type) {
+      case "MatSummary":
+        mat = {
+          ...curMat.summary,
+          completedInspections: [],
+          loading_events: loading,
+          events: Vector.empty(),
+        };
+        break;
+      case "LogMat":
+        mat = {
+          materialID: curMat.logMat.id,
+          jobUnique: curMat.logMat.uniq,
+          partName: curMat.logMat.part,
+          startedProcess1: curMat.logMat.proc > 0,
+          serial: curMat.logMat.serial,
+          workorderId: curMat.logMat.workorder,
+          signaledInspections: [],
+          completedInspections: [],
+          loading_events: loading,
+          events: Vector.empty(),
+        };
+        break;
+      case "Serial":
+        mat = {
+          materialID: -1,
+          jobUnique: "",
+          partName: "",
+          startedProcess1: false,
+          serial: curMat.serial ?? undefined,
+          workorderId: undefined,
+          signaledInspections: [],
+          completedInspections: [],
+          loading_events: loading,
+          events: Vector.empty(),
+        };
+        break;
     }
-  | {
-      type: ActionType.OpenMaterialDialog;
-      initial: MaterialDetail;
-      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>;
-    }
-  | {
-      type: ActionType.LoadLogFromOtherServer;
-      pledge: Pledge<ReadonlyArray<Readonly<api.ILogEntry>>>;
-    }
-  | {
-      type: ActionType.OpenMaterialDialogWithoutLoad;
-      mat: MaterialDetail;
-    }
-  | {
-      type: ActionType.UpdateMaterial;
-      newCompletedInspection?: string;
-      newWorkorder?: string;
-      newSerial?: string;
-      newSignaledInspection?: string;
-      pledge: Pledge<Readonly<api.ILogEntry> | undefined>;
-    }
-  | {
-      type: ActionType.LoadWorkorders;
-      pledge: Pledge<Vector<WorkorderPlanAndSummary>>;
-    }
-  | {
-      type: ActionType.AddNewMaterialToQueue;
-      pledge: Pledge<void>;
+
+    let inspTypes = HashSet.ofIterable(mat.signaledInspections);
+    let completedTypes = HashSet.ofIterable(mat.completedInspections);
+
+    allEvents.forEach((e) => {
+      e.material.forEach((m) => {
+        if (mat.materialID < 0 && mat.serial === m.serial) {
+          mat = { ...mat, materialID: m.id };
+        }
+        if (mat.partName === "") {
+          mat = { ...mat, partName: m.part };
+        }
+        if (mat.jobUnique === "") {
+          mat = { ...mat, jobUnique: m.uniq };
+        }
+      });
+
+      switch (e.type) {
+        case LogType.PartMark:
+          mat = { ...mat, serial: e.result };
+          break;
+
+        case LogType.OrderAssignment:
+          mat = { ...mat, workorderId: e.result };
+          break;
+
+        case LogType.Inspection:
+          if (e.result.toLowerCase() === "true" || e.result === "1") {
+            const itype = (e.details || {}).InspectionType;
+            if (itype) {
+              inspTypes = inspTypes.add(itype);
+            }
+          }
+          break;
+
+        case LogType.InspectionForce:
+          if (e.result.toLowerCase() === "true" || e.result === "1") {
+            inspTypes = inspTypes.add(e.program);
+          }
+          break;
+
+        case LogType.InspectionResult:
+          completedTypes = completedTypes.add(e.program);
+          break;
+      }
+    });
+
+    return {
+      ...mat,
+      signaledInspections: inspTypes.toArray({ sortOn: (x) => x }),
+      completedInspections: completedTypes.toArray({ sortOn: (x) => x }),
+      events: allEvents,
     };
+  },
+});
 
-export function openMaterialDialog(mat: Readonly<MaterialSummary>): ReadonlyArray<PledgeToPromise<Action>> {
-  const mainLoad = {
-    type: ActionType.OpenMaterialDialog,
-    initial: {
-      materialID: mat.materialID,
-      partName: mat.partName,
-      jobUnique: mat.jobUnique,
-      serial: mat.serial,
-      workorderId: mat.workorderId,
-      signaledInspections: mat.signaledInspections,
-      completedInspections: [],
-      loading_events: true,
-      updating_material: false,
-      events: Vector.empty(),
-      loading_workorders: false,
-      saving_workorder: false,
-      workorders: Vector.empty(),
-      openedViaBarcodeScanner: false,
-    } as MaterialDetail,
-    pledge: LogBackend.logForMaterial(mat.materialID),
-  } as PledgeToPromise<Action>;
+//--------------------------------------------------------------------------------
+// Workorders
+//--------------------------------------------------------------------------------
 
-  let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
-  if (mat.serial && mat.serial !== "") {
-    const serial = mat.serial;
-    extra = OtherLogBackends.map(
-      (b) =>
-        ({
-          type: ActionType.LoadLogFromOtherServer,
-          pledge: b.logForSerial(serial),
-        } as PledgeToPromise<Action>)
+export interface WorkorderPlanAndSummary {
+  readonly plan: Readonly<IPartWorkorder>;
+  readonly summary?: Readonly<IWorkorderPartSummary>;
+}
+
+export const possibleWorkordersForMaterialInDialog = selector<Vector<WorkorderPlanAndSummary>>({
+  key: "possible-workorders-for-mat-in-dialog",
+  get: async ({ get }) => {
+    const mat = get(materialDetail);
+    const load = get(loadWorkordersForMaterialInDialog);
+    if (mat === null || mat.partName === "" || load === false) return Vector.empty();
+
+    const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName);
+    const summaries: IWorkorderSummary[] = [];
+    for (const ws of LazySeq.ofIterable(works).chunk(16)) {
+      summaries.push(...(await LogBackend.getWorkorders(ws.map((w) => w.workorderId))));
+    }
+
+    const workMap = new Map<string, WorkorderPlanAndSummary>();
+    for (const w of works) {
+      workMap.set(w.workorderId, { plan: w });
+    }
+    for (const s of summaries) {
+      for (const w of s.parts) {
+        if (w.name === mat.partName) {
+          const planAndS = workMap.get(s.id);
+          if (planAndS) {
+            workMap.set(s.id, { ...planAndS, summary: w });
+          }
+        }
+      }
+    }
+    return Vector.ofIterable(workMap.values()).sortOn(
+      (w) => w.plan.dueDate.getTime(),
+      (w) => -w.plan.priority
     );
-  }
-  return [mainLoad].concat(extra);
-}
+  },
+});
 
-export function openMaterialDialogWithEmptyMat(): PledgeToPromise<Action> {
-  return {
-    type: ActionType.OpenMaterialDialogWithoutLoad,
-    mat: {
-      materialID: -1,
-      partName: "",
-      jobUnique: "",
-      serial: "",
-      workorderId: "",
-      signaledInspections: [],
-      completedInspections: [],
-      loading_events: false,
-      updating_material: false,
-      events: Vector.empty(),
-      loading_workorders: false,
-      saving_workorder: false,
-      workorders: Vector.empty(),
-      openedViaBarcodeScanner: false,
-    } as MaterialDetail,
-  };
-}
-
-export function openMaterialById(matId: number): PledgeToPromise<Action> {
-  const mainLoad = {
-    type: ActionType.OpenMaterialDialog,
-    initial: {
-      materialID: matId,
-      partName: "",
-      jobUnique: "",
-      serial: "",
-      workorderId: "",
-      signaledInspections: [],
-      completedInspections: [],
-      loading_events: true,
-      updating_material: false,
-      events: Vector.empty(),
-      loading_workorders: false,
-      saving_workorder: false,
-      workorders: Vector.empty(),
-      openedViaBarcodeScanner: false,
-    } as MaterialDetail,
-    pledge: LogBackend.logForMaterial(matId),
-  } as PledgeToPromise<Action>;
-  return mainLoad;
-}
-
-export function openMaterialBySerial(serial: string, openedByBarcode: boolean): ReadonlyArray<PledgeToPromise<Action>> {
-  const mainLoad = {
-    type: ActionType.OpenMaterialDialog,
-    initial: {
-      materialID: -1,
-      partName: "",
-      jobUnique: "",
-      serial: serial,
-      workorderId: "",
-      signaledInspections: [],
-      completedInspections: [],
-      loading_events: true,
-      updating_material: false,
-      events: Vector.empty(),
-      loading_workorders: false,
-      saving_workorder: false,
-      workorders: Vector.empty(),
-      openedViaBarcodeScanner: openedByBarcode,
-    } as MaterialDetail,
-    pledge: LogBackend.logForSerial(serial),
-  } as PledgeToPromise<Action>;
-  let extra: ReadonlyArray<PledgeToPromise<Action>> = [];
-  if (serial !== "") {
-    extra = OtherLogBackends.map(
-      (b) =>
-        ({
-          type: ActionType.LoadLogFromOtherServer,
-          pledge: b.logForSerial(serial),
-        } as PledgeToPromise<Action>)
-    );
-  }
-  return [mainLoad].concat(extra);
-}
+//--------------------------------------------------------------------------------
+// Updates
+//--------------------------------------------------------------------------------
 
 export interface ForceInspectionData {
   readonly mat: MaterialDetail;
@@ -228,12 +318,24 @@ export interface ForceInspectionData {
   readonly inspect: boolean;
 }
 
-export function forceInspection({ mat, inspType, inspect }: ForceInspectionData): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    newSignaledInspection: inspType,
-    pledge: LogBackend.setInspectionDecision(mat.materialID, inspType, inspect, 1, mat.jobUnique, mat.partName),
-  };
+export function useForceInspection(): [(data: ForceInspectionData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const callback = useCallback((data: ForceInspectionData) => {
+    setUpdating(true);
+    LogBackend.setInspectionDecision(
+      data.mat.materialID,
+      data.inspType,
+      data.inspect,
+      1,
+      data.mat.jobUnique,
+      data.mat.partName
+    )
+      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
 export interface CompleteInspectionData {
@@ -243,30 +345,30 @@ export interface CompleteInspectionData {
   readonly operator: string | null;
 }
 
-export function completeInspection({
-  mat,
-  inspType,
-  success,
-  operator,
-}: CompleteInspectionData): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    newCompletedInspection: inspType,
-    pledge: LogBackend.recordInspectionCompleted(
-      new api.NewInspectionCompleted({
-        materialID: mat.materialID,
+export function useCompleteInspection(): [(data: CompleteInspectionData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const callback = useCallback((data: CompleteInspectionData) => {
+    setUpdating(true);
+    LogBackend.recordInspectionCompleted(
+      new NewInspectionCompleted({
+        materialID: data.mat.materialID,
         process: 1,
         inspectionLocationNum: 1,
-        inspectionType: inspType,
-        success,
+        inspectionType: data.inspType,
+        success: data.success,
         active: "PT0S",
         elapsed: "PT0S",
-        extraData: operator ? { operator } : undefined,
+        extraData: data.operator ? { operator: data.operator } : undefined,
       }),
-      mat.jobUnique,
-      mat.partName
-    ),
-  };
+      data.mat.jobUnique,
+      data.mat.partName
+    )
+      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
 export interface CompleteWashData {
@@ -274,11 +376,13 @@ export interface CompleteWashData {
   readonly operator: string | null;
 }
 
-export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    pledge: LogBackend.recordWashCompleted(
-      new api.NewWash({
+export function useCompleteWash(): [(d: CompleteWashData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const callback = useCallback((d: CompleteWashData) => {
+    setUpdating(true);
+    LogBackend.recordWashCompleted(
+      new NewWash({
         materialID: d.mat.materialID,
         process: 1,
         washLocationNum: 1,
@@ -288,115 +392,97 @@ export function completeWash(d: CompleteWashData): PledgeToPromise<Action> {
       }),
       d.mat.jobUnique,
       d.mat.partName
-    ),
-  };
+    )
+      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
-export function printLabel(
-  matId: number,
-  proc: number,
-  loadStation: number | null,
-  queue: string | null
-): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    pledge: FmsServerBackend.printLabel(matId, proc, loadStation || undefined, queue || undefined).then(
-      () => undefined
-    ),
-  };
+export function useAssignWorkorder(): [(mat: MaterialDetail, workorder: string) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const callback = useCallback((mat: MaterialDetail, workorder: string) => {
+    setUpdating(true);
+    LogBackend.setWorkorder(mat.materialID, workorder, 1, mat.jobUnique, mat.partName)
+      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
-export function removeFromQueue(matId: number, operator: string | null): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.removeMaterialFromAllQueues(matId, operator || undefined).then(() => undefined),
-  };
+export function useAssignSerial(): [(mat: MaterialDetail, serial: string) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const callback = useCallback((mat: MaterialDetail, serial: string) => {
+    setUpdating(true);
+    LogBackend.setSerial(mat.materialID, serial, 1, mat.jobUnique, mat.partName)
+      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
-export function signalForQuarantine(matId: number, queue: string, operator: string | null): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    pledge: JobsBackend.signalMaterialForQuarantine(matId, queue, operator || undefined).then(() => undefined),
-  };
+export interface AddNoteData {
+  readonly matId: number;
+  readonly process: number;
+  readonly operator: string | null;
+  readonly notes: string;
 }
 
-export interface AssignWorkorderData {
-  readonly mat: MaterialDetail;
-  readonly workorder: string;
+export function useAddNote(): [(data: AddNoteData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const callback = useCallback((data: AddNoteData) => {
+    setUpdating(true);
+    LogBackend.recordOperatorNotes(data.matId, data.notes, data.process, data.operator ?? undefined)
+      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
-export function assignWorkorder({ mat, workorder }: AssignWorkorderData): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    newWorkorder: workorder,
-    pledge: LogBackend.setWorkorder(mat.materialID, workorder, 1, mat.jobUnique, mat.partName),
-  };
+export interface PrintLabelData {
+  readonly materialId: number;
+  readonly proc: number;
+  readonly loadStation: number | null;
+  readonly queue: string | null;
 }
 
-export interface AssignSerialData {
-  readonly mat: MaterialDetail;
-  readonly serial: string;
+export function usePrintLabel(): [(data: PrintLabelData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const callback = useCallback((d: PrintLabelData) => {
+    setUpdating(true);
+    FmsServerBackend.printLabel(d.materialId, d.proc, d.loadStation ?? undefined, d.queue ?? undefined).finally(() =>
+      setUpdating(false)
+    );
+  }, []);
+
+  return [callback, updating];
 }
 
-export function assignSerial({ mat, serial }: AssignSerialData): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    newSerial: serial,
-    pledge: LogBackend.setSerial(mat.materialID, serial, 1, mat.jobUnique, mat.partName),
-  };
+export function useRemoveFromQueue(): [(matId: number, operator: string | null) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const callback = useCallback((matId: number, operator: string | null) => {
+    setUpdating(true);
+    JobsBackend.removeMaterialFromAllQueues(matId, operator ?? undefined).finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
-export function addNote(
-  matId: number,
-  process: number,
-  operator: string | null,
-  notes: string
-): PledgeToPromise<Action> {
-  return {
-    type: ActionType.UpdateMaterial,
-    pledge: LogBackend.recordOperatorNotes(matId, notes, process, operator || undefined),
-  };
-}
+export function useSignalForQuarantine(): [(matId: number, queue: string, operator: string | null) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const callback = useCallback((matId: number, queue: string, operator: string | null) => {
+    setUpdating(true);
+    JobsBackend.signalMaterialForQuarantine(matId, queue, operator ?? undefined).finally(() => setUpdating(false));
+  }, []);
 
-export function computeWorkorders(
-  partName: string,
-  workorders: ReadonlyArray<api.IPartWorkorder>,
-  summaries: ReadonlyArray<api.IWorkorderSummary>
-): Vector<WorkorderPlanAndSummary> {
-  const workMap = new Map<string, WorkorderPlanAndSummary>();
-  for (const w of workorders) {
-    workMap.set(w.workorderId, { plan: w });
-  }
-  for (const s of summaries) {
-    for (const w of s.parts) {
-      if (w.name === partName) {
-        const planAndS = workMap.get(s.id);
-        if (planAndS) {
-          workMap.set(s.id, { ...planAndS, summary: w });
-        }
-      }
-    }
-  }
-  return Vector.ofIterable(workMap.values()).sortOn(
-    (w) => w.plan.dueDate.getTime(),
-    (w) => -w.plan.priority
-  );
-}
-
-async function loadWorkordersForPart(part: string): Promise<Vector<WorkorderPlanAndSummary>> {
-  const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(part);
-  const summaries: api.IWorkorderSummary[] = [];
-  for (const ws of LazySeq.ofIterable(works).chunk(16)) {
-    summaries.push(...(await LogBackend.getWorkorders(ws.map((w) => w.workorderId))));
-  }
-  return computeWorkorders(part, works, summaries);
-}
-
-export function loadWorkorders(mat: MaterialDetail): PledgeToPromise<Action> {
-  return {
-    type: ActionType.LoadWorkorders,
-    pledge: loadWorkordersForPart(mat.partName),
-  };
+  return [callback, updating];
 }
 
 export interface AddExistingMaterialToQueueData {
@@ -406,18 +492,21 @@ export interface AddExistingMaterialToQueueData {
   readonly operator: string | null;
 }
 
-export function addExistingMaterialToQueue(d: AddExistingMaterialToQueueData): PledgeToPromise<Action> {
-  return {
-    type: ActionType.AddNewMaterialToQueue,
-    pledge: JobsBackend.setMaterialInQueue(
+export function useAddExistingMaterialToQueue(): [(d: AddExistingMaterialToQueueData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const callback = useCallback((d: AddExistingMaterialToQueueData) => {
+    setUpdating(true);
+    JobsBackend.setMaterialInQueue(
       d.materialId,
-      new api.QueuePosition({
+      new QueuePosition({
         queue: d.queue,
         position: d.queuePosition,
       }),
-      d.operator || undefined
-    ),
-  };
+      d.operator ?? undefined
+    ).finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
 export interface AddNewMaterialToQueueData {
@@ -428,16 +517,16 @@ export interface AddNewMaterialToQueueData {
   readonly queuePosition: number;
   readonly serial?: string;
   readonly operator: string | null;
+  readonly onNewMaterial?: (mat: Readonly<IInProcessMaterial>) => void;
+  readonly onError?: (reason: any) => void;
 }
 
-export function addNewMaterialToQueue(
-  d: AddNewMaterialToQueueData,
-  onNewMaterial?: (mat: Readonly<api.IInProcessMaterial>) => void,
-  onError?: (reason: any) => void
-) {
-  return {
-    type: ActionType.AddNewMaterialToQueue,
-    pledge: JobsBackend.addUnprocessedMaterialToQueue(
+export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const callback = useCallback((d: AddNewMaterialToQueueData) => {
+    setUpdating(true);
+
+    JobsBackend.addUnprocessedMaterialToQueue(
       d.jobUnique,
       d.lastCompletedProcess,
       d.pathGroup,
@@ -445,14 +534,18 @@ export function addNewMaterialToQueue(
       d.queuePosition,
       d.serial || "",
       d.operator || undefined
-    ).then((m) => {
-      if (onNewMaterial && m) {
-        onNewMaterial(m);
-      } else if (onError) {
-        onError("No material returned");
-      }
-    }, onError),
-  };
+    )
+      .then((m) => {
+        if (d.onNewMaterial && m) {
+          d.onNewMaterial(m);
+        } else if (d.onError) {
+          d.onError("No material returned");
+        }
+      }, d.onError)
+      .finally(() => setUpdating(false));
+  }, []);
+
+  return [callback, updating];
 }
 
 export interface AddNewCastingToQueueData {
@@ -462,265 +555,28 @@ export interface AddNewCastingToQueueData {
   readonly queuePosition: number;
   readonly serials?: ReadonlyArray<string>;
   readonly operator: string | null;
+  readonly onNewMaterial?: (mats: ReadonlyArray<Readonly<IInProcessMaterial>>) => void;
+  readonly onError?: (reason: any) => void;
 }
 
-export function addNewCastingToQueue(
-  d: AddNewCastingToQueueData,
-  onNewMaterial?: (mats: ReadonlyArray<Readonly<api.IInProcessMaterial>>) => void,
-  onError?: (reason: any) => void
-) {
-  return {
-    type: ActionType.AddNewMaterialToQueue,
-    pledge: JobsBackend.addUnallocatedCastingToQueue(
+export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => void, boolean] {
+  const [updating, setUpdating] = useState<boolean>(false);
+  const callback = useCallback((d: AddNewCastingToQueueData) => {
+    setUpdating(true);
+
+    JobsBackend.addUnallocatedCastingToQueue(
       d.casting,
       d.queue,
       d.queuePosition,
       [...(d.serials || [])],
       d.quantity,
       d.operator || undefined
-    ).then((ms) => {
-      if (onNewMaterial) onNewMaterial(ms);
-    }, onError),
-  };
-}
+    )
+      .then((ms) => {
+        if (d.onNewMaterial) d.onNewMaterial(ms);
+      }, d.onError)
+      .finally(() => setUpdating(false));
+  }, []);
 
-export interface State {
-  readonly material: MaterialDetail | null;
-  readonly load_error?: Error;
-  readonly update_error?: Error;
-  readonly load_workorders_error?: Error;
-  readonly add_mat_in_progress: boolean;
-  readonly add_mat_error?: Error;
-}
-
-export const initial: State = {
-  material: null,
-  add_mat_in_progress: false,
-};
-
-function processEvents(evts: ReadonlyArray<Readonly<api.ILogEntry>>, mat: MaterialDetail): MaterialDetail {
-  let inspTypes = HashSet.ofIterable(mat.signaledInspections);
-  let completedTypes = HashSet.ofIterable(mat.completedInspections);
-
-  evts.forEach((e) => {
-    e.material.forEach((m) => {
-      if (mat.materialID < 0) {
-        mat = { ...mat, materialID: m.id };
-      }
-      if (mat.partName === "") {
-        mat = { ...mat, partName: m.part };
-      }
-      if (mat.jobUnique === "") {
-        mat = { ...mat, jobUnique: m.uniq };
-      }
-    });
-
-    switch (e.type) {
-      case api.LogType.PartMark:
-        mat = { ...mat, serial: e.result };
-        break;
-
-      case api.LogType.OrderAssignment:
-        mat = { ...mat, workorderId: e.result };
-        break;
-
-      case api.LogType.Inspection:
-        if (e.result.toLowerCase() === "true" || e.result === "1") {
-          const itype = (e.details || {}).InspectionType;
-          if (itype) {
-            inspTypes = inspTypes.add(itype);
-          }
-        }
-        break;
-
-      case api.LogType.InspectionForce:
-        if (e.result.toLowerCase() === "true" || e.result === "1") {
-          inspTypes = inspTypes.add(e.program);
-        }
-        break;
-
-      case api.LogType.InspectionResult:
-        completedTypes = completedTypes.add(e.program);
-        break;
-    }
-  });
-
-  const allEvents = mat.events.appendAll(evts).sortOn(
-    (e) => e.endUTC.getTime(),
-    (e) => e.counter
-  );
-
-  return {
-    ...mat,
-    signaledInspections: inspTypes.toArray({ sortOn: (x) => x }),
-    completedInspections: completedTypes.toArray({ sortOn: (x) => x }),
-    loading_events: false,
-    events: allEvents,
-  };
-}
-
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) {
-    return initial;
-  }
-  switch (a.type) {
-    case ActionType.OpenMaterialDialog:
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          return { ...s, material: a.initial, load_error: undefined };
-
-        case PledgeStatus.Completed:
-          return {
-            ...s,
-            material: processEvents(a.pledge.result, s.material || a.initial),
-          };
-
-        case PledgeStatus.Error:
-          return {
-            ...s,
-            material: {
-              ...a.initial,
-              loading_events: false,
-              events: Vector.empty(),
-            },
-            load_error: a.pledge.error,
-          };
-
-        default:
-          return s;
-      }
-
-    case ActionType.LoadLogFromOtherServer:
-      if (a.pledge.status === PledgeStatus.Completed) {
-        if (s.material) {
-          return {
-            ...s,
-            material: {
-              ...s.material,
-              events: s.material.events.appendAll(a.pledge.result).sortOn(
-                (e) => e.endUTC.getTime(),
-                (e) => e.counter
-              ),
-            },
-          };
-        } else {
-          return s; // happens if the dialog is closed before the response arrives
-        }
-      } else {
-        return s; // ignore starting and errors for other servers
-      }
-
-    case ActionType.OpenMaterialDialogWithoutLoad:
-      return { ...s, material: a.mat };
-
-    case ActionType.CloseMaterialDialog:
-      return { ...s, material: null };
-
-    case ActionType.UpdateMaterial:
-      if (!s.material) {
-        return s;
-      }
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          return {
-            ...s,
-            material: {
-              ...s.material,
-              updating_material: true,
-            },
-            update_error: undefined,
-          };
-        case PledgeStatus.Completed: {
-          const oldMatEnd = s.material;
-          return {
-            ...s,
-            material: {
-              ...oldMatEnd,
-              completedInspections: a.newCompletedInspection
-                ? [...oldMatEnd.completedInspections, a.newCompletedInspection]
-                : oldMatEnd.completedInspections,
-              signaledInspections: a.newSignaledInspection
-                ? [...oldMatEnd.signaledInspections, a.newSignaledInspection]
-                : oldMatEnd.signaledInspections,
-              workorderId: a.newWorkorder || oldMatEnd.workorderId,
-              serial: a.newSerial || oldMatEnd.serial,
-              events: a.pledge.result ? oldMatEnd.events.append(a.pledge.result) : oldMatEnd.events,
-              updating_material: false,
-            },
-          };
-        }
-
-        case PledgeStatus.Error:
-          return {
-            ...s,
-            material: {
-              ...s.material,
-              updating_material: false,
-            },
-            update_error: a.pledge.error,
-          };
-
-        default:
-          return s;
-      }
-
-    case ActionType.LoadWorkorders:
-      if (!s.material) {
-        return s;
-      }
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          return {
-            ...s,
-            material: {
-              ...s.material,
-              loading_workorders: true,
-            },
-            load_workorders_error: undefined,
-          };
-
-        case PledgeStatus.Completed:
-          return {
-            ...s,
-            material: {
-              ...s.material,
-              loading_workorders: false,
-              workorders: a.pledge.result,
-            },
-          };
-
-        case PledgeStatus.Error:
-          return {
-            ...s,
-            material: {
-              ...s.material,
-              loading_workorders: false,
-              workorders: Vector.empty(),
-            },
-            load_workorders_error: a.pledge.error,
-          };
-
-        default:
-          return s;
-      }
-
-    case ActionType.AddNewMaterialToQueue:
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          return { ...s, add_mat_in_progress: true, add_mat_error: undefined };
-        case PledgeStatus.Completed:
-          return { ...s, add_mat_in_progress: false };
-        case PledgeStatus.Error:
-          return {
-            ...s,
-            add_mat_in_progress: false,
-            add_mat_error: a.pledge.error,
-          };
-        default:
-          return s;
-      }
-
-    default:
-      return s;
-  }
+  return [callback, updating];
 }

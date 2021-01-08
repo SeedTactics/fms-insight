@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -34,32 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { User, UserManager } from "oidc-client";
 import * as api from "./api";
 import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend";
-import { Pledge, PledgeStatus, ActionBeforeMiddleware } from "../store/middleware";
-import { openWebsocket } from "../store/websocket";
+import { selector } from "recoil";
 
-export enum ActionType {
-  Load = "ServerSettings_Load",
-  Login = "ServerSettings_Login",
-  Logout = "ServerSettings_Logout",
-}
-
-export interface LoadReturn {
-  readonly fmsInfo: Readonly<api.IFMSInfo>;
+export interface FMSInfoAndUser extends Readonly<api.IFMSInfo> {
   readonly user?: User;
 }
-
-export type Action =
-  | { type: ActionType.Load; pledge: Pledge<LoadReturn> }
-  | { type: ActionType.Login }
-  | { type: ActionType.Logout };
-
-export interface State {
-  readonly fmsInfo?: Readonly<api.IFMSInfo>;
-  readonly loadError?: Error;
-  readonly user?: User;
-}
-
-export const initial: State = {};
 
 let userManager: UserManager | undefined;
 
@@ -72,7 +51,7 @@ export function requireLogin(fmsInfo: Readonly<api.IFMSInfo>): boolean {
   }
 }
 
-async function loadInfo(): Promise<LoadReturn> {
+async function loadInfo(): Promise<FMSInfoAndUser> {
   const fmsInfo = await FmsServerBackend.fMSInformation();
 
   if (fmsInfo.additionalLogServers && fmsInfo.additionalLogServers.length > 0) {
@@ -102,55 +81,25 @@ async function loadInfo(): Promise<LoadReturn> {
     if (user) {
       setUserToken(user);
       localStorage.setItem("current-operator", user.profile.name || user.profile.sub);
-      openWebsocket(user);
     }
-  } else {
-    openWebsocket(user);
   }
 
-  return { fmsInfo, user: user === null ? undefined : user };
+  return { ...fmsInfo, user: user === null ? undefined : user };
 }
 
-export function loadServerSettings(): ActionBeforeMiddleware<Action> {
-  return {
-    type: ActionType.Load,
-    pledge: loadInfo(),
-  };
-}
+export const fmsInformation = selector<FMSInfoAndUser>({
+  key: "fms-info",
+  get: () => loadInfo(),
+});
 
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) {
-    return initial;
+export function login(fmsInfo: FMSInfoAndUser) {
+  if (userManager && !fmsInfo.user) {
+    userManager.signinRedirect();
   }
-  switch (a.type) {
-    case ActionType.Load:
-      switch (a.pledge.status) {
-        case PledgeStatus.Starting:
-          return s; // do nothing
-        case PledgeStatus.Completed:
-          return {
-            fmsInfo: a.pledge.result.fmsInfo,
-            user: a.pledge.result.user,
-          };
-        case PledgeStatus.Error:
-          return { ...s, loadError: a.pledge.error };
-        default:
-          return s;
-      }
+}
 
-    case ActionType.Login:
-      if (userManager && !s.user) {
-        userManager.signinRedirect();
-      }
-      return s;
-
-    case ActionType.Logout:
-      if (userManager && s.user) {
-        userManager.signoutRedirect();
-      }
-      return s;
-
-    default:
-      return s;
+export function logout() {
+  if (userManager) {
+    userManager.signoutRedirect();
   }
 }

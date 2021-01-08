@@ -36,7 +36,7 @@ import Button from "@material-ui/core/Button";
 import { connect } from "../store/store";
 
 const InitialPage = React.memo(function BackupViewer(props: {
-  onRequestOpenFile: () => void;
+  onRequestOpenFile?: () => void;
   loading_error: Error | undefined;
 }) {
   return (

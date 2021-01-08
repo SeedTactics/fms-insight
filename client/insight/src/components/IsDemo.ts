@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -30,12 +30,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { atom, useRecoilValue } from "recoil";
 
-const IsDemoCtx = React.createContext(false);
-
-export const IsDemoProvider = IsDemoCtx.Provider;
+export const isDemo = atom<boolean>({ key: "isDemo", default: false });
 
 export function useIsDemo(): boolean {
-  return React.useContext(IsDemoCtx);
+  return useRecoilValue(isDemo);
 }

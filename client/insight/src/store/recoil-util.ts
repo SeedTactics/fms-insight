@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,53 +31,32 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as ss from "./server-settings";
-import { PledgeStatus } from "../store/middleware";
+import * as React from "react";
+import { RecoilState, useRecoilState, useSetRecoilState } from "recoil";
+import produce, { Draft, Immutable } from "immer";
 
-it("creates the initial state", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const s = ss.reducer(undefined as any, undefined as any);
-  expect(s).toBe(ss.initial);
-});
-
-it("loads data", () => {
-  const s = ss.reducer(ss.initial, {
-    type: ss.ActionType.Load,
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: {
-        fmsInfo: {
-          name: "test",
-          version: "1.2.3.4",
-          requireScanAtWash: false,
-          requireWorkorderBeforeAllowWashComplete: true,
-          additionalLogServers: ["aaa"],
-          usingLabelPrinterForSerials: false,
-        },
-      },
+export function useRecoilStateDraft<T>(recoilState: RecoilState<T>): [T, (f: (d: Draft<T>) => void) => void] {
+  const [st, setState] = useRecoilState(recoilState);
+  const setDraft = React.useCallback(
+    function setDraft(f: (d: Draft<T>) => void) {
+      const mapper: (t: Immutable<Draft<T>>) => Immutable<Draft<T>> = produce((d) => void f(d));
+      // convert Immutable<Draft<T>> to T
+      setState((mapper as unknown) as (t: T) => T);
     },
-  });
+    [setState]
+  );
+  return [st, setDraft];
+}
 
-  expect(s).toEqual({
-    fmsInfo: {
-      name: "test",
-      version: "1.2.3.4",
-      requireScanAtWash: false,
-      requireWorkorderBeforeAllowWashComplete: true,
-      additionalLogServers: ["aaa"],
-      usingLabelPrinterForSerials: false,
+export function useSetRecoilStateDraft<T>(recoilState: RecoilState<T>): (f: (d: Draft<T>) => void) => void {
+  const setState = useSetRecoilState(recoilState);
+  const setDraft = React.useCallback(
+    function setDraft(f: (d: Draft<T>) => void) {
+      const mapper: (t: Immutable<Draft<T>>) => Immutable<Draft<T>> = produce((d) => void f(d));
+      // convert Immutable<Draft<T>> to T
+      setState((mapper as unknown) as (t: T) => T);
     },
-  });
-});
-
-it("responds to error", () => {
-  const s = ss.reducer(ss.initial, {
-    type: ss.ActionType.Load,
-    pledge: {
-      status: PledgeStatus.Error,
-      error: new Error("hello"),
-    },
-  });
-
-  expect(s.loadError).toEqual(new Error("hello"));
-});
+    [setState]
+  );
+  return setDraft;
+}

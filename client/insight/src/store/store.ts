@@ -30,17 +30,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as currentStatus from "../data/current-status";
 import * as events from "../data/events";
-import * as gui from "../data/gui-state";
 import * as routes from "../data/routes";
-import * as mat from "../data/material-details";
-import * as operators from "../data/operators";
-import * as paths from "../data/path-lookup";
-import * as serverSettings from "../data/server-settings";
-import * as allMatBins from "../data/all-material-bins";
-import * as websocket from "./websocket";
-import { initBarcodeListener } from "./barcode";
 
 import { createStore, StoreState, StoreActions, ACPayload, mkACF } from "./typed-redux";
 import * as redux from "redux";
@@ -79,16 +70,8 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
 
   const store = createStore(
     {
-      Current: currentStatus.reducer,
       Events: events.reducer,
-      Gui: gui.reducer,
-      MaterialDetails: mat.reducer,
-      PathLookup: paths.reducer,
-      AllMatBins: allMatBins.reducer,
       Route: routes.reducer,
-      Websocket: websocket.reducer,
-      Operators: operators.reducer,
-      ServerSettings: serverSettings.reducer,
       location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
     },
     middleware,
@@ -96,15 +79,6 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
       ? (m) => composeEnhancers(router.enhancer, redux.applyMiddleware(m, router.middleware))
       : (m) => composeEnhancers(redux.applyMiddleware(m))
   );
-
-  initBarcodeListener(store.dispatch.bind(store));
-
-  const operatorOnStateChange = operators.createOnStateChange();
-  const matBinsOnStateChange = allMatBins.createOnStateChange();
-  store.subscribe(() => {
-    operatorOnStateChange(store.getState().Operators);
-    matBinsOnStateChange(store.getState().AllMatBins);
-  });
 
   reduxStore = store as any;
   return store;

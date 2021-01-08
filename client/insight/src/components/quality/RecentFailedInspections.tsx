@@ -51,12 +51,13 @@ import { createSelector } from "reselect";
 import { addDays, startOfToday } from "date-fns";
 import { connect } from "../../store/store";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
-import { openMaterialById } from "../../data/material-details";
+import { materialToShowInDialog } from "../../data/material-details";
 import { RouteLocation } from "../../data/routes";
+import { useSetRecoilState } from "recoil";
 
 interface RecentFailedInspectionsProps {
   readonly failed: Vector<FailedInspectionEntry>;
-  readonly openDetails: (matId: number) => void;
+  readonly openDetails: () => void;
 }
 
 enum ColumnId {
@@ -106,6 +107,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
   const [origCurPage, setPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(50);
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
   function handleRequestSort(property: ColumnId) {
     if (orderBy === property) {
@@ -142,7 +144,21 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
         <DataTableBody
           columns={columns}
           pageData={points.drop(curPage * rowsPerPage).take(rowsPerPage)}
-          onClickDetails={(_, row) => props.openDetails(row.materialID)}
+          onClickDetails={(_, row) => {
+            props.openDetails();
+            setMatToShow({
+              type: "MatSummary",
+              summary: {
+                materialID: row.materialID,
+                partName: row.part,
+                jobUnique: "",
+                serial: row.serial,
+                workorderId: row.workorder,
+                startedProcess1: true,
+                signaledInspections: [],
+              },
+            });
+          }}
         />
       </Table>
       <DataTableActions
@@ -198,7 +214,7 @@ const ConnectedFailedInspections = connect(
     failed: failedReducer(st.Events.last30.inspection, startOfToday()),
   }),
   {
-    openDetails: (matId: number) => [{ type: RouteLocation.Quality_Serials }, openMaterialById(matId)],
+    openDetails: () => ({ type: RouteLocation.Quality_Serials }),
   }
 )(RecentFailedInspections);
 

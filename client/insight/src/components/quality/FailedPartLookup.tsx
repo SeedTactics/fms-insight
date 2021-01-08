@@ -38,18 +38,17 @@ import Step from "@material-ui/core/Step";
 import StepLabel from "@material-ui/core/StepLabel";
 import StepContent from "@material-ui/core/StepContent";
 
-import { connect } from "../../store/store";
 import * as matDetails from "../../data/material-details";
-import * as pathLookup from "../../data/path-lookup";
 import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material";
 import { buildPathString, extractPath } from "../../data/results.inspection";
 import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
 import { LogType } from "../../data/api";
-import { HashMap } from "prelude-ts";
-import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
 import { InspectionSankey } from "../analysis/InspectionSankey";
 import { DataTableActionZoomType } from "../analysis/DataTable";
 import { useIsDemo } from "../IsDemo";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 
 interface SerialLookupProps {
   readonly onSelect: (s: string) => void;
@@ -97,54 +96,40 @@ function lastMachineTime(mat: matDetails.MaterialDetail) {
 
 interface PathLookupProps {
   readonly mat: matDetails.MaterialDetail;
-  readonly logs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
-  readonly extendPartRange: (part: string, oldStart: Date, oldEnd: Date, numDays: number) => void;
-  readonly curStart?: Date;
-  readonly curEnd?: Date;
 }
 
 function PathLookup(props: PathLookupProps) {
+  const [searchRange, setSearchRange] = useRecoilState(pathLookupRange);
+  const logs = useRecoilValue(inspectionLogEntries);
+
   function extendDateRange(numDays: number) {
-    if (props.curStart && props.curEnd) {
-      props.extendPartRange(props.mat.partName, props.curStart, props.curEnd, numDays);
-    }
+    setSearchRange(extendRange(numDays));
   }
   return (
     <InspectionSankey
-      inspectionlogs={props.logs}
+      inspectionlogs={logs}
       restrictToPart={props.mat.partName}
       subtitle={"Paths for " + props.mat.partName + " around " + lastMachineTime(props.mat).toLocaleString()}
-      default_date_range={props.curStart && props.curEnd ? [props.curStart, props.curEnd] : []}
-      zoomType={props.curStart && props.curEnd ? DataTableActionZoomType.ExtendDays : undefined}
+      default_date_range={searchRange ? [searchRange.curStart, searchRange.curEnd] : []}
+      zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
       extendDateRange={extendDateRange}
       defaultToTable
+      hideOpenDetailColumn
     />
   );
 }
 
-interface PartLookupStepperProps {
-  readonly mat: matDetails.MaterialDetail | null;
-  readonly pathDetails: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>> | undefined;
-  readonly pathLoading: boolean;
-  readonly curStart?: Date;
-  readonly curEnd?: Date;
-  readonly openMaterialBySerial: (s: string) => void;
-  readonly searchPartRange: (part: string, start: Date, end: Date) => void;
-  readonly extendPartRange: (part: string, oldStart: Date, oldEnd: Date, numDays: number) => void;
-  readonly reset: () => void;
-}
-
-function PartLookupStepper(props: PartLookupStepperProps) {
+function PartLookupStepper() {
   const [origStep, setStep] = React.useState(0);
+  const mat = useRecoilValue(matDetails.materialDetail);
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+
+  const setSearchRange = useSetRecoilState(pathLookupRange);
+
   let step = origStep;
-  if (step === 0 && props.mat) {
+  if (step === 0 && mat) {
     step = 1;
   }
-  if (step < 2 && props.pathDetails && !props.pathLoading) {
-    step = 2;
-  }
-  const mat = props.mat;
-  const pathDetails = props.pathDetails;
   return (
     <Stepper activeStep={step} orientation="vertical">
       <Step>
@@ -152,7 +137,7 @@ function PartLookupStepper(props: PartLookupStepperProps) {
         <StepContent>
           <SerialLookup
             onSelect={(s) => {
-              props.openMaterialBySerial(s);
+              setMatToShow({ type: "Serial", serial: s });
               setStep(1);
             }}
           />
@@ -180,7 +165,11 @@ function PartLookupStepper(props: PartLookupStepperProps) {
                   color="secondary"
                   onClick={() => {
                     const d = lastMachineTime(mat);
-                    props.searchPartRange(mat.partName, startOfDay(addDays(d, -5)), endOfDay(addDays(d, 5)));
+                    setSearchRange({
+                      part: mat.partName,
+                      curStart: startOfDay(addDays(d, -5)),
+                      curEnd: endOfDay(addDays(d, 5)),
+                    });
                     setStep(2);
                   }}
                 >
@@ -190,7 +179,8 @@ function PartLookupStepper(props: PartLookupStepperProps) {
                   variant="contained"
                   style={{ marginLeft: "2em" }}
                   onClick={() => {
-                    props.reset();
+                    setMatToShow(null);
+                    setSearchRange(null);
                     setStep(0);
                   }}
                 >
@@ -204,20 +194,17 @@ function PartLookupStepper(props: PartLookupStepperProps) {
       <Step>
         <StepLabel>Lookup similar paths</StepLabel>
         <StepContent>
-          {pathDetails && mat ? (
-            <PathLookup
-              logs={pathDetails}
-              mat={mat}
-              extendPartRange={props.extendPartRange}
-              curStart={props.curStart}
-              curEnd={props.curEnd}
-            />
+          {mat ? (
+            <DisplayLoadingAndErrorCard>
+              <PathLookup mat={mat} />
+            </DisplayLoadingAndErrorCard>
           ) : undefined}
           <Button
             variant="contained"
             style={{ marginTop: "2em" }}
             onClick={() => {
-              props.reset();
+              setMatToShow(null);
+              setSearchRange(null);
               setStep(0);
             }}
           >
@@ -229,22 +216,6 @@ function PartLookupStepper(props: PartLookupStepperProps) {
   );
 }
 
-const ConnectedStepper = connect(
-  (st) => ({
-    mat: st.MaterialDetails.material,
-    pathDetails: st.PathLookup.entries,
-    pathLoading: st.PathLookup.loading,
-    curStart: st.PathLookup.curStart,
-    curEnd: st.PathLookup.curEnd,
-  }),
-  {
-    openMaterialBySerial: (s: string) => matDetails.openMaterialBySerial(s, true),
-    searchPartRange: pathLookup.searchForPaths,
-    extendPartRange: pathLookup.extendRange,
-    reset: () => [{ type: matDetails.ActionType.CloseMaterialDialog }, { type: pathLookup.ActionType.Clear }],
-  }
-)(PartLookupStepper);
-
 export function FailedPartLookup() {
   React.useEffect(() => {
     document.title = "Failed Part Lookup - FMS Insight";
@@ -252,7 +223,7 @@ export function FailedPartLookup() {
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="failed-parts">
-        <ConnectedStepper />
+        <PartLookupStepper />
       </div>
     </main>
   );

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -32,17 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import Grid from "@material-ui/core/Grid";
-import { createSelector } from "reselect";
 import Tooltip from "@material-ui/core/Tooltip";
 import TimeAgo from "react-timeago";
 
-import { connect, Store } from "../../store/store";
+import { connect } from "../../store/store";
 import * as api from "../../data/api";
 import { duration } from "moment";
 import { addSeconds, addDays } from "date-fns";
 import { PalletData, buildPallets } from "../../data/load-station";
-import { HashMap } from "prelude-ts";
+import { Vector } from "prelude-ts";
 import { stationMinutes } from "../../data/results.cycles";
+import { PartCycleData } from "../../data/events.cycles";
+import { useRecoilValue } from "recoil";
+import { currentStatus } from "../../data/current-status";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;
@@ -251,26 +253,31 @@ class StationOEE extends React.PureComponent<StationOEEProps> {
 }
 
 interface Props {
-  dateOfCurrentStatus: Date | undefined;
-  station_active_minutes_past_week: HashMap<string, number>;
-  pallets: HashMap<string, { pal?: PalletData; queued?: PalletData }>;
+  readonly partCycles: Vector<PartCycleData>;
 }
 
-function StationOEEs(p: Props) {
-  const stats = p.pallets
+function StationOEEs(props: Props) {
+  const currentSt = useRecoilValue(currentStatus);
+  const pallets = React.useMemo(() => buildPallets(currentSt), [currentSt]);
+  const stationMins = React.useMemo(
+    () => stationMinutes(props.partCycles, addDays(currentSt.timeOfCurrentStatusUTC, -7)),
+    [props.partCycles, currentSt.timeOfCurrentStatusUTC]
+  );
+
+  const stats = pallets
     .keySet()
-    .addAll(p.station_active_minutes_past_week.keySet())
+    .addAll(stationMins.keySet())
     .toArray({ sortOn: [(s) => s.startsWith("L/U"), (s) => s] }); // put machines first
   return (
     <Grid data-testid="stationoee-container" container justify="space-around">
       {stats.map((stat, idx) => (
         <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
           <StationOEE
-            dateOfCurrentStatus={p.dateOfCurrentStatus}
+            dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
             station={stat}
-            oee={p.station_active_minutes_past_week.get(stat).getOrElse(0) / (60 * 24 * 7)}
-            pallet={p.pallets.get(stat).getOrElse({ pal: undefined }).pal}
-            queuedPallet={p.pallets.get(stat).getOrElse({ queued: undefined }).queued}
+            oee={stationMins.get(stat).getOrElse(0) / (60 * 24 * 7)}
+            pallet={pallets.get(stat).getOrElse({ pal: undefined }).pal}
+            queuedPallet={pallets.get(stat).getOrElse({ queued: undefined }).queued}
           />
         </Grid>
       ))}
@@ -278,16 +285,6 @@ function StationOEEs(p: Props) {
   );
 }
 
-const oeeSelector = createSelector(
-  (s: Store) => s.Events.last30.cycles.part_cycles,
-  (s: Store) => s.Current.current_status.timeOfCurrentStatusUTC,
-  (byPartThenStat, lastStTime) => stationMinutes(byPartThenStat, addDays(lastStTime, -7))
-);
-
-const palSelector = createSelector((s: Store) => s.Current.current_status, buildPallets);
-
 export default connect((s) => ({
-  dateOfCurrentStatus: s.Current.current_status.timeOfCurrentStatusUTC,
-  station_active_minutes_past_week: oeeSelector(s),
-  pallets: palSelector(s),
+  partCycles: s.Events.last30.cycles.part_cycles,
 }))(StationOEEs);

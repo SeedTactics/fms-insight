@@ -31,9 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { createSelector } from "reselect";
 
-import { connect, Store } from "../../store/store";
 import {
   FlexibleWidthXYPlot,
   FlexibleXYPlot,
@@ -46,7 +44,9 @@ import {
   Hint,
 } from "react-vis";
 
-import { CompletedDataPoint, jobsToPoints, DataPoints } from "../../data/job-bullet";
+import { CompletedDataPoint, jobsToPoints } from "../../data/job-bullet";
+import { currentStatus } from "../../data/current-status";
+import { useRecoilValue } from "recoil";
 
 // --------------------------------------------------------------------------------
 // Data
@@ -92,12 +92,8 @@ function ScrollablePlot({ children, cnt, longestPartName }: PlotProps) {
 
 const targetMark = () => <rect x="-2" y="-5" width="4" height="10" fill="black" />;
 
-interface CurrentJobsProps extends DataPoints {
+interface CurrentJobsProps {
   readonly fillViewport: boolean;
-}
-
-interface JobState {
-  readonly hoveredJob?: CompletedDataPoint;
 }
 
 function format_hint(
@@ -129,48 +125,31 @@ function format_tick(p: CompletedDataPoint) {
   );
 }
 
-class CurrentJobs extends React.PureComponent<CurrentJobsProps, JobState> {
-  state: JobState = {};
+export const CurrentJobs = React.memo(function CurrentJobs(props: CurrentJobsProps) {
+  const [hoveredJob, setHoveredJob] = React.useState<CompletedDataPoint | null>(null);
+  const st = useRecoilValue(currentStatus);
+  const points = React.useMemo(() => jobsToPoints(Object.values(st.jobs)), [st.jobs]);
 
-  setHint = (j: CompletedDataPoint) => {
-    this.setState({ hoveredJob: j });
-  };
-
-  clearHint = () => {
-    this.setState({ hoveredJob: undefined });
-  };
-
-  render() {
-    const Plot = this.props.fillViewport ? FillViewportPlot : ScrollablePlot;
-    return (
-      <Plot cnt={this.props.completedData.length} longestPartName={this.props.longestPartName}>
-        <XAxis />
-        <YAxis tickFormat={(y: number, i: number) => format_tick(this.props.completedData[i])} />
-        <HorizontalGridLines />
-        <VerticalGridLines />
-        <HorizontalBarSeries
-          data={this.props.completedData}
-          color="#795548"
-          onValueMouseOver={this.setHint}
-          onValueMouseOut={this.clearHint}
-        />
-        <CustomSVGSeries
-          data={this.props.planData}
-          customComponent={targetMark}
-          onValueMouseOver={(p: { x: number; y: number }) => this.setHint({ ...this.props.completedData[p.y], x: p.x })}
-          onValueMouseOut={this.clearHint}
-        />
-        {this.state.hoveredJob === undefined ? undefined : <Hint value={this.state.hoveredJob} format={format_hint} />}
-      </Plot>
-    );
-  }
-}
-
-const jobsToPointsSelector = createSelector(
-  (s: Store) => s.Current.current_status.jobs,
-  (js) => jobsToPoints(Object.values(js))
-);
-
-export default connect((s) => {
-  return jobsToPointsSelector(s);
-})(CurrentJobs);
+  const Plot = props.fillViewport ? FillViewportPlot : ScrollablePlot;
+  return (
+    <Plot cnt={points.completedData.length} longestPartName={points.longestPartName}>
+      <XAxis />
+      <YAxis tickFormat={(y: number, i: number) => format_tick(points.completedData[i])} />
+      <HorizontalGridLines />
+      <VerticalGridLines />
+      <HorizontalBarSeries
+        data={points.completedData}
+        color="#795548"
+        onValueMouseOver={setHoveredJob}
+        onValueMouseOut={() => setHoveredJob(null)}
+      />
+      <CustomSVGSeries
+        data={points.planData}
+        customComponent={targetMark}
+        onValueMouseOver={(p: { x: number; y: number }) => setHoveredJob({ ...points.completedData[p.y], x: p.x })}
+        onValueMouseOut={() => setHoveredJob(null)}
+      />
+      {hoveredJob === null ? undefined : <Hint value={hoveredJob} format={format_hint} />}
+    </Plot>
+  );
+});

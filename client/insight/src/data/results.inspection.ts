@@ -42,6 +42,7 @@ const copy = require("copy-to-clipboard");
 export interface TriggeredInspectionEntry {
   readonly time: Date;
   readonly materialID: number;
+  readonly partName: string;
   readonly serial?: string;
   readonly workorder?: string;
   readonly toInspect: boolean;
@@ -89,6 +90,7 @@ export function groupInspectionsByPath(
           return Option.some({
             time: e.time,
             materialID: e.materialID,
+            partName: e.part,
             serial: e.serial,
             workorder: e.workorder,
             toInspect: e.result.toInspect,

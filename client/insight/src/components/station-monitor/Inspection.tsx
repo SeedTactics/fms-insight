@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -39,35 +39,41 @@ import Tooltip from "@material-ui/core/Tooltip";
 import DialogActions from "@material-ui/core/DialogActions";
 import { createSelector } from "reselect";
 
-import { Store, connect, mkAC, AppActionBeforeMiddleware } from "../../store/store";
-import { MaterialDialogProps, MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
+import { Store, connect } from "../../store/store";
+import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { fmsInformation } from "../../data/server-settings";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
-  readonly operator: string | null;
   readonly inspection_type: string;
-  readonly quarantineQueue: string | null;
-  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
-  readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function InspButtons(props: InspButtonsProps) {
+  const operator = useRecoilValue(currentOperator);
+  const quarantineQueue = useRecoilValue(fmsInformation).quarantineQueue ?? null;
+  const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
+  const [addExistingToQueue, addExistingToQueueUpdating] = matDetails.useAddExistingMaterialToQueue();
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+
   function markInspComplete(success: boolean) {
     if (!props.display_material) {
       return;
     }
 
-    props.completeInspection({
+    completeInsp({
       mat: props.display_material,
       inspType: props.inspection_type,
       success,
-      operator: props.operator,
+      operator: operator,
     });
+
+    setMatToShow(null);
   }
 
   return (
@@ -76,49 +82,49 @@ function InspButtons(props: InspButtonsProps) {
         <InstructionButton
           material={props.display_material}
           type={props.inspection_type}
-          operator={props.operator}
+          operator={operator}
           pallet={null}
         />
       ) : undefined}
-      {props.display_material && props.quarantineQueue !== null ? (
-        <Tooltip title={"Move to " + props.quarantineQueue}>
+      {props.display_material && quarantineQueue !== null ? (
+        <Tooltip title={"Move to " + quarantineQueue}>
           <Button
             color="primary"
-            onClick={() =>
-              props.display_material && props.quarantineQueue
-                ? props.moveToQueue({
-                    materialId: props.display_material.materialID,
-                    queue: props.quarantineQueue,
-                    queuePosition: 0,
-                    operator: props.operator || null,
-                  })
-                : undefined
-            }
+            disabled={addExistingToQueueUpdating}
+            onClick={() => {
+              if (props.display_material && quarantineQueue) {
+                addExistingToQueue({
+                  materialId: props.display_material.materialID,
+                  queue: quarantineQueue,
+                  queuePosition: 0,
+                  operator: operator || null,
+                });
+              }
+              setMatToShow(null);
+            }}
           >
             Quarantine Material
           </Button>
         </Tooltip>
       ) : undefined}
-      <Button color="primary" onClick={() => markInspComplete(true)}>
+      <Button color="primary" disabled={completeInspUpdating} onClick={() => markInspComplete(true)}>
         Mark {props.inspection_type} Success
       </Button>
-      <Button color="primary" onClick={() => markInspComplete(false)}>
+      <Button color="primary" disabled={completeInspUpdating} onClick={() => markInspComplete(false)}>
         Mark {props.inspection_type} Failed
       </Button>
     </>
   );
 }
 
-interface InspDialogProps extends MaterialDialogProps {
-  readonly operator: string | null;
+interface InspDialogProps {
   readonly focusInspectionType: string;
-  readonly quarantineQueue: string | null;
-  readonly completeInspection: (comp: matDetails.CompleteInspectionData) => void;
-  readonly moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => void;
 }
 
 function InspDialog(props: InspDialogProps) {
-  const displayMat = props.display_material;
+  const displayMat = useRecoilValue(matDetails.materialDetail);
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+
   let singleInspectionType: string | undefined;
   let multipleInspTypes: ReadonlyArray<string> | undefined;
   if (props.focusInspectionType) {
@@ -132,22 +138,15 @@ function InspDialog(props: InspDialogProps) {
   }
   return (
     <MaterialDialog
-      display_material={props.display_material}
+      display_material={displayMat}
       allowNote
-      onClose={props.onClose}
+      onClose={() => setMatToShow(null)}
       extraDialogElements={
         !displayMat || !multipleInspTypes ? undefined : (
           <>
             {multipleInspTypes.map((i) => (
               <DialogActions key={i}>
-                <InspButtons
-                  display_material={displayMat}
-                  operator={props.operator}
-                  inspection_type={i}
-                  completeInspection={props.completeInspection}
-                  quarantineQueue={props.quarantineQueue}
-                  moveToQueue={props.moveToQueue}
-                />
+                <InspButtons display_material={displayMat} inspection_type={i} />
               </DialogActions>
             ))}
           </>
@@ -155,37 +154,16 @@ function InspDialog(props: InspDialogProps) {
       }
       buttons={
         !singleInspectionType || !displayMat ? undefined : (
-          <InspButtons
-            display_material={displayMat}
-            operator={props.operator}
-            inspection_type={singleInspectionType}
-            completeInspection={props.completeInspection}
-            quarantineQueue={props.quarantineQueue}
-            moveToQueue={props.moveToQueue}
-          />
+          <InspButtons display_material={displayMat} inspection_type={singleInspectionType} />
         )
       }
     />
   );
 }
 
-const ConnectedInspDialog = connect(
-  (st) => ({
-    display_material: st.MaterialDetails.material,
-    focusInspectionType: st.Route.selected_insp_type || "",
-    operator: currentOperator(st),
-    quarantineQueue: st.ServerSettings.fmsInfo?.quarantineQueue || null,
-  }),
-  {
-    onClose: mkAC(matDetails.ActionType.CloseMaterialDialog),
-    completeInspection: (data: matDetails.CompleteInspectionData) =>
-      [
-        matDetails.completeInspection(data),
-        { type: matDetails.ActionType.CloseMaterialDialog },
-      ] as AppActionBeforeMiddleware,
-    moveToQueue: (d: matDetails.AddExistingMaterialToQueueData) => matDetails.addExistingMaterialToQueue(d),
-  }
-)(InspDialog);
+const ConnectedInspDialog = connect((st) => ({
+  focusInspectionType: st.Route.selected_insp_type || "",
+}))(InspDialog);
 
 interface PartsForInspection {
   readonly waiting_to_inspect: ReadonlyArray<MaterialSummary>;
@@ -195,7 +173,6 @@ interface PartsForInspection {
 interface InspectionProps {
   readonly recent_inspections: PartsForInspection;
   readonly focusInspectionType: string;
-  readonly openMat: (mat: MaterialSummary) => void;
 }
 
 function Inspection(props: InspectionProps) {
@@ -213,26 +190,14 @@ function Inspection(props: InspectionProps) {
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
             {props.recent_inspections.waiting_to_inspect.map((m, idx) => (
-              <MatSummary
-                key={idx}
-                mat={m}
-                onOpen={props.openMat}
-                focusInspectionType={props.focusInspectionType}
-                hideInspectionIcon
-              />
+              <MatSummary key={idx} mat={m} focusInspectionType={props.focusInspectionType} hideInspectionIcon />
             ))}
           </WhiteboardRegion>
         </Grid>
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
             {props.recent_inspections.inspect_completed.map((m, idx) => (
-              <MatSummary
-                key={idx}
-                mat={m}
-                onOpen={props.openMat}
-                focusInspectionType={props.focusInspectionType}
-                hideInspectionIcon
-              />
+              <MatSummary key={idx} mat={m} focusInspectionType={props.focusInspectionType} hideInspectionIcon />
             ))}
           </WhiteboardRegion>
         </Grid>
@@ -308,12 +273,7 @@ const extractRecentInspections = createSelector(
   }
 );
 
-export default connect(
-  (st: Store) => ({
-    recent_inspections: extractRecentInspections(st),
-    focusInspectionType: st.Route.selected_insp_type || "",
-  }),
-  {
-    openMat: matDetails.openMaterialDialog,
-  }
-)(Inspection);
+export default connect((st: Store) => ({
+  recent_inspections: extractRecentInspections(st),
+  focusInspectionType: st.Route.selected_insp_type || "",
+}))(Inspection);

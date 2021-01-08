@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { initStore } from "./store/store";
-import * as serverSettings from "./data/server-settings";
 import * as websocket from "./store/websocket";
 import { render } from "./renderer";
 
@@ -42,7 +41,6 @@ websocket.configureWebsocket(
   (a) => store.dispatch(a),
   () => store.getState().Events
 );
-store.dispatch(serverSettings.loadServerSettings());
 
 render({ demo: false }, store, document.getElementById("root"));
 
