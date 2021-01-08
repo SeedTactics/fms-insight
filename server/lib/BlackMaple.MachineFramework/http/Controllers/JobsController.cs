@@ -105,7 +105,7 @@ namespace BlackMaple.MachineFramework.Controllers
       return _backend.JobControl.GetCurrentStatus();
     }
 
-    [HttpGet("check-valid")]
+    [HttpPost("check-valid")]
     public IList<string> CheckValid([FromBody] IList<JobPlan> jobs)
     {
       return _backend.JobControl.CheckValidRoutes(jobs);

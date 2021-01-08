@@ -93,6 +93,11 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
       return false;
     }
 
+    // can't remove if on a pallet
+    if (props.in_proc_material.location.type === api.LocType.OnPallet) {
+      return false;
+    }
+
     // can remove if no quarantine queue or material is raw material
     return !fmsInfo.quarantineQueue || fmsInfo.quarantineQueue === "" || props.in_proc_material.process === 0;
   }, [props.in_proc_material, fmsInfo]);
@@ -107,6 +112,11 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
       props.in_proc_material.action.type === api.ActionType.Loading
     ) {
       return null;
+    }
+
+    // can't quarantine if on a pallet
+    if (props.in_proc_material.location.type === api.LocType.OnPallet) {
+      return false;
     }
 
     return fmsInfo.quarantineQueue;
@@ -567,6 +577,7 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
 
 type CurrentlyInQueue =
   | { readonly type: "NotInQueue" }
+  | { readonly type: "OnPallet"; readonly inProcMat: Readonly<api.IInProcessMaterial> }
   | { readonly type: "InRegularQueue"; readonly inProcMat: Readonly<api.IInProcessMaterial> }
   | { readonly type: "InQuarantine"; readonly inProcMat: Readonly<api.IInProcessMaterial>; readonly queue: string };
 
@@ -598,6 +609,8 @@ function matCurrentlyInQueue(
         } else {
           return { type: "InQuarantine", inProcMat, queue: inProcMat.location.currentQueue };
         }
+      } else if (inProcMat.location.type === api.LocType.OnPallet) {
+        return { type: "OnPallet", inProcMat };
       } else {
         return { type: "NotInQueue" };
       }
@@ -626,7 +639,7 @@ function QueueMatDialog(props: QueueMatDialogProps) {
   if (displayMat === null) {
     body = <p>None</p>;
   } else {
-    if (matInQueue.type === "InRegularQueue") {
+    if (matInQueue.type === "InRegularQueue" || matInQueue.type === "OnPallet") {
       body = <ExistingMatInQueueDialogBody display_material={displayMat} in_proc_material={matInQueue.inProcMat} />;
     } else if (displayMat.materialID >= 0 || displayMat.loading_events) {
       body = (
