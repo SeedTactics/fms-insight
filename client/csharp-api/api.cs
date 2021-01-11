@@ -9,50 +9,50 @@ namespace BlackMaple.FMSInsight.API
     #pragma warning disable
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "12.3.1.0 (NJsonSchema v9.14.1.0 (Newtonsoft.Json v11.0.0.0))")]
-    public partial class FmsClient
+    public partial class FmsClient 
     {
         private string _baseUrl = "";
         private System.Net.Http.HttpClient _httpClient;
         private System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings;
-
+    
         public FmsClient(string baseUrl, System.Net.Http.HttpClient httpClient)
         {
-            BaseUrl = baseUrl;
-            _httpClient = httpClient;
-            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() =>
+            BaseUrl = baseUrl; 
+            _httpClient = httpClient; 
+            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() => 
             {
                 var settings = new Newtonsoft.Json.JsonSerializerSettings();
                 UpdateJsonSerializerSettings(settings);
                 return settings;
             });
         }
-
-        public string BaseUrl
+    
+        public string BaseUrl 
         {
             get { return _baseUrl; }
             set { _baseUrl = value; }
         }
-
+    
         protected Newtonsoft.Json.JsonSerializerSettings JsonSerializerSettings { get { return _settings.Value; } }
-
+    
         partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<FMSInfo> FMSInformationAsync()
         {
             return FMSInformationAsync(System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<FMSInfo> FMSInformationAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/fms/fms-information");
-
+    
             var client_ = _httpClient;
             try
             {
@@ -60,12 +60,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -75,20 +75,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(FMSInfo);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(FMSInfo); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<FMSInfo>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -96,10 +96,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(FMSInfo);
                     }
                     finally
@@ -113,13 +113,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<string> GetSettingsAsync(string id)
         {
             return GetSettingsAsync(id, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<string> GetSettingsAsync(string id, System.Threading.CancellationToken cancellationToken)
@@ -127,7 +127,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/fms/settings/{id}");
             urlBuilder_.Replace("{id}", System.Uri.EscapeDataString(ConvertToString(id, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -135,12 +135,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -150,20 +150,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(string);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(string); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<string>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -171,10 +171,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(string);
                     }
                     finally
@@ -188,13 +188,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task SetSettingAsync(string id, string setting)
         {
             return SetSettingAsync(id, setting, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task SetSettingAsync(string id, string setting, System.Threading.CancellationToken cancellationToken)
@@ -202,7 +202,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/fms/settings/{id}");
             urlBuilder_.Replace("{id}", System.Uri.EscapeDataString(ConvertToString(id, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -212,12 +212,12 @@ namespace BlackMaple.FMSInsight.API
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -227,18 +227,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -253,13 +253,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task FindInstructionsAsync(string part, string type, int? process, long? materialID, string operatorName, string pallet)
         {
             return FindInstructionsAsync(part, type, process, materialID, operatorName, pallet, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task FindInstructionsAsync(string part, string type, int? process, long? materialID, string operatorName, string pallet, System.Threading.CancellationToken cancellationToken)
@@ -268,36 +268,36 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/fms/find-instructions/{part}?");
             urlBuilder_.Replace("{part}", System.Uri.EscapeDataString(ConvertToString(part, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append("type=").Append(System.Uri.EscapeDataString(type != null ? ConvertToString(type, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
-            if (process != null)
+            if (process != null) 
             {
                 urlBuilder_.Append("process=").Append(System.Uri.EscapeDataString(ConvertToString(process, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (materialID != null)
+            if (materialID != null) 
             {
                 urlBuilder_.Append("materialID=").Append(System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (operatorName != null)
+            if (operatorName != null) 
             {
                 urlBuilder_.Append("operatorName=").Append(System.Uri.EscapeDataString(ConvertToString(operatorName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (pallet != null)
+            if (pallet != null) 
             {
                 urlBuilder_.Append("pallet=").Append(System.Uri.EscapeDataString(ConvertToString(pallet, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -307,25 +307,25 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "302")
+                        if (status_ == "302") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("A server side error occurred.", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                         else
-                        if (status_ == "404")
+                        if (status_ == "404") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("A server side error occurred.", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -340,37 +340,37 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task PrintLabelAsync(long materialId, int? process, int? loadStation, string queue)
         {
             return PrintLabelAsync(materialId, process, loadStation, queue, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task PrintLabelAsync(long materialId, int? process, int? loadStation, string queue, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/fms/print-label/{materialId}?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
-            if (process != null)
+            if (process != null) 
             {
                 urlBuilder_.Append("process=").Append(System.Uri.EscapeDataString(ConvertToString(process, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (loadStation != null)
+            if (loadStation != null) 
             {
                 urlBuilder_.Append("loadStation=").Append(System.Uri.EscapeDataString(ConvertToString(loadStation, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (queue != null)
+            if (queue != null) 
             {
                 urlBuilder_.Append("queue=").Append(System.Uri.EscapeDataString(ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -378,12 +378,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Content = new System.Net.Http.StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json");
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -393,24 +393,24 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
-                        if (status_ == "400")
+                        if (status_ == "400") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("A server side error occurred.", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -425,7 +425,7 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         private string ConvertToString(object value, System.Globalization.CultureInfo cultureInfo)
         {
             if (value is System.Enum)
@@ -436,7 +436,7 @@ namespace BlackMaple.FMSInsight.API
                     var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                     if (field != null)
                     {
-                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute))
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
                             as System.Runtime.Serialization.EnumMemberAttribute;
                         if (attribute != null)
                         {
@@ -457,65 +457,65 @@ namespace BlackMaple.FMSInsight.API
                 var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
                 return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
             }
-
+        
             return System.Convert.ToString(value, cultureInfo);
         }
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "12.3.1.0 (NJsonSchema v9.14.1.0 (Newtonsoft.Json v11.0.0.0))")]
-    public partial class JobsClient
+    public partial class JobsClient 
     {
         private string _baseUrl = "";
         private System.Net.Http.HttpClient _httpClient;
         private System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings;
-
+    
         public JobsClient(string baseUrl, System.Net.Http.HttpClient httpClient)
         {
-            BaseUrl = baseUrl;
-            _httpClient = httpClient;
-            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() =>
+            BaseUrl = baseUrl; 
+            _httpClient = httpClient; 
+            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() => 
             {
                 var settings = new Newtonsoft.Json.JsonSerializerSettings();
                 UpdateJsonSerializerSettings(settings);
                 return settings;
             });
         }
-
-        public string BaseUrl
+    
+        public string BaseUrl 
         {
             get { return _baseUrl; }
             set { _baseUrl = value; }
         }
-
+    
         protected Newtonsoft.Json.JsonSerializerSettings JsonSerializerSettings { get { return _settings.Value; } }
-
+    
         partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<HistoricData> HistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC)
         {
             return HistoryAsync(startUTC, endUTC, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<HistoricData> HistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, System.Threading.CancellationToken cancellationToken)
         {
             if (startUTC == null)
                 throw new System.ArgumentNullException("startUTC");
-
+    
             if (endUTC == null)
                 throw new System.ArgumentNullException("endUTC");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/history?");
             urlBuilder_.Append("startUTC=").Append(System.Uri.EscapeDataString(startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append("endUTC=").Append(System.Uri.EscapeDataString(endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -523,12 +523,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -538,20 +538,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(HistoricData);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(HistoricData); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<HistoricData>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -559,10 +559,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(HistoricData);
                     }
                     finally
@@ -576,13 +576,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<HistoricData> RecentAsync(string afterScheduleId)
         {
             return RecentAsync(afterScheduleId, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<HistoricData> RecentAsync(string afterScheduleId, System.Threading.CancellationToken cancellationToken)
@@ -591,7 +591,7 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/recent?");
             urlBuilder_.Append("afterScheduleId=").Append(System.Uri.EscapeDataString(afterScheduleId != null ? ConvertToString(afterScheduleId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -599,12 +599,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -614,20 +614,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(HistoricData);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(HistoricData); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<HistoricData>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -635,10 +635,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(HistoricData);
                     }
                     finally
@@ -652,20 +652,20 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<PlannedSchedule> LatestScheduleAsync()
         {
             return LatestScheduleAsync(System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<PlannedSchedule> LatestScheduleAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/latest-schedule");
-
+    
             var client_ = _httpClient;
             try
             {
@@ -673,12 +673,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -688,20 +688,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(PlannedSchedule);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(PlannedSchedule); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<PlannedSchedule>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -709,10 +709,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(PlannedSchedule);
                     }
                     finally
@@ -726,13 +726,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<PartWorkorder>> MostRecentUnfilledWorkordersForPartAsync(string part)
         {
             return MostRecentUnfilledWorkordersForPartAsync(part, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<PartWorkorder>> MostRecentUnfilledWorkordersForPartAsync(string part, System.Threading.CancellationToken cancellationToken)
@@ -740,7 +740,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/unfilled-workorders/by-part/{part}");
             urlBuilder_.Replace("{part}", System.Uri.EscapeDataString(ConvertToString(part, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -748,12 +748,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -763,20 +763,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<PartWorkorder>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<PartWorkorder>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<PartWorkorder>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -784,10 +784,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<PartWorkorder>);
                     }
                     finally
@@ -801,20 +801,20 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<CurrentStatus> CurrentStatusAsync()
         {
             return CurrentStatusAsync(System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<CurrentStatus> CurrentStatusAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/status");
-
+    
             var client_ = _httpClient;
             try
             {
@@ -822,12 +822,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -837,20 +837,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(CurrentStatus);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(CurrentStatus); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<CurrentStatus>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -858,10 +858,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(CurrentStatus);
                     }
                     finally
@@ -875,90 +875,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
-        /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> CheckValidAsync(System.Collections.Generic.IEnumerable<JobPlan> jobs)
-        {
-            return CheckValidAsync(jobs, System.Threading.CancellationToken.None);
-        }
-
-        /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> CheckValidAsync(System.Collections.Generic.IEnumerable<JobPlan> jobs, System.Threading.CancellationToken cancellationToken)
-        {
-            var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/check-valid");
-
-            var client_ = _httpClient;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var content_ = new System.Net.Http.StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(jobs, _settings.Value));
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    try
-                    {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<string>);
-                            try
-                            {
-                                result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<string>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
-                            {
-                                throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
-                            }
-                        }
-                        else
-                        if (status_ != "200" && status_ != "204")
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
-                        }
-
-                        return default(System.Collections.Generic.ICollection<string>);
-                    }
-                    finally
-                    {
-                        if (response_ != null)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-            }
-        }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task AddAsync(NewJobs newJobs, string expectedPreviousScheduleId)
         {
             return AddAsync(newJobs, expectedPreviousScheduleId, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task AddAsync(NewJobs newJobs, string expectedPreviousScheduleId, System.Threading.CancellationToken cancellationToken)
@@ -967,7 +890,7 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/add?");
             urlBuilder_.Append("expectedPreviousScheduleId=").Append(System.Uri.EscapeDataString(expectedPreviousScheduleId != null ? ConvertToString(expectedPreviousScheduleId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -977,12 +900,12 @@ namespace BlackMaple.FMSInsight.API
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -992,18 +915,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1018,31 +941,31 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<InProcessMaterial> AddUnallocatedCastingToQueueByPartAsync(string partName, string queue, int pos, string serial, string operName)
         {
             return AddUnallocatedCastingToQueueByPartAsync(partName, queue, pos, serial, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<InProcessMaterial> AddUnallocatedCastingToQueueByPartAsync(string partName, string queue, int pos, string serial, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (pos == null)
                 throw new System.ArgumentNullException("pos");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/part/{partName}/casting?");
             urlBuilder_.Replace("{partName}", System.Uri.EscapeDataString(ConvertToString(partName, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append("queue=").Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Append("pos=").Append(System.Uri.EscapeDataString(ConvertToString(pos, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1053,12 +976,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1068,20 +991,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(InProcessMaterial);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(InProcessMaterial); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<InProcessMaterial>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -1089,10 +1012,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(InProcessMaterial);
                     }
                     finally
@@ -1106,35 +1029,35 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<InProcessMaterial>> AddUnallocatedCastingToQueueAsync(string castingName, string queue, int pos, System.Collections.Generic.IEnumerable<string> serials, int? qty, string operName)
         {
             return AddUnallocatedCastingToQueueAsync(castingName, queue, pos, serials, qty, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<InProcessMaterial>> AddUnallocatedCastingToQueueAsync(string castingName, string queue, int pos, System.Collections.Generic.IEnumerable<string> serials, int? qty, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (pos == null)
                 throw new System.ArgumentNullException("pos");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/casting/{castingName}?");
             urlBuilder_.Replace("{castingName}", System.Uri.EscapeDataString(ConvertToString(castingName, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append("queue=").Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Append("pos=").Append(System.Uri.EscapeDataString(ConvertToString(pos, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            if (qty != null)
+            if (qty != null) 
             {
                 urlBuilder_.Append("qty=").Append(System.Uri.EscapeDataString(ConvertToString(qty, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1145,12 +1068,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1160,20 +1083,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<InProcessMaterial>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<InProcessMaterial>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<InProcessMaterial>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -1181,10 +1104,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<InProcessMaterial>);
                     }
                     finally
@@ -1198,13 +1121,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<JobPlan> GetJobPlanAsync(string jobUnique)
         {
             return GetJobPlanAsync(jobUnique, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<JobPlan> GetJobPlanAsync(string jobUnique, System.Threading.CancellationToken cancellationToken)
@@ -1212,7 +1135,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/job/{jobUnique}/plan");
             urlBuilder_.Replace("{jobUnique}", System.Uri.EscapeDataString(ConvertToString(jobUnique, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1220,12 +1143,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1235,20 +1158,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(JobPlan);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(JobPlan); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<JobPlan>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -1256,10 +1179,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(JobPlan);
                     }
                     finally
@@ -1273,26 +1196,26 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string serial, string operName)
         {
             return AddUnprocessedMaterialToQueueAsync(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string serial, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (lastCompletedProcess == null)
                 throw new System.ArgumentNullException("lastCompletedProcess");
-
+    
             if (pathGroup == null)
                 throw new System.ArgumentNullException("pathGroup");
-
+    
             if (pos == null)
                 throw new System.ArgumentNullException("pos");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/job/{jobUnique}/unprocessed-material?");
             urlBuilder_.Replace("{jobUnique}", System.Uri.EscapeDataString(ConvertToString(jobUnique, System.Globalization.CultureInfo.InvariantCulture)));
@@ -1300,12 +1223,12 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append("pathGroup=").Append(System.Uri.EscapeDataString(ConvertToString(pathGroup, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append("queue=").Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Append("pos=").Append(System.Uri.EscapeDataString(ConvertToString(pos, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1316,12 +1239,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1331,20 +1254,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(InProcessMaterial);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(InProcessMaterial); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<InProcessMaterial>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -1352,10 +1275,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(InProcessMaterial);
                     }
                     finally
@@ -1369,13 +1292,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task SetJobCommentAsync(string jobUnique, string comment)
         {
             return SetJobCommentAsync(jobUnique, comment, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task SetJobCommentAsync(string jobUnique, string comment, System.Threading.CancellationToken cancellationToken)
@@ -1383,7 +1306,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/job/{jobUnique}/comment");
             urlBuilder_.Replace("{jobUnique}", System.Uri.EscapeDataString(ConvertToString(jobUnique, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1393,12 +1316,12 @@ namespace BlackMaple.FMSInsight.API
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1408,18 +1331,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1434,29 +1357,29 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task SetMaterialInQueueAsync(long materialId, QueuePosition queue, string operName)
         {
             return SetMaterialInQueueAsync(materialId, queue, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task SetMaterialInQueueAsync(long materialId, QueuePosition queue, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/queue?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1466,12 +1389,12 @@ namespace BlackMaple.FMSInsight.API
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1481,18 +1404,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1507,41 +1430,41 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task RemoveMaterialFromAllQueuesAsync(long materialId, string operName)
         {
             return RemoveMaterialFromAllQueuesAsync(materialId, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task RemoveMaterialFromAllQueuesAsync(long materialId, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/queue?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("DELETE");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1551,18 +1474,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1577,29 +1500,29 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task SignalMaterialForQuarantineAsync(long materialId, string queue, string operName)
         {
             return SignalMaterialForQuarantineAsync(materialId, queue, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task SignalMaterialForQuarantineAsync(long materialId, string queue, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/quarantine?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1609,12 +1532,12 @@ namespace BlackMaple.FMSInsight.API
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1624,18 +1547,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1650,33 +1573,33 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task InvalidatePalletCycleAsync(long materialId, int process, string putMatInQueue, string operName)
         {
             return InvalidatePalletCycleAsync(materialId, process, putMatInQueue, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task InvalidatePalletCycleAsync(long materialId, int process, string putMatInQueue, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/invalidate-process?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
-            if (putMatInQueue != null)
+            if (putMatInQueue != null) 
             {
                 urlBuilder_.Append("putMatInQueue=").Append(System.Uri.EscapeDataString(ConvertToString(putMatInQueue, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1686,12 +1609,12 @@ namespace BlackMaple.FMSInsight.API
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1701,18 +1624,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1727,33 +1650,33 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task SwapMaterialOnPalletAsync(long materialId, MatToPutOnPallet mat, string putMatInQueue, string operName)
         {
             return SwapMaterialOnPalletAsync(materialId, mat, putMatInQueue, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task SwapMaterialOnPalletAsync(long materialId, MatToPutOnPallet mat, string putMatInQueue, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/swap-off-pallet?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
-            if (putMatInQueue != null)
+            if (putMatInQueue != null) 
             {
                 urlBuilder_.Append("putMatInQueue=").Append(System.Uri.EscapeDataString(ConvertToString(putMatInQueue, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1763,12 +1686,12 @@ namespace BlackMaple.FMSInsight.API
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1778,18 +1701,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1804,13 +1727,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task BulkRemoveMaterialFromQueuesAsync(System.Collections.Generic.IEnumerable<long> id, string operName)
         {
             return BulkRemoveMaterialFromQueuesAsync(id, operName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task BulkRemoveMaterialFromQueuesAsync(System.Collections.Generic.IEnumerable<long> id, string operName, System.Threading.CancellationToken cancellationToken)
@@ -1818,24 +1741,24 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material?");
             foreach (var item_ in id) { urlBuilder_.Append("id=").Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append("&"); }
-            if (operName != null)
+            if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("DELETE");
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1845,18 +1768,18 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
                             return;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
                     }
@@ -1871,29 +1794,29 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<JobAndDecrementQuantity>> DecrementQuantitiesAsync(long? loadDecrementsStrictlyAfterDecrementId, System.DateTimeOffset? loadDecrementsAfterTimeUTC)
         {
             return DecrementQuantitiesAsync(loadDecrementsStrictlyAfterDecrementId, loadDecrementsAfterTimeUTC, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<JobAndDecrementQuantity>> DecrementQuantitiesAsync(long? loadDecrementsStrictlyAfterDecrementId, System.DateTimeOffset? loadDecrementsAfterTimeUTC, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/planned-cycles?");
-            if (loadDecrementsStrictlyAfterDecrementId != null)
+            if (loadDecrementsStrictlyAfterDecrementId != null) 
             {
                 urlBuilder_.Append("loadDecrementsStrictlyAfterDecrementId=").Append(System.Uri.EscapeDataString(ConvertToString(loadDecrementsStrictlyAfterDecrementId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (loadDecrementsAfterTimeUTC != null)
+            if (loadDecrementsAfterTimeUTC != null) 
             {
                 urlBuilder_.Append("loadDecrementsAfterTimeUTC=").Append(System.Uri.EscapeDataString(loadDecrementsAfterTimeUTC.Value.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -1901,12 +1824,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("DELETE");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -1916,20 +1839,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<JobAndDecrementQuantity>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<JobAndDecrementQuantity>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<JobAndDecrementQuantity>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -1937,10 +1860,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<JobAndDecrementQuantity>);
                     }
                     finally
@@ -1954,7 +1877,7 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         private string ConvertToString(object value, System.Globalization.CultureInfo cultureInfo)
         {
             if (value is System.Enum)
@@ -1965,7 +1888,7 @@ namespace BlackMaple.FMSInsight.API
                     var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                     if (field != null)
                     {
-                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute))
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
                             as System.Runtime.Serialization.EnumMemberAttribute;
                         if (attribute != null)
                         {
@@ -1986,65 +1909,65 @@ namespace BlackMaple.FMSInsight.API
                 var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
                 return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
             }
-
+        
             return System.Convert.ToString(value, cultureInfo);
         }
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "12.3.1.0 (NJsonSchema v9.14.1.0 (Newtonsoft.Json v11.0.0.0))")]
-    public partial class LogClient
+    public partial class LogClient 
     {
         private string _baseUrl = "";
         private System.Net.Http.HttpClient _httpClient;
         private System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings;
-
+    
         public LogClient(string baseUrl, System.Net.Http.HttpClient httpClient)
         {
-            BaseUrl = baseUrl;
-            _httpClient = httpClient;
-            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() =>
+            BaseUrl = baseUrl; 
+            _httpClient = httpClient; 
+            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() => 
             {
                 var settings = new Newtonsoft.Json.JsonSerializerSettings();
                 UpdateJsonSerializerSettings(settings);
                 return settings;
             });
         }
-
-        public string BaseUrl
+    
+        public string BaseUrl 
         {
             get { return _baseUrl; }
             set { _baseUrl = value; }
         }
-
+    
         protected Newtonsoft.Json.JsonSerializerSettings JsonSerializerSettings { get { return _settings.Value; } }
-
+    
         partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> GetAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC)
         {
             return GetAsync(startUTC, endUTC, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> GetAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, System.Threading.CancellationToken cancellationToken)
         {
             if (startUTC == null)
                 throw new System.ArgumentNullException("startUTC");
-
+    
             if (endUTC == null)
                 throw new System.ArgumentNullException("endUTC");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/all?");
             urlBuilder_.Append("startUTC=").Append(System.Uri.EscapeDataString(startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append("endUTC=").Append(System.Uri.EscapeDataString(endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2052,12 +1975,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2067,20 +1990,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<LogEntry>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2088,10 +2011,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<LogEntry>);
                     }
                     finally
@@ -2105,29 +2028,29 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<FileResponse> GetEventCSVAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC)
         {
             return GetEventCSVAsync(startUTC, endUTC, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<FileResponse> GetEventCSVAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, System.Threading.CancellationToken cancellationToken)
         {
             if (startUTC == null)
                 throw new System.ArgumentNullException("startUTC");
-
+    
             if (endUTC == null)
                 throw new System.ArgumentNullException("endUTC");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events.csv?");
             urlBuilder_.Append("startUTC=").Append(System.Uri.EscapeDataString(startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append("endUTC=").Append(System.Uri.EscapeDataString(endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2135,12 +2058,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2150,24 +2073,24 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200" || status_ == "206")
+                        if (status_ == "200" || status_ == "206") 
                         {
                             var responseStream_ = response_.Content == null ? System.IO.Stream.Null : await response_.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                            var fileResponse_ = new FileResponse((int)response_.StatusCode, headers_, responseStream_, null, response_);
+                            var fileResponse_ = new FileResponse((int)response_.StatusCode, headers_, responseStream_, null, response_); 
                             client_ = null; response_ = null; // response and client are disposed by FileResponse
                             return fileResponse_;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(FileResponse);
                     }
                     finally
@@ -2181,29 +2104,29 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> GetCompletedPartsAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC)
         {
             return GetCompletedPartsAsync(startUTC, endUTC, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> GetCompletedPartsAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, System.Threading.CancellationToken cancellationToken)
         {
             if (startUTC == null)
                 throw new System.ArgumentNullException("startUTC");
-
+    
             if (endUTC == null)
                 throw new System.ArgumentNullException("endUTC");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/all-completed-parts?");
             urlBuilder_.Append("startUTC=").Append(System.Uri.EscapeDataString(startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append("endUTC=").Append(System.Uri.EscapeDataString(endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2211,12 +2134,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2226,20 +2149,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<LogEntry>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2247,10 +2170,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<LogEntry>);
                     }
                     finally
@@ -2264,25 +2187,25 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> RecentAsync(long lastSeenCounter)
         {
             return RecentAsync(lastSeenCounter, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> RecentAsync(long lastSeenCounter, System.Threading.CancellationToken cancellationToken)
         {
             if (lastSeenCounter == null)
                 throw new System.ArgumentNullException("lastSeenCounter");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/recent?");
             urlBuilder_.Append("lastSeenCounter=").Append(System.Uri.EscapeDataString(ConvertToString(lastSeenCounter, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2290,12 +2213,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2305,20 +2228,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<LogEntry>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2326,10 +2249,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<LogEntry>);
                     }
                     finally
@@ -2343,24 +2266,24 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForMaterialAsync(long materialID)
         {
             return LogForMaterialAsync(materialID, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForMaterialAsync(long materialID, System.Threading.CancellationToken cancellationToken)
         {
             if (materialID == null)
                 throw new System.ArgumentNullException("materialID");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/for-material/{materialID}");
             urlBuilder_.Replace("{materialID}", System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2368,12 +2291,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2383,20 +2306,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<LogEntry>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2404,10 +2327,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<LogEntry>);
                     }
                     finally
@@ -2421,13 +2344,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForMaterialsAsync(System.Collections.Generic.IEnumerable<long> id)
         {
             return LogForMaterialsAsync(id, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForMaterialsAsync(System.Collections.Generic.IEnumerable<long> id, System.Threading.CancellationToken cancellationToken)
@@ -2436,7 +2359,7 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/for-material?");
             foreach (var item_ in id) { urlBuilder_.Append("id=").Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append("&"); }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2444,12 +2367,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2459,20 +2382,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<LogEntry>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2480,10 +2403,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<LogEntry>);
                     }
                     finally
@@ -2497,13 +2420,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForSerialAsync(string serial)
         {
             return LogForSerialAsync(serial, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForSerialAsync(string serial, System.Threading.CancellationToken cancellationToken)
@@ -2511,7 +2434,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/for-serial/{serial}");
             urlBuilder_.Replace("{serial}", System.Uri.EscapeDataString(ConvertToString(serial, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2519,12 +2442,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2534,20 +2457,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<LogEntry>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2555,10 +2478,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<LogEntry>);
                     }
                     finally
@@ -2572,13 +2495,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForWorkorderAsync(string workorder)
         {
             return LogForWorkorderAsync(workorder, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<LogEntry>> LogForWorkorderAsync(string workorder, System.Threading.CancellationToken cancellationToken)
@@ -2586,7 +2509,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/for-workorder/{workorder}");
             urlBuilder_.Replace("{workorder}", System.Uri.EscapeDataString(ConvertToString(workorder, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2594,12 +2517,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2609,20 +2532,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<LogEntry>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<LogEntry>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2630,10 +2553,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<LogEntry>);
                     }
                     finally
@@ -2647,24 +2570,24 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<MaterialDetails> MaterialDetailsAsync(long materialID)
         {
             return MaterialDetailsAsync(materialID, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<MaterialDetails> MaterialDetailsAsync(long materialID, System.Threading.CancellationToken cancellationToken)
         {
             if (materialID == null)
                 throw new System.ArgumentNullException("materialID");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/material-details/{materialID}");
             urlBuilder_.Replace("{materialID}", System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2672,12 +2595,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2687,20 +2610,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(MaterialDetails);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(MaterialDetails); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<MaterialDetails>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2708,10 +2631,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(MaterialDetails);
                     }
                     finally
@@ -2725,13 +2648,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<MaterialDetails>> MaterialDetailsForJobAsync(string jobUnique)
         {
             return MaterialDetailsForJobAsync(jobUnique, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<MaterialDetails>> MaterialDetailsForJobAsync(string jobUnique, System.Threading.CancellationToken cancellationToken)
@@ -2739,7 +2662,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/material-for-job/{jobUnique}");
             urlBuilder_.Replace("{jobUnique}", System.Uri.EscapeDataString(ConvertToString(jobUnique, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2747,12 +2670,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2762,20 +2685,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<MaterialDetails>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<MaterialDetails>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<MaterialDetails>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2783,10 +2706,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<MaterialDetails>);
                     }
                     finally
@@ -2800,13 +2723,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<WorkorderSummary>> GetWorkordersAsync(System.Collections.Generic.IEnumerable<string> ids)
         {
             return GetWorkordersAsync(ids, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<WorkorderSummary>> GetWorkordersAsync(System.Collections.Generic.IEnumerable<string> ids, System.Threading.CancellationToken cancellationToken)
@@ -2815,7 +2738,7 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/workorders?");
             foreach (var item_ in ids) { urlBuilder_.Append("ids=").Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append("&"); }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2823,12 +2746,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2838,20 +2761,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<WorkorderSummary>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<WorkorderSummary>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<WorkorderSummary>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -2859,10 +2782,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<WorkorderSummary>);
                     }
                     finally
@@ -2876,13 +2799,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<FileResponse> GetWorkordersCSVAsync(System.Collections.Generic.IEnumerable<string> ids)
         {
             return GetWorkordersCSVAsync(ids, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<FileResponse> GetWorkordersCSVAsync(System.Collections.Generic.IEnumerable<string> ids, System.Threading.CancellationToken cancellationToken)
@@ -2891,7 +2814,7 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/workorders.csv?");
             foreach (var item_ in ids) { urlBuilder_.Append("ids=").Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append("&"); }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2899,12 +2822,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2914,24 +2837,24 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200" || status_ == "206")
+                        if (status_ == "200" || status_ == "206") 
                         {
                             var responseStream_ = response_.Content == null ? System.IO.Stream.Null : await response_.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                            var fileResponse_ = new FileResponse((int)response_.StatusCode, headers_, responseStream_, null, response_);
+                            var fileResponse_ = new FileResponse((int)response_.StatusCode, headers_, responseStream_, null, response_); 
                             client_ = null; response_ = null; // response and client are disposed by FileResponse
                             return fileResponse_;
                         }
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(FileResponse);
                     }
                     finally
@@ -2945,29 +2868,29 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<LogEntry> SetSerialAsync(long materialID, string serial, int? process)
         {
             return SetSerialAsync(materialID, serial, process, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<LogEntry> SetSerialAsync(long materialID, string serial, int? process, System.Threading.CancellationToken cancellationToken)
         {
             if (materialID == null)
                 throw new System.ArgumentNullException("materialID");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/material-details/{materialID}/serial?");
             urlBuilder_.Replace("{materialID}", System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture)));
-            if (process != null)
+            if (process != null) 
             {
                 urlBuilder_.Append("process=").Append(System.Uri.EscapeDataString(ConvertToString(process, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -2978,12 +2901,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -2993,20 +2916,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(LogEntry);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(LogEntry); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3014,10 +2937,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(LogEntry);
                     }
                     finally
@@ -3031,29 +2954,29 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<LogEntry> SetWorkorderAsync(long materialID, string workorder, int? process)
         {
             return SetWorkorderAsync(materialID, workorder, process, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<LogEntry> SetWorkorderAsync(long materialID, string workorder, int? process, System.Threading.CancellationToken cancellationToken)
         {
             if (materialID == null)
                 throw new System.ArgumentNullException("materialID");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/material-details/{materialID}/workorder?");
             urlBuilder_.Replace("{materialID}", System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture)));
-            if (process != null)
+            if (process != null) 
             {
                 urlBuilder_.Append("process=").Append(System.Uri.EscapeDataString(ConvertToString(process, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3064,12 +2987,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3079,20 +3002,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(LogEntry);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(LogEntry); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3100,10 +3023,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(LogEntry);
                     }
                     finally
@@ -3117,30 +3040,30 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<LogEntry> SetInspectionDecisionAsync(long materialID, string inspType, bool inspect, int? process)
         {
             return SetInspectionDecisionAsync(materialID, inspType, inspect, process, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<LogEntry> SetInspectionDecisionAsync(long materialID, string inspType, bool inspect, int? process, System.Threading.CancellationToken cancellationToken)
         {
             if (materialID == null)
                 throw new System.ArgumentNullException("materialID");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/material-details/{materialID}/inspections/{inspType}?");
             urlBuilder_.Replace("{materialID}", System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{inspType}", System.Uri.EscapeDataString(ConvertToString(inspType, System.Globalization.CultureInfo.InvariantCulture)));
-            if (process != null)
+            if (process != null) 
             {
                 urlBuilder_.Append("process=").Append(System.Uri.EscapeDataString(ConvertToString(process, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3151,12 +3074,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3166,20 +3089,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(LogEntry);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(LogEntry); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3187,10 +3110,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(LogEntry);
                     }
                     finally
@@ -3204,33 +3127,33 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<LogEntry> RecordOperatorNotesAsync(long materialID, string notes, int? process, string operatorName)
         {
             return RecordOperatorNotesAsync(materialID, notes, process, operatorName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<LogEntry> RecordOperatorNotesAsync(long materialID, string notes, int? process, string operatorName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialID == null)
                 throw new System.ArgumentNullException("materialID");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/material-details/{materialID}/notes?");
             urlBuilder_.Replace("{materialID}", System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture)));
-            if (process != null)
+            if (process != null) 
             {
                 urlBuilder_.Append("process=").Append(System.Uri.EscapeDataString(ConvertToString(process, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
-            if (operatorName != null)
+            if (operatorName != null) 
             {
                 urlBuilder_.Append("operatorName=").Append(System.Uri.EscapeDataString(ConvertToString(operatorName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3241,12 +3164,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3256,20 +3179,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(LogEntry);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(LogEntry); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3277,10 +3200,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(LogEntry);
                     }
                     finally
@@ -3294,20 +3217,20 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<LogEntry> RecordInspectionCompletedAsync(NewInspectionCompleted insp)
         {
             return RecordInspectionCompletedAsync(insp, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<LogEntry> RecordInspectionCompletedAsync(NewInspectionCompleted insp, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/inspection-result");
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3318,12 +3241,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3333,20 +3256,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(LogEntry);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(LogEntry); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3354,10 +3277,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(LogEntry);
                     }
                     finally
@@ -3371,20 +3294,20 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<LogEntry> RecordWashCompletedAsync(NewWash insp)
         {
             return RecordWashCompletedAsync(insp, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<LogEntry> RecordWashCompletedAsync(NewWash insp, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/events/wash");
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3395,12 +3318,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3410,20 +3333,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(LogEntry);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(LogEntry); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3431,10 +3354,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(LogEntry);
                     }
                     finally
@@ -3448,13 +3371,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<LogEntry> FinalizeWorkorderAsync(string workorder)
         {
             return FinalizeWorkorderAsync(workorder, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<LogEntry> FinalizeWorkorderAsync(string workorder, System.Threading.CancellationToken cancellationToken)
@@ -3462,7 +3385,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/log/workorder/{workorder}/finalize");
             urlBuilder_.Replace("{workorder}", System.Uri.EscapeDataString(ConvertToString(workorder, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3471,12 +3394,12 @@ namespace BlackMaple.FMSInsight.API
                     request_.Content = new System.Net.Http.StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json");
                     request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3486,20 +3409,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(LogEntry);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(LogEntry); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3507,10 +3430,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(LogEntry);
                     }
                     finally
@@ -3524,7 +3447,7 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         private string ConvertToString(object value, System.Globalization.CultureInfo cultureInfo)
         {
             if (value is System.Enum)
@@ -3535,7 +3458,7 @@ namespace BlackMaple.FMSInsight.API
                     var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                     if (field != null)
                     {
-                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute))
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
                             as System.Runtime.Serialization.EnumMemberAttribute;
                         if (attribute != null)
                         {
@@ -3556,56 +3479,56 @@ namespace BlackMaple.FMSInsight.API
                 var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
                 return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
             }
-
+        
             return System.Convert.ToString(value, cultureInfo);
         }
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "12.3.1.0 (NJsonSchema v9.14.1.0 (Newtonsoft.Json v11.0.0.0))")]
-    public partial class MachinesClient
+    public partial class MachinesClient 
     {
         private string _baseUrl = "";
         private System.Net.Http.HttpClient _httpClient;
         private System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings;
-
+    
         public MachinesClient(string baseUrl, System.Net.Http.HttpClient httpClient)
         {
-            BaseUrl = baseUrl;
-            _httpClient = httpClient;
-            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() =>
+            BaseUrl = baseUrl; 
+            _httpClient = httpClient; 
+            _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(() => 
             {
                 var settings = new Newtonsoft.Json.JsonSerializerSettings();
                 UpdateJsonSerializerSettings(settings);
                 return settings;
             });
         }
-
-        public string BaseUrl
+    
+        public string BaseUrl 
         {
             get { return _baseUrl; }
             set { _baseUrl = value; }
         }
-
+    
         protected Newtonsoft.Json.JsonSerializerSettings JsonSerializerSettings { get { return _settings.Value; } }
-
+    
         partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ToolInMachine>> GetToolsInMachinesAsync()
         {
             return GetToolsInMachinesAsync(System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ToolInMachine>> GetToolsInMachinesAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/machines/tools");
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3613,12 +3536,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3628,20 +3551,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<ToolInMachine>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<ToolInMachine>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<ToolInMachine>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3649,10 +3572,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<ToolInMachine>);
                     }
                     finally
@@ -3666,20 +3589,20 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ProgramInCellController>> GetProgramsInCellControllerAsync()
         {
             return GetProgramsInCellControllerAsync(System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ProgramInCellController>> GetProgramsInCellControllerAsync(System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/machines/programs-in-cell-controller");
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3687,12 +3610,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3702,20 +3625,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<ProgramInCellController>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<ProgramInCellController>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<ProgramInCellController>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3723,10 +3646,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<ProgramInCellController>);
                     }
                     finally
@@ -3740,30 +3663,30 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ProgramRevision>> GetProgramRevisionsInDescendingOrderOfRevisionAsync(string programName, int count, long? revisionToStart)
         {
             return GetProgramRevisionsInDescendingOrderOfRevisionAsync(programName, count, revisionToStart, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ProgramRevision>> GetProgramRevisionsInDescendingOrderOfRevisionAsync(string programName, int count, long? revisionToStart, System.Threading.CancellationToken cancellationToken)
         {
             if (count == null)
                 throw new System.ArgumentNullException("count");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/machines/program/{programName}/revisions?");
             urlBuilder_.Replace("{programName}", System.Uri.EscapeDataString(ConvertToString(programName, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append("count=").Append(System.Uri.EscapeDataString(ConvertToString(count, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            if (revisionToStart != null)
+            if (revisionToStart != null) 
             {
                 urlBuilder_.Append("revisionToStart=").Append(System.Uri.EscapeDataString(ConvertToString(revisionToStart, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3771,12 +3694,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3786,20 +3709,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(System.Collections.Generic.ICollection<ProgramRevision>);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(System.Collections.Generic.ICollection<ProgramRevision>); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.ICollection<ProgramRevision>>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3807,10 +3730,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(System.Collections.Generic.ICollection<ProgramRevision>);
                     }
                     finally
@@ -3824,25 +3747,25 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<string> GetProgramRevisionContentAsync(string programName, long revision)
         {
             return GetProgramRevisionContentAsync(programName, revision, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<string> GetProgramRevisionContentAsync(string programName, long revision, System.Threading.CancellationToken cancellationToken)
         {
             if (revision == null)
                 throw new System.ArgumentNullException("revision");
-
+    
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/machines/program/{programName}/revision/{revision}/content");
             urlBuilder_.Replace("{programName}", System.Uri.EscapeDataString(ConvertToString(programName, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{revision}", System.Uri.EscapeDataString(ConvertToString(revision, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3850,12 +3773,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3865,20 +3788,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(string);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(string); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<string>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3886,10 +3809,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(string);
                     }
                     finally
@@ -3903,13 +3826,13 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<string> GetLatestProgramRevisionContentAsync(string programName)
         {
             return GetLatestProgramRevisionContentAsync(programName, System.Threading.CancellationToken.None);
         }
-
+    
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         public async System.Threading.Tasks.Task<string> GetLatestProgramRevisionContentAsync(string programName, System.Threading.CancellationToken cancellationToken)
@@ -3917,7 +3840,7 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/machines/program/{programName}/latest-revision/content");
             urlBuilder_.Replace("{programName}", System.Uri.EscapeDataString(ConvertToString(programName, System.Globalization.CultureInfo.InvariantCulture)));
-
+    
             var client_ = _httpClient;
             try
             {
@@ -3925,12 +3848,12 @@ namespace BlackMaple.FMSInsight.API
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
+    
                     PrepareRequest(client_, request_, urlBuilder_);
                     var url_ = urlBuilder_.ToString();
                     request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
                     PrepareRequest(client_, request_, url_);
-
+    
                     var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     try
                     {
@@ -3940,20 +3863,20 @@ namespace BlackMaple.FMSInsight.API
                             foreach (var item_ in response_.Content.Headers)
                                 headers_[item_.Key] = item_.Value;
                         }
-
+    
                         ProcessResponse(client_, response_);
-
+    
                         var status_ = ((int)response_.StatusCode).ToString();
-                        if (status_ == "200")
+                        if (status_ == "200") 
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var result_ = default(string);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            var result_ = default(string); 
                             try
                             {
                                 result_ = Newtonsoft.Json.JsonConvert.DeserializeObject<string>(responseData_, _settings.Value);
-                                return result_;
-                            }
-                            catch (System.Exception exception_)
+                                return result_; 
+                            } 
+                            catch (System.Exception exception_) 
                             {
                                 throw new SwaggerException("Could not deserialize the response body.", (int)response_.StatusCode, responseData_, headers_, exception_);
                             }
@@ -3961,10 +3884,10 @@ namespace BlackMaple.FMSInsight.API
                         else
                         if (status_ != "200" && status_ != "204")
                         {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-
+            
                         return default(string);
                     }
                     finally
@@ -3978,7 +3901,7 @@ namespace BlackMaple.FMSInsight.API
             {
             }
         }
-
+    
         private string ConvertToString(object value, System.Globalization.CultureInfo cultureInfo)
         {
             if (value is System.Enum)
@@ -3989,7 +3912,7 @@ namespace BlackMaple.FMSInsight.API
                     var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                     if (field != null)
                     {
-                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute))
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
                             as System.Runtime.Serialization.EnumMemberAttribute;
                         if (attribute != null)
                         {
@@ -4010,1614 +3933,1614 @@ namespace BlackMaple.FMSInsight.API
                 var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
                 return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
             }
-
+        
             return System.Convert.ToString(value, cultureInfo);
         }
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class FMSInfo
+    public partial class FMSInfo 
     {
         [Newtonsoft.Json.JsonProperty("Name", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Name { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Version", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Version { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("RequireScanAtWash", Required = Newtonsoft.Json.Required.Always)]
         public bool RequireScanAtWash { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("RequireWorkorderBeforeAllowWashComplete", Required = Newtonsoft.Json.Required.Always)]
         public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("AdditionalLogServers", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<string> AdditionalLogServers { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("OpenIDConnectAuthority", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string OpenIDConnectAuthority { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("LocalhostOpenIDConnectAuthority", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string LocalhostOpenIDConnectAuthority { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("OpenIDConnectClientId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string OpenIDConnectClientId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("UsingLabelPrinterForSerials", Required = Newtonsoft.Json.Required.Always)]
         public bool UsingLabelPrinterForSerials { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("UseClientPrinterForLabels", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? UseClientPrinterForLabels { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("QuarantineQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string QuarantineQueue { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("RequireOperatorNamePromptWhenAddingMaterial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("AllowAddRawMaterialForNonRunningJobs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowAddRawMaterialForNonRunningJobs { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("RequireSerialWhenAddingMaterialToQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? RequireSerialWhenAddingMaterialToQueue { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("AllowQuarantineAtLoadStation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowQuarantineAtLoadStation { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("AllowChangeSerial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowChangeSerial { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("AllowChangeWorkorderAtLoadStation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowChangeWorkorderAtLoadStation { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("AllowEditJobPlanQuantityFromQueuesPage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string AllowEditJobPlanQuantityFromQueuesPage { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static FMSInfo FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<FMSInfo>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ServerEvent
+    public partial class ServerEvent 
     {
         [Newtonsoft.Json.JsonProperty("LogEntry", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public LogEntry LogEntry { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("NewJobs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public NewJobs NewJobs { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("NewCurrentStatus", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public CurrentStatus NewCurrentStatus { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("EditMaterialInLog", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public EditMaterialInLogEvents EditMaterialInLog { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ServerEvent FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ServerEvent>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class LogEntry
+    public partial class LogEntry 
     {
         [Newtonsoft.Json.JsonProperty("details", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, string> Details { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("counter", Required = Newtonsoft.Json.Required.Always)]
         public long Counter { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("material", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<LogMaterial> Material { get; set; } = new System.Collections.ObjectModel.Collection<LogMaterial>();
-
+    
         [Newtonsoft.Json.JsonProperty("type", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public LogType Type { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("startofcycle", Required = Newtonsoft.Json.Required.Always)]
         public bool Startofcycle { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("endUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset EndUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("loc", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Loc { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("locnum", Required = Newtonsoft.Json.Required.Always)]
         public int Locnum { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("pal", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Pal { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("program", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Program { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("result", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Result { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("elapsed", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan Elapsed { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("active", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan Active { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("tools", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, ToolUse> Tools { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static LogEntry FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<LogEntry>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class LogMaterial
+    public partial class LogMaterial 
     {
         [Newtonsoft.Json.JsonProperty("id", Required = Newtonsoft.Json.Required.Always)]
         public long Id { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("uniq", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Uniq { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("part", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Part { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("proc", Required = Newtonsoft.Json.Required.Always)]
         public int Proc { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("numproc", Required = Newtonsoft.Json.Required.Always)]
         public int Numproc { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("face", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Face { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("serial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Serial { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("workorder", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Workorder { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static LogMaterial FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<LogMaterial>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
     public enum LogType
     {
         [System.Runtime.Serialization.EnumMember(Value = @"LoadUnloadCycle")]
         LoadUnloadCycle = 0,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"MachineCycle")]
         MachineCycle = 1,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"PartMark")]
         PartMark = 2,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Inspection")]
         Inspection = 3,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"OrderAssignment")]
         OrderAssignment = 4,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"GeneralMessage")]
         GeneralMessage = 5,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"PalletCycle")]
         PalletCycle = 6,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"FinalizeWorkorder")]
         FinalizeWorkorder = 7,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"InspectionResult")]
         InspectionResult = 8,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Wash")]
         Wash = 9,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"AddToQueue")]
         AddToQueue = 10,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"RemoveFromQueue")]
         RemoveFromQueue = 11,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"InspectionForce")]
         InspectionForce = 12,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"PalletOnRotaryInbound")]
         PalletOnRotaryInbound = 13,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"PalletInStocker")]
         PalletInStocker = 14,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"SignalQuarantine")]
         SignalQuarantine = 15,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"InvalidateCycle")]
         InvalidateCycle = 16,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"SwapMaterialOnPallet")]
         SwapMaterialOnPallet = 17,
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ToolUse
+    public partial class ToolUse 
     {
         [Newtonsoft.Json.JsonProperty("ToolUseDuringCycle", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan ToolUseDuringCycle { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("TotalToolUseAtEndOfCycle", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan TotalToolUseAtEndOfCycle { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ConfiguredToolLife", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan ConfiguredToolLife { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ToolChangeOccurred", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? ToolChangeOccurred { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ToolUse FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ToolUse>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class MaterialProcessActualPath
+    public partial class MaterialProcessActualPath 
     {
         [Newtonsoft.Json.JsonProperty("MaterialID", Required = Newtonsoft.Json.Required.Always)]
         public long MaterialID { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Process", Required = Newtonsoft.Json.Required.Always)]
         public int Process { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Pallet", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Pallet { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("LoadStation", Required = Newtonsoft.Json.Required.Always)]
         public int LoadStation { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Stops", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<Stop> Stops { get; set; } = new System.Collections.ObjectModel.Collection<Stop>();
-
+    
         [Newtonsoft.Json.JsonProperty("UnloadStation", Required = Newtonsoft.Json.Required.Always)]
         public int UnloadStation { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static MaterialProcessActualPath FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<MaterialProcessActualPath>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class Stop
+    public partial class Stop 
     {
         [Newtonsoft.Json.JsonProperty("StationName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string StationName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("StationNum", Required = Newtonsoft.Json.Required.Always)]
         public int StationNum { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static Stop FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<Stop>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class NewJobs
+    public partial class NewJobs 
     {
         [Newtonsoft.Json.JsonProperty("ScheduleId", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ScheduleId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Jobs", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<JobPlan> Jobs { get; set; } = new System.Collections.ObjectModel.Collection<JobPlan>();
-
+    
         [Newtonsoft.Json.JsonProperty("StationUse", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<SimulatedStationUtilization> StationUse { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ExtraParts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, int> ExtraParts { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CurrentUnfilledWorkorders", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<PartWorkorder> CurrentUnfilledWorkorders { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("QueueSizes", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, QueueSize> QueueSizes { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Programs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<ProgramEntry> Programs { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("DebugMessage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public byte[] DebugMessage { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ArchiveCompletedJobs", Required = Newtonsoft.Json.Required.Always)]
         public bool ArchiveCompletedJobs { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static NewJobs FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class JobPlan
+    public partial class JobPlan 
     {
         [Newtonsoft.Json.JsonProperty("RouteStartUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset RouteStartUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("RouteEndUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset RouteEndUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Archived", Required = Newtonsoft.Json.Required.Always)]
         public bool Archived { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CopiedToSystem", Required = Newtonsoft.Json.Required.Always)]
         public bool CopiedToSystem { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PartName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string PartName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Comment", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Comment { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CreateMarkingData", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore, DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Include)]
         public bool CreateMarkingData { get; set; }
 
         [Newtonsoft.Json.JsonProperty("Unique", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Unique { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ScheduleId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string ScheduleId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Bookings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<string> Bookings { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ManuallyCreated", Required = Newtonsoft.Json.Required.Always)]
         public bool ManuallyCreated { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("HoldEntireJob", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public JobHoldPattern HoldEntireJob { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CyclesOnFirstProcess", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<int> CyclesOnFirstProcess { get; set; } = new System.Collections.ObjectModel.Collection<int>();
-
+    
         [Newtonsoft.Json.JsonProperty("ProcsAndPaths", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<ProcessInfo> ProcsAndPaths { get; set; } = new System.Collections.ObjectModel.Collection<ProcessInfo>();
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static JobPlan FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<JobPlan>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class JobHoldPattern
+    public partial class JobHoldPattern 
     {
         [Newtonsoft.Json.JsonProperty("UserHold", Required = Newtonsoft.Json.Required.Always)]
         public bool UserHold { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ReasonForUserHold", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ReasonForUserHold { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("HoldUnholdPattern", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<System.TimeSpan> HoldUnholdPattern { get; set; } = new System.Collections.ObjectModel.Collection<System.TimeSpan>();
-
+    
         [Newtonsoft.Json.JsonProperty("HoldUnholdPatternStartUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset HoldUnholdPatternStartUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("HoldUnholdPatternRepeats", Required = Newtonsoft.Json.Required.Always)]
         public bool HoldUnholdPatternRepeats { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static JobHoldPattern FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<JobHoldPattern>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ProcessInfo
+    public partial class ProcessInfo 
     {
         [Newtonsoft.Json.JsonProperty("paths", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<ProcPathInfo> Paths { get; set; } = new System.Collections.ObjectModel.Collection<ProcPathInfo>();
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ProcessInfo FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ProcessInfo>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ProcPathInfo
+    public partial class ProcPathInfo 
     {
         [Newtonsoft.Json.JsonProperty("PathGroup", Required = Newtonsoft.Json.Required.Always)]
         public int PathGroup { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Pallets", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<string> Pallets { get; set; } = new System.Collections.ObjectModel.Collection<string>();
-
+    
         [Newtonsoft.Json.JsonProperty("Fixture", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Fixture { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Face", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? Face { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Load", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<int> Load { get; set; } = new System.Collections.ObjectModel.Collection<int>();
-
+    
         [Newtonsoft.Json.JsonProperty("ExpectedLoadTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan ExpectedLoadTime { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Unload", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<int> Unload { get; set; } = new System.Collections.ObjectModel.Collection<int>();
-
+    
         [Newtonsoft.Json.JsonProperty("ExpectedUnloadTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan ExpectedUnloadTime { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Stops", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<JobMachiningStop> Stops { get; set; } = new System.Collections.ObjectModel.Collection<JobMachiningStop>();
-
+    
         [Newtonsoft.Json.JsonProperty("SimulatedProduction", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<SimulatedProduction> SimulatedProduction { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("SimulatedStartingUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset SimulatedStartingUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("SimulatedAverageFlowTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan SimulatedAverageFlowTime { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("HoldMachining", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public JobHoldPattern HoldMachining { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("HoldLoadUnload", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public JobHoldPattern HoldLoadUnload { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PartsPerPallet", Required = Newtonsoft.Json.Required.Always)]
         public int PartsPerPallet { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("InputQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string InputQueue { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("OutputQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string OutputQueue { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Inspections", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<PathInspection> Inspections { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Casting", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Casting { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ProcPathInfo FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ProcPathInfo>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class JobMachiningStop
+    public partial class JobMachiningStop 
     {
         [Newtonsoft.Json.JsonProperty("StationNums", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<int> StationNums { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Program", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Program { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ProgramRevision", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public long? ProgramRevision { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Tools", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, System.TimeSpan> Tools { get; set; } = new System.Collections.Generic.Dictionary<string, System.TimeSpan>();
-
+    
         [Newtonsoft.Json.JsonProperty("StationGroup", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string StationGroup { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ExpectedCycleTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan ExpectedCycleTime { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static JobMachiningStop FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<JobMachiningStop>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class SimulatedProduction
+    public partial class SimulatedProduction 
     {
         [Newtonsoft.Json.JsonProperty("TimeUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset TimeUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Quantity", Required = Newtonsoft.Json.Required.Always)]
         public int Quantity { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static SimulatedProduction FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<SimulatedProduction>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class PathInspection
+    public partial class PathInspection 
     {
         [Newtonsoft.Json.JsonProperty("InspectionType", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string InspectionType { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Counter", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Counter { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("MaxVal", Required = Newtonsoft.Json.Required.Always)]
         public int MaxVal { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("RandomFreq", Required = Newtonsoft.Json.Required.Always)]
         public double RandomFreq { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("TimeInterval", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan TimeInterval { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ExpectedInspectionTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.TimeSpan? ExpectedInspectionTime { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static PathInspection FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<PathInspection>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class SimulatedStationUtilization
+    public partial class SimulatedStationUtilization 
     {
         [Newtonsoft.Json.JsonProperty("ScheduleId", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ScheduleId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("StationGroup", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string StationGroup { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("StationNum", Required = Newtonsoft.Json.Required.Always)]
         public int StationNum { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("StartUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset StartUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("EndUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset EndUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("UtilizationTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan UtilizationTime { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PlannedDownTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan PlannedDownTime { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static SimulatedStationUtilization FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<SimulatedStationUtilization>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class PartWorkorder
+    public partial class PartWorkorder 
     {
         [Newtonsoft.Json.JsonProperty("WorkorderId", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string WorkorderId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Part", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Part { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Quantity", Required = Newtonsoft.Json.Required.Always)]
         public int Quantity { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("DueDate", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset DueDate { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Priority", Required = Newtonsoft.Json.Required.Always)]
         public int Priority { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static PartWorkorder FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<PartWorkorder>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class QueueSize
+    public partial class QueueSize 
     {
         [Newtonsoft.Json.JsonProperty("MaxSizeBeforeStopUnloading", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? MaxSizeBeforeStopUnloading { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static QueueSize FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<QueueSize>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ProgramEntry
+    public partial class ProgramEntry 
     {
         [Newtonsoft.Json.JsonProperty("ProgramName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ProgramName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Comment", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Comment { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ProgramContent", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ProgramContent { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Revision", Required = Newtonsoft.Json.Required.Always)]
         public long Revision { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ProgramEntry FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ProgramEntry>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class CurrentStatus
+    public partial class CurrentStatus 
     {
         [Newtonsoft.Json.JsonProperty("Jobs", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, InProcessJob> Jobs { get; set; } = new System.Collections.Generic.Dictionary<string, InProcessJob>();
-
+    
         [Newtonsoft.Json.JsonProperty("Pallets", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, PalletStatus> Pallets { get; set; } = new System.Collections.Generic.Dictionary<string, PalletStatus>();
-
+    
         [Newtonsoft.Json.JsonProperty("Material", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<InProcessMaterial> Material { get; set; } = new System.Collections.ObjectModel.Collection<InProcessMaterial>();
-
+    
         [Newtonsoft.Json.JsonProperty("Alarms", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<string> Alarms { get; set; } = new System.Collections.ObjectModel.Collection<string>();
-
+    
         [Newtonsoft.Json.JsonProperty("Queues", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, QueueSize> Queues { get; set; } = new System.Collections.Generic.Dictionary<string, QueueSize>();
-
+    
         [Newtonsoft.Json.JsonProperty("TimeOfCurrentStatusUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset TimeOfCurrentStatusUTC { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static CurrentStatus FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<CurrentStatus>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
     public partial class InProcessJob : JobPlan
     {
         [Newtonsoft.Json.JsonProperty("Completed", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<System.Collections.Generic.ICollection<int>> Completed { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Decrements", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<DecrementQuantity> Decrements { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Precedence", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<System.Collections.Generic.ICollection<long>> Precedence { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("AssignedWorkorders", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<string> AssignedWorkorders { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static InProcessJob FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<InProcessJob>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class DecrementQuantity
+    public partial class DecrementQuantity 
     {
         [Newtonsoft.Json.JsonProperty("DecrementId", Required = Newtonsoft.Json.Required.Always)]
         public long DecrementId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Proc1Path", Required = Newtonsoft.Json.Required.Always)]
         public int Proc1Path { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("TimeUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset TimeUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Quantity", Required = Newtonsoft.Json.Required.Always)]
         public int Quantity { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static DecrementQuantity FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<DecrementQuantity>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class PalletStatus
+    public partial class PalletStatus 
     {
         [Newtonsoft.Json.JsonProperty("Pallet", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Pallet { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("FixtureOnPallet", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string FixtureOnPallet { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("OnHold", Required = Newtonsoft.Json.Required.Always)]
         public bool OnHold { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CurrentPalletLocation", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public PalletLocation CurrentPalletLocation { get; set; } = new PalletLocation();
-
+    
         [Newtonsoft.Json.JsonProperty("NewFixture", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string NewFixture { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("NumFaces", Required = Newtonsoft.Json.Required.Always)]
         public int NumFaces { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("TargetLocation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public PalletLocation TargetLocation { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PercentMoveCompleted", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public decimal? PercentMoveCompleted { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static PalletStatus FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<PalletStatus>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class PalletLocation
+    public partial class PalletLocation 
     {
         [Newtonsoft.Json.JsonProperty("loc", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public PalletLocationEnum Loc { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("group", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Group { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("num", Required = Newtonsoft.Json.Required.Always)]
         public int Num { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static PalletLocation FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<PalletLocation>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
     public enum PalletLocationEnum
     {
         [System.Runtime.Serialization.EnumMember(Value = @"LoadUnload")]
         LoadUnload = 0,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Machine")]
         Machine = 1,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"MachineQueue")]
         MachineQueue = 2,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Buffer")]
         Buffer = 3,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Cart")]
         Cart = 4,
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class InProcessMaterial
+    public partial class InProcessMaterial 
     {
         [Newtonsoft.Json.JsonProperty("MaterialID", Required = Newtonsoft.Json.Required.Always)]
         public long MaterialID { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("JobUnique", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string JobUnique { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PartName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string PartName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Process", Required = Newtonsoft.Json.Required.Always)]
         public int Process { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Path", Required = Newtonsoft.Json.Required.Always)]
         public int Path { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Serial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Serial { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("WorkorderId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string WorkorderId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("SignaledInspections", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<string> SignaledInspections { get; set; } = new System.Collections.ObjectModel.Collection<string>();
-
+    
         [Newtonsoft.Json.JsonProperty("LastCompletedMachiningRouteStopIndex", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? LastCompletedMachiningRouteStopIndex { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Location", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public InProcessMaterialLocation Location { get; set; } = new InProcessMaterialLocation();
-
+    
         [Newtonsoft.Json.JsonProperty("Action", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public InProcessMaterialAction Action { get; set; } = new InProcessMaterialAction();
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static InProcessMaterial FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<InProcessMaterial>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class InProcessMaterialLocation
+    public partial class InProcessMaterialLocation 
     {
         [Newtonsoft.Json.JsonProperty("Type", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public LocType Type { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Pallet", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Pallet { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Face", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? Face { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CurrentQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string CurrentQueue { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("QueuePosition", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? QueuePosition { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static InProcessMaterialLocation FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<InProcessMaterialLocation>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
     public enum LocType
     {
         [System.Runtime.Serialization.EnumMember(Value = @"Free")]
         Free = 0,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"OnPallet")]
         OnPallet = 1,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"InQueue")]
         InQueue = 2,
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class InProcessMaterialAction
+    public partial class InProcessMaterialAction 
     {
         [Newtonsoft.Json.JsonProperty("Type", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public ActionType Type { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("LoadOntoPallet", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string LoadOntoPallet { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("LoadOntoFace", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? LoadOntoFace { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ProcessAfterLoad", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? ProcessAfterLoad { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PathAfterLoad", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public int? PathAfterLoad { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("UnloadIntoQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string UnloadIntoQueue { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ElapsedLoadUnloadTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.TimeSpan? ElapsedLoadUnloadTime { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Program", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Program { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ElapsedMachiningTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.TimeSpan? ElapsedMachiningTime { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ExpectedRemainingMachiningTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.TimeSpan? ExpectedRemainingMachiningTime { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static InProcessMaterialAction FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<InProcessMaterialAction>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
     public enum ActionType
     {
         [System.Runtime.Serialization.EnumMember(Value = @"Waiting")]
         Waiting = 0,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Loading")]
         Loading = 1,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"UnloadToInProcess")]
         UnloadToInProcess = 2,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"UnloadToCompletedMaterial")]
         UnloadToCompletedMaterial = 3,
-
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Machining")]
         Machining = 4,
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class EditMaterialInLogEvents
+    public partial class EditMaterialInLogEvents 
     {
         [Newtonsoft.Json.JsonProperty("OldMaterialID", Required = Newtonsoft.Json.Required.Always)]
         public long OldMaterialID { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("NewMaterialID", Required = Newtonsoft.Json.Required.Always)]
         public long NewMaterialID { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("EditedEvents", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<LogEntry> EditedEvents { get; set; } = new System.Collections.ObjectModel.Collection<LogEntry>();
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static EditMaterialInLogEvents FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<EditMaterialInLogEvents>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class HistoricData
+    public partial class HistoricData 
     {
         [Newtonsoft.Json.JsonProperty("Jobs", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, HistoricJob> Jobs { get; set; } = new System.Collections.Generic.Dictionary<string, HistoricJob>();
-
+    
         [Newtonsoft.Json.JsonProperty("StationUse", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<SimulatedStationUtilization> StationUse { get; set; } = new System.Collections.ObjectModel.Collection<SimulatedStationUtilization>();
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static HistoricData FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<HistoricData>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
     public partial class HistoricJob : JobPlan
     {
         [Newtonsoft.Json.JsonProperty("Decrements", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<DecrementQuantity> Decrements { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static HistoricJob FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<HistoricJob>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class PlannedSchedule
+    public partial class PlannedSchedule 
     {
         [Newtonsoft.Json.JsonProperty("LatestScheduleId", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string LatestScheduleId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Jobs", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<JobPlan> Jobs { get; set; } = new System.Collections.ObjectModel.Collection<JobPlan>();
-
+    
         [Newtonsoft.Json.JsonProperty("ExtraParts", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, int> ExtraParts { get; set; } = new System.Collections.Generic.Dictionary<string, int>();
-
+    
         [Newtonsoft.Json.JsonProperty("CurrentUnfilledWorkorders", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<PartWorkorder> CurrentUnfilledWorkorders { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static PlannedSchedule FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<PlannedSchedule>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class QueuePosition
+    public partial class QueuePosition 
     {
         [Newtonsoft.Json.JsonProperty("Queue", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Queue { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Position", Required = Newtonsoft.Json.Required.Always)]
         public int Position { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static QueuePosition FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<QueuePosition>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class MatToPutOnPallet
+    public partial class MatToPutOnPallet 
     {
         [Newtonsoft.Json.JsonProperty("Pallet", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Pallet { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("MaterialIDToSetOnPallet", Required = Newtonsoft.Json.Required.Always)]
         public long MaterialIDToSetOnPallet { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static MatToPutOnPallet FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<MatToPutOnPallet>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class JobAndDecrementQuantity
+    public partial class JobAndDecrementQuantity 
     {
         [Newtonsoft.Json.JsonProperty("DecrementId", Required = Newtonsoft.Json.Required.Always)]
         public long DecrementId { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("JobUnique", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string JobUnique { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Proc1Path", Required = Newtonsoft.Json.Required.Always)]
         public int Proc1Path { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("TimeUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset TimeUTC { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Part", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Part { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Quantity", Required = Newtonsoft.Json.Required.Always)]
         public int Quantity { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static JobAndDecrementQuantity FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<JobAndDecrementQuantity>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class MaterialDetails
+    public partial class MaterialDetails 
     {
         [Newtonsoft.Json.JsonProperty("MaterialID", Required = Newtonsoft.Json.Required.Always)]
         public long MaterialID { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("JobUnique", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string JobUnique { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PartName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string PartName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("NumProcesses", Required = Newtonsoft.Json.Required.Always)]
         public int NumProcesses { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Workorder", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Workorder { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Serial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Serial { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Paths", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, int> Paths { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static MaterialDetails FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<MaterialDetails>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class WorkorderSummary
+    public partial class WorkorderSummary 
     {
         [Newtonsoft.Json.JsonProperty("parts", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<WorkorderPartSummary> Parts { get; set; } = new System.Collections.ObjectModel.Collection<WorkorderPartSummary>();
-
+    
         [Newtonsoft.Json.JsonProperty("serials", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<string> Serials { get; set; } = new System.Collections.ObjectModel.Collection<string>();
-
+    
         [Newtonsoft.Json.JsonProperty("id", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Id { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("finalized", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.DateTimeOffset? Finalized { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static WorkorderSummary FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<WorkorderSummary>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class WorkorderPartSummary
+    public partial class WorkorderPartSummary 
     {
         [Newtonsoft.Json.JsonProperty("elapsed-station-time", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, System.TimeSpan> ElapsedStationTime { get; set; } = new System.Collections.Generic.Dictionary<string, System.TimeSpan>();
-
+    
         [Newtonsoft.Json.JsonProperty("active-stat-time", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, System.TimeSpan> ActiveStatTime { get; set; } = new System.Collections.Generic.Dictionary<string, System.TimeSpan>();
-
+    
         [Newtonsoft.Json.JsonProperty("name", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Name { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("completed-qty", Required = Newtonsoft.Json.Required.Always)]
         public int CompletedQty { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static WorkorderPartSummary FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<WorkorderPartSummary>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class NewInspectionCompleted
+    public partial class NewInspectionCompleted 
     {
         [Newtonsoft.Json.JsonProperty("MaterialID", Required = Newtonsoft.Json.Required.Always)]
         public long MaterialID { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Process", Required = Newtonsoft.Json.Required.Always)]
         public int Process { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("InspectionLocationNum", Required = Newtonsoft.Json.Required.Always)]
         public int InspectionLocationNum { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("InspectionType", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string InspectionType { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Success", Required = Newtonsoft.Json.Required.Always)]
         public bool Success { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ExtraData", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, string> ExtraData { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Elapsed", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan Elapsed { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Active", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan Active { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static NewInspectionCompleted FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<NewInspectionCompleted>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class NewWash
+    public partial class NewWash 
     {
         [Newtonsoft.Json.JsonProperty("MaterialID", Required = Newtonsoft.Json.Required.Always)]
         public long MaterialID { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Process", Required = Newtonsoft.Json.Required.Always)]
         public int Process { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("WashLocationNum", Required = Newtonsoft.Json.Required.Always)]
         public int WashLocationNum { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ExtraData", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, string> ExtraData { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Elapsed", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan Elapsed { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Active", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan Active { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static NewWash FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<NewWash>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ToolInMachine
+    public partial class ToolInMachine 
     {
         [Newtonsoft.Json.JsonProperty("MachineGroupName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string MachineGroupName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("MachineNum", Required = Newtonsoft.Json.Required.Always)]
         public int MachineNum { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Pocket", Required = Newtonsoft.Json.Required.Always)]
         public int Pocket { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ToolName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ToolName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CurrentUse", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan CurrentUse { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("TotalLifeTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan TotalLifeTime { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ToolInMachine FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ToolInMachine>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ProgramInCellController
+    public partial class ProgramInCellController 
     {
         [Newtonsoft.Json.JsonProperty("CellControllerProgramName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string CellControllerProgramName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("ProgramName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ProgramName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Revision", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public long? Revision { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Comment", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Comment { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ProgramInCellController FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ProgramInCellController>(data);
         }
-
+    
     }
-
+    
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
-    public partial class ProgramRevision
+    public partial class ProgramRevision 
     {
         [Newtonsoft.Json.JsonProperty("ProgramName", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string ProgramName { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Revision", Required = Newtonsoft.Json.Required.Always)]
         public long Revision { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("Comment", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Comment { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("CellControllerProgramName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string CellControllerProgramName { get; set; }
-
-        public string ToJson()
+    
+        public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
-
+    
         public static ProgramRevision FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<ProgramRevision>(data);
         }
-
+    
     }
 
     public partial class FileResponse : System.IDisposable
     {
-        private System.IDisposable _client;
-        private System.IDisposable _response;
+        private System.IDisposable _client; 
+        private System.IDisposable _response; 
 
         public int StatusCode { get; private set; }
 
@@ -5632,14 +5555,14 @@ namespace BlackMaple.FMSInsight.API
 
         public FileResponse(int statusCode, System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.IO.Stream stream, System.IDisposable client, System.IDisposable response)
         {
-            StatusCode = statusCode;
-            Headers = headers;
-            Stream = stream;
-            _client = client;
+            StatusCode = statusCode; 
+            Headers = headers; 
+            Stream = stream; 
+            _client = client; 
             _response = response;
         }
 
-        public void Dispose()
+        public void Dispose() 
         {
             if (Stream != null)
                 Stream.Dispose();
@@ -5659,11 +5582,11 @@ namespace BlackMaple.FMSInsight.API
 
         public System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> Headers { get; private set; }
 
-        public SwaggerException(string message, int statusCode, string response, System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception innerException)
+        public SwaggerException(string message, int statusCode, string response, System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception innerException) 
             : base(message + "\n\nStatus: " + statusCode + "\nResponse: \n" + response.Substring(0, response.Length >= 512 ? 512 : response.Length), innerException)
         {
             StatusCode = statusCode;
-            Response = response;
+            Response = response; 
             Headers = headers;
         }
 
@@ -5678,7 +5601,7 @@ namespace BlackMaple.FMSInsight.API
     {
         public TResult Result { get; private set; }
 
-        public SwaggerException(string message, int statusCode, string response, System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception innerException)
+        public SwaggerException(string message, int statusCode, string response, System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception innerException) 
             : base(message, statusCode, response, headers, innerException)
         {
             Result = result;

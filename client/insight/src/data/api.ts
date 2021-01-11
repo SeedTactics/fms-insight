@@ -419,48 +419,6 @@ export class JobsClient {
         return Promise.resolve<CurrentStatus>(<any>null);
     }
 
-    checkValid(jobs: JobPlan[]): Promise<string[]> {
-        let url_ = this.baseUrl + "/api/v1/jobs/check-valid";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(jobs);
-
-        let options_ = <RequestInit>{
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json", 
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCheckValid(_response);
-        });
-    }
-
-    protected processCheckValid(response: Response): Promise<string[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (resultData200 && resultData200.constructor === Array) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(item);
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<string[]>(<any>null);
-    }
-
     add(newJobs: NewJobs, expectedPreviousScheduleId: string | null): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/add?";
         if (expectedPreviousScheduleId === undefined)

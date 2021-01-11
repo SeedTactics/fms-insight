@@ -105,12 +105,6 @@ namespace BlackMaple.MachineFramework.Controllers
       return _backend.JobControl.GetCurrentStatus();
     }
 
-    [HttpPost("check-valid")]
-    public IList<string> CheckValid([FromBody] IList<JobPlan> jobs)
-    {
-      return _backend.JobControl.CheckValidRoutes(jobs);
-    }
-
     [HttpPost("add")]
     [ProducesResponseType(typeof(void), 200)]
     public void Add([FromBody] NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId)
