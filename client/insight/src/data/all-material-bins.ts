@@ -231,3 +231,25 @@ export function selectAllMaterialIntoBins(
     }
   });
 }
+
+export function moveMaterialInBin(
+  bins: ReadonlyArray<MaterialBin>,
+  mat: Readonly<api.IInProcessMaterial>,
+  queue: string,
+  queuePosition: number
+): ReadonlyArray<MaterialBin> {
+  return bins.map((bin) => {
+    switch (bin.type) {
+      case MaterialBinType.QuarantineQueues:
+        if (bin.queueName === queue) {
+          const mats = bin.material.filter((m) => m.materialID !== mat.materialID);
+          mats.splice(queuePosition, 0, mat);
+          return { ...bin, material: mats };
+        } else {
+          return { ...bin, material: bin.material.filter((m) => m.materialID !== mat.materialID) };
+        }
+      default:
+        return bin;
+    }
+  });
+}

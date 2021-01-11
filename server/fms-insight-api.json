@@ -349,51 +349,6 @@
         }
       }
     },
-    "/api/v1/jobs/check-valid": {
-      "get": {
-        "tags": [
-          "jobs"
-        ],
-        "operationId": "jobs_CheckValid",
-        "consumes": [
-          "application/json-patch+json",
-          "application/json",
-          "text/json",
-          "application/*+json"
-        ],
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "parameters": [
-          {
-            "name": "jobs",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/JobPlan"
-              }
-            },
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "x-nullable": false,
-            "description": "",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/jobs/add": {
       "post": {
         "tags": [
