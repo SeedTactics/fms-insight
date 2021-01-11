@@ -83,6 +83,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("fms-information")]
+    [AllowAnonymous]
     public FMSInfo FMSInformation()
     {
       return new FMSInfo()
@@ -242,17 +243,5 @@ namespace BlackMaple.MachineFramework.Controllers
         return BadRequest("FMS configuration does not support printing labels");
       }
     }
-  }
-
-
-  // the old controller before I renamed server to fms
-  [Route("api/v1/server"), NSwag.Annotations.SwaggerIgnore]
-  public class serverController : fmsController
-  {
-    public serverController(FMSSettings fmsSt, ServerSettings serverSt, FMSImplementation impl)
-      : base(fmsSt, serverSt, impl)
-    {
-    }
-
   }
 }

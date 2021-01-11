@@ -1,9 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
     <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
 
     <Title>SeedTactics FMS Insight for Flexibile Manufacturing Systems</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -31,50 +32,28 @@
     </Content>
   </ItemGroup>
 
-  <Choose>
-    <When Condition="$(OS) == 'Unix'">
-      <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
-      </PropertyGroup>
-    </When>
-
-    <When Condition="$(OS) == 'Windows_NT'">
-      <PropertyGroup>
-        <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
-      </PropertyGroup>
-    </When>
-  </Choose>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.*" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.1.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.1.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.1.*" />
-    <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="2.1.*"/>
-    <PackageReference Include="Microsoft.AspNetCore.HttpsPolicy" Version="2.1.*"/>
-    <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.1.*"/>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.1.*"/>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="2.1.*"/>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.*"/>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.*" />
 
-    <PackageReference Include="NSwag.AspNetCore" Version="12.3.1"/>
-    <PackageReference Include="Serilog" Version="2.9.0"/>
+    <PackageReference Include="NSwag.AspNetCore" Version="13.9.4"/>
+    <PackageReference Include="Serilog" Version="2.10.0"/>
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0"/>
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1"/>
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0"/>
-    <PackageReference Include="Serilog.AspNetCore" Version="2.1.*"/>
+    <PackageReference Include="Serilog.AspNetCore" Version="3.4.0"/>
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
-    <PackageReference Include="CsvHelper" Version="18.0.0"/>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.1" />
+    <PackageReference Include="CsvHelper" Version="19.0.0"/>
 
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
 
   <Choose>
-    <When Condition="$(TargetFramework) == 'net461'">
+    <When Condition="$(OS) == 'Windows_NT'">
       <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="2.1.*" />
-        <PackageReference Include="Serilog.Sinks.EventLog" Version="3.0.47"/>
+        <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="5.0.*" />
+        <PackageReference Include="Serilog.Sinks.EventLog" Version="3.1.0"/>
       </ItemGroup>
       <PropertyGroup>
         <DefineConstants>$(DefineConstants);SERVICE_AVAIL</DefineConstants>

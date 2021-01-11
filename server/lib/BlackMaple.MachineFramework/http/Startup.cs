@@ -45,9 +45,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Converters;
 using NSwag.AspNetCore;
-using NSwag.SwaggerGeneration.WebApi;
 using Serilog;
 
 namespace BlackMaple.MachineFramework
@@ -76,10 +76,31 @@ namespace BlackMaple.MachineFramework
               new Controllers.WebsocketManager(_fmsImpl.Backend)
           );
 
+      services
+        .AddResponseCompression()
+        .AddCors(options =>
+        {
+          options.AddDefaultPolicy(builder =>
+          {
+            builder
+              .WithOrigins(
+                  _fmsSt.AdditionalLogServers
+#if DEBUG
+                          .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
+#endif
+                          .ToArray()
+              )
+#if DEBUG
+                .WithMethods(new[] { "GET", "PUT", "POST", "DELETE" })
+#else
+                .WithMethods("GET")
+#endif
+                .WithHeaders("content-type", "authorization");
+          });
+        });
+
       var mvcBuilder = services
-          .AddResponseCompression()
-          .AddCors()
-          .AddMvcCore(options =>
+          .AddControllers(options =>
           {
             options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
           })
@@ -90,10 +111,7 @@ namespace BlackMaple.MachineFramework
               foreach (var p in _fmsImpl.ExtraApplicationParts) am.ApplicationParts.Add(p);
             }
           })
-          .AddApiExplorer()
-          .AddFormatterMappings()
-          .AddJsonFormatters()
-          .AddJsonOptions(options =>
+          .AddNewtonsoftJson(options =>
           {
             options.SerializerSettings.Converters.Add(new StringEnumConverter());
             options.SerializerSettings.Converters.Add(new TimespanConverter());
@@ -112,14 +130,13 @@ namespace BlackMaple.MachineFramework
         settings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
         cfg.SerializerSettings = settings;
         //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
-        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
+        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema.Generation.ReferenceTypeNullHandling.NotNull;
         cfg.RequireParametersWithoutDefault = true;
         cfg.IgnoreObsoleteProperties = true;
       });
 
       if (_serverSt.UseAuthentication)
       {
-        mvcBuilder.AddAuthorization();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
@@ -146,47 +163,18 @@ namespace BlackMaple.MachineFramework
           };
         });
       }
-
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(
         IApplicationBuilder app,
-        IApplicationLifetime lifetime,
-        IHostingEnvironment env,
+        IHostApplicationLifetime lifetime,
+        IWebHostEnvironment env,
         Controllers.WebsocketManager wsManager)
     {
       app.UseResponseCompression();
-      app.UseCors(builder => builder
-        .WithOrigins(
-            _fmsSt.AdditionalLogServers
-#if DEBUG
-                  .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
-#endif
-                  .ToArray()
-        )
-#if DEBUG
-        .WithMethods(new[] { "GET", "PUT", "POST", "DELETE" })
-#else
-        .WithMethods("GET")
-#endif
-        .WithHeaders("content-type", "authorization")
-      );
-      app.UseMiddleware(typeof(ErrorHandlingMiddleware));
-      if (_serverSt.UseAuthentication)
-      {
-        app.UseAuthentication();
-      }
-      app.UseMvc();
 
-      // https://github.com/aspnet/Home/issues/2442
-      var fileExt = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-      fileExt.Mappings[".webmanifest"] = "application/manifest+json";
-      app.UseStaticFiles(new StaticFileOptions
-      {
-        ContentTypeProvider = fileExt
-      });
-
+      app.UseStaticFiles();
       if (!string.IsNullOrEmpty(_fmsSt.InstructionFilePath))
       {
         if (System.IO.Directory.Exists(_fmsSt.InstructionFilePath))
@@ -201,6 +189,18 @@ namespace BlackMaple.MachineFramework
         {
           Log.Error("Instruction directory {path} does not exist or is not a directory", _fmsSt.InstructionFilePath);
         }
+      }
+
+      app.UseMiddleware(typeof(ErrorHandlingMiddleware));
+
+      app.UseRouting();
+
+      app.UseCors();
+
+      if (_serverSt.UseAuthentication)
+      {
+        app.UseAuthentication();
+        app.UseAuthorization();
       }
 
       if (!string.IsNullOrEmpty(_serverSt.TLSCertFile))
@@ -240,23 +240,29 @@ namespace BlackMaple.MachineFramework
         }
       });
 
-      app
-        .UseSwagger(settings =>
-        {
-          settings.PostProcess = (doc, req) =>
-          {
-            doc.Host = null;
-            doc.BasePath = null;
-            doc.Schemes = null;
-          };
-        })
-        .UseSwaggerUi3();
+      app.UseOpenApi();
+      app.UseSwaggerUi3();
 
-      app.Run(async context =>
+      app.UseEndpoints(endpoints =>
       {
-        context.Response.ContentType = "text/html";
-        await context.Response.SendFileAsync(System.IO.Path.Combine(env.WebRootPath, "index.html"));
+        endpoints.MapControllers();
+
+        endpoints.MapFallbackToFile("/index.html");
       });
+
+      /*
+            app
+              .UseSwagger(settings =>
+              {
+                settings.PostProcess = (doc, req) =>
+                {
+                  doc.Host = null;
+                  doc.BasePath = null;
+                  doc.Schemes = null;
+                };
+              })
+              .UseSwaggerUi3();
+              */
 
       lifetime.ApplicationStopping.Register(async () =>
       {

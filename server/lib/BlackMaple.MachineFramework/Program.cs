@@ -42,6 +42,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
@@ -150,35 +151,38 @@ namespace BlackMaple.MachineFramework
       Log.Logger = logConfig.CreateLogger();
     }
 
-    public static IWebHost BuildWebHost(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl)
+    public static IHost BuildWebHost(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl)
     {
-      return new WebHostBuilder()
-          .UseConfiguration(cfg)
+      return new HostBuilder()
           .ConfigureServices(s =>
           {
             s.AddSingleton<FMSImplementation>(fmsImpl);
             s.AddSingleton<FMSSettings>(fmsSt);
             s.AddSingleton<ServerSettings>(serverSt);
           })
-          .SuppressStatusMessages(suppressStatusMessages: true)
-          .UseKestrel(options =>
-          {
-            var address = IPAddress.IPv6Any;
-            if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
-            {
-              options.Listen(address, serverSt.Port, listenOptions =>
-              {
-                listenOptions.UseHttps(serverSt.TLSCertFile);
-              });
-            }
-            else
-            {
-              options.Listen(address, serverSt.Port);
-            }
-          })
           .UseContentRoot(ServerSettings.ContentRootDirectory)
-          .UseSerilog()
-          .UseStartup<Startup>()
+          .ConfigureWebHost(webBuilder => {
+            webBuilder
+            .UseConfiguration(cfg)
+            .SuppressStatusMessages(suppressStatusMessages: true)
+            .UseSerilog()
+            .UseKestrel(options =>
+            {
+              var address = IPAddress.IPv6Any;
+              if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
+              {
+                options.Listen(address, serverSt.Port, listenOptions =>
+                {
+                  listenOptions.UseHttps(serverSt.TLSCertFile);
+                });
+              }
+              else
+              {
+                options.Listen(address, serverSt.Port);
+              }
+            })
+            .UseStartup<Startup>();
+          })
           .Build();
     }
 
