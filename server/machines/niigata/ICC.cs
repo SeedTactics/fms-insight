@@ -42,7 +42,7 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   // This class is not thread-safe, and assumes loading status
   // and sending actions happens on a single thread (the syncpallets thread).
-  public class NiigataICC : INiigataCommunication, IDisposable
+  public class NiigataICC : INiigataCommunication
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataICC>();
     private NiigataStationNames _statNames;
@@ -79,19 +79,12 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         _thread = new Thread(NotifyThread);
+        _thread.IsBackground = true;
         _thread.Start();
       }
     }
 
     #region Notify Thread
-    public void Dispose()
-    {
-      if (_thread != null)
-      {
-        _thread.Abort();
-        _thread.Join();
-      }
-    }
     private void NotifyThread()
     {
       try

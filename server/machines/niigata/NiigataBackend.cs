@@ -177,8 +177,6 @@ namespace BlackMaple.FMSInsight.Niigata
       _jobControl = null;
       if (SyncPallets != null) _sync.Dispose();
       _sync = null;
-      if (_icc != null) _icc.Dispose();
-      _icc = null;
     }
 
     public IJobControl JobControl { get => _jobControl; }

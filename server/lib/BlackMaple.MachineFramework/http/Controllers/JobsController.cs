@@ -48,7 +48,6 @@ namespace BlackMaple.MachineFramework.Controllers
   }
 
   [ApiController]
-  [Authorize]
   [Route("api/v1/[controller]")]
   public class jobsController : ControllerBase
   {

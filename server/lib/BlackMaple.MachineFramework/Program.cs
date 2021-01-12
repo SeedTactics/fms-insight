@@ -36,12 +36,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
@@ -154,15 +151,18 @@ namespace BlackMaple.MachineFramework
     public static IHost BuildWebHost(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl)
     {
       return new HostBuilder()
-          .ConfigureServices(s =>
-          {
-            s.AddSingleton<FMSImplementation>(fmsImpl);
-            s.AddSingleton<FMSSettings>(fmsSt);
-            s.AddSingleton<ServerSettings>(serverSt);
-          })
           .UseContentRoot(ServerSettings.ContentRootDirectory)
-          .ConfigureWebHost(webBuilder => {
+          .ConfigureWebHost(webBuilder =>
+          {
             webBuilder
+            .ConfigureServices(s =>
+            {
+              s.AddSingleton<FMSImplementation>(fmsImpl);
+              s.AddSingleton<IFMSBackend>(fmsImpl.Backend);
+              s.AddSingleton<FMSSettings>(fmsSt);
+              s.AddSingleton<ServerSettings>(serverSt);
+              Startup.AddServices(s, fmsImpl, fmsSt, serverSt);
+            })
             .UseConfiguration(cfg)
             .SuppressStatusMessages(suppressStatusMessages: true)
             .UseSerilog()

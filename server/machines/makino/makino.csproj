@@ -4,6 +4,7 @@
     <AssemblyName>BlackMaple.FMSInsight.Makino</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Makino</PackageId>
     <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
 
     <Title>SeedTactics FMS Insight Makino Backend</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -28,39 +29,10 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
-  <Choose>
-    <When Condition="$(OS) == 'Windows_NT'">
-      <PropertyGroup>
-        <TargetFrameworks>net461;netcoreapp2.1</TargetFrameworks>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <TargetFramework>netcoreapp2.1</TargetFramework>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.2"/>
+    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="5.0.0"/>
   </ItemGroup>
-
-  <Choose>
-      <When Condition="$(TargetFramework) == 'net461'">
-          <ItemGroup>
-            <Reference Include="System" />
-            <Reference Include="System.Data.DataSetExtensions" />
-            <Reference Include="System.Data" />
-          </ItemGroup>
-      </When>
-
-      <When Condition="$(TargetFramework) == 'netcoreapp2.1'">
-          <ItemGroup>
-            <PackageReference Include="System.Data.SqlClient" Version="4.6.0"/>
-            <PackageReference Include="System.IO.FileSystem.AccessControl" Version="4.5.0"/>
-          </ItemGroup>
-      </When>
-  </Choose>
 </Project>

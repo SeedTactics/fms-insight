@@ -34,46 +34,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Threading;
-using BlackMaple.MachineWatchInterface;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Converters;
-using NSwag.AspNetCore;
 using Serilog;
 
 namespace BlackMaple.MachineFramework
 {
   public class Startup
   {
-    private FMSImplementation _fmsImpl;
-    private ServerSettings _serverSt;
-    private FMSSettings _fmsSt;
-
-    public Startup(FMSImplementation fmsImpl, ServerSettings serverSt, FMSSettings fmsSt)
+    public static void AddServices(IServiceCollection services, FMSImplementation fmsImpl, FMSSettings fmsSt, ServerSettings serverSt)
     {
-      _fmsImpl = fmsImpl;
-      _serverSt = serverSt;
-      _fmsSt = fmsSt;
-    }
-
-    // This method gets called by the runtime. Use this method to add services to the container.
-    public void ConfigureServices(IServiceCollection services)
-    {
-
       services
-          .AddSingleton<BlackMaple.MachineFramework.FMSImplementation>(_fmsImpl)
-          .AddSingleton<BlackMaple.MachineFramework.IFMSBackend>(_fmsImpl.Backend)
           .AddSingleton<Controllers.WebsocketManager>(
-              new Controllers.WebsocketManager(_fmsImpl.Backend)
+              new Controllers.WebsocketManager(fmsImpl.Backend)
           );
 
       services
@@ -84,7 +62,7 @@ namespace BlackMaple.MachineFramework
           {
             builder
               .WithOrigins(
-                  _fmsSt.AdditionalLogServers
+                  fmsSt.AdditionalLogServers
 #if DEBUG
                           .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
 #endif
@@ -106,9 +84,9 @@ namespace BlackMaple.MachineFramework
           })
           .ConfigureApplicationPartManager(am =>
           {
-            if (_fmsImpl.ExtraApplicationParts != null)
+            if (fmsImpl.ExtraApplicationParts != null)
             {
-              foreach (var p in _fmsImpl.ExtraApplicationParts) am.ApplicationParts.Add(p);
+              foreach (var p in fmsImpl.ExtraApplicationParts) am.ApplicationParts.Add(p);
             }
           })
           .AddNewtonsoftJson(options =>
@@ -135,16 +113,16 @@ namespace BlackMaple.MachineFramework
         cfg.IgnoreObsoleteProperties = true;
       });
 
-      if (_serverSt.UseAuthentication)
+      if (serverSt.UseAuthentication)
       {
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-          options.Authority = _serverSt.AuthAuthority;
+          options.Authority = serverSt.AuthAuthority;
           options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
           {
             ValidateIssuer = true,
-            ValidAudiences = _serverSt.AuthTokenAudiences.Split(';')
+            ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
           };
 #if DEBUG
           options.RequireHttpsMetadata = false;
@@ -165,29 +143,31 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(
         IApplicationBuilder app,
         IHostApplicationLifetime lifetime,
         IWebHostEnvironment env,
+        FMSImplementation fmsImpl,
+        ServerSettings serverSt,
+        FMSSettings fmsSt,
         Controllers.WebsocketManager wsManager)
     {
       app.UseResponseCompression();
 
       app.UseStaticFiles();
-      if (!string.IsNullOrEmpty(_fmsSt.InstructionFilePath))
+      if (!string.IsNullOrEmpty(fmsSt.InstructionFilePath))
       {
-        if (System.IO.Directory.Exists(_fmsSt.InstructionFilePath))
+        if (System.IO.Directory.Exists(fmsSt.InstructionFilePath))
         {
           app.UseStaticFiles(new StaticFileOptions()
           {
-            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(_fmsSt.InstructionFilePath),
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(fmsSt.InstructionFilePath),
             RequestPath = "/instructions"
           });
         }
         else
         {
-          Log.Error("Instruction directory {path} does not exist or is not a directory", _fmsSt.InstructionFilePath);
+          Log.Error("Instruction directory {path} does not exist or is not a directory", fmsSt.InstructionFilePath);
         }
       }
 
@@ -197,13 +177,13 @@ namespace BlackMaple.MachineFramework
 
       app.UseCors();
 
-      if (_serverSt.UseAuthentication)
+      if (serverSt.UseAuthentication)
       {
         app.UseAuthentication();
         app.UseAuthorization();
       }
 
-      if (!string.IsNullOrEmpty(_serverSt.TLSCertFile))
+      if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
       {
         if (!env.IsDevelopment())
           app.UseHsts();
@@ -211,13 +191,19 @@ namespace BlackMaple.MachineFramework
       }
 
       app.UseWebSockets();
-      app.Use(async (context, next) =>
+
+      app.UseOpenApi();
+      app.UseSwaggerUi3();
+
+      app.UseEndpoints(endpoints =>
       {
-        if (context.Request.Path == "/api/v1/events")
+        endpoints.MapControllers();
+
+        endpoints.Map("/api/v1/events", async context =>
         {
           if (context.WebSockets.IsWebSocketRequest)
           {
-            if (_serverSt.UseAuthentication)
+            if (serverSt.UseAuthentication)
             {
               var res = await context.AuthenticateAsync();
               if (!res.Succeeded)
@@ -233,44 +219,18 @@ namespace BlackMaple.MachineFramework
           {
             context.Response.StatusCode = 400;
           }
-        }
-        else
-        {
-          await next();
-        }
-      });
-
-      app.UseOpenApi();
-      app.UseSwaggerUi3();
-
-      app.UseEndpoints(endpoints =>
-      {
-        endpoints.MapControllers();
+        });
 
         endpoints.MapFallbackToFile("/index.html");
       });
 
-      /*
-            app
-              .UseSwagger(settings =>
-              {
-                settings.PostProcess = (doc, req) =>
-                {
-                  doc.Host = null;
-                  doc.BasePath = null;
-                  doc.Schemes = null;
-                };
-              })
-              .UseSwaggerUi3();
-              */
-
       lifetime.ApplicationStopping.Register(async () =>
       {
-        if (_fmsImpl == null) return;
+        if (fmsImpl == null) return;
         await wsManager.CloseAll();
-        foreach (var w in _fmsImpl.Workers)
+        foreach (var w in fmsImpl.Workers)
           w.Dispose();
-        _fmsImpl.Backend?.Dispose();
+        fmsImpl.Backend?.Dispose();
         Serilog.Log.CloseAndFlush();
       });
     }

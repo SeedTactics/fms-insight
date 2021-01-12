@@ -81,6 +81,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _createLog = create;
       _icc.NewCurrentStatus += NewCurrentStatus;
       _thread = new Thread(new ThreadStart(Thread));
+      _thread.IsBackground = true;
     }
 
     public void StartThread()
@@ -99,8 +100,6 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       _icc.NewCurrentStatus -= NewCurrentStatus;
       _shutdown.Set();
-      if (_thread != null && _thread.IsAlive && !_thread.Join(TimeSpan.FromSeconds(15)))
-        _thread.Abort();
     }
 
     public void JobsOrQueuesChanged()

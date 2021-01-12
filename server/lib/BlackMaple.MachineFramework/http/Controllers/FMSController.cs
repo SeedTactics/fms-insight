@@ -109,7 +109,7 @@ namespace BlackMaple.MachineFramework.Controllers
       };
     }
 
-    [HttpGet("settings/{id}"), Authorize]
+    [HttpGet("settings/{id}")]
     public string GetSettings(string id)
     {
       var f = System.IO.Path.Combine(
@@ -122,7 +122,7 @@ namespace BlackMaple.MachineFramework.Controllers
         return null;
     }
 
-    [HttpPut("settings/{id}"), Authorize]
+    [HttpPut("settings/{id}")]
     [ProducesResponseType(typeof(void), 200)]
     public void SetSetting(string id, [FromBody] string setting)
     {
@@ -147,7 +147,6 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("find-instructions/{part}")]
     [ProducesResponseType(302)]
     [ProducesResponseType(404)]
-    [Authorize]
     public IActionResult FindInstructions(string part,
                                          [FromQuery] string type,
                                          [FromQuery] int? process = null,
@@ -228,7 +227,7 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    [HttpPost("print-label/{materialId}"), Authorize]
+    [HttpPost("print-label/{materialId}")]
     [ProducesResponseType(200)]
     [ProducesResponseType(400)]
     public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1, [FromQuery] int? loadStation = null, [FromQuery] string queue = null)

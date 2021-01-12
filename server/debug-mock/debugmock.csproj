@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework.DebugMock</PackageId>
     <AssemblyName>BlackMaple.MachineFramework.DebugMock</AssemblyName>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>

@@ -390,6 +390,7 @@ namespace MazakMachineInterface
       if (System.IO.Directory.Exists(path))
       {
         _thread = new Thread(new ThreadStart(ThreadFunc));
+        _thread.IsBackground = true;
         _thread.Start();
         _watcher = new FileSystemWatcher(_path);
         _watcher.Filter = "*.csv";
@@ -500,9 +501,6 @@ namespace MazakMachineInterface
       if (_watcher != null)
         _watcher.EnableRaisingEvents = false;
       _shutdown.Set();
-
-      if (_thread != null && !_thread.Join(TimeSpan.FromSeconds(15)))
-        _thread.Abort();
     }
 
     public void RecheckQueues(bool wait)

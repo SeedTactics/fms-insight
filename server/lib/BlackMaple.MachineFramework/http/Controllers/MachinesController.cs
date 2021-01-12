@@ -40,7 +40,6 @@ using BlackMaple.MachineWatchInterface;
 namespace BlackMaple.MachineFramework.Controllers
 {
   [ApiController]
-  [Authorize]
   [Route("api/v1/machines")]
   public class machinesController : ControllerBase
   {
