@@ -97,7 +97,7 @@ namespace BlackMaple.MachineFramework
             options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
           });
 
-      services.AddSwaggerDocument(cfg =>
+      services.AddOpenApiDocument(cfg =>
       {
         cfg.Title = "SeedTactic FMS Insight";
         cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
