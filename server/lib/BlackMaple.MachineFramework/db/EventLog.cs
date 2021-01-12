@@ -2702,7 +2702,7 @@ namespace BlackMaple.MachineFramework
 
           // check new material path matches
           var newMatDetails = GetMaterialDetails(newMatId, trans);
-          if (newMatDetails == null || oldMatDetails.JobUnique != newMatDetails.JobUnique || newMatDetails.Paths.ContainsKey(oldMatProc))
+          if (newMatDetails == null || oldMatDetails.JobUnique != newMatDetails.JobUnique)
           {
             throw new ConflictRequestException("Overriding material on pallet must use material from the same job");
           }
