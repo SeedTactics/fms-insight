@@ -149,6 +149,10 @@ export interface SwapMaterialDialogContentProps {
   readonly setState: (s: SwapMaterialState) => void;
 }
 
+function isNullOrEmpty(s: string | null | undefined): boolean {
+  return s === undefined || s === null || s == "";
+}
+
 export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps): JSX.Element {
   const curMat = props.curMat;
   if (curMat === null || props.st === null) return <div />;
@@ -156,9 +160,9 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
   const availMats = props.current_material.filter(
     (m) =>
       m.location.type !== LocType.OnPallet &&
-      m.jobUnique === curMat.jobUnique &&
       m.process === curMat.process - 1 &&
-      m.path === curMat.path &&
+      ((m.jobUnique === curMat.jobUnique && m.path === curMat.path) ||
+        (isNullOrEmpty(m.jobUnique) && m.partName === curMat.partName)) &&
       m.serial !== ""
   );
   if (availMats.length === 0) {
