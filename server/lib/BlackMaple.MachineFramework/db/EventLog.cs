@@ -1185,6 +1185,13 @@ namespace BlackMaple.MachineFramework
 
     private List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet, SqliteTransaction trans)
     {
+      string ignoreInvalidCondition =
+        "   NOT EXISTS (" +
+        "    SELECT 1 FROM program_details d " +
+        "      WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
+        "   ) AND " +
+        "   StationLoc != (" + ((int)MachineWatchInterface.LogType.SwapMaterialOnPallet).ToString() + ")";
+
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
@@ -1197,7 +1204,9 @@ namespace BlackMaple.MachineFramework
         {
 
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Pallet = $pal ORDER BY Counter ASC";
+              " FROM stations s " +
+              " WHERE Pallet = $pal AND " + ignoreInvalidCondition +
+              " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
           {
             return LoadLog(reader);
@@ -1208,7 +1217,9 @@ namespace BlackMaple.MachineFramework
         {
 
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Pallet = $pal AND Counter > $cntr ORDER BY Counter ASC";
+              " FROM stations s " +
+              " WHERE Pallet = $pal AND Counter > $cntr AND " + ignoreInvalidCondition +
+              " ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
 
           using (var reader = cmd.ExecuteReader())

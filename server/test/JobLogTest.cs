@@ -688,6 +688,41 @@ namespace MachineWatchTest
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
 
+      //********  Ignores invalidated and swap events
+      var invalidated = new LogEntry(
+        cntr: 0,
+        mat: new[] { mat1, mat2 },
+        pal: "pal1",
+        ty: LogType.MachineCycle,
+        locName: "OtherMC",
+        locNum: 100,
+        prog: "prog22",
+        start: true,
+        endTime: pal1CycleTime.AddMinutes(31),
+        result: "prog22",
+        endOfRoute: false
+      );
+      invalidated.ProgramDetails["PalletCycleInvalidated"] = "1";
+      _jobLog.AddLogEntryFromUnitTest(invalidated);
+
+      var swap = new LogEntry(
+        cntr: 0,
+        mat: new[] { mat1, mat2 },
+        pal: "pal1",
+        ty: LogType.SwapMaterialOnPallet,
+        locName: "SwapMatOnPallet",
+        locNum: 1,
+        prog: "SwapMatOnPallet",
+        start: false,
+        endTime: pal1CycleTime.AddMinutes(32),
+        result: "Replace aaa with bbb",
+        endOfRoute: false
+      );
+      _jobLog.AddLogEntryFromUnitTest(swap);
+
+      // neither invalidated nor swap added to pal1Cycle
+      CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
+
       _jobLog.CompletePalletCycle("pal1", pal1CycleTime.AddMinutes(40), "");
       _jobLog.CompletePalletCycle("pal1", pal1CycleTime.AddMinutes(40), ""); //filter duplicates
 
@@ -697,7 +732,11 @@ namespace MachineWatchTest
 
       Assert.Equal(pal1CycleTime.AddMinutes(40), _jobLog.LastPalletCycleTime("pal1"));
       _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
-      CheckLog(pal1Cycle, _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow), DateTime.UtcNow.AddHours(-50));
+
+      // add invalidated and swap when loading all entries
+      CheckLog(pal1Cycle.Append(invalidated).Append(swap).ToList(),
+               _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow),
+               DateTime.UtcNow.AddHours(-50));
 
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
     }
