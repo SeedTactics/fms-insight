@@ -220,6 +220,10 @@ export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
 
   function swapMats() {
     if (props.curMat && props.st && props.st.selectedMatToSwap && props.curMat.location.type === LocType.OnPallet) {
+      const queue =
+        props.st.selectedMatToSwap.location.type === LocType.InQueue
+          ? props.st.selectedMatToSwap.location.currentQueue ?? quarantineQueueName
+          : quarantineQueueName;
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
       JobsBackend.swapMaterialOnPallet(
         props.curMat.materialID,
@@ -227,7 +231,7 @@ export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
           pallet: props.curMat.location.pallet ?? "",
           materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
         },
-        quarantineQueueName,
+        queue,
         props.operator
       ).finally(() => props.close());
     }
