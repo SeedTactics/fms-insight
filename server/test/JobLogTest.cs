@@ -1538,9 +1538,11 @@ namespace MachineWatchTest
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void OverrideMatOnPal(bool firstPalletCycle)
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void OverrideMatOnPal(bool firstPalletCycle, bool newMatUnassigned)
     {
       var now = DateTime.UtcNow.AddHours(-5);
 
@@ -1559,7 +1561,6 @@ namespace MachineWatchTest
       // ------------------------------------------------------
       // Material
       // ------------------------------------------------------
-
       var initiallyLoadedMatProc0 = new EventLogDB.EventLogMaterial()
       {
         MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
@@ -1582,15 +1583,25 @@ namespace MachineWatchTest
 
       now = now.AddMinutes(1);
 
+      long newMatId;
+      if (newMatUnassigned)
+      {
+        newMatId = _jobLog.AllocateMaterialIDForCasting("part1");
+      }
+      else
+      {
+        newMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
+      }
+
       var newMatProc0 = new EventLogDB.EventLogMaterial()
       {
-        MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
+        MaterialID = newMatId,
         Process = 0,
         Face = ""
       };
       var newMatProc1 = new EventLogDB.EventLogMaterial()
       {
-        MaterialID = newMatProc0.MaterialID,
+        MaterialID = newMatId,
         Process = 1,
         Face = "1"
       };
@@ -1664,10 +1675,36 @@ namespace MachineWatchTest
       );
 
       // ------------------------------------------------------
+      // Check Mat Details
+      // ------------------------------------------------------
+
+      _jobLog.GetMaterialDetails(initiallyLoadedMatProc0.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = initiallyLoadedMatProc0.MaterialID,
+        JobUnique = newMatUnassigned ? null : "uniq1",
+        PartName = "part1",
+        NumProcesses = 2,
+        Workorder = null,
+        Serial = "bbbb",
+        Paths = newMatUnassigned ? new Dictionary<int, int>() : new Dictionary<int, int>() { { 1, 5 } }
+      });
+
+      _jobLog.GetMaterialDetails(newMatId).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = newMatId,
+        JobUnique = "uniq1",
+        PartName = "part1",
+        NumProcesses = 2,
+        Workorder = null,
+        Serial = "cccc",
+        Paths = new Dictionary<int, int>() { { 1, 5 } }
+      });
+
+      // ------------------------------------------------------
       // Check Logs
       // ------------------------------------------------------
 
-      var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
+      var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: newMatUnassigned ? "" : "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
       var newLogMatProc0 = new LogMaterial(matID: newMatProc1.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "cccc", workorder: "", face: "");
 
       var expectedSwapMsg = new LogEntry(
@@ -1775,10 +1812,6 @@ namespace MachineWatchTest
         .Select(m => m.Process)
         .Max()
         .Should().Be(0);
-
-      _jobLog.GetMaterialDetails(newMatProc0.MaterialID).Paths.Should().BeEquivalentTo(new Dictionary<int, int> {
-        {1, 5}
-      });
     }
 
     [Fact]
