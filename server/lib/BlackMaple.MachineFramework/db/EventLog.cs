@@ -2702,10 +2702,16 @@ namespace BlackMaple.MachineFramework
 
           // check new material path matches
           var newMatDetails = GetMaterialDetails(newMatId, trans);
-          if (newMatDetails == null || oldMatDetails.JobUnique != newMatDetails.JobUnique)
+          if (newMatDetails == null)
+          {
+            throw new ConflictRequestException("Unable to find new material");
+          }
+          var newMatIsUnassigned = string.IsNullOrEmpty(newMatDetails.JobUnique);
+          if (newMatIsUnassigned == false && oldMatDetails.JobUnique != newMatDetails.JobUnique)
           {
             throw new ConflictRequestException("Overriding material on pallet must use material from the same job");
           }
+          // TODO: Check if raw material matches
 
           // perform the swap
           updateMatsCmd.CommandText = "UPDATE stations_mat SET MaterialID = $newmat WHERE Counter = $cntr AND MaterialID = $oldmat";
@@ -2725,16 +2731,38 @@ namespace BlackMaple.MachineFramework
                   m.MaterialID == oldMatId
                     ? new MachineWatchInterface.LogMaterial(
                         matID: newMatId,
-                        uniq: newMatDetails.JobUnique,
+                        uniq: oldMatDetails.JobUnique,
                         proc: oldMatProc,
                         part: newMatDetails.PartName,
-                        numProc: newMatDetails.NumProcesses,
+                        numProc: oldMatDetails.NumProcesses,
                         serial: newMatDetails.Serial ?? "",
                         workorder: newMatDetails.Workorder ?? "",
                         face: m.Face)
                     : m
                 )
               ));
+            }
+          }
+
+          // update job assignment
+          if (newMatIsUnassigned)
+          {
+            using (var setJobCmd = _connection.CreateCommand())
+            {
+              setJobCmd.Transaction = trans;
+              setJobCmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
+              var uParam = setJobCmd.Parameters.Add("uniq", SqliteType.Text);
+              setJobCmd.Parameters.Add("part", SqliteType.Text).Value = oldMatDetails.PartName;
+              setJobCmd.Parameters.Add("numproc", SqliteType.Integer).Value = oldMatDetails.NumProcesses;
+              var matParam = setJobCmd.Parameters.Add("mat", SqliteType.Integer);
+
+              uParam.Value = oldMatDetails.JobUnique;
+              matParam.Value = newMatId;
+              setJobCmd.ExecuteNonQuery();
+
+              uParam.Value = DBNull.Value;
+              matParam.Value = oldMatId;
+              setJobCmd.ExecuteNonQuery();
             }
           }
 
@@ -2785,6 +2813,18 @@ namespace BlackMaple.MachineFramework
               newPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
               newPathCmd.Parameters.Add("path", SqliteType.Integer).Value = oldPath;
               newPathCmd.ExecuteNonQuery();
+            }
+
+            if (newMatIsUnassigned || oldMatProc >= 2)
+            {
+              using (var delPathCmd = _connection.CreateCommand())
+              {
+                delPathCmd.Transaction = trans;
+                delPathCmd.CommandText = "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
+                delPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = oldMatId;
+                delPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
+                delPathCmd.ExecuteNonQuery();
+              }
             }
           }
 
