@@ -2377,7 +2377,24 @@ namespace BlackMaple.MachineFramework
           }
         }
       }
+    }
 
+    public void RemoveBookingsFromAllJobs(IEnumerable<string> bookings)
+    {
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+
+        cmd.CommandText = "DELETE FROM scheduled_bookings WHERE BookingId = $b";
+        cmd.Parameters.Add("b", SqliteType.Text);
+
+        foreach (var b in bookings)
+        {
+          cmd.Parameters[0].Value = b;
+          cmd.ExecuteNonQuery();
+        }
+      }
     }
 
     public List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(string unique)

@@ -4076,7 +4076,8 @@ namespace BlackMaple.MachineFramework
 
                     foreach (var logMat in mat[key])
                     {
-                      newEvts.AddRange(RemoveFromAllQueues(trans, logMat, operatorName: null, timeUTC: timeUTC.AddSeconds(1)));
+                      var prevProcMat = new EventLogMaterial() { MaterialID = logMat.MaterialID, Process = logMat.Process - 1, Face = "" };
+                      newEvts.AddRange(RemoveFromAllQueues(trans, prevProcMat, operatorName: null, timeUTC: timeUTC.AddSeconds(1)));
                     }
 
                   }

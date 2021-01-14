@@ -2247,7 +2247,7 @@ namespace MachineWatchTest
       );
     }
 
-    private Func<LogEntry, LogEntry> TransformLog(long matID, Func<LogMaterial, LogMaterial> transformMat)
+    public static Func<LogEntry, LogEntry> TransformLog(long matID, Func<LogMaterial, LogMaterial> transformMat)
     {
       return copy =>
       {
