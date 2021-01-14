@@ -2680,7 +2680,6 @@ namespace BlackMaple.MachineFramework
       string pallet,
       long oldMatId,
       long newMatId,
-      string oldMatPutInQueue,
       string operatorName,
       DateTime? timeUTC = null
     )
@@ -2799,7 +2798,16 @@ namespace BlackMaple.MachineFramework
           newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
 
           // update queues
-          newLogEntries.AddRange(RemoveFromAllQueues(trans, matID: newMatId, process: oldMatProc - 1, operatorName: operatorName, time));
+          var removeQueueEvts = RemoveFromAllQueues(trans, matID: newMatId, process: oldMatProc - 1, operatorName: operatorName, time);
+          newLogEntries.AddRange(removeQueueEvts);
+
+          var oldMatPutInQueue =
+            removeQueueEvts
+            .Where(e => e.LogType == MachineWatchInterface.LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
+            .Select(e => e.LocationName)
+            .FirstOrDefault()
+            ?? _config.Settings.QuarantineQueue;
+
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
             newLogEntries.AddRange(AddToQueue(trans,

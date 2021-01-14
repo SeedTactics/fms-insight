@@ -1708,7 +1708,6 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: initiallyLoadedMatProc1.MaterialID,
         newMatId: newMatProc1.MaterialID,
-        oldMatPutInQueue: "quarantine",
         operatorName: "theoper",
         timeUTC: now
       );
@@ -1773,7 +1772,7 @@ namespace MachineWatchTest
         AddToQueueExpectedEntry(
           mat: initiallyLoadedLogMatProc0,
           cntr: 0,
-          queue: "quarantine",
+          queue: "rawmat",
           position: 0,
           timeUTC: now,
           operName: "theoper",
@@ -1814,7 +1813,7 @@ namespace MachineWatchTest
         AddToQueueExpectedEntry(
           mat: initiallyLoadedLogMatProc0,
           cntr: 0,
-          queue: "quarantine",
+          queue: "rawmat",
           position: 0,
           timeUTC: now,
           operName: "theoper",
@@ -1874,7 +1873,6 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: 12345,
         newMatId: 98765,
-        oldMatPutInQueue: null,
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Unable to find material");
 
@@ -1882,7 +1880,6 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,
-        oldMatPutInQueue: null,
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
 
@@ -1893,7 +1890,6 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,
-        oldMatPutInQueue: null,
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
     }

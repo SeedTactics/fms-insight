@@ -883,12 +883,6 @@
           },
           {
             "type": "string",
-            "name": "putMatInQueue",
-            "in": "query",
-            "x-nullable": true
-          },
-          {
-            "type": "string",
             "name": "operName",
             "in": "query",
             "x-nullable": true

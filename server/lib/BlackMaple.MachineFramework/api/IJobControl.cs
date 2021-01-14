@@ -104,7 +104,6 @@ namespace BlackMaple.MachineWatchInterface
         string pallet,
         long oldMatId,
         long newMatId,
-        string oldMatPutInQueue = null,
         string operatorName = null
     );
 
