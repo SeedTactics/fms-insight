@@ -213,6 +213,94 @@ namespace MachineWatchTest
         .ToList();
     }
 
+    protected TestMaterial AdjUnique(TestMaterial m, string uniq, int? numProc = null)
+    {
+      return new TestMaterial()
+      {
+        MaterialID = m.MaterialID,
+        MazakPartName = m.MazakPartName,
+        JobPartName = m.JobPartName,
+        Unique = uniq,
+        Process = m.Process,
+        Path = m.Path,
+        NumProcess = numProc ?? m.NumProcess,
+        Face = m.Face,
+        EventStartTime = m.EventStartTime,
+        Pallet = m.Pallet,
+      };
+    }
+
+    protected TestMaterial AdjProcess(TestMaterial m, int proc)
+    {
+      return new TestMaterial()
+      {
+        MaterialID = m.MaterialID,
+        MazakPartName = m.MazakPartName,
+        JobPartName = m.JobPartName,
+        Unique = m.Unique,
+        Process = proc,
+        Path = m.Path,
+        NumProcess = m.NumProcess,
+        Face = m.Face,
+        EventStartTime = m.EventStartTime,
+        Pallet = m.Pallet,
+      };
+    }
+
+    protected enum AllocateTy
+    {
+      None,
+      Assigned,
+      Casting
+    }
+
+    protected void AddMaterialToQueue(TestMaterial material, int proc, string queue, int offset, AllocateTy allocate = AllocateTy.None)
+    {
+      switch (allocate)
+      {
+        case AllocateTy.Assigned:
+          {
+            var matId = jobLog.AllocateMaterialID(material.Unique, material.JobPartName, material.NumProcess);
+            if (matId != material.MaterialID)
+            {
+              throw new Exception("Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString());
+            }
+            expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, FMSSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
+            jobLog.RecordPathForProcess(material.MaterialID, Math.Max(1, proc), material.Path);
+            break;
+          }
+        case AllocateTy.Casting:
+          {
+            var matId = jobLog.AllocateMaterialIDForCasting(material.JobPartName);
+            if (matId != material.MaterialID)
+            {
+              throw new Exception("Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString());
+            }
+            expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, FMSSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
+            jobLog.RecordPathForProcess(material.MaterialID, Math.Max(1, proc), material.Path);
+            break;
+          }
+      }
+      expected.AddRange(jobLog.RecordAddMaterialToQueue(
+        mat: new EventLogDB.EventLogMaterial() { MaterialID = material.MaterialID, Process = proc, Face = "" },
+        queue: queue,
+        position: -1,
+        operatorName: null,
+        reason: "FromTestSuite",
+        timeUTC: material.EventStartTime.AddMinutes(offset)
+      ));
+    }
+
+    protected void RemoveFromAllQueues(TestMaterial mat, int proc, int offset)
+    {
+      expected.AddRange(jobLog.RecordRemoveMaterialFromAllQueues(new EventLogDB.EventLogMaterial()
+      {
+        MaterialID = mat.MaterialID,
+        Process = proc,
+        Face = ""
+      }, null, mat.EventStartTime.AddMinutes(offset)));
+    }
+
     protected void MachStart(TestMaterial mat, int offset, int mach)
     {
       MachStart(new[] { mat }, offset, mach);
@@ -398,11 +486,11 @@ namespace MachineWatchTest
       ));
     }
 
-    protected void LoadEnd(TestMaterial mat, int offset, int cycleOffset, int load, int elapMin, int activeMin = 0)
+    protected void LoadEnd(TestMaterial mat, int offset, int cycleOffset, int load, int elapMin, int activeMin = 0, bool expectMark = true)
     {
-      LoadEnd(new[] { mat }, offset, cycleOffset, load, elapMin, activeMin);
+      LoadEnd(new[] { mat }, offset, cycleOffset, load, elapMin, activeMin, expectMark);
     }
-    protected void LoadEnd(IEnumerable<TestMaterial> mats, int offset, int cycleOffset, int load, int elapMin, int activeMin = 0)
+    protected void LoadEnd(IEnumerable<TestMaterial> mats, int offset, int cycleOffset, int load, int elapMin, int activeMin = 0, bool expectMark = true)
     {
       var e2 = new MazakMachineInterface.LogEntry()
       {
@@ -449,7 +537,7 @@ namespace MachineWatchTest
 
       foreach (var mat in mats)
       {
-        if (mat.Process > 1) continue;
+        if (mat.Process > 1 || expectMark == false) continue;
         expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
             cntr: -1,
             mat: new[] {new BlackMaple.MachineWatchInterface.LogMaterial(
@@ -914,6 +1002,51 @@ namespace MachineWatchTest
         ));
     }
 
+    protected void SwapMaterial(TestMaterial matOnPal, TestMaterial matToAdd, int offset, bool unassigned)
+    {
+      var time = matOnPal.EventStartTime.AddMinutes(offset);
+      var swap = jobLog.SwapMaterialInCurrentPalletCycle(
+        pallet: matOnPal.Pallet.ToString(),
+        oldMatId: matOnPal.MaterialID,
+        newMatId: matToAdd.MaterialID,
+        operatorName: null,
+        timeUTC: time
+      );
+
+
+      for (int i = 0; i < expected.Count; i++)
+      {
+        if (expected[i].Pallet == matOnPal.Pallet.ToString() && expected[i].Material.Any(m => m.MaterialID == matOnPal.MaterialID))
+        {
+          expected[i] = JobLogTest.TransformLog(matOnPal.MaterialID, logMat =>
+            new LogMaterial(matID: matToAdd.MaterialID, uniq: logMat.JobUniqueStr, proc: logMat.Process, part: logMat.PartName, numProc: logMat.NumProcesses,
+              serial: FMSSettings.ConvertToBase62(matToAdd.MaterialID).PadLeft(10, '0'),
+              workorder: logMat.Workorder,
+              face: logMat.Face
+            )
+          )(expected[i]);
+        }
+      }
+
+      if (unassigned)
+      {
+        // remove uniq on existing events
+        for (int i = 0; i < expected.Count; i++)
+        {
+          if (expected[i].Material.Any(m => m.MaterialID == matOnPal.MaterialID))
+          {
+            expected[i] = JobLogTest.TransformLog(matOnPal.MaterialID, JobLogTest.SetUniqInMat(""))(expected[i]);
+          }
+          if (expected[i].Material.Any(m => m.MaterialID == matToAdd.MaterialID))
+          {
+            expected[i] = JobLogTest.TransformLog(matToAdd.MaterialID, JobLogTest.SetUniqInMat(matToAdd.Unique, 2))(expected[i]);
+          }
+        }
+      }
+
+      expected.AddRange(swap.NewLogEntries);
+    }
+
     #endregion
 
     #region Checking Log
@@ -929,6 +1062,21 @@ namespace MachineWatchTest
       );
 
       raisedByEvent.Should().BeEquivalentTo(expectedMazakLogEntries);
+    }
+
+    protected void CheckMatInQueue(string queue, IEnumerable<TestMaterial> mats)
+    {
+      jobLog.GetMaterialInQueue(queue).Should().BeEquivalentTo(mats.Select((m, idx) =>
+        new EventLogDB.QueuedMaterial()
+        {
+          MaterialID = m.MaterialID,
+          Queue = queue,
+          Position = idx,
+          Unique = m.Unique,
+          PartNameOrCasting = m.JobPartName,
+          NumProcesses = m.NumProcess,
+        }
+      ), options => options.ComparingByMembers<EventLogDB.QueuedMaterial>().Excluding(o => o.AddTimeUTC));
     }
     #endregion
   }
@@ -1615,6 +1763,85 @@ namespace MachineWatchTest
           Serial = "0000000003"
         },
       });
+    }
+
+    [Fact]
+    public void SwapsRawMaterial()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
+
+      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
+      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 2);
+      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 3);
+      var mat4 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 4);
+
+
+      var j = new JobPlan("uuuu", 2);
+      j.PartName = "pppp";
+      j.SetInputQueue(1, 1, "rawmat");
+      j.SetOutputQueue(1, 1, "thequeue");
+      j.SetInputQueue(2, 1, "thequeue");
+      var newJobs = new NewJobs()
+      {
+        Jobs = new List<JobPlan> { j }
+      };
+      jobDB.AddJobs(newJobs, null);
+
+      AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 0, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat3, proc: 0, queue: "rawmat", offset: 2, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat4, proc: 0, queue: "rawmat", offset: 3, allocate: AllocateTy.Casting);
+
+      LoadStart(mat1, offset: 4, load: 1);
+      LoadEnd(mat1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5 - 4, expectMark: false);
+      MovePallet(t, pal: 8, offset: 6, load: 1, elapMin: 0);
+      ExpectRemoveFromQueue(AdjProcess(mat1, 0), offset: 6, queue: "rawmat", startingPos: 0, elapMin: 6 - 0);
+
+      StockerStart(mat1, offset: 8, stocker: 8, waitForMachine: true);
+
+      CheckMatInQueue("rawmat", new[] { mat2, mat3, AdjUnique(mat4, "", 1) });
+
+      SwapMaterial(mat1, mat2, offset: 10, unassigned: false);
+
+      CheckMatInQueue("rawmat", new[] { mat3, AdjUnique(mat4, "", 1), mat1 });
+
+      // continue with mat2
+      MachStart(mat2, offset: 15, mach: 3);
+      MachEnd(mat2, offset: 20, mach: 3, elapMin: 20 - 15);
+
+      RemoveFromAllQueues(mat1, proc: 0, offset: 22);
+
+      //----- Now Unassigned
+      LoadStart(mat3, offset: 25, load: 2);
+      LoadEnd(mat3, offset: 30, cycleOffset: 30, load: 2, elapMin: 30 - 25, expectMark: false);
+      MovePallet(t, pal: 4, offset: 30, load: 2, elapMin: 0);
+      ExpectRemoveFromQueue(AdjProcess(mat3, 0), offset: 30, queue: "rawmat", startingPos: 0, elapMin: 30 - 2);
+
+      CheckMatInQueue("rawmat", new[] { AdjUnique(mat4, "", 1) });
+
+      SwapMaterial(mat3, mat4, offset: 33, unassigned: true);
+
+      CheckMatInQueue("rawmat", new[] { AdjUnique(mat3, "", 2) });
+
+      // continue with mat4
+      MachStart(mat4, offset: 35, mach: 3);
+      MachEnd(mat4, offset: 38, mach: 3, elapMin: 38 - 35);
+
+      jobLog.GetMaterialDetails(mat3.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = mat3.MaterialID,
+        JobUnique = null,
+        PartName = mat3.JobPartName,
+        NumProcesses = mat3.NumProcess,
+        Workorder = null,
+        Serial = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0'),
+        Paths = new Dictionary<int, int>() { }
+      });
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      sendToExternal.Should().BeEmpty();
     }
 
     [Fact]
