@@ -76,7 +76,6 @@ export interface JobAPI {
   swapMaterialOnPallet(
     materialId: number,
     mat: Readonly<api.IMatToPutOnPallet>,
-    putMatInQueue: string | undefined,
     operName: string | undefined
   ): Promise<void>;
   invalidatePalletCycle(

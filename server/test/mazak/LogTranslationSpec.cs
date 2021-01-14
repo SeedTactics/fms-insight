@@ -896,7 +896,7 @@ namespace MachineWatchTest
               proc: mat.Process,
               part: mat.JobPartName,
               numProc: mat.NumProcess,
-              face: mat.Face,
+              face: "",
               serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
               workorder: ""
             )},
@@ -1435,7 +1435,7 @@ namespace MachineWatchTest
       LoadStart(proc2, offset: 28, load: 1);
       LoadEnd(proc2, offset: 29, cycleOffset: 30, load: 1, elapMin: 1);
       MovePallet(t, pal: 9, offset: 30, load: 1, elapMin: 0);
-      ExpectRemoveFromQueue(proc2, offset: 30, queue: "thequeue", startingPos: 0, elapMin: 30 - 24);
+      ExpectRemoveFromQueue(proc1, offset: 30, queue: "thequeue", startingPos: 0, elapMin: 30 - 24);
 
       MachStart(proc2, offset: 30, mach: 6);
       MachStart(proc1snd, offset: 35, mach: 3);
@@ -1541,7 +1541,7 @@ namespace MachineWatchTest
       LoadStart(proc2path1, offset: 40, load: 2);
       LoadEnd(proc2path1, offset: 44, cycleOffset: 45, load: 2, elapMin: 4);
       MovePallet(t, offset: 45, pal: 5, load: 2, elapMin: 0);
-      ExpectRemoveFromQueue(proc2path1, offset: 45, queue: "thequeue", startingPos: 0, elapMin: 45 - 15);
+      ExpectRemoveFromQueue(proc1path1, offset: 45, queue: "thequeue", startingPos: 0, elapMin: 45 - 15);
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
@@ -1568,7 +1568,7 @@ namespace MachineWatchTest
       UnloadEnd(proc2path1, offset: 65, load: 1, elapMin: 5);
       LoadEnd(proc2path1snd, offset: 65, cycleOffset: 66, load: 1, elapMin: 5);
       MovePallet(t, offset: 66, pal: 5, load: 1, elapMin: 66 - 45);
-      ExpectRemoveFromQueue(proc2path1snd, offset: 66, queue: "thequeue", startingPos: 3, elapMin: 66 - 33);
+      ExpectRemoveFromQueue(proc1path1snd, offset: 66, queue: "thequeue", startingPos: 3, elapMin: 66 - 33);
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6 }).Select((i, idx) =>
@@ -1589,7 +1589,7 @@ namespace MachineWatchTest
       LoadStart(proc2path2, offset: 70, load: 2);
       LoadEnd(proc2path2, offset: 73, cycleOffset: 74, load: 2, elapMin: 3);
       MovePallet(t, offset: 74, pal: 7, load: 2, elapMin: 0);
-      ExpectRemoveFromQueue(proc2path2, offset: 74, queue: "thequeue", startingPos: 0, elapMin: 74 - 27);
+      ExpectRemoveFromQueue(proc1path2, offset: 74, queue: "thequeue", startingPos: 0, elapMin: 74 - 27);
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEmpty();
 

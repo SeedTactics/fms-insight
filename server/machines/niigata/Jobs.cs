@@ -559,7 +559,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 
@@ -570,7 +570,6 @@ namespace BlackMaple.FMSInsight.Niigata
           pallet: pallet,
           oldMatId: oldMatId,
           newMatId: newMatId,
-          oldMatPutInQueue: oldMatPutInQueue,
           operatorName: operatorName
         );
 

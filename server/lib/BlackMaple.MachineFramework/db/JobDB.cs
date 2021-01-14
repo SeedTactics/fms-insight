@@ -2377,7 +2377,6 @@ namespace BlackMaple.MachineFramework
           }
         }
       }
-
     }
 
     public List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(string unique)

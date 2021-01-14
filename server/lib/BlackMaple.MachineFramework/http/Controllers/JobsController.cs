@@ -199,13 +199,12 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPut("material/{materialId}/swap-off-pallet")]
     [ProducesResponseType(typeof(void), 200)]
-    public void SwapMaterialOnPallet(long materialId, [FromBody] MatToPutOnPallet mat, [FromQuery] string putMatInQueue = null, [FromQuery] string operName = null)
+    public void SwapMaterialOnPallet(long materialId, [FromBody] MatToPutOnPallet mat, [FromQuery] string operName = null)
     {
       _backend.JobControl.SwapMaterialOnPallet(
         oldMatId: materialId,
         newMatId: mat.MaterialIDToSetOnPallet,
         pallet: mat.Pallet,
-        oldMatPutInQueue: putMatInQueue,
         operatorName: operName
       );
     }

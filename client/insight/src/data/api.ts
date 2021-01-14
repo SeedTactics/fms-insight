@@ -854,13 +854,11 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    swapMaterialOnPallet(materialId: number, mat: MatToPutOnPallet, putMatInQueue: string | null | undefined, operName: string | null | undefined): Promise<void> {
+    swapMaterialOnPallet(materialId: number, mat: MatToPutOnPallet, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/swap-off-pallet?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
         url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId)); 
-        if (putMatInQueue !== undefined)
-            url_ += "putMatInQueue=" + encodeURIComponent("" + putMatInQueue) + "&"; 
         if (operName !== undefined)
             url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");

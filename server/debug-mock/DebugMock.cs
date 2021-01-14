@@ -640,14 +640,13 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       Serilog.Log.Information("Swapping {oldMatId} to {newMatId} on pallet {pallet}", oldMatId, newMatId, pallet);
       var o = LogDB.SwapMaterialInCurrentPalletCycle(
         pallet: pallet,
         oldMatId: oldMatId,
         newMatId: newMatId,
-        oldMatPutInQueue: oldMatPutInQueue,
         operatorName: operatorName
       );
       OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
