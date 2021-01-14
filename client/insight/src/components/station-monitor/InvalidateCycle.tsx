@@ -36,11 +36,9 @@ import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import { Vector } from "prelude-ts";
 import * as React from "react";
-import { useRecoilValue } from "recoil";
 import { IInProcessMaterial, ILogEntry, LocType } from "../../data/api";
 import { JobsBackend } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
-import { fmsInformation } from "../../data/server-settings";
 
 interface InvalidateCycle {
   readonly process: number | null;
