@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -554,10 +554,6 @@ namespace MachineWatchTest
           new[] { job1unfilledWorks[0] }, // job2 is manual, so latest should be from job1
           _jobDB.MostRecentUnfilledWorkordersForPart(job2unfilledWorks[job2unfilledWorks.Count - 2].Part)
       );
-      CheckWorkordersEqual(
-          new[] { job2unfilledWorks.Last() },
-          _jobDB.UnfilledWorkordersForJob("Unique2")
-      );
 
       // job2 is manually created so job1 is most recent
       recent = _jobDB.LoadMostRecentSchedule();
@@ -879,6 +875,7 @@ namespace MachineWatchTest
     {
       var job1 = new JobPlan("uniq", 2, new int[] { 2, 3 });
       SetJob1Data(job1);
+      job1.ScheduleId = "1111";
 
       job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
       job1.GetMachiningStop(1, 1).First().ProgramRevision = null;
@@ -892,9 +889,21 @@ namespace MachineWatchTest
       job1.GetMachiningStop(2, 2).First().ProgramName = "bbb";
       job1.GetMachiningStop(2, 2).First().ProgramRevision = 6;
 
+      var initialWorks = RandUnfilledWorkorders();
+      initialWorks[0].Programs = new[] {
+        new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = null },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = null }
+      };
+      initialWorks[1].Programs = new[] {
+        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 6 }
+      };
+
       _jobDB.AddJobs(new NewJobs
       {
+        ScheduleId = job1.ScheduleId,
         Jobs = new List<JobPlan> { job1 },
+        CurrentUnfilledWorkorders = initialWorks,
         Programs = new List<ProgramEntry> {
             new ProgramEntry() {
               ProgramName = "aaa",
@@ -913,8 +922,16 @@ namespace MachineWatchTest
 
       job1.GetMachiningStop(1, 1).First().ProgramRevision = 1; // should lookup latest revision to 1
       job1.GetMachiningStop(2, 1).First().ProgramRevision = 6; // should lookup latest revision to 6
+      initialWorks[0].Programs.First().Revision = 1;
+      initialWorks[0].Programs.Last().Revision = 6;
 
       CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
+
+      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(initialWorks);
+
+      _jobDB.MostRecentUnfilledWorkordersForPart(initialWorks[0].Part).Should().BeEquivalentTo(new[] { initialWorks[0] });
+
+      _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] });
 
       _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new ProgramRevision()
       {
@@ -1002,7 +1019,38 @@ namespace MachineWatchTest
       _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content");
       _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
 
-      // now should ignore when program content matches
+      // replaces workorders
+      var newWorkorders = RandUnfilledWorkorders();
+      newWorkorders[0].Programs = new[] {
+        new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+      };
+      newWorkorders[1].Programs = new[] {
+        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+      };
+
+      _jobDB.ReplaceWorkordersForSchedule(job1.ScheduleId, newWorkorders, new[] {
+        new ProgramEntry() {
+          ProgramName = "ccc",
+          Revision = 0,
+          Comment = "the ccc comment",
+          ProgramContent = "ccc first program"
+        }
+      });
+
+      newWorkorders[1].Programs.First().Revision = 1;
+
+      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(newWorkorders);
+
+      _jobDB.LoadMostRecentProgram("ccc").Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "ccc",
+        Revision = 1,
+        Comment = "the ccc comment",
+      });
+
+      // now should ignore when program content matches exact revision or most recent revision
       _jobDB.AddJobs(new NewJobs
       {
         Jobs = new List<JobPlan> { },
@@ -1019,13 +1067,19 @@ namespace MachineWatchTest
                 Comment = "bbb comment",
                 ProgramContent = "bbb program content"
               },
+              new ProgramEntry() {
+                ProgramName = "ccc",
+                Revision = 0, // auto assign
+                Comment = "ccc new comment", // comment does not match most recent revision
+                ProgramContent = "ccc first program" // content matches most recent revision
+              },
             }
       }, null);
 
       _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
-        Revision = 2,
+        Revision = 2, // creates new revision
         Comment = "aaa comment rev 2",
       });
       _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new ProgramRevision()
@@ -1041,6 +1095,13 @@ namespace MachineWatchTest
         Comment = "bbb comment",
       });
       _jobDB.LoadProgramContent("aaa", 2).Should().Be("aaa program content rev 2");
+      _jobDB.LoadMostRecentProgram("ccc").Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "ccc",
+        Revision = 1,
+        Comment = "the ccc comment",
+      });
+      _jobDB.LoadProgramContent("ccc", 1).Should().Be("ccc first program");
 
       //now set cell controller names
       _jobDB.LoadProgramsInCellController().Should().BeEmpty();
@@ -1119,9 +1180,9 @@ namespace MachineWatchTest
       _jobDB.AddPrograms(new[] {
         new ProgramEntry() {
           ProgramName = "aaa",
-          Revision = 0, // should be ignored because content matches
-          Comment = "aaa comment rev 2",
-          ProgramContent = "aaa program content rev 2"
+          Revision = 0, // should be ignored because comment and content matches revision 1
+          Comment = "aaa comment",
+          ProgramContent = "aaa program content"
         },
         new ProgramEntry() {
           ProgramName = "bbb",
@@ -1131,16 +1192,10 @@ namespace MachineWatchTest
         },
       }, job1.RouteStartingTimeUTC);
 
-      _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new ProgramRevision()
-      {
-        ProgramName = "aaa",
-        Revision = 2,
-        Comment = "aaa comment rev 2",
-      });
       _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "aaa",
-        Revision = 2,
+        Revision = 2, // didn't allocate 3
         Comment = "aaa comment rev 2",
       });
       _jobDB.LoadMostRecentProgram("bbb").Should().BeEquivalentTo(new ProgramRevision()
@@ -1151,9 +1206,33 @@ namespace MachineWatchTest
       });
       _jobDB.LoadProgramContent("bbb", 7).Should().Be("bbb program content rev7");
 
+      // adds new when comment matches, but content does not
+      _jobDB.AddPrograms(new[] {
+        new ProgramEntry() {
+          ProgramName = "aaa",
+          Revision = 0, // allocate new
+          Comment = "aaa comment", // comment matches
+          ProgramContent = "aaa program content rev 3" // content does not
+        }
+      }, job1.RouteStartingTimeUTC);
+
+      _jobDB.LoadMostRecentProgram("aaa").Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "aaa",
+        Revision = 3,
+        Comment = "aaa comment",
+      });
+      _jobDB.LoadProgramContent("aaa", 3).Should().BeEquivalentTo("aaa program content rev 3");
+
       // loading all revisions
-      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 2, startRevision: null)
+      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 3, startRevision: null)
         .Should().BeEquivalentTo(new[] {
+          new ProgramRevision()
+          {
+            ProgramName = "aaa",
+            Revision = 3,
+            Comment = "aaa comment",
+          },
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1172,8 +1251,8 @@ namespace MachineWatchTest
           new ProgramRevision()
           {
             ProgramName = "aaa",
-            Revision = 2,
-            Comment = "aaa comment rev 2",
+            Revision = 3,
+            Comment = "aaa comment",
           }
         }, options => options.WithStrictOrdering());
       _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 2, startRevision: 1)
@@ -1192,20 +1271,26 @@ namespace MachineWatchTest
     [Fact]
     public void NegativeProgramRevisions()
     {
-      // add an existing revision 6 for bbb and 4 for ccc
+      // add an existing revision 6 for bbb and 3,4 for ccc
       _jobDB.AddJobs(new NewJobs
       {
         Jobs = new List<JobPlan>(),
         Programs = new List<ProgramEntry> {
             new ProgramEntry() {
               ProgramName = "bbb",
-              Revision = 6, // new revision
+              Revision = 6,
               Comment = "bbb comment 6",
               ProgramContent = "bbb program content 6"
             },
             new ProgramEntry() {
               ProgramName = "ccc",
-              Revision = 4, // new revision
+              Revision = 3,
+              Comment = "ccc comment 3",
+              ProgramContent = "ccc program content 3"
+            },
+            new ProgramEntry() {
+              ProgramName = "ccc",
+              Revision = 4,
               Comment = "ccc comment 4",
               ProgramContent = "ccc program content 4"
             },
@@ -1214,6 +1299,7 @@ namespace MachineWatchTest
 
       var job1 = new JobPlan("uniq", 2, new int[] { 2, 3 });
       SetJob1Data(job1);
+      job1.ScheduleId = "1111";
 
       job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
       job1.GetMachiningStop(1, 1).First().ProgramRevision = -1;
@@ -1228,28 +1314,42 @@ namespace MachineWatchTest
       job1.GetMachiningStop(2, 2).First().ProgramRevision = -2;
 
       job1.GetMachiningStop(2, 3).First().ProgramName = "ccc";
-      job1.GetMachiningStop(2, 3).First().ProgramRevision = -1;
+      job1.GetMachiningStop(2, 3).First().ProgramRevision = -2;
+
+      var initialWorks = RandUnfilledWorkorders();
+      initialWorks[0].Programs = new[] {
+        new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = -1 },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = -2 },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = -1 }
+      };
+      initialWorks[1].Programs = new[] {
+        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = -2 },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = -1 },
+        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = -2 }
+      };
 
       _jobDB.AddJobs(new NewJobs
       {
+        ScheduleId = job1.ScheduleId,
         Jobs = new List<JobPlan> { job1 },
+        CurrentUnfilledWorkorders = initialWorks,
         Programs = new List<ProgramEntry> {
             new ProgramEntry() {
               ProgramName = "aaa",
-              Revision = -1, // should be assigned to 1
+              Revision = -1, // should be created to be revision 1
               Comment = "aaa comment 1",
               ProgramContent = "aaa program content for 1"
             },
             new ProgramEntry() {
               ProgramName = "aaa",
-              Revision = -2, // should be assigned to 2
+              Revision = -2, // should be created to be revision 2
               Comment = "aaa comment 2",
               ProgramContent = "aaa program content for 2"
             },
             new ProgramEntry() {
               ProgramName = "bbb",
-              Revision = -1, // matches existing so should be converted to 6
-              Comment = "bbb comment 6",
+              Revision = -1, // matches latest content so should be converted to 6
+              Comment = "bbb other comment", // comment doesn't match but is ignored
               ProgramContent = "bbb program content 6"
             },
             new ProgramEntry() {
@@ -1260,8 +1360,14 @@ namespace MachineWatchTest
             },
             new ProgramEntry() {
               ProgramName = "ccc",
-              Revision = -1, // assigned a new val since doesn't match existing
-              Comment = "ccc comment 5",
+              Revision = -1, // assigned to 3 (older than most recent) because comment and content match
+              Comment = "ccc comment 3",
+              ProgramContent = "ccc program content 3"
+            },
+            new ProgramEntry() {
+              ProgramName = "ccc",
+              Revision = -2, // assigned a new val since doesn't match existing, even if comment matches
+              Comment = "ccc comment 3",
               ProgramContent = "ccc program content 5"
             },
           }
@@ -1273,8 +1379,16 @@ namespace MachineWatchTest
       job1.GetMachiningStop(2, 2).First().ProgramRevision = 7;
       job1.GetMachiningStop(2, 3).First().ProgramRevision = 5;
 
+      initialWorks[0].Programs.ElementAt(0).Revision = 1; // aaa -1
+      initialWorks[0].Programs.ElementAt(1).Revision = 2; // aaa -2
+      initialWorks[0].Programs.ElementAt(2).Revision = 6; // bbb -1
+      initialWorks[1].Programs.ElementAt(0).Revision = 7; // bbb -2
+      initialWorks[1].Programs.ElementAt(1).Revision = 3; // ccc -1
+      initialWorks[1].Programs.ElementAt(2).Revision = 5; // ccc -2
+
       CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
 
+      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(initialWorks);
 
       _jobDB.LoadProgram("aaa", 1).Should().BeEquivalentTo(new ProgramRevision()
       {
@@ -1309,6 +1423,13 @@ namespace MachineWatchTest
       _jobDB.LoadProgramContent("bbb", 7).Should().Be("bbb program content 7");
       _jobDB.LoadMostRecentProgram("bbb").Revision.Should().Be(7);
 
+      _jobDB.LoadProgram("ccc", 3).Should().BeEquivalentTo(new ProgramRevision()
+      {
+        ProgramName = "ccc",
+        Revision = 3,
+        Comment = "ccc comment 3",
+      });
+      _jobDB.LoadProgramContent("ccc", 3).Should().Be("ccc program content 3");
       _jobDB.LoadProgram("ccc", 4).Should().BeEquivalentTo(new ProgramRevision()
       {
         ProgramName = "ccc",
@@ -1320,7 +1441,7 @@ namespace MachineWatchTest
       {
         ProgramName = "ccc",
         Revision = 5,
-        Comment = "ccc comment 5",
+        Comment = "ccc comment 3",
       });
       _jobDB.LoadProgramContent("ccc", 5).Should().Be("ccc program content 5");
       _jobDB.LoadMostRecentProgram("ccc").Revision.Should().Be(5);
@@ -1489,6 +1610,8 @@ namespace MachineWatchTest
       Assert.Equal(w1.Quantity, w2.Quantity);
       Assert.Equal(w1.DueDate, w2.DueDate);
       Assert.Equal(w1.Priority, w2.Priority);
+      w1.Programs.Should().BeNullOrEmpty();
+      w2.Programs.Should().BeNullOrEmpty();
     }
 
     private byte[] LoadDebugData(string schId)

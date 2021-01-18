@@ -99,6 +99,27 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
+    [DataContract]
+    public class WorkordersAndPrograms
+    {
+      [DataMember(IsRequired = true)]
+      public IList<PartWorkorder> Workorders { get; set; }
+      [DataMember(IsRequired = false, EmitDefaultValue = false)]
+      public IList<ProgramEntry> Programs { get; set; }
+    }
+
+    [HttpPut("unfilled-workorders/by-schid/{scheduleId}")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void ReplaceWorkordersForScheduleId(string scheduleId, [FromBody] WorkordersAndPrograms workorders)
+    {
+      if (string.IsNullOrEmpty(scheduleId))
+        throw new BadRequestException("ScheduleId must be non-empty");
+      using (var db = _backend.OpenJobDatabase())
+      {
+        db.ReplaceWorkordersForSchedule(scheduleId, workorders.Workorders, workorders.Programs);
+      }
+    }
+
     [HttpGet("status")]
     public CurrentStatus CurrentStatus()
     {

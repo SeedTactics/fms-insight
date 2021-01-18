@@ -1345,6 +1345,28 @@ namespace BlackMaple.MachineWatchInterface
     }
   }
 
+  [DataContract]
+  public class WorkorderProgram
+  {
+    /// <summary>Identifies the process on the part that this program is for.</summary>
+    [DataMember]
+    public int ProcessNumber { get; set; }
+
+    /// <summary>Identifies which machine stop on the part that this program is for (only needed if a process has multiple
+    /// machining stops before unload).  The stop numbers are zero-indexed.</summary>
+    [DataMember]
+    public int? StopIndex { get; set; }
+
+    /// <summary>The program name, used to find the program contents.</summary>
+    [DataMember]
+    public string ProgramName { get; set; }
+
+    ///<summary>The program revision to run.  Can be negative during download, is treated identically to how the revision
+    ///in JobMachiningStop works.</summary>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public long? Revision { get; set; }
+  }
+
   [Serializable, DataContract]
   public class PartWorkorder
   {
@@ -1353,6 +1375,10 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)] public int Quantity { get; set; }
     [DataMember(IsRequired = true)] public DateTime DueDate { get; set; }
     [DataMember(IsRequired = true)] public int Priority { get; set; }
+
+    ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public IEnumerable<WorkorderProgram> Programs { get; set; }
   }
 
   [Serializable, DataContract]
