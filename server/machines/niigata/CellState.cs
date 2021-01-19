@@ -355,8 +355,13 @@ namespace BlackMaple.FMSInsight.Niigata
           var castings =
             logDB.GetMaterialInQueue(inputQueue)
             .Where(m => !currentlyLoading.Contains(m.MaterialID))
-            .Select(m => FilterMaterialAvailableToLoadOntoFace(m, face, logDB))
-            .Where(m => m != null)
+            .Select(m => new QueuedMaterialWithDetails()
+            {
+              Material = m,
+              NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
+              Details = logDB.GetMaterialDetails(m.MaterialID)
+            })
+            .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
             .ToList();
 
           foreach (var mat in castings.Take(face.Job.PartsPerPallet(face.Process, face.Path)))
@@ -482,8 +487,13 @@ namespace BlackMaple.FMSInsight.Niigata
             var availableMaterial =
               logDB.GetMaterialInQueue(inputQueue)
               .Where(m => !currentlyLoading.Contains(m.MaterialID))
-              .Select(m => FilterMaterialAvailableToLoadOntoFace(m, face, logDB))
-              .Where(m => m != null)
+              .Select(m => new QueuedMaterialWithDetails()
+              {
+                Material = m,
+                NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
+                Details = logDB.GetMaterialDetails(m.MaterialID)
+              })
+              .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
               .ToList();
             foreach (var mat in availableMaterial)
             {
@@ -1523,14 +1533,16 @@ namespace BlackMaple.FMSInsight.Niigata
       return cnts;
     }
 
-    private class QueuedMaterialWithDetails
+    public class QueuedMaterialWithDetails
     {
       public EventLogDB.QueuedMaterial Material { get; set; }
+      public int NextProcess { get; set; }
       public MaterialDetails Details { get; set; }
     }
 
-    private QueuedMaterialWithDetails FilterMaterialAvailableToLoadOntoFace(EventLogDB.QueuedMaterial mat, PalletFace face, EventLogDB logDB)
+    public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails matWithDetails, PalletFace face)
     {
+      var mat = matWithDetails.Material;
       if (face.Process == 1)
       {
         // check for casting on process 1
@@ -1539,33 +1551,24 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (string.IsNullOrEmpty(mat.Unique) && mat.PartNameOrCasting == casting)
         {
-          return new QueuedMaterialWithDetails()
-          {
-            Material = mat,
-            Details = logDB.GetMaterialDetails(mat.MaterialID)
-          };
+          return true;
         }
       }
 
       // now check unique, process, and path group match
-      if (mat.Unique != face.Job.UniqueStr) return null;
+      if (mat.Unique != face.Job.UniqueStr) return false;
 
-      var nextProc = logDB.NextProcessForQueuedMaterial(mat.MaterialID);
-      if (nextProc != face.Process) return null;
+      if (matWithDetails.NextProcess != face.Process) return false;
 
       // now path group
-      var details = logDB.GetMaterialDetails(mat.MaterialID);
+      var details = matWithDetails.Details;
       if (details.Paths != null && details.Paths.Count > 0)
       {
         var path = details.Paths.Aggregate((max, v) => max.Key > v.Key ? max : v);
-        var group = face.Job.GetPathGroup(process: path.Key, path: path.Value);
+        var group = face.Job.GetPathGroup(process: Math.Max(1, path.Key), path: path.Value);
         if (group == face.Job.GetPathGroup(face.Process, face.Path))
         {
-          return new QueuedMaterialWithDetails()
-          {
-            Material = mat,
-            Details = details
-          };
+          return true;
         }
       }
       else
@@ -1573,7 +1576,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Log.Warning("Material {matId} has no path groups! {@details}", mat.MaterialID, details);
       }
 
-      return null;
+      return false;
     }
 
     private string OutputQueueForMaterial(InProcessMaterialAndJob mat, IReadOnlyList<LogEntry> log)

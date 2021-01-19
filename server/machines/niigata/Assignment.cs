@@ -204,11 +204,44 @@ namespace BlackMaple.FMSInsight.Niigata
       return s;
     }
 
+    private static bool CanMaterialLoadOntoPath(InProcessMaterial m, JobPath path)
+    {
+      return CreateCellState.FilterMaterialAvailableToLoadOntoFace(new CreateCellState.QueuedMaterialWithDetails()
+      {
+        Material = new MachineFramework.EventLogDB.QueuedMaterial()
+        {
+          MaterialID = m.MaterialID,
+          Queue = m.Location.CurrentQueue,
+          Position = m.Location.QueuePosition ?? 0,
+          Unique = m.JobUnique,
+          PartNameOrCasting = m.PartName,
+          NumProcesses = 1 // not used in FilterMaterialAvailableToLoadOntoFace
+        },
+        NextProcess = m.Process + 1,
+        Details = new MaterialDetails()
+        {
+          MaterialID = m.MaterialID,
+          JobUnique = m.JobUnique,
+          PartName = m.PartName,
+          NumProcesses = 1,
+          Workorder = m.WorkorderId,
+          Serial = m.Serial,
+          Paths = new Dictionary<int, int>() { { m.Process, m.Path } }
+        }
+      },
+      new PalletFace()
+      {
+        Job = path.Job,
+        Process = path.Process,
+        Path = path.Path,
+        Face = 1,
+        FaceIsMissingMaterial = false
+      });
+    }
+
     private (bool, HashSet<long>) CheckMaterialForPathExists(HashSet<long> currentlyLoading, IReadOnlyDictionary<long, InProcessMaterial> unusedMatsOnPal, JobPath path, IEnumerable<InProcessMaterial> queuedMats)
     {
       // This logic must be identical to the eventual assignment in CreateCellState.MaterialToLoadOnFace and SizedQueues.AvailablePalletForPickup
-
-      var (fixture, faceNum) = path.Job.PlannedFixture(path.Process, path.Path);
 
       var inputQueue = path.Job.GetInputQueue(path.Process, path.Path);
       if (path.Process == 1 && string.IsNullOrEmpty(inputQueue))
@@ -226,13 +259,7 @@ namespace BlackMaple.FMSInsight.Niigata
           queuedMats
           .Where(m => m.Location.CurrentQueue == inputQueue
                     && !currentlyLoading.Contains(m.MaterialID)
-                    && ((string.IsNullOrEmpty(m.JobUnique) && m.PartName == casting)
-                       || (!string.IsNullOrEmpty(m.JobUnique)
-                            && m.JobUnique == path.Job.UniqueStr
-                            && m.Process == 0
-                            && path.Job.GetPathGroup(1, m.Path) == path.Job.GetPathGroup(path.Process, path.Path)
-                          )
-                       )
+                    && CanMaterialLoadOntoPath(m, path)
           )
           .OrderBy(m => m.Location.QueuePosition)
           .ToList();
@@ -273,10 +300,7 @@ namespace BlackMaple.FMSInsight.Niigata
           foreach (var mat in queuedMats)
           {
             if (mat.Location.CurrentQueue != inputQueue) continue;
-            if (mat.JobUnique != path.Job.UniqueStr) continue;
-            if (mat.Process + 1 != path.Process) continue;
-            if (path.Job.GetPathGroup(mat.Process, mat.Path) != path.Job.GetPathGroup(path.Process, path.Path))
-              continue;
+            if (!CanMaterialLoadOntoPath(mat, path)) continue;
             if (currentlyLoading.Contains(mat.MaterialID)) continue;
 
             availMatIds.Add(mat.MaterialID);
