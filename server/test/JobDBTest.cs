@@ -1030,6 +1030,13 @@ namespace MachineWatchTest
         new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
       };
 
+      // replace an existing
+      newWorkorders.Add(initialWorks[1]);
+      newWorkorders.Last().Quantity = 10;
+      newWorkorders.Last().Programs = new[] {
+        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+      };
+
       _jobDB.ReplaceWorkordersForSchedule(job1.ScheduleId, newWorkorders, new[] {
         new ProgramEntry() {
           ProgramName = "ccc",
@@ -1040,8 +1047,11 @@ namespace MachineWatchTest
       });
 
       newWorkorders[1].Programs.First().Revision = 1;
+      newWorkorders.Last().Programs.First().Revision = 1;
 
-      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(newWorkorders);
+      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(newWorkorders); // initialWorks have been archived and don't appear
+
+      _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] }); // but still exist when looked up directly
 
       _jobDB.LoadMostRecentProgram("ccc").Should().BeEquivalentTo(new ProgramRevision()
       {

@@ -237,7 +237,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
+        cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER, PRIMARY KEY(ScheduleId, Part, Workorder))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
@@ -740,6 +740,10 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
+
+        cmd.CommandText = "ALTER TABLE unfilled_workorders ADD Archived INTEGER";
+        cmd.ExecuteNonQuery();
+
         cmd.CommandText = "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
         cmd.ExecuteNonQuery();
 
@@ -1161,7 +1165,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision " +
           " FROM unfilled_workorders w " +
           " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
-          " WHERE w.ScheduleId == $sid";
+          " WHERE w.ScheduleId == $sid AND (Archived IS NULL OR Archived != 1)";
         cmd.Parameters.Add("sid", SqliteType.Integer).Value = schId;
         using (IDataReader reader = cmd.ExecuteReader())
         {
@@ -1374,7 +1378,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
-            " WHERE w.ScheduleId = $sid AND w.Part = $part";
+            " WHERE w.ScheduleId = $sid AND w.Part = $part AND (Archived IS NULL OR Archived != 1)";
           cmd.Parameters.Add("sid", SqliteType.Text).Value = sid;
           cmd.Parameters.Add("part", SqliteType.Text).Value = part;
 
@@ -1432,7 +1436,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
-            " WHERE w.Workorder = $work " +
+            " WHERE w.Workorder = $work" +
             " ORDER BY w.ScheduleId DESC";
           cmd.Parameters.Add("work", SqliteType.Text).Value = workorderId;
 
@@ -2151,7 +2155,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)prgCmd).Transaction = trans;
 
 
-        cmd.CommandText = "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority) VALUES ($sid,$work,$part,$qty,$due,$pri)";
+        cmd.CommandText = "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority, Archived) VALUES ($sid,$work,$part,$qty,$due,$pri,NULL)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
         cmd.Parameters.Add("work", SqliteType.Text);
@@ -2448,14 +2452,54 @@ namespace BlackMaple.MachineFramework
       lock (_cfg)
       {
         using (var trans = _connection.BeginTransaction())
-        using (var delCmd = _connection.CreateCommand())
+        using (var getWorksCmd = _connection.CreateCommand())
+        using (var archiveCmd = _connection.CreateCommand())
+        using (var delProgsCmd = _connection.CreateCommand())
         {
-          delCmd.Transaction = trans;
-          delCmd.CommandText = "DELETE FROM unfilled_workorders WHERE ScheduleId = $sid";
-          delCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
-          delCmd.ExecuteNonQuery();
-          delCmd.CommandText = "DELETE FROM workorder_programs WHERE ScheduleId = $sid";
-          delCmd.ExecuteNonQuery();
+          getWorksCmd.Transaction = trans;
+          archiveCmd.Transaction = trans;
+          delProgsCmd.Transaction = trans;
+
+          getWorksCmd.CommandText = "SELECT Workorder, Part FROM unfilled_workorders WHERE ScheduleId = $sid AND (Archived IS NULL OR Archived != 1)";
+          getWorksCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+
+          archiveCmd.CommandText = "UPDATE unfilled_workorders SET Archived = 1 WHERE ScheduleId = $sid AND Workorder = $work AND Part = $part";
+          archiveCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+          var archiveWorkorder = archiveCmd.Parameters.Add("work", SqliteType.Text);
+          var archivePart = archiveCmd.Parameters.Add("part", SqliteType.Text);
+
+          delProgsCmd.CommandText = "DELETE FROM workorder_programs WHERE ScheduleId = $sid AND Workorder = $work AND Part = $part";
+          delProgsCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+          var delWorkorder = delProgsCmd.Parameters.Add("work", SqliteType.Text);
+          var delPart = delProgsCmd.Parameters.Add("part", SqliteType.Text);
+
+          var newWorkorderIds = new HashSet<(string work, string part)>(
+            newWorkorders.Select(w => (work: w.WorkorderId, part: w.Part))
+          );
+
+          using (var reader = getWorksCmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              var work = reader.GetString(0);
+              var part = reader.GetString(1);
+
+              if (newWorkorderIds.Contains((work: work, part: part)))
+              {
+                // will be replaced below, for now clear out programs
+                delWorkorder.Value = work;
+                delPart.Value = part;
+                delProgsCmd.ExecuteNonQuery();
+              }
+              else
+              {
+                // missing from new, archive
+                archiveWorkorder.Value = work;
+                archivePart.Value = part;
+                archiveCmd.ExecuteNonQuery();
+              }
+            }
+          }
 
           var negProgMap = AddPrograms(trans, programs, nowUtc ?? DateTime.UtcNow);
           AddUnfilledWorkorders(trans, scheduleId, newWorkorders, negProgMap);
