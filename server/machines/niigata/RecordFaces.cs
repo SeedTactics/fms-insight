@@ -48,7 +48,7 @@ namespace BlackMaple.FMSInsight.Niigata
     [DataMember] public string Unique { get; set; }
     [DataMember] public int Proc { get; set; }
     [DataMember] public int Path { get; set; }
-
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Workorder { get; set; }
   }
 
   public static class RecordFacesForPallet

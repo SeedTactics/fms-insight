@@ -1064,7 +1064,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             })
         );
       }
-      actualSt.QueuedMaterial.Should().BeEquivalentTo(_expectedMaterial.Values.Where(
+      actualSt.QueuedMaterial.Select(m => m.Mat).Should().BeEquivalentTo(_expectedMaterial.Values.Where(
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
       ));
       actualSt.JobQtyRemainingOnProc1.Should().BeEquivalentTo(_expectedJobRemainCount);

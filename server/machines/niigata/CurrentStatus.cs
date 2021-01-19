@@ -151,7 +151,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // queued mats
       foreach (var mat in status.QueuedMaterial)
       {
-        curStatus.Material.Add(mat);
+        curStatus.Material.Add(mat.Mat);
       }
 
       SetLongTool(curStatus, status);

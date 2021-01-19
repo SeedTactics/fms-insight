@@ -46,12 +46,14 @@ namespace BlackMaple.FMSInsight.Niigata
     public int Path { get; set; }
     public int Face { get; set; }
     public bool FaceIsMissingMaterial { get; set; }
+    public IEnumerable<WorkorderProgram> WorkorderPrograms { get; set; }
   }
 
   public class InProcessMaterialAndJob
   {
     public InProcessMaterial Mat { get; set; }
     public JobPlan Job { get; set; }
+    public IEnumerable<WorkorderProgram> WorkorderPrograms { get; set; }
   }
 
   public class PalletAndMaterial
@@ -71,7 +73,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public ICollection<JobPlan> UnarchivedJobs { get; set; }
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
-    public List<InProcessMaterial> QueuedMaterial { get; set; }
+    public List<InProcessMaterialAndJob> QueuedMaterial { get; set; }
     public Dictionary<(string uniq, int proc1path), int> JobQtyRemainingOnProc1 { get; set; }
     public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
     public List<ProgramRevision> OldUnusedPrograms { get; set; }
@@ -102,7 +104,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var jobCache = Memoize<string, JobPlan>(jobDB.LoadJob);
       var pals = status.Pallets
-        .Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
+        .Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB, jobDB))
         .OrderBy(p =>
         {
           // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
@@ -153,7 +155,7 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    private PalletAndMaterial BuildCurrentPallet(IReadOnlyDictionary<int, MachineStatus> machines, Func<string, JobPlan> jobCache, PalletStatus pallet, EventLogDB logDB)
+    private PalletAndMaterial BuildCurrentPallet(IReadOnlyDictionary<int, MachineStatus> machines, Func<string, JobPlan> jobCache, PalletStatus pallet, EventLogDB logDB, JobDB jobDB)
     {
       MachineStatus machStatus = null;
       if (pallet.CurStation.Location.Location == PalletLocationEnum.Machine)
@@ -169,13 +171,18 @@ namespace BlackMaple.FMSInsight.Niigata
       var currentOrLoadingFaces =
         RecordFacesForPallet
         .Load(pallet.Master.Comment, logDB)
-        .Select(m => new PalletFace()
+        .Select(m =>
         {
-          Job = jobCache(m.Unique),
-          Process = m.Proc,
-          Path = m.Path,
-          Face = m.Face,
-          FaceIsMissingMaterial = false
+          var job = jobCache(m.Unique);
+          return new PalletFace()
+          {
+            Job = jobCache(m.Unique),
+            Process = m.Proc,
+            Path = m.Path,
+            Face = m.Face,
+            FaceIsMissingMaterial = false,
+            WorkorderPrograms = string.IsNullOrEmpty(m.Workorder) ? null : jobDB.WorkordersById(m.Workorder).Where(w => w.Part == job.PartName).FirstOrDefault()?.Programs
+          };
         })
         .ToList();
 
@@ -246,7 +253,8 @@ namespace BlackMaple.FMSInsight.Niigata
         mats.Add(new InProcessMaterialAndJob()
         {
           Mat = inProcMat,
-          Job = job
+          Job = job,
+          WorkorderPrograms = string.IsNullOrEmpty(inProcMat.WorkorderId) ? null : jobDB.WorkordersById(inProcMat.WorkorderId).Where(w => w.Part == inProcMat.PartName).FirstOrDefault()?.Programs
         });
       }
 
@@ -276,7 +284,8 @@ namespace BlackMaple.FMSInsight.Niigata
           DateTime nowUtc,
           HashSet<long> currentlyLoading,
           Dictionary<long, InProcessMaterialAndJob> unusedMatsOnPal,
-          EventLogDB logDB
+          EventLogDB logDB,
+          JobDB jobDB
     )
     {
       foreach (var face in pallet.CurrentOrLoadingFaces)
@@ -355,11 +364,16 @@ namespace BlackMaple.FMSInsight.Niigata
           var castings =
             logDB.GetMaterialInQueue(inputQueue)
             .Where(m => !currentlyLoading.Contains(m.MaterialID))
-            .Select(m => new QueuedMaterialWithDetails()
+            .Select(m =>
             {
-              Material = m,
-              NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
-              Details = logDB.GetMaterialDetails(m.MaterialID)
+              var details = logDB.GetMaterialDetails(m.MaterialID);
+              return new QueuedMaterialWithDetails()
+              {
+                Material = m,
+                NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
+                Details = details,
+                WorkorderPrograms = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder).Where(w => w.Part == m.PartNameOrCasting).FirstOrDefault()?.Programs
+              };
             })
             .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
             .ToList();
@@ -409,7 +423,8 @@ namespace BlackMaple.FMSInsight.Niigata
                  {
                    Type = InProcessMaterialAction.ActionType.Waiting
                  }
-              }
+              },
+              WorkorderPrograms = string.IsNullOrEmpty(mat.Details?.Workorder) ? null : jobDB.WorkordersById(mat.Details?.Workorder).Where(w => w.Part == face.Job.PartName).FirstOrDefault()?.Programs
             });
             currentlyLoading.Add(mat.Material.MaterialID);
             loadedMatCnt += 1;
@@ -468,7 +483,8 @@ namespace BlackMaple.FMSInsight.Niigata
                     {
                       Type = InProcessMaterialAction.ActionType.Waiting
                     }
-                }
+                },
+                WorkorderPrograms = string.IsNullOrEmpty(mat.WorkorderId) ? null : jobDB.WorkordersById(mat.WorkorderId).Where(w => w.Part == face.Job.PartName).FirstOrDefault()?.Programs
               });
               unusedMatsOnPal.Remove(mat.MaterialID);
               currentlyLoading.Add(mat.MaterialID);
@@ -487,11 +503,16 @@ namespace BlackMaple.FMSInsight.Niigata
             var availableMaterial =
               logDB.GetMaterialInQueue(inputQueue)
               .Where(m => !currentlyLoading.Contains(m.MaterialID))
-              .Select(m => new QueuedMaterialWithDetails()
+              .Select(m =>
               {
-                Material = m,
-                NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
-                Details = logDB.GetMaterialDetails(m.MaterialID)
+                var details = logDB.GetMaterialDetails(m.MaterialID);
+                return new QueuedMaterialWithDetails()
+                {
+                  Material = m,
+                  NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
+                  Details = details,
+                  WorkorderPrograms = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder).Where(w => w.Part == m.PartNameOrCasting).FirstOrDefault()?.Programs
+                };
               })
               .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
               .ToList();
@@ -542,7 +563,8 @@ namespace BlackMaple.FMSInsight.Niigata
                     {
                       Type = InProcessMaterialAction.ActionType.Waiting
                     }
-                }
+                },
+                WorkorderPrograms = string.IsNullOrEmpty(mat.Details?.Workorder) ? null : jobDB.WorkordersById(mat.Details?.Workorder).Where(w => w.Part == face.Job.PartName).FirstOrDefault()?.Programs
               });
 
               currentlyLoading.Add(mat.Material.MaterialID);
@@ -616,7 +638,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     {
                       Type = InProcessMaterialAction.ActionType.Waiting
                     }
-                }
+                },
               });
             }
           }
@@ -641,7 +663,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           // first time seeing pallet after it loaded, record the pallet cycle and adjust the material on the faces
           palletStateUpdated = true;
-          AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc, logDB);
+          AddPalletCycle(pallet, loadBegin, currentlyLoading, nowUtc, logDB, jobDB);
         }
 
         if (pallet.Status.HasWork)
@@ -729,7 +751,7 @@ namespace BlackMaple.FMSInsight.Niigata
           (pallet.Status.CurrentStep is UnloadStep && pallet.Status.Master.RemainingPalletCycles > 1)
          )
       {
-        SetMaterialToLoadOnFace(pallet, allocateNew: false, actionIsLoading: true, nowUtc: nowUtc, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal, logDB: logDB);
+        SetMaterialToLoadOnFace(pallet, allocateNew: false, actionIsLoading: true, nowUtc: nowUtc, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal, logDB: logDB, jobDB: jobDB);
         foreach (var mat in pallet.Material)
         {
           mat.Mat.Action.ElapsedLoadUnloadTime = elapsedLoadTime;
@@ -761,7 +783,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void AddPalletCycle(PalletAndMaterial pallet, LogEntry loadBegin, HashSet<long> currentlyLoading, DateTime nowUtc, EventLogDB logDB)
+    private void AddPalletCycle(PalletAndMaterial pallet, LogEntry loadBegin, HashSet<long> currentlyLoading, DateTime nowUtc, EventLogDB logDB, JobDB jobDB)
     {
       // record unload-end
       foreach (var face in pallet.Material.GroupBy(m => m.Mat.Location.Face))
@@ -810,7 +832,8 @@ namespace BlackMaple.FMSInsight.Niigata
           nowUtc: nowUtc.AddSeconds(1),
           currentlyLoading: currentlyLoading,
           unusedMatsOnPal: unusedMatsOnPal,
-          logDB: logDB);
+          logDB: logDB,
+          jobDB: jobDB);
 
         foreach (var face in pallet.Material.GroupBy(p => p.Mat.Location.Face))
         {
@@ -1425,9 +1448,9 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
     #region Material Computations
-    private List<InProcessMaterial> QueuedMaterial(HashSet<long> matsOnPallets, EventLogDB logDB, List<JobPlan> unarchivedJobs, Func<string, JobPlan> loadJob, JobDB jobDB)
+    private List<InProcessMaterialAndJob> QueuedMaterial(HashSet<long> matsOnPallets, EventLogDB logDB, List<JobPlan> unarchivedJobs, Func<string, JobPlan> loadJob, JobDB jobDB)
     {
-      var mats = new List<InProcessMaterial>();
+      var mats = new List<InProcessMaterialAndJob>();
       var jobUniqs = new HashSet<string>(unarchivedJobs.Select(j => j.UniqueStr));
 
       foreach (var mat in logDB.GetMaterialInAllQueues())
@@ -1440,9 +1463,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
         var matDetails = logDB.GetMaterialDetails(mat.MaterialID);
 
+        JobPlan job = null;
         if (!string.IsNullOrEmpty(matDetails.JobUnique) && !jobUniqs.Contains(matDetails.JobUnique))
         {
-          var job = loadJob(matDetails.JobUnique);
+          job = loadJob(matDetails.JobUnique);
           if (job.Archived)
           {
             jobDB.UnarchiveJob(matDetails.JobUnique);
@@ -1451,31 +1475,36 @@ namespace BlackMaple.FMSInsight.Niigata
           unarchivedJobs.Add(job);
         }
 
-        mats.Add(new InProcessMaterial()
+        mats.Add(new InProcessMaterialAndJob()
         {
-          MaterialID = mat.MaterialID,
-          JobUnique = mat.Unique,
-          PartName = mat.PartNameOrCasting,
-          Process = lastProc,
-          Path = matDetails?.Paths != null && matDetails.Paths.TryGetValue(Math.Max(1, lastProc), out var path) ? path : 1,
-          Serial = matDetails?.Serial,
-          WorkorderId = matDetails?.Workorder,
-          SignaledInspections =
+          Job = job,
+          Mat = new InProcessMaterial()
+          {
+            MaterialID = mat.MaterialID,
+            JobUnique = mat.Unique,
+            PartName = mat.PartNameOrCasting,
+            Process = lastProc,
+            Path = matDetails?.Paths != null && matDetails.Paths.TryGetValue(Math.Max(1, lastProc), out var path) ? path : 1,
+            Serial = matDetails?.Serial,
+            WorkorderId = matDetails?.Workorder,
+            SignaledInspections =
                 logDB.LookupInspectionDecisions(mat.MaterialID)
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .Distinct()
                 .ToList(),
-          Location = new InProcessMaterialLocation()
-          {
-            Type = InProcessMaterialLocation.LocType.InQueue,
-            CurrentQueue = mat.Queue,
-            QueuePosition = mat.Position,
+            Location = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.InQueue,
+              CurrentQueue = mat.Queue,
+              QueuePosition = mat.Position,
+            },
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Waiting
+            }
           },
-          Action = new InProcessMaterialAction()
-          {
-            Type = InProcessMaterialAction.ActionType.Waiting
-          }
+          WorkorderPrograms = string.IsNullOrEmpty(matDetails?.Workorder) ? null : jobDB.WorkordersById(matDetails?.Workorder).Where(w => w.Part == mat.PartNameOrCasting).FirstOrDefault()?.Programs
         });
       }
 
@@ -1538,6 +1567,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public EventLogDB.QueuedMaterial Material { get; set; }
       public int NextProcess { get; set; }
       public MaterialDetails Details { get; set; }
+      public IEnumerable<WorkorderProgram> WorkorderPrograms { get; set; }
     }
 
     public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails matWithDetails, PalletFace face)

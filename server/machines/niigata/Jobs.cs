@@ -246,8 +246,8 @@ namespace BlackMaple.FMSInsight.Niigata
       var matInProc =
         st.Pallets
         .SelectMany(p => p.Material)
-        .Select(f => f.Mat)
         .Concat(st.QueuedMaterial)
+        .Select(f => f.Mat)
         .Where(m => m.JobUnique == job.UniqueStr)
         .Any();
 
@@ -530,7 +530,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var palMat = st.Pallets
         .SelectMany(p => p.Material)
         .FirstOrDefault(m => m.Mat.MaterialID == materialId);
-      var qMat = st.QueuedMaterial.FirstOrDefault(m => m.MaterialID == materialId);
+      var qMat = st.QueuedMaterial.FirstOrDefault(m => m.Mat.MaterialID == materialId);
 
       if (palMat != null && palMat.Mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
