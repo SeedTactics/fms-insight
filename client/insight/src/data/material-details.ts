@@ -51,9 +51,9 @@ import {
 import { useCallback, useState } from "react";
 
 export type MaterialToShow =
-  | { type: "MatSummary"; summary: Readonly<MaterialSummary> }
-  | { type: "LogMat"; logMat: Readonly<ILogMaterial> }
-  | { type: "Serial"; serial: string | null; addToQueue?: string };
+  | { readonly type: "MatSummary"; readonly summary: Readonly<MaterialSummary> }
+  | { readonly type: "LogMat"; readonly logMat: Readonly<ILogMaterial> }
+  | { readonly type: "Serial"; readonly serial: string; readonly addToQueue?: string };
 
 const matToShow = atom<MaterialToShow | null>({
   key: "mat-to-show-in-dialog",
@@ -200,7 +200,7 @@ export const materialDetail = selector<MaterialDetail | null>({
           jobUnique: "",
           partName: "",
           startedProcess1: false,
-          serial: curMat.serial ?? undefined,
+          serial: curMat.serial,
           workorderId: undefined,
           signaledInspections: [],
           completedInspections: [],

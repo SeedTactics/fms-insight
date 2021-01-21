@@ -58,7 +58,8 @@ namespace DebugMachineWatchApiServer
       BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
       {
         st.RequireSerialWhenAddingMaterialToQueue = true;
-        st.AllowAddRawMaterialForNonRunningJobs = true;
+        st.AddRawMaterialAsUnassigned = true;
+        st.RequireExistingMaterialWhenAddingToQueue = false;
         var backend = new MockServerBackend();
         return new FMSImplementation()
         {
