@@ -2041,7 +2041,6 @@ export class FMSInfo implements IFMSInfo {
     addRawMaterialAsUnassigned?: boolean | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowQuarantineAtLoadStation?: boolean | undefined;
-    allowChangeSerial?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 
@@ -2076,7 +2075,6 @@ export class FMSInfo implements IFMSInfo {
             this.addRawMaterialAsUnassigned = data["AddRawMaterialAsUnassigned"];
             this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowQuarantineAtLoadStation = data["AllowQuarantineAtLoadStation"];
-            this.allowChangeSerial = data["AllowChangeSerial"];
             this.allowChangeWorkorderAtLoadStation = data["AllowChangeWorkorderAtLoadStation"];
             this.allowEditJobPlanQuantityFromQueuesPage = data["AllowEditJobPlanQuantityFromQueuesPage"];
         }
@@ -2111,7 +2109,6 @@ export class FMSInfo implements IFMSInfo {
         data["AddRawMaterialAsUnassigned"] = this.addRawMaterialAsUnassigned;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowQuarantineAtLoadStation"] = this.allowQuarantineAtLoadStation;
-        data["AllowChangeSerial"] = this.allowChangeSerial;
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         return data; 
@@ -2135,7 +2132,6 @@ export interface IFMSInfo {
     addRawMaterialAsUnassigned?: boolean | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowQuarantineAtLoadStation?: boolean | undefined;
-    allowChangeSerial?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 }

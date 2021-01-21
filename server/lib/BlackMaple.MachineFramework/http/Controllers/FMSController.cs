@@ -63,7 +63,6 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
 
     [DataMember] public bool? AllowQuarantineAtLoadStation { get; set; }
-    [DataMember] public bool? AllowChangeSerial { get; set; }
     [DataMember] public bool? AllowChangeWorkorderAtLoadStation { get; set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
@@ -107,7 +106,6 @@ namespace BlackMaple.MachineFramework.Controllers
         AddRawMaterialAsUnassigned = _cfg.AddRawMaterialAsUnassigned,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
-        AllowChangeSerial = _cfg.AllowChangeSerial,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation
       };
     }

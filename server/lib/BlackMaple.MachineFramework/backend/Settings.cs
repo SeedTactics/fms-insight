@@ -113,7 +113,6 @@ namespace BlackMaple.MachineFramework
     public bool RequireSerialWhenAddingMaterialToQueue { get; set; }
     public bool AddRawMaterialAsUnassigned { get; set; }
     public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
-    public bool AllowChangeSerial { get; set; }
     public bool AllowChangeWorkorderAtLoadStation { get; set; }
 
     public Dictionary<string, MachineWatchInterface.QueueSize> Queues { get; }
@@ -145,10 +144,15 @@ namespace BlackMaple.MachineFramework
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
       RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
       RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
+
       RequireSerialWhenAddingMaterialToQueue = fmsSection.GetValue<bool>("RequireSerialWhenAddingMaterialToQueue", false);
       RequireExistingMaterialWhenAddingToQueue = fmsSection.GetValue<bool>("RequireExistingMaterialWhenAddingToQueue", false);
+      if (RequireExistingMaterialWhenAddingToQueue)
+      {
+        RequireSerialWhenAddingMaterialToQueue = true;
+      }
+
       AddRawMaterialAsUnassigned = fmsSection.GetValue<bool>("AddRawMaterialAsUnassigned", true);
-      AllowChangeSerial = fmsSection.GetValue<bool>("AllowChangeSerial", false);
       AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>("AllowChangeWorkorderAtLoadStation", false);
       QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
       AdditionalLogServers =

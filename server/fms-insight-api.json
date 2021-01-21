@@ -2011,9 +2011,6 @@
         "AllowQuarantineAtLoadStation": {
           "type": "boolean"
         },
-        "AllowChangeSerial": {
-          "type": "boolean"
-        },
         "AllowChangeWorkorderAtLoadStation": {
           "type": "boolean"
         },
