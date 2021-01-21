@@ -46,7 +46,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public int Path { get; set; }
     public int Face { get; set; }
     public bool FaceIsMissingMaterial { get; set; }
-    public IEnumerable<WorkorderProgram> WorkorderPrograms { get; set; }
+    public IEnumerable<ProgramsForProcess> Programs { get; set; }
   }
 
   public class InProcessMaterialAndJob
@@ -176,12 +176,17 @@ namespace BlackMaple.FMSInsight.Niigata
           var job = jobCache(m.Unique);
           return new PalletFace()
           {
-            Job = jobCache(m.Unique),
+            Job = job,
             Process = m.Proc,
             Path = m.Path,
             Face = m.Face,
             FaceIsMissingMaterial = false,
-            WorkorderPrograms = string.IsNullOrEmpty(m.Workorder) ? null : jobDB.WorkordersById(m.Workorder).Where(w => w.Part == job.PartName).FirstOrDefault()?.Programs
+            Programs = m.ProgOverride ?? job.GetMachiningStop(m.Proc, m.Path).Select((stop, stopIdx) => new ProgramsForProcess()
+            {
+              StopIndex = stopIdx,
+              ProgramName = stop.ProgramName,
+              Revision = stop.ProgramRevision
+            })
           };
         })
         .ToList();
@@ -369,9 +374,14 @@ namespace BlackMaple.FMSInsight.Niigata
               var details = logDB.GetMaterialDetails(m.MaterialID);
               return new QueuedMaterialWithDetails()
               {
-                Material = m,
+                MaterialID = m.MaterialID,
+                Unique = m.Unique,
+                Serial = details?.Serial,
+                Workorder = details?.Workorder,
+                PartNameOrCasting = m.PartNameOrCasting,
                 NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
-                Details = details,
+                QueuePosition = m.Position,
+                Paths = details?.Paths,
                 WorkorderPrograms = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder).Where(w => w.Part == m.PartNameOrCasting).FirstOrDefault()?.Programs
               };
             })
@@ -382,26 +392,26 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (allocateNew)
             {
-              logDB.SetDetailsForMaterialID(mat.Material.MaterialID, face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
+              logDB.SetDetailsForMaterialID(mat.MaterialID, face.Job.UniqueStr, face.Job.PartName, face.Job.NumProcesses);
             }
             pallet.Material.Add(new InProcessMaterialAndJob()
             {
               Job = face.Job,
               Mat = new InProcessMaterial()
               {
-                MaterialID = mat.Material.MaterialID,
+                MaterialID = mat.MaterialID,
                 JobUnique = face.Job.UniqueStr,
                 PartName = face.Job.PartName,
-                Serial = mat.Details?.Serial,
-                WorkorderId = mat.Details?.Workorder,
+                Serial = mat.Serial,
+                WorkorderId = mat.Workorder,
                 Process = actionIsLoading ? 0 : face.Process,
-                Path = actionIsLoading ? (mat.Details.Paths != null && mat.Details.Paths.TryGetValue(1, out var path) ? path : 1) : face.Path,
+                Path = actionIsLoading ? (mat.Paths != null && mat.Paths.TryGetValue(1, out var path) ? path : 1) : face.Path,
                 Location = actionIsLoading ?
                   new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.InQueue,
                     CurrentQueue = inputQueue,
-                    QueuePosition = mat.Material.Position,
+                    QueuePosition = mat.QueuePosition,
                   }
                   : new InProcessMaterialLocation()
                   {
@@ -424,9 +434,9 @@ namespace BlackMaple.FMSInsight.Niigata
                    Type = InProcessMaterialAction.ActionType.Waiting
                  }
               },
-              WorkorderPrograms = string.IsNullOrEmpty(mat.Details?.Workorder) ? null : jobDB.WorkordersById(mat.Details?.Workorder).Where(w => w.Part == face.Job.PartName).FirstOrDefault()?.Programs
+              WorkorderPrograms = mat.WorkorderPrograms
             });
-            currentlyLoading.Add(mat.Material.MaterialID);
+            currentlyLoading.Add(mat.MaterialID);
             loadedMatCnt += 1;
           }
 
@@ -508,9 +518,14 @@ namespace BlackMaple.FMSInsight.Niigata
                 var details = logDB.GetMaterialDetails(m.MaterialID);
                 return new QueuedMaterialWithDetails()
                 {
-                  Material = m,
+                  MaterialID = m.MaterialID,
+                  Unique = m.Unique,
+                  Serial = details?.Serial,
+                  Workorder = details?.Workorder,
+                  QueuePosition = m.Position,
+                  PartNameOrCasting = m.PartNameOrCasting,
                   NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
-                  Details = details,
+                  Paths = details?.Paths,
                   WorkorderPrograms = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder).Where(w => w.Part == m.PartNameOrCasting).FirstOrDefault()?.Programs
                 };
               })
@@ -523,25 +538,25 @@ namespace BlackMaple.FMSInsight.Niigata
                 Job = face.Job,
                 Mat = new InProcessMaterial()
                 {
-                  MaterialID = mat.Material.MaterialID,
+                  MaterialID = mat.MaterialID,
                   JobUnique = face.Job.UniqueStr,
                   PartName = face.Job.PartName,
-                  Serial = mat.Details?.Serial,
-                  WorkorderId = mat.Details?.Workorder,
+                  Serial = mat.Serial,
+                  WorkorderId = mat.Workorder,
                   SignaledInspections =
-                      logDB.LookupInspectionDecisions(mat.Material.MaterialID)
+                      logDB.LookupInspectionDecisions(mat.MaterialID)
                       .Where(x => x.Inspect)
                       .Select(x => x.InspType)
                       .Distinct()
                       .ToList(),
                   Process = actionIsLoading ? face.Process - 1 : face.Process,
-                  Path = actionIsLoading ? (mat.Details.Paths != null && mat.Details.Paths.TryGetValue(Math.Max(face.Process - 1, 1), out var path) ? path : 1) : face.Path,
+                  Path = actionIsLoading ? (mat.Paths != null && mat.Paths.TryGetValue(Math.Max(face.Process - 1, 1), out var path) ? path : 1) : face.Path,
                   Location = actionIsLoading ?
                     new InProcessMaterialLocation()
                     {
                       Type = InProcessMaterialLocation.LocType.InQueue,
                       CurrentQueue = inputQueue,
-                      QueuePosition = mat.Material.Position
+                      QueuePosition = mat.QueuePosition
                     }
                     : new InProcessMaterialLocation()
                     {
@@ -564,10 +579,10 @@ namespace BlackMaple.FMSInsight.Niigata
                       Type = InProcessMaterialAction.ActionType.Waiting
                     }
                 },
-                WorkorderPrograms = string.IsNullOrEmpty(mat.Details?.Workorder) ? null : jobDB.WorkordersById(mat.Details?.Workorder).Where(w => w.Part == face.Job.PartName).FirstOrDefault()?.Programs
+                WorkorderPrograms = mat.WorkorderPrograms
               });
 
-              currentlyLoading.Add(mat.Material.MaterialID);
+              currentlyLoading.Add(mat.MaterialID);
               loadedMatCnt += 1;
 
               if (loadedMatCnt >= face.Job.PartsPerPallet(face.Process, face.Path))
@@ -1564,69 +1579,105 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public class QueuedMaterialWithDetails
     {
-      public EventLogDB.QueuedMaterial Material { get; set; }
+      public long MaterialID { get; set; }
+      public string Unique { get; set; }
+      public string Serial { get; set; }
+      public string Workorder { get; set; }
+      public string PartNameOrCasting { get; set; }
+      public int QueuePosition { get; set; }
+      public Dictionary<int, int> Paths { get; set; }
       public int NextProcess { get; set; }
-      public MaterialDetails Details { get; set; }
       public IEnumerable<WorkorderProgram> WorkorderPrograms { get; set; }
     }
 
-    public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails matWithDetails, PalletFace face)
+    public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails mat, PalletFace face)
     {
-      var mat = matWithDetails.Material;
-      if (face.Process == 1)
+      if (face.Process == 1 && mat.NextProcess == 1 && string.IsNullOrEmpty(mat.Unique))
       {
         // check for casting on process 1
         var casting = face.Job.GetCasting(face.Path);
         if (string.IsNullOrEmpty(casting)) casting = face.Job.PartName;
 
-        if (string.IsNullOrEmpty(mat.Unique) && mat.PartNameOrCasting == casting)
+        if (mat.PartNameOrCasting != casting) return false;
+
+        // check workorders
+        if (mat.WorkorderPrograms == null)
         {
-          return CheckWorkordersMatch(face.WorkorderPrograms, matWithDetails.WorkorderPrograms);
+          // material will just inherit programs on pallet
+          return true;
         }
-      }
-
-      // now check unique, process, and path group match
-      if (mat.Unique != face.Job.UniqueStr) return false;
-
-      if (matWithDetails.NextProcess != face.Process) return false;
-
-      // now path group
-      var details = matWithDetails.Details;
-      if (details.Paths != null && details.Paths.Count > 0)
-      {
-        var path = details.Paths.Aggregate((max, v) => max.Key > v.Key ? max : v);
-        var group = face.Job.GetPathGroup(process: Math.Max(1, path.Key), path: path.Value);
-        if (group == face.Job.GetPathGroup(face.Process, face.Path))
+        else if (face.Programs == null)
         {
-          return CheckWorkordersMatch(face.WorkorderPrograms, matWithDetails.WorkorderPrograms);
+          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(1, mat.WorkorderPrograms));
+        }
+        else
+        {
+          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(1, mat.WorkorderPrograms));
         }
       }
       else
       {
-        Log.Warning("Material {matId} has no path groups! {@details}", mat.MaterialID, details);
-      }
+        // check unique, process, and path group match
+        if (mat.Unique != face.Job.UniqueStr) return false;
+        if (mat.NextProcess != face.Process) return false;
 
-      return false;
-    }
-
-    private static bool CheckWorkordersMatch(IEnumerable<WorkorderProgram> programsOnPallet, IEnumerable<WorkorderProgram> programsForMat)
-    {
-      if (programsOnPallet == null) return true;
-      if (programsOnPallet.Any() == false && (programsForMat == null || programsForMat.Any() == false)) return true;
-      if (programsForMat == null) return false;
-
-      var progsOnPallet = programsOnPallet.ToDictionary(p => (proc: p.ProcessNumber, stop: p.StopIndex), p => p);
-
-      foreach (var progForMat in programsForMat)
-      {
-        var key = (proc: progForMat.ProcessNumber, stop: progForMat.StopIndex);
-        if (progsOnPallet.TryGetValue(key, out var progOnPallet))
+        // now path group
+        if (mat.Paths != null && mat.Paths.Count > 0)
         {
-          if (progOnPallet.ProgramName != progForMat.ProgramName || progOnPallet.Revision != progForMat.Revision)
+          var path = mat.Paths.Aggregate((max, v) => max.Key > v.Key ? max : v);
+          var group = face.Job.GetPathGroup(process: Math.Max(1, path.Key), path: path.Value);
+          if (group != face.Job.GetPathGroup(face.Process, face.Path))
           {
             return false;
           }
-          progsOnPallet.Remove(key);
+        }
+        else
+        {
+          Log.Warning("Material {matId} has no path groups! {@mat}", mat);
+        }
+
+        // finally, check workorders
+        if (face.Programs == null && mat.WorkorderPrograms == null)
+        {
+          return true;
+        }
+        else if (face.Programs == null && mat.WorkorderPrograms != null)
+        {
+          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(face.Process, mat.WorkorderPrograms));
+        }
+        else if (face.Programs != null && mat.WorkorderPrograms == null)
+        {
+          var progsForMat = face.Job.GetMachiningStop(face.Process, face.Path).Select((stop, stopIdx) =>
+            new ProgramsForProcess()
+            {
+              StopIndex = stopIdx,
+              ProgramName = stop.ProgramName,
+              Revision = stop.ProgramRevision
+            }
+          );
+          return CheckProgramsMatch(face.Programs, progsForMat);
+        }
+        else
+        {
+          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(face.Process, mat.WorkorderPrograms));
+        }
+      }
+    }
+
+    private static bool CheckProgramsMatch(IEnumerable<ProgramsForProcess> ps1, IEnumerable<ProgramsForProcess> ps2)
+    {
+      // can use Enumerable.SequenceEqual when ProgramsForProcess is converted to a record
+      var byStop = ps1.GroupBy(p => p.StopIndex).ToDictionary(p => p.Key, p => p.First());
+
+      foreach (var p2 in ps2)
+      {
+        if (byStop.TryGetValue(p2.StopIndex, out var p1))
+        {
+          if (p1.ProgramName != p2.ProgramName || p1.Revision != p2.Revision)
+          {
+            return false;
+          }
+          byStop.Remove(p2.StopIndex);
         }
         else
         {
@@ -1634,12 +1685,39 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      if (progsOnPallet.Count > 0)
+      return byStop.Count == 0;
+    }
+
+    private static bool CheckProgramsMatchJobSteps(IEnumerable<JobMachiningStop> stops, IEnumerable<ProgramsForProcess> ps)
+    {
+      var byStop = ps.GroupBy(p => p.StopIndex).ToDictionary(p => p.Key, p => p.First());
+
+      int stopIdx = -1;
+      foreach (var stop in stops)
       {
-        return false;
+        stopIdx += 1;
+
+        if (byStop.TryGetValue(stopIdx, out var p))
+        {
+          byStop.Remove(stopIdx);
+        }
+        else
+        {
+          return false;
+        }
       }
 
-      return true;
+      return byStop.Count == 0;
+    }
+
+    private static IEnumerable<ProgramsForProcess> FilterProgramsToProcess(int proc, IEnumerable<WorkorderProgram> works)
+    {
+      return works.Where(p => p.ProcessNumber == proc).Select(p => new ProgramsForProcess()
+      {
+        StopIndex = p.StopIndex ?? 0,
+        ProgramName = p.ProgramName,
+        Revision = p.Revision
+      });
     }
 
     private string OutputQueueForMaterial(InProcessMaterialAndJob mat, IReadOnlyList<LogEntry> log)

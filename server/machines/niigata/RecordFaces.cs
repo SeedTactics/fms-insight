@@ -36,10 +36,17 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
+  [DataContract]
+  public class ProgramsForProcess
+  {
+    [DataMember] public int StopIndex { get; set; }
+    [DataMember] public string ProgramName { get; set; }
+    [DataMember] public long? Revision { get; set; }
+  }
+
   /// Recorded as a general message in the log to keep track of what we decided to set on each niigata pallet route
   [DataContract]
   public class AssignedJobAndPathForFace
@@ -48,7 +55,7 @@ namespace BlackMaple.FMSInsight.Niigata
     [DataMember] public string Unique { get; set; }
     [DataMember] public int Proc { get; set; }
     [DataMember] public int Path { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Workorder { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public IEnumerable<ProgramsForProcess> ProgOverride { get; set; }
   }
 
   public static class RecordFacesForPallet
