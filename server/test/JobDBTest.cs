@@ -928,6 +928,7 @@ namespace MachineWatchTest
       CheckJobEqual(job1, _jobDB.LoadJob(job1.UniqueStr), true);
 
       _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(initialWorks);
+      _jobDB.MostRecentWorkorders().Should().BeEquivalentTo(initialWorks);
 
       _jobDB.MostRecentUnfilledWorkordersForPart(initialWorks[0].Part).Should().BeEquivalentTo(new[] { initialWorks[0] });
 
@@ -1050,6 +1051,7 @@ namespace MachineWatchTest
       newWorkorders.Last().Programs.First().Revision = 1;
 
       _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(newWorkorders); // initialWorks have been archived and don't appear
+      _jobDB.MostRecentWorkorders().Should().BeEquivalentTo(newWorkorders);
 
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] }); // but still exist when looked up directly
 

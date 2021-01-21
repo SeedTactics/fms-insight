@@ -1363,6 +1363,18 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public List<MachineWatchInterface.PartWorkorder> MostRecentWorkorders()
+    {
+      lock (_cfg)
+      {
+        using (var trans = _connection.BeginTransaction())
+        {
+          var sid = LatestScheduleId(trans);
+          return LoadUnfilledWorkorders(trans, sid);
+        }
+      }
+    }
+
     public List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
     {
       lock (_cfg)
