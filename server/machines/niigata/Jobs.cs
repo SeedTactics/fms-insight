@@ -50,9 +50,10 @@ namespace BlackMaple.FMSInsight.Niigata
     private Action<EditMaterialInLogEvents> _onEditMatInLog;
     private bool _requireRawMatQueue;
     private bool _requireInProcessQueues;
+    private bool _requireProgramsInJobs;
 
     public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
-                       bool requireRawMatQ, bool requireInProcQ, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
+                       bool requireRawMatQ, bool requireInProcQ, bool requireProgsInJobs, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
     {
       _onNewJobs = onNewJobs;
       _jobDbCfg = j;
@@ -62,6 +63,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _statNames = statNames;
       _requireRawMatQueue = requireRawMatQ;
       _requireInProcessQueues = requireInProcQ;
+      _requireProgramsInJobs = requireProgsInJobs;
       _onEditMatInLog = onEditMatInLog;
     }
 
@@ -157,35 +159,38 @@ namespace BlackMaple.FMSInsight.Niigata
               }
               else
               {
-                if (string.IsNullOrEmpty(stop.ProgramName))
+                if (_requireProgramsInJobs)
                 {
-                  errors.Add("Part " + j.PartName + " has no assigned program");
-                }
-                if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
-                {
-                  var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
-                  var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
-                  if (!existing && !newProg)
+                  if (string.IsNullOrEmpty(stop.ProgramName))
                   {
-                    errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
+                    errors.Add("Part " + j.PartName + " has no assigned program");
                   }
-                }
-                else
-                {
-                  var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
-                  var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
-                  if (!existing && !newProg)
+                  if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
                   {
-                    if (int.TryParse(stop.ProgramName, out int progNum))
+                    var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
+                    var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
+                    if (!existing && !newProg)
                     {
-                      if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
-                      {
-                        errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
-                      }
+                      errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
                     }
-                    else
+                  }
+                  else
+                  {
+                    var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
+                    var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
+                    if (!existing && !newProg)
                     {
-                      errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor is an integer");
+                      if (int.TryParse(stop.ProgramName, out int progNum))
+                      {
+                        if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
+                        {
+                          errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
+                        }
+                      }
+                      else
+                      {
+                        errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor is an integer");
+                      }
                     }
                   }
                 }

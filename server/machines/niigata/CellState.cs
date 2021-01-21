@@ -1581,7 +1581,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (string.IsNullOrEmpty(mat.Unique) && mat.PartNameOrCasting == casting)
         {
-          return true;
+          return CheckWorkordersMatch(face.WorkorderPrograms, matWithDetails.WorkorderPrograms);
         }
       }
 
@@ -1598,7 +1598,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var group = face.Job.GetPathGroup(process: Math.Max(1, path.Key), path: path.Value);
         if (group == face.Job.GetPathGroup(face.Process, face.Path))
         {
-          return true;
+          return CheckWorkordersMatch(face.WorkorderPrograms, matWithDetails.WorkorderPrograms);
         }
       }
       else
@@ -1607,6 +1607,39 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return false;
+    }
+
+    private static bool CheckWorkordersMatch(IEnumerable<WorkorderProgram> programsOnPallet, IEnumerable<WorkorderProgram> programsForMat)
+    {
+      if (programsOnPallet == null) return true;
+      if (programsOnPallet.Any() == false && (programsForMat == null || programsForMat.Any() == false)) return true;
+      if (programsForMat == null) return false;
+
+      var progsOnPallet = programsOnPallet.ToDictionary(p => (proc: p.ProcessNumber, stop: p.StopIndex), p => p);
+
+      foreach (var progForMat in programsForMat)
+      {
+        var key = (proc: progForMat.ProcessNumber, stop: progForMat.StopIndex);
+        if (progsOnPallet.TryGetValue(key, out var progOnPallet))
+        {
+          if (progOnPallet.ProgramName != progForMat.ProgramName || progOnPallet.Revision != progForMat.Revision)
+          {
+            return false;
+          }
+          progsOnPallet.Remove(key);
+        }
+        else
+        {
+          return false;
+        }
+      }
+
+      if (progsOnPallet.Count > 0)
+      {
+        return false;
+      }
+
+      return true;
     }
 
     private string OutputQueueForMaterial(InProcessMaterialAndJob mat, IReadOnlyList<LogEntry> log)

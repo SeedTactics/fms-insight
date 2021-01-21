@@ -310,7 +310,7 @@ namespace BlackMaple.FMSInsight.Niigata
           if (!CanMaterialLoadOntoPath(mat, path, programs)) continue;
 
           if (workorder == null) workorder = mat.Mat.WorkorderId;
-          if (programs == null) programs = matInQueue[0].WorkorderPrograms ?? Enumerable.Empty<WorkorderProgram>();
+          if (programs == null) programs = mat.WorkorderPrograms ?? Enumerable.Empty<WorkorderProgram>();
           availMatIds.Add(mat.Mat.MaterialID);
           if (availMatIds.Count == countToLoad)
           {
