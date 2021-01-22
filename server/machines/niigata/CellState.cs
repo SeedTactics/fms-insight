@@ -53,7 +53,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     public InProcessMaterial Mat { get; set; }
     public JobPlan Job { get; set; }
-    public IEnumerable<WorkorderProgram> WorkorderPrograms { get; set; }
+    public IEnumerable<PartWorkorder> Workorders { get; set; }
   }
 
   public class PalletAndMaterial
@@ -259,7 +259,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           Mat = inProcMat,
           Job = job,
-          WorkorderPrograms = string.IsNullOrEmpty(inProcMat.WorkorderId) ? null : jobDB.WorkordersById(inProcMat.WorkorderId).Where(w => w.Part == inProcMat.PartName).FirstOrDefault()?.Programs
+          Workorders = string.IsNullOrEmpty(inProcMat.WorkorderId) ? null : jobDB.WorkordersById(inProcMat.WorkorderId)
         });
       }
 
@@ -382,7 +382,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
                 QueuePosition = m.Position,
                 Paths = details?.Paths,
-                WorkorderPrograms = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder).Where(w => w.Part == m.PartNameOrCasting).FirstOrDefault()?.Programs
+                Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder)
               };
             })
             .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
@@ -434,7 +434,7 @@ namespace BlackMaple.FMSInsight.Niigata
                    Type = InProcessMaterialAction.ActionType.Waiting
                  }
               },
-              WorkorderPrograms = mat.WorkorderPrograms
+              Workorders = mat.Workorders
             });
             currentlyLoading.Add(mat.MaterialID);
             loadedMatCnt += 1;
@@ -494,7 +494,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       Type = InProcessMaterialAction.ActionType.Waiting
                     }
                 },
-                WorkorderPrograms = string.IsNullOrEmpty(mat.WorkorderId) ? null : jobDB.WorkordersById(mat.WorkorderId).Where(w => w.Part == face.Job.PartName).FirstOrDefault()?.Programs
+                Workorders = string.IsNullOrEmpty(mat.WorkorderId) ? null : jobDB.WorkordersById(mat.WorkorderId)
               });
               unusedMatsOnPal.Remove(mat.MaterialID);
               currentlyLoading.Add(mat.MaterialID);
@@ -526,7 +526,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   PartNameOrCasting = m.PartNameOrCasting,
                   NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
                   Paths = details?.Paths,
-                  WorkorderPrograms = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder).Where(w => w.Part == m.PartNameOrCasting).FirstOrDefault()?.Programs
+                  Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : jobDB.WorkordersById(details?.Workorder)
                 };
               })
               .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
@@ -579,7 +579,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       Type = InProcessMaterialAction.ActionType.Waiting
                     }
                 },
-                WorkorderPrograms = mat.WorkorderPrograms
+                Workorders = mat.Workorders
               });
 
               currentlyLoading.Add(mat.MaterialID);
@@ -1519,7 +1519,7 @@ namespace BlackMaple.FMSInsight.Niigata
               Type = InProcessMaterialAction.ActionType.Waiting
             }
           },
-          WorkorderPrograms = string.IsNullOrEmpty(matDetails?.Workorder) ? null : jobDB.WorkordersById(matDetails?.Workorder).Where(w => w.Part == mat.PartNameOrCasting).FirstOrDefault()?.Programs
+          Workorders = string.IsNullOrEmpty(matDetails?.Workorder) ? null : jobDB.WorkordersById(matDetails?.Workorder)
         });
       }
 
@@ -1587,7 +1587,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public int QueuePosition { get; set; }
       public Dictionary<int, int> Paths { get; set; }
       public int NextProcess { get; set; }
-      public IEnumerable<WorkorderProgram> WorkorderPrograms { get; set; }
+      public IEnumerable<PartWorkorder> Workorders { get; set; }
     }
 
     public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails mat, PalletFace face)
@@ -1601,18 +1601,19 @@ namespace BlackMaple.FMSInsight.Niigata
         if (mat.PartNameOrCasting != casting) return false;
 
         // check workorders
-        if (mat.WorkorderPrograms == null)
+        var matWorkProgs = WorkorderProgramsForPart(face.Job.PartName, mat.Workorders);
+        if (matWorkProgs == null)
         {
           // material will just inherit programs on pallet
           return true;
         }
         else if (face.Programs == null)
         {
-          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(1, mat.WorkorderPrograms));
+          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(1, matWorkProgs));
         }
         else
         {
-          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(1, mat.WorkorderPrograms));
+          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(1, matWorkProgs));
         }
       }
       else
@@ -1637,15 +1638,16 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         // finally, check workorders
-        if (face.Programs == null && mat.WorkorderPrograms == null)
+        var matWorkProgs = WorkorderProgramsForPart(face.Job.PartName, mat.Workorders);
+        if (face.Programs == null && matWorkProgs == null)
         {
           return true;
         }
-        else if (face.Programs == null && mat.WorkorderPrograms != null)
+        else if (face.Programs == null && matWorkProgs != null)
         {
-          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(face.Process, mat.WorkorderPrograms));
+          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(face.Process, matWorkProgs));
         }
-        else if (face.Programs != null && mat.WorkorderPrograms == null)
+        else if (face.Programs != null && matWorkProgs == null)
         {
           var progsForMat = face.Job.GetMachiningStop(face.Process, face.Path).Select((stop, stopIdx) =>
             new ProgramsForProcess()
@@ -1659,7 +1661,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(face.Process, mat.WorkorderPrograms));
+          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(face.Process, matWorkProgs));
         }
       }
     }
@@ -1708,6 +1710,11 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return byStop.Count == 0;
+    }
+
+    private static IEnumerable<WorkorderProgram> WorkorderProgramsForPart(string part, IEnumerable<PartWorkorder> works)
+    {
+      return works?.Where(w => w.Part == part).FirstOrDefault()?.Programs;
     }
 
     private static IEnumerable<ProgramsForProcess> FilterProgramsToProcess(int proc, IEnumerable<WorkorderProgram> works)

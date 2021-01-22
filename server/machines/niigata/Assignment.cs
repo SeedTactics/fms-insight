@@ -223,7 +223,7 @@ namespace BlackMaple.FMSInsight.Niigata
         NextProcess = m.Process + 1,
         QueuePosition = m.Location.QueuePosition ?? 0,
         Paths = new Dictionary<int, int>() { { m.Process, m.Path } },
-        WorkorderPrograms = mat.WorkorderPrograms,
+        Workorders = mat.Workorders,
       },
       new PalletFace()
       {
@@ -238,7 +238,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private IEnumerable<ProgramsForProcess> ProgramsForMaterial(InProcessMaterialAndJob mat, JobPath path, out bool programsOverrideJob)
     {
-      if (mat.WorkorderPrograms == null)
+      var matWorkProgs = mat.Workorders?.Where(w => w.Part == path.Job.PartName).FirstOrDefault()?.Programs;
+      if (matWorkProgs == null)
       {
         // use from job
         programsOverrideJob = false;
@@ -255,7 +256,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         // use from workorder
         programsOverrideJob = true;
-        return mat.WorkorderPrograms.Where(p => p.ProcessNumber == path.Process).Select(p => new ProgramsForProcess()
+        return matWorkProgs.Where(p => p.ProcessNumber == path.Process).Select(p => new ProgramsForProcess()
         {
           StopIndex = p.StopIndex ?? 0,
           ProgramName = p.ProgramName,

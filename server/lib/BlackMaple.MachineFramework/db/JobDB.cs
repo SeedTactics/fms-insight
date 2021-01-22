@@ -1448,8 +1448,9 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
-            " WHERE w.Workorder = $work" +
-            " ORDER BY w.ScheduleId DESC";
+            " WHERE " +
+            "    w.ScheduleId = (SELECT MAX(v.ScheduleId) FROM unfilled_workorders v WHERE v.Workorder = $work)" +
+            "    AND w.Workorder = $work";
           cmd.Parameters.Add("work", SqliteType.Text).Value = workorderId;
 
           using (IDataReader reader = cmd.ExecuteReader())
