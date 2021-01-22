@@ -159,48 +159,66 @@ namespace BlackMaple.FMSInsight.Niigata
               }
               else
               {
-                if (_requireProgramsInJobs)
+                if (string.IsNullOrEmpty(stop.ProgramName))
                 {
-                  if (string.IsNullOrEmpty(stop.ProgramName))
+                  if (_requireProgramsInJobs)
                   {
                     errors.Add("Part " + j.PartName + " has no assigned program");
                   }
-                  if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
-                  {
-                    var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
-                    var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
-                    if (!existing && !newProg)
-                    {
-                      errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
-                    }
-                  }
-                  else
-                  {
-                    var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
-                    var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
-                    if (!existing && !newProg)
-                    {
-                      if (int.TryParse(stop.ProgramName, out int progNum))
-                      {
-                        if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
-                        {
-                          errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
-                        }
-                      }
-                      else
-                      {
-                        errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor is an integer");
-                      }
-                    }
-                  }
+                }
+                else
+                {
+                  CheckProgram(stop.ProgramName, stop.ProgramRevision, jobs.Programs, cellState, jobDB, "Part " + j.PartName, errors);
                 }
               }
-
             }
           }
         }
       }
+
+      foreach (var w in jobs.CurrentUnfilledWorkorders ?? Enumerable.Empty<PartWorkorder>())
+      {
+        if (w.Programs != null)
+        {
+          foreach (var prog in w.Programs)
+          {
+            CheckProgram(prog.ProgramName, prog.Revision, jobs.Programs, cellState, jobDB, "Workorder " + w.WorkorderId, errors);
+          }
+        }
+      }
       return errors;
+    }
+
+    private void CheckProgram(string programName, long? rev, IEnumerable<MachineWatchInterface.ProgramEntry> newPrograms, CellState cellState, JobDB jobDB, string errHdr, IList<string> errors)
+    {
+      if (rev.HasValue && rev.Value > 0)
+      {
+        var existing = jobDB.LoadProgram(programName, rev.Value) != null;
+        var newProg = newPrograms != null && newPrograms.Any(p => p.ProgramName == programName && p.Revision == rev.Value);
+        if (!existing && !newProg)
+        {
+          errors.Add(errHdr + " program " + programName + " rev" + rev.Value.ToString() + " is not found");
+        }
+      }
+      else
+      {
+        var existing = jobDB.LoadMostRecentProgram(programName) != null;
+        var newProg = newPrograms != null && newPrograms.Any(p => p.ProgramName == programName);
+        if (!existing && !newProg)
+        {
+          if (int.TryParse(programName, out int progNum))
+          {
+            if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
+            {
+              errors.Add(errHdr + " program " + programName + " is neither included in the download nor found in the cell controller");
+            }
+          }
+          else
+          {
+            errors.Add(errHdr + " program " + programName + " is neither included in the download nor is an integer");
+          }
+        }
+      }
     }
 
     void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
@@ -292,6 +310,35 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         jdb.SetJobComment(jobUnique, comment);
       }
+      _sync.JobsOrQueuesChanged();
+    }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs)
+    {
+      var cellState = _sync.CurrentCellState();
+      if (cellState == null) return;
+
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        var errors = new List<string>();
+        foreach (var w in newWorkorders ?? Enumerable.Empty<PartWorkorder>())
+        {
+          if (w.Programs != null)
+          {
+            foreach (var prog in w.Programs)
+            {
+              CheckProgram(prog.ProgramName, prog.Revision, programs, cellState, jdb, "Workorder " + w.WorkorderId, errors);
+            }
+          }
+        }
+        if (errors.Any())
+        {
+          throw new BadRequestException(string.Join(Environment.NewLine, errors));
+        }
+
+        jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
+      }
+
       _sync.JobsOrQueuesChanged();
     }
     #endregion

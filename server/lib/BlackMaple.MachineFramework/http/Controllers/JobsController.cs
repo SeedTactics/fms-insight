@@ -114,10 +114,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(scheduleId))
         throw new BadRequestException("ScheduleId must be non-empty");
-      using (var db = _backend.OpenJobDatabase())
-      {
-        db.ReplaceWorkordersForSchedule(scheduleId, workorders.Workorders, workorders.Programs);
-      }
+      _backend.JobControl.ReplaceWorkordersForSchedule(scheduleId, workorders.Workorders, workorders.Programs);
     }
 
     [HttpGet("status")]

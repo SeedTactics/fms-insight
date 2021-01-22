@@ -50,6 +50,5 @@ namespace BlackMaple.MachineWatchInterface
     PlannedSchedule LoadMostRecentSchedule();
 
     List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
-    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime? nowUtc = null);
   }
 }

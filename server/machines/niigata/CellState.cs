@@ -1609,7 +1609,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (face.Programs == null)
         {
-          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(1, matWorkProgs));
+          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(1, matWorkProgs));
         }
         else
         {
@@ -1645,7 +1645,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (face.Programs == null && matWorkProgs != null)
         {
-          return CheckProgramsMatchJobSteps(face.Job.GetMachiningStop(face.Process, face.Path), FilterProgramsToProcess(face.Process, matWorkProgs));
+          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(face.Process, matWorkProgs));
         }
         else if (face.Programs != null && matWorkProgs == null)
         {
@@ -1690,12 +1690,12 @@ namespace BlackMaple.FMSInsight.Niigata
       return byStop.Count == 0;
     }
 
-    private static bool CheckProgramsMatchJobSteps(IEnumerable<JobMachiningStop> stops, IEnumerable<ProgramsForProcess> ps)
+    private static bool CheckProgramsMatchJobSteps(string workorder, PalletFace face, IEnumerable<ProgramsForProcess> ps)
     {
       var byStop = ps.GroupBy(p => p.StopIndex).ToDictionary(p => p.Key, p => p.First());
 
       int stopIdx = -1;
-      foreach (var stop in stops)
+      foreach (var stop in face.Job.GetMachiningStop(face.Process, face.Path))
       {
         stopIdx += 1;
 
@@ -1705,11 +1705,20 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
+          Log.Warning("Workorder {workorder} programs for process {proc} do not match job machining steps for job {uniq}", workorder, face.Process, face.Job.UniqueStr);
           return false;
         }
       }
 
-      return byStop.Count == 0;
+      if (byStop.Count == 0)
+      {
+        return true;
+      }
+      else
+      {
+        Log.Warning("Workorder {workorder} programs for process {proc} do not match job machining steps for job {uniq}", workorder, face.Process, face.Job.UniqueStr);
+        return false;
+      }
     }
 
     private static IEnumerable<WorkorderProgram> WorkorderProgramsForPart(string part, IEnumerable<PartWorkorder> works)

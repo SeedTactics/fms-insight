@@ -668,5 +668,10 @@ namespace DebugMachineWatchApiServer
         operatorName: operatorName
       );
     }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    {
+      JobDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
+    }
   }
 }
