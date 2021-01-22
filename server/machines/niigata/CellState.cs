@@ -140,7 +140,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var queuedMats = QueuedMaterial(new HashSet<long>(
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
         ), logDB, unarchivedJobs, jobCache, jobDB);
-      var progsInUse = FindProgramNums(jobDB, unarchivedJobs, status);
+      var progsInUse = FindProgramNums(jobDB, unarchivedJobs, queuedMats, status);
 
       return new CellState()
       {
@@ -1478,10 +1478,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
         var matDetails = logDB.GetMaterialDetails(mat.MaterialID);
 
-        JobPlan job = null;
-        if (!string.IsNullOrEmpty(matDetails.JobUnique) && !jobUniqs.Contains(matDetails.JobUnique))
+        JobPlan job = string.IsNullOrEmpty(matDetails.JobUnique) ? null : loadJob(matDetails.JobUnique);
+        if (job != null && !jobUniqs.Contains(matDetails.JobUnique))
         {
-          job = loadJob(matDetails.JobUnique);
           if (job.Archived)
           {
             jobDB.UnarchiveJob(matDetails.JobUnique);
@@ -1750,8 +1749,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, IEnumerable<JobPlan> unarchivedJobs, NiigataStatus status)
+    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(JobDB jobDB, IEnumerable<JobPlan> unarchivedJobs, IEnumerable<InProcessMaterialAndJob> queuedMats, NiigataStatus status)
     {
+      var progs = new Dictionary<(string progName, long revision), ProgramRevision>();
+
       var stops =
         unarchivedJobs
           .SelectMany(j => Enumerable.Range(1, j.NumProcesses).SelectMany(proc =>
@@ -1759,8 +1760,6 @@ namespace BlackMaple.FMSInsight.Niigata
               j.GetMachiningStop(proc, path)
             )
           ));
-
-      var progs = new Dictionary<(string progName, long revision), ProgramRevision>();
       foreach (var stop in stops)
       {
         if (stop.ProgramRevision.HasValue)
@@ -1779,6 +1778,32 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
       }
+
+      foreach (var mat in queuedMats)
+      {
+        if (mat.Workorders != null)
+        {
+          foreach (var workProg in mat.Workorders.SelectMany(w => w.Programs ?? Enumerable.Empty<WorkorderProgram>()))
+          {
+            if (workProg.Revision.HasValue)
+            {
+              var prog = jobDB.LoadProgram(workProg.ProgramName, workProg.Revision.Value);
+              progs[(workProg.ProgramName, workProg.Revision.Value)] = prog;
+              if (!string.IsNullOrEmpty(prog.CellControllerProgramName) && int.TryParse(prog.CellControllerProgramName, out var progNum))
+              {
+                // operator might have deleted the program
+                if (!status.Programs.ContainsKey(progNum) || !AssignNewRoutesOnPallets.IsInsightProgram(status.Programs[progNum]))
+                {
+                  // clear it, so that the Assignment adds the program back as a new number
+                  jobDB.SetCellControllerProgramForProgram(prog.ProgramName, prog.Revision, null);
+                  prog.CellControllerProgramName = null;
+                }
+              }
+            }
+          }
+        }
+      }
+
       return progs;
     }
 

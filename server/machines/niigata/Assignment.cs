@@ -772,12 +772,39 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private NewProgram AddProgram(CellState cellSt, ProgramRevision prog)
     {
-      var procAndStop =
+      int process = 0;
+      TimeSpan elapsed = TimeSpan.Zero;
+
+      // search for program in job
+      var procAndStopFromJob =
         cellSt.UnarchivedJobs
           .SelectMany(j => Enumerable.Range(1, j.NumProcesses).Select(proc => new { j, proc }))
           .SelectMany(j => Enumerable.Range(1, j.j.GetNumPaths(j.proc)).Select(path => new { j = j.j, proc = j.proc, path }))
           .SelectMany(j => j.j.GetMachiningStop(j.proc, j.path).Select(stop => new { stop, proc = j.proc }))
           .FirstOrDefault(s => s.stop.ProgramName == prog.ProgramName && s.stop.ProgramRevision == prog.Revision);
+
+      if (procAndStopFromJob != null)
+      {
+        process = procAndStopFromJob.proc;
+        elapsed = procAndStopFromJob.stop.ExpectedCycleTime;
+      }
+      else
+      {
+        // search in workorders
+        foreach (var work in cellSt.QueuedMaterial.SelectMany(m => m.Workorders ?? Enumerable.Empty<PartWorkorder>()).Where(w => w.Programs != null))
+        {
+          var workProg = work.Programs.FirstOrDefault(p => p.ProgramName == prog.ProgramName && p.Revision == prog.Revision);
+          if (workProg != null)
+          {
+            process = workProg.ProcessNumber;
+            var job = cellSt.UnarchivedJobs.Where(j => j.PartName == work.Part).FirstOrDefault();
+            if (job != null && process >= 1 && process <= job.NumProcesses)
+            {
+              elapsed = job.GetMachiningStop(process, 1).ElementAtOrDefault(workProg.StopIndex ?? 0)?.ExpectedCycleTime ?? TimeSpan.Zero;
+            }
+          }
+        }
+      }
 
       var existing = new HashSet<int>(
         cellSt.Status.Programs.Keys.Concat(
@@ -785,16 +812,16 @@ namespace BlackMaple.FMSInsight.Niigata
       ));
 
       int progNum = 0;
-      if (procAndStop != null && procAndStop.proc >= 1 && procAndStop.proc <= 9)
+      if (process >= 1 && process <= 9)
       {
         // start at the max existing number and wrap around, checking for available
-        int maxExisting = Enumerable.Range(2000 + procAndStop.proc * 100, 99).LastOrDefault(p => existing.Contains(p)) % 100;
+        int maxExisting = Enumerable.Range(2000 + process * 100, 99).LastOrDefault(p => existing.Contains(p)) % 100;
         if (maxExisting > 90) maxExisting = 0;
 
         for (int i = 0; i < 99; i++)
         {
           var offset = (maxExisting + i) % 100;
-          var toCheck = 2000 + procAndStop.proc * 100 + offset;
+          var toCheck = 2000 + process * 100 + offset;
           if (!existing.Contains(toCheck))
           {
             progNum = toCheck;
@@ -816,7 +843,7 @@ namespace BlackMaple.FMSInsight.Niigata
         IccProgramComment = CreateProgramComment(prog.ProgramName, prog.Revision),
         ProgramName = prog.ProgramName,
         ProgramRevision = prog.Revision,
-        ExpectedCuttingTime = procAndStop == null ? TimeSpan.Zero : procAndStop.stop.ExpectedCycleTime
+        ExpectedCuttingTime = elapsed
       };
     }
 

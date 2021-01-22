@@ -1039,7 +1039,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             loadMins2: 11,
             unloadMins2: 12,
             fixture: "fix1",
-            queue: "qqq"
+            transQ: "qqq"
           )},
           new[] {
             (prog: "prog111", rev: 5L),
@@ -1619,7 +1619,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           loadMins2: 11,
           unloadMins2: 12,
           fixture: "fix1",
-          queue: "qqq"
+          transQ: "qqq"
         )},
         new[] {
           (prog: "prog111", rev: 5L),
@@ -2125,6 +2125,252 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("rawmat")]
+    public void ProgramsInWorkorders(string rawMatName)
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateMultiProcSeparatePalletJob(
+            unique: "uniq1",
+            part: "part1",
+            qty: 5,
+            priority: 5,
+            partsPerPal: 1,
+            pals1: new[] { 1, 2 },
+            pals2: new[] { 4, 5 },
+            load1: new[] { 3, 4 },
+            unload1: new[] { 3, 4 },
+            load2: new[] { 3, 4 },
+            unload2: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog1: null,
+            prog1Rev: null,
+            prog2: null,
+            prog2Rev: null,
+            loadMins1: 8,
+            unloadMins1: 9,
+            machMins1: 14,
+            machMins2: 10,
+            loadMins2: 11,
+            unloadMins2: 12,
+            fixture: "fix1",
+            rawMatName: rawMatName,
+            castingQ: "castingQ",
+            transQ: "qqq"
+          )},
+          progs: new[] {
+            (prog: "prog111", rev: 4L),
+            (prog: "prog111", rev: 5L),
+            (prog: "prog222", rev: 6L),
+            (prog: "prog333", rev: 7L),
+          },
+          workorders: new[] {
+            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = new[] {
+              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = null },
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 },
+            }},
+            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = new[] {
+              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 },
+            }}
+          }
+        )
+        .ExpectNoChanges()
+        .MoveToMachineOutboundQueue(pal: 2, mach: 1)
+        .AddUnallocatedCasting(queue: "castingQ", rawMatName: rawMatName ?? "part1", mat: out var queuedMat1, workorder: "work1", numProc: 2)
+        .AddUnallocatedCasting(queue: "castingQ", rawMatName: rawMatName ?? "part1", mat: out var queuedMat2, workorder: "work2", numProc: 2)
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .UpdateExpectedMaterial(queuedMat1.MaterialID, m =>
+        {
+          m.JobUnique = "uniq1";
+          m.PartName = "part1";
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            LoadOntoPallet = 1.ToString(),
+            LoadOntoFace = 1,
+            ProcessAfterLoad = 1,
+            PathAfterLoad = 1
+          };
+        })
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2200, name: "prog222", rev: 6, mcMin: 10),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2101, name: "prog111", rev: 4, mcMin: 14),
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2201, name: "prog333", rev: 7, mcMin: 10),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 2,
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            progs: new[] { 2100 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) },
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog111", Revision = 5}})}
+          )
+        })
+
+        // load pallet 1
+        .MoveToLoad(pal: 1, lul: 3)
+        .UpdateExpectedMaterial(queuedMat1.MaterialID, m => m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero)
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3) })
+        .AdvanceMinutes(2)
+
+        .SetInQueue(queuedMat2, queue: "castingQ", pos: 0)
+        .UpdateExpectedMaterial(queuedMat1.MaterialID, m =>
+        {
+          m.Location.QueuePosition = 1;
+          m.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(2);
+        })
+        .ExpectNoChanges()
+
+
+
+        .SetAfterLoad(pal: 1)
+        .UpdateExpectedMaterial(queuedMat1.MaterialID, m =>
+        {
+          m.Process = 1;
+          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.OnPallet,
+            Pallet = "1",
+            Face = 1
+          };
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
+          _dsl.LoadToFace(pal: 1, lul: 3, face: 1, unique: "uniq1", elapsedMin: 2, activeMins: 8, loadingMats: new[] {queuedMat1}, loadedMats: out var mat1, part: "part1"),
+          FakeIccDsl.RemoveFromQueue("castingQ", pos: 1, elapMin: 2, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1)))
+        })
+        .SetBeforeMC(pal: 1)
+        .MoveToBuffer(pal: 1, buff: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: mat1)
+        })
+
+        // second one goes on a pallet with different programs (2101 and revision 4)
+        .MoveToBuffer(pal: 2, buff: 2)
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .UpdateExpectedMaterial(queuedMat2.MaterialID, m =>
+        {
+          m.JobUnique = "uniq1";
+          m.PartName = "part1";
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            LoadOntoPallet = 2.ToString(),
+            LoadOntoFace = 1,
+            ProcessAfterLoad = 1,
+            PathAfterLoad = 1
+          };
+        })
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectNewRoute(
+            pal: 2,
+            pri: 2,
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            progs: new[] { 2101 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) },
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog111", Revision = 4}})}
+          )
+        })
+        .MoveToLoad(pal: 2, lul: 4)
+        .UpdateExpectedMaterial(queuedMat2.MaterialID, m => m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero)
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 2, lul: 4) })
+        .AdvanceMinutes(5)
+        .SetAfterLoad(pal: 2)
+        .UpdateExpectedMaterial(queuedMat2.MaterialID, m =>
+        {
+          m.Process = 1;
+          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.OnPallet,
+            Pallet = "2",
+            Face = 1
+          };
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
+          _dsl.LoadToFace(pal: 2, lul: 4, face: 1, unique: "uniq1", elapsedMin: 5, activeMins: 8, loadingMats: new[] {queuedMat2}, loadedMats: out var mat2, part: "part1"),
+          FakeIccDsl.RemoveFromQueue("castingQ", pos: 0, elapMin: 5, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2)))
+        })
+        .SetBeforeMC(pal: 2)
+        .MoveToBuffer(pal: 2, buff: 2)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 2, stocker: 2, waitForMach: true, mats: mat2)
+        })
+
+        // now try process 1 -> 2
+        .MoveToMachineQueue(pal: 5, mach: 1)
+        .AddAllocatedMaterial(queue: "qqq", uniq: "uniq1", part: "part1", workorder: "work2", proc: 1, path: 1, numProc: 2, mat: out var queuedMat3)
+        .AddAllocatedMaterial(queue: "qqq", uniq: "uniq1", part: "part1", workorder: "work1", proc: 1, path: 1, numProc: 2, mat: out var queuedMat4)
+        .UpdateExpectedMaterial(queuedMat3.MaterialID, m =>
+        {
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            LoadOntoPallet = 4.ToString(),
+            LoadOntoFace = 1,
+            ProcessAfterLoad = 2,
+            PathAfterLoad = 1
+          };
+        })
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectNewRoute(
+            pal: 4,
+            pri: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            progs: new[] { 2201 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 2, path: 1) },
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog333", Revision = 7}})}
+          )
+        })
+        .MoveToLoad(pal: 4, lul: 3)
+        .UpdateExpectedMaterial(queuedMat3.MaterialID, m => m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero)
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 4, lul: 3) })
+        .AdvanceMinutes(6)
+
+        // reorder queue, should not change anything since programs don't match
+        .SetInQueue(queuedMat4, queue: "qqq", pos: 0)
+        .UpdateExpectedMaterial(queuedMat3.MaterialID, m =>
+        {
+          m.Location.QueuePosition = 1;
+          m.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(6);
+        })
+
+
+        .SetAfterLoad(pal: 4)
+        .UpdateExpectedMaterial(queuedMat3.MaterialID, m =>
+        {
+          m.Process = 2;
+          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.OnPallet,
+            Pallet = "4",
+            Face = 1
+          };
+        })
+        .DecrJobRemainCnt("uniq1", 1)
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectPalletCycle(pal: 4, mins: 0),
+          _dsl.LoadToFace(pal: 4, lul: 3, face: 1, unique: "uniq1", elapsedMin: 6, activeMins: 11, loadingMats: new[] {queuedMat3}, loadedMats: out var mat3, part: "part1"),
+          FakeIccDsl.RemoveFromQueue("qqq", pos: 1, elapMin: 6, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, mat3)))
+        })
+        .SetBeforeMC(pal: 4)
+        .MoveToBuffer(pal: 4, buff: 4)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 4, stocker: 4, waitForMach: true, mats: mat3)
+        })
+        ;
+    }
+
+
     [Fact]
     public void SizedQueues()
     {
@@ -2154,7 +2400,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             loadMins2: 11,
             unloadMins2: 12,
             fixture: "fix1",
-            queue: "sizedQ"
+            transQ: "sizedQ"
           )},
           new[] {
             (prog: "prog111", rev: 5L),
@@ -2783,7 +3029,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             loadMins2: 11,
             unloadMins2: 12,
             fixture: "fix1",
-            queue: "qqq"
+            transQ: "qqq"
           )},
           new[] {
             (prog: "prog111", rev: 5L),
@@ -2957,7 +3203,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             loadMins2: 11,
             unloadMins2: 12,
             fixture: "fix1",
-            queue: "qqq"
+            transQ: "qqq"
           )},
           new[] {
             (prog: "prog111", rev: 5L),
@@ -3338,7 +3584,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             loadMins2: 11,
             unloadMins2: 12,
             fixture: "fix1",
-            queue: "qqq"
+            transQ: "qqq"
           )},
           new[] {
             (prog: "prog111", rev: 5L),
@@ -3592,7 +3838,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             loadMins2: 11,
             unloadMins2: 12,
             fixture: "fix1",
-            queue: "qqq"
+            transQ: "qqq"
           )},
           new[] {
             (prog: "prog111", rev: 5L),

@@ -435,7 +435,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Material
-    public FakeIccDsl AddUnallocatedCasting(string queue, string rawMatName, out LogMaterial mat)
+    public FakeIccDsl AddUnallocatedCasting(string queue, string rawMatName, out LogMaterial mat, string workorder = null, int numProc = 1)
     {
       var matId = _logDB.AllocateMaterialIDForCasting(rawMatName);
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
@@ -443,6 +443,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _logDB.RecordSerialForMaterialID(
           new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
           _settings.ConvertMaterialIDToSerial(matId),
+          _status.TimeOfStatusUTC
+        );
+      }
+      if (!string.IsNullOrEmpty(workorder))
+      {
+        _logDB.RecordWorkorderForMaterialID(
+          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          workorder,
           _status.TimeOfStatusUTC
         );
       }
@@ -467,6 +475,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Process = 0,
         Path = 1,
         Serial = _settings.ConvertMaterialIDToSerial(matId),
+        WorkorderId = workorder,
         Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Waiting
@@ -483,15 +492,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         uniq: "",
         proc: 0,
         part: rawMatName,
-        numProc: 1,
+        numProc: numProc,
         serial: _settings.ConvertMaterialIDToSerial(matId),
-        workorder: "",
+        workorder: workorder ?? "",
         face: ""
       );
       return this;
     }
 
-    public FakeIccDsl AddAllocatedMaterial(string queue, string uniq, string part, int proc, int path, int numProc, out LogMaterial mat)
+    public FakeIccDsl AddAllocatedMaterial(string queue, string uniq, string part, int proc, int path, int numProc, out LogMaterial mat, string workorder = null)
     {
       var matId = _logDB.AllocateMaterialID(unique: uniq, part: part, numProc: numProc);
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
@@ -499,6 +508,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _logDB.RecordSerialForMaterialID(
           new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
           _settings.ConvertMaterialIDToSerial(matId),
+          _status.TimeOfStatusUTC
+        );
+      }
+      if (!string.IsNullOrEmpty(workorder))
+      {
+        _logDB.RecordWorkorderForMaterialID(
+          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
+          workorder,
           _status.TimeOfStatusUTC
         );
       }
@@ -524,6 +541,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Process = proc,
         Path = path,
         Serial = _settings.ConvertMaterialIDToSerial(matId),
+        WorkorderId = workorder,
         Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Waiting
@@ -542,9 +560,33 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         part: part,
         numProc: numProc,
         serial: _settings.ConvertMaterialIDToSerial(matId),
-        workorder: "",
+        workorder: workorder ?? "",
         face: ""
       );
+      return this;
+    }
+
+    public FakeIccDsl SetInQueue(LogMaterial mat, string queue, int pos)
+    {
+      _logDB.RecordAddMaterialToQueue(
+        new EventLogDB.EventLogMaterial()
+        {
+          MaterialID = mat.MaterialID,
+          Process = mat.Process,
+          Face = ""
+        },
+        queue,
+        pos,
+        operatorName: "theoperator",
+        reason: "TestAddCasting",
+        timeUTC: _status.TimeOfStatusUTC
+      );
+      _expectedMaterial[mat.MaterialID].Location = new InProcessMaterialLocation()
+      {
+        Type = InProcessMaterialLocation.LocType.InQueue,
+        CurrentQueue = queue,
+        QueuePosition = pos
+      };
       return this;
     }
 
@@ -747,12 +789,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedJobRemainCount[(uniq: unique, proc1path: path)] = cnt;
       return this;
     }
-    public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null)
+    public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<PartWorkorder> workorders = null)
     {
       if (progs == null)
         progs = Enumerable.Empty<(string prog, long rev)>();
       var newJ = new NewJobs()
       {
+        ScheduleId = DateTime.UtcNow.Ticks.ToString(),
         Jobs = jobs.ToList(),
         Programs =
             progs.Select(p =>
@@ -762,7 +805,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Revision = p.rev,
               Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
               ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
-            }).ToList()
+            }).ToList(),
+        CurrentUnfilledWorkorders = workorders?.ToList()
       };
       _jobDB.AddJobs(newJ, null);
       foreach (var j in jobs)
@@ -943,7 +987,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string queue)
+    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, string rawMatName = null, string castingQ = null)
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
@@ -1000,8 +1044,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetFixtureFace(1, 1, fixture, 1);
       j.SetFixtureFace(2, 1, fixture, 1);
 
-      j.SetOutputQueue(1, 1, queue);
-      j.SetInputQueue(2, 1, queue);
+      if (!string.IsNullOrEmpty(castingQ))
+      {
+        j.SetCasting(1, rawMatName);
+        j.SetInputQueue(1, 1, castingQ);
+      }
+
+      j.SetOutputQueue(1, 1, transQ);
+      j.SetInputQueue(2, 1, transQ);
       return j;
     }
 
@@ -1237,7 +1287,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)> Faces { get; set; }
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, int pri, IEnumerable<(int face, string unique, int proc, int path)> faces, int[] unloads = null)
+    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, int pri,
+                                                IEnumerable<(int face, string unique, int proc, int path)> faces,
+                                                int[] unloads = null,
+                                                IEnumerable<(int face, ProgramsForProcess[] progs)> progOverride = null
+                                               )
     {
       return new ExpectNewRouteChange()
       {
@@ -1265,7 +1319,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           },
         },
-        Faces = faces.Select(f => (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: (IEnumerable<ProgramsForProcess>)null))
+        Faces = faces.Select(f =>
+        {
+          var overrideProgs = (IEnumerable<ProgramsForProcess>)progOverride?.FirstOrDefault(p => p.face == f.face).progs;
+          return (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: overrideProgs);
+        })
       };
     }
 
@@ -1669,7 +1727,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Face = f.face,
               Unique = f.unique,
               Proc = f.proc,
-              Path = f.path
+              Path = f.path,
+              ProgOverride = f.progs
             })
           }, options => options
               .Excluding(e => e.NewMaster.Comment)
@@ -1923,7 +1982,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.AddRange(removeFromQueueEvt.Material.Select(m => new LogEntry(
                 cntr: -1,
                 mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-                                            numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
+                                            numProc: m.NumProcesses, serial: m.Serial, workorder: m.Workorder ?? "", face: m.Face) },
                 pal: "",
                 ty: LogType.RemoveFromQueue,
                 locName: removeFromQueueEvt.FromQueue,
