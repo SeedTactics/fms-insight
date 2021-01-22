@@ -236,13 +236,13 @@ namespace BlackMaple.FMSInsight.Niigata
       });
     }
 
-    private IEnumerable<ProgramsForProcess> ProgramsForMaterial(InProcessMaterialAndJob mat, int proc, int path, out bool programsOverrideJob)
+    private IEnumerable<ProgramsForProcess> ProgramsForMaterial(InProcessMaterialAndJob mat, JobPath path, out bool programsOverrideJob)
     {
       if (mat.WorkorderPrograms == null)
       {
         // use from job
         programsOverrideJob = false;
-        return mat.Job.GetMachiningStop(proc, path).Select((stop, stopIdx) =>
+        return path.Job.GetMachiningStop(path.Process, path.Path).Select((stop, stopIdx) =>
           new ProgramsForProcess()
           {
             StopIndex = stopIdx,
@@ -255,7 +255,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         // use from workorder
         programsOverrideJob = true;
-        return mat.WorkorderPrograms.Where(p => p.ProcessNumber == proc).Select(p => new ProgramsForProcess()
+        return mat.WorkorderPrograms.Where(p => p.ProcessNumber == path.Process).Select(p => new ProgramsForProcess()
         {
           StopIndex = p.StopIndex ?? 0,
           ProgramName = p.ProgramName,
@@ -300,7 +300,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (programs == null)
             {
-              programs = ProgramsForMaterial(mat, path.Process, path.Path, out programsOverrideJob);
+              programs = ProgramsForMaterial(mat, path, out programsOverrideJob);
             }
             availMatIds.Add(mat.Mat.MaterialID);
             if (availMatIds.Count == countToLoad)
@@ -328,7 +328,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           if (programs == null)
           {
-            programs = ProgramsForMaterial(mat, path.Process, path.Path, out programsOverrideJob);
+            programs = ProgramsForMaterial(mat, path, out programsOverrideJob);
           }
           availMatIds.Add(mat.Mat.MaterialID);
           if (availMatIds.Count == countToLoad)

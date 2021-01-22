@@ -54,7 +54,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
-    private Dictionary<int, List<(int face, string unique, int proc, int path)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path)>>(); // key is pallet
+    private Dictionary<int, List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>>(); // key is pallet
     private Dictionary<(string uniq, int proc1path), int> _expectedJobRemainCount = new Dictionary<(string uniq, int proc1path), int>();
     private List<ProgramRevision> _expectedOldPrograms = new List<ProgramRevision>();
 
@@ -128,7 +128,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Alarm = false
           }
         });
-        _expectedFaces[pal] = new List<(int face, string unique, int proc, int path)>();
+        _expectedFaces[pal] = new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
       }
     }
 
@@ -329,7 +329,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       if (manual)
       {
-        _expectedFaces[pal] = new List<(int face, string unique, int proc, int path)>();
+        _expectedFaces[pal] = new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
       }
       _status.Pallets[pal - 1].Master.Comment = manual ? "aaa Manual yyy" : "";
       return this;
@@ -363,7 +363,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl OverrideRoute(int pal, string comment, bool noWork, IEnumerable<int> luls, IEnumerable<int> machs, IEnumerable<int> progs, IEnumerable<int> machs2 = null, IEnumerable<int> progs2 = null, IEnumerable<(int face, string unique, int proc, int path)> faces = null)
+    public FakeIccDsl OverrideRoute(int pal, string comment, bool noWork, IEnumerable<int> luls, IEnumerable<int> machs, IEnumerable<int> progs, IEnumerable<int> machs2 = null, IEnumerable<int> progs2 = null, IEnumerable<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)> faces = null)
     {
       var routes = new List<RouteStep>();
       routes.Add(
@@ -403,7 +403,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NoWork = noWork,
         Routes = routes
       };
-      _expectedFaces[pal] = faces == null ? new List<(int face, string unique, int proc, int path)>() : faces.ToList();
+      _expectedFaces[pal] = faces == null ? new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>() : faces.ToList();
 
       return this;
     }
@@ -1033,14 +1033,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var current = actualSt.Pallets[palNum - 1];
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
         current.CurrentOrLoadingFaces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
-          new PalletFace()
+        {
+          var job = _jobDB.LoadJob(face.unique);
+          return new PalletFace()
           {
-            Job = _jobDB.LoadJob(face.unique),
+            Job = job,
             Process = face.proc,
             Path = face.path,
             Face = face.face,
-            FaceIsMissingMaterial = false
-          }
+            FaceIsMissingMaterial = false,
+            Programs = face.progs ?? job.GetMachiningStop(face.proc, face.path).Select((stop, stopIdx) => new ProgramsForProcess()
+            {
+              StopIndex = stopIdx,
+              ProgramName = stop.ProgramName,
+              Revision = stop.ProgramRevision
+            })
+          };
+        }
         ));
         current.Material.Select(m => m.Mat).Should().BeEquivalentTo(
           _expectedMaterial.Values.Concat(_expectedLoadCastings).Where(m =>
@@ -1225,7 +1234,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private class ExpectNewRouteChange : ExpectedChange
     {
       public PalletMaster ExpectedMaster { get; set; }
-      public IEnumerable<(int face, string unique, int proc, int path)> Faces { get; set; }
+      public IEnumerable<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)> Faces { get; set; }
     }
 
     public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, int pri, IEnumerable<(int face, string unique, int proc, int path)> faces, int[] unloads = null)
@@ -1256,7 +1265,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           },
         },
-        Faces = faces
+        Faces = faces.Select(f => (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: (IEnumerable<ProgramsForProcess>)null))
       };
     }
 
@@ -1295,7 +1304,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           },
         },
-        Faces = faces
+        Faces = faces.Select(f => (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: (IEnumerable<ProgramsForProcess>)null))
       };
     }
 
@@ -1303,12 +1312,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public int NewCycleCount { get; set; }
-      public IEnumerable<(int face, string unique, int proc, int path)> Faces { get; set; }
+      public IEnumerable<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)> Faces { get; set; }
     }
 
     public static ExpectedChange ExpectRouteIncrement(int pal, int newCycleCnt, IEnumerable<(int face, string unique, int proc, int path)> faces = null)
     {
-      return new ExpectRouteIncrementChange() { Pallet = pal, NewCycleCount = newCycleCnt, Faces = faces };
+      return new ExpectRouteIncrementChange()
+      {
+        Pallet = pal,
+        NewCycleCount = newCycleCnt,
+        Faces = faces?.Select(f => (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: (IEnumerable<ProgramsForProcess>)null))
+      };
     }
 
     private class ExpectRouteDeleteChange : ExpectedChange
