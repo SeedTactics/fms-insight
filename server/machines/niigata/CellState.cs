@@ -894,11 +894,11 @@ namespace BlackMaple.FMSInsight.Niigata
             case MachiningStep step:
               // find log events if they exist
               var machStart = unusedLogs
-                .Where(e => e.LogType == LogType.MachineCycle && e.StartOfCycle && e.Program == ss.JobStop.ProgramName && e.Material.Any(m => matIdsOnFace.Contains(m.MaterialID)))
+                .Where(e => e.LogType == LogType.MachineCycle && e.StartOfCycle && e.Program == ss.ProgramName && e.Material.Any(m => matIdsOnFace.Contains(m.MaterialID)))
                 .FirstOrDefault()
                 ;
               var machEnd = unusedLogs
-                .Where(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle && e.Program == ss.JobStop.ProgramName && e.Material.Any(m => matIdsOnFace.Contains(m.MaterialID)))
+                .Where(e => e.LogType == LogType.MachineCycle && !e.StartOfCycle && e.Program == ss.ProgramName && e.Material.Any(m => matIdsOnFace.Contains(m.MaterialID)))
                 .FirstOrDefault()
                 ;
               if (machStart != null) unusedLogs.Remove(machStart);
@@ -968,6 +968,9 @@ namespace BlackMaple.FMSInsight.Niigata
       public int IccStepNum { get; set; } // 1-indexed
       public RouteStep IccStep { get; set; }
       public bool StopCompleted { get; set; }
+      public string ProgramName { get; set; }
+      public long? Revision { get; set; }
+      public string IccMachineProgram { get; set; }
     }
 
     private IReadOnlyList<StopAndStep> MatchStopsAndSteps(JobDB jobDB, PalletAndMaterial pallet, PalletFace face)
@@ -975,10 +978,15 @@ namespace BlackMaple.FMSInsight.Niigata
       var ret = new List<StopAndStep>();
 
       int stepIdx = 1; // 0-indexed, first step is load so skip it
+      int stopIdx = -1;
 
       foreach (var stop in face.Job.GetMachiningStop(face.Process, face.Path))
       {
+        stopIdx += 1;
+
         // find out if job stop is machine or reclamp and which program
+        string programName = null;
+        long? revision = null;
         string iccMachineProg = null;
         bool isReclamp = false;
         if (_stationNames != null && _stationNames.ReclampGroupNames.Contains(stop.StationGroup))
@@ -987,12 +995,29 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          if (stop.ProgramRevision.HasValue)
+          var faceProg = face.Programs.FirstOrDefault(p => p.StopIndex == stopIdx);
+          if (faceProg != null && faceProg.Revision.HasValue)
           {
+            programName = faceProg.ProgramName;
+            revision = faceProg.Revision;
+            iccMachineProg = jobDB.LoadProgram(faceProg.ProgramName, faceProg.Revision.Value)?.CellControllerProgramName;
+          }
+          else if (faceProg != null)
+          {
+            programName = faceProg.ProgramName;
+            revision = faceProg.Revision;
+            iccMachineProg = faceProg.ProgramName;
+          }
+          else if (stop.ProgramRevision.HasValue)
+          {
+            programName = stop.ProgramName;
+            revision = stop.ProgramRevision;
             iccMachineProg = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value)?.CellControllerProgramName;
           }
           else
           {
+            programName = stop.ProgramName;
+            revision = null;
             iccMachineProg = stop.ProgramName;
           }
         }
@@ -1051,6 +1076,9 @@ namespace BlackMaple.FMSInsight.Niigata
           JobStop = stop,
           IccStepNum = stepIdx + 1,
           IccStep = step,
+          ProgramName = programName,
+          Revision = revision,
+          IccMachineProgram = iccMachineProg,
           StopCompleted =
             (stepIdx + 1 < pallet.Status.Tracking.CurrentStepNum)
             ||
@@ -1082,17 +1110,10 @@ namespace BlackMaple.FMSInsight.Niigata
       if (pallet.MachineStatus != null && pallet.MachineStatus.CurrentlyExecutingProgram > 0)
       {
         runningAnyProgram = true;
-        if (ss.JobStop.ProgramRevision.HasValue)
-        {
-          runningProgram =
-            pallet.MachineStatus.CurrentlyExecutingProgram.ToString()
-            ==
-            jobDB.LoadProgram(ss.JobStop.ProgramName, ss.JobStop.ProgramRevision.Value).CellControllerProgramName;
-        }
-        else
-        {
-          runningProgram = pallet.MachineStatus.CurrentlyExecutingProgram.ToString() == ss.JobStop.ProgramName;
-        }
+        runningProgram =
+          pallet.MachineStatus.CurrentlyExecutingProgram.ToString()
+          ==
+          ss.IccMachineProgram;
       }
 
       if (runningProgram && machineStart == null)
@@ -1116,10 +1137,10 @@ namespace BlackMaple.FMSInsight.Niigata
           pallet: pallet.Status.Master.PalletNum.ToString(),
           statName: pallet.Status.CurStation.Location.StationGroup,
           statNum: pallet.Status.CurStation.Location.Num,
-          program: ss.JobStop.ProgramName,
+          program: ss.ProgramName,
           timeUTC: nowUtc,
-          extraData: !ss.JobStop.ProgramRevision.HasValue ? null : new Dictionary<string, string> {
-              {"ProgramRevision", ss.JobStop.ProgramRevision.Value.ToString()}
+          extraData: !ss.Revision.HasValue ? null : new Dictionary<string, string> {
+              {"ProgramRevision", ss.Revision.Value.ToString()}
           },
           pockets: tools?.Select(t => t.ToEventDBToolSnapshot())
         );
@@ -1129,7 +1150,7 @@ namespace BlackMaple.FMSInsight.Niigata
           m.Action = new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
-            Program = ss.JobStop.ProgramRevision.HasValue ? ss.JobStop.ProgramName + " rev" + ss.JobStop.ProgramRevision.Value.ToString() : ss.JobStop.ProgramName,
+            Program = ss.Revision.HasValue ? ss.ProgramName + " rev" + ss.Revision.Value.ToString() : ss.ProgramName,
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime
           };
@@ -1144,7 +1165,7 @@ namespace BlackMaple.FMSInsight.Niigata
           m.Action = new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
-            Program = ss.JobStop.ProgramRevision.HasValue ? ss.JobStop.ProgramName + " rev" + ss.JobStop.ProgramRevision.Value.ToString() : ss.JobStop.ProgramName,
+            Program = ss.Revision.HasValue ? ss.ProgramName + " rev" + ss.Revision.Value.ToString() : ss.ProgramName,
             ElapsedMachiningTime = elapsed,
             ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime.Subtract(elapsed)
           };
@@ -1212,13 +1233,13 @@ namespace BlackMaple.FMSInsight.Niigata
         pallet: pallet.Status.Master.PalletNum.ToString(),
         statName: statName,
         statNum: statNum,
-        program: ss.JobStop.ProgramName,
+        program: ss.ProgramName,
         result: "",
         timeUTC: nowUtc,
         elapsed: machStart != null ? nowUtc.Subtract(machStart.EndTimeUTC) : TimeSpan.Zero, // TODO: lookup start from SQL?
         active: ss.JobStop.ExpectedCycleTime,
-        extraData: !ss.JobStop.ProgramRevision.HasValue ? null : new Dictionary<string, string> {
-                {"ProgramRevision", ss.JobStop.ProgramRevision.Value.ToString()}
+        extraData: !ss.Revision.HasValue ? null : new Dictionary<string, string> {
+                {"ProgramRevision", ss.Revision.Value.ToString()}
         },
         tools: toolsAtStart == null || toolsAtEnd == null ? null :
           EventLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))

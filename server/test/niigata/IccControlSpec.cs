@@ -2245,9 +2245,31 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.RemoveFromQueue("castingQ", pos: 1, elapMin: 2, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1)))
         })
         .SetBeforeMC(pal: 1)
-        .MoveToBuffer(pal: 1, buff: 1)
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: mat1)
+        .MoveToMachine(pal: 1, mach: 6)
+        .StartMachine(mach: 6, program: 2100)
+        .UpdateExpectedMaterial(mat1, m =>
+        {
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Machining,
+            Program = "prog111 rev5",
+            ElapsedMachiningTime = TimeSpan.Zero,
+            ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
+          };
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog111", rev: 5, mat: mat1)
+        })
+        .AdvanceMinutes(4)
+        .SetAfterMC(pal: 1)
+        .EndMachine(mach: 6)
+        .UpdateExpectedMaterial(mat1, m =>
+        {
+          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.LastCompletedMachiningRouteStopIndex = 0;
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 6, program: "prog111", rev: 5, elapsedMin: 4, activeMin: 14, mats: mat1)
         })
 
         // second one goes on a pallet with different programs (2101 and revision 4)
@@ -2296,12 +2318,34 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
           _dsl.LoadToFace(pal: 2, lul: 4, face: 1, unique: "uniq1", elapsedMin: 5, activeMins: 8, loadingMats: new[] {queuedMat2}, loadedMats: out var mat2, part: "part1"),
-          FakeIccDsl.RemoveFromQueue("castingQ", pos: 0, elapMin: 5, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2)))
+          FakeIccDsl.RemoveFromQueue("castingQ", pos: 0, elapMin: 9, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2)))
         })
         .SetBeforeMC(pal: 2)
-        .MoveToBuffer(pal: 2, buff: 2)
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectStockerStart(pal: 2, stocker: 2, waitForMach: true, mats: mat2)
+        .MoveToMachine(pal: 2, mach: 5)
+        .StartMachine(mach: 5, program: 2101)
+        .UpdateExpectedMaterial(mat2, m =>
+        {
+          m.Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Machining,
+            Program = "prog111 rev4",
+            ElapsedMachiningTime = TimeSpan.Zero,
+            ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
+          };
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineBegin(pal: 2, machine: 5, program: "prog111", rev: 4, mat: mat2)
+        })
+        .AdvanceMinutes(3)
+        .SetAfterMC(pal: 2)
+        .EndMachine(mach: 5)
+        .UpdateExpectedMaterial(mat2, m =>
+        {
+          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.LastCompletedMachiningRouteStopIndex = 0;
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineEnd(pal: 2, mach: 5, program: "prog111", rev: 4, elapsedMin: 3, activeMin: 14, mats: mat2)
         })
 
         // now try process 1 -> 2

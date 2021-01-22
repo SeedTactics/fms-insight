@@ -229,9 +229,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       });
     }
 
-    private void AddJobs(NewJobs jobs)
+    private void ExpectNewRoute()
     {
-      _jobDB.AddJobs(jobs, null);
       using (var logMonitor = _logDBCfg.Monitor())
       {
         _sync.SynchronizePallets(false);
@@ -240,9 +239,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
+    private void AddJobs(NewJobs jobs, bool expectNewRoute = true)
+    {
+      _jobDB.AddJobs(jobs, null);
+      using (var logMonitor = _logDBCfg.Monitor())
+      {
+        _sync.SynchronizePallets(false);
+        if (expectNewRoute)
+        {
+          var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
+          evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
+        }
+      }
+    }
+
     private void CheckSingleMaterial(IEnumerable<LogEntry> logs,
         long matId, string uniq, string part, int numProc, int[][] pals, string queue = null, bool[] reclamp = null,
-        string[][] machGroups = null
+        string[][] machGroups = null, string castingQueue = null, (string prog, long rev)[][] progs = null
     )
     {
       var matLogs = logs.Where(e =>
@@ -258,13 +271,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         int proc = procNum; // so lambdas capture constant proc
         if (proc == 1)
         {
-          expected.Add(mark =>
+          if (castingQueue != null)
           {
-            mark.LogType.Should().Be(LogType.PartMark);
-            mark.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-            mark.Result.Should().Be(_settings.ConvertMaterialIDToSerial(matId));
+            expected.Add(e =>
+            {
+              e.LogType.Should().Be(LogType.RemoveFromQueue);
+              e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+              e.LocationName.Should().Be(castingQueue);
+            });
           }
-          );
+          else
+          {
+            expected.Add(mark =>
+            {
+              mark.LogType.Should().Be(LogType.PartMark);
+              mark.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
+              mark.Result.Should().Be(_settings.ConvertMaterialIDToSerial(matId));
+            });
+          }
         }
 
         if (proc > 1 && queue != null)
@@ -286,7 +310,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           e.Result.Should().Be("LOAD");
         });
 
-        foreach (var group in machGroups[proc - 1])
+        foreach (var (group, grpIdx) in machGroups[proc - 1].Select((g, idx) => (g, idx)))
         {
           expected.Add(e =>
           {
@@ -295,6 +319,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             e.LogType.Should().Be(LogType.MachineCycle);
             e.LocationName.Should().Be(group);
             e.StartOfCycle.Should().BeTrue();
+
+            if (progs != null && proc - 1 < progs.Length && grpIdx < progs[proc - 1].Length)
+            {
+              var p = progs[proc - 1][grpIdx];
+              e.Program.Should().BeEquivalentTo(p.prog);
+              e.ProgramDetails["ProgramRevision"].Should().BeEquivalentTo(p.rev.ToString());
+            }
           });
           expected.Add(e =>
           {
@@ -303,6 +334,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             e.LogType.Should().Be(LogType.MachineCycle);
             e.LocationName.Should().Be(group);
             e.StartOfCycle.Should().BeFalse();
+
+            if (progs != null && proc - 1 < progs.Length && grpIdx < progs[proc - 1].Length)
+            {
+              var p = progs[proc - 1][grpIdx];
+              e.Program.Should().BeEquivalentTo(p.prog);
+              e.ProgramDetails["ProgramRevision"].Should().BeEquivalentTo(p.rev.ToString());
+            }
           });
         }
 
@@ -847,7 +885,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Fact]
-    public void TwoMachineStopsSingleProcess()
+    public void TwoMachineStops()
     {
       InitSim(new NiigataStationNames()
       {
@@ -896,35 +934,136 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new[] { "RO", "FC"},
             new[] { "FC"},
             new[] {"RO"}
+          },
+          progs: new[] {
+            new[] { (prog: "aaa1RO", rev: 1L) },
+            new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
+            new[] { (prog: "aaa3FC", rev: 1L) },
+            new[] { (prog: "aaa4RO", rev: 1L) },
           }
         );
       }
+    }
 
-      // check programs
-      _jobDB.LoadProgramContent("aaa1RO", 1).Should().Be("Program content for AAA-1 on RO");
-      var aaa1RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 1 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
-      aaa1RO.Program.Should().Be("aaa1RO");
-      aaa1RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+    [Fact]
+    public void PerMaterialWorkorderPrograms()
+    {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { },
+        IccMachineToJobMachNames = new Dictionary<int, (string group, int num)> {
+          {1, (group: "RO", num: 1)},
+          {2, (group: "RO", num: 2)},
+          {3, (group: "RO", num: 3)},
+          {4, (group: "RO", num: 4)},
+          {5, (group: "FC", num: 1)},
+          {6, (group: "FC", num: 2)},
+          {7, (group: "FC", num: 3)},
+          {8, (group: "FC", num: 4)},
+        }
+      },
+      numPals: 16,
+      numLoads: 4,
+      numMachines: 8);
 
-      _jobDB.LoadProgramContent("aaa2RO", 1).Should().Be("Program content for AAA-2 on RO");
-      var aaa2RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 2 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
-      aaa2RO.Program.Should().Be("aaa2RO");
-      aaa2RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+      var newJobs = Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(
+        System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
+        jsonSettings
+      );
+      foreach (var j in newJobs.Jobs)
+      {
+        for (int proc = 1; proc <= j.NumProcesses; proc++)
+        {
+          for (int path = 1; path <= j.GetNumPaths(proc); path++)
+          {
+            if (proc == 1)
+            {
+              j.SetInputQueue(proc, path, "castingQ");
+            }
+            foreach (var stop in j.GetMachiningStop(proc, path))
+            {
+              stop.ProgramName = null;
+              stop.ProgramRevision = null;
+            }
+          }
+        }
+      }
+      newJobs.CurrentUnfilledWorkorders = new List<PartWorkorder> {
+        new PartWorkorder() { WorkorderId = "work1", Part = "aaa", Programs = new[] {
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1},
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1},
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1},
+          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1},
+          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1}
+        }},
+        new PartWorkorder() { WorkorderId = "work2", Part = "aaa", Programs = new[] {
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2},
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2},
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2},
+          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1},
+          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1}
+        }}
+      };
+      newJobs.Programs.AddRange(new[] {
+        new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
+        new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
+        new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
+        new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
+        new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
+      });
 
-      _jobDB.LoadProgramContent("aaa2FC", 1).Should().Be("Program content for AAA-2 on FC");
-      var aaa2FC = logs.First(e => e.Material.FirstOrDefault()?.Process == 2 && e.LogType == LogType.MachineCycle && e.LocationName == "FC");
-      aaa2FC.Program.Should().Be("aaa2FC");
-      aaa2FC.ProgramDetails["ProgramRevision"].Should().Be("1");
+      AddJobs(newJobs, expectNewRoute: false); // no route yet because no material
 
-      _jobDB.LoadProgramContent("aaa3FC", 1).Should().Be("Program content for AAA-3 on FC");
-      var aaa3FC = logs.First(e => e.Material.FirstOrDefault()?.Process == 3 && e.LogType == LogType.MachineCycle && e.LocationName == "FC");
-      aaa3FC.Program.Should().Be("aaa3FC");
-      aaa3FC.ProgramDetails["ProgramRevision"].Should().Be("1");
+      for (int i = 0; i < 9; i++)
+      {
+        var m = _logDB.AllocateMaterialIDForCasting("aaa");
+        _logDB.RecordWorkorderForMaterialID(m, 0, i % 2 == 0 ? "work1" : "work2");
+        _logDB.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite");
+      }
 
-      _jobDB.LoadProgramContent("aaa4RO", 1).Should().Be("Program content for AAA-4 on RO");
-      var aaa4RO = logs.First(e => e.Material.FirstOrDefault()?.Process == 4 && e.LogType == LogType.MachineCycle && e.LocationName == "RO");
-      aaa4RO.Program.Should().Be("aaa4RO");
-      aaa4RO.ProgramDetails["ProgramRevision"].Should().Be("1");
+      ExpectNewRoute();
+
+      var logs = Run();
+      var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
+
+      byMat.Count.Should().Be(9);
+      foreach (var m in byMat)
+      {
+        CheckSingleMaterial(
+          m,
+          matId: m.Key,
+          uniq: "aaa-0NovSzGF9VZGS00b_",
+          part: "aaa",
+          numProc: 4,
+          castingQueue: "castingQ",
+          queue: "Transfer",
+          pals: new[] {
+            new[] { 2, 3, 4 },
+            new[] { 5, 6, 7, 8, 9, 10 },
+            new[] { 12, 13, 14, 15, 16},
+            new[] { 11 }
+          },
+          machGroups: new[] {
+            new[] { "RO"},
+            new[] { "RO", "FC"},
+            new[] { "FC"},
+            new[] {"RO"}
+          },
+          progs: m.Key % 2 == 1 // material ids start at 1, so odd is first
+            ? new[] {
+                new[] { (prog: "aaa1RO", rev: 1L) },
+                new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
+                new[] { (prog: "aaa3FC", rev: 1L) },
+                new[] { (prog: "aaa4RO", rev: 1L) },
+              }
+            : new[] {
+                new[] { (prog: "aaa1RO", rev: 2L) },
+                new[] { (prog: "aaa2RO", rev: 2L), (prog: "aaa2FC", rev: 2L) },
+                new[] { (prog: "zzz3FC", rev: 1L) },
+                new[] { (prog: "zzz4RO", rev: 1L) },
+              }
+        );
+      }
     }
   }
 }
