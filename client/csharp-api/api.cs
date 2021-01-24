@@ -803,6 +803,71 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
+        public System.Threading.Tasks.Task ReplaceWorkordersForScheduleIdAsync(string scheduleId, WorkordersAndPrograms workorders)
+        {
+            return ReplaceWorkordersForScheduleIdAsync(scheduleId, workorders, System.Threading.CancellationToken.None);
+        }
+    
+        /// <exception cref="SwaggerException">A server side error occurred.</exception>
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        public async System.Threading.Tasks.Task ReplaceWorkordersForScheduleIdAsync(string scheduleId, WorkordersAndPrograms workorders, System.Threading.CancellationToken cancellationToken)
+        {
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/unfilled-workorders/by-schid/{scheduleId}");
+            urlBuilder_.Replace("{scheduleId}", System.Uri.EscapeDataString(ConvertToString(scheduleId, System.Globalization.CultureInfo.InvariantCulture)));
+    
+            var client_ = _httpClient;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var content_ = new System.Net.Http.StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(workorders, _settings.Value));
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("PUT");
+    
+                    PrepareRequest(client_, request_, urlBuilder_);
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+                    PrepareRequest(client_, request_, url_);
+    
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+    
+                        ProcessResponse(client_, response_);
+    
+                        var status_ = ((int)response_.StatusCode).ToString();
+                        if (status_ == "200") 
+                        {
+                            return;
+                        }
+                        else
+                        if (status_ != "200" && status_ != "204")
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
+                            throw new SwaggerException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (response_ != null)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+            }
+        }
+    
+        /// <exception cref="SwaggerException">A server side error occurred.</exception>
         public System.Threading.Tasks.Task<CurrentStatus> CurrentStatusAsync()
         {
             return CurrentStatusAsync(System.Threading.CancellationToken.None);
@@ -1652,14 +1717,14 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task SwapMaterialOnPalletAsync(long materialId, MatToPutOnPallet mat, string putMatInQueue, string operName)
+        public System.Threading.Tasks.Task SwapMaterialOnPalletAsync(long materialId, MatToPutOnPallet mat, string operName)
         {
-            return SwapMaterialOnPalletAsync(materialId, mat, putMatInQueue, operName, System.Threading.CancellationToken.None);
+            return SwapMaterialOnPalletAsync(materialId, mat, operName, System.Threading.CancellationToken.None);
         }
     
         /// <exception cref="SwaggerException">A server side error occurred.</exception>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        public async System.Threading.Tasks.Task SwapMaterialOnPalletAsync(long materialId, MatToPutOnPallet mat, string putMatInQueue, string operName, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task SwapMaterialOnPalletAsync(long materialId, MatToPutOnPallet mat, string operName, System.Threading.CancellationToken cancellationToken)
         {
             if (materialId == null)
                 throw new System.ArgumentNullException("materialId");
@@ -1667,10 +1732,6 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material/{materialId}/swap-off-pallet?");
             urlBuilder_.Replace("{materialId}", System.Uri.EscapeDataString(ConvertToString(materialId, System.Globalization.CultureInfo.InvariantCulture)));
-            if (putMatInQueue != null) 
-            {
-                urlBuilder_.Append("putMatInQueue=").Append(System.Uri.EscapeDataString(ConvertToString(putMatInQueue, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
             if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
@@ -3974,20 +4035,20 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("QuarantineQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string QuarantineQueue { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("RequireOperatorNamePromptWhenAddingMaterial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("AllowAddRawMaterialForNonRunningJobs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? AllowAddRawMaterialForNonRunningJobs { get; set; }
+        [Newtonsoft.Json.JsonProperty("RequireExistingMaterialWhenAddingToQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public bool? RequireExistingMaterialWhenAddingToQueue { get; set; }
     
         [Newtonsoft.Json.JsonProperty("RequireSerialWhenAddingMaterialToQueue", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? RequireSerialWhenAddingMaterialToQueue { get; set; }
     
+        [Newtonsoft.Json.JsonProperty("AddRawMaterialAsUnassigned", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public bool? AddRawMaterialAsUnassigned { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("RequireOperatorNamePromptWhenAddingMaterial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
+    
         [Newtonsoft.Json.JsonProperty("AllowQuarantineAtLoadStation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowQuarantineAtLoadStation { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("AllowChangeSerial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? AllowChangeSerial { get; set; }
     
         [Newtonsoft.Json.JsonProperty("AllowChangeWorkorderAtLoadStation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowChangeWorkorderAtLoadStation { get; set; }
@@ -4685,6 +4746,9 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("Priority", Required = Newtonsoft.Json.Required.Always)]
         public int Priority { get; set; }
     
+        [Newtonsoft.Json.JsonProperty("Programs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<WorkorderProgram> Programs { get; set; }
+    
         public string ToJson() 
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(this);
@@ -4693,6 +4757,33 @@ namespace BlackMaple.FMSInsight.API
         public static PartWorkorder FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<PartWorkorder>(data);
+        }
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
+    public partial class WorkorderProgram 
+    {
+        [Newtonsoft.Json.JsonProperty("ProcessNumber", Required = Newtonsoft.Json.Required.Always)]
+        public int ProcessNumber { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("StopIndex", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? StopIndex { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("ProgramName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string ProgramName { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("Revision", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public long? Revision { get; set; }
+    
+        public string ToJson() 
+        {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
+    
+        public static WorkorderProgram FromJson(string data)
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<WorkorderProgram>(data);
         }
     
     }
@@ -5186,6 +5277,28 @@ namespace BlackMaple.FMSInsight.API
         public static PlannedSchedule FromJson(string data)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<PlannedSchedule>(data);
+        }
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "9.14.1.0 (Newtonsoft.Json v11.0.0.0)")]
+    public partial class WorkordersAndPrograms 
+    {
+        [Newtonsoft.Json.JsonProperty("Workorders", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
+        public System.Collections.Generic.ICollection<PartWorkorder> Workorders { get; set; } = new System.Collections.ObjectModel.Collection<PartWorkorder>();
+    
+        [Newtonsoft.Json.JsonProperty("Programs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<ProgramEntry> Programs { get; set; }
+    
+        public string ToJson() 
+        {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
+    
+        public static WorkordersAndPrograms FromJson(string data)
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<WorkordersAndPrograms>(data);
         }
     
     }
