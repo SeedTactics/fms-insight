@@ -56,11 +56,13 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool UsingLabelPrinterForSerials { get; set; }
     [DataMember] public bool? UseClientPrinterForLabels { get; set; }
     [DataMember] public string QuarantineQueue { get; set; }
-    [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
-    [DataMember] public bool? AllowAddRawMaterialForNonRunningJobs { get; set; }
+
+    [DataMember] public bool? RequireExistingMaterialWhenAddingToQueue { get; set; }
     [DataMember] public bool? RequireSerialWhenAddingMaterialToQueue { get; set; }
+    [DataMember] public bool? AddRawMaterialAsUnassigned { get; set; }
+    [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; set; }
+
     [DataMember] public bool? AllowQuarantineAtLoadStation { get; set; }
-    [DataMember] public bool? AllowChangeSerial { get; set; }
     [DataMember] public bool? AllowChangeWorkorderAtLoadStation { get; set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
@@ -99,11 +101,11 @@ namespace BlackMaple.MachineFramework.Controllers
         UseClientPrinterForLabels = _impl.PrintLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
+        RequireExistingMaterialWhenAddingToQueue = _cfg.RequireExistingMaterialWhenAddingToQueue,
         RequireSerialWhenAddingMaterialToQueue = _cfg.RequireSerialWhenAddingMaterialToQueue,
-        AllowAddRawMaterialForNonRunningJobs = _cfg.AllowAddRawMaterialForNonRunningJobs,
+        AddRawMaterialAsUnassigned = _cfg.AddRawMaterialAsUnassigned,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
-        AllowChangeSerial = _cfg.AllowChangeSerial,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation
       };
     }

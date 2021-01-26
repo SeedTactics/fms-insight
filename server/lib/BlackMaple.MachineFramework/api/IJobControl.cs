@@ -49,6 +49,7 @@ namespace BlackMaple.MachineWatchInterface
 
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
+    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs);
 
     void SetJobComment(string jobUnique, string comment);
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -40,7 +40,6 @@ import TableHead from "@material-ui/core/TableHead";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableBody from "@material-ui/core/TableBody";
-import TableFooter from "@material-ui/core/TableFooter";
 import Button from "@material-ui/core/Button";
 import Tooltip from "@material-ui/core/Tooltip";
 import Typography from "@material-ui/core/Typography";
@@ -68,9 +67,17 @@ import {
 } from "./Material";
 import * as api from "../../data/api";
 import * as routes from "../../data/routes";
-import { Store, connect, useSelector } from "../../store/store";
+import { Store, connect } from "../../store/store";
 import * as events from "../../data/events";
-import { ConnectedMaterialDialog, ChooseSerialOrDirectJobDialog, ConnectedAddCastingDialog } from "./QueuesAddMaterial";
+import {
+  QueueMaterialDialog,
+  AddBySerialDialog,
+  BulkAddCastingWithoutSerialDialog,
+  AddWithoutSerialDialog,
+  addMaterialBySerial,
+  bulkAddCastingToQueue,
+  addMaterialWithoutSerial,
+} from "./QueuesAddMaterial";
 import {
   selectQueueData,
   extractJobRawMaterial,
@@ -231,21 +238,16 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
-  readonly addCastings: () => void;
   readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
   readonly editQty: (job: JobRawMaterialData) => void;
 }
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentSt = useRecoilValue(currentStatus);
-  const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
   const jobs = React.useMemo(() => extractJobRawMaterial(props.queue, currentSt.jobs, currentSt.material), [
     props.queue,
     currentSt,
   ]);
-  const hasCastings = React.useMemo(() => {
-    return hasOldCastings || jobs.findIndex((j) => j.rawMatName !== j.job.partName) >= 0;
-  }, [hasOldCastings, jobs]);
 
   return (
     <Table size="small">
@@ -268,18 +270,6 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
           <RawMaterialJobRow key={idx} job={j} editNote={props.editNote} editQty={props.editQty} />
         ))}
       </TableBody>
-      {hasCastings ? (
-        <TableFooter>
-          <TableRow>
-            <TableCell colSpan={8} />
-            <TableCell align="right">
-              <Button color="secondary" variant="outlined" onClick={props.addCastings}>
-                Add Raw Material
-              </Button>
-            </TableCell>
-          </TableRow>
-        </TableFooter>
-      ) : undefined}
     </Table>
   );
 }
@@ -604,58 +594,71 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
 interface AddMaterialButtonsProps {
   readonly label: string;
   readonly rawMatQueue: boolean;
-  openAddToQueue(label: string): void;
-  openAddCasting(label: string): void;
 }
 
 const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
   const currentJobs = useRecoilValue(currentStatus).jobs;
-  const hasOldCastings = useSelector((s) => !s.Events.last30.sim_use.castingNames.isEmpty());
   const fmsInfo = useRecoilValue(fmsInformation);
-  const bttnsToShow = React.useMemo(() => {
-    return {
-      hasCastings:
-        (props.rawMatQueue && hasOldCastings) ||
-        LazySeq.ofObject(currentJobs)
-          .flatMap(([, j]) => j.procsAndPaths[0]?.paths || [])
-          .anyMatch((p) => p.inputQueue === props.label && p.casting !== undefined && p.casting !== ""),
-      hasMatInput: LazySeq.ofObject(currentJobs)
-        .flatMap(([, j]) => j.procsAndPaths)
-        .flatMap((p) => p.paths)
-        .anyMatch((p) => p.inputQueue === props.label && (p.casting === undefined || p.casting === "")),
-    };
-  }, [hasOldCastings, currentJobs]);
+  const setAddBySerial = useSetRecoilState(addMaterialBySerial);
+  const setBulkAddCastings = useSetRecoilState(bulkAddCastingToQueue);
+  const setAddWithoutSerial = useSetRecoilState(addMaterialWithoutSerial);
 
-  return (
-    <>
-      {bttnsToShow.hasCastings ? (
-        <Tooltip title="Add Raw Material">
-          <Fab
-            color="secondary"
-            onClick={() => props.openAddCasting(props.label)}
-            size="large"
-            style={{ marginBottom: "-30px", zIndex: 1 }}
-          >
-            <AddIcon />
-          </Fab>
-        </Tooltip>
-      ) : undefined}
-      {bttnsToShow.hasMatInput ||
-      (props.rawMatQueue &&
-        fmsInfo.allowAddRawMaterialForNonRunningJobs &&
-        fmsInfo.requireSerialWhenAddingMaterialToQueue) ? (
-        <Tooltip title="Add Assigned Material">
+  const jobExistsWithInputQueue = React.useMemo(() => {
+    return LazySeq.ofObject(currentJobs)
+      .flatMap(([, j]) => j.procsAndPaths)
+      .flatMap((p) => p.paths)
+      .anyMatch((p) => p.inputQueue === props.label);
+  }, [currentJobs]);
+
+  if (props.rawMatQueue) {
+    return (
+      <Tooltip title="Add Raw Material">
+        <Fab
+          color="secondary"
+          onClick={() => {
+            if (fmsInfo.requireSerialWhenAddingMaterialToQueue) {
+              setAddBySerial(props.label);
+            } else if (fmsInfo.addRawMaterialAsUnassigned) {
+              setBulkAddCastings(props.label);
+            } else {
+              setAddWithoutSerial(props.label);
+            }
+          }}
+          size="large"
+          style={{ marginBottom: "-30px", zIndex: 1 }}
+        >
+          <AddIcon />
+        </Fab>
+      </Tooltip>
+    );
+  } else if (jobExistsWithInputQueue) {
+    return (
+      <>
+        {fmsInfo.requireSerialWhenAddingMaterialToQueue ? undefined : (
+          <Tooltip title="Add Material Without Serial">
+            <IconButton
+              onClick={() => setAddWithoutSerial(props.label)}
+              size="medium"
+              style={{ marginBottom: "-20px", zIndex: 1 }}
+            >
+              <AssignIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        <Tooltip title="Add By Serial">
           <IconButton
-            onClick={() => props.openAddToQueue(props.label)}
+            onClick={() => setAddBySerial(props.label)}
             size="medium"
             style={{ marginBottom: "-20px", zIndex: 1 }}
           >
-            <AssignIcon fontSize="inherit" />
+            <AddIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
-      ) : undefined}
-    </>
-  );
+      </>
+    );
+  } else {
+    return null;
+  }
 });
 
 const queueStyles = createStyles({
@@ -687,8 +690,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     [currentSt, props.route, props.rawMaterialQueues]
   );
 
-  const [addCastingQueue, setAddCastingQueue] = React.useState<string | null>(null);
-  const closeAddCastingDialog = React.useCallback(() => setAddCastingQueue(null), []);
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
   const [editQtyForJob, setEditQtyForJob] = React.useState<JobRawMaterialData | null>(null);
@@ -697,8 +698,6 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     Readonly<api.IInProcessMaterial>
   > | null>(null);
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
-  const [chooseSerialOrJobOpen, setChooseSerialOrJobOpen] = React.useState<string | null>(null);
-  const closeChooseSerialOrJob = React.useCallback(() => setChooseSerialOrJobOpen(null), []);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
   return (
@@ -711,12 +710,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
             flexStart
             addMaterialButton={
               region.free ? undefined : (
-                <AddMaterialButtons
-                  label={region.label}
-                  rawMatQueue={region.rawMaterialQueue}
-                  openAddToQueue={() => setChooseSerialOrJobOpen(region.label)}
-                  openAddCasting={setAddCastingQueue}
-                />
+                <AddMaterialButtons label={region.label} rawMatQueue={region.rawMaterialQueue} />
               )
             }
             distance={5}
@@ -761,23 +755,17 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
                 )
               : undefined}
             {region.rawMaterialQueue ? (
-              <div style={{ margin: "1em 5em 0 5em", width: "100%" }}>
-                <RawMaterialJobTable
-                  queue={region.label}
-                  addCastings={() => setAddCastingQueue(region.label)}
-                  editNote={setChangeNoteForJob}
-                  editQty={setEditQtyForJob}
-                />
+              <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
+                <RawMaterialJobTable queue={region.label} editNote={setChangeNoteForJob} editQty={setEditQtyForJob} />
               </div>
             ) : undefined}
           </SortableWhiteboardRegion>
         </div>
       ))}
-      <ConnectedMaterialDialog
-        initialQueue={props.route.standalone_queues.length === 1 ? props.route.standalone_queues[0] : null}
-      />
-      <ChooseSerialOrDirectJobDialog dialogOpenForQueue={chooseSerialOrJobOpen} onClose={closeChooseSerialOrJob} />
-      <ConnectedAddCastingDialog queue={addCastingQueue} closeDialog={closeAddCastingDialog} />
+      <QueueMaterialDialog />
+      <AddBySerialDialog />
+      <AddWithoutSerialDialog />
+      <BulkAddCastingWithoutSerialDialog />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -150,7 +150,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private const int Version = 22;
+    private const int Version = 23;
 
     // the Priority and CreateMarkingData field was removed from the job but old tables had it marked as NOT NULL.  So rather than try and copy
     // all the jobs, we just fill it in with 0 for old job databases.
@@ -237,13 +237,22 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
+        cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER, PRIMARY KEY(ScheduleId, Part, Workorder))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
         cmd.ExecuteNonQuery();
       }
     }
@@ -334,6 +343,7 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 19) Ver18ToVer19(trans);
           if (curVersion < 20) Ver19ToVer20(trans);
           if (curVersion < 22) Ver20ToVer22(trans);
+          if (curVersion < 23) Ver22ToVer23(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -721,6 +731,26 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE decrements";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
+    private static void Ver22ToVer23(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+
+        cmd.CommandText = "ALTER TABLE unfilled_workorders ADD Archived INTEGER";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1126,27 +1156,58 @@ namespace BlackMaple.MachineFramework
     private List<MachineWatchInterface.PartWorkorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
     {
       using (var cmd = _connection.CreateCommand())
+      using (var prgCmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
+        ((IDbCommand)prgCmd).Transaction = trans;
 
-        var ret = new List<MachineWatchInterface.PartWorkorder>();
-        cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders WHERE ScheduleId == $sid";
+        var ret = new Dictionary<(string work, string part), MachineWatchInterface.PartWorkorder>();
+        cmd.CommandText = "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision " +
+          " FROM unfilled_workorders w " +
+          " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
+          " WHERE w.ScheduleId == $sid AND (Archived IS NULL OR Archived != 1)";
         cmd.Parameters.Add("sid", SqliteType.Integer).Value = schId;
         using (IDataReader reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            ret.Add(new MachineWatchInterface.PartWorkorder()
+            var workId = reader.GetString(0);
+            var part = reader.GetString(1);
+            MachineWatchInterface.PartWorkorder workorder;
+
+            if (!ret.TryGetValue((work: workId, part: part), out workorder))
             {
-              WorkorderId = reader.GetString(0),
-              Part = reader.GetString(1),
-              Quantity = reader.GetInt32(2),
-              DueDate = new DateTime(reader.GetInt64(3)),
-              Priority = reader.GetInt32(4)
+              workorder = new MachineWatchInterface.PartWorkorder()
+              {
+                WorkorderId = workId,
+                Part = part,
+                Quantity = reader.GetInt32(2),
+                DueDate = new DateTime(reader.GetInt64(3)),
+                Priority = reader.GetInt32(4)
+              };
+              ret.Add((work: workId, part: part), workorder);
+            }
+
+            if (reader.IsDBNull(5)) continue;
+
+            // add the program
+            if (workorder.Programs == null)
+            {
+              workorder.Programs = new List<MachineWatchInterface.WorkorderProgram>();
+            }
+            var progs = (List<MachineWatchInterface.WorkorderProgram>)workorder.Programs;
+            progs.Add(new MachineWatchInterface.WorkorderProgram()
+            {
+              ProcessNumber = reader.GetInt32(5),
+              StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
+              ProgramName = reader.IsDBNull(7) ? null : reader.GetString(7),
+              Revision = reader.IsDBNull(8) ? (int?)null : (int?)reader.GetInt32(8)
             });
+
           }
         }
-        return ret;
+
+        return ret.Values.ToList();
       }
     }
 
@@ -1302,67 +1363,137 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public List<MachineWatchInterface.PartWorkorder> MostRecentWorkorders()
+    {
+      lock (_cfg)
+      {
+        using (var trans = _connection.BeginTransaction())
+        {
+          var sid = LatestScheduleId(trans);
+          return LoadUnfilledWorkorders(trans, sid);
+        }
+      }
+    }
+
     public List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
     {
       lock (_cfg)
       {
+        using (var trans = _connection.BeginTransaction())
         using (var cmd = _connection.CreateCommand())
         {
-          var ret = new List<MachineWatchInterface.PartWorkorder>();
-          cmd.CommandText = "SELECT Workorder, Part, Quantity, DueDate, Priority FROM unfilled_workorders " +
-            "WHERE ScheduleId IN (SELECT MAX(ScheduleId) FROM jobs WHERE ScheduleId IS NOT NULL AND (Manual IS NULL OR Manual == 0)) AND Part = $part";
+          cmd.Transaction = trans;
+
+          var sid = LatestScheduleId(trans);
+
+          var ret = new Dictionary<string, MachineWatchInterface.PartWorkorder>();
+          cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
+            " FROM unfilled_workorders w " +
+            " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
+            " WHERE w.ScheduleId = $sid AND w.Part = $part AND (Archived IS NULL OR Archived != 1)";
+          cmd.Parameters.Add("sid", SqliteType.Text).Value = sid;
           cmd.Parameters.Add("part", SqliteType.Text).Value = part;
 
           using (IDataReader reader = cmd.ExecuteReader())
           {
             while (reader.Read())
             {
-              ret.Add(new MachineWatchInterface.PartWorkorder()
+              var workId = reader.GetString(0);
+              MachineWatchInterface.PartWorkorder workorder;
+
+              if (!ret.TryGetValue(workId, out workorder))
               {
-                WorkorderId = reader.GetString(0),
-                Part = reader.GetString(1),
-                Quantity = reader.GetInt32(2),
-                DueDate = new DateTime(reader.GetInt64(3)),
-                Priority = reader.GetInt32(4)
+                workorder = new MachineWatchInterface.PartWorkorder()
+                {
+                  WorkorderId = workId,
+                  Part = part,
+                  Quantity = reader.GetInt32(1),
+                  DueDate = new DateTime(reader.GetInt64(2)),
+                  Priority = reader.GetInt32(3)
+                };
+                ret.Add(workId, workorder);
+              }
+
+              if (reader.IsDBNull(4)) continue;
+
+              // add the program
+              if (workorder.Programs == null)
+              {
+                workorder.Programs = new List<MachineWatchInterface.WorkorderProgram>();
+              }
+              var progs = (List<MachineWatchInterface.WorkorderProgram>)workorder.Programs;
+              progs.Add(new MachineWatchInterface.WorkorderProgram()
+              {
+                ProcessNumber = reader.GetInt32(4),
+                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
               });
             }
           }
-          return ret;
+
+          trans.Commit();
+          return ret.Values.ToList();
         }
       }
     }
 
-    public List<MachineWatchInterface.PartWorkorder> UnfilledWorkordersForJob(string unique)
+    public List<MachineWatchInterface.PartWorkorder> WorkordersById(string workorderId)
     {
       lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
-
-          var ret = new List<MachineWatchInterface.PartWorkorder>();
-          cmd.CommandText = "SELECT a.Workorder, a.Part, a.Quantity, a.DueDate, a.Priority " +
-                             " FROM unfilled_workorders a INNER JOIN jobs b ON a.ScheduleId = b.ScheduleId AND a.Part = b.Part" +
-                             " WHERE b.UniqueStr = $uniq";
-          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+          var ret = new Dictionary<string, MachineWatchInterface.PartWorkorder>();
+          cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
+            " FROM unfilled_workorders w " +
+            " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
+            " WHERE " +
+            "    w.ScheduleId = (SELECT MAX(v.ScheduleId) FROM unfilled_workorders v WHERE v.Workorder = $work)" +
+            "    AND w.Workorder = $work";
+          cmd.Parameters.Add("work", SqliteType.Text).Value = workorderId;
 
           using (IDataReader reader = cmd.ExecuteReader())
           {
             while (reader.Read())
             {
-              ret.Add(new MachineWatchInterface.PartWorkorder()
+              var part = reader.GetString(0);
+              MachineWatchInterface.PartWorkorder workorder;
+
+              if (!ret.TryGetValue(part, out workorder))
               {
-                WorkorderId = reader.GetString(0),
-                Part = reader.GetString(1),
-                Quantity = reader.GetInt32(2),
-                DueDate = new DateTime(reader.GetInt64(3)),
-                Priority = reader.GetInt32(4)
+                workorder = new MachineWatchInterface.PartWorkorder()
+                {
+                  WorkorderId = workorderId,
+                  Part = part,
+                  Quantity = reader.GetInt32(1),
+                  DueDate = new DateTime(reader.GetInt64(2)),
+                  Priority = reader.GetInt32(3)
+                };
+                ret.Add(part, workorder);
+              }
+
+              if (reader.IsDBNull(4)) continue;
+
+              // add the program
+              if (workorder.Programs == null)
+              {
+                workorder.Programs = new List<MachineWatchInterface.WorkorderProgram>();
+              }
+              var progs = (List<MachineWatchInterface.WorkorderProgram>)workorder.Programs;
+              progs.Add(new MachineWatchInterface.WorkorderProgram()
+              {
+                ProcessNumber = reader.GetInt32(4),
+                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
               });
             }
           }
-          return ret;
+
+          return ret.Values.ToList();
         }
       }
-
     }
 
     public BlackMaple.MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule()
@@ -1546,7 +1677,7 @@ namespace BlackMaple.MachineFramework
 
           if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.CurrentUnfilledWorkorders != null)
           {
-            AddUnfilledWorkorders(trans, newJobs.ScheduleId, newJobs.CurrentUnfilledWorkorders);
+            AddUnfilledWorkorders(trans, newJobs.ScheduleId, newJobs.CurrentUnfilledWorkorders, negRevisionMap);
           }
 
           if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.DebugMessage != null)
@@ -2028,13 +2159,16 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddUnfilledWorkorders(IDbTransaction trans, string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> workorders)
+    private void AddUnfilledWorkorders(IDbTransaction trans, string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> workorders, Dictionary<(string prog, long rev), long> negativeRevisionMap)
     {
       using (var cmd = _connection.CreateCommand())
+      using (var prgCmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
+        ((IDbCommand)prgCmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority) VALUES ($sid,$work,$part,$qty,$due,$pri)";
+
+        cmd.CommandText = "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority, Archived) VALUES ($sid,$work,$part,$qty,$due,$pri,NULL)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
         cmd.Parameters.Add("work", SqliteType.Text);
@@ -2042,6 +2176,16 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("qty", SqliteType.Integer);
         cmd.Parameters.Add("due", SqliteType.Integer);
         cmd.Parameters.Add("pri", SqliteType.Integer);
+
+        prgCmd.CommandText = "INSERT OR REPLACE INTO workorder_programs(ScheduleId, Workorder, Part, ProcessNumber, StopIndex, ProgramName, Revision) VALUES ($sid,$work,$part,$proc,$stop,$name,$rev)";
+        prgCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+        prgCmd.Parameters.Add("work", SqliteType.Text);
+        prgCmd.Parameters.Add("part", SqliteType.Text);
+        prgCmd.Parameters.Add("proc", SqliteType.Integer);
+        prgCmd.Parameters.Add("stop", SqliteType.Integer);
+        prgCmd.Parameters.Add("name", SqliteType.Text);
+        prgCmd.Parameters.Add("rev", SqliteType.Integer);
+
         foreach (var w in workorders)
         {
           cmd.Parameters[1].Value = w.WorkorderId;
@@ -2050,6 +2194,42 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[4].Value = w.DueDate.Ticks;
           cmd.Parameters[5].Value = w.Priority;
           cmd.ExecuteNonQuery();
+
+          if (w.Programs != null)
+          {
+            foreach (var prog in w.Programs)
+            {
+              long? rev = null;
+              if (!prog.Revision.HasValue || prog.Revision.Value == 0)
+              {
+                if (!string.IsNullOrEmpty(prog.ProgramName))
+                {
+                  rev = LatestRevisionForProgram(trans, prog.ProgramName);
+                }
+              }
+              else if (prog.Revision.Value > 0)
+              {
+                rev = prog.Revision.Value;
+              }
+              else if (negativeRevisionMap.TryGetValue((prog: prog.ProgramName, rev: prog.Revision.Value), out long convertedRev))
+              {
+                rev = convertedRev;
+              }
+              else
+              {
+                throw new BadRequestException($"Workorder {w.WorkorderId} " +
+                  "has a negative program revision but no matching negative program revision exists in the downloaded ProgramEntry list");
+              }
+
+              prgCmd.Parameters[1].Value = w.WorkorderId;
+              prgCmd.Parameters[2].Value = w.Part;
+              prgCmd.Parameters[3].Value = prog.ProcessNumber;
+              prgCmd.Parameters[4].Value = prog.StopIndex.HasValue ? (object)prog.StopIndex.Value : DBNull.Value;
+              prgCmd.Parameters[5].Value = prog.ProgramName;
+              prgCmd.Parameters[6].Value = rev != null ? (object)rev : DBNull.Value;
+              prgCmd.ExecuteNonQuery();
+            }
+          }
         }
       }
     }
@@ -2279,6 +2459,68 @@ namespace BlackMaple.MachineFramework
         }
       }
     }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime? nowUtc = null)
+    {
+      lock (_cfg)
+      {
+        using (var trans = _connection.BeginTransaction())
+        using (var getWorksCmd = _connection.CreateCommand())
+        using (var archiveCmd = _connection.CreateCommand())
+        using (var delProgsCmd = _connection.CreateCommand())
+        {
+          getWorksCmd.Transaction = trans;
+          archiveCmd.Transaction = trans;
+          delProgsCmd.Transaction = trans;
+
+          getWorksCmd.CommandText = "SELECT Workorder, Part FROM unfilled_workorders WHERE ScheduleId = $sid AND (Archived IS NULL OR Archived != 1)";
+          getWorksCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+
+          archiveCmd.CommandText = "UPDATE unfilled_workorders SET Archived = 1 WHERE ScheduleId = $sid AND Workorder = $work AND Part = $part";
+          archiveCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+          var archiveWorkorder = archiveCmd.Parameters.Add("work", SqliteType.Text);
+          var archivePart = archiveCmd.Parameters.Add("part", SqliteType.Text);
+
+          delProgsCmd.CommandText = "DELETE FROM workorder_programs WHERE ScheduleId = $sid AND Workorder = $work AND Part = $part";
+          delProgsCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+          var delWorkorder = delProgsCmd.Parameters.Add("work", SqliteType.Text);
+          var delPart = delProgsCmd.Parameters.Add("part", SqliteType.Text);
+
+          var newWorkorderIds = new HashSet<(string work, string part)>(
+            newWorkorders.Select(w => (work: w.WorkorderId, part: w.Part))
+          );
+
+          using (var reader = getWorksCmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              var work = reader.GetString(0);
+              var part = reader.GetString(1);
+
+              if (newWorkorderIds.Contains((work: work, part: part)))
+              {
+                // will be replaced below, for now clear out programs
+                delWorkorder.Value = work;
+                delPart.Value = part;
+                delProgsCmd.ExecuteNonQuery();
+              }
+              else
+              {
+                // missing from new, archive
+                archiveWorkorder.Value = work;
+                archivePart.Value = part;
+                archiveCmd.ExecuteNonQuery();
+              }
+            }
+          }
+
+          var negProgMap = AddPrograms(trans, programs, nowUtc ?? DateTime.UtcNow);
+          AddUnfilledWorkorders(trans, scheduleId, newWorkorders, negProgMap);
+
+          trans.Commit();
+        }
+      }
+    }
     #endregion
 
     #region Decrement Counts
@@ -2467,6 +2709,7 @@ namespace BlackMaple.MachineFramework
 
       using (var checkCmd = _connection.CreateCommand())
       using (var checkMaxCmd = _connection.CreateCommand())
+      using (var checkByCommentCmd = _connection.CreateCommand())
       using (var addProgCmd = _connection.CreateCommand())
       {
         ((IDbCommand)checkCmd).Transaction = transaction;
@@ -2477,6 +2720,13 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)checkMaxCmd).Transaction = transaction;
         checkMaxCmd.CommandText = "SELECT ProgramRevision, ProgramContent FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
         checkMaxCmd.Parameters.Add("prog", SqliteType.Text);
+
+        ((IDbCommand)checkByCommentCmd).Transaction = transaction;
+        checkByCommentCmd.CommandText = "SELECT ProgramRevision, ProgramContent FROM program_revisions " +
+                                        " WHERE ProgramName = $prog AND RevisionComment IS NOT NULL AND RevisionComment = $comment " +
+                                        " ORDER BY ProgramRevision DESC LIMIT 1";
+        checkByCommentCmd.Parameters.Add("prog", SqliteType.Text);
+        checkByCommentCmd.Parameters.Add("comment", SqliteType.Text);
 
         ((IDbCommand)addProgCmd).Transaction = transaction;
         addProgCmd.CommandText = "INSERT INTO program_revisions(ProgramName, ProgramRevision, RevisionTimeUTC, RevisionComment, ProgramContent) " +
@@ -2531,6 +2781,26 @@ namespace BlackMaple.MachineFramework
             else
             {
               lastRev = 0;
+            }
+          }
+
+          if (!string.IsNullOrEmpty(prog.Comment))
+          {
+            // check program matching the same comment
+            checkByCommentCmd.Parameters[0].Value = prog.ProgramName;
+            checkByCommentCmd.Parameters[1].Value = prog.Comment;
+            using (var reader = checkByCommentCmd.ExecuteReader())
+            {
+              if (reader.Read())
+              {
+                var lastContent = reader.GetString(1);
+                if (lastContent == prog.ProgramContent)
+                {
+                  if (prog.Revision < 0) negativeRevisionMap[(prog: prog.ProgramName, rev: prog.Revision)] = reader.GetInt64(0);
+                  continue;
+                }
+              }
+
             }
           }
 

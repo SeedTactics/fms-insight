@@ -385,6 +385,43 @@ export class JobsClient {
         return Promise.resolve<PartWorkorder[]>(<any>null);
     }
 
+    replaceWorkordersForScheduleId(scheduleId: string | null, workorders: WorkordersAndPrograms): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-schid/{scheduleId}";
+        if (scheduleId === undefined || scheduleId === null)
+            throw new Error("The parameter 'scheduleId' must be defined.");
+        url_ = url_.replace("{scheduleId}", encodeURIComponent("" + scheduleId)); 
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(workorders);
+
+        let options_ = <RequestInit>{
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json", 
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processReplaceWorkordersForScheduleId(_response);
+        });
+    }
+
+    protected processReplaceWorkordersForScheduleId(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(<any>null);
+    }
+
     currentStatus(): Promise<CurrentStatus> {
         let url_ = this.baseUrl + "/api/v1/jobs/status";
         url_ = url_.replace(/[?&]$/, "");
@@ -1999,11 +2036,11 @@ export class FMSInfo implements IFMSInfo {
     usingLabelPrinterForSerials!: boolean;
     useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
-    allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
+    requireExistingMaterialWhenAddingToQueue?: boolean | undefined;
     requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
+    addRawMaterialAsUnassigned?: boolean | undefined;
+    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowQuarantineAtLoadStation?: boolean | undefined;
-    allowChangeSerial?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 
@@ -2033,11 +2070,11 @@ export class FMSInfo implements IFMSInfo {
             this.usingLabelPrinterForSerials = data["UsingLabelPrinterForSerials"];
             this.useClientPrinterForLabels = data["UseClientPrinterForLabels"];
             this.quarantineQueue = data["QuarantineQueue"];
-            this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
-            this.allowAddRawMaterialForNonRunningJobs = data["AllowAddRawMaterialForNonRunningJobs"];
+            this.requireExistingMaterialWhenAddingToQueue = data["RequireExistingMaterialWhenAddingToQueue"];
             this.requireSerialWhenAddingMaterialToQueue = data["RequireSerialWhenAddingMaterialToQueue"];
+            this.addRawMaterialAsUnassigned = data["AddRawMaterialAsUnassigned"];
+            this.requireOperatorNamePromptWhenAddingMaterial = data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowQuarantineAtLoadStation = data["AllowQuarantineAtLoadStation"];
-            this.allowChangeSerial = data["AllowChangeSerial"];
             this.allowChangeWorkorderAtLoadStation = data["AllowChangeWorkorderAtLoadStation"];
             this.allowEditJobPlanQuantityFromQueuesPage = data["AllowEditJobPlanQuantityFromQueuesPage"];
         }
@@ -2067,11 +2104,11 @@ export class FMSInfo implements IFMSInfo {
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
         data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
         data["QuarantineQueue"] = this.quarantineQueue;
-        data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
-        data["AllowAddRawMaterialForNonRunningJobs"] = this.allowAddRawMaterialForNonRunningJobs;
+        data["RequireExistingMaterialWhenAddingToQueue"] = this.requireExistingMaterialWhenAddingToQueue;
         data["RequireSerialWhenAddingMaterialToQueue"] = this.requireSerialWhenAddingMaterialToQueue;
+        data["AddRawMaterialAsUnassigned"] = this.addRawMaterialAsUnassigned;
+        data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowQuarantineAtLoadStation"] = this.allowQuarantineAtLoadStation;
-        data["AllowChangeSerial"] = this.allowChangeSerial;
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         return data; 
@@ -2090,11 +2127,11 @@ export interface IFMSInfo {
     usingLabelPrinterForSerials: boolean;
     useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
-    allowAddRawMaterialForNonRunningJobs?: boolean | undefined;
+    requireExistingMaterialWhenAddingToQueue?: boolean | undefined;
     requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
+    addRawMaterialAsUnassigned?: boolean | undefined;
+    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowQuarantineAtLoadStation?: boolean | undefined;
-    allowChangeSerial?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 }
@@ -3262,6 +3299,7 @@ export class PartWorkorder implements IPartWorkorder {
     quantity!: number;
     dueDate!: Date;
     priority!: number;
+    programs?: WorkorderProgram[] | undefined;
 
     constructor(data?: IPartWorkorder) {
         if (data) {
@@ -3279,6 +3317,11 @@ export class PartWorkorder implements IPartWorkorder {
             this.quantity = data["Quantity"];
             this.dueDate = data["DueDate"] ? new Date(data["DueDate"].toString()) : <any>undefined;
             this.priority = data["Priority"];
+            if (data["Programs"] && data["Programs"].constructor === Array) {
+                this.programs = [] as any;
+                for (let item of data["Programs"])
+                    this.programs!.push(WorkorderProgram.fromJS(item));
+            }
         }
     }
 
@@ -3296,6 +3339,11 @@ export class PartWorkorder implements IPartWorkorder {
         data["Quantity"] = this.quantity;
         data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["Priority"] = this.priority;
+        if (this.programs && this.programs.constructor === Array) {
+            data["Programs"] = [];
+            for (let item of this.programs)
+                data["Programs"].push(item.toJSON());
+        }
         return data; 
     }
 }
@@ -3306,6 +3354,55 @@ export interface IPartWorkorder {
     quantity: number;
     dueDate: Date;
     priority: number;
+    programs?: WorkorderProgram[] | undefined;
+}
+
+export class WorkorderProgram implements IWorkorderProgram {
+    processNumber!: number;
+    stopIndex?: number | undefined;
+    programName?: string | undefined;
+    revision?: number | undefined;
+
+    constructor(data?: IWorkorderProgram) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            this.processNumber = data["ProcessNumber"];
+            this.stopIndex = data["StopIndex"];
+            this.programName = data["ProgramName"];
+            this.revision = data["Revision"];
+        }
+    }
+
+    static fromJS(data: any): WorkorderProgram {
+        data = typeof data === 'object' ? data : {};
+        let result = new WorkorderProgram();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ProcessNumber"] = this.processNumber;
+        data["StopIndex"] = this.stopIndex;
+        data["ProgramName"] = this.programName;
+        data["Revision"] = this.revision;
+        return data; 
+    }
+}
+
+export interface IWorkorderProgram {
+    processNumber: number;
+    stopIndex?: number | undefined;
+    programName?: string | undefined;
+    revision?: number | undefined;
 }
 
 export class QueueSize implements IQueueSize {
@@ -4216,6 +4313,65 @@ export interface IPlannedSchedule {
     jobs: JobPlan[];
     extraParts: { [key: string] : number; };
     currentUnfilledWorkorders?: PartWorkorder[] | undefined;
+}
+
+export class WorkordersAndPrograms implements IWorkordersAndPrograms {
+    workorders!: PartWorkorder[];
+    programs?: ProgramEntry[] | undefined;
+
+    constructor(data?: IWorkordersAndPrograms) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.workorders = [];
+        }
+    }
+
+    init(data?: any) {
+        if (data) {
+            if (data["Workorders"] && data["Workorders"].constructor === Array) {
+                this.workorders = [] as any;
+                for (let item of data["Workorders"])
+                    this.workorders!.push(PartWorkorder.fromJS(item));
+            }
+            if (data["Programs"] && data["Programs"].constructor === Array) {
+                this.programs = [] as any;
+                for (let item of data["Programs"])
+                    this.programs!.push(ProgramEntry.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): WorkordersAndPrograms {
+        data = typeof data === 'object' ? data : {};
+        let result = new WorkordersAndPrograms();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (this.workorders && this.workorders.constructor === Array) {
+            data["Workorders"] = [];
+            for (let item of this.workorders)
+                data["Workorders"].push(item.toJSON());
+        }
+        if (this.programs && this.programs.constructor === Array) {
+            data["Programs"] = [];
+            for (let item of this.programs)
+                data["Programs"].push(item.toJSON());
+        }
+        return data; 
+    }
+}
+
+export interface IWorkordersAndPrograms {
+    workorders: PartWorkorder[];
+    programs?: ProgramEntry[] | undefined;
 }
 
 export class QueuePosition implements IQueuePosition {

@@ -50,9 +50,10 @@ namespace BlackMaple.FMSInsight.Niigata
     private Action<EditMaterialInLogEvents> _onEditMatInLog;
     private bool _requireRawMatQueue;
     private bool _requireInProcessQueues;
+    private bool _requireProgramsInJobs;
 
     public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
-                       bool requireRawMatQ, bool requireInProcQ, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
+                       bool requireRawMatQ, bool requireInProcQ, bool requireProgsInJobs, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
     {
       _onNewJobs = onNewJobs;
       _jobDbCfg = j;
@@ -62,6 +63,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _statNames = statNames;
       _requireRawMatQueue = requireRawMatQ;
       _requireInProcessQueues = requireInProcQ;
+      _requireProgramsInJobs = requireProgsInJobs;
       _onEditMatInLog = onEditMatInLog;
     }
 
@@ -159,43 +161,64 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 if (string.IsNullOrEmpty(stop.ProgramName))
                 {
-                  errors.Add("Part " + j.PartName + " has no assigned program");
-                }
-                if (stop.ProgramRevision.HasValue && stop.ProgramRevision.Value > 0)
-                {
-                  var existing = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value) != null;
-                  var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName && p.Revision == stop.ProgramRevision);
-                  if (!existing && !newProg)
+                  if (_requireProgramsInJobs)
                   {
-                    errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " rev" + stop.ProgramRevision.Value.ToString() + " is not found");
+                    errors.Add("Part " + j.PartName + " has no assigned program");
                   }
                 }
                 else
                 {
-                  var existing = jobDB.LoadMostRecentProgram(stop.ProgramName) != null;
-                  var newProg = jobs.Programs != null && jobs.Programs.Any(p => p.ProgramName == stop.ProgramName);
-                  if (!existing && !newProg)
-                  {
-                    if (int.TryParse(stop.ProgramName, out int progNum))
-                    {
-                      if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
-                      {
-                        errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor found in the cell controller");
-                      }
-                    }
-                    else
-                    {
-                      errors.Add("Part " + j.PartName + " program " + stop.ProgramName + " is neither included in the download nor is an integer");
-                    }
-                  }
+                  CheckProgram(stop.ProgramName, stop.ProgramRevision, jobs.Programs, cellState, jobDB, "Part " + j.PartName, errors);
                 }
               }
-
             }
           }
         }
       }
+
+      foreach (var w in jobs.CurrentUnfilledWorkorders ?? Enumerable.Empty<PartWorkorder>())
+      {
+        if (w.Programs != null)
+        {
+          foreach (var prog in w.Programs)
+          {
+            CheckProgram(prog.ProgramName, prog.Revision, jobs.Programs, cellState, jobDB, "Workorder " + w.WorkorderId, errors);
+          }
+        }
+      }
       return errors;
+    }
+
+    private void CheckProgram(string programName, long? rev, IEnumerable<MachineWatchInterface.ProgramEntry> newPrograms, CellState cellState, JobDB jobDB, string errHdr, IList<string> errors)
+    {
+      if (rev.HasValue && rev.Value > 0)
+      {
+        var existing = jobDB.LoadProgram(programName, rev.Value) != null;
+        var newProg = newPrograms != null && newPrograms.Any(p => p.ProgramName == programName && p.Revision == rev.Value);
+        if (!existing && !newProg)
+        {
+          errors.Add(errHdr + " program " + programName + " rev" + rev.Value.ToString() + " is not found");
+        }
+      }
+      else
+      {
+        var existing = jobDB.LoadMostRecentProgram(programName) != null;
+        var newProg = newPrograms != null && newPrograms.Any(p => p.ProgramName == programName);
+        if (!existing && !newProg)
+        {
+          if (int.TryParse(programName, out int progNum))
+          {
+            if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
+            {
+              errors.Add(errHdr + " program " + programName + " is neither included in the download nor found in the cell controller");
+            }
+          }
+          else
+          {
+            errors.Add(errHdr + " program " + programName + " is neither included in the download nor is an integer");
+          }
+        }
+      }
     }
 
     void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
@@ -246,8 +269,8 @@ namespace BlackMaple.FMSInsight.Niigata
       var matInProc =
         st.Pallets
         .SelectMany(p => p.Material)
-        .Select(f => f.Mat)
         .Concat(st.QueuedMaterial)
+        .Select(f => f.Mat)
         .Where(m => m.JobUnique == job.UniqueStr)
         .Any();
 
@@ -287,6 +310,35 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         jdb.SetJobComment(jobUnique, comment);
       }
+      _sync.JobsOrQueuesChanged();
+    }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs)
+    {
+      var cellState = _sync.CurrentCellState();
+      if (cellState == null) return;
+
+      using (var jdb = _jobDbCfg.OpenConnection())
+      {
+        var errors = new List<string>();
+        foreach (var w in newWorkorders ?? Enumerable.Empty<PartWorkorder>())
+        {
+          if (w.Programs != null)
+          {
+            foreach (var prog in w.Programs)
+            {
+              CheckProgram(prog.ProgramName, prog.Revision, programs, cellState, jdb, "Workorder " + w.WorkorderId, errors);
+            }
+          }
+        }
+        if (errors.Any())
+        {
+          throw new BadRequestException(string.Join(Environment.NewLine, errors));
+        }
+
+        jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
+      }
+
       _sync.JobsOrQueuesChanged();
     }
     #endregion
@@ -530,7 +582,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var palMat = st.Pallets
         .SelectMany(p => p.Material)
         .FirstOrDefault(m => m.Mat.MaterialID == materialId);
-      var qMat = st.QueuedMaterial.FirstOrDefault(m => m.MaterialID == materialId);
+      var qMat = st.QueuedMaterial.FirstOrDefault(m => m.Mat.MaterialID == materialId);
 
       if (palMat != null && palMat.Mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {

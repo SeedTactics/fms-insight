@@ -155,11 +155,11 @@ namespace BlackMaple.FMSInsight.Niigata
       // take out anything currently in the queue
       foreach (var m in cellState.QueuedMaterial)
       {
-        if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type != InProcessMaterialAction.ActionType.Loading)
+        if (m.Mat.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Mat.Action.Type != InProcessMaterialAction.ActionType.Loading)
         {
-          if (remain.ContainsKey(m.Location.CurrentQueue))
+          if (remain.ContainsKey(m.Mat.Location.CurrentQueue))
           {
-            remain[m.Location.CurrentQueue] -= 1;
+            remain[m.Mat.Location.CurrentQueue] -= 1;
           }
         }
       }

@@ -2201,7 +2201,21 @@ namespace MachineWatchTest
       return e;
     }
 
-    private Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)
+    public static Func<LogMaterial, LogMaterial> SetUniqInMat(string uniq, int? numProc = null)
+    {
+      return m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: uniq,
+        proc: m.Process,
+        part: m.PartName,
+        numProc: numProc ?? m.NumProcesses,
+        serial: m.Serial,
+        workorder: m.Workorder,
+        face: m.Face
+      );
+    }
+
+    public static Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)
     {
       return m => new LogMaterial(
         matID: m.MaterialID,
@@ -2215,7 +2229,7 @@ namespace MachineWatchTest
       );
     }
 
-    private Func<LogMaterial, LogMaterial> SetWorkorderInMat(string work)
+    public static Func<LogMaterial, LogMaterial> SetWorkorderInMat(string work)
     {
       return m => new LogMaterial(
         matID: m.MaterialID,
@@ -2229,7 +2243,7 @@ namespace MachineWatchTest
       );
     }
 
-    private Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
+    public static Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
     {
       return m => new LogMaterial(
         matID: m.MaterialID,

@@ -270,6 +270,18 @@ namespace MazakMachineInterface
       }
       _onCurStatusChange(st);
     }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    {
+      if (newWorkorders != null && newWorkorders.Any(w => w.Programs != null && w.Programs.Any()))
+      {
+        throw new BlackMaple.MachineFramework.BadRequestException("Mazak does not support per-workorder programs");
+      }
+      using (var jdb = jobDBCfg.OpenConnection())
+      {
+        jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
+      }
+    }
     #endregion
 
     #region "Decrement Plan Quantity"

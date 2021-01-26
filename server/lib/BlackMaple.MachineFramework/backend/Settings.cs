@@ -109,10 +109,10 @@ namespace BlackMaple.MachineFramework
     public bool RequireScanAtWash { get; set; }
     public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
     public string QuarantineQueue { get; set; }
-    public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
-    public bool AllowAddRawMaterialForNonRunningJobs { get; set; }
+    public bool RequireExistingMaterialWhenAddingToQueue { get; set; }
     public bool RequireSerialWhenAddingMaterialToQueue { get; set; }
-    public bool AllowChangeSerial { get; set; }
+    public bool AddRawMaterialAsUnassigned { get; set; }
+    public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     public bool AllowChangeWorkorderAtLoadStation { get; set; }
 
     public Dictionary<string, MachineWatchInterface.QueueSize> Queues { get; }
@@ -144,9 +144,15 @@ namespace BlackMaple.MachineFramework
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
       RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
       RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
+
       RequireSerialWhenAddingMaterialToQueue = fmsSection.GetValue<bool>("RequireSerialWhenAddingMaterialToQueue", false);
-      AllowAddRawMaterialForNonRunningJobs = fmsSection.GetValue<bool>("AllowAddRawMaterialForNonRunningJobs", true);
-      AllowChangeSerial = fmsSection.GetValue<bool>("AllowChangeSerial", false);
+      RequireExistingMaterialWhenAddingToQueue = fmsSection.GetValue<bool>("RequireExistingMaterialWhenAddingToQueue", false);
+      if (RequireExistingMaterialWhenAddingToQueue)
+      {
+        RequireSerialWhenAddingMaterialToQueue = true;
+      }
+
+      AddRawMaterialAsUnassigned = fmsSection.GetValue<bool>("AddRawMaterialAsUnassigned", true);
       AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>("AllowChangeWorkorderAtLoadStation", false);
       QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
       AdditionalLogServers =

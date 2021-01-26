@@ -133,6 +133,11 @@ namespace Makino
     {
       //do nothing
     }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    {
+      // do nothing
+    }
     #endregion
 
     #region Queues
