@@ -41,7 +41,7 @@ namespace MazakMachineInterface
 {
   public interface IHoldManagement
   {
-    TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.JobDB jobDB);
+    TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.IRepository jobDB);
   }
 
   public class HoldPattern : IHoldManagement
@@ -124,7 +124,7 @@ namespace MazakMachineInterface
         _parent.database.Save(transSet, "Hold Mode");
       }
 
-      public MazakSchedule(BlackMaple.MachineFramework.JobDB jdb, HoldPattern parent, MazakScheduleRow s)
+      public MazakSchedule(BlackMaple.MachineFramework.IRepository jdb, HoldPattern parent, MazakScheduleRow s)
       {
         _parent = parent;
         _schRow = s;
@@ -145,7 +145,7 @@ namespace MazakMachineInterface
       private MazakScheduleRow _schRow;
     }
 
-    private IDictionary<int, MazakSchedule> LoadMazakSchedules(BlackMaple.MachineFramework.JobDB jdb, IEnumerable<MazakScheduleRow> schedules)
+    private IDictionary<int, MazakSchedule> LoadMazakSchedules(BlackMaple.MachineFramework.IRepository jdb, IEnumerable<MazakScheduleRow> schedules)
     {
       var ret = new Dictionary<int, MazakSchedule>();
 
@@ -157,7 +157,7 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    public TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.JobDB jobDB)
+    public TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.IRepository jobDB)
     {
       try
       {

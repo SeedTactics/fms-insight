@@ -44,8 +44,7 @@ namespace MazakMachineInterface
     private IWriteData writeDb;
     private IReadDataAccess readDatabase;
     private IMazakLogReader logReader;
-    private BlackMaple.MachineFramework.JobDB.Config jobDBCfg;
-    private BlackMaple.MachineFramework.EventLogDB.Config logDbCfg;
+    private BlackMaple.MachineFramework.RepositoryConfig logDbCfg;
     private IWriteJobs _writeJobs;
     private IMachineGroupName _machineGroupName;
     private IDecrementPlanQty _decr;
@@ -64,8 +63,7 @@ namespace MazakMachineInterface
       IMachineGroupName machineGroupName,
       IReadDataAccess readDb,
       IMazakLogReader logR,
-      BlackMaple.MachineFramework.JobDB.Config jDBCfg,
-      BlackMaple.MachineFramework.EventLogDB.Config jLogCfg,
+      BlackMaple.MachineFramework.RepositoryConfig jLogCfg,
       IWriteJobs wJobs,
       IQueueSyncFault queueSyncFault,
       IDecrementPlanQty decrement,
@@ -79,7 +77,6 @@ namespace MazakMachineInterface
       writeDb = d;
       readDatabase = readDb;
       fmsSettings = settings;
-      jobDBCfg = jDBCfg;
       logReader = logR;
       logDbCfg = jLogCfg;
       _writeJobs = wJobs;
@@ -105,13 +102,12 @@ namespace MazakMachineInterface
     CurrentStatus IJobControl.GetCurrentStatus()
     {
       using (var log = logDbCfg.OpenConnection())
-      using (var jdb = jobDBCfg.OpenConnection())
       {
-        return CurrentStatus(jdb, log);
+        return CurrentStatus(log);
       }
     }
 
-    public CurrentStatus CurrentStatus(BlackMaple.MachineFramework.JobDB jobDB, BlackMaple.MachineFramework.EventLogDB eventLogDB)
+    public CurrentStatus CurrentStatus(BlackMaple.MachineFramework.IRepository eventLogDB)
     {
       MazakAllData mazakData;
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
@@ -127,7 +123,7 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return MazakMachineInterface.BuildCurrentStatus.Build(jobDB, eventLogDB, fmsSettings, _machineGroupName, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
+      return MazakMachineInterface.BuildCurrentStatus.Build(eventLogDB, fmsSettings, _machineGroupName, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
     }
 
     #endregion
@@ -155,7 +151,7 @@ namespace MazakMachineInterface
 
       try
       {
-        using (var jobDB = jobDBCfg.OpenConnection())
+        using (var jobDB = logDbCfg.OpenConnection())
         {
           ProgramRevision lookupProg(string prog, long? rev)
           {
@@ -211,14 +207,11 @@ namespace MazakMachineInterface
       try
       {
         NewJobTransform?.Invoke(newJ);
-        using (var jobDB = jobDBCfg.OpenConnection())
+        using (var jobDB = logDbCfg.OpenConnection())
         {
           _writeJobs.AddJobs(jobDB, newJ, expectedPreviousScheduleId);
           logReader.RecheckQueues(wait: false);
-          using (var log = logDbCfg.OpenConnection())
-          {
-            curSt = CurrentStatus(jobDB, log);
-          }
+          curSt = CurrentStatus(jobDB);
         }
       }
       finally
@@ -240,7 +233,7 @@ namespace MazakMachineInterface
         }
         try
         {
-          using (var jobDB = jobDBCfg.OpenConnection())
+          using (var jobDB = logDbCfg.OpenConnection())
           {
             _writeJobs.RecopyJobsToMazak(jobDB);
             logReader.RecheckQueues(wait: false);
@@ -260,13 +253,10 @@ namespace MazakMachineInterface
     void IJobControl.SetJobComment(string jobUnique, string comment)
     {
       CurrentStatus st;
-      using (var jdb = jobDBCfg.OpenConnection())
+      using (var jdb = logDbCfg.OpenConnection())
       {
         jdb.SetJobComment(jobUnique, comment);
-        using (var logDb = logDbCfg.OpenConnection())
-        {
-          st = CurrentStatus(jdb, logDb);
-        }
+        st = CurrentStatus(jdb);
       }
       _onCurStatusChange(st);
     }
@@ -277,7 +267,7 @@ namespace MazakMachineInterface
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Mazak does not support per-workorder programs");
       }
-      using (var jdb = jobDBCfg.OpenConnection())
+      using (var jdb = logDbCfg.OpenConnection())
       {
         jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
       }
@@ -294,7 +284,7 @@ namespace MazakMachineInterface
       List<JobAndDecrementQuantity> ret;
       try
       {
-        using (var jdb = jobDBCfg.OpenConnection())
+        using (var jdb = logDbCfg.OpenConnection())
         {
           _decr.Decrement(jdb);
           ret = jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
@@ -316,7 +306,7 @@ namespace MazakMachineInterface
       List<JobAndDecrementQuantity> ret;
       try
       {
-        using (var jdb = jobDBCfg.OpenConnection())
+        using (var jdb = logDbCfg.OpenConnection())
         {
           _decr.Decrement(jdb);
           ret = jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
@@ -348,7 +338,7 @@ namespace MazakMachineInterface
 
       // try and see if there is a job for this part with an actual casting
       List<JobPlan> sch;
-      using (var jdb = jobDBCfg.OpenConnection())
+      using (var jdb = logDbCfg.OpenConnection())
       {
         sch = jdb.LoadUnarchivedJobs();
       }
@@ -393,7 +383,7 @@ namespace MazakMachineInterface
           if (i < serial.Count)
           {
             logDb.RecordSerialForMaterialID(
-              new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
+              new BlackMaple.MachineFramework.Repository.EventLogMaterial()
               {
                 MaterialID = matId,
                 Process = 0,
@@ -415,10 +405,7 @@ namespace MazakMachineInterface
 
         logReader.RecheckQueues(wait: true);
 
-        using (var jdb = jobDBCfg.OpenConnection())
-        {
-          newSt = CurrentStatus(jdb, logDb);
-        }
+        newSt = CurrentStatus(logDb);
       }
       _onCurStatusChange(newSt);
 
@@ -438,9 +425,8 @@ namespace MazakMachineInterface
       CurrentStatus st;
       long matId;
       using (var logDb = logDbCfg.OpenConnection())
-      using (var jobDb = jobDBCfg.OpenConnection())
       {
-        var job = jobDb.LoadJob(jobUnique);
+        var job = logDb.LoadJob(jobUnique);
         if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 
         int? path = null;
@@ -458,7 +444,7 @@ namespace MazakMachineInterface
         if (!string.IsNullOrEmpty(serial))
         {
           logDb.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
+            new BlackMaple.MachineFramework.Repository.EventLogMaterial()
             {
               MaterialID = matId,
               Process = process,
@@ -479,7 +465,7 @@ namespace MazakMachineInterface
 
         logReader.RecheckQueues(wait: true);
 
-        st = CurrentStatus(jobDb, logDb);
+        st = CurrentStatus(logDb);
       }
 
       _onCurStatusChange(st);
@@ -511,10 +497,7 @@ namespace MazakMachineInterface
         );
         logReader.RecheckQueues(wait: true);
 
-        using (var jdb = jobDBCfg.OpenConnection())
-        {
-          status = CurrentStatus(jdb, logDb);
-        }
+        status = CurrentStatus(logDb);
       }
       _onCurStatusChange(status);
     }
@@ -534,10 +517,7 @@ namespace MazakMachineInterface
         }
         logReader.RecheckQueues(wait: true);
 
-        using (var jdb = jobDBCfg.OpenConnection())
-        {
-          status = CurrentStatus(jdb, logDb);
-        }
+        status = CurrentStatus(logDb);
       }
       _onCurStatusChange(status);
     }
@@ -551,9 +531,8 @@ namespace MazakMachineInterface
       }
 
       using (var logDb = logDbCfg.OpenConnection())
-      using (var jdb = jobDBCfg.OpenConnection())
       {
-        var status = CurrentStatus(jdb, logDb);
+        var status = CurrentStatus(logDb);
 
         var mat = status.Material.FirstOrDefault(m => m.MaterialID == materialId);
         if (mat == null)
@@ -576,7 +555,6 @@ namespace MazakMachineInterface
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 
       using (var logDb = logDbCfg.OpenConnection())
-      using (var jdb = jobDBCfg.OpenConnection())
       {
         var o = logDb.SwapMaterialInCurrentPalletCycle(
           pallet: pallet,
@@ -591,7 +569,7 @@ namespace MazakMachineInterface
           NewMaterialID = newMatId,
           EditedEvents = o.ChangedLogEntries,
         });
-        _onCurStatusChange(CurrentStatus(jdb, logDb));
+        _onCurStatusChange(CurrentStatus(logDb));
       }
     }
 
@@ -600,7 +578,6 @@ namespace MazakMachineInterface
       Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
 
       using (var logDb = logDbCfg.OpenConnection())
-      using (var jdb = jobDBCfg.OpenConnection())
       {
         logDb.InvalidatePalletCycle(
           matId: matId,
@@ -608,7 +585,7 @@ namespace MazakMachineInterface
           oldMatPutInQueue: oldMatPutInQueue,
           operatorName: operatorName
         );
-        _onCurStatusChange(CurrentStatus(jdb, logDb));
+        _onCurStatusChange(CurrentStatus(logDb));
       }
     }
     #endregion

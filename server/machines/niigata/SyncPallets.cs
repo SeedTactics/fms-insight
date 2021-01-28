@@ -43,14 +43,13 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     CellState CurrentCellState();
     void JobsOrQueuesChanged();
-    void DecrementPlannedButNotStartedQty(JobDB jobDB, EventLogDB logDB);
+    void DecrementPlannedButNotStartedQty(IRepository jobDB);
   }
 
   public class SyncPallets : ISyncPallets, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<SyncPallets>();
-    private JobDB.Config _jobDbCfg;
-    private EventLogDB.Config _logDbCfg;
+    private RepositoryConfig _jobDbCfg;
     private INiigataCommunication _icc;
     private IAssignPallets _assign;
     private IBuildCellState _createLog;
@@ -69,13 +68,12 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public SyncPallets(JobDB.Config jobDbCfg, EventLogDB.Config log, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create, IDecrementJobs decrementJobs, FMSSettings settings, Action<CurrentStatus> onNewCurrentStatus)
+    public SyncPallets(RepositoryConfig jobDbCfg, INiigataCommunication icc, IAssignPallets assign, IBuildCellState create, IDecrementJobs decrementJobs, FMSSettings settings, Action<CurrentStatus> onNewCurrentStatus)
     {
       _settings = settings;
       _onNewCurrentStatus = onNewCurrentStatus;
       _jobDbCfg = jobDbCfg;
       _decrJobs = decrementJobs;
-      _logDbCfg = log;
       _icc = icc;
       _assign = assign;
       _createLog = create;
@@ -180,7 +178,6 @@ namespace BlackMaple.FMSInsight.Niigata
         // 5. Decide on any changes to pallet routes or planned quantities.
 
         using (var jdb = _jobDbCfg.OpenConnection())
-        using (var logDB = _logDbCfg.OpenConnection())
         {
           try
           {
@@ -195,7 +192,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
               Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs.Select(j => j.UniqueStr));
 
-              cellSt = _createLog.BuildCellState(jdb, logDB, status, jobs);
+              cellSt = _createLog.BuildCellState(jdb, status, jobs);
               raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
 
               lock (_curStLock)
@@ -211,7 +208,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 Log.Debug("Executing action pallet to {@change}", action);
                 raisePalletChanged = true;
-                _icc.PerformAction(jdb, logDB, action);
+                _icc.PerformAction(jdb, action);
               }
             } while (action != null);
 
@@ -220,7 +217,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (cellSt != null && raisePalletChanged)
             {
-              _onNewCurrentStatus(BuildCurrentStatus.Build(jdb, logDB, cellSt, _settings));
+              _onNewCurrentStatus(BuildCurrentStatus.Build(jdb, cellSt, _settings));
             }
           }
         }
@@ -228,20 +225,20 @@ namespace BlackMaple.FMSInsight.Niigata
 
     }
 
-    public void DecrementPlannedButNotStartedQty(JobDB jobDB, EventLogDB logDB)
+    public void DecrementPlannedButNotStartedQty(IRepository jobDB)
     {
       // lock prevents decrement from occuring at the same time as the thread
       // is deciding what to put onto a pallet
       lock (_changeLock)
       {
         var jobs = jobDB.LoadUnarchivedJobs();
-        var cellSt = _createLog.BuildCellState(jobDB, logDB, _icc.LoadNiigataStatus(), jobs);
+        var cellSt = _createLog.BuildCellState(jobDB, _icc.LoadNiigataStatus(), jobs);
 
-        var changed = _decrJobs.DecrementJobs(jobDB, logDB, cellSt);
+        var changed = _decrJobs.DecrementJobs(jobDB, cellSt);
 
         if (changed || cellSt.PalletStateUpdated)
         {
-          _onNewCurrentStatus(BuildCurrentStatus.Build(jobDB, logDB, cellSt, _settings));
+          _onNewCurrentStatus(BuildCurrentStatus.Build(jobDB, cellSt, _settings));
         }
       }
     }

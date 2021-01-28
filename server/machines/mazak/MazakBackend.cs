@@ -52,8 +52,7 @@ namespace MazakMachineInterface
     private ICurrentLoadActions loadOper;
     private IMazakLogReader logDataLoader;
 
-    private EventLogDB.Config logDbConfig;
-    private JobDB.Config jobDBConfig;
+    private RepositoryConfig logDbConfig;
 
     //Settings
     public MazakDbType MazakType { get; }
@@ -63,8 +62,7 @@ namespace MazakMachineInterface
     public IWriteData WriteDB => _writeDB;
     public IReadDataAccess ReadDB => _readDB;
 
-    public EventLogDB.Config EventLogDBConfig => logDbConfig;
-    public JobDB.Config JobDBConfig => jobDBConfig;
+    public RepositoryConfig EventLogDBConfig => logDbConfig;
     public IMazakLogReader LogTranslation => logDataLoader;
     public RoutingInfo RoutingInfo => routing;
     public MazakMachineControl MazakMachineControl { get; }
@@ -72,15 +70,15 @@ namespace MazakMachineInterface
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry;
     public event NewCurrentStatus OnNewCurrentStatus;
-    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId, EventLogDB db) =>
+    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId, IRepository db) =>
       NewLogEntry?.Invoke(e, foreignId);
 
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
-    public void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.JobDB jobDb, BlackMaple.MachineFramework.EventLogDB logDB)
+    public void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.IRepository jobDb)
     {
       if (routing == null) return;
-      OnNewCurrentStatus?.Invoke(routing.CurrentStatus(jobDb, logDB));
+      OnNewCurrentStatus?.Invoke(routing.CurrentStatus(jobDb));
     }
 
     private void OnLoadActions(int lds, IEnumerable<LoadAction> actions)
@@ -189,18 +187,17 @@ namespace MazakMachineInterface
         "Configured UseStartingOffsetForDueDate = {useStarting}",
         UseStartingOffsetForDueDate);
 
-      logDbConfig = EventLogDB.Config.InitializeEventDatabase(
+      var oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
+      if (!System.IO.File.Exists(oldJobDbName))
+        oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db");
+
+      logDbConfig = RepositoryConfig.InitializeEventDatabase(
         st,
         System.IO.Path.Combine(st.DataDirectory, "log.db"),
-        System.IO.Path.Combine(st.DataDirectory, "insp.db")
+        System.IO.Path.Combine(st.DataDirectory, "insp.db"),
+        oldJobDbName
       );
       logDbConfig.NewLogEntry += RaiseNewLogEntry;
-
-      var jobInspName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
-      if (System.IO.File.Exists(jobInspName))
-        jobDBConfig = BlackMaple.MachineFramework.JobDB.Config.InitializeJobDatabase(jobInspName);
-      else
-        jobDBConfig = BlackMaple.MachineFramework.JobDB.Config.InitializeJobDatabase(System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db"));
 
       _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
 
@@ -218,7 +215,7 @@ namespace MazakMachineInterface
 
       var hold = new HoldPattern(_writeDB);
       WriteJobs writeJobs;
-      using (var jdb = jobDBConfig.OpenConnection())
+      using (var jdb = logDbConfig.OpenConnection())
       {
         writeJobs = new WriteJobs(
           d: _writeDB,
@@ -232,7 +229,7 @@ namespace MazakMachineInterface
       var decr = new DecrementPlanQty(_writeDB, _readDB);
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, logDbConfig, jobDBConfig, writeJobs, sendToExternal, _readDB, queues, hold, st,
+        logDataLoader = new LogDataWeb(logPath, logDbConfig, writeJobs, sendToExternal, _readDB, queues, hold, st,
           currentStatusChanged: RaiseCurrentStatusChanged
         );
       else
@@ -251,7 +248,6 @@ namespace MazakMachineInterface
         machineGroupName: writeJobs,
         readDb: _readDB,
         logR: logDataLoader,
-        jDBCfg: jobDBConfig,
         jLogCfg: logDbConfig,
         wJobs: writeJobs,
         queueSyncFault: queues,
@@ -263,7 +259,7 @@ namespace MazakMachineInterface
         onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o)
       );
 
-      MazakMachineControl = new MazakMachineControl(jobDBConfig, _readDB, writeJobs);
+      MazakMachineControl = new MazakMachineControl(logDbConfig, _readDB, writeJobs);
     }
 
     private bool _disposed = false;
@@ -285,7 +281,7 @@ namespace MazakMachineInterface
 
     public IJobDatabase OpenJobDatabase()
     {
-      return jobDBConfig.OpenConnection();
+      return logDbConfig.OpenConnection();
     }
     public ILogDatabase OpenLogDatabase()
     {

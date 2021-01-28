@@ -40,12 +40,12 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public class NiigataMachineControl : IMachineControl
   {
-    private JobDB.Config _jobDbCfg;
+    private RepositoryConfig _jobDbCfg;
     private INiigataCommunication _icc;
     private ICncMachineConnection _cnc;
     private NiigataStationNames _statNames;
 
-    public NiigataMachineControl(JobDB.Config jobDbCfg, INiigataCommunication icc, ICncMachineConnection cnc, NiigataStationNames statNames)
+    public NiigataMachineControl(RepositoryConfig jobDbCfg, INiigataCommunication icc, ICncMachineConnection cnc, NiigataStationNames statNames)
     {
       _jobDbCfg = jobDbCfg;
       _icc = icc;

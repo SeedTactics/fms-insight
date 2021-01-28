@@ -46,8 +46,8 @@ namespace MachineWatchTest
 
   public class LogTestBase : IDisposable
   {
-    protected EventLogDB jobLog;
-    protected JobDB jobDB;
+    protected RepositoryConfig _repoCfg;
+    protected IRepository jobLog;
     protected LogTranslation log;
     protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> raisedByEvent = new List<MazakMachineInterface.LogEntry>();
@@ -70,8 +70,8 @@ namespace MachineWatchTest
       settings.Queues["thequeue"] = new QueueSize() { MaxSizeBeforeStopUnloading = -1 };
       settings.ExternalQueues["externalq"] = "testserver";
 
-      jobLog = EventLogDB.Config.InitializeSingleThreadedMemoryDB(settings).OpenConnection();
-      jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
+      jobLog = _repoCfg.OpenConnection();
 
       _schedules = new List<MazakScheduleRow>();
       _palletSubStatus = new List<MazakPalletSubStatusRow>();
@@ -88,20 +88,19 @@ namespace MachineWatchTest
       machGroupName = Substitute.For<IMachineGroupName>();
       machGroupName.MachineGroupName.Returns("machinespec");
 
-      log = new LogTranslation(jobDB, jobLog, mazakData, machGroupName, settings,
+      log = new LogTranslation(jobLog, mazakData, machGroupName, settings,
         e => raisedByEvent.Add(e)
       );
     }
 
     public void Dispose()
     {
-      jobLog.Close();
-      jobDB.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     protected void ResetLogTranslation()
     {
-      log = new LogTranslation(jobDB, jobLog, mazakData, machGroupName, settings,
+      log = new LogTranslation(jobLog, mazakData, machGroupName, settings,
         e => raisedByEvent.Add(e)
       );
     }
@@ -282,7 +281,7 @@ namespace MachineWatchTest
           }
       }
       expected.AddRange(jobLog.RecordAddMaterialToQueue(
-        mat: new EventLogDB.EventLogMaterial() { MaterialID = material.MaterialID, Process = proc, Face = "" },
+        mat: new Repository.EventLogMaterial() { MaterialID = material.MaterialID, Process = proc, Face = "" },
         queue: queue,
         position: -1,
         operatorName: null,
@@ -293,7 +292,7 @@ namespace MachineWatchTest
 
     protected void RemoveFromAllQueues(TestMaterial mat, int proc, int offset)
     {
-      expected.AddRange(jobLog.RecordRemoveMaterialFromAllQueues(new EventLogDB.EventLogMaterial()
+      expected.AddRange(jobLog.RecordRemoveMaterialFromAllQueues(new Repository.EventLogMaterial()
       {
         MaterialID = mat.MaterialID,
         Process = proc,
@@ -1067,7 +1066,7 @@ namespace MachineWatchTest
     protected void CheckMatInQueue(string queue, IEnumerable<TestMaterial> mats)
     {
       jobLog.GetMaterialInQueue(queue).Should().BeEquivalentTo(mats.Select((m, idx) =>
-        new EventLogDB.QueuedMaterial()
+        new Repository.QueuedMaterial()
         {
           MaterialID = m.MaterialID,
           Queue = queue,
@@ -1076,7 +1075,7 @@ namespace MachineWatchTest
           PartNameOrCasting = m.JobPartName,
           NumProcesses = m.NumProcess,
         }
-      ), options => options.ComparingByMembers<EventLogDB.QueuedMaterial>().Excluding(o => o.AddTimeUTC));
+      ), options => options.ComparingByMembers<Repository.QueuedMaterial>().Excluding(o => o.AddTimeUTC));
     }
     #endregion
   }
@@ -1088,7 +1087,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1125,7 +1124,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1179,7 +1178,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 2);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1270,7 +1269,7 @@ namespace MachineWatchTest
       {
         Jobs = new List<JobPlan> { j }
       };
-      jobDB.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null);
 
       LoadStart(proc1path1, offset: 0, load: 1);
       LoadStart(proc1path2, offset: 1, load: 2);
@@ -1321,7 +1320,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("uuuu", 2);
       j.PartName = "pppp";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
@@ -1372,7 +1371,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1420,7 +1419,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1480,7 +1479,7 @@ namespace MachineWatchTest
       {
         Jobs = new List<JobPlan> { j }
       };
-      jobDB.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null);
 
       LoadStart(proc1, offset: 0, load: 6);
       LoadEnd(proc1, offset: 2, cycleOffset: 5, load: 6, elapMin: 2);
@@ -1564,7 +1563,7 @@ namespace MachineWatchTest
       {
         Jobs = new List<JobPlan> { j }
       };
-      jobDB.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null);
 
       LoadStart(proc1, offset: 0, load: 1);
       LoadEnd(proc1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5);
@@ -1631,7 +1630,7 @@ namespace MachineWatchTest
       {
         Jobs = new List<JobPlan> { j }
       };
-      jobDB.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null);
 
       LoadStart(proc1path1, offset: 0, load: 10);
       LoadEnd(proc1path1, offset: 2, cycleOffset: 3, load: 10, elapMin: 2);
@@ -1671,7 +1670,7 @@ namespace MachineWatchTest
       //queue now has 9 elements
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         Enumerable.Range(1, 9).Select((i, idx) =>
-          new EventLogDB.QueuedMaterial()
+          new Repository.QueuedMaterial()
           {
             MaterialID = i,
             Queue = "thequeue",
@@ -1693,7 +1692,7 @@ namespace MachineWatchTest
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
-            new EventLogDB.QueuedMaterial()
+            new Repository.QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
@@ -1720,7 +1719,7 @@ namespace MachineWatchTest
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6 }).Select((i, idx) =>
-            new EventLogDB.QueuedMaterial()
+            new Repository.QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
@@ -1786,7 +1785,7 @@ namespace MachineWatchTest
       {
         Jobs = new List<JobPlan> { j }
       };
-      jobDB.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null);
 
       AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 0, allocate: AllocateTy.Assigned);
       AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
@@ -1849,7 +1848,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow;
 
@@ -1862,7 +1861,7 @@ namespace MachineWatchTest
       MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
 
 
-      // some basic snapshots.  More complicated scenarios are tested as part of the EventLogDB spec
+      // some basic snapshots.  More complicated scenarios are tested as part of the Repository spec
 
       mazakData.Tools = new[] {
         new ToolPocketRow() { MachineNumber = 1, PocketNumber = 10, GroupNo = "ignored", IsToolDataValid = true, LifeUsed = 20, LifeSpan = 101},
@@ -1907,7 +1906,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1953,7 +1952,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1985,7 +1984,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 2);
       j.PartName = "part1";
-      jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -2042,7 +2041,7 @@ namespace MachineWatchTest
 
       ExpectAddToQueue(m2proc1, offset: 10, queue: "quarantineQ", pos: 0, reason: "MaterialMissingOnPallet");
       jobLog.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-        new EventLogDB.QueuedMaterial() {
+        new Repository.QueuedMaterial() {
           MaterialID = m2proc1.MaterialID,
           Queue = "quarantineQ",
           Position = 0,

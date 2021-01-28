@@ -45,7 +45,8 @@ namespace MachineWatchTest
 {
   public class DecrementSpec : IDisposable
   {
-    private JobDB _jobDB;
+    private RepositoryConfig _repoCfg;
+    private IRepository _jobDB;
     private DecrementPlanQty _decr;
 
     private class WriteMock : IWriteData
@@ -65,7 +66,8 @@ namespace MachineWatchTest
 
     public DecrementSpec()
     {
-      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _jobDB = _repoCfg.OpenConnection();
 
       _write = new WriteMock();
 
@@ -76,7 +78,7 @@ namespace MachineWatchTest
     }
     public void Dispose()
     {
-      _jobDB.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -211,7 +213,7 @@ namespace MachineWatchTest
 
       var now = DateTime.UtcNow.AddHours(-1);
       _jobDB.AddNewDecrement(new[] {
-        new JobDB.NewDecrementQuantity() {
+        new Repository.NewDecrementQuantity() {
           JobUnique = "uuuu", Proc1Path = 1, Part = "pppp", Quantity = 3
         }
       }, now);

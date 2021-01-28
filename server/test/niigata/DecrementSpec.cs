@@ -43,22 +43,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 {
   public class NiigataDecrementSpec : IDisposable
   {
-    private JobDB _jobDB;
-    private EventLogDB _logDB;
+    private RepositoryConfig _repoCfg;
+    private IRepository _jobDB;
 
     public NiigataDecrementSpec()
     {
-      var logCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings());
-      _logDB = logCfg.OpenConnection();
-
-      var jobDbCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
-      _jobDB = jobDbCfg.OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _jobDB = _repoCfg.OpenConnection();
     }
 
     void IDisposable.Dispose()
     {
-      _logDB.Close();
-      _jobDB.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -79,7 +75,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         // decrement twice, the second time keeps everything unchanged
 
-        d.DecrementJobs(_jobDB, _logDB,
+        d.DecrementJobs(_jobDB,
           new CellState()
           {
             UnarchivedJobs = new[] { j1, j2 },

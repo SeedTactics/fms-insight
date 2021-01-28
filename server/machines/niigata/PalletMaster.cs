@@ -352,7 +352,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     NiigataStatus LoadNiigataStatus();
     Dictionary<int, ProgramEntry> LoadPrograms();
-    void PerformAction(MachineFramework.JobDB jobDB, MachineFramework.EventLogDB logDB, NiigataAction a);
+    void PerformAction(MachineFramework.IRepository jobDB, NiigataAction a);
     event Action NewCurrentStatus;
   }
 }

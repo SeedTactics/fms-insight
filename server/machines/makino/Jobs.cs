@@ -39,13 +39,13 @@ namespace Makino
   public class Jobs : IJobControl, IOldJobDecrement
   {
     private MakinoDB _db;
-    private Func<BlackMaple.MachineFramework.JobDB> _openJobDB;
+    private Func<BlackMaple.MachineFramework.IRepository> _openJobDB;
     private Action<NewJobs> _onNewJobs;
     private Action _onJobCommentChange;
     private string _xmlPath;
     private bool _onlyOrders;
 
-    public Jobs(MakinoDB db, Func<BlackMaple.MachineFramework.JobDB> jdb, string xmlPath, bool onlyOrders, Action<NewJobs> onNewJob, Action onJobCommentChange)
+    public Jobs(MakinoDB db, Func<BlackMaple.MachineFramework.IRepository> jdb, string xmlPath, bool onlyOrders, Action<NewJobs> onNewJob, Action onJobCommentChange)
     {
       _db = db;
       _openJobDB = jdb;

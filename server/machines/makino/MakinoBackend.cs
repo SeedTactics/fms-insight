@@ -43,8 +43,7 @@ namespace Makino
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
     // Common databases from machine framework
-    public JobDB.Config JobDBConfig { get; }
-    public EventLogDB.Config EventLogDBConfig { get; }
+    public RepositoryConfig RepoConfig { get; }
 
     // Makino databases
     private MakinoDB _makinoDB;
@@ -82,27 +81,25 @@ namespace Makino
 
         _dataDirectory = st.DataDirectory;
 
-        EventLogDBConfig = EventLogDB.Config.InitializeEventDatabase(
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(
             st,
             System.IO.Path.Combine(_dataDirectory, "log.db"),
-            System.IO.Path.Combine(_dataDirectory, "inspections.db")
+            System.IO.Path.Combine(_dataDirectory, "inspections.db"),
+            System.IO.Path.Combine(_dataDirectory, "jobs.db")
         );
-        EventLogDBConfig.NewLogEntry += OnLogEntry;
-
-        // open jobDB
-        JobDBConfig = BlackMaple.MachineFramework.JobDB.Config.InitializeJobDatabase(System.IO.Path.Combine(_dataDirectory, "jobs.db"));
+        RepoConfig.NewLogEntry += OnLogEntry;
 
         _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
 #if DEBUG
-        _makinoDB = new MakinoDB(EventLogDBConfig, MakinoDB.DBTypeEnum.SqlLocal, "", _status);
+        _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlLocal, "", _status);
 #else
         _makinoDB = new MakinoDB(EventLogDBConfig, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status);
 #endif
 
-        _logTimer = new LogTimer(EventLogDBConfig, JobDBConfig.OpenConnection, _makinoDB, _status, st);
+        _logTimer = new LogTimer(RepoConfig, _makinoDB, _status, st);
 
-        _jobs = new Jobs(_makinoDB, JobDBConfig.OpenConnection, adePath, downloadOnlyOrders, onNewJob: j => OnNewJobs?.Invoke(j), onJobCommentChange: OnLogsProcessed);
+        _jobs = new Jobs(_makinoDB, RepoConfig.OpenConnection, adePath, downloadOnlyOrders, onNewJob: j => OnNewJobs?.Invoke(j), onJobCommentChange: OnLogsProcessed);
 
         _logTimer.LogsProcessed += OnLogsProcessed;
 
@@ -121,11 +118,11 @@ namespace Makino
       _logTimer.LogsProcessed -= OnLogsProcessed;
       if (_logTimer != null) _logTimer.Halt();
       if (_makinoDB != null) _makinoDB.Close();
-      EventLogDBConfig.NewLogEntry -= OnLogEntry;
+      RepoConfig.NewLogEntry -= OnLogEntry;
     }
 
     public event NewLogEntryDelegate NewLogEntry;
-    private void OnLogEntry(LogEntry entry, string foreignId, EventLogDB db)
+    private void OnLogEntry(LogEntry entry, string foreignId, IRepository db)
     {
       NewLogEntry?.Invoke(entry, foreignId);
     }
@@ -151,7 +148,7 @@ namespace Makino
 
     public IJobDatabase OpenJobDatabase()
     {
-      return JobDBConfig.OpenConnection();
+      return RepoConfig.OpenConnection();
     }
 
     public IJobControl JobControl { get => _jobs; }
@@ -162,12 +159,12 @@ namespace Makino
 
     public IInspectionControl OpenInspectionControl()
     {
-      return EventLogDBConfig.OpenConnection();
+      return RepoConfig.OpenConnection();
     }
 
     public ILogDatabase OpenLogDatabase()
     {
-      return EventLogDBConfig.OpenConnection();
+      return RepoConfig.OpenConnection();
     }
 
     public LogTimer LogTimer

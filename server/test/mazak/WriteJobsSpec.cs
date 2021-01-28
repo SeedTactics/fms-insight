@@ -100,8 +100,8 @@ namespace MachineWatchTest
       }
     }
 
-    private EventLogDB _logDB;
-    private JobDB _jobDB;
+    private RepositoryConfig _repoCfg;
+    private IRepository _jobDB;
     private IWriteJobs _writeJobs;
     private WriteMock _writeMock;
     private IReadDataAccess _readMock;
@@ -110,8 +110,8 @@ namespace MachineWatchTest
 
     public WriteJobsSpec()
     {
-      _logDB = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
-      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _jobDB = _repoCfg.OpenConnection();
 
       _writeMock = new WriteMock();
 
@@ -254,8 +254,7 @@ namespace MachineWatchTest
 
     public void Dispose()
     {
-      _logDB.Close();
-      _jobDB.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     private void ShouldMatchSnapshot<T>(T val, string snapshot, Action<T> adjust = null)

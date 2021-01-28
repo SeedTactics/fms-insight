@@ -39,16 +39,16 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public interface IDecrementJobs
   {
-    bool DecrementJobs(JobDB jobDB, EventLogDB logDB, CellState cellSt);
+    bool DecrementJobs(IRepository jobDB, CellState cellSt);
   }
 
   public class DecrementNotYetStartedJobs : IDecrementJobs
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrementNotYetStartedJobs>();
 
-    public bool DecrementJobs(JobDB jobDB, EventLogDB logDB, CellState cellSt)
+    public bool DecrementJobs(IRepository jobDB, CellState cellSt)
     {
-      var decrs = new List<JobDB.NewDecrementQuantity>();
+      var decrs = new List<Repository.NewDecrementQuantity>();
       foreach (var j in cellSt.UnarchivedJobs)
       {
         if (j.ManuallyCreatedJob || jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
@@ -57,7 +57,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
           {
-            decrs.Add(new JobDB.NewDecrementQuantity()
+            decrs.Add(new Repository.NewDecrementQuantity()
             {
               JobUnique = j.UniqueStr,
               Proc1Path = path,

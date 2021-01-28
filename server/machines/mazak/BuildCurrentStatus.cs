@@ -43,7 +43,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
 
-    public static CurrentStatus Build(JobDB jobDB, EventLogDB log, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
+    public static CurrentStatus Build(IRepository jobDB, FMSSettings fmsSettings, IMachineGroupName machineGroupName, IQueueSyncFault queueSyncFault, MazakDbType dbType, MazakAllData mazakData, DateTime utcNow)
     {
       //Load process and path numbers
       CalculateMaxProcAndPath(mazakData, jobDB, out var uniqueToMaxPath, out var uniqueToMaxProcess, out var partNameToNumProc);
@@ -166,8 +166,8 @@ namespace MazakMachineInterface
           };
           curStatus.Pallets.Add(status.Pallet, status);
 
-          var oldCycles = log.CurrentPalletLog(palName);
-          var pending = log.PendingLoads(palName);
+          var oldCycles = jobDB.CurrentPalletLog(palName);
+          var pending = jobDB.PendingLoads(palName);
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -184,7 +184,7 @@ namespace MazakMachineInterface
             var job = jobsBySchID[palSub.ScheduleID];
             var procToPath = pathBySchID[palSub.ScheduleID];
 
-            var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, pending.Count > 0, job, palSub.PartProcessNumber, procToPath.PathForProc(palSub.PartProcessNumber), log));
+            var matIDs = new Queue<long>(FindMatIDsFromOldCycles(oldCycles, pending.Count > 0, job, palSub.PartProcessNumber, procToPath.PathForProc(palSub.PartProcessNumber), jobDB));
 
             for (int i = 1; i <= palSub.FixQuantity; i++)
             {
@@ -193,7 +193,7 @@ namespace MazakMachineInterface
               if (matIDs.Count > 0)
                 matID = matIDs.Dequeue();
 
-              var matDetails = log.GetMaterialDetails(matID);
+              var matDetails = jobDB.GetMaterialDetails(matID);
               var inProcMat = new InProcessMaterial()
               {
                 MaterialID = matID,
@@ -204,7 +204,7 @@ namespace MazakMachineInterface
                 Serial = matDetails?.Serial,
                 WorkorderId = matDetails?.Workorder,
                 SignaledInspections =
-                      log.LookupInspectionDecisions(matID)
+                      jobDB.LookupInspectionDecisions(matID)
                       .Where(x => x.Inspect)
                       .Select(x => x.InspType)
                       .Distinct()
@@ -286,21 +286,21 @@ namespace MazakMachineInterface
           {
             var start = FindLoadStartFromOldCycles(oldCycles);
             var elapsedLoad = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null;
-            AddRemainingLoadsAndUnloads(log, currentLoads, status, palLoc, elapsedLoad, curStatus, oldCycles, partNameToNumProc);
+            AddRemainingLoadsAndUnloads(jobDB, currentLoads, status, palLoc, elapsedLoad, curStatus, oldCycles, partNameToNumProc);
           }
         }
       }
 
       //now queued
       var seenMatIds = new HashSet<long>(curStatus.Material.Select(m => m.MaterialID));
-      foreach (var mat in log.GetMaterialInAllQueues())
+      foreach (var mat in jobDB.GetMaterialInAllQueues())
       {
         // material could be in the process of being loaded
         if (seenMatIds.Contains(mat.MaterialID)) continue;
-        var matLogs = log.GetLogForMaterial(mat.MaterialID);
-        var nextProcess = log.NextProcessForQueuedMaterial(mat.MaterialID);
+        var matLogs = jobDB.GetLogForMaterial(mat.MaterialID);
+        var nextProcess = jobDB.NextProcessForQueuedMaterial(mat.MaterialID);
         var lastProc = (nextProcess ?? 1) - 1;
-        var matDetails = log.GetMaterialDetails(mat.MaterialID);
+        var matDetails = jobDB.GetMaterialDetails(mat.MaterialID);
         curStatus.Material.Add(new InProcessMaterial()
         {
           MaterialID = mat.MaterialID,
@@ -311,7 +311,7 @@ namespace MazakMachineInterface
           Serial = matDetails?.Serial,
           WorkorderId = matDetails?.Workorder,
           SignaledInspections =
-                log.LookupInspectionDecisions(mat.MaterialID)
+                jobDB.LookupInspectionDecisions(mat.MaterialID)
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .Distinct()
@@ -348,14 +348,14 @@ namespace MazakMachineInterface
       foreach (var j in curStatus.Jobs)
       {
         j.Value.Decrements = jobDB.LoadDecrementsForJob(j.Value.UniqueStr);
-        j.Value.Workorders = log.GetWorkordersForUnique(j.Value.UniqueStr);
+        j.Value.Workorders = jobDB.GetWorkordersForUnique(j.Value.UniqueStr);
       }
 
       return curStatus;
     }
 
     private static void CalculateMaxProcAndPath(MazakAllData mazakData,
-                                                JobDB jobDB,
+                                                IRepository jobDB,
                                                out Dictionary<string, int> uniqueToMaxProc1Path,
                                                out Dictionary<string, int> uniqueToMaxProcess,
                                                out Dictionary<string, int> partNameToNumProc)
@@ -488,7 +488,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddDataFromJobDB(JobDB jobDB, JobPlan jobFromMazak)
+    private static void AddDataFromJobDB(IRepository jobDB, JobPlan jobFromMazak)
     {
       var jobFromDb = jobDB.LoadJob(jobFromMazak.UniqueStr);
       if (jobFromDb == null) return;
@@ -595,9 +595,9 @@ namespace MazakMachineInterface
       return null;
     }
 
-    private static void AddRemainingLoadsAndUnloads(EventLogDB log, List<LoadAction> currentActions, PalletStatus pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
+    private static void AddRemainingLoadsAndUnloads(IRepository log, List<LoadAction> currentActions, PalletStatus pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
     {
-      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<EventLogDB.QueuedMaterial>>();
+      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<Repository.QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
 
       // loads from raw material or a queue have not yet been processed.
@@ -724,7 +724,7 @@ namespace MazakMachineInterface
           };
 
           // load queued material
-          List<BlackMaple.MachineFramework.EventLogDB.QueuedMaterial> queuedMat = null;
+          List<BlackMaple.MachineFramework.Repository.QueuedMaterial> queuedMat = null;
           if (curStatus.Jobs.ContainsKey(operation.Unique))
           {
             var job = curStatus.Jobs[operation.Unique];
@@ -786,7 +786,7 @@ namespace MazakMachineInterface
     }
 
     private static IEnumerable<long> FindMatIDsFromOldCycles(
-      IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, bool hasPendingLoads, JobPlan job, int proc, int path, EventLogDB log
+      IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, bool hasPendingLoads, JobPlan job, int proc, int path, IRepository log
     )
     {
 

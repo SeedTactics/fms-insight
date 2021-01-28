@@ -45,8 +45,8 @@ namespace MazakMachineInterface
 
   public interface IWriteJobs
   {
-    void AddJobs(JobDB jobDB, NewJobs newJ, string expectedPreviousScheduleId);
-    void RecopyJobsToMazak(JobDB jobDB, DateTime? nowUtc = null);
+    void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId);
+    void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null);
   }
 
   public class WriteJobs : IWriteJobs, IMachineGroupName
@@ -68,7 +68,7 @@ namespace MazakMachineInterface
     public WriteJobs(
       IWriteData d,
       IReadDataAccess readDb,
-      BlackMaple.MachineFramework.JobDB jDB,
+      BlackMaple.MachineFramework.IRepository jDB,
       FMSSettings settings,
       bool useStartingOffsetForDueDate,
       string progDir
@@ -105,7 +105,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public void AddJobs(JobDB jobDB, NewJobs newJ, string expectedPreviousScheduleId)
+    public void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId)
     {
       // check previous schedule id
       if (!string.IsNullOrEmpty(newJ.ScheduleId))
@@ -154,7 +154,7 @@ namespace MazakMachineInterface
 
     }
 
-    public void RecopyJobsToMazak(JobDB jobDB, DateTime? nowUtc = null)
+    public void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null)
     {
       var now = nowUtc ?? DateTime.UtcNow;
       var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1), includeDecremented: false);
@@ -170,7 +170,7 @@ namespace MazakMachineInterface
 
     }
 
-    private ProgramRevision LookupProgram(JobDB jobDB, string program, long? rev)
+    private ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
     {
       if (rev.HasValue)
       {
@@ -182,7 +182,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddFixturesPalletsParts(JobDB jobDB, NewJobs newJ)
+    private void AddFixturesPalletsParts(IRepository jobDB, NewJobs newJ)
     {
       var mazakData = readDatabase.LoadAllData();
 
@@ -278,7 +278,7 @@ namespace MazakMachineInterface
       writeDb.Save(transSet, "Add Parts");
     }
 
-    private void AddSchedules(JobDB jobDB, IEnumerable<JobPlan> jobs)
+    private void AddSchedules(IRepository jobDB, IEnumerable<JobPlan> jobs)
     {
       var mazakData = readDatabase.LoadAllData();
       Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
@@ -294,7 +294,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddJobsToDB(JobDB jobDB, NewJobs newJ)
+    private void AddJobsToDB(IRepository jobDB, NewJobs newJ)
     {
       foreach (var j in newJ.Jobs)
       {
@@ -324,7 +324,7 @@ namespace MazakMachineInterface
 
     }
 
-    private void ArchiveOldJobs(JobDB jobDB, MazakCurrentStatus schedules)
+    private void ArchiveOldJobs(IRepository jobDB, MazakCurrentStatus schedules)
     {
       var current = new HashSet<string>();
       var completed = new Dictionary<(string uniq, int proc1path), int>();
@@ -358,7 +358,7 @@ namespace MazakMachineInterface
           {
             if (compCnt < jobAndPath.j.GetPlannedCyclesOnFirstProcess(jobAndPath.path))
             {
-              return new JobDB.NewDecrementQuantity()
+              return new Repository.NewDecrementQuantity()
               {
                 JobUnique = jobAndPath.j.UniqueStr,
                 Proc1Path = jobAndPath.path,

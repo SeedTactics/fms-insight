@@ -84,7 +84,7 @@ namespace MazakMachineInterface
     public string FromPosition { get; set; }
   }
 
-  public delegate void MazakLogEventDel(LogEntry e, BlackMaple.MachineFramework.JobDB jobDB, BlackMaple.MachineFramework.EventLogDB eventLogDB);
+  public delegate void MazakLogEventDel(LogEntry e, BlackMaple.MachineFramework.IRepository jobDB);
   public interface INotifyMazakLogEvent
   {
     event MazakLogEventDel MazakLogEvent;
@@ -343,15 +343,14 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
-    private BlackMaple.MachineFramework.JobDB.Config _jobDBCfg;
-    private BlackMaple.MachineFramework.EventLogDB.Config _logDbCfg;
+    private BlackMaple.MachineFramework.RepositoryConfig _logDbCfg;
     private IReadDataAccess _readDB;
     private IMachineGroupName _machGroupName;
     private IHoldManagement _hold;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private MazakQueues _queues;
-    private Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> _currentStatusChanged;
+    private Action<BlackMaple.MachineFramework.IRepository> _currentStatusChanged;
 
     private string _path;
     private AutoResetEvent _shutdown;
@@ -363,19 +362,17 @@ namespace MazakMachineInterface
     private FileSystemWatcher _watcher;
 
     public LogDataWeb(string path,
-                      BlackMaple.MachineFramework.EventLogDB.Config logCfg,
-                      BlackMaple.MachineFramework.JobDB.Config jobDBCfg,
+                      BlackMaple.MachineFramework.RepositoryConfig logCfg,
                       IMachineGroupName machineGroupName,
                       BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
                       IReadDataAccess readDB,
                       MazakQueues queues,
                       IHoldManagement hold,
                       BlackMaple.MachineFramework.FMSSettings settings,
-                      Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged)
+                      Action<BlackMaple.MachineFramework.IRepository> currentStatusChanged)
     {
       _path = path;
       _logDbCfg = logCfg;
-      _jobDBCfg = jobDBCfg;
       _readDB = readDB;
       _queues = queues;
       _hold = hold;
@@ -446,11 +443,10 @@ namespace MazakMachineInterface
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
 
           using (var logDb = _logDbCfg.OpenConnection())
-          using (var jobDB = _jobDBCfg.OpenConnection())
           {
             logs = LoadLog(logDb.MaxForeignID());
-            var trans = new LogTranslation(jobDB, logDb, mazakData, _machGroupName, _settings,
-              le => MazakLogEvent?.Invoke(le, jobDB, logDb)
+            var trans = new LogTranslation(logDb, mazakData, _machGroupName, _settings,
+              le => MazakLogEvent?.Invoke(le, logDb)
             );
             foreach (var ev in logs)
             {
@@ -468,13 +464,13 @@ namespace MazakMachineInterface
 
             var palStChanged = trans.CheckPalletStatusMatchesLogs();
 
-            var queuesChanged = _queues.CheckQueues(jobDB, logDb, mazakData);
+            var queuesChanged = _queues.CheckQueues(logDb, mazakData);
 
-            _hold.CheckForTransition(mazakData, jobDB);
+            _hold.CheckForTransition(mazakData, logDb);
 
             if (logs.Count > 0 || queuesChanged || palStChanged)
             {
-              _currentStatusChanged(jobDB, logDb);
+              _currentStatusChanged(logDb);
             }
           }
 

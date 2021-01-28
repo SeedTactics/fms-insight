@@ -79,8 +79,7 @@ namespace DebugMachineWatchApiServer
 
   public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IOldJobDecrement, IDisposable
   {
-    public EventLogDB LogDB { get; private set; }
-    public JobDB JobDB { get; private set; }
+    public IRepository LogDB { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
@@ -112,18 +111,11 @@ namespace DebugMachineWatchApiServer
       if (path != null)
       {
         if (System.IO.File.Exists(dbFile("log"))) System.IO.File.Delete(dbFile("log"));
-        LogDB = EventLogDB.Config.InitializeEventDatabase(new FMSSettings(), dbFile("log"), dbFile("insp")).OpenConnection();
-
-        if (System.IO.File.Exists(dbFile("job"))) System.IO.File.Delete(dbFile("job"));
-        var cfg = JobDB.Config.InitializeJobDatabase(dbFile("job"));
-        JobDB = cfg.OpenConnection();
+        LogDB = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), dbFile("log"), dbFile("insp"), dbFile("job")).OpenConnection();
       }
       else
       {
-        LogDB = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
-
-        var cfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
-        JobDB = cfg.OpenConnection();
+        LogDB = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
       }
 
       _jsonSettings = new JsonSerializerSettings();
@@ -150,8 +142,7 @@ namespace DebugMachineWatchApiServer
 
     public void Dispose()
     {
-      JobDB.Close();
-      LogDB.Close();
+      LogDB.Dispose();
     }
 
     public IInspectionControl OpenInspectionControl()
@@ -170,7 +161,7 @@ namespace DebugMachineWatchApiServer
 
     public IJobDatabase OpenJobDatabase()
     {
-      return JobDB;
+      return LogDB;
     }
 
     private long _curStatusLoadCount = 0;
@@ -200,14 +191,14 @@ namespace DebugMachineWatchApiServer
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
-      JobDB.AddJobs(jobs, expectedPreviousScheduleId);
+      LogDB.AddJobs(jobs, expectedPreviousScheduleId);
       OnNewJobs?.Invoke(jobs);
     }
 
     public void SetJobComment(string jobUnique, string comment)
     {
       Serilog.Log.Information("Setting comment for {job} to {comment}", jobUnique, comment);
-      JobDB.SetJobComment(jobUnique, comment);
+      LogDB.SetJobComment(jobUnique, comment);
       if (CurrentStatus.Jobs.TryGetValue(jobUnique, out var job))
       {
         job.Comment = comment;
@@ -319,7 +310,7 @@ namespace DebugMachineWatchApiServer
       };
 
       LogDB.RecordAddMaterialToQueue(
-        mat: new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
+        mat: new Repository.EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
         queue: queue,
         position: position,
         operatorName: operatorName,
@@ -336,7 +327,7 @@ namespace DebugMachineWatchApiServer
       if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
         LogDB.SignalMaterialForQuarantine(
-          new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
+          new Repository.EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
         );
       }
       else if (mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
@@ -480,12 +471,12 @@ namespace DebugMachineWatchApiServer
         if (e.LogType == LogType.PartMark)
         {
           foreach (var m in e.Material)
-            LogDB.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.OrderAssignment)
         {
           foreach (var m in e.Material)
-            LogDB.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.FinalizeWorkorder)
         {
@@ -530,7 +521,7 @@ namespace DebugMachineWatchApiServer
               e2.Tools[u.Key] = u.Value;
             }
           }
-          LogDB.AddLogEntryFromUnitTest(e2);
+          ((Repository)LogDB).AddLogEntryFromUnitTest(e2);
         }
       }
     }
@@ -561,7 +552,7 @@ namespace DebugMachineWatchApiServer
           w.DueDate = w.DueDate.Add(offset);
         }
 
-        JobDB.AddJobs(newJobs, null);
+        LogDB.AddJobs(newJobs, null);
       }
     }
 
@@ -671,7 +662,7 @@ namespace DebugMachineWatchApiServer
 
     public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
     {
-      JobDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
+      LogDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
     }
   }
 }

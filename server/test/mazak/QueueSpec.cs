@@ -44,23 +44,22 @@ namespace MachineWatchTest
 {
   public class QueueSpec : IDisposable
   {
-    private EventLogDB _logDB;
-    private JobDB _jobDB;
+    private RepositoryConfig _repoCfg;
+    private IRepository _logDB;
 
     private readonly DateTime _now;
 
     public QueueSpec()
     {
-      _logDB = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
-      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _logDB = _repoCfg.OpenConnection();
 
       _now = DateTime.UtcNow.AddHours(1);
     }
 
     public void Dispose()
     {
-      _logDB.Close();
-      _jobDB.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     private class TestMazakData
@@ -84,7 +83,7 @@ namespace MachineWatchTest
     public void Empty(bool waitAll)
     {
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, new TestMazakData().ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, new TestMazakData().ToData());
       trans.Should().BeNull();
     }
 
@@ -159,12 +158,12 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       j.SetInputQueue(1, 1, "thequeue");
       j.SetInputQueue(2, 1, "thequeue");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // put 2 castings in queue, plus a different unique and a different process
@@ -176,7 +175,7 @@ namespace MachineWatchTest
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("yyyy", new[] { 1 }, false), 1, 1);
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Id.Should().Be(10);
@@ -213,7 +212,7 @@ namespace MachineWatchTest
       }
       j.SetInputQueue(1, 1, "thequeue");
       j.SetInputQueue(2, 1, "thequeue");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -229,14 +228,14 @@ namespace MachineWatchTest
       AddCasting(casting, "thequeue");
       AddCasting(casting, "thequeue");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // add 1 more for each proc 1 and 2
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "thequeue");
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(10);
@@ -272,7 +271,7 @@ namespace MachineWatchTest
       }
       j.SetInputQueue(1, 1, "thequeue");
       j.SetInputQueue(2, 1, "thequeue");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -288,7 +287,7 @@ namespace MachineWatchTest
       AddCasting(casting, "thequeue");
       AddCasting(casting, "thequeue");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // add 1 more for each proc 1 and 2.
@@ -298,7 +297,7 @@ namespace MachineWatchTest
 
       _logDB.GetMaterialInQueue("thequeue").Should().Contain(m => m.MaterialID == matIdProc1);
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(10);
@@ -326,7 +325,7 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       j.SetInputQueue(1, 1, "castingQ");
       j.SetInputQueue(2, 1, "transQ");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -345,14 +344,14 @@ namespace MachineWatchTest
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "castingQ");
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // now remove one from process 1 and one from process 2
       _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0], 1);
       _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0], 2);
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Id.Should().Be(10);
@@ -379,7 +378,7 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       j.SetInputQueue(1, 1, "castingQ");
       j.SetInputQueue(2, 1, "transQ");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -398,7 +397,7 @@ namespace MachineWatchTest
       var xxxId1 = AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "castingQ");
       var xxxId2 = AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // now remove one from process 1 and one from process 2
@@ -406,18 +405,18 @@ namespace MachineWatchTest
       _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0], 2);
 
       _logDB.GetMaterialInQueue("castingQ").Should().BeEquivalentTo(new[] {
-          new EventLogDB.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
-          new EventLogDB.QueuedMaterial() { MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now }
+          new Repository.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
+          new Repository.QueuedMaterial() { MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now }
       });
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       // adds an extra material with id xxxId2 + 1
       var actual = _logDB.GetMaterialInQueue("castingQ");
       actual.Should().BeEquivalentTo(new[] {
-          new EventLogDB.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
-          new EventLogDB.QueuedMaterial() { MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now },
-          new EventLogDB.QueuedMaterial() { MaterialID = xxxId2 + 1, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = actual.Last().AddTimeUTC }
+          new Repository.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
+          new Repository.QueuedMaterial() { MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now },
+          new Repository.QueuedMaterial() { MaterialID = xxxId2 + 1, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = actual.Last().AddTimeUTC }
       });
 
       trans.Schedules.Count.Should().Be(1);
@@ -431,15 +430,15 @@ namespace MachineWatchTest
 
       read.Schedules[0].Processes[1].ProcessMaterialQuantity = 3;
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // no extra material a second time
       actual = _logDB.GetMaterialInQueue("castingQ");
       actual.Should().BeEquivalentTo(new[] {
-          new EventLogDB.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
-          new EventLogDB.QueuedMaterial() { MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now },
-          new EventLogDB.QueuedMaterial() { MaterialID = xxxId2 + 1, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = actual.Last().AddTimeUTC }
+          new Repository.QueuedMaterial() { MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now },
+          new Repository.QueuedMaterial() { MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now },
+          new Repository.QueuedMaterial() { MaterialID = xxxId2 + 1, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = actual.Last().AddTimeUTC }
       });
     }
 
@@ -466,7 +465,7 @@ namespace MachineWatchTest
       {
         j.SetCasting(1, casting);
       }
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -474,7 +473,7 @@ namespace MachineWatchTest
       // put a different casting
       var mat0 = AddCasting("unused", "thequeue");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // put 3 unassigned castings in queue
@@ -483,27 +482,27 @@ namespace MachineWatchTest
       var mat3 = AddCasting(casting, "thequeue");
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat0, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
 
       // should allocate 1 parts to uuuu since that is the fixed quantity
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat0, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
       _logDB.GetMaterialDetails(mat1).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
@@ -538,7 +537,7 @@ namespace MachineWatchTest
       {
         j.SetCasting(1, casting);
       }
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -549,7 +548,7 @@ namespace MachineWatchTest
       var mat2 = AddCasting(casting, "thequeue");
 
       // should not be enough, need two to fill out planned quantity
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // now add two more
@@ -557,27 +556,27 @@ namespace MachineWatchTest
       var mat4 = AddCasting(casting, "thequeue");
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
 
       // should allocate 2 parts to uuuu since that is the remaining planned
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
       _logDB.GetMaterialDetails(mat2).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
@@ -605,12 +604,12 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       j.SetCasting(1, "casting");
       j.SetInputQueue(1, 1, "thequeue");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // put 2 assigned castings and three castings
@@ -621,31 +620,31 @@ namespace MachineWatchTest
       var mat5 = AddCasting("casting", "thequeue");
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat5, Queue = "thequeue", Position = 4, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now},
           });
 
       // should allocate nothing because material is not zero, just update the process material quantity
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat5, Queue = "thequeue", Position = 4, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now},
           });
 
@@ -672,7 +671,7 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       j.SetInputQueue(1, 1, "thequeue");
       j.SetCasting(1, "cccc");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -683,23 +682,23 @@ namespace MachineWatchTest
       var mat3 = AddCasting("cccc", "thequeue");
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now},
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now},
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now},
               });
 
       // should allocate no parts and leave schedule unchanged.
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now},
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now},
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now},
               });
 
@@ -721,12 +720,12 @@ namespace MachineWatchTest
 
       var j = new JobPlan("uuuu", 1);
       j.PartName = "pppp";
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(10);
@@ -762,7 +761,7 @@ namespace MachineWatchTest
       {
         j.SetCasting(1, casting);
       }
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -772,14 +771,14 @@ namespace MachineWatchTest
       var mat2 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
-                new EventLogDB.QueuedMaterial() {
+                new Repository.QueuedMaterial() {
                   MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
               });
 
       // should not touch the schedule but unallocate or remove the two entries
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Should().BeEmpty();
 
@@ -792,9 +791,9 @@ namespace MachineWatchTest
       {
         // otherwise, material is just unallocated
         _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-                  new EventLogDB.QueuedMaterial() {
+                  new Repository.QueuedMaterial() {
                     MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-                  new EventLogDB.QueuedMaterial() {
+                  new Repository.QueuedMaterial() {
                     MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
                 });
       }
@@ -836,7 +835,7 @@ namespace MachineWatchTest
       }
       if (!string.IsNullOrEmpty(casting))
         j.SetCasting(2, casting);
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -876,7 +875,7 @@ namespace MachineWatchTest
 
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // add 2 more to path group 1 proc 1
@@ -896,7 +895,7 @@ namespace MachineWatchTest
         AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 2, queue: "transQ");
 
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
@@ -965,7 +964,7 @@ namespace MachineWatchTest
 
       CreateMultiPathJob();
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // now remove some material
@@ -973,12 +972,12 @@ namespace MachineWatchTest
       _logDB.RecordRemoveMaterialFromAllQueues(proc2path1[0], 2);
       _logDB.RecordRemoveMaterialFromAllQueues(proc2path1[1], 2);
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
@@ -1049,7 +1048,7 @@ namespace MachineWatchTest
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // put 3 unassigned castings in queue
@@ -1058,27 +1057,27 @@ namespace MachineWatchTest
       var mat3 = AddCasting(casting, "castingQ");
 
       _logDB.GetMaterialInQueue("castingQ").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
 
       // should allocate 2 (fixqty) parts to path 2 (lowest priority)
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("castingQ").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
       _logDB.GetMaterialDetails(mat1).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 2 } }); // proc 1 path 2
@@ -1099,20 +1098,20 @@ namespace MachineWatchTest
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("castingQ").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat4, Queue = "castingQ", Position = 4, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat5, Queue = "castingQ", Position = 5, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
       _logDB.GetMaterialDetails(mat3).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } }); // proc 1 path 1
@@ -1188,7 +1187,7 @@ namespace MachineWatchTest
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // put 3 unassigned castings in queue which is not enough for path 2 (but is enough for path 1)
@@ -1197,37 +1196,37 @@ namespace MachineWatchTest
       var mat3 = AddCasting(casting, "castingQ");
 
       _logDB.GetMaterialInQueue("castingQ").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       // two more, which gives enough for path 2
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("castingQ").Should().BeEquivalentTo(new[] {
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat4, Queue = "castingQ", Position = 4, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now},
-            new EventLogDB.QueuedMaterial() {
+            new Repository.QueuedMaterial() {
               MaterialID = mat5, Queue = "castingQ", Position = 5, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
           });
       _logDB.GetMaterialDetails(mat1).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 2 } }); // proc 1 path 2
@@ -1302,7 +1301,7 @@ namespace MachineWatchTest
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(11); // schedule has priority increased from 8 to 11
@@ -1330,7 +1329,7 @@ namespace MachineWatchTest
       var j = new JobPlan("uuuu", 1);
       j.PartName = "pppp";
       j.SetInputQueue(1, 1, "thequeue");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -1342,17 +1341,17 @@ namespace MachineWatchTest
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] { 1 }, false), 1, 1);
       read.LoadActions.Add(action);
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Should().BeNull();
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-        new EventLogDB.QueuedMaterial() {
+        new Repository.QueuedMaterial() {
               MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
       });
 
       read.LoadActions.Clear();
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       if (waitAll)
       {
@@ -1364,7 +1363,7 @@ namespace MachineWatchTest
       {
         // not wait all sets the job
         _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-          new EventLogDB.QueuedMaterial() {
+          new Repository.QueuedMaterial() {
                 MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
         });
         trans.Schedules.Count.Should().Be(1);
@@ -1389,7 +1388,7 @@ namespace MachineWatchTest
       var j = new JobPlan("uuuu", 1);
       j.PartName = "pppp";
       j.SetInputQueue(1, 1, "thequeue");
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j }
       }, null);
@@ -1400,22 +1399,22 @@ namespace MachineWatchTest
       //add a pending load
       _logDB.AddPendingLoad("pal1", "pppp:10:1,unused", load: 5, elapsed: TimeSpan.FromMinutes(2), active: TimeSpan.FromMinutes(3), foreignID: null);
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Should().BeNull();
 
       _logDB.CompletePalletCycle("pal1", DateTime.UtcNow, "",
-        new Dictionary<string, IEnumerable<EventLogDB.EventLogMaterial>>() {
-          {"pppp:10:1,unused", new EventLogDB.EventLogMaterial[] {}}
+        new Dictionary<string, IEnumerable<Repository.EventLogMaterial>>() {
+          {"pppp:10:1,unused", new Repository.EventLogMaterial[] {}}
         }, false
       );
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-        new EventLogDB.QueuedMaterial() {
+        new Repository.QueuedMaterial() {
               MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
       });
 
 
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       if (waitAll)
       {
@@ -1427,7 +1426,7 @@ namespace MachineWatchTest
       {
         // not wait all sets the job
         _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-          new EventLogDB.QueuedMaterial() {
+          new Repository.QueuedMaterial() {
                 MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
         });
         trans.Schedules.Count.Should().Be(1);
@@ -1470,7 +1469,7 @@ namespace MachineWatchTest
         j1.SetCasting(1, casting);
         j2.SetCasting(1, casting);
       }
-      _jobDB.AddJobs(new NewJobs()
+      _logDB.AddJobs(new NewJobs()
       {
         Jobs = new List<JobPlan> { j1, j2 }
       }, null);
@@ -1483,24 +1482,24 @@ namespace MachineWatchTest
       var mat1 = AddCasting(casting, "thequeue");
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() {
+                    new Repository.QueuedMaterial() {
                       MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
                   });
 
-      var trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() {
+                    new Repository.QueuedMaterial() {
                       MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now},
                   });
 
       // now remove the action
       read.LoadActions.Clear();
-      trans = queues.CalculateScheduleChanges(_jobDB, _logDB, read.ToData());
+      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       _logDB.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() {
+                    new Repository.QueuedMaterial() {
                       MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuu2", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now},
                   });
 

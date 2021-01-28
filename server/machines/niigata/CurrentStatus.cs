@@ -40,7 +40,7 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public static class BuildCurrentStatus
   {
-    public static CurrentStatus Build(JobDB jobDB, EventLogDB logDB, CellState status, FMSSettings settings)
+    public static CurrentStatus Build(IRepository jobDB, CellState status, FMSSettings settings)
     {
       if (status == null)
       {
@@ -56,7 +56,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         var curJob = new InProcessJob(j);
         curStatus.Jobs.Add(curJob.UniqueStr, curJob);
-        var evts = logDB.GetLogForJobUnique(j.UniqueStr);
+        var evts = jobDB.GetLogForJobUnique(j.UniqueStr);
         foreach (var e in evts)
         {
           if (e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
@@ -65,7 +65,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               if (mat.JobUniqueStr == j.UniqueStr)
               {
-                var details = logDB.GetMaterialDetails(mat.MaterialID);
+                var details = jobDB.GetMaterialDetails(mat.MaterialID);
                 int matPath = details?.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
                 curJob.AdjustCompleted(mat.Process, matPath, x => x + 1);
               }
@@ -96,7 +96,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
 
-        curJob.Workorders = logDB.GetWorkordersForUnique(j.UniqueStr);
+        curJob.Workorders = jobDB.GetWorkordersForUnique(j.UniqueStr);
       }
 
       // set precedence

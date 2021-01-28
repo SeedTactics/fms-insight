@@ -187,11 +187,11 @@ namespace Makino
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
 
     private IDbConnection _db;
-    private BlackMaple.MachineFramework.EventLogDB.Config _logDbCfg;
+    private BlackMaple.MachineFramework.RepositoryConfig _logDbCfg;
     private StatusDB _status;
     private string dbo;
 
-    public MakinoDB(BlackMaple.MachineFramework.EventLogDB.Config logDb, DBTypeEnum dbType, string dbConnStr, StatusDB status)
+    public MakinoDB(BlackMaple.MachineFramework.RepositoryConfig logDb, DBTypeEnum dbType, string dbConnStr, StatusDB status)
     {
       _logDbCfg = logDb;
       _status = status;

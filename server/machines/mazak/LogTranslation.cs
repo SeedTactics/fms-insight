@@ -47,8 +47,7 @@ namespace MazakMachineInterface
 
   public class LogTranslation : ILogTranslation
   {
-    private BlackMaple.MachineFramework.JobDB _jobDB;
-    private BlackMaple.MachineFramework.EventLogDB _log;
+    private BlackMaple.MachineFramework.IRepository _log;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private IMachineGroupName _machGroupName;
     private Action<LogEntry> _onMazakLog;
@@ -58,14 +57,12 @@ namespace MazakMachineInterface
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
-    public LogTranslation(BlackMaple.MachineFramework.JobDB jDB,
-                          BlackMaple.MachineFramework.EventLogDB logDB,
+    public LogTranslation(BlackMaple.MachineFramework.IRepository logDB,
                           MazakCurrentStatusAndTools mazakSch,
                           IMachineGroupName machineGroupName,
                           BlackMaple.MachineFramework.FMSSettings settings,
                           Action<LogEntry> onMazakLogMessage)
     {
-      _jobDB = jDB;
       _log = logDB;
       _machGroupName = machineGroupName;
       _mazakSchedules = mazakSch;
@@ -81,7 +78,7 @@ namespace MazakMachineInterface
         return _jobs[unique];
       else
       {
-        var j = _jobDB.LoadJob(unique);
+        var j = _log.LoadJob(unique);
         _jobs.Add(unique, j);
         return j;
       }
@@ -126,7 +123,7 @@ namespace MazakMachineInterface
           // There should never be any pending loads since the pallet movement event should have fired.
           // Just in case, we check for pending loads here
           cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
-          IEnumerable<EventLogDB.ToolPocketSnapshot> pockets = null;
+          IEnumerable<Repository.ToolPocketSnapshot> pockets = null;
           if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
           {
             pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
@@ -148,7 +145,7 @@ namespace MazakMachineInterface
 
           var machStart = FindMachineStart(e, cycle, e.StationNumber);
           TimeSpan elapsed;
-          IEnumerable<EventLogDB.ToolPocketSnapshot> toolsAtStart;
+          IEnumerable<Repository.ToolPocketSnapshot> toolsAtStart;
           if (machStart != null)
           {
             elapsed = e.TimeUTC.Subtract(machStart.EndTimeUTC);
@@ -158,7 +155,7 @@ namespace MazakMachineInterface
           {
             Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
             elapsed = TimeSpan.Zero;
-            toolsAtStart = Enumerable.Empty<EventLogDB.ToolPocketSnapshot>();
+            toolsAtStart = Enumerable.Empty<Repository.ToolPocketSnapshot>();
           }
           var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
 
@@ -175,7 +172,7 @@ namespace MazakMachineInterface
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
-              tools: EventLogDB.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd),
+              tools: Repository.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd),
               pockets: toolsAtEnd,
               foreignId: e.ForeignID);
             HandleMachiningCompleted(s, machineMats);
@@ -223,7 +220,7 @@ namespace MazakMachineInterface
 
         case LogCode.StartRotatePalletIntoMachine:
           _log.RecordPalletDepartRotaryInbound(
-            mats: GetAllMaterialOnPallet(cycle).Select(EventLogDB.EventLogMaterial.FromLogMat),
+            mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
             pallet: e.Pallet.ToString(),
             statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
@@ -245,7 +242,7 @@ namespace MazakMachineInterface
             if (LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum))
             {
               _log.RecordPalletDepartRotaryInbound(
-                mats: GetAllMaterialOnPallet(cycle).Select(EventLogDB.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
@@ -261,7 +258,7 @@ namespace MazakMachineInterface
             if (int.TryParse(e.FromPosition.Substring(1), out var stockerNum))
             {
               _log.RecordPalletDepartStocker(
-                mats: GetAllMaterialOnPallet(cycle).Select(EventLogDB.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
@@ -280,7 +277,7 @@ namespace MazakMachineInterface
             if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
             {
               _log.RecordPalletArriveRotaryInbound(
-                mats: GetAllMaterialOnPallet(cycle).Select(EventLogDB.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
@@ -294,7 +291,7 @@ namespace MazakMachineInterface
             if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
             {
               _log.RecordPalletArriveStocker(
-                mats: GetAllMaterialOnPallet(cycle).Select(EventLogDB.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
@@ -314,10 +311,10 @@ namespace MazakMachineInterface
     #endregion
 
     #region Material
-    private List<EventLogDB.EventLogMaterial> CreateMaterialWithoutIDs(LogEntry e)
+    private List<Repository.EventLogMaterial> CreateMaterialWithoutIDs(LogEntry e)
     {
-      var ret = new List<EventLogDB.EventLogMaterial>();
-      ret.Add(new EventLogDB.EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
+      var ret = new List<Repository.EventLogMaterial>();
+      ret.Add(new Repository.EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
       return ret;
     }
 
@@ -334,7 +331,7 @@ namespace MazakMachineInterface
 
     private struct LogMaterialAndPath
     {
-      public EventLogDB.EventLogMaterial Mat { get; set; }
+      public Repository.EventLogMaterial Mat { get; set; }
       public string Unique { get; set; }
       public string PartName { get; set; }
       public int Path { get; set; }
@@ -381,7 +378,7 @@ namespace MazakMachineInterface
           //something went wrong, must create material
           ret.Add(new LogMaterialAndPath()
           {
-            Mat = new EventLogDB.EventLogMaterial()
+            Mat = new Repository.EventLogMaterial()
             {
               MaterialID = _log.AllocateMaterialID(unique, e.JobPartName, numProc),
               Process = e.Process,
@@ -405,10 +402,10 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private SortedList<string, EventLogDB.EventLogMaterial> ParseMaterialFromPreviousEvents(
+    private SortedList<string, Repository.EventLogMaterial> ParseMaterialFromPreviousEvents(
       string jobPartName, int proc, int fixQty, bool isUnloadEnd, IList<MWI.LogEntry> oldEvents)
     {
-      var byFace = new SortedList<string, EventLogDB.EventLogMaterial>(); //face -> material
+      var byFace = new SortedList<string, Repository.EventLogMaterial>(); //face -> material
 
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
@@ -447,7 +444,7 @@ namespace MazakMachineInterface
             }
 
             byFace[newFace] =
-              new EventLogDB.EventLogMaterial() { MaterialID = mat.MaterialID, Process = proc, Face = newFace };
+              new Repository.EventLogMaterial() { MaterialID = mat.MaterialID, Process = proc, Face = newFace };
           }
         }
       }
@@ -483,7 +480,7 @@ namespace MazakMachineInterface
         return cycle;
       }
 
-      var mat = new Dictionary<string, IEnumerable<EventLogDB.EventLogMaterial>>();
+      var mat = new Dictionary<string, IEnumerable<Repository.EventLogMaterial>>();
 
       foreach (var p in pending)
       {
@@ -508,7 +505,7 @@ namespace MazakMachineInterface
           path = 1;
         }
 
-        var mats = new List<EventLogDB.EventLogMaterial>();
+        var mats = new List<Repository.EventLogMaterial>();
         if (job != null && !string.IsNullOrEmpty(job.GetInputQueue(proc, path)))
         {
           // search input queue for material
@@ -531,14 +528,14 @@ namespace MazakMachineInterface
             if (i <= qs.Count)
             {
               var qmat = qs[i - 1];
-              mats.Add(new EventLogDB.EventLogMaterial() { MaterialID = qmat.MaterialID, Process = proc, Face = face });
+              mats.Add(new Repository.EventLogMaterial() { MaterialID = qmat.MaterialID, Process = proc, Face = face });
             }
             else
             {
               // not enough material in queue
               Log.Warning("Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
                 job.GetInputQueue(proc, path), fullPartName, proc, p);
-              mats.Add(new EventLogDB.EventLogMaterial()
+              mats.Add(new Repository.EventLogMaterial()
               {
                 MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                 Process = proc,
@@ -560,7 +557,7 @@ namespace MazakMachineInterface
             else
               face = proc.ToString() + "-" + i.ToString();
 
-            mats.Add(new EventLogDB.EventLogMaterial()
+            mats.Add(new Repository.EventLogMaterial()
             {
               MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
               Process = proc,
@@ -597,7 +594,7 @@ namespace MazakMachineInterface
             if (byFace.ContainsKey(prevFace))
             {
               var old = byFace[prevFace];
-              mats.Add(new EventLogDB.EventLogMaterial()
+              mats.Add(new Repository.EventLogMaterial()
               {
                 MaterialID = old.MaterialID,
                 Process = proc,
@@ -607,7 +604,7 @@ namespace MazakMachineInterface
             else
             {
               //something went wrong, must create material
-              mats.Add(new EventLogDB.EventLogMaterial()
+              mats.Add(new Repository.EventLogMaterial()
               {
                 MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                 Process = proc,
@@ -717,7 +714,7 @@ namespace MazakMachineInterface
         foreach (var extraMat in matsOnPal)
         {
           _log.RecordAddMaterialToQueue(
-            mat: new EventLogDB.EventLogMaterial() { MaterialID = extraMat.MaterialID, Process = extraMat.Process, Face = "" },
+            mat: new Repository.EventLogMaterial() { MaterialID = extraMat.MaterialID, Process = extraMat.Process, Face = "" },
             queue: _settings.QuarantineQueue,
             position: -1,
             operatorName: null,
@@ -857,12 +854,12 @@ namespace MazakMachineInterface
     #endregion
 
     #region Tools
-    private static IEnumerable<EventLogDB.ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
+    private static IEnumerable<Repository.ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
     {
       if (tools == null) return null;
       return tools
         .Where(t => t.MachineNumber == machine && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
-        .Select(t => new EventLogDB.ToolPocketSnapshot()
+        .Select(t => new Repository.ToolPocketSnapshot()
         {
           PocketNumber = t.PocketNumber.Value,
           Tool = t.GroupNo,

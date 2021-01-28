@@ -640,7 +640,7 @@ namespace BlackMaple.FMSInsight.Niigata
       conn.Execute("DELETE FROM register_program_tool", transaction: trans);
     }
 
-    private void SetRoute(NewPalletRoute newRoute, EventLogDB logDB)
+    private void SetRoute(NewPalletRoute newRoute, IRepository logDB)
     {
       if (_connStr == null)
       {
@@ -960,7 +960,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void AddProgram(JobDB jobDB, NewProgram add)
+    private void AddProgram(IRepository jobDB, NewProgram add)
     {
       if (_connStr == null)
       {
@@ -1057,7 +1057,7 @@ namespace BlackMaple.FMSInsight.Niigata
       jobDB.SetCellControllerProgramForProgram(add.ProgramName, add.ProgramRevision, add.ProgramNum.ToString());
     }
 
-    private void DeleteProgram(JobDB jobDB, DeleteProgram delete)
+    private void DeleteProgram(IRepository jobDB, DeleteProgram delete)
     {
       if (_connStr == null)
       {
@@ -1124,7 +1124,7 @@ namespace BlackMaple.FMSInsight.Niigata
       jobDB.SetCellControllerProgramForProgram(delete.ProgramName, delete.ProgramRevision, null);
     }
 
-    public void PerformAction(JobDB jobDB, EventLogDB logDB, NiigataAction a)
+    public void PerformAction(IRepository jobDB, NiigataAction a)
     {
       // ICC can't accept actions too fast, so only send one every second
       var sinceLast = DateTime.UtcNow.Subtract(_lastActionTime);
@@ -1138,7 +1138,7 @@ namespace BlackMaple.FMSInsight.Niigata
         switch (a)
         {
           case NewPalletRoute newRoute:
-            SetRoute(newRoute, logDB);
+            SetRoute(newRoute, jobDB);
             break;
 
           case DeletePalletRoute deletePalletRoute:

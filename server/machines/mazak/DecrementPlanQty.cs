@@ -40,7 +40,7 @@ namespace MazakMachineInterface
 {
   public interface IDecrementPlanQty
   {
-    void Decrement(JobDB jobDB, DateTime? now = null);
+    void Decrement(IRepository jobDB, DateTime? now = null);
   }
 
   public class DecrementPlanQty : IDecrementPlanQty
@@ -56,7 +56,7 @@ namespace MazakMachineInterface
       _read = r;
     }
 
-    public void Decrement(JobDB jobDB, DateTime? now = null)
+    public void Decrement(IRepository jobDB, DateTime? now = null)
     {
       // This works in three steps:
       //
@@ -94,7 +94,7 @@ namespace MazakMachineInterface
       public int NewPlanQty { get; set; }
     }
 
-    private List<DecrSchedule> JobsToDecrement(JobDB jobDB, MazakCurrentStatus schedules)
+    private List<DecrSchedule> JobsToDecrement(IRepository jobDB, MazakCurrentStatus schedules)
     {
       var jobs = new List<DecrSchedule>();
 
@@ -164,15 +164,15 @@ namespace MazakMachineInterface
       }
     }
 
-    private void RecordDecrement(JobDB jobDB, List<DecrSchedule> decrs, DateTime? now)
+    private void RecordDecrement(IRepository jobDB, List<DecrSchedule> decrs, DateTime? now)
     {
-      var decrAmt = new List<JobDB.NewDecrementQuantity>();
+      var decrAmt = new List<Repository.NewDecrementQuantity>();
       foreach (var decr in decrs)
       {
         var planned = decr.Job.GetPlannedCyclesOnFirstProcess(path: decr.Proc1Path);
         if (planned > decr.NewPlanQty)
         {
-          decrAmt.Add(new JobDB.NewDecrementQuantity()
+          decrAmt.Add(new Repository.NewDecrementQuantity()
           {
             JobUnique = decr.Job.UniqueStr,
             Proc1Path = decr.Proc1Path,
@@ -187,7 +187,7 @@ namespace MazakMachineInterface
       {
         for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
         {
-          decrAmt.Add(new JobDB.NewDecrementQuantity()
+          decrAmt.Add(new Repository.NewDecrementQuantity()
           {
             JobUnique = j.UniqueStr,
             Proc1Path = path,

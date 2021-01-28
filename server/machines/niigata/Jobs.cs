@@ -41,8 +41,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NiigataJobs : IJobControl
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataJobs>();
-    private JobDB.Config _jobDbCfg;
-    private EventLogDB.Config _logDbCfg;
+    private RepositoryConfig _jobDbCfg;
     private FMSSettings _settings;
     private ISyncPallets _sync;
     private readonly NiigataStationNames _statNames;
@@ -52,12 +51,11 @@ namespace BlackMaple.FMSInsight.Niigata
     private bool _requireInProcessQueues;
     private bool _requireProgramsInJobs;
 
-    public NiigataJobs(JobDB.Config j, EventLogDB.Config l, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
+    public NiigataJobs(RepositoryConfig j, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
                        bool requireRawMatQ, bool requireInProcQ, bool requireProgsInJobs, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
     {
       _onNewJobs = onNewJobs;
       _jobDbCfg = j;
-      _logDbCfg = l;
       _sync = sy;
       _settings = st;
       _statNames = statNames;
@@ -70,9 +68,8 @@ namespace BlackMaple.FMSInsight.Niigata
     CurrentStatus IJobControl.GetCurrentStatus()
     {
       using (var jdb = _jobDbCfg.OpenConnection())
-      using (var ldb = _logDbCfg.OpenConnection())
       {
-        return BuildCurrentStatus.Build(jdb, ldb, _sync.CurrentCellState(), _settings);
+        return BuildCurrentStatus.Build(jdb, _sync.CurrentCellState(), _settings);
       }
     }
 
@@ -88,7 +85,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public List<string> CheckJobs(JobDB jobDB, NewJobs jobs)
+    public List<string> CheckJobs(IRepository jobDB, NewJobs jobs)
     {
       var errors = new List<string>();
       var cellState = _sync.CurrentCellState();
@@ -189,7 +186,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return errors;
     }
 
-    private void CheckProgram(string programName, long? rev, IEnumerable<MachineWatchInterface.ProgramEntry> newPrograms, CellState cellState, JobDB jobDB, string errHdr, IList<string> errors)
+    private void CheckProgram(string programName, long? rev, IEnumerable<MachineWatchInterface.ProgramEntry> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
     {
       if (rev.HasValue && rev.Value > 0)
       {
@@ -287,9 +284,8 @@ namespace BlackMaple.FMSInsight.Niigata
     List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       using (var jdb = _jobDbCfg.OpenConnection())
-      using (var ldb = _logDbCfg.OpenConnection())
       {
-        _sync.DecrementPlannedButNotStartedQty(jdb, ldb);
+        _sync.DecrementPlannedButNotStartedQty(jdb);
         return jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
       }
     }
@@ -297,9 +293,8 @@ namespace BlackMaple.FMSInsight.Niigata
     List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
       using (var jdb = _jobDbCfg.OpenConnection())
-      using (var ldb = _logDbCfg.OpenConnection())
       {
-        _sync.DecrementPlannedButNotStartedQty(jdb, ldb);
+        _sync.DecrementPlannedButNotStartedQty(jdb);
         return jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
       }
     }
@@ -344,7 +339,7 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Queues
-    private List<InProcessMaterial> AddUnallocatedCastingToQueue(EventLogDB logDB, string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    private List<InProcessMaterial> AddUnallocatedCastingToQueue(IRepository logDB, string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -365,7 +360,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (i < serial.Count)
         {
           logDB.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
+            new BlackMaple.MachineFramework.Repository.EventLogMaterial()
             {
               MaterialID = matId,
               Process = 0,
@@ -434,7 +429,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      using (var ldb = _logDbCfg.OpenConnection())
+      using (var ldb = _jobDbCfg.OpenConnection())
       {
         return
           AddUnallocatedCastingToQueue(ldb, casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName)
@@ -444,7 +439,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     List<InProcessMaterial> IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
     {
-      using (var ldb = _logDbCfg.OpenConnection())
+      using (var ldb = _jobDbCfg.OpenConnection())
       {
         return AddUnallocatedCastingToQueue(ldb, casting, qty, queue, position, serial, operatorName);
       }
@@ -481,13 +476,13 @@ namespace BlackMaple.FMSInsight.Niigata
 
       long matId;
       IEnumerable<LogEntry> logEvt;
-      using (var ldb = _logDbCfg.OpenConnection())
+      using (var ldb = _jobDbCfg.OpenConnection())
       {
         matId = ldb.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
         if (!string.IsNullOrEmpty(serial))
         {
           ldb.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
+            new BlackMaple.MachineFramework.Repository.EventLogMaterial()
             {
               MaterialID = matId,
               Process = process,
@@ -537,7 +532,7 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Adding material {matId} to queue {queue} in position {pos}",
         materialId, queue, position
       );
-      using (var ldb = _logDbCfg.OpenConnection())
+      using (var ldb = _jobDbCfg.OpenConnection())
       {
         var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
         var proc = (nextProc ?? 1) - 1;
@@ -556,7 +551,7 @@ namespace BlackMaple.FMSInsight.Niigata
     void IJobControl.RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
-      using (var ldb = _logDbCfg.OpenConnection())
+      using (var ldb = _jobDbCfg.OpenConnection())
       {
         foreach (var materialId in materialIds)
         {
@@ -586,10 +581,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
       if (palMat != null && palMat.Mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
-        using (var ldb = _logDbCfg.OpenConnection())
+        using (var ldb = _jobDbCfg.OpenConnection())
         {
           ldb.SignalMaterialForQuarantine(
-            mat: new EventLogDB.EventLogMaterial() { MaterialID = materialId, Process = palMat.Mat.Process, Face = "" },
+            mat: new Repository.EventLogMaterial() { MaterialID = materialId, Process = palMat.Mat.Process, Face = "" },
             pallet: palMat.Mat.Location.Pallet,
             queue: queue,
             timeUTC: null,
@@ -615,7 +610,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 
-      using (var logDb = _logDbCfg.OpenConnection())
+      using (var logDb = _jobDbCfg.OpenConnection())
       {
 
         var o = logDb.SwapMaterialInCurrentPalletCycle(
@@ -640,7 +635,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
 
-      using (var logDb = _logDbCfg.OpenConnection())
+      using (var logDb = _jobDbCfg.OpenConnection())
       {
         logDb.InvalidatePalletCycle(
           matId: matId,

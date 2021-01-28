@@ -41,8 +41,7 @@ namespace Makino
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTimer>();
     private object _lock;
-    private Func<EventLogDB> _openLogDB;
-    private Func<JobDB> _openJobDB;
+    private Func<IRepository> _openLogDB;
     private MakinoDB _makinoDB;
     private StatusDB _status;
     private System.Timers.Timer _timer;
@@ -57,11 +56,10 @@ namespace Makino
     }
 
     public LogTimer(
-      EventLogDB.Config logCfg, Func<JobDB> jobDB, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
+      RepositoryConfig logCfg, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
     {
       _lock = new object();
       _openLogDB = () => logCfg.OpenConnection();
-      _openJobDB = jobDB;
       Settings = settings;
       _makinoDB = makinoDB;
       _status = status;
@@ -102,7 +100,7 @@ namespace Makino
     }
 
     /* This has public instead of private for testing */
-    public void CheckLogs(EventLogDB logDb, DateTime lastDate)
+    public void CheckLogs(IRepository logDb, DateTime lastDate)
     {
       var devices = _makinoDB.Devices();
 
@@ -155,7 +153,7 @@ namespace Makino
     }
 
     private void AddMachineToLog(
-        DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.MachineResults m, EventLogDB logDb)
+        DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.MachineResults m, IRepository logDb)
     {
       //find the location
       PalletLocation loc;
@@ -219,18 +217,15 @@ namespace Makino
       AddInspection(m, matList, logDb);
     }
 
-    private void AddInspection(MakinoDB.MachineResults m, IList<EventLogDB.EventLogMaterial> material, EventLogDB logDb)
+    private void AddInspection(MakinoDB.MachineResults m, IList<Repository.EventLogMaterial> material, IRepository logDb)
     {
-      if (_openJobDB == null && logDb == null)
+      if (logDb == null)
         return;
 
       JobPlan job;
-      using (var jdb = _openJobDB())
-      {
-        job = jdb.LoadJob(m.OrderName);
-        if (job == null)
-          return;
-      }
+      job = logDb.LoadJob(m.OrderName);
+      if (job == null)
+        return;
 
       foreach (var mat in material)
       {
@@ -239,7 +234,7 @@ namespace Makino
     }
 
     private void AddLoadToLog(
-      DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.WorkSetResults w, EventLogDB logDb)
+      DateTime timeToSkip, IDictionary<int, PalletLocation> devices, MakinoDB.WorkSetResults w, IRepository logDb)
     {
       //find the location
       PalletLocation loc;
@@ -307,7 +302,7 @@ namespace Makino
       }
     }
 
-    private IReadOnlyList<long> AllocateMatIds(int count, string order, string part, int numProcess, EventLogDB logDb)
+    private IReadOnlyList<long> AllocateMatIds(int count, string order, string part, int numProcess, IRepository logDb)
     {
       var matIds = new List<long>();
       for (int i = 0; i < count; i++)
@@ -317,17 +312,17 @@ namespace Makino
       return matIds;
     }
 
-    private IList<EventLogDB.EventLogMaterial> CreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, EventLogDB logDb)
+    private IList<Repository.EventLogMaterial> CreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, IRepository logDb)
     {
       var rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process, logDb), 0);
 
-      var ret = new List<EventLogDB.EventLogMaterial>();
+      var ret = new List<Repository.EventLogMaterial>();
       foreach (var row in rows)
-        ret.Add(new EventLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
+        ret.Add(new Repository.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       return ret;
     }
 
-    private IList<EventLogDB.EventLogMaterial> FindOrCreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, EventLogDB logDb)
+    private IList<Repository.EventLogMaterial> FindOrCreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, IRepository logDb)
     {
       var rows = _status.FindMaterialIDs(pallet, fixturenum, endUTC);
 
@@ -368,18 +363,18 @@ namespace Makino
         }
       }
 
-      var ret = new List<EventLogDB.EventLogMaterial>();
+      var ret = new List<Repository.EventLogMaterial>();
       foreach (var row in rows)
       {
         if (Settings.SerialType != SerialType.NoAutomaticSerials)
           CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), logDb, Settings);
-        ret.Add(new EventLogDB.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
+        ret.Add(new Repository.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       }
       return ret;
     }
 
     public static void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
-                                        EventLogDB _log, FMSSettings Settings)
+                                        IRepository _log, FMSSettings Settings)
     {
       foreach (var stat in _log.GetLogForMaterial(matID))
       {
@@ -407,7 +402,7 @@ namespace Makino
       Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
 
 
-      var logMat = new EventLogDB.EventLogMaterial() { MaterialID = matID, Process = process, Face = face };
+      var logMat = new Repository.EventLogMaterial() { MaterialID = matID, Process = process, Face = face };
       _log.RecordSerialForMaterialID(logMat, serial);
     }
 

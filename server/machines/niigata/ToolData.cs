@@ -74,9 +74,9 @@ namespace BlackMaple.FMSInsight.Niigata
       };
     }
 
-    public EventLogDB.ToolPocketSnapshot ToEventDBToolSnapshot()
+    public Repository.ToolPocketSnapshot ToEventDBToolSnapshot()
     {
-      return new EventLogDB.ToolPocketSnapshot()
+      return new Repository.ToolPocketSnapshot()
       {
 
         PocketNumber = Pocket,

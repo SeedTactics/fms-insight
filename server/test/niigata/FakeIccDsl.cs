@@ -42,9 +42,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 {
   public class FakeIccDsl : IDisposable
   {
-    private EventLogDB.Config _logDBCfg;
-    private EventLogDB _logDB;
-    private JobDB _jobDB;
+    private RepositoryConfig _logDBCfg;
+    private IRepository _logDB;
     private IAssignPallets _assign;
     private CreateCellState _createLog;
     private NiigataStatus _status;
@@ -71,9 +70,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _settings.Queues.Add("qqq", new MachineWatchInterface.QueueSize());
       _settings.Queues.Add("Quarantine", new MachineWatchInterface.QueueSize());
 
-      _logDBCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(_settings);
+      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_settings);
       _logDB = _logDBCfg.OpenConnection();
-      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
 
       _statNames = new NiigataStationNames()
       {
@@ -134,8 +132,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public void Dispose()
     {
-      _logDB.Close();
-      _jobDB.Close();
+      _logDBCfg.CloseMemoryConnection();
     }
 
     #region Niigata Status
@@ -441,7 +438,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
-          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          new Repository.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
           _settings.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
@@ -449,13 +446,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!string.IsNullOrEmpty(workorder))
       {
         _logDB.RecordWorkorderForMaterialID(
-          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          new Repository.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
           workorder,
           _status.TimeOfStatusUTC
         );
       }
       var addLog = _logDB.RecordAddMaterialToQueue(
-        new EventLogDB.EventLogMaterial()
+        new Repository.EventLogMaterial()
         {
           MaterialID = matId,
           Process = 0,
@@ -506,7 +503,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
-          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
+          new Repository.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
           _settings.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
@@ -514,13 +511,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!string.IsNullOrEmpty(workorder))
       {
         _logDB.RecordWorkorderForMaterialID(
-          new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
+          new Repository.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
           workorder,
           _status.TimeOfStatusUTC
         );
       }
       var addLog = _logDB.RecordAddMaterialToQueue(
-        new EventLogDB.EventLogMaterial()
+        new Repository.EventLogMaterial()
         {
           MaterialID = matId,
           Process = proc,
@@ -569,7 +566,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public FakeIccDsl SetInQueue(LogMaterial mat, string queue, int pos)
     {
       _logDB.RecordAddMaterialToQueue(
-        new EventLogDB.EventLogMaterial()
+        new Repository.EventLogMaterial()
         {
           MaterialID = mat.MaterialID,
           Process = mat.Process,
@@ -594,7 +591,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       foreach (var mat in mats)
       {
-        _logDB.RecordRemoveMaterialFromAllQueues(EventLogDB.EventLogMaterial.FromLogMat(mat), operatorName: null, _status.TimeOfStatusUTC);
+        _logDB.RecordRemoveMaterialFromAllQueues(Repository.EventLogMaterial.FromLogMat(mat), operatorName: null, _status.TimeOfStatusUTC);
         _expectedMaterial.Remove(mat.MaterialID);
       }
       return this;
@@ -605,7 +602,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       foreach (var mat in mats)
       {
         _logDB.SignalMaterialForQuarantine(
-          EventLogDB.EventLogMaterial.FromLogMat(mat),
+          Repository.EventLogMaterial.FromLogMat(mat),
           pallet: pal.ToString(),
           queue: q,
           timeUTC: _status.TimeOfStatusUTC
@@ -763,7 +760,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Face = face
       };
 
-      int numProc = _jobDB.LoadJob(matToAdd.JobUnique).NumProcesses;
+      int numProc = _logDB.LoadJob(matToAdd.JobUnique).NumProcesses;
 
       newMat = new[] {
         new LogMaterial(matID: matToAddId, uniq: matToAdd.JobUnique, proc: matToAdd.Process, part: matToAdd.PartName, numProc: numProc, serial: matToAdd.Serial, workorder: matToAdd.WorkorderId ?? "", face: face.ToString())
@@ -808,7 +805,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }).ToList(),
         CurrentUnfilledWorkorders = workorders?.ToList()
       };
-      _jobDB.AddJobs(newJ, null);
+      _logDB.AddJobs(newJ, null);
       foreach (var j in jobs)
       {
         for (int path = 1; path <= j.GetNumPaths(1); path++)
@@ -823,8 +820,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public FakeIccDsl AddJobDecrement(string uniq, int proc1path)
     {
       var remaining = _expectedJobRemainCount.Where(k => k.Key.uniq == uniq).ToList();
-      _jobDB.AddNewDecrement(new[] {
-        new JobDB.NewDecrementQuantity() {
+      _logDB.AddNewDecrement(new[] {
+        new Repository.NewDecrementQuantity() {
         JobUnique = uniq,
         Proc1Path = proc1path,
         Part = "part",
@@ -839,7 +836,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ArchiveJob(string uniq)
     {
-      _jobDB.ArchiveJob(uniq);
+      _logDB.ArchiveJob(uniq);
       return this;
     }
 
@@ -1084,7 +1081,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
         current.CurrentOrLoadingFaces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
         {
-          var job = _jobDB.LoadJob(face.unique);
+          var job = _logDB.LoadJob(face.unique);
           return new PalletFace()
           {
             Job = job,
@@ -1133,11 +1130,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectNoChanges()
     {
-      var unarchJobs = _jobDB.LoadUnarchivedJobs();
+      var unarchJobs = _logDB.LoadUnarchivedJobs();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, unarchJobs);
+        var cellSt = _createLog.BuildCellState(_logDB, _status, unarchJobs);
         cellSt.PalletStateUpdated.Should().BeFalse();
         cellSt.UnarchivedJobs.Should().BeEquivalentTo(unarchJobs,
           options => options.CheckJsonEquals<JobPlan, JobPlan>()
@@ -1656,11 +1653,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
-      var sch = _jobDB.LoadUnarchivedJobs();
+      var sch = _logDB.LoadUnarchivedJobs();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+        var cellSt = _createLog.BuildCellState(_logDB, _status, sch);
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
         cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
           options => options.CheckJsonEquals<JobPlan, JobPlan>()
@@ -1673,7 +1670,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           var action = _assign.NewPalletChange(cellSt);
           action.Should().BeEquivalentTo<NewProgram>(expectAdd.Expected);
-          _jobDB.SetCellControllerProgramForProgram(expectAdd.Expected.ProgramName, expectAdd.Expected.ProgramRevision, expectAdd.Expected.ProgramNum.ToString());
+          _logDB.SetCellControllerProgramForProgram(expectAdd.Expected.ProgramName, expectAdd.Expected.ProgramRevision, expectAdd.Expected.ProgramNum.ToString());
           _status.Programs[expectAdd.Expected.ProgramNum] = new ProgramEntry()
           {
             ProgramNum = expectAdd.Expected.ProgramNum,
@@ -1683,7 +1680,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+          cellSt = _createLog.BuildCellState(_logDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
           cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
             options => options.CheckJsonEquals<JobPlan, JobPlan>()
@@ -1711,7 +1708,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[pal - 1].Tracking.RouteInvalid = true;
 
           // reload
-          cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+          cellSt = _createLog.BuildCellState(_logDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(false);
         }
 
@@ -1787,11 +1784,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _status.Programs.Remove(expectDelete.Expected.ProgramNum);
             if (expectDelete.IccFailure == false)
             {
-              _jobDB.SetCellControllerProgramForProgram(expectDelete.Expected.ProgramName, expectDelete.Expected.ProgramRevision, null);
+              _logDB.SetCellControllerProgramForProgram(expectDelete.Expected.ProgramName, expectDelete.Expected.ProgramRevision, null);
               _expectedOldPrograms.RemoveAll(p => p.CellControllerProgramName == expectDelete.Expected.ProgramNum.ToString());
             }
             // reload cell state
-            cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+            cellSt = _createLog.BuildCellState(_logDB, _status, sch);
             cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
             cellSt.OldUnusedPrograms.Should().BeEquivalentTo(_expectedOldPrograms,
               options => options.Excluding(p => p.Comment)
@@ -1829,7 +1826,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork = expectNoWork.NoWork;
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_jobDB, _logDB, _status, sch);
+          cellSt = _createLog.BuildCellState(_logDB, _status, sch);
           cellSt.PalletStateUpdated.Should().Be(true);
           cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
             options => options.CheckJsonEquals<JobPlan, JobPlan>()

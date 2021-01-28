@@ -47,8 +47,8 @@ namespace MachineWatchTest
 {
   public class BuildCurrentStatusSpec : IDisposable
   {
-    private EventLogDB _memoryLog;
-    private JobDB _jobDB;
+    private RepositoryConfig _repoCfg;
+    private IRepository _memoryLog;
     private JsonSerializerSettings jsonSettings;
     private FMSSettings _settings;
     private IMachineGroupName _machGroupName;
@@ -57,8 +57,8 @@ namespace MachineWatchTest
 
     public BuildCurrentStatusSpec()
     {
-      _memoryLog = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
-      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _memoryLog = _repoCfg.OpenConnection();
 
       _settings = new FMSSettings();
       _settings.Queues["castings"] = new QueueSize();
@@ -82,8 +82,7 @@ namespace MachineWatchTest
 
     public void Dispose()
     {
-      _memoryLog.Close();
-      _jobDB.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     /*
@@ -143,6 +142,24 @@ namespace MachineWatchTest
     [InlineData("pathgroups-load")]
     public void StatusSnapshot(string scenario)
     {
+
+      IRepository repository;
+      bool close = false;
+      var existingLogPath =
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
+      string _tempLogFile = System.IO.Path.GetTempFileName();
+      if (File.Exists(existingLogPath))
+      {
+        System.IO.File.Copy(existingLogPath, _tempLogFile, overwrite: true);
+        repository = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), _tempLogFile).OpenConnection();
+        close = true;
+      }
+      else
+      {
+        repository = _memoryLog;
+      }
+
+
       /*
       Symlinks not supported on Windows
       var newJobs = JsonConvert.DeserializeObject<NewJobs>(
@@ -177,23 +194,13 @@ namespace MachineWatchTest
         );
 
       }
-      _jobDB.AddJobs(newJobs, null);
+      repository.AddJobs(newJobs, null);
 
       var allData = JsonConvert.DeserializeObject<MazakAllData>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".data.json")),
           jsonSettings
       );
-
-      var logDb = _memoryLog;
-      bool close = false;
-      var existingLogPath =
-        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
-      if (File.Exists(existingLogPath))
-      {
-        logDb = EventLogDB.Config.InitializeEventDatabase(new FMSSettings(), existingLogPath).OpenConnection();
-        close = true;
-      }
 
       if (scenario == "basic-no-material")
       {
@@ -203,12 +210,13 @@ namespace MachineWatchTest
       CurrentStatus status;
       try
       {
-        status = BuildCurrentStatus.Build(_jobDB, logDb, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
+        status = BuildCurrentStatus.Build(repository, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
       }
       finally
       {
-        if (close) logDb.Close();
+        if (close) repository.Dispose();
+        File.Delete(_tempLogFile);
       }
 
       /*
@@ -240,7 +248,7 @@ namespace MachineWatchTest
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
-      _jobDB.AddJobs(newJobs, null);
+      _memoryLog.AddJobs(newJobs, null);
 
       var allData = JsonConvert.DeserializeObject<MazakAllData>(
         File.ReadAllText(
@@ -251,11 +259,11 @@ namespace MachineWatchTest
       _memoryLog.AddPendingLoad("1", "thekey", 1, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), "foreignid");
 
       var matId = _memoryLog.AllocateMaterialID("aaa-schId1234", "aaa", 2);
-      _memoryLog.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1,
+      _memoryLog.RecordAddMaterialToQueue(new Repository.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1,
         operatorName: null, reason: "TheQueueReason"
       );
 
-      var status = BuildCurrentStatus.Build(_jobDB, _memoryLog, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
+      var status = BuildCurrentStatus.Build(_memoryLog, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
 
       var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(

@@ -60,7 +60,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public static class RecordFacesForPallet
   {
-    public static IEnumerable<AssignedJobAndPathForFace> Load(string palComment, EventLogDB logDB)
+    public static IEnumerable<AssignedJobAndPathForFace> Load(string palComment, IRepository logDB)
     {
       if (palComment == null || !palComment.StartsWith("Insight:"))
       {
@@ -80,7 +80,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public static string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths, EventLogDB logDB)
+    public static string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths, IRepository logDB)
     {
       // comments can be 32 characters. A base64 guid is 22 characters to which we add "Insight:" 8 characters
       var guid64 = Convert.ToBase64String(System.Guid.NewGuid().ToByteArray()).Replace("/", "_").Replace("+", "-").Substring(0, 22);

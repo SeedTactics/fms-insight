@@ -45,10 +45,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
   public class SyncPalletsSpec : IDisposable
   {
     private FMSSettings _settings;
-    private EventLogDB.Config _logDBCfg;
-    private EventLogDB _logDB;
-    private JobDB.Config _jobDBCfg;
-    private JobDB _jobDB;
+    private RepositoryConfig _logDBCfg;
+    private IRepository _logDB;
     private IccSimulator _sim;
     private SyncPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
@@ -68,11 +66,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _settings.Queues.Add("Transfer", new QueueSize() { MaxSizeBeforeStopUnloading = -1 });
       _settings.Queues.Add("sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1 });
 
-      _logDBCfg = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
       _logDB = _logDBCfg.OpenConnection();
-
-      _jobDBCfg = JobDB.Config.InitializeSingleThreadedMemoryDB();
-      _jobDB = _jobDBCfg.OpenConnection();
 
       jsonSettings = new Newtonsoft.Json.JsonSerializerSettings();
       jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
@@ -96,17 +91,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var decr = new DecrementNotYetStartedJobs();
 
       _onCurrentStatus = Substitute.For<Action<CurrentStatus>>();
-      _sync = new SyncPallets(_jobDBCfg, _logDBCfg, _sim, assign, createLog, decr, _settings, onNewCurrentStatus: _onCurrentStatus);
+      _sync = new SyncPallets(_logDBCfg, _sim, assign, createLog, decr, _settings, onNewCurrentStatus: _onCurrentStatus);
 
       _sim.OnNewProgram += (newprog) =>
-        _jobDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
+        _logDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
     }
 
     public void Dispose()
     {
       _sync.Dispose();
-      _logDB.Close();
-      _jobDB.Close();
+      _logDBCfg.CloseMemoryConnection();
     }
 
     private IEnumerable<LogEntry> Step()
@@ -241,7 +235,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private void AddJobs(NewJobs jobs, bool expectNewRoute = true)
     {
-      _jobDB.AddJobs(jobs, null);
+      _logDB.AddJobs(jobs, null);
       using (var logMonitor = _logDBCfg.Monitor())
       {
         _sync.SynchronizePallets(false);
@@ -1018,7 +1012,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var m = _logDB.AllocateMaterialIDForCasting("aaa");
         _logDB.RecordWorkorderForMaterialID(m, 0, i % 2 == 0 ? "work1" : "work2");
-        _logDB.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite");
+        _logDB.RecordAddMaterialToQueue(new Repository.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite");
       }
 
       ExpectNewRoute();

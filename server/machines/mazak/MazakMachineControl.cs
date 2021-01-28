@@ -40,11 +40,11 @@ namespace MazakMachineInterface
 {
   public class MazakMachineControl : IMachineControl
   {
-    private JobDB.Config _jobDbCfg;
+    private RepositoryConfig _jobDbCfg;
     private IReadDataAccess _readData;
     private IMachineGroupName _machGroupName;
 
-    public MazakMachineControl(JobDB.Config jobDbCfg, IReadDataAccess readData, IMachineGroupName machineGroupName)
+    public MazakMachineControl(RepositoryConfig jobDbCfg, IReadDataAccess readData, IMachineGroupName machineGroupName)
     {
       _jobDbCfg = jobDbCfg;
       _readData = readData;

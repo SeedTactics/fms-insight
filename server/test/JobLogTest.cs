@@ -54,16 +54,18 @@ namespace MachineWatchTest
 
   public class JobLogTest : JobComparisonHelpers, IDisposable
   {
-    private EventLogDB _jobLog;
+    private RepositoryConfig _repoCfg;
+    private IRepository _jobLog;
 
     public JobLogTest()
     {
-      _jobLog = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _jobLog = _repoCfg.OpenConnection();
     }
 
     public void Dispose()
     {
-      _jobLog.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -188,7 +190,7 @@ namespace MachineWatchTest
           _jobLog.AllocateMaterialID("unique", "pp1", 53), "unique", 2, "pp1", 53, "", "", "face55");
 
       var loadStartActualCycle = _jobLog.RecordLoadStart(
-          mats: new[] { mat1, mat19 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+          mats: new[] { mat1, mat19 }.Select(Repository.EventLogMaterial.FromLogMat),
           pallet: "pal",
           lulNum: 2,
           timeUTC: start.AddHours(1)
@@ -208,7 +210,7 @@ namespace MachineWatchTest
           _jobLog.AllocateMaterialID("qghr4e", "ppp532", 14), "qghr4e", 3, "ppp532", 14, "", "", "");
 
       var loadEndActualCycle = _jobLog.RecordLoadEnd(
-          mats: new[] { mat2, mat15 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+          mats: new[] { mat2, mat15 }.Select(Repository.EventLogMaterial.FromLogMat),
           pallet: "aaaa",
           lulNum: 16,
           timeUTC: start.AddHours(3),
@@ -227,7 +229,7 @@ namespace MachineWatchTest
       _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).Should().BeEmpty();
 
       var arriveStocker = _jobLog.RecordPalletArriveStocker(
-        mats: new[] { mat2 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+        mats: new[] { mat2 }.Select(Repository.EventLogMaterial.FromLogMat),
         pallet: "bbbb",
         stockerNum: 23,
         waitForMachine: true,
@@ -253,7 +255,7 @@ namespace MachineWatchTest
       logsForMat2.Add(arriveStocker);
 
       var departStocker = _jobLog.RecordPalletDepartStocker(
-        mats: new[] { mat2, mat15 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+        mats: new[] { mat2, mat15 }.Select(Repository.EventLogMaterial.FromLogMat),
         pallet: "cccc",
         stockerNum: 34,
         waitForMachine: true,
@@ -282,7 +284,7 @@ namespace MachineWatchTest
       logsForMat2.Add(departStocker);
 
       var arriveInbound = _jobLog.RecordPalletArriveRotaryInbound(
-        mats: new[] { mat15 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+        mats: new[] { mat15 }.Select(Repository.EventLogMaterial.FromLogMat),
         pallet: "bbbb",
         statName: "thestat",
         statNum: 77,
@@ -307,7 +309,7 @@ namespace MachineWatchTest
       logs.Add(arriveInbound);
 
       var departInbound = _jobLog.RecordPalletDepartRotaryInbound(
-        mats: new[] { mat15 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+        mats: new[] { mat15 }.Select(Repository.EventLogMaterial.FromLogMat),
         pallet: "dddd",
         statName: "thestat2",
         statNum: 88,
@@ -335,16 +337,16 @@ namespace MachineWatchTest
       );
       logs.Add(departInbound);
 
-      var machineStartPockets = new List<EventLogDB.ToolPocketSnapshot> {
-        new EventLogDB.ToolPocketSnapshot() {
+      var machineStartPockets = new List<Repository.ToolPocketSnapshot> {
+        new Repository.ToolPocketSnapshot() {
           PocketNumber = 10, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
         },
-        new EventLogDB.ToolPocketSnapshot() {
+        new Repository.ToolPocketSnapshot() {
           PocketNumber = 20, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromMinutes(40)
         }
       };
       var machineStartActualCycle = _jobLog.RecordMachineStart(
-          mats: new[] { mat15 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+          mats: new[] { mat15 }.Select(Repository.EventLogMaterial.FromLogMat),
           pallet: "rrrr",
           statName: "ssssss",
           statNum: 152,
@@ -362,7 +364,7 @@ namespace MachineWatchTest
       _jobLog.ToolPocketSnapshotForCycle(machineStartActualCycle.Counter).Should().BeEquivalentTo(machineStartPockets);
 
       var machineEndActualCycle = _jobLog.RecordMachineEnd(
-          mats: new[] { mat2 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+          mats: new[] { mat2 }.Select(Repository.EventLogMaterial.FromLogMat),
           pallet: "www",
           statName: "xxx",
           statNum: 177,
@@ -412,7 +414,7 @@ namespace MachineWatchTest
       logsForMat2.Add(machineEndActualCycle);
 
       var unloadStartActualCycle = _jobLog.RecordUnloadStart(
-          mats: new[] { mat15, mat19 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+          mats: new[] { mat15, mat19 }.Select(Repository.EventLogMaterial.FromLogMat),
           pallet: "rrr",
           lulNum: 87,
           timeUTC: start.AddHours(6).AddMinutes(10)
@@ -426,7 +428,7 @@ namespace MachineWatchTest
       logs.Add(unloadStartActualCycle);
 
       var unloadEndActualCycle = _jobLog.RecordUnloadEnd(
-          mats: new[] { mat2, mat19 }.Select(EventLogDB.EventLogMaterial.FromLogMat),
+          mats: new[] { mat2, mat19 }.Select(Repository.EventLogMaterial.FromLogMat),
           pallet: "bb",
           lulNum: 14,
           timeUTC: start.AddHours(7),
@@ -444,8 +446,8 @@ namespace MachineWatchTest
       logsForMat2.Add(unloadEndActualCycle.First());
 
       var newRawLog = _jobLog.RawAddLogEntries(new[] {
-        new EventLogDB.NewEventLogEntry() {
-          Material = Enumerable.Empty<EventLogDB.EventLogMaterial>(),
+        new Repository.NewEventLogEntry() {
+          Material = Enumerable.Empty<Repository.EventLogMaterial>(),
           LogType = LogType.GeneralMessage,
           EndTimeUTC = start.AddHours(6.8),
           LocationName = "CustomMsg",
@@ -489,7 +491,7 @@ namespace MachineWatchTest
       CheckLog(logsForMat1.Concat(logsForMat2).ToList(), _jobLog.GetLogForMaterial(new[] { 1, mat2.MaterialID }), start);
       _jobLog.GetLogForMaterial(18).Should().BeEmpty();
 
-      var markLog = _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat1), "ser1");
+      var markLog = _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat1), "ser1");
       logsForMat1.Add(new LogEntry(-1, new LogMaterial[] { mat1 }, "",
                                        LogType.PartMark, "Mark", 1,
                                        "MARK", false, markLog.EndTimeUTC, "ser1", false));
@@ -499,7 +501,7 @@ namespace MachineWatchTest
       CheckLog(logsForMat1, _jobLog.GetLogForSerial("ser1"), start);
       _jobLog.GetLogForSerial("ser2").Should().BeEmpty();
 
-      var orderLog = _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat1), "work1");
+      var orderLog = _jobLog.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(mat1), "work1");
       logsForMat1.Add(new LogEntry(-1, new LogMaterial[] { mat1 }, "",
                                        LogType.OrderAssignment, "Order", 1,
                                        "", false, orderLog.EndTimeUTC, "work1", false));
@@ -515,7 +517,7 @@ namespace MachineWatchTest
 
       //inspection, wash, and general
       var inspCompLog = _jobLog.RecordInspectionCompleted(
-          EventLogDB.EventLogMaterial.FromLogMat(mat1), 5, "insptype1", true, new Dictionary<string, string> { { "a", "aaa" }, { "b", "bbb" } },
+          Repository.EventLogMaterial.FromLogMat(mat1), 5, "insptype1", true, new Dictionary<string, string> { { "a", "aaa" }, { "b", "bbb" } },
           TimeSpan.FromMinutes(100), TimeSpan.FromMinutes(5));
       var expectedInspLog = new LogEntry(-1, new LogMaterial[] { mat1 }, "",
           LogType.InspectionResult, "Inspection", 5, "insptype1", false, inspCompLog.EndTimeUTC, "True", false,
@@ -525,7 +527,7 @@ namespace MachineWatchTest
       logsForMat1.Add(expectedInspLog);
 
       var washLog = _jobLog.RecordWashCompleted(
-          EventLogDB.EventLogMaterial.FromLogMat(mat1), 7, new Dictionary<string, string> { { "z", "zzz" }, { "y", "yyy" } },
+          Repository.EventLogMaterial.FromLogMat(mat1), 7, new Dictionary<string, string> { { "z", "zzz" }, { "y", "yyy" } },
           TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(9));
       var expectedWashLog = new LogEntry(-1, new LogMaterial[] { mat1 }, "",
           LogType.Wash, "Wash", 7, "", false, washLog.EndTimeUTC, "", false,
@@ -534,7 +536,7 @@ namespace MachineWatchTest
       expectedWashLog.ProgramDetails.Add("y", "yyy");
       logsForMat1.Add(expectedWashLog);
 
-      var generalLog = _jobLog.RecordGeneralMessage(EventLogDB.EventLogMaterial.FromLogMat(mat1), "The program msg", "The result msg",
+      var generalLog = _jobLog.RecordGeneralMessage(Repository.EventLogMaterial.FromLogMat(mat1), "The program msg", "The result msg",
                                                     extraData: new Dictionary<string, string> { { "extra1", "value1" } });
       var expectedGeneralLog = new LogEntry(-1, new LogMaterial[] { mat1 }, "",
           LogType.GeneralMessage, "Message", 1, "The program msg", false, generalLog.EndTimeUTC, "The result msg", false
@@ -683,7 +685,7 @@ namespace MachineWatchTest
           "result",
           true)); //end of route
 
-      _jobLog.AddLogEntryFromUnitTest(pal1Cycle[pal1Cycle.Count - 1]);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(pal1Cycle[pal1Cycle.Count - 1]);
 
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
@@ -703,7 +705,7 @@ namespace MachineWatchTest
         endOfRoute: false
       );
       invalidated.ProgramDetails["PalletCycleInvalidated"] = "1";
-      _jobLog.AddLogEntryFromUnitTest(invalidated);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(invalidated);
 
       var swap = new LogEntry(
         cntr: 0,
@@ -718,7 +720,7 @@ namespace MachineWatchTest
         result: "Replace aaa with bbb",
         endOfRoute: false
       );
-      _jobLog.AddLogEntryFromUnitTest(swap);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(swap);
 
       // neither invalidated nor swap added to pal1Cycle
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
@@ -760,16 +762,16 @@ namespace MachineWatchTest
                             "prog3", false, DateTime.UtcNow, "result3", false, TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(21));
 
       Assert.Equal("", _jobLog.MaxForeignID());
-      _jobLog.AddLogEntryFromUnitTest(log1, "for1");
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1, "for1");
       Assert.Equal("for1", _jobLog.MaxForeignID());
-      _jobLog.AddLogEntryFromUnitTest(log2, "for2");
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log2, "for2");
       Assert.Equal("for2", _jobLog.MaxForeignID());
-      _jobLog.AddLogEntryFromUnitTest(log3);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log3);
       Assert.Equal("for2", _jobLog.MaxForeignID());
       _jobLog.AddPendingLoad("p", "k", 1, TimeSpan.Zero, TimeSpan.Zero, "for4");
       Assert.Equal("for4", _jobLog.MaxForeignID());
-      var mat = new Dictionary<string, IEnumerable<EventLogDB.EventLogMaterial>>();
-      mat["k"] = new EventLogDB.EventLogMaterial[] { };
+      var mat = new Dictionary<string, IEnumerable<Repository.EventLogMaterial>>();
+      mat["k"] = new Repository.EventLogMaterial[] { };
       _jobLog.CompletePalletCycle("p", DateTime.UtcNow, "for3", mat, generateSerials: false);
       Assert.Equal("for4", _jobLog.MaxForeignID()); // for4 should be copied
 
@@ -809,7 +811,7 @@ namespace MachineWatchTest
                             "program125", false, DateTime.UtcNow, "result66", false, TimeSpan.FromMinutes(166), TimeSpan.FromMinutes(74));
 
       Assert.Equal("", _jobLog.MaxForeignID());
-      _jobLog.AddLogEntryFromUnitTest(log1, "foreign1", "the original message");
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1, "foreign1", "the original message");
       Assert.Equal("foreign1", _jobLog.MaxForeignID());
 
       var load1 = _jobLog.StationLogByForeignID("foreign1");
@@ -832,19 +834,19 @@ namespace MachineWatchTest
       var mat2_proc1 = new LogMaterial(_jobLog.AllocateMaterialID("uniq1", "part1", 2), "uniq1", 1, "part1", 2, "", "", "");
 
       //not adding all events, but at least one non-endofroute and one endofroute
-      _jobLog.AddLogEntryFromUnitTest(
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(
         new LogEntry(0, new LogMaterial[] { mat1_proc1 },
                              "pal1", LogType.MachineCycle, "MC", 5, "prog1", false,
                              t.AddMinutes(5), "", false,
                TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20))
       );
-      _jobLog.AddLogEntryFromUnitTest(
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(
         new LogEntry(0, new LogMaterial[] { mat1_proc2 },
                              "pal1", LogType.MachineCycle, "MC", 5, "prog2", false,
                              t.AddMinutes(6), "", false,
                TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(40))
       );
-      _jobLog.AddLogEntryFromUnitTest(
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(
         new LogEntry(0, new LogMaterial[] { mat1_proc2, mat2_proc1 }, //mat2_proc1 should be ignored since it isn't final process
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "UNLOAD", false,
                              t.AddMinutes(7), "UNLOAD", false,
@@ -857,13 +859,13 @@ namespace MachineWatchTest
       var mat5 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2", "part3", 1), "uniq2", 1, "part3", 1, "", "", "");
       var mat6 = new LogMaterial(_jobLog.AllocateMaterialID("uniq2", "part3", 1), "uniq2", 1, "part3", 1, "", "", "");
 
-      _jobLog.AddLogEntryFromUnitTest(
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(
         new LogEntry(0, new LogMaterial[] { mat3, mat4, mat5, mat6 },
                              "pal1", LogType.MachineCycle, "MC", 5, "progdouble", false,
                              t.AddMinutes(15), "", false,
                TimeSpan.FromMinutes(3), TimeSpan.FromMinutes(4))
       );
-      _jobLog.AddLogEntryFromUnitTest(
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(
         new LogEntry(0, new LogMaterial[] { mat3, mat4, mat5, mat6 },
                              "pal1", LogType.LoadUnloadCycle, "Load", 5, "UNLOAD", false,
                              t.AddMinutes(17), "UNLOAD", false,
@@ -872,12 +874,12 @@ namespace MachineWatchTest
 
 
       //now record serial and workorder
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat1_proc2), "serial1");
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat2_proc1), "serial2");
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat3), "serial3");
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat4), "serial4");
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat5), "serial5");
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat6), "serial6");
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat1_proc2), "serial1");
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat2_proc1), "serial2");
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat3), "serial3");
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat4), "serial4");
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat5), "serial5");
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat6), "serial6");
       Assert.Equal("serial1", _jobLog.GetMaterialDetails(mat1_proc2.MaterialID).Serial);
       _jobLog.GetMaterialDetailsForSerial("serial1").Should().BeEquivalentTo(new[] {
         new MaterialDetails() {
@@ -891,11 +893,11 @@ namespace MachineWatchTest
       });
       _jobLog.GetMaterialDetailsForSerial("waoheufweiuf").Should().BeEmpty();
 
-      _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat1_proc2), "work1");
-      _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat3), "work1");
-      _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat4), "work1");
-      _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat5), "work2");
-      _jobLog.RecordWorkorderForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat6), "work2");
+      _jobLog.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(mat1_proc2), "work1");
+      _jobLog.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(mat3), "work1");
+      _jobLog.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(mat4), "work1");
+      _jobLog.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(mat5), "work2");
+      _jobLog.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(mat6), "work2");
       Assert.Equal("work2", _jobLog.GetMaterialDetails(mat5.MaterialID).Workorder);
 
       var summary = _jobLog.GetWorkorderSummaries(new[] { "work1", "work2" });
@@ -1072,7 +1074,7 @@ namespace MachineWatchTest
 
       var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100, "", "", "");
       _jobLog.CreateMaterialID(100, "uniq100", "part100", 100);
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(otherQueueMat), "BBBB", 0, "theoper", "thereason", start.AddHours(-1))
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(otherQueueMat), "BBBB", 0, "theoper", "thereason", start.AddHours(-1))
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1), "theoper", "thereason") });
 
 
@@ -1088,13 +1090,13 @@ namespace MachineWatchTest
       _jobLog.CreateMaterialID(4, "uniq4", "part4", 44);
 
       // add via LogMaterial with position -1
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", -1, null, null, start)
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat1), "AAAA", -1, null, null, start)
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat1, 2, "AAAA", 0, start) });
       expectedLogs.Add(AddToQueueExpectedEntry(mat1, 2, "AAAA", 0, start));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start}
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start}
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().BeNull();
@@ -1102,14 +1104,14 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().BeNull();
 
       //adding with LogMaterial with position -1 and existing queue
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat2), "AAAA", -1, null, null, start.AddMinutes(10))
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat2), "AAAA", -1, null, null, start.AddMinutes(10))
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat2, 3, "AAAA", 1, start.AddMinutes(10)) });
       expectedLogs.Add(AddToQueueExpectedEntry(mat2, 3, "AAAA", 1, start.AddMinutes(10)));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)}
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)}
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
@@ -1118,22 +1120,22 @@ namespace MachineWatchTest
 
 
       //inserting into queue with LogMaterial
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, "opernnnn", "rrrrr", start.AddMinutes(20))
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, "opernnnn", "rrrrr", start.AddMinutes(20))
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20), "opernnnn", reason: "rrrrr") });
       expectedLogs.Add(AddToQueueExpectedEntry(mat3, 4, "AAAA", 1, start.AddMinutes(20), "opernnnn", "rrrrr"));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(20)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)}
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(20)},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)}
           });
       _jobLog.GetMaterialInAllQueues()
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(20)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0, Unique = "uniq100", PartNameOrCasting = "part100", NumProcesses = 100, AddTimeUTC = start.AddHours(-1)}
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(20)},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 2, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
+                    new Repository.QueuedMaterial() { MaterialID = 100, Queue = "BBBB", Position = 0, Unique = "uniq100", PartNameOrCasting = "part100", NumProcesses = 100, AddTimeUTC = start.AddHours(-1)}
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
@@ -1141,14 +1143,14 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().BeNull();
 
       //removing from queue with LogMaterial
-      _jobLog.RecordRemoveMaterialFromAllQueues(EventLogDB.EventLogMaterial.FromLogMat(mat3), "operyy", start.AddMinutes(40))
+      _jobLog.RecordRemoveMaterialFromAllQueues(Repository.EventLogMaterial.FromLogMat(mat3), "operyy", start.AddMinutes(40))
           .Should().BeEquivalentTo(new[] { RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, 40 - 20, start.AddMinutes(40), "operyy") });
       expectedLogs.Add(RemoveFromQueueExpectedEntry(mat3, 5, "AAAA", 1, 40 - 20, start.AddMinutes(40), "operyy"));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)}
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)}
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
@@ -1163,9 +1165,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(45)}
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(45)}
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
@@ -1173,7 +1175,7 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().BeNull();
 
       //move item backwards in queue
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat1), "AAAA", 1, null, null, start.AddMinutes(50))
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat1), "AAAA", 1, null, null, start.AddMinutes(50))
           .Should().BeEquivalentTo(new[] {
                     RemoveFromQueueExpectedEntry(mat1, 7, "AAAA", 0, 50, start.AddMinutes(50)),
                     AddToQueueExpectedEntry(mat1, 8, "AAAA", 1, start.AddMinutes(50))
@@ -1183,9 +1185,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(45)},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(45)},
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
@@ -1193,7 +1195,7 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().BeNull();
 
       //move item forwards in queue
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, null, null, start.AddMinutes(55))
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat3), "AAAA", 1, null, null, start.AddMinutes(55))
           .Should().BeEquivalentTo(new[] {
                     RemoveFromQueueExpectedEntry(mat3, 9, "AAAA", 2, 55 - 45, start.AddMinutes(55)),
                     AddToQueueExpectedEntry(mat3, 10, "AAAA", 1, start.AddMinutes(55))
@@ -1203,9 +1205,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)  },
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)  },
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
@@ -1213,7 +1215,7 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().BeNull();
 
       //add large position
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat4), "AAAA", 500, null, null, start.AddMinutes(58))
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat4), "AAAA", 500, null, null, start.AddMinutes(58))
           .Should().BeEquivalentTo(new[] {
                     AddToQueueExpectedEntry(mat4, 11, "AAAA", 3, start.AddMinutes(58))
           });
@@ -1221,27 +1223,27 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)},
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
+                    new Repository.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
       _jobLog.NextProcessForQueuedMaterial(mat3.MaterialID).Should().Be(4);
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().Be(5);
 
-      _jobLog.SignalMaterialForQuarantine(EventLogDB.EventLogMaterial.FromLogMat(mat1), "pal", "QQQ", start.AddMinutes(59), "theoper")
+      _jobLog.SignalMaterialForQuarantine(Repository.EventLogMaterial.FromLogMat(mat1), "pal", "QQQ", start.AddMinutes(59), "theoper")
         .Should().BeEquivalentTo(SignalQuarantineExpectedEntry(mat1, 12, "pal", "QQQ", start.AddMinutes(59), "theoper"));
       expectedLogs.Add(SignalQuarantineExpectedEntry(mat1, 12, "pal", "QQQ", start.AddMinutes(59), "theoper"));
 
       // hasn't moved yet
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 1, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)},
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 2, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
+                    new Repository.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 3, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
           });
       _jobLog.GetMaterialInQueue("QQQ").Should().BeEmpty();
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -1258,9 +1260,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 2, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 0, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(55)},
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(50)},
+                    new Repository.QueuedMaterial() { MaterialID = 4, Queue = "AAAA", Position = 2, Unique = "uniq4", PartNameOrCasting = "part4", NumProcesses = 44, AddTimeUTC = start.AddMinutes(58)},
           });
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
@@ -1288,15 +1290,15 @@ namespace MachineWatchTest
       _jobLog.CreateMaterialID(4, "uniq4", "part4", 47);
 
       // add two material into queue 1
-      _jobLog.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = mat1.MaterialID, Process = 14, Face = "" }, "AAAA", -1, null, null, start);
+      _jobLog.RecordAddMaterialToQueue(new Repository.EventLogMaterial() { MaterialID = mat1.MaterialID, Process = 14, Face = "" }, "AAAA", -1, null, null, start);
       expectedLogs.Add(AddToQueueExpectedEntry(SetProcInMat(14)(mat1), 1, "AAAA", 0, start));
-      _jobLog.RecordAddMaterialToQueue(new EventLogDB.EventLogMaterial() { MaterialID = mat2.MaterialID, Process = 0, Face = "" }, "AAAA", -1, null, null, start);
+      _jobLog.RecordAddMaterialToQueue(new Repository.EventLogMaterial() { MaterialID = mat2.MaterialID, Process = 0, Face = "" }, "AAAA", -1, null, null, start);
       expectedLogs.Add(AddToQueueExpectedEntry(SetProcInMat(0)(mat2), 2, "AAAA", 1, start));
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start}
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start}
           });
 
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(15);
@@ -1306,7 +1308,7 @@ namespace MachineWatchTest
 
 
       // loading should remove from queue
-      var loadEndActual = _jobLog.RecordLoadEnd(new[] { mat1 }.Select(EventLogDB.EventLogMaterial.FromLogMat), "pal1", 16, start.AddMinutes(10), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20));
+      var loadEndActual = _jobLog.RecordLoadEnd(new[] { mat1 }.Select(Repository.EventLogMaterial.FromLogMat), "pal1", 16, start.AddMinutes(10), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20));
       loadEndActual.Should().BeEquivalentTo(new[] {
                 new LogEntry(4, new [] {mat1}, "pal1",
                     LogType.LoadUnloadCycle, "L/U", 16,
@@ -1319,7 +1321,7 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start}
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start}
           });
 
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -1327,7 +1329,7 @@ namespace MachineWatchTest
 
       //unloading should add to queue
       var unloadEndActual = _jobLog.RecordUnloadEnd(
-          new[] { mat1, mat3, mat4 }.Select(EventLogDB.EventLogMaterial.FromLogMat), "pal5", 77, start.AddMinutes(30), TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(23),
+          new[] { mat1, mat3, mat4 }.Select(Repository.EventLogMaterial.FromLogMat), "pal5", 77, start.AddMinutes(30), TimeSpan.FromMinutes(52), TimeSpan.FromMinutes(23),
           new Dictionary<long, string>() { { 1, "AAAA" }, { 3, "AAAA" } });
       unloadEndActual.Should().BeEquivalentTo(new[] {
                 new LogEntry(7, new [] {mat1, mat3, mat4}, "pal5",
@@ -1342,9 +1344,9 @@ namespace MachineWatchTest
 
       _jobLog.GetMaterialInQueue("AAAA")
           .Should().BeEquivalentTo(new[] {
-                    new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(30)},
-                    new EventLogDB.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(30)}
+                    new Repository.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 0, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start},
+                    new Repository.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 1, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start.AddMinutes(30)},
+                    new Repository.QueuedMaterial() { MaterialID = 3, Queue = "AAAA", Position = 2, Unique = "uniq3", PartNameOrCasting = "part3", NumProcesses = 36, AddTimeUTC = start.AddMinutes(30)}
           });
 
 
@@ -1367,9 +1369,9 @@ namespace MachineWatchTest
       var mat3 = new LogMaterial(
           _jobLog.AllocateMaterialIDForCasting("casting3"), "", 0, "casting3", 1, "", "", "");
 
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat1), "queue1", 0, null, null);
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat2), "queue1", 1, null, null);
-      _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat3), "queue1", 2, null, null);
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat1), "queue1", 0, null, null);
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat2), "queue1", 1, null, null);
+      _jobLog.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat3), "queue1", 2, null, null);
 
       _jobLog.GetMaterialDetails(mat1.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -1452,8 +1454,8 @@ namespace MachineWatchTest
     [Fact]
     public void ToolSnapshotDiff()
     {
-      var start = new List<EventLogDB.ToolPocketSnapshot>();
-      var end = new List<EventLogDB.ToolPocketSnapshot>();
+      var start = new List<Repository.ToolPocketSnapshot>();
+      var end = new List<Repository.ToolPocketSnapshot>();
       var expectedUse = new Dictionary<string, TimeSpan>();
       var expectedTotalUse = new Dictionary<string, TimeSpan>();
       var expectedLife = new Dictionary<string, TimeSpan>();
@@ -1461,10 +1463,10 @@ namespace MachineWatchTest
 
       // first a normal use
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
       );
       expectedUse["tool1"] = TimeSpan.FromSeconds(50 - 10);
       expectedTotalUse["tool1"] = TimeSpan.FromSeconds(50);
@@ -1472,18 +1474,18 @@ namespace MachineWatchTest
 
       // now an unused tool
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
       );
 
       // now a tool which is replaced and used
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(70), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(70), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromSeconds(100) }
       );
       expectedUse["tool3"] = TimeSpan.FromSeconds(100 - 70 + 20);
       expectedTotalUse["tool3"] = TimeSpan.FromSeconds(20);
@@ -1492,16 +1494,16 @@ namespace MachineWatchTest
 
       // now a pocket with two tools
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
       );
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(200) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(200) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(110), ToolLife = TimeSpan.FromSeconds(200) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(110), ToolLife = TimeSpan.FromSeconds(200) }
       );
       expectedUse["tool4"] = TimeSpan.FromSeconds(100 - 60);
       expectedTotalUse["tool4"] = TimeSpan.Zero;
@@ -1513,10 +1515,10 @@ namespace MachineWatchTest
 
       // now a tool which is removed and a new tool added
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool6", CurrentUse = TimeSpan.FromSeconds(65), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool6", CurrentUse = TimeSpan.FromSeconds(65), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool7", CurrentUse = TimeSpan.FromSeconds(30), ToolLife = TimeSpan.FromSeconds(120) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool7", CurrentUse = TimeSpan.FromSeconds(30), ToolLife = TimeSpan.FromSeconds(120) }
       );
       expectedUse["tool6"] = TimeSpan.FromSeconds(100 - 65);
       expectedTotalUse["tool6"] = TimeSpan.Zero;
@@ -1528,7 +1530,7 @@ namespace MachineWatchTest
 
       // now a tool which is removed and nothing added
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 5, Tool = "tool8", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 5, Tool = "tool8", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
       );
       expectedUse["tool8"] = TimeSpan.FromSeconds(100 - 80);
       expectedTotalUse["tool8"] = TimeSpan.Zero;
@@ -1537,7 +1539,7 @@ namespace MachineWatchTest
 
       // now a new tool which is appears
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 6, Tool = "tool9", CurrentUse = TimeSpan.FromSeconds(15), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 6, Tool = "tool9", CurrentUse = TimeSpan.FromSeconds(15), ToolLife = TimeSpan.FromSeconds(100) }
       );
       expectedUse["tool9"] = TimeSpan.FromSeconds(15);
       expectedTotalUse["tool9"] = TimeSpan.FromSeconds(15);
@@ -1545,28 +1547,28 @@ namespace MachineWatchTest
 
       // a new unused tool
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 7, Tool = "tool10", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 7, Tool = "tool10", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
       );
 
       // same tools in separate pockets are accumulated
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(77), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(77), ToolLife = TimeSpan.FromSeconds(100) }
       );
       start.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
       );
       end.Add(
-        new EventLogDB.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(13), ToolLife = TimeSpan.FromSeconds(100) }
+        new Repository.ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(13), ToolLife = TimeSpan.FromSeconds(100) }
       );
       expectedUse["tool11"] = TimeSpan.FromSeconds((77 - 50) + (100 - 80) + 13);
       expectedTotalUse["tool11"] = TimeSpan.FromSeconds(77 + 13);
       expectedLife["tool11"] = TimeSpan.FromSeconds(100 + 100);
       expectedChange.Add("tool11");
 
-      EventLogDB.ToolPocketSnapshot.DiffSnapshots(start, end).Should().BeEquivalentTo(
+      Repository.ToolPocketSnapshot.DiffSnapshots(start, end).Should().BeEquivalentTo(
         expectedUse.Select(x => new
         {
           Tool = x.Key,
@@ -1588,7 +1590,7 @@ namespace MachineWatchTest
       if (!firstPalletCycle)
       {
         var firstMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
-        var firstMat = new EventLogDB.EventLogMaterial() { MaterialID = firstMatId, Process = 1, Face = "1" };
+        var firstMat = new Repository.EventLogMaterial() { MaterialID = firstMatId, Process = 1, Face = "1" };
         _jobLog.RecordSerialForMaterialID(firstMat, "aaaa", now);
         _jobLog.RecordLoadEnd(new[] { firstMat }, pallet: "5", lulNum: 3, timeUTC: now.AddMinutes(1), elapsed: TimeSpan.FromMinutes(5), active: TimeSpan.FromMinutes(4));
         _jobLog.RecordMachineEnd(new[] { firstMat }, pallet: "5", statName: "Mach", statNum: 4, program: "proggg", result: "proggg", timeUTC: now.AddMinutes(2), elapsed: TimeSpan.FromMinutes(10), active: TimeSpan.FromMinutes(11));
@@ -1600,13 +1602,13 @@ namespace MachineWatchTest
       // ------------------------------------------------------
       // Material
       // ------------------------------------------------------
-      var initiallyLoadedMatProc0 = new EventLogDB.EventLogMaterial()
+      var initiallyLoadedMatProc0 = new Repository.EventLogMaterial()
       {
         MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
         Process = 0,
         Face = ""
       };
-      var initiallyLoadedMatProc1 = new EventLogDB.EventLogMaterial()
+      var initiallyLoadedMatProc1 = new Repository.EventLogMaterial()
       {
         MaterialID = initiallyLoadedMatProc0.MaterialID,
         Process = 1,
@@ -1632,13 +1634,13 @@ namespace MachineWatchTest
         newMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
       }
 
-      var newMatProc0 = new EventLogDB.EventLogMaterial()
+      var newMatProc0 = new Repository.EventLogMaterial()
       {
         MaterialID = newMatId,
         Process = 0,
         Face = ""
       };
-      var newMatProc1 = new EventLogDB.EventLogMaterial()
+      var newMatProc1 = new Repository.EventLogMaterial()
       {
         MaterialID = newMatId,
         Process = 1,
@@ -1858,8 +1860,8 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow.AddHours(-5);
 
       var firstMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
-      var firstMatProc0 = new EventLogDB.EventLogMaterial() { MaterialID = firstMatId, Process = 0, Face = "" };
-      var firstMat = new EventLogDB.EventLogMaterial() { MaterialID = firstMatId, Process = 1, Face = "1" };
+      var firstMatProc0 = new Repository.EventLogMaterial() { MaterialID = firstMatId, Process = 0, Face = "" };
+      var firstMat = new Repository.EventLogMaterial() { MaterialID = firstMatId, Process = 1, Face = "1" };
       _jobLog.RecordSerialForMaterialID(firstMatProc0, serial: "aaaa", endTimeUTC: now);
       _jobLog.RecordLoadEnd(new[] { firstMat }, pallet: "5", lulNum: 3, timeUTC: now.AddMinutes(1), elapsed: TimeSpan.FromMinutes(5), active: TimeSpan.FromMinutes(4));
       _jobLog.RecordMachineEnd(new[] { firstMat }, pallet: "5", statName: "Mach", statNum: 4, program: "proggg", result: "proggg", timeUTC: now.AddMinutes(2), elapsed: TimeSpan.FromMinutes(10), active: TimeSpan.FromMinutes(11));
@@ -1903,13 +1905,13 @@ namespace MachineWatchTest
       // Material
       // ------------------------------------------------------
 
-      var matProc0 = new EventLogDB.EventLogMaterial()
+      var matProc0 = new Repository.EventLogMaterial()
       {
         MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
         Process = 0,
         Face = ""
       };
-      var matProc1 = new EventLogDB.EventLogMaterial()
+      var matProc1 = new Repository.EventLogMaterial()
       {
         MaterialID = matProc0.MaterialID,
         Process = 1,
@@ -2091,7 +2093,7 @@ namespace MachineWatchTest
     #region Helpers
     private LogEntry AddLogEntry(LogEntry l)
     {
-      _jobLog.AddLogEntryFromUnitTest(l);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(l);
       return l;
     }
 
@@ -2101,7 +2103,7 @@ namespace MachineWatchTest
 
       foreach (var l in logs)
       {
-        _jobLog.AddLogEntryFromUnitTest(l);
+        ((Repository)_jobLog).AddLogEntryFromUnitTest(l);
 
         if (l.EndTimeUTC > last)
         {
@@ -2315,17 +2317,19 @@ namespace MachineWatchTest
 
   public class LogOneSerialPerMaterialSpec : IDisposable
   {
-    private EventLogDB _jobLog;
+    private RepositoryConfig _repoCfg;
+    private IRepository _jobLog;
 
     public LogOneSerialPerMaterialSpec()
     {
       var settings = new FMSSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, SerialLength = 10 };
-      _jobLog = EventLogDB.Config.InitializeSingleThreadedMemoryDB(settings).OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
+      _jobLog = _repoCfg.OpenConnection();
     }
 
     public void Dispose()
     {
-      _jobLog.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -2350,7 +2354,7 @@ namespace MachineWatchTest
       var t = DateTime.UtcNow.AddHours(-1);
 
       //mat4 already has a serial
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
       var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
                             "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
 
@@ -2361,14 +2365,14 @@ namespace MachineWatchTest
                             "pal2", LogType.MachineCycle, "MC", 1,
                             "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(17));
 
-      _jobLog.AddLogEntryFromUnitTest(log1);
-      _jobLog.AddLogEntryFromUnitTest(log2);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log2);
 
       _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
       _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
 
       _jobLog.PendingLoads("pal1").Should().BeEquivalentTo(new[] {
-                new EventLogDB.PendingLoad() {
+                new Repository.PendingLoad() {
                     Pallet = "pal1",
                     Key = "key1",
                     LoadStation = 5,
@@ -2376,7 +2380,7 @@ namespace MachineWatchTest
                     ForeignID = "for1",
                     ActiveOperationTime = TimeSpan.FromMinutes(38)
                 },
-                new EventLogDB.PendingLoad() {
+                new Repository.PendingLoad() {
                     Pallet = "pal1",
                     Key = "key2",
                     LoadStation = 7,
@@ -2386,7 +2390,7 @@ namespace MachineWatchTest
                 }
             });
       _jobLog.AllPendingLoads().Should().BeEquivalentTo(new[] {
-                new EventLogDB.PendingLoad() {
+                new Repository.PendingLoad() {
                     Pallet = "pal1",
                     Key = "key1",
                     LoadStation = 5,
@@ -2394,7 +2398,7 @@ namespace MachineWatchTest
                     ForeignID = "for1",
                     ActiveOperationTime = TimeSpan.FromMinutes(38)
                 },
-                new EventLogDB.PendingLoad() {
+                new Repository.PendingLoad() {
                     Pallet = "pal1",
                     Key = "key2",
                     LoadStation = 7,
@@ -2404,13 +2408,13 @@ namespace MachineWatchTest
                 }
             });
 
-      var mat = new Dictionary<string, IEnumerable<EventLogDB.EventLogMaterial>>();
+      var mat = new Dictionary<string, IEnumerable<Repository.EventLogMaterial>>();
 
       var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
         LogType.PalletCycle, "Pallet Cycle", 1, "", false,
         t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
 
-      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(EventLogDB.EventLogMaterial.FromLogMat);
+      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(Repository.EventLogMaterial.FromLogMat);
 
       var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
                               "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
@@ -2424,7 +2428,7 @@ namespace MachineWatchTest
                             "", LogType.PartMark, "Mark", 1, "MARK", false,
         t.AddMinutes(45).AddSeconds(2), serial2, false);
 
-      mat["key2"] = new LogMaterial[] { mat3, mat4 }.Select(EventLogDB.EventLogMaterial.FromLogMat);
+      mat["key2"] = new LogMaterial[] { mat3, mat4 }.Select(Repository.EventLogMaterial.FromLogMat);
 
       var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3, mat4 },
                               "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
@@ -2450,17 +2454,19 @@ namespace MachineWatchTest
 
   public class LogOneSerialPerCycleSpec : IDisposable
   {
-    private EventLogDB _jobLog;
+    private RepositoryConfig _repoCfg;
+    private IRepository _jobLog;
 
     public LogOneSerialPerCycleSpec()
     {
       var settings = new FMSSettings() { SerialType = SerialType.AssignOneSerialPerCycle, SerialLength = 10 };
-      _jobLog = EventLogDB.Config.InitializeSingleThreadedMemoryDB(settings).OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
+      _jobLog = _repoCfg.OpenConnection();
     }
 
     public void Dispose()
     {
-      _jobLog.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -2481,7 +2487,7 @@ namespace MachineWatchTest
       var t = DateTime.UtcNow.AddHours(-1);
 
       //mat4 already has a serial
-      _jobLog.RecordSerialForMaterialID(EventLogDB.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
+      _jobLog.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
       var ser4 = new LogEntry(0, new LogMaterial[] { mat4 },
                             "", LogType.PartMark, "Mark", 1, "MARK", false, t.AddMinutes(1), "themat4serial", false);
 
@@ -2492,20 +2498,20 @@ namespace MachineWatchTest
                             "pal2", LogType.MachineCycle, "MC", 1,
                             "prog2", false, t.AddMinutes(20), "result2", false, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(22));
 
-      _jobLog.AddLogEntryFromUnitTest(log1);
-      _jobLog.AddLogEntryFromUnitTest(log2);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1);
+      ((Repository)_jobLog).AddLogEntryFromUnitTest(log2);
 
       _jobLog.AddPendingLoad("pal1", "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
       _jobLog.AddPendingLoad("pal1", "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
       _jobLog.AddPendingLoad("pal1", "key3", 6, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61), "for2.5");
 
-      var mat = new Dictionary<string, IEnumerable<EventLogDB.EventLogMaterial>>();
+      var mat = new Dictionary<string, IEnumerable<Repository.EventLogMaterial>>();
 
       var palCycle = new LogEntry(0, new LogMaterial[] { }, "pal1",
       LogType.PalletCycle, "Pallet Cycle", 1, "", false,
         t.AddMinutes(45), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero);
 
-      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(EventLogDB.EventLogMaterial.FromLogMat);
+      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(Repository.EventLogMaterial.FromLogMat);
 
       var nLoad1 = new LogEntry(0, new LogMaterial[] { mat1, mat2 },
                               "pal1", LogType.LoadUnloadCycle, "L/U", 5, "LOAD", false,
@@ -2515,7 +2521,7 @@ namespace MachineWatchTest
                             "", LogType.PartMark, "Mark", 1, "MARK", false,
         t.AddMinutes(45).AddSeconds(2), serial1, false);
 
-      mat["key2"] = new LogMaterial[] { mat3 }.Select(EventLogDB.EventLogMaterial.FromLogMat);
+      mat["key2"] = new LogMaterial[] { mat3 }.Select(Repository.EventLogMaterial.FromLogMat);
 
       var nLoad2 = new LogEntry(0, new LogMaterial[] { mat3 },
                               "pal1", LogType.LoadUnloadCycle, "L/U", 7, "LOAD", false,
@@ -2525,7 +2531,7 @@ namespace MachineWatchTest
                             "", LogType.PartMark, "Mark", 1, "MARK", false,
         t.AddMinutes(45).AddSeconds(2), serial3, false);
 
-      mat["key3"] = new LogMaterial[] { mat4 }.Select(EventLogDB.EventLogMaterial.FromLogMat);
+      mat["key3"] = new LogMaterial[] { mat4 }.Select(Repository.EventLogMaterial.FromLogMat);
 
       var nLoad3 = new LogEntry(0, new LogMaterial[] { mat4 },
                               "pal1", LogType.LoadUnloadCycle, "L/U", 6, "LOAD", false,
@@ -2573,7 +2579,7 @@ namespace MachineWatchTest
     [Fact]
     public void MaterialIDs()
     {
-      var logDB = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
+      var logDB = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
       long m1 = logDB.AllocateMaterialID("U1", "P1", 52);
       long m2 = logDB.AllocateMaterialID("U2", "P2", 66);
       long m3 = logDB.AllocateMaterialID("U3", "P3", 566);
@@ -2595,7 +2601,7 @@ namespace MachineWatchTest
     public void ErrorsTooLarge()
     {
       Action act = () =>
-        EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "A000000000" });
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "A000000000" });
       act.Should().Throw<Exception>().WithMessage("Serial A000000000 is too large");
     }
 
@@ -2603,13 +2609,13 @@ namespace MachineWatchTest
     public void AdjustsStartingSerial()
     {
       var logFromCreate =
-        EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
 
       long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
       m1.Should().Be(33_152_428_148);
 
       var logFromUpgrade =
-        EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "B3t24s" }, _connection, createTables: false).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "B3t24s" }, _connection, createTables: false).OpenConnection();
 
       long m2 = logFromUpgrade.AllocateMaterialID("U1", "P1", 2);
       long m3 = logFromUpgrade.AllocateMaterialID("U2", "P2", 4);
@@ -2621,13 +2627,13 @@ namespace MachineWatchTest
     public void AvoidsAdjustingSerialBackwards()
     {
       var logFromCreate =
-        EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
 
       long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
       m1.Should().Be(33_152_428_148);
 
       var logFromUpgrade =
-        EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "w53122" }, _connection, createTables: false).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "w53122" }, _connection, createTables: false).OpenConnection();
 
       long m2 = logFromUpgrade.AllocateMaterialID("U1", "P1", 2);
       m2.Should().Be(33_152_428_149);

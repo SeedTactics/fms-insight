@@ -39,719 +39,8 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-  public class EventLogDB : MachineWatchInterface.ILogDatabase, MachineWatchInterface.IInspectionControl, IDisposable
+  public partial class Repository
   {
-
-    #region Database Create/Update
-    public class Config
-    {
-      public event Action<MachineWatchInterface.LogEntry, string, EventLogDB> NewLogEntry;
-      internal void OnNewLogEntry(MachineWatchInterface.LogEntry e, string foreignId, EventLogDB db) => NewLogEntry?.Invoke(e, foreignId, db);
-
-      public FMSSettings Settings { get; }
-
-      public static Config InitializeEventDatabase(FMSSettings st, string filename, string oldInspDbFile = null)
-      {
-        var connStr = "Data Source=" + filename;
-        if (System.IO.File.Exists(filename))
-        {
-          using (var conn = new SqliteConnection(connStr))
-          {
-            conn.Open();
-            UpdateTables(conn, st, oldInspDbFile);
-            AdjustStartingSerial(conn, st);
-            return new Config(st, connStr);
-          }
-        }
-        else
-        {
-          using (var conn = new SqliteConnection(connStr))
-          {
-            conn.Open();
-            try
-            {
-              CreateTables(conn, st);
-              return new Config(st, connStr);
-            }
-            catch
-            {
-              conn.Close();
-              System.IO.File.Delete(filename);
-              throw;
-            }
-          }
-        }
-      }
-
-      public static Config InitializeSingleThreadedMemoryDB(FMSSettings st)
-      {
-        var memConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-        memConn.Open();
-        CreateTables(memConn, st);
-        return new Config(st, memConn);
-      }
-
-      public static Config InitializeSingleThreadedMemoryDB(FMSSettings st, SqliteConnection memConn, bool createTables)
-      {
-        if (createTables)
-        {
-          CreateTables(memConn, st);
-        }
-        else
-        {
-          UpdateTables(memConn, st, null);
-          AdjustStartingSerial(memConn, st);
-        }
-        return new Config(st, memConn);
-      }
-
-      public EventLogDB OpenConnection()
-      {
-        if (_memoryConnection != null)
-        {
-          return new EventLogDB(this, _memoryConnection, closeOnDispose: false);
-        }
-        else
-        {
-          var conn = new SqliteConnection(_connStr);
-          conn.Open();
-          return new EventLogDB(this, conn, closeOnDispose: true);
-        }
-      }
-
-      private string _connStr { get; }
-      private SqliteConnection _memoryConnection { get; }
-
-      private Config(FMSSettings st, string connStr)
-      {
-        Settings = st;
-        _connStr = connStr;
-      }
-
-      private Config(FMSSettings st, SqliteConnection memConn)
-      {
-        Settings = st;
-        _memoryConnection = memConn;
-      }
-
-
-    }
-
-    private SqliteConnection _connection;
-    private bool _closeConnectionOnDispose;
-    private Config _config;
-    private Random _rand = new Random();
-
-    private EventLogDB(Config cfg, SqliteConnection c, bool closeOnDispose)
-    {
-      _connection = c;
-      _closeConnectionOnDispose = closeOnDispose;
-      _config = cfg;
-    }
-
-    public void Close()
-    {
-      _connection.Close();
-    }
-
-    public void Dispose()
-    {
-      if (_closeConnectionOnDispose && _connection != null)
-      {
-        _connection.Close();
-        _connection.Dispose();
-        _connection = null;
-      }
-    }
-
-    private const int Version = 23;
-
-    private static void CreateTables(SqliteConnection conn, FMSSettings settings)
-    {
-      using (var cmd = conn.CreateCommand())
-      {
-
-        cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "INSERT INTO version VALUES(" + Version.ToString() + ")";
-        cmd.ExecuteNonQuery();
-
-        //StationLoc, StationName and StationNum columns should be named
-        //LogType, LocationName, and LocationNum but the column names are kept for backwards
-        //compatibility
-        cmd.CommandText = "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet TEXT," +
-             "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER," +
-             "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, " +
-             "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE INDEX stations_idx ON stations(TimeUTC)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE INDEX stations_foreign ON stations(ForeignID)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE matdetails(" +
-            "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "UniqueStr TEXT, " +
-            "PartName TEXT NOT NULL, " +
-            "NumProcesses INTEGER NOT NULL, " +
-            "Serial TEXT, " +
-            "Workorder TEXT " +
-            ")";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_uniq ON matdetails(UniqueStr)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX pending_pal on pendingloads(Pallet)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX pending_foreign on pendingloads(ForeignID)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
-            "PRIMARY KEY(Counter, Key))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
-            "PRIMARY KEY(Counter, Tool))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, AddTimeUTC INTEGER, PRIMARY KEY(MaterialID, Queue))";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, PocketNumber, Tool))";
-        cmd.ExecuteNonQuery();
-
-        if (!string.IsNullOrEmpty(settings.StartingSerial))
-        {
-          long matId = settings.ConvertSerialToMaterialID(settings.StartingSerial) - 1;
-          if (matId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
-            throw new Exception("Serial " + settings.StartingSerial + " is too large");
-          cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
-          cmd.Parameters.Add("v", SqliteType.Integer).Value = matId;
-          cmd.ExecuteNonQuery();
-        }
-
-      }
-    }
-
-    private static void AdjustStartingSerial(SqliteConnection conn, FMSSettings settings)
-    {
-      if (string.IsNullOrEmpty(settings.StartingSerial)) return;
-      long startingMatId = settings.ConvertSerialToMaterialID(settings.StartingSerial) - 1;
-      if (startingMatId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
-        throw new Exception("Serial " + settings.StartingSerial + " is too large");
-
-      using (var cmd = conn.CreateCommand())
-      {
-        var trans = conn.BeginTransaction();
-        try
-        {
-          cmd.Transaction = trans;
-          cmd.CommandText = "SELECT seq FROM sqlite_sequence WHERE name == 'matdetails'";
-          var last = cmd.ExecuteScalar();
-          if (last != null && last != DBNull.Value)
-          {
-            var lastId = (long)last;
-            // if starting mat id is moving forward, update it
-            if (lastId + 1000 < startingMatId)
-            {
-              cmd.CommandText = "UPDATE sqlite_sequence SET seq = $v WHERE name == 'matdetails'";
-              cmd.Parameters.Add("v", SqliteType.Integer).Value = startingMatId;
-              cmd.ExecuteNonQuery();
-            }
-          }
-
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-      }
-
-    }
-
-    private static void UpdateTables(SqliteConnection connection, FMSSettings settings, string inspDbFile)
-    {
-      using (var cmd = connection.CreateCommand())
-      {
-
-        cmd.CommandText = "SELECT ver FROM version";
-
-        int curVersion = 0;
-
-        try
-        {
-          using (var reader = cmd.ExecuteReader())
-          {
-            if (reader.Read())
-            {
-              curVersion = (int)reader.GetInt32(0);
-            }
-            else
-            {
-              curVersion = 0;
-            }
-          }
-
-        }
-        catch (Exception ex)
-        {
-          if (ex.Message.IndexOf("no such table") >= 0)
-          {
-            curVersion = 0;
-          }
-          else
-          {
-            throw;
-          }
-        }
-
-        if (curVersion > Version)
-        {
-          throw new Exception("This input file was created with a newer version of machine watch.  Please upgrade machine watch");
-        }
-
-        if (curVersion == Version) return;
-
-
-        var trans = connection.BeginTransaction();
-        bool detachInsp = false;
-
-        try
-        {
-          //add upgrade code here, in seperate functions
-          if (curVersion < 1) Ver0ToVer1(trans);
-
-          if (curVersion < 2) Ver1ToVer2(trans);
-
-          if (curVersion < 3) Ver2ToVer3(trans);
-
-          if (curVersion < 4) Ver3ToVer4(trans);
-
-          if (curVersion < 5) Ver4ToVer5(trans);
-
-          if (curVersion < 6) Ver5ToVer6(trans);
-
-          if (curVersion < 7) Ver6ToVer7(trans);
-
-          if (curVersion < 8) Ver7ToVer8(trans);
-
-          if (curVersion < 9) Ver8ToVer9(trans);
-
-          if (curVersion < 10) Ver9ToVer10(trans);
-
-          if (curVersion < 11) Ver10ToVer11(trans);
-
-          if (curVersion < 12) Ver11ToVer12(trans);
-
-          if (curVersion < 13) Ver12ToVer13(trans);
-
-          if (curVersion < 14) Ver13ToVer14(trans);
-
-          if (curVersion < 15) Ver14ToVer15(trans);
-
-          if (curVersion < 16) Ver15ToVer16(trans);
-
-          if (curVersion < 17)
-            detachInsp = Ver16ToVer17(trans, inspDbFile);
-
-          if (curVersion < 18) Ver17ToVer18(trans);
-
-          if (curVersion < 19) Ver18ToVer19(trans);
-
-          if (curVersion < 20) Ver19ToVer20(trans);
-
-          if (curVersion < 21) Ver20ToVer21(trans);
-
-          if (curVersion < 22) Ver21ToVer22(trans);
-
-          if (curVersion < 23) Ver22ToVer23(trans);
-
-          //update the version in the database
-          cmd.Transaction = trans;
-          cmd.CommandText = "UPDATE version SET ver = " + Version.ToString();
-          cmd.ExecuteNonQuery();
-
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-
-        //detaching must be outside the transaction which attached
-        if (detachInsp) DetachInspectionDb(connection);
-
-        //only vacuum if we did some updating
-        cmd.Transaction = null;
-        cmd.CommandText = "VACUUM";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver0ToVer1(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE material ADD Part TEXT";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver1ToVer2(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE material ADD NumProcess INTEGER";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver2ToVer3(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE stations ADD EndOfRoute INTEGER";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver3ToVer4(IDbTransaction trans)
-    {
-      // This version added columns which have since been removed.
-    }
-
-    private static void Ver4ToVer5(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE stations ADD Elapsed INTEGER";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver5ToVer6(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE material ADD Face TEXT";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver6ToVer7(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE stations ADD ForeignID TEXT";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, EndOfRoute);";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX stations_foreign ON stations(ForeignID)";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver7ToVer8(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ForeignID TEXT)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX pending_pal on pendingloads(Pallet)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX pending_foreign on pendingloads(ForeignID)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "DROP INDEX stations_pal";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver8ToVer9(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
-            "PRIMARY KEY(Counter, Key))";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver9ToVer10(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE stations ADD ActiveTime INTEGER";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "ALTER TABLE pendingloads ADD ActiveTime INTEGER";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "ALTER TABLE materialid ADD Serial TEXT";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX materialid_serial ON materialid(Serial) WHERE Serial IS NOT NULL";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver10ToVer11(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE stations ADD OriginalMessage TEXT";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver11ToVer12(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE materialid ADD Workorder TEXT";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX materialid_workorder ON materialid(Workorder) WHERE Workorder IS NOT NULL";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver12ToVer13(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "ALTER TABLE stations ADD StationName TEXT";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver13ToVer14(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE sersettings(ID INTEGER PRIMARY KEY, SerialType INTEGER, SerialLength INTEGER, DepositProc INTEGER, FilenameTemplate TEXT, ProgramTemplate TEXT)";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver14ToVer15(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "CREATE INDEX materialid_uniq ON materialid(UniqueStr)";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver15ToVer16(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "DROP TABLE sersettings";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static bool Ver16ToVer17(SqliteTransaction trans, string inspDbFile)
-    {
-      using (var cmd = trans.Connection.CreateCommand())
-      {
-        ((IDbCommand)cmd).Transaction = trans;
-
-        cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
-        cmd.ExecuteNonQuery();
-
-        if (string.IsNullOrEmpty(inspDbFile)) return false;
-        if (!System.IO.File.Exists(inspDbFile)) return false;
-
-        cmd.CommandText = "ATTACH DATABASE $db AS insp";
-        cmd.Parameters.Add("db", SqliteType.Text).Value = inspDbFile;
-        cmd.ExecuteNonQuery();
-        cmd.Parameters.Clear();
-
-        cmd.CommandText = "INSERT INTO main.inspection_counters SELECT * FROM insp.counters";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "INSERT INTO main.inspection_next_piece SELECT * FROM insp.next_piece";
-        cmd.ExecuteNonQuery();
-      }
-
-      return true;
-    }
-
-    private static void DetachInspectionDb(SqliteConnection conn)
-    {
-      using (var cmd = conn.CreateCommand())
-      {
-        cmd.CommandText = "DETACH DATABASE insp";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver17ToVer18(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
-        cmd.ExecuteNonQuery();
-
-        // new stations_mat table equals old material table but without some columns
-        cmd.CommandText = "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, " +
-             "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "INSERT INTO stations_mat(Counter, MaterialID, Process, Face) " +
-          " SELECT Counter, MaterialID, Process, Face FROM material";
-        cmd.ExecuteNonQuery();
-
-
-        // new matdetails table
-        cmd.CommandText = "CREATE TABLE matdetails(" +
-            "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "UniqueStr TEXT, " +
-            "PartName TEXT," +
-            "NumProcesses INTEGER, " +
-            "Serial TEXT, " +
-            "Workorder TEXT " +
-            ")";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_uniq ON matdetails(UniqueStr)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "INSERT INTO matdetails(MaterialID, UniqueStr, Serial, Workorder, PartName, NumProcesses) " +
-          " SELECT " +
-          "   MaterialID, UniqueStr, Serial, Workorder, " +
-          "   (SELECT Part FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as PartName, " +
-          "   (SELECT NumProcess FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as NumProcesses " +
-          " FROM materialid";
-        cmd.ExecuteNonQuery();
-
-
-        cmd.CommandText = "DROP TABLE material";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "DROP TABLE materialid";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver18ToVer19(IDbTransaction trans)
-    {
-      using (IDbCommand cmd = trans.Connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, Tool))";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver19ToVer20(IDbTransaction transaction)
-    {
-      using (IDbCommand cmd = transaction.Connection.CreateCommand())
-      {
-        cmd.Transaction = transaction;
-        cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    private static void Ver20ToVer21(IDbTransaction transaction)
-    {
-      using (IDbCommand cmd = transaction.Connection.CreateCommand())
-      {
-        cmd.Transaction = transaction;
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, PocketNumber))";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    public static void Ver21ToVer22(IDbTransaction transaction)
-    {
-      using (IDbCommand cmd = transaction.Connection.CreateCommand())
-      {
-        cmd.Transaction = transaction;
-
-        cmd.CommandText = "DROP TABLE tool_snapshots";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, PocketNumber, Tool))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "ALTER TABLE queues ADD AddTimeUTC INTEGER";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    public static void Ver22ToVer23(IDbTransaction transaction)
-    {
-      using (IDbCommand cmd = transaction.Connection.CreateCommand())
-      {
-        cmd.Transaction = transaction;
-
-        cmd.CommandText = "ALTER TABLE station_tools ADD ToolChange INTEGER";
-        cmd.ExecuteNonQuery();
-      }
-    }
-
-    #endregion
-
     #region Loading
     private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
     {
@@ -920,7 +209,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -940,7 +229,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLog(long counter)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -958,7 +247,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> StationLogByForeignID(string foreignID)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -976,7 +265,7 @@ namespace BlackMaple.MachineFramework
 
     public string OriginalMessageByForeignID(string foreignID)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1006,7 +295,7 @@ namespace BlackMaple.MachineFramework
     public List<MachineWatchInterface.LogEntry> GetLogForMaterial(long materialID)
     {
       if (materialID < 0) return new List<MachineWatchInterface.LogEntry>();
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1024,7 +313,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var ret = new List<MachineWatchInterface.LogEntry>();
         using (var cmd = _connection.CreateCommand())
@@ -1051,7 +340,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForSerial(string serial)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1069,7 +358,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForJobUnique(string jobUnique)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1087,7 +376,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.LogEntry> GetLogForWorkorder(string workorder)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1131,7 +420,7 @@ namespace BlackMaple.MachineFramework
                                 stations_mat.Process = matdetails.NumProcesses
                         )";
 
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1152,7 +441,7 @@ namespace BlackMaple.MachineFramework
 
     public DateTime LastPalletCycleTime(string pallet)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1172,7 +461,7 @@ namespace BlackMaple.MachineFramework
     //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
     public List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var trans = _connection.BeginTransaction())
         {
@@ -1233,7 +522,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<ToolPocketSnapshot> ToolPocketSnapshotForCycle(long counter)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1261,7 +550,7 @@ namespace BlackMaple.MachineFramework
 
     public System.DateTime MaxLogDate()
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1287,7 +576,7 @@ namespace BlackMaple.MachineFramework
 
     public string MaxForeignID()
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1319,7 +608,7 @@ namespace BlackMaple.MachineFramework
 
     public string ForeignIDForCounter(long counter)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1338,7 +627,7 @@ namespace BlackMaple.MachineFramework
 
     public bool CycleExists(DateTime endUTC, string pal, MachineWatchInterface.LogType logTy, string locName, int locNum)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -1513,7 +802,7 @@ namespace BlackMaple.MachineFramework
 
     public List<string> GetWorkordersForUnique(string jobUnique)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         using (var trans = _connection.BeginTransaction())
@@ -1905,7 +1194,7 @@ namespace BlackMaple.MachineFramework
     private MachineWatchInterface.LogEntry AddEntryInTransaction(Func<IDbTransaction, MachineWatchInterface.LogEntry> f, string foreignId = "")
     {
       MachineWatchInterface.LogEntry log;
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -1919,14 +1208,14 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-      _config.OnNewLogEntry(log, foreignId, this);
+      _cfg.OnNewLogEntry(log, foreignId, this);
       return log;
     }
 
     private IEnumerable<MachineWatchInterface.LogEntry> AddEntryInTransaction(Func<IDbTransaction, IReadOnlyList<MachineWatchInterface.LogEntry>> f, string foreignId = "")
     {
       IEnumerable<MachineWatchInterface.LogEntry> logs;
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -1940,7 +1229,7 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-      foreach (var l in logs) _config.OnNewLogEntry(l, foreignId, this);
+      foreach (var l in logs) _cfg.OnNewLogEntry(l, foreignId, this);
       return logs;
     }
 
@@ -2687,7 +1976,7 @@ namespace BlackMaple.MachineFramework
       var newLogEntries = new List<MachineWatchInterface.LogEntry>();
       var changedLogEntries = new List<MachineWatchInterface.LogEntry>();
 
-      lock (_config)
+      lock (_cfg)
       {
         using (var updateMatsCmd = _connection.CreateCommand())
         using (var trans = _connection.BeginTransaction())
@@ -2806,7 +2095,7 @@ namespace BlackMaple.MachineFramework
             .Where(e => e.LogType == MachineWatchInterface.LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
             .Select(e => e.LocationName)
             .FirstOrDefault()
-            ?? _config.Settings.QuarantineQueue;
+            ?? _cfg.Settings.QuarantineQueue;
 
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
@@ -2851,7 +2140,7 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      foreach (var l in newLogEntries) _config.OnNewLogEntry(l, null, this);
+      foreach (var l in newLogEntries) _cfg.OnNewLogEntry(l, null, this);
 
       return new SwapMaterialResult()
       {
@@ -2877,7 +2166,7 @@ namespace BlackMaple.MachineFramework
     {
       var newLogEntries = new List<MachineWatchInterface.LogEntry>();
 
-      lock (_config)
+      lock (_cfg)
       {
         using (var getCycles = _connection.CreateCommand())
         using (var getMatsCmd = _connection.CreateCommand())
@@ -2994,7 +2283,7 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      foreach (var l in newLogEntries) _config.OnNewLogEntry(l, null, this);
+      foreach (var l in newLogEntries) _cfg.OnNewLogEntry(l, null, this);
 
       return newLogEntries;
     }
@@ -3003,7 +2292,7 @@ namespace BlackMaple.MachineFramework
     #region Material IDs
     public long AllocateMaterialID(string unique, string part, int numProc)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -3033,7 +2322,7 @@ namespace BlackMaple.MachineFramework
 
     public long AllocateMaterialIDForCasting(string casting)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -3061,7 +2350,7 @@ namespace BlackMaple.MachineFramework
 
     public void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -3077,7 +2366,7 @@ namespace BlackMaple.MachineFramework
 
     public void RecordPathForProcess(long matID, int process, int path)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -3092,7 +2381,7 @@ namespace BlackMaple.MachineFramework
 
     public void CreateMaterialID(long matID, string unique, string part, int numProc)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -3108,7 +2397,7 @@ namespace BlackMaple.MachineFramework
 
     public MachineWatchInterface.MaterialDetails GetMaterialDetails(long matID)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -3168,7 +2457,7 @@ namespace BlackMaple.MachineFramework
 
     public IReadOnlyList<MachineWatchInterface.MaterialDetails> GetMaterialDetailsForSerial(string serial)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -3514,7 +2803,7 @@ namespace BlackMaple.MachineFramework
     /// Find parts without an assigned unique in the queue, and assign them to the given unique
     public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         var matIds = new List<long>();
@@ -3579,7 +2868,7 @@ namespace BlackMaple.MachineFramework
 
     public void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -3633,7 +2922,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         var ret = new List<QueuedMaterial>();
@@ -3678,7 +2967,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<QueuedMaterial> GetMaterialInAllQueues()
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         var ret = new List<QueuedMaterial>();
@@ -3721,7 +3010,7 @@ namespace BlackMaple.MachineFramework
 
     public int? NextProcessForQueuedMaterial(long matId)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var loadCmd = _connection.CreateCommand())
         {
@@ -3755,7 +3044,7 @@ namespace BlackMaple.MachineFramework
 
     public void AddPendingLoad(string pal, string key, int load, TimeSpan elapsed, TimeSpan active, string foreignID)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
 
@@ -3803,7 +3092,7 @@ namespace BlackMaple.MachineFramework
 
     public List<PendingLoad> PendingLoads(string pallet)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var ret = new List<PendingLoad>();
 
@@ -3851,7 +3140,7 @@ namespace BlackMaple.MachineFramework
 
     public List<PendingLoad> AllPendingLoads()
     {
-      lock (_config)
+      lock (_cfg)
       {
         var ret = new List<PendingLoad>();
 
@@ -3904,7 +3193,7 @@ namespace BlackMaple.MachineFramework
     public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID,
                                     IDictionary<string, IEnumerable<EventLogMaterial>> mat, bool generateSerials)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
 
@@ -3946,7 +3235,7 @@ namespace BlackMaple.MachineFramework
             {
               trans.Commit();
               foreach (var e in newEvts)
-                _config.OnNewLogEntry(e, foreignID, this);
+                _cfg.OnNewLogEntry(e, foreignID, this);
               return;
             }
 
@@ -3964,7 +3253,7 @@ namespace BlackMaple.MachineFramework
                   var key = reader.GetString(0);
                   if (mat.ContainsKey(key))
                   {
-                    if (generateSerials && _config.Settings.SerialType == SerialType.AssignOneSerialPerCycle)
+                    if (generateSerials && _cfg.Settings.SerialType == SerialType.AssignOneSerialPerCycle)
                     {
 
                       // find a material id to use to create the serial
@@ -3998,9 +3287,9 @@ namespace BlackMaple.MachineFramework
                       }
                       if (matID >= 0)
                       {
-                        var serial = _config.Settings.ConvertMaterialIDToSerial(matID);
-                        serial = serial.Substring(0, Math.Min(_config.Settings.SerialLength, serial.Length));
-                        serial = serial.PadLeft(_config.Settings.SerialLength, '0');
+                        var serial = _cfg.Settings.ConvertMaterialIDToSerial(matID);
+                        serial = serial.Substring(0, Math.Min(_cfg.Settings.SerialLength, serial.Length));
+                        serial = serial.PadLeft(_cfg.Settings.SerialLength, '0');
                         // add the serial
                         foreach (var m in mat[key])
                         {
@@ -4023,7 +3312,7 @@ namespace BlackMaple.MachineFramework
                       }
 
                     }
-                    else if (generateSerials && _config.Settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+                    else if (generateSerials && _cfg.Settings.SerialType == SerialType.AssignOneSerialPerMaterial)
                     {
                       using (var checkConn = _connection.CreateCommand())
                       {
@@ -4043,9 +3332,9 @@ namespace BlackMaple.MachineFramework
                             continue;
                           }
 
-                          var serial = _config.Settings.ConvertMaterialIDToSerial(m.MaterialID);
-                          serial = serial.Substring(0, Math.Min(_config.Settings.SerialLength, serial.Length));
-                          serial = serial.PadLeft(_config.Settings.SerialLength, '0');
+                          var serial = _cfg.Settings.ConvertMaterialIDToSerial(m.MaterialID);
+                          serial = serial.Substring(0, Math.Min(_cfg.Settings.SerialLength, serial.Length));
+                          serial = serial.PadLeft(_cfg.Settings.SerialLength, '0');
                           if (m.MaterialID < 0) continue;
                           RecordSerialForMaterialID(trans, m.MaterialID, serial);
                           newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()
@@ -4111,13 +3400,14 @@ namespace BlackMaple.MachineFramework
         }
 
         foreach (var e in newEvts)
-          _config.OnNewLogEntry(e, foreignID, this);
+          _cfg.OnNewLogEntry(e, foreignID, this);
       }
     }
 
     #endregion
 
     #region Inspection Counts
+    private static Random _rand = new Random();
 
     private MachineWatchInterface.InspectCount QueryCount(IDbTransaction trans, string counter, int maxVal)
     {
@@ -4158,7 +3448,7 @@ namespace BlackMaple.MachineFramework
 
     public List<MachineWatchInterface.InspectCount> LoadInspectCounts()
     {
-      lock (_config)
+      lock (_cfg)
       {
         List<MachineWatchInterface.InspectCount> ret = new List<MachineWatchInterface.InspectCount>();
 
@@ -4201,7 +3491,7 @@ namespace BlackMaple.MachineFramework
 
     public void SetInspectCounts(IEnumerable<MachineWatchInterface.InspectCount> counts)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -4354,7 +3644,7 @@ namespace BlackMaple.MachineFramework
     }
     public IList<Decision> LookupInspectionDecisions(long matID)
     {
-      lock (_config)
+      lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
@@ -4640,7 +3930,7 @@ namespace BlackMaple.MachineFramework
 
     public void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType)
     {
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
@@ -4660,7 +3950,7 @@ namespace BlackMaple.MachineFramework
     {
       var logs = new List<MachineWatchInterface.LogEntry>();
 
-      lock (_config)
+      lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         using (var cmd2 = _connection.CreateCommand())
@@ -4708,7 +3998,7 @@ namespace BlackMaple.MachineFramework
         }
 
         foreach (var log in logs)
-          _config.OnNewLogEntry(log, null, this);
+          _cfg.OnNewLogEntry(log, null, this);
       }
     }
     #endregion

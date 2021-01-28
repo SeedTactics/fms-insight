@@ -44,16 +44,18 @@ namespace MachineWatchTest
 {
   public class JobDBTest : JobEqualityChecks, IDisposable
   {
-    private JobDB _jobDB;
+    private RepositoryConfig _repoCfg;
+    private IRepository _jobDB;
 
     public JobDBTest()
     {
-      _jobDB = JobDB.Config.InitializeSingleThreadedMemoryDB().OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _jobDB = _repoCfg.OpenConnection();
     }
 
     public void Dispose()
     {
-      _jobDB.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     private static void SetJob1Data(JobPlan job1)
@@ -627,7 +629,7 @@ namespace MachineWatchTest
 
       //Archive job1
       var archiveTime = DateTime.UtcNow;
-      _jobDB.ArchiveJobs(new[] { job1.UniqueStr }, new[] { new JobDB.NewDecrementQuantity() {
+      _jobDB.ArchiveJobs(new[] { job1.UniqueStr }, new[] { new Repository.NewDecrementQuantity() {
         JobUnique = job1.UniqueStr,
         Proc1Path = 66,
         Part = job1.PartName,
@@ -677,19 +679,19 @@ namespace MachineWatchTest
 
       var time1 = DateTime.UtcNow.AddHours(-2);
       _jobDB.AddNewDecrement(new[] {
-        new JobDB.NewDecrementQuantity() {
+        new Repository.NewDecrementQuantity() {
           JobUnique = "uniq1",
           Proc1Path = 1,
           Part = "part1",
           Quantity = 53
         },
-        new JobDB.NewDecrementQuantity() {
+        new Repository.NewDecrementQuantity() {
           JobUnique = "uniq1",
           Proc1Path = 2,
           Part = "part1",
           Quantity = 77
         },
-        new JobDB.NewDecrementQuantity() {
+        new Repository.NewDecrementQuantity() {
           JobUnique = "uniq2",
           Proc1Path = 1,
           Part = "part2",
@@ -761,13 +763,13 @@ namespace MachineWatchTest
       //now second decrement
       var time2 = DateTime.UtcNow.AddHours(-1);
       _jobDB.AddNewDecrement(new[] {
-        new JobDB.NewDecrementQuantity() {
+        new Repository.NewDecrementQuantity() {
           JobUnique = "uniq1",
           Proc1Path = 1,
           Part = "part1",
           Quantity = 26
         },
-        new JobDB.NewDecrementQuantity() {
+        new Repository.NewDecrementQuantity() {
           JobUnique = "uniq2",
           Proc1Path = 1,
           Part = "part2",
@@ -776,11 +778,11 @@ namespace MachineWatchTest
       },
       time2,
       new[] {
-        new JobDB.RemovedBooking() {
+        new Repository.RemovedBooking() {
           JobUnique = "uniq1",
           BookingId = "BBB"
         },
-        new JobDB.RemovedBooking() {
+        new Repository.RemovedBooking() {
           JobUnique = "uniq2",
           BookingId = "CCC"
         }

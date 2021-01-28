@@ -44,16 +44,18 @@ namespace MachineWatchTest
   public class InspectionTest : IDisposable
   {
 
-    private EventLogDB _insp;
+    private RepositoryConfig _repoCfg;
+    private IRepository _insp;
 
     public InspectionTest()
     {
-      _insp = EventLogDB.Config.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _insp = _repoCfg.OpenConnection();
     }
 
     public void Dispose()
     {
-      _insp.Close();
+      _repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -336,8 +338,8 @@ namespace MachineWatchTest
     public void WithoutInspectProgram()
     {
       DateTime now = DateTime.UtcNow;
-      var mat1 = new EventLogDB.EventLogMaterial() { MaterialID = 1, Process = 1 };
-      var mat2 = new EventLogDB.EventLogMaterial() { MaterialID = 2, Process = 1 };
+      var mat1 = new Repository.EventLogMaterial() { MaterialID = 1, Process = 1 };
+      var mat2 = new Repository.EventLogMaterial() { MaterialID = 2, Process = 1 };
       _insp.ForceInspection(mat1, "myinspection", true, now);
       _insp.ForceInspection(mat2, "myinspection", false, now);
 
@@ -352,9 +354,9 @@ namespace MachineWatchTest
     private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum, bool end)
     {
       string name = loc == LogType.MachineCycle ? "MC" : "Load";
-      _insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
+      ((Repository)_insp).AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
-      _insp.AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
+      ((Repository)_insp).AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
     }
 
@@ -367,7 +369,7 @@ namespace MachineWatchTest
         if (d.InspType == iType)
         {
           d.Should().BeEquivalentTo(
-              new EventLogDB.Decision()
+              new Repository.Decision()
               {
                 MaterialID = matID,
                 InspType = iType,
