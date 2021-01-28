@@ -153,6 +153,7 @@ namespace BlackMaple.FMSInsight.Niigata
                                       statNames: StationNames,
                                       requireRawMatQ: config.GetValue<bool>("Require Raw Material Queue", false),
                                       requireInProcQ: config.GetValue<bool>("Require In-Process Queues", false),
+                                      requireProgsInJobs: config.GetValue<bool>("Require Programs In Jobs", true),
                                       onNewJobs: j => OnNewJobs?.Invoke(j),
                                       onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o));
         if (startSyncThread)

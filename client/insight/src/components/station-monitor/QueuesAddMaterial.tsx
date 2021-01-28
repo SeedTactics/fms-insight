@@ -57,14 +57,13 @@ import clsx from "clsx";
 
 import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material";
 import * as api from "../../data/api";
-import { connect, useSelector } from "../../store/store";
+import { useSelector } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { LazySeq } from "../../data/lazyseq";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
-import { HashSet } from "prelude-ts";
 import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus } from "../../data/current-status";
 import { useAddNewCastingToQueue } from "../../data/material-details";
@@ -203,22 +202,27 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
 }
 
 interface AddSerialFoundProps {
-  readonly queues: ReadonlyArray<string>;
-  readonly initial_queue: string | null;
   readonly current_quarantine_queue: string | null;
   readonly display_material: matDetails.MaterialDetail;
 }
 
 function AddSerialFound(props: AddSerialFoundProps) {
+  const queueNames = useSelector((s) => s.Route.standalone_queues);
   const [selected_queue, setSelectedQueue] = React.useState<string | null>(null);
   const operator = useRecoilValue(currentOperator);
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const [matToShow, setMatToShow] = useRecoilState(matDetails.materialToShowInDialog);
   const [addMat, addingMat] = matDetails.useAddExistingMaterialToQueue();
 
-  let queue = props.initial_queue ?? selected_queue;
-  let queueDests = props.queues.filter((q) => q !== props.current_quarantine_queue);
-  if (queue === null && queueDests.length === 1) {
+  let queue: string | null;
+  let queueDests = queueNames.filter((q) => q !== props.current_quarantine_queue);
+  let promptForQueue = false;
+  if (queueDests.length === 1) {
     queue = queueDests[0];
+  } else if (matToShow && matToShow.type === "Serial" && matToShow.addToQueue) {
+    queue = matToShow.addToQueue;
+  } else {
+    queue = selected_queue;
+    promptForQueue = true;
   }
 
   let addProcMsg: string | null = null;
@@ -244,7 +248,7 @@ function AddSerialFound(props: AddSerialFoundProps) {
         <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
       </DialogTitle>
       <DialogContent>
-        {props.initial_queue === null && queueDests.length > 1 ? (
+        {promptForQueue ? (
           <div style={{ marginBottom: "1em" }}>
             <p>Select a queue.</p>
             <List>
@@ -275,105 +279,6 @@ function AddSerialFound(props: AddSerialFoundProps) {
           {props.current_quarantine_queue !== null ? `Move From ${props.current_quarantine_queue} To` : "Add To"}{" "}
           {queue}
           {addProcMsg}
-        </Button>
-        <Button onClick={() => setMatToShow(null)} color="primary">
-          Cancel
-        </Button>
-      </DialogActions>
-    </>
-  );
-}
-
-interface AddUnassignedRawMatProps {
-  readonly queues: ReadonlyArray<string>;
-  readonly initial_queue: string | null;
-  readonly not_found_serial?: string;
-}
-
-function AddUnassignedRawMat(props: AddUnassignedRawMatProps) {
-  const selectedOperator = useRecoilValue(currentOperator);
-  const promptForOperator = useRecoilValue(fmsInformation).requireOperatorNamePromptWhenAddingMaterial ?? false;
-
-  const [operator, setOperator] = React.useState<string | null>(null);
-  const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
-  const initialRawMatQueues = useSelector((s) => s.Events.last30.sim_use.rawMaterialQueues);
-  const allJobs = useRecoilValue(currentStatus).jobs;
-  const rawMatQueues = React.useMemo(() => {
-    let rawQ = initialRawMatQueues;
-    for (const [, j] of LazySeq.ofObject(allJobs)) {
-      for (const path of j.procsAndPaths[0].paths) {
-        if (path.inputQueue && path.inputQueue !== "" && !rawQ.contains(path.inputQueue)) {
-          rawQ = rawQ.add(path.inputQueue);
-        }
-      }
-    }
-    return rawQ;
-  }, [initialRawMatQueues, allJobs]);
-
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
-  const [addUnassigned, addingUnassigned] = matDetails.useAddNewCastingToQueue();
-
-  let queue = props.initial_queue || selectedQueue;
-  if (!queue && props.queues.length === 1) {
-    queue = props.queues[0];
-  }
-
-  const allowAdd =
-    queue &&
-    addingUnassigned === false &&
-    rawMatQueues.contains(queue) &&
-    (!promptForOperator || (operator && operator !== ""));
-
-  function addMaterial() {
-    if (queue) {
-      setOperator(null);
-      setSelectedQueue(null);
-      addUnassigned({
-        casting: "No Job",
-        quantity: 1,
-        queue: queue,
-        queuePosition: -1,
-        serials: props.not_found_serial ? [props.not_found_serial] : undefined,
-        operator: promptForOperator ? operator : selectedOperator,
-      });
-      setMatToShow(null);
-    }
-  }
-
-  return (
-    <>
-      <DialogTitle>{props.not_found_serial ? props.not_found_serial : "Add New Material"}</DialogTitle>
-      <DialogContent>
-        {props.not_found_serial ? <p>The serial {props.not_found_serial} was not found.</p> : undefined}
-        <div style={{ display: "flex" }}>
-          {props.initial_queue === null && props.queues.length > 1 ? (
-            <div style={{ marginRight: "1em" }}>
-              <p>Select a queue.</p>
-              <List>
-                {props.queues.map((q, idx) => (
-                  <MenuItem key={idx} selected={q === selectedQueue} onClick={() => setSelectedQueue(q)}>
-                    {q}
-                  </MenuItem>
-                ))}
-              </List>
-            </div>
-          ) : undefined}
-          {promptForOperator ? (
-            <div style={{ marginLeft: "1em" }}>
-              <TextField
-                fullWidth
-                label="Operator"
-                value={operator || ""}
-                onChange={(e) => setOperator(e.target.value)}
-              />
-            </div>
-          ) : undefined}
-        </div>
-        {queue && !rawMatQueues.contains(queue) ? <p>The queue {queue} is not a raw material queue.</p> : undefined}
-      </DialogContent>
-      <DialogActions>
-        <Button color="primary" onClick={addMaterial} disabled={!allowAdd}>
-          Add To {queue} as Raw Material
         </Button>
         <Button onClick={() => setMatToShow(null)} color="primary">
           Cancel
@@ -479,9 +384,9 @@ function SelectJob(props: SelectJobProps) {
 }
 
 interface AddNewMaterialProps {
-  readonly queues: ReadonlyArray<string>;
-  readonly initial_queue: string | null;
   readonly not_found_serial?: string;
+  readonly addToQueue?: string;
+  readonly onClose: () => void;
 }
 
 interface AddNewJobProcessState {
@@ -491,16 +396,16 @@ interface AddNewJobProcessState {
 }
 
 function AddNewMaterialBody(props: AddNewMaterialProps) {
+  const queueNames = useSelector((s) => s.Route.standalone_queues);
   const selectedOperator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
   const [selected_job, setSelectedJob] = React.useState<AddNewJobProcessState | undefined>(undefined);
-  const [selected_queue, setSelectedQueue] = React.useState<string | undefined>(undefined);
+  const [selected_queue, setSelectedQueue] = React.useState<string | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const [addAssigned, addingAssigned] = matDetails.useAddNewMaterialToQueue();
 
-  function addMaterial(queue?: string) {
-    if (queue === undefined) {
+  function addMaterial(queue: string | null) {
+    if (queue === null) {
       return;
     }
 
@@ -515,14 +420,20 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
         operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator || null : selectedOperator,
       });
       setSelectedJob(undefined);
-      setSelectedQueue(undefined);
+      setSelectedQueue(null);
       setEnteredOperator(null);
     }
   }
 
-  let queue = props.initial_queue || selected_queue;
-  if (queue === undefined && props.queues.length === 1) {
-    queue = props.queues[0];
+  let queue: string | null;
+  let promptForQueue = false;
+  if (queueNames.length === 1) {
+    queue = queueNames[0];
+  } else if (props.addToQueue) {
+    queue = props.addToQueue;
+  } else {
+    queue = selected_queue;
+    promptForQueue = true;
   }
 
   const allowAdd =
@@ -538,11 +449,11 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
           <p>The serial {props.not_found_serial} was not found. Specify the job and process to add to the queue.</p>
         ) : undefined}
         <div style={{ display: "flex" }}>
-          {props.initial_queue === undefined && props.queues.length > 1 ? (
+          {promptForQueue ? (
             <div style={{ marginRight: "1em" }}>
               <p>Select a queue.</p>
               <List>
-                {props.queues.map((q, idx) => (
+                {queueNames.map((q, idx) => (
                   <MenuItem key={idx} selected={q === selected_queue} onClick={() => setSelectedQueue(q)}>
                     {q}
                   </MenuItem>
@@ -550,7 +461,7 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
               </List>
             </div>
           ) : undefined}
-          <SelectJob selected_job={selected_job} onSelectJob={setSelectedJob} queue={queue} />
+          <SelectJob selected_job={selected_job} onSelectJob={setSelectedJob} queue={queue ?? undefined} />
           {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
             <div style={{ marginLeft: "1em" }}>
               <TextField
@@ -567,8 +478,25 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
         <Button color="primary" onClick={() => addMaterial(queue)} disabled={!allowAdd}>
           Add To {queue}
         </Button>
-        <Button onClick={() => setMatToShow(null)} color="primary">
+        <Button onClick={props.onClose} color="primary">
           Cancel
+        </Button>
+      </DialogActions>
+    </>
+  );
+}
+
+function MaterialMissingError() {
+  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const mat = useRecoilValue(matDetails.materialDetail);
+  return (
+    <>
+      <DialogContent>
+        {mat && mat.serial ? <p>The serial {mat.serial} was not found.</p> : <p>The material was not found.</p>}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setMatToShow(null)} color="primary">
+          Close
         </Button>
       </DialogActions>
     </>
@@ -619,18 +547,11 @@ function matCurrentlyInQueue(
   return { type: "NotInQueue" };
 }
 
-export interface QueueMatDialogProps {
-  readonly queueNames: ReadonlyArray<string>;
-  readonly initialQueue: string | null;
-}
-
-function QueueMatDialog(props: QueueMatDialogProps) {
+export const QueueMaterialDialog = React.memo(function QueueMaterialDialog() {
   const fmsInfo = useRecoilValue(fmsInformation);
   const currentSt = useRecoilValue(currentStatus);
   const displayMat = useRecoilValue(matDetails.materialDetail);
   const [matToShow, setMatToShow] = useRecoilState(matDetails.materialToShowInDialog);
-  const initialQueue =
-    (matToShow !== null && matToShow.type === "Serial" ? matToShow.addToQueue : null) ?? props.initialQueue;
 
   const matInQueue = React.useMemo(() => matCurrentlyInQueue(displayMat, currentSt), [displayMat, currentSt]);
 
@@ -644,26 +565,18 @@ function QueueMatDialog(props: QueueMatDialogProps) {
     } else if (displayMat.materialID >= 0 || displayMat.loading_events) {
       body = (
         <AddSerialFound
-          queues={props.queueNames}
-          initial_queue={initialQueue}
           current_quarantine_queue={matInQueue.type === "InQuarantine" ? matInQueue.queue : null}
           display_material={displayMat}
         />
       );
-    } else if (fmsInfo.requireSerialWhenAddingMaterialToQueue && fmsInfo.allowAddRawMaterialForNonRunningJobs) {
-      body = (
-        <AddUnassignedRawMat
-          queues={props.queueNames}
-          not_found_serial={displayMat.serial}
-          initial_queue={initialQueue}
-        />
-      );
+    } else if (fmsInfo.requireExistingMaterialWhenAddingToQueue) {
+      body = <MaterialMissingError />;
     } else {
       body = (
         <AddNewMaterialBody
-          queues={props.queueNames}
           not_found_serial={displayMat.serial}
-          initial_queue={initialQueue}
+          addToQueue={matToShow && matToShow.type === "Serial" ? matToShow.addToQueue : undefined}
+          onClose={() => setMatToShow(null)}
         />
       );
     }
@@ -674,80 +587,49 @@ function QueueMatDialog(props: QueueMatDialogProps) {
       {body}
     </Dialog>
   );
-}
+});
 
-export const ConnectedMaterialDialog = connect((st) => ({
-  queueNames: st.Route.standalone_queues,
-}))(QueueMatDialog);
+export const addMaterialBySerial = atom<string | null>({
+  key: "add-by-serial-dialog",
+  default: null,
+});
 
-interface ChooseSerialOrDirectJobProps {
-  readonly dialogOpenForQueue: string | null;
-  readonly onClose: () => void;
-}
-
-export const ChooseSerialOrDirectJobDialog = React.memo(function ChooseSerialOrJob(
-  props: ChooseSerialOrDirectJobProps
-) {
+export const AddBySerialDialog = React.memo(function AddBySerialDialog() {
+  const [queue, setQueue] = useRecoilState(addMaterialBySerial);
   const [serial, setSerial] = React.useState<string | undefined>(undefined);
-  const fmsInfo = useRecoilValue(fmsInformation);
   const setMatToDisplay = useSetRecoilState(matDetails.materialToShowInDialog);
 
   function lookup() {
     if (serial && serial !== "") {
-      setMatToDisplay({ type: "Serial", serial, addToQueue: props.dialogOpenForQueue ?? undefined });
-      props.onClose();
+      setMatToDisplay({ type: "Serial", serial, addToQueue: queue ?? undefined });
+      setQueue(null);
       setSerial(undefined);
     }
   }
   function close() {
-    props.onClose();
-    setSerial(undefined);
-  }
-  function manualSelect() {
-    setMatToDisplay({ type: "Serial", serial: null });
-    props.onClose();
+    setQueue(null);
     setSerial(undefined);
   }
   return (
-    <Dialog open={props.dialogOpenForQueue !== null} onClose={close} maxWidth="md">
+    <Dialog open={queue !== null} onClose={close} maxWidth="md">
       <DialogTitle>Lookup Material</DialogTitle>
       <DialogContent>
-        {fmsInfo.requireSerialWhenAddingMaterialToQueue ? undefined : (
-          <div style={{ maxWidth: "25em" }}>
-            <p>
-              To find the details of the material to add, you can either scan a part&apos;s serial, lookup a serial, or
-              manually select a job.
-            </p>
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div
-            style={{
-              paddingRight: "8px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ marginBottom: "2em" }}>
-              <TextField label="Serial" value={serial || ""} onChange={(e) => setSerial(e.target.value)} />
-            </div>
-            <div>
-              <Button variant="contained" color="secondary" onClick={lookup}>
-                Lookup Serial
-              </Button>
-            </div>
-          </div>
-          {fmsInfo.requireSerialWhenAddingMaterialToQueue ? undefined : (
-            <div style={{ paddingLeft: "8px", borderLeft: "1px solid rgba(0,0,0,0.2)" }}>
-              <Button variant="contained" color="secondary" onClick={manualSelect}>
-                Manually Select Job
-              </Button>
-            </div>
-          )}
-        </div>
+        <TextField
+          label="Serial"
+          value={serial || ""}
+          onChange={(e) => setSerial(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === "Enter" && serial && serial !== "") {
+              e.preventDefault();
+              lookup();
+            }
+          }}
+        />
       </DialogContent>
       <DialogActions>
+        <Button onClick={lookup} color="secondary">
+          Lookup Serial
+        </Button>
         <Button onClick={close} color="primary">
           Cancel
         </Button>
@@ -756,13 +638,28 @@ export const ChooseSerialOrDirectJobDialog = React.memo(function ChooseSerialOrJ
   );
 });
 
-interface AddCastingProps {
-  readonly queue: string | null;
-  readonly castingNames: HashSet<string>;
-  readonly closeDialog: () => void;
-}
+export const addMaterialWithoutSerial = atom<string | null>({
+  key: "add-material-without-serial-dialog",
+  default: null,
+});
 
-const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingProps) {
+export const AddWithoutSerialDialog = React.memo(function AddWithoutSerialDialog() {
+  const [queue, setQueue] = useRecoilState(addMaterialWithoutSerial);
+  return (
+    <Dialog open={queue !== null} onClose={() => setQueue(null)} maxWidth="md">
+      <AddNewMaterialBody addToQueue={queue ?? undefined} onClose={() => setQueue(null)} />
+    </Dialog>
+  );
+});
+
+export const bulkAddCastingToQueue = atom<string | null>({
+  key: "bulk-add-casting-dialog",
+  default: null,
+});
+
+export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
+  const [queue, setQueue] = useRecoilState(bulkAddCastingToQueue);
+
   const currentSt = useRecoilValue(currentStatus);
   const operator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
@@ -777,17 +674,14 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
   );
   const printRef = React.useRef(null);
   const [adding, setAdding] = React.useState<boolean>(false);
+  const castingNames = useSelector((s) => s.Events.last30.sim_use.castingNames);
   const castings: ReadonlyArray<[string, number]> = React.useMemo(
     () =>
       LazySeq.ofObject(currentSt.jobs)
         .flatMap(([, j]) => j.procsAndPaths[0].paths)
         .filter((p) => p.casting !== undefined && p.casting !== "")
         .map((p) => ({ casting: p.casting as string, cnt: 1 }))
-        .appendAll(
-          fmsInfo.allowAddRawMaterialForNonRunningJobs
-            ? LazySeq.ofIterable(props.castingNames).map((c) => ({ casting: c, cnt: 0 }))
-            : []
-        )
+        .appendAll(LazySeq.ofIterable(castingNames).map((c) => ({ casting: c, cnt: 0 })))
         .toMap(
           (c) => [c.casting, c.cnt],
           (q1, q2) => q1 + q2
@@ -803,11 +697,11 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
           }
         })
         .toArray(),
-    [currentSt.jobs, props.castingNames]
+    [currentSt.jobs, castingNames]
   );
 
   function close() {
-    props.closeDialog();
+    setQueue(null);
     setSelectedCasting(null);
     setEnteredOperator(null);
     setMaterialToPrint(null);
@@ -816,11 +710,11 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
   }
 
   function add() {
-    if (props.queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
+    if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
       addNewCasting({
         casting: selectedCasting,
         quantity: qty,
-        queue: props.queue,
+        queue: queue,
         queuePosition: -1,
         operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
       });
@@ -830,12 +724,12 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
   function addAndPrint(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (props.queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
+      if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
         setAdding(true);
         addNewCasting({
           casting: selectedCasting,
           quantity: qty,
-          queue: props.queue,
+          queue: queue,
           queuePosition: -1,
           operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
           onNewMaterial: (mats) => {
@@ -855,7 +749,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
 
   return (
     <>
-      <Dialog open={props.queue !== null} onClose={() => (adding && printOnAdd ? undefined : close())}>
+      <Dialog open={queue !== null} onClose={() => (adding && printOnAdd ? undefined : close())}>
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
           <FormControl>
@@ -933,7 +827,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
                   }
                 >
                   {adding ? <CircularProgress size={10} /> : undefined}
-                  Add to {props.queue}
+                  Add to {queue}
                 </Button>
               )}
             />
@@ -949,7 +843,7 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
               }
               onClick={add}
             >
-              Add to {props.queue}
+              Add to {queue}
             </Button>
           )}
           <Button color="primary" disabled={adding && printOnAdd} onClick={close}>
@@ -970,7 +864,3 @@ const AddCastingDialog = React.memo(function AddCastingDialog(props: AddCastingP
     </>
   );
 });
-
-export const ConnectedAddCastingDialog = connect((s) => ({
-  castingNames: s.Events.last30.sim_use.castingNames,
-}))(AddCastingDialog);

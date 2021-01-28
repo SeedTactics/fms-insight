@@ -1185,6 +1185,13 @@ namespace BlackMaple.MachineFramework
 
     private List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet, SqliteTransaction trans)
     {
+      string ignoreInvalidCondition =
+        "   NOT EXISTS (" +
+        "    SELECT 1 FROM program_details d " +
+        "      WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
+        "   ) AND " +
+        "   StationLoc != (" + ((int)MachineWatchInterface.LogType.SwapMaterialOnPallet).ToString() + ")";
+
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
@@ -1197,7 +1204,9 @@ namespace BlackMaple.MachineFramework
         {
 
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Pallet = $pal ORDER BY Counter ASC";
+              " FROM stations s " +
+              " WHERE Pallet = $pal AND " + ignoreInvalidCondition +
+              " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
           {
             return LoadLog(reader);
@@ -1208,7 +1217,9 @@ namespace BlackMaple.MachineFramework
         {
 
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Pallet = $pal AND Counter > $cntr ORDER BY Counter ASC";
+              " FROM stations s " +
+              " WHERE Pallet = $pal AND Counter > $cntr AND " + ignoreInvalidCondition +
+              " ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
 
           using (var reader = cmd.ExecuteReader())
@@ -2669,7 +2680,6 @@ namespace BlackMaple.MachineFramework
       string pallet,
       long oldMatId,
       long newMatId,
-      string oldMatPutInQueue,
       string operatorName,
       DateTime? timeUTC = null
     )
@@ -2702,10 +2712,16 @@ namespace BlackMaple.MachineFramework
 
           // check new material path matches
           var newMatDetails = GetMaterialDetails(newMatId, trans);
-          if (newMatDetails == null || oldMatDetails.JobUnique != newMatDetails.JobUnique || newMatDetails.Paths.ContainsKey(oldMatProc))
+          if (newMatDetails == null)
+          {
+            throw new ConflictRequestException("Unable to find new material");
+          }
+          var newMatIsUnassigned = string.IsNullOrEmpty(newMatDetails.JobUnique);
+          if (newMatIsUnassigned == false && oldMatDetails.JobUnique != newMatDetails.JobUnique)
           {
             throw new ConflictRequestException("Overriding material on pallet must use material from the same job");
           }
+          // TODO: Check if raw material matches
 
           // perform the swap
           updateMatsCmd.CommandText = "UPDATE stations_mat SET MaterialID = $newmat WHERE Counter = $cntr AND MaterialID = $oldmat";
@@ -2725,16 +2741,38 @@ namespace BlackMaple.MachineFramework
                   m.MaterialID == oldMatId
                     ? new MachineWatchInterface.LogMaterial(
                         matID: newMatId,
-                        uniq: newMatDetails.JobUnique,
+                        uniq: oldMatDetails.JobUnique,
                         proc: oldMatProc,
                         part: newMatDetails.PartName,
-                        numProc: newMatDetails.NumProcesses,
+                        numProc: oldMatDetails.NumProcesses,
                         serial: newMatDetails.Serial ?? "",
                         workorder: newMatDetails.Workorder ?? "",
                         face: m.Face)
                     : m
                 )
               ));
+            }
+          }
+
+          // update job assignment
+          if (newMatIsUnassigned)
+          {
+            using (var setJobCmd = _connection.CreateCommand())
+            {
+              setJobCmd.Transaction = trans;
+              setJobCmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
+              var uParam = setJobCmd.Parameters.Add("uniq", SqliteType.Text);
+              setJobCmd.Parameters.Add("part", SqliteType.Text).Value = oldMatDetails.PartName;
+              setJobCmd.Parameters.Add("numproc", SqliteType.Integer).Value = oldMatDetails.NumProcesses;
+              var matParam = setJobCmd.Parameters.Add("mat", SqliteType.Integer);
+
+              uParam.Value = oldMatDetails.JobUnique;
+              matParam.Value = newMatId;
+              setJobCmd.ExecuteNonQuery();
+
+              uParam.Value = DBNull.Value;
+              matParam.Value = oldMatId;
+              setJobCmd.ExecuteNonQuery();
             }
           }
 
@@ -2760,7 +2798,16 @@ namespace BlackMaple.MachineFramework
           newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
 
           // update queues
-          newLogEntries.AddRange(RemoveFromAllQueues(trans, matID: newMatId, process: oldMatProc - 1, operatorName: operatorName, time));
+          var removeQueueEvts = RemoveFromAllQueues(trans, matID: newMatId, process: oldMatProc - 1, operatorName: operatorName, time);
+          newLogEntries.AddRange(removeQueueEvts);
+
+          var oldMatPutInQueue =
+            removeQueueEvts
+            .Where(e => e.LogType == MachineWatchInterface.LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
+            .Select(e => e.LocationName)
+            .FirstOrDefault()
+            ?? _config.Settings.QuarantineQueue;
+
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
             newLogEntries.AddRange(AddToQueue(trans,
@@ -2785,6 +2832,18 @@ namespace BlackMaple.MachineFramework
               newPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
               newPathCmd.Parameters.Add("path", SqliteType.Integer).Value = oldPath;
               newPathCmd.ExecuteNonQuery();
+            }
+
+            if (newMatIsUnassigned || oldMatProc >= 2)
+            {
+              using (var delPathCmd = _connection.CreateCommand())
+              {
+                delPathCmd.Transaction = trans;
+                delPathCmd.CommandText = "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
+                delPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = oldMatId;
+                delPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
+                delPathCmd.ExecuteNonQuery();
+              }
             }
           }
 
@@ -4025,7 +4084,8 @@ namespace BlackMaple.MachineFramework
 
                     foreach (var logMat in mat[key])
                     {
-                      newEvts.AddRange(RemoveFromAllQueues(trans, logMat, operatorName: null, timeUTC: timeUTC.AddSeconds(1)));
+                      var prevProcMat = new EventLogMaterial() { MaterialID = logMat.MaterialID, Process = logMat.Process - 1, Face = "" };
+                      newEvts.AddRange(RemoveFromAllQueues(trans, prevProcMat, operatorName: null, timeUTC: timeUTC.AddSeconds(1)));
                     }
 
                   }

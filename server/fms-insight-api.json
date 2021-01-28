@@ -327,6 +327,43 @@
         }
       }
     },
+    "/api/v1/jobs/unfilled-workorders/by-schid/{scheduleId}": {
+      "put": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_ReplaceWorkordersForScheduleId",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "scheduleId",
+            "in": "path",
+            "required": true,
+            "x-nullable": true
+          },
+          {
+            "name": "workorders",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/WorkordersAndPrograms"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/jobs/status": {
       "get": {
         "tags": [
@@ -344,51 +381,6 @@
             "description": "",
             "schema": {
               "$ref": "#/definitions/CurrentStatus"
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/check-valid": {
-      "post": {
-        "tags": [
-          "jobs"
-        ],
-        "operationId": "jobs_CheckValid",
-        "consumes": [
-          "application/json-patch+json",
-          "application/json",
-          "text/json",
-          "application/*+json"
-        ],
-        "produces": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "parameters": [
-          {
-            "name": "jobs",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/JobPlan"
-              }
-            },
-            "x-nullable": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "x-nullable": false,
-            "description": "",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
             }
           }
         }
@@ -925,12 +917,6 @@
               "$ref": "#/definitions/MatToPutOnPallet"
             },
             "x-nullable": false
-          },
-          {
-            "type": "string",
-            "name": "putMatInQueue",
-            "in": "query",
-            "x-nullable": true
           },
           {
             "type": "string",
@@ -2010,19 +1996,19 @@
         "QuarantineQueue": {
           "type": "string"
         },
-        "RequireOperatorNamePromptWhenAddingMaterial": {
-          "type": "boolean"
-        },
-        "AllowAddRawMaterialForNonRunningJobs": {
+        "RequireExistingMaterialWhenAddingToQueue": {
           "type": "boolean"
         },
         "RequireSerialWhenAddingMaterialToQueue": {
           "type": "boolean"
         },
-        "AllowQuarantineAtLoadStation": {
+        "AddRawMaterialAsUnassigned": {
           "type": "boolean"
         },
-        "AllowChangeSerial": {
+        "RequireOperatorNamePromptWhenAddingMaterial": {
+          "type": "boolean"
+        },
+        "AllowQuarantineAtLoadStation": {
           "type": "boolean"
         },
         "AllowChangeWorkorderAtLoadStation": {
@@ -2731,6 +2717,36 @@
         "Priority": {
           "type": "integer",
           "format": "int32"
+        },
+        "Programs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WorkorderProgram"
+          }
+        }
+      }
+    },
+    "WorkorderProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ProcessNumber"
+      ],
+      "properties": {
+        "ProcessNumber": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "StopIndex": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "ProgramName": {
+          "type": "string"
+        },
+        "Revision": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -3222,6 +3238,27 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/PartWorkorder"
+          }
+        }
+      }
+    },
+    "WorkordersAndPrograms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Workorders"
+      ],
+      "properties": {
+        "Workorders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PartWorkorder"
+          }
+        },
+        "Programs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProgramEntry"
           }
         }
       }

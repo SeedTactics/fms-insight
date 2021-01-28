@@ -67,7 +67,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _onNewJobs = Substitute.For<Action<NewJobs>>();
       _onEditMatInLog = Substitute.For<Action<EditMaterialInLogEvents>>();
-      _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, false, false, _onNewJobs, _onEditMatInLog);
+      _jobs = new NiigataJobs(jobDbCfg, logCfg, settings, _syncMock, null, false, false, true, _onNewJobs, _onEditMatInLog);
     }
 
     void IDisposable.Dispose()
@@ -215,7 +215,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         },
         Material = new List<InProcessMaterialAndJob> {
           new InProcessMaterialAndJob() {
-            Job = j,
+            Job = j2,
             Mat =
             new InProcessMaterial() {
               MaterialID = mat3,
@@ -242,25 +242,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         },
       };
 
-      var queuedMat = new InProcessMaterial
+      var queuedMat = new InProcessMaterialAndJob
       {
-        MaterialID = mat4,
-        Process = 1,
-        JobUnique = "u1",
-        PartName = "p1",
-        Path = 1,
-        Serial = "serial4",
-        WorkorderId = "work4",
-        SignaledInspections = new List<string> { "insp4" },
-        Location = new InProcessMaterialLocation()
+        Job = j,
+        Mat = new InProcessMaterial()
         {
-          Type = InProcessMaterialLocation.LocType.InQueue,
-          CurrentQueue = "q1",
-          QueuePosition = 1,
-        },
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting
+          MaterialID = mat4,
+          Process = 1,
+          JobUnique = "u1",
+          PartName = "p1",
+          Path = 1,
+          Serial = "serial4",
+          WorkorderId = "work4",
+          SignaledInspections = new List<string> { "insp4" },
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = "q1",
+            QueuePosition = 1,
+          },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting
+          }
         }
       };
 
@@ -318,7 +322,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       expectedSt.Material.Add(pal1.Material[0].Mat);
       expectedSt.Material.Add(pal2.Material[0].Mat);
-      expectedSt.Material.Add(queuedMat);
+      expectedSt.Material.Add(queuedMat.Mat);
       expectedSt.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
       {
         Pallet = "1",
@@ -345,7 +349,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         Status = status,
         Pallets = new List<PalletAndMaterial> { pal1, pal2 },
-        QueuedMaterial = new List<InProcessMaterial> { queuedMat },
+        QueuedMaterial = new List<InProcessMaterialAndJob> { queuedMat },
         UnarchivedJobs = new List<JobPlan> { j, j2, j3 }
       });
 
@@ -373,7 +377,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.CurrentCellState().Returns(new CellState()
       {
         Pallets = new List<PalletAndMaterial>(),
-        QueuedMaterial = new List<InProcessMaterial>(),
+        QueuedMaterial = new List<InProcessMaterialAndJob>(),
         JobQtyRemainingOnProc1 = new Dictionary<(string uniq, int proc1path), int>() {
           {(uniq: "old", proc1path: 1), 0},
           {(uniq: "tokeep", proc1path: 1), 5}
@@ -491,8 +495,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       //add a casting
       ((IJobControl)_jobs).AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, operatorName: "theoper")
         .Should().BeEquivalentTo(new[] {
-          QueuedMat(matId: 1, uniq: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0),
-          QueuedMat(matId: 2, uniq: null, part: "c1", proc: 0, path: 1, serial: null, queue: "q1", pos: 1),
+          QueuedMat(matId: 1, job: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0).Mat,
+          QueuedMat(matId: 2, job: null, part: "c1", proc: 0, path: 1, serial: null, queue: "q1", pos: 1).Mat,
         });
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -571,7 +575,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       //add an allocated material
       ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
         .Should().BeEquivalentTo(
-          QueuedMat(matId: 1, uniq: "uuu1", part: "p1", proc: lastCompletedProcess, path: 2, serial: "aaa", queue: "q1", pos: 0)
+          QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 2, serial: "aaa", queue: "q1", pos: 0).Mat
         );
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -657,7 +661,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               }
             }
           },
-          QueuedMaterial = new List<InProcessMaterial>()
+          QueuedMaterial = new List<InProcessMaterialAndJob>()
         }
       );
 
@@ -695,8 +699,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         new CellState()
         {
           Pallets = new List<PalletAndMaterial>(),
-          QueuedMaterial = new List<InProcessMaterial>() {
-            QueuedMat(matId: 1, uniq: "uuu1", part: "p1", proc: 1, path: 2, serial: "aaa", queue: "q1", pos: 0)
+          QueuedMaterial = new List<InProcessMaterialAndJob>() {
+            QueuedMat(matId: 1, job: job, part: "p1", proc: 1, path: 2, serial: "aaa", queue: "q1", pos: 0)
           }
         }
       );
@@ -821,25 +825,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return e;
     }
 
-    private InProcessMaterial QueuedMat(long matId, string uniq, string part, int proc, int path, string serial, string queue, int pos)
+    private InProcessMaterialAndJob QueuedMat(long matId, JobPlan job, string part, int proc, int path, string serial, string queue, int pos)
     {
-      return new InProcessMaterial()
+      return new InProcessMaterialAndJob()
       {
-        MaterialID = matId,
-        JobUnique = uniq,
-        PartName = part,
-        Process = proc,
-        Path = path,
-        Serial = serial,
-        Location = new InProcessMaterialLocation()
+        Job = job,
+        Mat = new InProcessMaterial()
         {
-          Type = InProcessMaterialLocation.LocType.InQueue,
-          CurrentQueue = queue,
-          QueuePosition = pos,
-        },
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting
+          MaterialID = matId,
+          JobUnique = job?.UniqueStr,
+          PartName = part,
+          Process = proc,
+          Path = path,
+          Serial = serial,
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = queue,
+            QueuePosition = pos,
+          },
+          Action = new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Waiting
+          }
         }
       };
     }

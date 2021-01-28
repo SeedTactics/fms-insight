@@ -98,16 +98,28 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
+    [DataContract]
+    public class WorkordersAndPrograms
+    {
+      [DataMember(IsRequired = true)]
+      public IList<PartWorkorder> Workorders { get; set; }
+      [DataMember(IsRequired = false, EmitDefaultValue = false)]
+      public IList<ProgramEntry> Programs { get; set; }
+    }
+
+    [HttpPut("unfilled-workorders/by-schid/{scheduleId}")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void ReplaceWorkordersForScheduleId(string scheduleId, [FromBody] WorkordersAndPrograms workorders)
+    {
+      if (string.IsNullOrEmpty(scheduleId))
+        throw new BadRequestException("ScheduleId must be non-empty");
+      _backend.JobControl.ReplaceWorkordersForSchedule(scheduleId, workorders.Workorders, workorders.Programs);
+    }
+
     [HttpGet("status")]
     public CurrentStatus CurrentStatus()
     {
       return _backend.JobControl.GetCurrentStatus();
-    }
-
-    [HttpPost("check-valid")]
-    public IList<string> CheckValid([FromBody] IList<JobPlan> jobs)
-    {
-      return _backend.JobControl.CheckValidRoutes(jobs);
     }
 
     [HttpPost("add")]
@@ -204,13 +216,12 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPut("material/{materialId}/swap-off-pallet")]
     [ProducesResponseType(typeof(void), 200)]
-    public void SwapMaterialOnPallet(long materialId, [FromBody] MatToPutOnPallet mat, [FromQuery] string putMatInQueue = null, [FromQuery] string operName = null)
+    public void SwapMaterialOnPallet(long materialId, [FromBody] MatToPutOnPallet mat, [FromQuery] string operName = null)
     {
       _backend.JobControl.SwapMaterialOnPallet(
         oldMatId: materialId,
         newMatId: mat.MaterialIDToSetOnPallet,
         pallet: mat.Pallet,
-        oldMatPutInQueue: putMatInQueue,
         operatorName: operName
       );
     }

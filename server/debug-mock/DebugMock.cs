@@ -58,7 +58,8 @@ namespace DebugMachineWatchApiServer
       BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
       {
         st.RequireSerialWhenAddingMaterialToQueue = true;
-        st.AllowAddRawMaterialForNonRunningJobs = true;
+        st.AddRawMaterialAsUnassigned = true;
+        st.RequireExistingMaterialWhenAddingToQueue = false;
         var backend = new MockServerBackend();
         return new FMSImplementation()
         {
@@ -640,14 +641,13 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       Serilog.Log.Information("Swapping {oldMatId} to {newMatId} on pallet {pallet}", oldMatId, newMatId, pallet);
       var o = LogDB.SwapMaterialInCurrentPalletCycle(
         pallet: pallet,
         oldMatId: oldMatId,
         newMatId: newMatId,
-        oldMatPutInQueue: oldMatPutInQueue,
         operatorName: operatorName
       );
       OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
@@ -667,6 +667,11 @@ namespace DebugMachineWatchApiServer
         oldMatPutInQueue: oldMatPutInQueue,
         operatorName: operatorName
       );
+    }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    {
+      JobDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
     }
   }
 }

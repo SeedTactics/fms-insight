@@ -133,6 +133,11 @@ namespace Makino
     {
       //do nothing
     }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    {
+      // do nothing
+    }
     #endregion
 
     #region Queues
@@ -168,7 +173,7 @@ namespace Makino
       // do nothing
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       // do nothing
     }

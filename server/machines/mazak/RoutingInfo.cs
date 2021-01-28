@@ -270,6 +270,18 @@ namespace MazakMachineInterface
       }
       _onCurStatusChange(st);
     }
+
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    {
+      if (newWorkorders != null && newWorkorders.Any(w => w.Programs != null && w.Programs.Any()))
+      {
+        throw new BlackMaple.MachineFramework.BadRequestException("Mazak does not support per-workorder programs");
+      }
+      using (var jdb = jobDBCfg.OpenConnection())
+      {
+        jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
+      }
+    }
     #endregion
 
     #region "Decrement Plan Quantity"
@@ -559,7 +571,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string oldMatPutInQueue = null, string operatorName = null)
+    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 
@@ -570,7 +582,6 @@ namespace MazakMachineInterface
           pallet: pallet,
           oldMatId: oldMatId,
           newMatId: newMatId,
-          oldMatPutInQueue: oldMatPutInQueue,
           operatorName: operatorName
         );
 

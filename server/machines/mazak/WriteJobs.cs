@@ -119,6 +119,12 @@ namespace MazakMachineInterface
         }
       }
 
+      // check workorder programs
+      if (newJ.CurrentUnfilledWorkorders != null && newJ.CurrentUnfilledWorkorders.Any(w => w.Programs != null && w.Programs.Any()))
+      {
+        throw new BlackMaple.MachineFramework.BadRequestException("Mazak does not support per-workorder programs");
+      }
+
       //check for an old schedule that has not yet been copied
       var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1), includeDecremented: false);
       if (oldJobs.Count > 0)

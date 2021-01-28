@@ -688,6 +688,41 @@ namespace MachineWatchTest
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
 
+      //********  Ignores invalidated and swap events
+      var invalidated = new LogEntry(
+        cntr: 0,
+        mat: new[] { mat1, mat2 },
+        pal: "pal1",
+        ty: LogType.MachineCycle,
+        locName: "OtherMC",
+        locNum: 100,
+        prog: "prog22",
+        start: true,
+        endTime: pal1CycleTime.AddMinutes(31),
+        result: "prog22",
+        endOfRoute: false
+      );
+      invalidated.ProgramDetails["PalletCycleInvalidated"] = "1";
+      _jobLog.AddLogEntryFromUnitTest(invalidated);
+
+      var swap = new LogEntry(
+        cntr: 0,
+        mat: new[] { mat1, mat2 },
+        pal: "pal1",
+        ty: LogType.SwapMaterialOnPallet,
+        locName: "SwapMatOnPallet",
+        locNum: 1,
+        prog: "SwapMatOnPallet",
+        start: false,
+        endTime: pal1CycleTime.AddMinutes(32),
+        result: "Replace aaa with bbb",
+        endOfRoute: false
+      );
+      _jobLog.AddLogEntryFromUnitTest(swap);
+
+      // neither invalidated nor swap added to pal1Cycle
+      CheckLog(pal1Cycle, _jobLog.CurrentPalletLog("pal1"), DateTime.UtcNow.AddHours(-10));
+
       _jobLog.CompletePalletCycle("pal1", pal1CycleTime.AddMinutes(40), "");
       _jobLog.CompletePalletCycle("pal1", pal1CycleTime.AddMinutes(40), ""); //filter duplicates
 
@@ -697,7 +732,11 @@ namespace MachineWatchTest
 
       Assert.Equal(pal1CycleTime.AddMinutes(40), _jobLog.LastPalletCycleTime("pal1"));
       _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
-      CheckLog(pal1Cycle, _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow), DateTime.UtcNow.AddHours(-50));
+
+      // add invalidated and swap when loading all entries
+      CheckLog(pal1Cycle.Append(invalidated).Append(swap).ToList(),
+               _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow),
+               DateTime.UtcNow.AddHours(-50));
 
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
     }
@@ -1538,9 +1577,11 @@ namespace MachineWatchTest
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void OverrideMatOnPal(bool firstPalletCycle)
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void OverrideMatOnPal(bool firstPalletCycle, bool newMatUnassigned)
     {
       var now = DateTime.UtcNow.AddHours(-5);
 
@@ -1559,7 +1600,6 @@ namespace MachineWatchTest
       // ------------------------------------------------------
       // Material
       // ------------------------------------------------------
-
       var initiallyLoadedMatProc0 = new EventLogDB.EventLogMaterial()
       {
         MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
@@ -1582,15 +1622,25 @@ namespace MachineWatchTest
 
       now = now.AddMinutes(1);
 
+      long newMatId;
+      if (newMatUnassigned)
+      {
+        newMatId = _jobLog.AllocateMaterialIDForCasting("part1");
+      }
+      else
+      {
+        newMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
+      }
+
       var newMatProc0 = new EventLogDB.EventLogMaterial()
       {
-        MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
+        MaterialID = newMatId,
         Process = 0,
         Face = ""
       };
       var newMatProc1 = new EventLogDB.EventLogMaterial()
       {
-        MaterialID = newMatProc0.MaterialID,
+        MaterialID = newMatId,
         Process = 1,
         Face = "1"
       };
@@ -1658,16 +1708,41 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: initiallyLoadedMatProc1.MaterialID,
         newMatId: newMatProc1.MaterialID,
-        oldMatPutInQueue: "quarantine",
         operatorName: "theoper",
         timeUTC: now
       );
 
       // ------------------------------------------------------
+      // Check Mat Details
+      // ------------------------------------------------------
+
+      _jobLog.GetMaterialDetails(initiallyLoadedMatProc0.MaterialID).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = initiallyLoadedMatProc0.MaterialID,
+        JobUnique = newMatUnassigned ? null : "uniq1",
+        PartName = "part1",
+        NumProcesses = 2,
+        Workorder = null,
+        Serial = "bbbb",
+        Paths = newMatUnassigned ? new Dictionary<int, int>() : new Dictionary<int, int>() { { 1, 5 } }
+      });
+
+      _jobLog.GetMaterialDetails(newMatId).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = newMatId,
+        JobUnique = "uniq1",
+        PartName = "part1",
+        NumProcesses = 2,
+        Workorder = null,
+        Serial = "cccc",
+        Paths = new Dictionary<int, int>() { { 1, 5 } }
+      });
+
+      // ------------------------------------------------------
       // Check Logs
       // ------------------------------------------------------
 
-      var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
+      var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: newMatUnassigned ? "" : "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
       var newLogMatProc0 = new LogMaterial(matID: newMatProc1.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "cccc", workorder: "", face: "");
 
       var expectedSwapMsg = new LogEntry(
@@ -1697,7 +1772,7 @@ namespace MachineWatchTest
         AddToQueueExpectedEntry(
           mat: initiallyLoadedLogMatProc0,
           cntr: 0,
-          queue: "quarantine",
+          queue: "rawmat",
           position: 0,
           timeUTC: now,
           operName: "theoper",
@@ -1738,7 +1813,7 @@ namespace MachineWatchTest
         AddToQueueExpectedEntry(
           mat: initiallyLoadedLogMatProc0,
           cntr: 0,
-          queue: "quarantine",
+          queue: "rawmat",
           position: 0,
           timeUTC: now,
           operName: "theoper",
@@ -1775,10 +1850,6 @@ namespace MachineWatchTest
         .Select(m => m.Process)
         .Max()
         .Should().Be(0);
-
-      _jobLog.GetMaterialDetails(newMatProc0.MaterialID).Paths.Should().BeEquivalentTo(new Dictionary<int, int> {
-        {1, 5}
-      });
     }
 
     [Fact]
@@ -1802,7 +1873,6 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: 12345,
         newMatId: 98765,
-        oldMatPutInQueue: null,
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Unable to find material");
 
@@ -1810,7 +1880,6 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,
-        oldMatPutInQueue: null,
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
 
@@ -1821,7 +1890,6 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,
-        oldMatPutInQueue: null,
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
     }
@@ -2133,7 +2201,21 @@ namespace MachineWatchTest
       return e;
     }
 
-    private Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)
+    public static Func<LogMaterial, LogMaterial> SetUniqInMat(string uniq, int? numProc = null)
+    {
+      return m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: uniq,
+        proc: m.Process,
+        part: m.PartName,
+        numProc: numProc ?? m.NumProcesses,
+        serial: m.Serial,
+        workorder: m.Workorder,
+        face: m.Face
+      );
+    }
+
+    public static Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)
     {
       return m => new LogMaterial(
         matID: m.MaterialID,
@@ -2147,7 +2229,7 @@ namespace MachineWatchTest
       );
     }
 
-    private Func<LogMaterial, LogMaterial> SetWorkorderInMat(string work)
+    public static Func<LogMaterial, LogMaterial> SetWorkorderInMat(string work)
     {
       return m => new LogMaterial(
         matID: m.MaterialID,
@@ -2161,7 +2243,7 @@ namespace MachineWatchTest
       );
     }
 
-    private Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
+    public static Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
     {
       return m => new LogMaterial(
         matID: m.MaterialID,
@@ -2175,7 +2257,7 @@ namespace MachineWatchTest
       );
     }
 
-    private Func<LogEntry, LogEntry> TransformLog(long matID, Func<LogMaterial, LogMaterial> transformMat)
+    public static Func<LogEntry, LogEntry> TransformLog(long matID, Func<LogMaterial, LogMaterial> transformMat)
     {
       return copy =>
       {

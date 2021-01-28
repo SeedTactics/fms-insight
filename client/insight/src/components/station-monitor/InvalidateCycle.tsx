@@ -36,11 +36,9 @@ import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import { Vector } from "prelude-ts";
 import * as React from "react";
-import { useRecoilValue } from "recoil";
 import { IInProcessMaterial, ILogEntry, LocType } from "../../data/api";
 import { JobsBackend } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
-import { fmsInformation } from "../../data/server-settings";
 
 interface InvalidateCycle {
   readonly process: number | null;
@@ -149,6 +147,10 @@ export interface SwapMaterialDialogContentProps {
   readonly setState: (s: SwapMaterialState) => void;
 }
 
+function isNullOrEmpty(s: string | null | undefined): boolean {
+  return s === undefined || s === null || s == "";
+}
+
 export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps): JSX.Element {
   const curMat = props.curMat;
   if (curMat === null || props.st === null) return <div />;
@@ -156,9 +158,9 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
   const availMats = props.current_material.filter(
     (m) =>
       m.location.type !== LocType.OnPallet &&
-      m.jobUnique === curMat.jobUnique &&
       m.process === curMat.process - 1 &&
-      m.path === curMat.path &&
+      ((m.jobUnique === curMat.jobUnique && m.path === curMat.path) ||
+        (isNullOrEmpty(m.jobUnique) && m.partName === curMat.partName)) &&
       m.serial !== ""
   );
   if (availMats.length === 0) {
@@ -212,8 +214,6 @@ export interface SwapMaterialButtonsProps {
 }
 
 export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
-  const quarantineQueueName = useRecoilValue(fmsInformation).quarantineQueue;
-
   function swapMats() {
     if (props.curMat && props.st && props.st.selectedMatToSwap && props.curMat.location.type === LocType.OnPallet) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
@@ -223,7 +223,6 @@ export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
           pallet: props.curMat.location.pallet ?? "",
           materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
         },
-        quarantineQueueName,
         props.operator
       ).finally(() => props.close());
     }
