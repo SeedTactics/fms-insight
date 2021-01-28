@@ -279,15 +279,7 @@ namespace MazakMachineInterface
 
     public IMachineControl MachineControl => MazakMachineControl;
 
-    public IJobDatabase OpenJobDatabase()
-    {
-      return logDbConfig.OpenConnection();
-    }
-    public ILogDatabase OpenLogDatabase()
-    {
-      return logDbConfig.OpenConnection();
-    }
-    public IInspectionControl OpenInspectionControl()
+    public IRepository OpenRepository()
     {
       return logDbConfig.OpenConnection();
     }

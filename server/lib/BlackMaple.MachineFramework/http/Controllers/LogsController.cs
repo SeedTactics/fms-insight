@@ -79,7 +79,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/all")]
     public List<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetLogEntries(startUTC, endUTC);
       }
@@ -90,7 +90,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
       IEnumerable<LogEntry> entries;
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         entries = db.GetLogEntries(startUTC, endUTC);
       }
@@ -118,7 +118,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/all-completed-parts")]
     public List<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetCompletedPartLogs(startUTC, endUTC);
       }
@@ -127,7 +127,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/recent")]
     public List<LogEntry> Recent([FromQuery] long lastSeenCounter)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetLog(lastSeenCounter);
       }
@@ -136,7 +136,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/for-material/{materialID}")]
     public List<LogEntry> LogForMaterial(long materialID)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetLogForMaterial(materialID);
       }
@@ -146,7 +146,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public List<LogEntry> LogForMaterials([FromQuery] List<long> id)
     {
       if (id == null || id.Count == 0) return new List<LogEntry>();
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetLogForMaterial(id);
       }
@@ -156,7 +156,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [EnableCors("AllowOtherLogServers")]
     public List<LogEntry> LogForSerial(string serial)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetLogForSerial(serial);
       }
@@ -165,7 +165,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/for-workorder/{workorder}")]
     public List<LogEntry> LogForWorkorder(string workorder)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetLogForWorkorder(workorder);
       }
@@ -174,7 +174,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("material-details/{materialID}")]
     public MaterialDetails MaterialDetails(long materialID)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetMaterialDetails(materialID);
       }
@@ -183,7 +183,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("material-for-job/{jobUnique}")]
     public List<MaterialDetails> MaterialDetailsForJob(string jobUnique)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetMaterialForJobUnique(jobUnique);
       }
@@ -192,7 +192,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("workorders")]
     public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.GetWorkorderSummaries(ids);
       }
@@ -203,7 +203,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public IActionResult GetWorkordersCSV([FromQuery] IEnumerable<string> ids)
     {
       IEnumerable<WorkorderSummary> workorders;
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         workorders = db.GetWorkorderSummaries(ids);
       }
@@ -231,7 +231,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/serial")]
     public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.RecordSerialForMaterialID(materialID, process, serial);
       }
@@ -240,7 +240,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/workorder")]
     public LogEntry SetWorkorder(long materialID, [FromBody] string workorder, [FromQuery] int process = 1)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.RecordWorkorderForMaterialID(materialID, process, workorder);
       }
@@ -249,7 +249,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/inspections/{inspType}")]
     public LogEntry SetInspectionDecision(long materialID, string inspType, [FromBody] bool inspect, [FromQuery] int process = 1)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.ForceInspection(materialID, process, inspType, inspect);
       }
@@ -258,7 +258,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/notes")]
     public LogEntry RecordOperatorNotes(long materialID, [FromBody] string notes, [FromQuery] int process = 1, [FromQuery] string operatorName = null)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.RecordOperatorNotes(materialID, process, notes, operatorName);
       }
@@ -269,7 +269,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
     {
       if (string.IsNullOrEmpty(insp.InspectionType)) throw new BadRequestException("Must give inspection type");
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.RecordInspectionCompleted(
             insp.MaterialID,
@@ -287,7 +287,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("events/wash")]
     public LogEntry RecordWashCompleted([FromBody] NewWash insp)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.RecordWashCompleted(
             insp.MaterialID,
@@ -303,7 +303,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("workorder/{workorder}/finalize")]
     public LogEntry FinalizeWorkorder(string workorder)
     {
-      using (var db = _backend.OpenLogDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.RecordFinalizedWorkorder(workorder);
       }

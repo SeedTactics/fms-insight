@@ -3409,9 +3409,9 @@ namespace BlackMaple.MachineFramework
     #region Inspection Counts
     private static Random _rand = new Random();
 
-    private MachineWatchInterface.InspectCount QueryCount(IDbTransaction trans, string counter, int maxVal)
+    private InspectCount QueryCount(IDbTransaction trans, string counter, int maxVal)
     {
-      var cnt = new MachineWatchInterface.InspectCount();
+      var cnt = new InspectCount();
       cnt.Counter = counter;
 
       using (var cmd = _connection.CreateCommand())
@@ -3446,11 +3446,11 @@ namespace BlackMaple.MachineFramework
       return cnt;
     }
 
-    public List<MachineWatchInterface.InspectCount> LoadInspectCounts()
+    public List<InspectCount> LoadInspectCounts()
     {
       lock (_cfg)
       {
-        List<MachineWatchInterface.InspectCount> ret = new List<MachineWatchInterface.InspectCount>();
+        List<InspectCount> ret = new List<InspectCount>();
 
         using (var cmd = _connection.CreateCommand())
         {
@@ -3460,7 +3460,7 @@ namespace BlackMaple.MachineFramework
           {
             while (reader.Read())
             {
-              var insp = default(MachineWatchInterface.InspectCount);
+              var insp = default(InspectCount);
               insp.Counter = reader.GetString(0);
               insp.Value = reader.GetInt32(1);
               if (reader.IsDBNull(2))
@@ -3476,7 +3476,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void SetInspectionCount(IDbTransaction trans, MachineWatchInterface.InspectCount cnt)
+    private void SetInspectionCount(IDbTransaction trans, InspectCount cnt)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -3489,7 +3489,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void SetInspectCounts(IEnumerable<MachineWatchInterface.InspectCount> counts)
+    public void SetInspectCounts(IEnumerable<InspectCount> counts)
     {
       lock (_cfg)
       {

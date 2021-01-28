@@ -39,12 +39,7 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-  public partial class Repository :
-      BlackMaple.MachineWatchInterface.IJobDatabase,
-      MachineWatchInterface.ILogDatabase,
-      MachineWatchInterface.IInspectionControl,
-      IDisposable,
-      IRepository
+  public partial class Repository : IDisposable, IRepository
   {
     private SqliteConnection _connection;
     private bool _closeConnectionOnDispose;

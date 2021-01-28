@@ -182,15 +182,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public IOldJobDecrement OldJobDecrement { get => null; }
     public IMachineControl MachineControl => _machControl;
 
-    public IJobDatabase OpenJobDatabase()
-    {
-      return LogDBConfig.OpenConnection();
-    }
-    public ILogDatabase OpenLogDatabase()
-    {
-      return LogDBConfig.OpenConnection();
-    }
-    public IInspectionControl OpenInspectionControl()
+    public IRepository OpenRepository()
     {
       return LogDBConfig.OpenConnection();
     }

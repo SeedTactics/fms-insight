@@ -145,7 +145,7 @@ namespace DebugMachineWatchApiServer
       LogDB.Dispose();
     }
 
-    public IInspectionControl OpenInspectionControl()
+    public IRepository OpenRepository()
     {
       return LogDB;
     }
@@ -153,16 +153,6 @@ namespace DebugMachineWatchApiServer
     public IJobControl JobControl { get => this; }
 
     public IMachineControl MachineControl => this;
-
-    public ILogDatabase OpenLogDatabase()
-    {
-      return LogDB;
-    }
-
-    public IJobDatabase OpenJobDatabase()
-    {
-      return LogDB;
-    }
 
     private long _curStatusLoadCount = 0;
     public CurrentStatus GetCurrentStatus()

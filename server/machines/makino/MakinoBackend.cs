@@ -146,7 +146,7 @@ namespace Makino
       return b.ConnectionString;
     }
 
-    public IJobDatabase OpenJobDatabase()
+    public IRepository OpenRepository()
     {
       return RepoConfig.OpenConnection();
     }
@@ -156,16 +156,6 @@ namespace Makino
     public IOldJobDecrement OldJobDecrement { get => _jobs; }
 
     public IMachineControl MachineControl => null;
-
-    public IInspectionControl OpenInspectionControl()
-    {
-      return RepoConfig.OpenConnection();
-    }
-
-    public ILogDatabase OpenLogDatabase()
-    {
-      return RepoConfig.OpenConnection();
-    }
 
     public LogTimer LogTimer
     {

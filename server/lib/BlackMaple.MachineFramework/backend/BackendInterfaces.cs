@@ -47,10 +47,9 @@ namespace BlackMaple.MachineFramework
   {
     IJobControl JobControl { get; }
     IMachineControl MachineControl { get; }
-    IJobDatabase OpenJobDatabase();
-    ILogDatabase OpenLogDatabase();
-    IInspectionControl OpenInspectionControl();
     IOldJobDecrement OldJobDecrement { get; }
+
+    IRepository OpenRepository();
 
     event NewLogEntryDelegate NewLogEntry;
     event NewCurrentStatus OnNewCurrentStatus;

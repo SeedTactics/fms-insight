@@ -39,14 +39,7 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-  // Disable warning which notes IRepository overrides function from IJobDatabase/ILogDatabase
-#pragma warning disable 108
-
-  public interface IRepository :
-      IDisposable,
-      BlackMaple.MachineWatchInterface.IJobDatabase,
-      MachineWatchInterface.ILogDatabase,
-      MachineWatchInterface.IInspectionControl
+  public interface IRepository : IDisposable
   {
     void AddPendingLoad(string pal, string key, int load, TimeSpan elapsed, TimeSpan active, string foreignID);
     IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count);
@@ -82,7 +75,7 @@ namespace BlackMaple.MachineFramework
     List<MachineWatchInterface.WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders);
     IEnumerable<MachineWatchInterface.LogEntry> InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue, string operatorName, DateTime? timeUTC = null);
     DateTime LastPalletCycleTime(string pallet);
-    List<MachineWatchInterface.InspectCount> LoadInspectCounts();
+    List<InspectCount> LoadInspectCounts();
     IList<Repository.Decision> LookupInspectionDecisions(long matID);
     IEnumerable<MachineWatchInterface.LogEntry> MakeInspectionDecisions(long matID, int process, IEnumerable<MachineWatchInterface.PathInspection> inspections, DateTime? mutcNow = null);
     void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting);
@@ -128,7 +121,7 @@ namespace BlackMaple.MachineFramework
     MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(Repository.EventLogMaterial mat, string workorder);
     MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(Repository.EventLogMaterial mat, string workorder, DateTime recordUtc);
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
-    void SetInspectCounts(IEnumerable<MachineWatchInterface.InspectCount> counts);
+    void SetInspectCounts(IEnumerable<InspectCount> counts);
     MachineWatchInterface.LogEntry SignalMaterialForQuarantine(Repository.EventLogMaterial mat, string pallet, string queue, DateTime? timeUTC = null, string operatorName = null, string foreignId = null, string originalMessage = null);
     List<MachineWatchInterface.LogEntry> StationLogByForeignID(string foreignID);
     Repository.SwapMaterialResult SwapMaterialInCurrentPalletCycle(string pallet, long oldMatId, long newMatId, string operatorName, DateTime? timeUTC = null);
@@ -170,5 +163,12 @@ namespace BlackMaple.MachineFramework
     void UpdateJobMachiningHold(string unique, int proc, int path, MachineWatchInterface.JobHoldPattern newHold);
     List<MachineWatchInterface.PartWorkorder> WorkordersById(string workorderId);
 
+  }
+
+  public struct InspectCount
+  {
+    public string Counter;
+    public int Value;
+    public DateTime LastUTC;
   }
 }

@@ -61,7 +61,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("history")]
     public HistoricData History([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      using (var db = _backend.OpenJobDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.LoadJobHistory(startUTC, endUTC);
       }
@@ -72,7 +72,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(afterScheduleId))
         throw new BadRequestException("After schedule ID must be non-empty");
-      using (var db = _backend.OpenJobDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.LoadJobsAfterScheduleId(afterScheduleId);
       }
@@ -81,7 +81,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("latest-schedule")]
     public PlannedSchedule LatestSchedule()
     {
-      using (var db = _backend.OpenJobDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.LoadMostRecentSchedule();
       }
@@ -92,7 +92,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(part))
         throw new BadRequestException("Part must be non-empty");
-      using (var db = _backend.OpenJobDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.MostRecentUnfilledWorkordersForPart(part);
       }
@@ -152,7 +152,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("job/{jobUnique}/plan")]
     public JobPlan GetJobPlan(string jobUnique)
     {
-      using (var db = _backend.OpenJobDatabase())
+      using (var db = _backend.OpenRepository())
       {
         return db.LoadJob(jobUnique);
       }
