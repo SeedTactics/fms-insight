@@ -63,25 +63,28 @@ namespace MachineWatchTest
     {
       List<InspectCount> cnts = new List<InspectCount>();
 
-      InspectCount cnt = new InspectCount();
-
-      cnt.Counter = "Test1";
-      cnt.Value = 15;
-      cnt.LastUTC = DateTime.Parse("1/5/2009 4:23:12 GMT");
+      InspectCount cnt = new InspectCount()
+      {
+        Counter = "Test1",
+        Value = 15,
+        LastUTC = DateTime.Parse("1/5/2009 4:23:12 GMT"),
+      };
       cnts.Add(cnt);
 
-      cnt = new InspectCount();
-
-      cnt.Counter = "Test2";
-      cnt.Value = 1563;
-      cnt.LastUTC = DateTime.Parse("1/15/2009 3:35:24 GMT");
+      cnt = new InspectCount()
+      {
+        Counter = "Test2",
+        Value = 1563,
+        LastUTC = DateTime.Parse("1/15/2009 3:35:24 GMT"),
+      };
       cnts.Add(cnt);
 
-      cnt = new InspectCount();
-
-      cnt.Counter = "Test3";
-      cnt.Value = 532;
-      cnt.LastUTC = DateTime.Parse("2/12/2009 15:03:55 GMT");
+      cnt = new InspectCount()
+      {
+        Counter = "Test3",
+        Value = 532,
+        LastUTC = DateTime.Parse("2/12/2009 15:03:55 GMT"),
+      };
       cnts.Add(cnt);
 
       _insp.SetInspectCounts(cnts);
@@ -115,10 +118,12 @@ namespace MachineWatchTest
     {
       var now = DateTime.UtcNow;
       //set the count as zero, otherwise it chooses a random
-      InspectCount cnt = new InspectCount();
-      cnt.Counter = "counter1";
-      cnt.Value = 0;
-      cnt.LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(2);
+      InspectCount cnt = new InspectCount()
+      {
+        Counter = "counter1",
+        Value = 0,
+        LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(2),
+      };
       _insp.SetInspectCounts(new InspectCount[] { cnt });
 
       //set up a program
@@ -144,10 +149,12 @@ namespace MachineWatchTest
       CheckLastUTC("counter1", DateTime.UtcNow);
 
       //now check lastutc. set lastutc to be 2 minutes
-      cnt = new InspectCount();
-      cnt.Counter = "counter1";
-      cnt.Value = 0;
-      cnt.LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(-2);
+      cnt = new InspectCount()
+      {
+        Counter = "counter1",
+        Value = 0,
+        LastUTC = DateTime.UtcNow.AddHours(-11).AddMinutes(-2),
+      };
       _insp.SetInspectCounts(new InspectCount[] { cnt });
 
       _insp.MakeInspectionDecisions(4, 2, new[] { inspProg });
@@ -164,10 +171,12 @@ namespace MachineWatchTest
       var inspProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", MaxVal = 13, TimeInterval = TimeSpan.FromHours(11) };
 
       //set the count as zero, otherwise it chooses a random
-      InspectCount cnt = new InspectCount();
-      cnt.Counter = "counter1";
-      cnt.Value = 0;
-      cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
+      InspectCount cnt = new InspectCount()
+      {
+        Counter = "counter1",
+        Value = 0,
+        LastUTC = DateTime.UtcNow.AddHours(-10),
+      };
       _insp.SetInspectCounts(new InspectCount[] { cnt });
 
       //try making a decision
@@ -196,10 +205,12 @@ namespace MachineWatchTest
       job.PathInspections(1, 1).Add(inspProg);
 
       //set the count as zero, otherwise it chooses a random
-      InspectCount cnt = new InspectCount();
-      cnt.Counter = "counter1";
-      cnt.Value = 0;
-      cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
+      InspectCount cnt = new InspectCount()
+      {
+        Counter = "counter1",
+        Value = 0,
+        LastUTC = DateTime.UtcNow.AddHours(-10),
+      };
       _insp.SetInspectCounts(new InspectCount[] { cnt });
 
       PalletLocation palLoc = new PalletLocation(PalletLocationEnum.Machine, "MC", 1);
@@ -233,14 +244,18 @@ namespace MachineWatchTest
       var expandedCounter2 = "counter1-6-8-7-9-P5-P4-15-16-18-19";
 
       //set the count as zero, otherwise it chooses a random
-      var cnt = new InspectCount();
-      cnt.Counter = expandedCounter1;
-      cnt.Value = 0;
-      cnt.LastUTC = DateTime.UtcNow.AddHours(-10);
-      var cnt2 = new InspectCount();
-      cnt2.Counter = expandedCounter2;
-      cnt2.Value = 0;
-      cnt2.LastUTC = DateTime.UtcNow.AddHours(-10);
+      var cnt = new InspectCount()
+      {
+        Counter = expandedCounter1,
+        Value = 0,
+        LastUTC = DateTime.UtcNow.AddHours(-10),
+      };
+      var cnt2 = new InspectCount()
+      {
+        Counter = expandedCounter2,
+        Value = 0,
+        LastUTC = DateTime.UtcNow.AddHours(-10),
+      };
       _insp.SetInspectCounts(new[] { cnt, cnt2 });
 
 
@@ -380,6 +395,7 @@ namespace MachineWatchTest
               },
               options =>
                 options
+                  .ComparingByMembers<Decision>()
                   .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1000))
                     .WhenTypeIs<DateTime>()
             );

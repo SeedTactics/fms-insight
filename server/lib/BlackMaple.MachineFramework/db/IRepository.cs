@@ -205,18 +205,18 @@ namespace BlackMaple.MachineFramework
     void SetCellControllerProgramForProgram(string program, long revision, string cellCtProgName);
   }
 
-  public struct InspectCount
+  public record InspectCount
   {
-    public string Counter;
-    public int Value;
-    public DateTime LastUTC;
+    public string Counter { get; init; }
+    public int Value { get; init; }
+    public DateTime LastUTC { get; init; }
   }
 
-  public class EventLogMaterial
+  public record EventLogMaterial
   {
-    public long MaterialID { get; set; }
-    public int Process { get; set; }
-    public string Face { get; set; }
+    public long MaterialID { get; init; }
+    public int Process { get; init; }
+    public string Face { get; init; }
 
     public static EventLogMaterial FromLogMat(MachineWatchInterface.LogMaterial m)
     {
@@ -229,55 +229,55 @@ namespace BlackMaple.MachineFramework
     }
   }
 
-  public class SwapMaterialResult
+  public record SwapMaterialResult
   {
-    public IEnumerable<MachineWatchInterface.LogEntry> ChangedLogEntries { get; set; }
-    public IEnumerable<MachineWatchInterface.LogEntry> NewLogEntries { get; set; }
+    public IEnumerable<MachineWatchInterface.LogEntry> ChangedLogEntries { get; init; }
+    public IEnumerable<MachineWatchInterface.LogEntry> NewLogEntries { get; init; }
   }
 
-  public class Decision
+  public record Decision
   {
-    public long MaterialID;
-    public string InspType;
-    public string Counter;
-    public bool Inspect;
-    public bool Forced;
-    public System.DateTime CreateUTC;
+    public long MaterialID { get; init; }
+    public string InspType { get; init; }
+    public string Counter { get; init; }
+    public bool Inspect { get; init; }
+    public bool Forced { get; init; }
+    public System.DateTime CreateUTC { get; init; }
   }
 
-  public struct PendingLoad
+  public record PendingLoad
   {
-    public string Pallet;
-    public string Key;
-    public int LoadStation;
-    public TimeSpan Elapsed;
-    public TimeSpan ActiveOperationTime;
-    public string ForeignID;
+    public string Pallet { get; init; }
+    public string Key { get; init; }
+    public int LoadStation { get; init; }
+    public TimeSpan Elapsed { get; init; }
+    public TimeSpan ActiveOperationTime { get; init; }
+    public string ForeignID { get; init; }
   }
 
-  public struct QueuedMaterial
+  public record QueuedMaterial
   {
-    public long MaterialID { get; set; }
-    public string Queue { get; set; }
-    public int Position { get; set; }
-    public string Unique { get; set; }
-    public string PartNameOrCasting { get; set; }
-    public int NumProcesses { get; set; }
-    public DateTime? AddTimeUTC { get; set; }
+    public long MaterialID { get; init; }
+    public string Queue { get; init; }
+    public int Position { get; init; }
+    public string Unique { get; init; }
+    public string PartNameOrCasting { get; init; }
+    public int NumProcesses { get; init; }
+    public DateTime? AddTimeUTC { get; init; }
   }
 
-  public class NewDecrementQuantity
+  public record NewDecrementQuantity
   {
-    public string JobUnique { get; set; }
-    public int Proc1Path { get; set; }
-    public string Part { get; set; }
-    public int Quantity { get; set; }
+    public string JobUnique { get; init; }
+    public int Proc1Path { get; init; }
+    public string Part { get; init; }
+    public int Quantity { get; init; }
   }
 
-  public class RemovedBooking
+  public record RemovedBooking
   {
-    public string JobUnique { get; set; }
-    public string BookingId { get; set; }
+    public string JobUnique { get; init; }
+    public string BookingId { get; init; }
   }
 
 }

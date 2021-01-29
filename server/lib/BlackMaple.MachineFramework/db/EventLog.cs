@@ -3061,17 +3061,15 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                var p = default(PendingLoad);
-                p.Pallet = pallet;
-                p.Key = reader.GetString(0);
-                p.LoadStation = reader.GetInt32(1);
-                p.Elapsed = new TimeSpan(reader.GetInt64(2));
-                if (!reader.IsDBNull(3))
-                  p.ActiveOperationTime = TimeSpan.FromTicks(reader.GetInt64(3));
-                if (reader.IsDBNull(4))
-                  p.ForeignID = null;
-                else
-                  p.ForeignID = reader.GetString(4);
+                var p = new PendingLoad()
+                {
+                  Pallet = pallet,
+                  Key = reader.GetString(0),
+                  LoadStation = reader.GetInt32(1),
+                  Elapsed = new TimeSpan(reader.GetInt64(2)),
+                  ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
+                  ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
+                };
                 ret.Add(p);
               }
             }
@@ -3108,17 +3106,15 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                var p = default(PendingLoad);
-                p.Key = reader.GetString(0);
-                p.LoadStation = reader.GetInt32(1);
-                p.Elapsed = new TimeSpan(reader.GetInt64(2));
-                if (!reader.IsDBNull(3))
-                  p.ActiveOperationTime = TimeSpan.FromTicks(reader.GetInt64(3));
-                if (reader.IsDBNull(4))
-                  p.ForeignID = null;
-                else
-                  p.ForeignID = reader.GetString(4);
-                p.Pallet = reader.GetString(5);
+                var p = new PendingLoad()
+                {
+                  Key = reader.GetString(0),
+                  LoadStation = reader.GetInt32(1),
+                  Elapsed = new TimeSpan(reader.GetInt64(2)),
+                  ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
+                  ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
+                  Pallet = reader.GetString(5),
+                };
                 ret.Add(p);
               }
             }
@@ -3362,9 +3358,6 @@ namespace BlackMaple.MachineFramework
 
     private InspectCount QueryCount(IDbTransaction trans, string counter, int maxVal)
     {
-      var cnt = new InspectCount();
-      cnt.Counter = counter;
-
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
@@ -3375,26 +3368,24 @@ namespace BlackMaple.MachineFramework
         {
           if (reader.Read())
           {
-            cnt.Value = reader.GetInt32(0);
-            if (reader.IsDBNull(1))
-              cnt.LastUTC = DateTime.MaxValue;
-            else
-              cnt.LastUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc);
-
+            return new InspectCount()
+            {
+              Counter = counter,
+              Value = reader.GetInt32(0),
+              LastUTC = reader.IsDBNull(1) ? DateTime.MaxValue : new DateTime(reader.GetInt64(1), DateTimeKind.Utc)
+            };
           }
           else
           {
-            if (maxVal <= 1)
-              cnt.Value = 0;
-            else
-              cnt.Value = _rand.Next(0, maxVal - 1);
-
-            cnt.LastUTC = DateTime.MaxValue;
+            return new InspectCount()
+            {
+              Counter = counter,
+              Value = maxVal <= 1 ? 0 : _rand.Next(0, maxVal - 1),
+              LastUTC = DateTime.MaxValue
+            };
           }
         }
       }
-
-      return cnt;
     }
 
     public List<InspectCount> LoadInspectCounts()
@@ -3411,14 +3402,13 @@ namespace BlackMaple.MachineFramework
           {
             while (reader.Read())
             {
-              var insp = default(InspectCount);
-              insp.Counter = reader.GetString(0);
-              insp.Value = reader.GetInt32(1);
-              if (reader.IsDBNull(2))
-                insp.LastUTC = DateTime.MaxValue;
-              else
-                insp.LastUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
-              ret.Add(insp);
+              ret.Add(new InspectCount()
+              {
+                Counter = reader.GetString(0),
+                Value = reader.GetInt32(1),
+                LastUTC = reader.IsDBNull(2) ?
+                DateTime.MaxValue : new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
+              });
             }
           }
         }
@@ -3749,11 +3739,11 @@ namespace BlackMaple.MachineFramework
           var currentCount = QueryCount(trans, counter, iProg.MaxVal);
           if (iProg.MaxVal > 0)
           {
-            currentCount.Value += 1;
+            currentCount = currentCount with { Value = currentCount.Value + 1 };
 
             if (currentCount.Value >= iProg.MaxVal)
             {
-              currentCount.Value = 0;
+              currentCount = currentCount with { Value = 0 };
               inspect = true;
             }
           }
@@ -3773,11 +3763,11 @@ namespace BlackMaple.MachineFramework
 
           //update lastutc if there is an inspection
           if (inspect)
-            currentCount.LastUTC = utcNow;
+            currentCount = currentCount with { LastUTC = utcNow };
 
           //if no lastutc has been recoreded, record the current time.
           if (currentCount.LastUTC == DateTime.MaxValue)
-            currentCount.LastUTC = utcNow;
+            currentCount = currentCount with { LastUTC = utcNow };
 
           SetInspectionCount(trans, currentCount);
         }
