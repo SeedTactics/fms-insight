@@ -597,7 +597,7 @@ namespace MazakMachineInterface
 
     private static void AddRemainingLoadsAndUnloads(IRepository log, List<LoadAction> currentActions, PalletStatus pallet, PalletLocation palLoc, TimeSpan? elapsedLoadTime, CurrentStatus curStatus, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
     {
-      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<Repository.QueuedMaterial>>();
+      var queuedMats = new Dictionary<(string uniq, int proc, int path), List<QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
 
       // loads from raw material or a queue have not yet been processed.
@@ -724,7 +724,7 @@ namespace MazakMachineInterface
           };
 
           // load queued material
-          List<BlackMaple.MachineFramework.Repository.QueuedMaterial> queuedMat = null;
+          List<BlackMaple.MachineFramework.QueuedMaterial> queuedMat = null;
           if (curStatus.Jobs.ContainsKey(operation.Unique))
           {
             var job = curStatus.Jobs[operation.Unique];

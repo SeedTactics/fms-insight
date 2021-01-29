@@ -311,7 +311,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 serial = _settings.ConvertMaterialIDToSerial(mid);
                 logDB.RecordSerialForMaterialID(
-                  new Repository.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
+                  new EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
                   serial,
                   nowUtc
                   );
@@ -611,7 +611,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 serial = _settings.ConvertMaterialIDToSerial(mid);
                 logDB.RecordSerialForMaterialID(
-                  new Repository.EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
+                  new EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
                   serial,
                   nowUtc
                   );
@@ -704,7 +704,7 @@ namespace BlackMaple.FMSInsight.Niigata
         foreach (var m in pallet.Material)
         {
           logDB.RecordAddMaterialToQueue(
-            mat: new Repository.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
+            mat: new EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = "" },
             queue: _settings.QuarantineQueue,
             position: -1,
             timeUTC: nowUtc,
@@ -743,7 +743,7 @@ namespace BlackMaple.FMSInsight.Niigata
           elapsedLoadTime = TimeSpan.Zero;
           palletStateUpdated = true;
           jobDB.RecordLoadStart(
-            mats: new Repository.EventLogMaterial[] { },
+            mats: new EventLogMaterial[] { },
             pallet: pallet.Status.Master.PalletNum.ToString(),
             lulNum: pallet.Status.CurStation.Location.Num,
             timeUTC: nowUtc
@@ -817,7 +817,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         logDB.RecordUnloadEnd(
-          mats: face.Select(m => new Repository.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = proc, Face = face.Key.ToString() }),
+          mats: face.Select(m => new EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = proc, Face = face.Key.ToString() }),
           pallet: pallet.Status.Master.PalletNum.ToString(),
           lulNum: loadBegin.LocationNum,
           timeUTC: nowUtc,
@@ -854,7 +854,7 @@ namespace BlackMaple.FMSInsight.Niigata
           var proc = face.First().Mat.Process;
           var path = face.First().Mat.Path;
           newLoadEvents.AddRange(logDB.RecordLoadEnd(
-            mats: face.Select(m => new Repository.EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = face.Key.ToString() }),
+            mats: face.Select(m => new EventLogMaterial() { MaterialID = m.Mat.MaterialID, Process = m.Mat.Process, Face = face.Key.ToString() }),
             pallet: pallet.Status.Master.PalletNum.ToString(),
             lulNum: loadBegin.LocationNum,
             timeUTC: nowUtc.AddSeconds(1),
@@ -1126,7 +1126,7 @@ namespace BlackMaple.FMSInsight.Niigata
         );
 
         jobDB.RecordMachineStart(
-          mats: matOnFace.Select(m => new Repository.EventLogMaterial()
+          mats: matOnFace.Select(m => new EventLogMaterial()
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
@@ -1222,7 +1222,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       logDB.RecordMachineEnd(
-        mats: matOnFace.Select(m => new Repository.EventLogMaterial()
+        mats: matOnFace.Select(m => new EventLogMaterial()
         {
           MaterialID = m.MaterialID,
           Process = m.Process,
@@ -1251,7 +1251,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Log.Debug("Recording reclamp start for {@pallet} and face {@face} for stop {@ss}", pallet, face, ss);
         palletStateUpdated = true;
         logDB.RecordManualWorkAtLULStart(
-          mats: matOnFace.Select(m => new Repository.EventLogMaterial()
+          mats: matOnFace.Select(m => new EventLogMaterial()
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
@@ -1317,7 +1317,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       logDB.RecordManualWorkAtLULEnd(
-        mats: matOnFace.Select(m => new Repository.EventLogMaterial()
+        mats: matOnFace.Select(m => new EventLogMaterial()
         {
           MaterialID = m.MaterialID,
           Process = m.Process,
@@ -1383,7 +1383,7 @@ namespace BlackMaple.FMSInsight.Niigata
       if (start == null && currentlyOnRotary && !pallet.Status.Tracking.Alarm)
       {
         logDB.RecordPalletArriveRotaryInbound(
-          mats: pallet.Material.Select(m => new Repository.EventLogMaterial()
+          mats: pallet.Material.Select(m => new EventLogMaterial()
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
@@ -1398,7 +1398,7 @@ namespace BlackMaple.FMSInsight.Niigata
       else if (start != null && !currentlyOnRotary)
       {
         logDB.RecordPalletDepartRotaryInbound(
-          mats: pallet.Material.Select(m => new Repository.EventLogMaterial()
+          mats: pallet.Material.Select(m => new EventLogMaterial()
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
@@ -1451,7 +1451,7 @@ namespace BlackMaple.FMSInsight.Niigata
       if (start == null && currentlyAtStocker)
       {
         logDB.RecordPalletArriveStocker(
-          mats: pallet.Material.Select(m => new Repository.EventLogMaterial()
+          mats: pallet.Material.Select(m => new EventLogMaterial()
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
@@ -1466,7 +1466,7 @@ namespace BlackMaple.FMSInsight.Niigata
       else if (start != null && !currentlyAtStocker)
       {
         logDB.RecordPalletDepartStocker(
-          mats: pallet.Material.Select(m => new Repository.EventLogMaterial()
+          mats: pallet.Material.Select(m => new EventLogMaterial()
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,

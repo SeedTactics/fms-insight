@@ -358,7 +358,7 @@ namespace MazakMachineInterface
           {
             if (compCnt < jobAndPath.j.GetPlannedCyclesOnFirstProcess(jobAndPath.path))
             {
-              return new Repository.NewDecrementQuantity()
+              return new NewDecrementQuantity()
               {
                 JobUnique = jobAndPath.j.UniqueStr,
                 Proc1Path = jobAndPath.path,

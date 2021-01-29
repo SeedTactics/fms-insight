@@ -217,7 +217,7 @@ namespace Makino
       AddInspection(m, matList, logDb);
     }
 
-    private void AddInspection(MakinoDB.MachineResults m, IList<Repository.EventLogMaterial> material, IRepository logDb)
+    private void AddInspection(MakinoDB.MachineResults m, IList<EventLogMaterial> material, IRepository logDb)
     {
       if (logDb == null)
         return;
@@ -312,17 +312,17 @@ namespace Makino
       return matIds;
     }
 
-    private IList<Repository.EventLogMaterial> CreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, IRepository logDb)
+    private IList<EventLogMaterial> CreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, IRepository logDb)
     {
       var rows = _status.CreateMaterialIDs(pallet, fixturenum, endUTC, order, AllocateMatIds(count, order, part, process, logDb), 0);
 
-      var ret = new List<Repository.EventLogMaterial>();
+      var ret = new List<EventLogMaterial>();
       foreach (var row in rows)
-        ret.Add(new Repository.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
+        ret.Add(new EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       return ret;
     }
 
-    private IList<Repository.EventLogMaterial> FindOrCreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, IRepository logDb)
+    private IList<EventLogMaterial> FindOrCreateMaterial(int pallet, int fixturenum, DateTime endUTC, string order, string part, int process, int count, IRepository logDb)
     {
       var rows = _status.FindMaterialIDs(pallet, fixturenum, endUTC);
 
@@ -363,12 +363,12 @@ namespace Makino
         }
       }
 
-      var ret = new List<Repository.EventLogMaterial>();
+      var ret = new List<EventLogMaterial>();
       foreach (var row in rows)
       {
         if (Settings.SerialType != SerialType.NoAutomaticSerials)
           CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), logDb, Settings);
-        ret.Add(new Repository.EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
+        ret.Add(new EventLogMaterial() { MaterialID = row.MatID, Process = process, Face = "" });
       }
       return ret;
     }
@@ -402,7 +402,7 @@ namespace Makino
       Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
 
 
-      var logMat = new Repository.EventLogMaterial() { MaterialID = matID, Process = process, Face = face };
+      var logMat = new EventLogMaterial() { MaterialID = matID, Process = process, Face = face };
       _log.RecordSerialForMaterialID(logMat, serial);
     }
 

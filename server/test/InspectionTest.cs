@@ -338,8 +338,8 @@ namespace MachineWatchTest
     public void WithoutInspectProgram()
     {
       DateTime now = DateTime.UtcNow;
-      var mat1 = new Repository.EventLogMaterial() { MaterialID = 1, Process = 1 };
-      var mat2 = new Repository.EventLogMaterial() { MaterialID = 2, Process = 1 };
+      var mat1 = new EventLogMaterial() { MaterialID = 1, Process = 1 };
+      var mat2 = new EventLogMaterial() { MaterialID = 2, Process = 1 };
       _insp.ForceInspection(mat1, "myinspection", true, now);
       _insp.ForceInspection(mat2, "myinspection", false, now);
 
@@ -369,7 +369,7 @@ namespace MachineWatchTest
         if (d.InspType == iType)
         {
           d.Should().BeEquivalentTo(
-              new Repository.Decision()
+              new Decision()
               {
                 MaterialID = matID,
                 InspType = iType,

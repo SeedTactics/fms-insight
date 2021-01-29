@@ -212,10 +212,10 @@ namespace MachineWatchTest
       var matId = _log.AllocateMaterialID("uuu5", "part5", 1);
       var mat = new LogMaterial(matId, "uuu5", 1, "part5", 1, "", "", "");
 
-      _log.RecordAddMaterialToQueue(Repository.EventLogMaterial.FromLogMat(mat), "queue", 5, null, null, now.AddHours(2));
+      _log.RecordAddMaterialToQueue(EventLogMaterial.FromLogMat(mat), "queue", 5, null, null, now.AddHours(2));
 
       _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new[] {
-        new Repository.QueuedMaterial() {
+        new QueuedMaterial() {
           MaterialID = matId,
           Queue = "queue",
           Position = 0,
@@ -264,7 +264,7 @@ namespace MachineWatchTest
 
       var now = DateTime.UtcNow;
       _log.AddNewDecrement(new[] {
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "mynewunique",
           Proc1Path = 22,
           Part = "thepart",

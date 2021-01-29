@@ -166,13 +166,13 @@ namespace MazakMachineInterface
 
     private void RecordDecrement(IRepository jobDB, List<DecrSchedule> decrs, DateTime? now)
     {
-      var decrAmt = new List<Repository.NewDecrementQuantity>();
+      var decrAmt = new List<NewDecrementQuantity>();
       foreach (var decr in decrs)
       {
         var planned = decr.Job.GetPlannedCyclesOnFirstProcess(path: decr.Proc1Path);
         if (planned > decr.NewPlanQty)
         {
-          decrAmt.Add(new Repository.NewDecrementQuantity()
+          decrAmt.Add(new NewDecrementQuantity()
           {
             JobUnique = decr.Job.UniqueStr,
             Proc1Path = decr.Proc1Path,
@@ -187,7 +187,7 @@ namespace MazakMachineInterface
       {
         for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
         {
-          decrAmt.Add(new Repository.NewDecrementQuantity()
+          decrAmt.Add(new NewDecrementQuantity()
           {
             JobUnique = j.UniqueStr,
             Proc1Path = path,

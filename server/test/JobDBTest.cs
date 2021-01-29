@@ -629,7 +629,7 @@ namespace MachineWatchTest
 
       //Archive job1
       var archiveTime = DateTime.UtcNow;
-      _jobDB.ArchiveJobs(new[] { job1.UniqueStr }, new[] { new Repository.NewDecrementQuantity() {
+      _jobDB.ArchiveJobs(new[] { job1.UniqueStr }, new[] { new NewDecrementQuantity() {
         JobUnique = job1.UniqueStr,
         Proc1Path = 66,
         Part = job1.PartName,
@@ -679,19 +679,19 @@ namespace MachineWatchTest
 
       var time1 = DateTime.UtcNow.AddHours(-2);
       _jobDB.AddNewDecrement(new[] {
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "uniq1",
           Proc1Path = 1,
           Part = "part1",
           Quantity = 53
         },
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "uniq1",
           Proc1Path = 2,
           Part = "part1",
           Quantity = 77
         },
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "uniq2",
           Proc1Path = 1,
           Part = "part2",
@@ -763,13 +763,13 @@ namespace MachineWatchTest
       //now second decrement
       var time2 = DateTime.UtcNow.AddHours(-1);
       _jobDB.AddNewDecrement(new[] {
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "uniq1",
           Proc1Path = 1,
           Part = "part1",
           Quantity = 26
         },
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "uniq2",
           Proc1Path = 1,
           Part = "part2",
@@ -778,11 +778,11 @@ namespace MachineWatchTest
       },
       time2,
       new[] {
-        new Repository.RemovedBooking() {
+        new RemovedBooking() {
           JobUnique = "uniq1",
           BookingId = "BBB"
         },
-        new Repository.RemovedBooking() {
+        new RemovedBooking() {
           JobUnique = "uniq2",
           BookingId = "CCC"
         }

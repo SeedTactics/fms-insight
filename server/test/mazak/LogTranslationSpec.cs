@@ -281,7 +281,7 @@ namespace MachineWatchTest
           }
       }
       expected.AddRange(jobLog.RecordAddMaterialToQueue(
-        mat: new Repository.EventLogMaterial() { MaterialID = material.MaterialID, Process = proc, Face = "" },
+        mat: new EventLogMaterial() { MaterialID = material.MaterialID, Process = proc, Face = "" },
         queue: queue,
         position: -1,
         operatorName: null,
@@ -292,7 +292,7 @@ namespace MachineWatchTest
 
     protected void RemoveFromAllQueues(TestMaterial mat, int proc, int offset)
     {
-      expected.AddRange(jobLog.RecordRemoveMaterialFromAllQueues(new Repository.EventLogMaterial()
+      expected.AddRange(jobLog.RecordRemoveMaterialFromAllQueues(new EventLogMaterial()
       {
         MaterialID = mat.MaterialID,
         Process = proc,
@@ -1066,7 +1066,7 @@ namespace MachineWatchTest
     protected void CheckMatInQueue(string queue, IEnumerable<TestMaterial> mats)
     {
       jobLog.GetMaterialInQueue(queue).Should().BeEquivalentTo(mats.Select((m, idx) =>
-        new Repository.QueuedMaterial()
+        new QueuedMaterial()
         {
           MaterialID = m.MaterialID,
           Queue = queue,
@@ -1075,7 +1075,7 @@ namespace MachineWatchTest
           PartNameOrCasting = m.JobPartName,
           NumProcesses = m.NumProcess,
         }
-      ), options => options.ComparingByMembers<Repository.QueuedMaterial>().Excluding(o => o.AddTimeUTC));
+      ), options => options.ComparingByMembers<QueuedMaterial>().Excluding(o => o.AddTimeUTC));
     }
     #endregion
   }
@@ -1670,7 +1670,7 @@ namespace MachineWatchTest
       //queue now has 9 elements
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         Enumerable.Range(1, 9).Select((i, idx) =>
-          new Repository.QueuedMaterial()
+          new QueuedMaterial()
           {
             MaterialID = i,
             Queue = "thequeue",
@@ -1692,7 +1692,7 @@ namespace MachineWatchTest
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
-            new Repository.QueuedMaterial()
+            new QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
@@ -1719,7 +1719,7 @@ namespace MachineWatchTest
 
       jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
         (new[] { 4, 5, 6 }).Select((i, idx) =>
-            new Repository.QueuedMaterial()
+            new QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
@@ -2041,7 +2041,7 @@ namespace MachineWatchTest
 
       ExpectAddToQueue(m2proc1, offset: 10, queue: "quarantineQ", pos: 0, reason: "MaterialMissingOnPallet");
       jobLog.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-        new Repository.QueuedMaterial() {
+        new QueuedMaterial() {
           MaterialID = m2proc1.MaterialID,
           Queue = "quarantineQ",
           Position = 0,

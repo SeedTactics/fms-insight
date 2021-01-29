@@ -213,7 +213,7 @@ namespace MachineWatchTest
 
       var now = DateTime.UtcNow.AddHours(-1);
       _jobDB.AddNewDecrement(new[] {
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "uuuu", Proc1Path = 1, Part = "pppp", Quantity = 3
         }
       }, now);

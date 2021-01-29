@@ -300,7 +300,7 @@ namespace DebugMachineWatchApiServer
       };
 
       LogDB.RecordAddMaterialToQueue(
-        mat: new Repository.EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
+        mat: new EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
         queue: queue,
         position: position,
         operatorName: operatorName,
@@ -317,7 +317,7 @@ namespace DebugMachineWatchApiServer
       if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
         LogDB.SignalMaterialForQuarantine(
-          new Repository.EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
+          new EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
         );
       }
       else if (mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
@@ -461,12 +461,12 @@ namespace DebugMachineWatchApiServer
         if (e.LogType == LogType.PartMark)
         {
           foreach (var m in e.Material)
-            LogDB.RecordSerialForMaterialID(Repository.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.OrderAssignment)
         {
           foreach (var m in e.Material)
-            LogDB.RecordWorkorderForMaterialID(Repository.EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.FinalizeWorkorder)
         {

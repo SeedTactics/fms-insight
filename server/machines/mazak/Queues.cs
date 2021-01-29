@@ -254,7 +254,7 @@ namespace MazakMachineInterface
                 var m = logDb.AllocateMaterialID(sch.Job.UniqueStr, sch.Job.PartName, sch.Job.NumProcesses);
                 logDb.RecordPathForProcess(m, 1, schProc.Path);
                 logDb.RecordAddMaterialToQueue(
-                  mat: new Repository.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" },
+                  mat: new EventLogMaterial() { MaterialID = m, Process = 0, Face = "" },
                   queue: schProc.InputQueue,
                   position: -1,
                   operatorName: null,
@@ -268,7 +268,7 @@ namespace MazakMachineInterface
               foreach (var m in matInQueue.Skip(schProc.SchProcRow.ProcessMaterialQuantity))
               {
                 logDb.RecordRemoveMaterialFromAllQueues(
-                  new Repository.EventLogMaterial() { MaterialID = m.MaterialID, Process = 1, Face = "" }
+                  new EventLogMaterial() { MaterialID = m.MaterialID, Process = 1, Face = "" }
                 );
               }
             }
@@ -443,9 +443,9 @@ namespace MazakMachineInterface
       }
     }
 
-    public static List<Repository.QueuedMaterial> QueuedMaterialForLoading(JobPlan job, IEnumerable<Repository.QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
+    public static List<QueuedMaterial> QueuedMaterialForLoading(JobPlan job, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
     {
-      var mats = new List<Repository.QueuedMaterial>();
+      var mats = new List<QueuedMaterial>();
       foreach (var m in materialToSearch)
       {
         if (m.Unique != job.UniqueStr) continue;

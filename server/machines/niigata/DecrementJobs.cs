@@ -48,7 +48,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public bool DecrementJobs(IRepository jobDB, CellState cellSt)
     {
-      var decrs = new List<Repository.NewDecrementQuantity>();
+      var decrs = new List<NewDecrementQuantity>();
       foreach (var j in cellSt.UnarchivedJobs)
       {
         if (j.ManuallyCreatedJob || jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
@@ -57,7 +57,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
           {
-            decrs.Add(new Repository.NewDecrementQuantity()
+            decrs.Add(new NewDecrementQuantity()
             {
               JobUnique = j.UniqueStr,
               Proc1Path = path,

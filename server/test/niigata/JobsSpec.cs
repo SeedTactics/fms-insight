@@ -103,7 +103,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 20, 0, 0, DateTimeKind.Utc));
       j.ScheduleId = "sch1";
       _logDB.RecordUnloadEnd(
-        mats: new[] { new Repository.EventLogMaterial() {
+        mats: new[] { new EventLogMaterial() {
           MaterialID = mat1,
           Process = 1,
           Face = "f1"
@@ -115,7 +115,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         active: TimeSpan.Zero
       );
       _logDB.AddNewDecrement(new[] {
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
           JobUnique = "u1",
           Proc1Path = 1,
           Part = "p1",
@@ -265,13 +265,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
 
       // two material in queues
-      _logDB.RecordAddMaterialToQueue(new Repository.EventLogMaterial()
+      _logDB.RecordAddMaterialToQueue(new EventLogMaterial()
       {
         MaterialID = mat3,
         Process = 1,
         Face = null
       }, "q1", 0, operatorName: null, reason: "TestReason");
-      _logDB.RecordAddMaterialToQueue(new Repository.EventLogMaterial()
+      _logDB.RecordAddMaterialToQueue(new EventLogMaterial()
       {
         MaterialID = mat4,
         Process = 1,
@@ -439,14 +439,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var now = DateTime.UtcNow.AddHours(-1);
 
       _logDB.AddNewDecrement(new[] {
-        new Repository.NewDecrementQuantity()
+        new NewDecrementQuantity()
         {
           JobUnique = "u1",
           Proc1Path = 1,
           Part = "p1",
           Quantity = 10
         },
-        new Repository.NewDecrementQuantity()
+        new NewDecrementQuantity()
         {
           JobUnique = "u2",
           Proc1Path = 2,
@@ -514,9 +514,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
-         new Repository.QueuedMaterial()
+         new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC },
-         new Repository.QueuedMaterial()
+         new QueuedMaterial()
           { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 1, Queue = "q1", Unique = "", AddTimeUTC = mats[1].AddTimeUTC }
         });
 
@@ -526,7 +526,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       ((IJobControl)_jobs).RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
       mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats.Should().BeEquivalentTo(new[] {
-          new Repository.QueuedMaterial()
+          new QueuedMaterial()
             { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC}
         }, options => options.Using<DateTime?>(ctx => ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, 4000)).WhenTypeIs<DateTime?>());
 
@@ -586,7 +586,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
-          new Repository.QueuedMaterial()
+          new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
         });
 
@@ -604,7 +604,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       ((IJobControl)_jobs).SetMaterialInQueue(1, "q1", 0, "theoper");
       mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats.Should().BeEquivalentTo(new[] {
-          new Repository.QueuedMaterial()
+          new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
         });
 
@@ -614,7 +614,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
-          new Repository.QueuedMaterial()
+          new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
         });
 
@@ -687,7 +687,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
       _logDB.RecordSerialForMaterialID(materialID: 1, proc: 1, serial: "aaa");
-      _logDB.RecordLoadStart(new[] { new Repository.EventLogMaterial() { MaterialID = 1, Process = 1, Face = "" } }, "3", 2, DateTime.UtcNow);
+      _logDB.RecordLoadStart(new[] { new EventLogMaterial() { MaterialID = 1, Process = 1, Face = "" } }, "3", 2, DateTime.UtcNow);
 
       ((IJobControl)_jobs).SetMaterialInQueue(materialId: 1, queue: "q1", position: -1);
 

@@ -220,7 +220,7 @@ namespace MazakMachineInterface
 
         case LogCode.StartRotatePalletIntoMachine:
           _log.RecordPalletDepartRotaryInbound(
-            mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
+            mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
             pallet: e.Pallet.ToString(),
             statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
@@ -242,7 +242,7 @@ namespace MazakMachineInterface
             if (LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum))
             {
               _log.RecordPalletDepartRotaryInbound(
-                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
@@ -258,7 +258,7 @@ namespace MazakMachineInterface
             if (int.TryParse(e.FromPosition.Substring(1), out var stockerNum))
             {
               _log.RecordPalletDepartStocker(
-                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
@@ -277,7 +277,7 @@ namespace MazakMachineInterface
             if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
             {
               _log.RecordPalletArriveRotaryInbound(
-                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
@@ -291,7 +291,7 @@ namespace MazakMachineInterface
             if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
             {
               _log.RecordPalletArriveStocker(
-                mats: GetAllMaterialOnPallet(cycle).Select(Repository.EventLogMaterial.FromLogMat),
+                mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet.ToString(),
                 stockerNum: stockerNum,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
@@ -311,10 +311,10 @@ namespace MazakMachineInterface
     #endregion
 
     #region Material
-    private List<Repository.EventLogMaterial> CreateMaterialWithoutIDs(LogEntry e)
+    private List<EventLogMaterial> CreateMaterialWithoutIDs(LogEntry e)
     {
-      var ret = new List<Repository.EventLogMaterial>();
-      ret.Add(new Repository.EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
+      var ret = new List<EventLogMaterial>();
+      ret.Add(new EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
       return ret;
     }
 
@@ -331,7 +331,7 @@ namespace MazakMachineInterface
 
     private struct LogMaterialAndPath
     {
-      public Repository.EventLogMaterial Mat { get; set; }
+      public EventLogMaterial Mat { get; set; }
       public string Unique { get; set; }
       public string PartName { get; set; }
       public int Path { get; set; }
@@ -378,7 +378,7 @@ namespace MazakMachineInterface
           //something went wrong, must create material
           ret.Add(new LogMaterialAndPath()
           {
-            Mat = new Repository.EventLogMaterial()
+            Mat = new EventLogMaterial()
             {
               MaterialID = _log.AllocateMaterialID(unique, e.JobPartName, numProc),
               Process = e.Process,
@@ -402,10 +402,10 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private SortedList<string, Repository.EventLogMaterial> ParseMaterialFromPreviousEvents(
+    private SortedList<string, EventLogMaterial> ParseMaterialFromPreviousEvents(
       string jobPartName, int proc, int fixQty, bool isUnloadEnd, IList<MWI.LogEntry> oldEvents)
     {
-      var byFace = new SortedList<string, Repository.EventLogMaterial>(); //face -> material
+      var byFace = new SortedList<string, EventLogMaterial>(); //face -> material
 
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
@@ -444,7 +444,7 @@ namespace MazakMachineInterface
             }
 
             byFace[newFace] =
-              new Repository.EventLogMaterial() { MaterialID = mat.MaterialID, Process = proc, Face = newFace };
+              new EventLogMaterial() { MaterialID = mat.MaterialID, Process = proc, Face = newFace };
           }
         }
       }
@@ -480,7 +480,7 @@ namespace MazakMachineInterface
         return cycle;
       }
 
-      var mat = new Dictionary<string, IEnumerable<Repository.EventLogMaterial>>();
+      var mat = new Dictionary<string, IEnumerable<EventLogMaterial>>();
 
       foreach (var p in pending)
       {
@@ -505,7 +505,7 @@ namespace MazakMachineInterface
           path = 1;
         }
 
-        var mats = new List<Repository.EventLogMaterial>();
+        var mats = new List<EventLogMaterial>();
         if (job != null && !string.IsNullOrEmpty(job.GetInputQueue(proc, path)))
         {
           // search input queue for material
@@ -528,14 +528,14 @@ namespace MazakMachineInterface
             if (i <= qs.Count)
             {
               var qmat = qs[i - 1];
-              mats.Add(new Repository.EventLogMaterial() { MaterialID = qmat.MaterialID, Process = proc, Face = face });
+              mats.Add(new EventLogMaterial() { MaterialID = qmat.MaterialID, Process = proc, Face = face });
             }
             else
             {
               // not enough material in queue
               Log.Warning("Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
                 job.GetInputQueue(proc, path), fullPartName, proc, p);
-              mats.Add(new Repository.EventLogMaterial()
+              mats.Add(new EventLogMaterial()
               {
                 MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                 Process = proc,
@@ -557,7 +557,7 @@ namespace MazakMachineInterface
             else
               face = proc.ToString() + "-" + i.ToString();
 
-            mats.Add(new Repository.EventLogMaterial()
+            mats.Add(new EventLogMaterial()
             {
               MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
               Process = proc,
@@ -594,7 +594,7 @@ namespace MazakMachineInterface
             if (byFace.ContainsKey(prevFace))
             {
               var old = byFace[prevFace];
-              mats.Add(new Repository.EventLogMaterial()
+              mats.Add(new EventLogMaterial()
               {
                 MaterialID = old.MaterialID,
                 Process = proc,
@@ -604,7 +604,7 @@ namespace MazakMachineInterface
             else
             {
               //something went wrong, must create material
-              mats.Add(new Repository.EventLogMaterial()
+              mats.Add(new EventLogMaterial()
               {
                 MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                 Process = proc,
@@ -714,7 +714,7 @@ namespace MazakMachineInterface
         foreach (var extraMat in matsOnPal)
         {
           _log.RecordAddMaterialToQueue(
-            mat: new Repository.EventLogMaterial() { MaterialID = extraMat.MaterialID, Process = extraMat.Process, Face = "" },
+            mat: new EventLogMaterial() { MaterialID = extraMat.MaterialID, Process = extraMat.Process, Face = "" },
             queue: _settings.QuarantineQueue,
             position: -1,
             operatorName: null,

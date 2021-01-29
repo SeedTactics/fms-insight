@@ -1794,20 +1794,6 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Decrement Counts
-    public class NewDecrementQuantity
-    {
-      public string JobUnique { get; set; }
-      public int Proc1Path { get; set; }
-      public string Part { get; set; }
-      public int Quantity { get; set; }
-    }
-
-    public class RemovedBooking
-    {
-      public string JobUnique { get; set; }
-      public string BookingId { get; set; }
-    }
-
     public void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null, IEnumerable<RemovedBooking> removedBookings = null)
     {
       lock (_cfg)

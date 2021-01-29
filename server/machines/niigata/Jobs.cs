@@ -360,7 +360,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (i < serial.Count)
         {
           logDB.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.Repository.EventLogMaterial()
+            new BlackMaple.MachineFramework.EventLogMaterial()
             {
               MaterialID = matId,
               Process = 0,
@@ -482,7 +482,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (!string.IsNullOrEmpty(serial))
         {
           ldb.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.Repository.EventLogMaterial()
+            new BlackMaple.MachineFramework.EventLogMaterial()
             {
               MaterialID = matId,
               Process = process,
@@ -584,7 +584,7 @@ namespace BlackMaple.FMSInsight.Niigata
         using (var ldb = _jobDbCfg.OpenConnection())
         {
           ldb.SignalMaterialForQuarantine(
-            mat: new Repository.EventLogMaterial() { MaterialID = materialId, Process = palMat.Mat.Process, Face = "" },
+            mat: new EventLogMaterial() { MaterialID = materialId, Process = palMat.Mat.Process, Face = "" },
             pallet: palMat.Mat.Location.Pallet,
             queue: queue,
             timeUTC: null,

@@ -259,7 +259,7 @@ namespace MachineWatchTest
       _memoryLog.AddPendingLoad("1", "thekey", 1, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), "foreignid");
 
       var matId = _memoryLog.AllocateMaterialID("aaa-schId1234", "aaa", 2);
-      _memoryLog.RecordAddMaterialToQueue(new Repository.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1,
+      _memoryLog.RecordAddMaterialToQueue(new EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1,
         operatorName: null, reason: "TheQueueReason"
       );
 

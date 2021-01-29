@@ -830,23 +830,6 @@ namespace BlackMaple.MachineFramework
 
     #region Adding
 
-    public class EventLogMaterial
-    {
-      public long MaterialID { get; set; }
-      public int Process { get; set; }
-      public string Face { get; set; }
-
-      public static EventLogMaterial FromLogMat(MachineWatchInterface.LogMaterial m)
-      {
-        return new EventLogMaterial()
-        {
-          MaterialID = m.MaterialID,
-          Process = m.Process,
-          Face = m.Face
-        };
-      }
-    }
-
     public class ToolPocketSnapshot
     {
       public int PocketNumber { get; set; }
@@ -946,7 +929,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public class NewEventLogEntry
+    private class NewEventLogEntry
     {
       public IEnumerable<EventLogMaterial> Material { get; set; }
       public MachineWatchInterface.LogType LogType { get; set; }
@@ -1954,17 +1937,6 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> RawAddLogEntries(IEnumerable<NewEventLogEntry> logs, string foreignId = null, string origMessage = null)
-    {
-      return AddEntryInTransaction(trans => logs.Select(e => AddLogEntry(trans, e, foreignId, origMessage)).ToList(), foreignId);
-    }
-
-    public class SwapMaterialResult
-    {
-      public IEnumerable<MachineWatchInterface.LogEntry> ChangedLogEntries { get; set; }
-      public IEnumerable<MachineWatchInterface.LogEntry> NewLogEntries { get; set; }
-    }
-
     public SwapMaterialResult SwapMaterialInCurrentPalletCycle(
       string pallet,
       long oldMatId,
@@ -2909,17 +2881,6 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    public struct QueuedMaterial
-    {
-      public long MaterialID { get; set; }
-      public string Queue { get; set; }
-      public int Position { get; set; }
-      public string Unique { get; set; }
-      public string PartNameOrCasting { get; set; }
-      public int NumProcesses { get; set; }
-      public DateTime? AddTimeUTC { get; set; }
-    }
-
     public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
     {
       lock (_cfg)
@@ -3078,16 +3039,6 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-    }
-
-    public struct PendingLoad
-    {
-      public string Pallet;
-      public string Key;
-      public int LoadStation;
-      public TimeSpan Elapsed;
-      public TimeSpan ActiveOperationTime;
-      public string ForeignID;
     }
 
     public List<PendingLoad> PendingLoads(string pallet)
@@ -3633,15 +3584,6 @@ namespace BlackMaple.MachineFramework
 
     #region Inspection Decisions
 
-    public class Decision
-    {
-      public long MaterialID;
-      public string InspType;
-      public string Counter;
-      public bool Inspect;
-      public bool Forced;
-      public System.DateTime CreateUTC;
-    }
     public IList<Decision> LookupInspectionDecisions(long matID)
     {
       lock (_cfg)
@@ -3883,10 +3825,10 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Force and Next Piece Inspection
-    public void ForceInspection(long matID, string inspType)
+    public MachineWatchInterface.LogEntry ForceInspection(long matID, string inspType)
     {
       var mat = new EventLogMaterial() { MaterialID = matID, Process = 1, Face = "" };
-      ForceInspection(mat, inspType, inspect: true, utcNow: DateTime.UtcNow);
+      return ForceInspection(mat, inspType, inspect: true, utcNow: DateTime.UtcNow);
     }
 
     public MachineWatchInterface.LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect)

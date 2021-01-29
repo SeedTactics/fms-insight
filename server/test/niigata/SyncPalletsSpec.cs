@@ -1012,7 +1012,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var m = _logDB.AllocateMaterialIDForCasting("aaa");
         _logDB.RecordWorkorderForMaterialID(m, 0, i % 2 == 0 ? "work1" : "work2");
-        _logDB.RecordAddMaterialToQueue(new Repository.EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite");
+        _logDB.RecordAddMaterialToQueue(new EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite");
       }
 
       ExpectNewRoute();

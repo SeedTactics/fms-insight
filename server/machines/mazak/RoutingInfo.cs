@@ -383,7 +383,7 @@ namespace MazakMachineInterface
           if (i < serial.Count)
           {
             logDb.RecordSerialForMaterialID(
-              new BlackMaple.MachineFramework.Repository.EventLogMaterial()
+              new BlackMaple.MachineFramework.EventLogMaterial()
               {
                 MaterialID = matId,
                 Process = 0,
@@ -444,7 +444,7 @@ namespace MazakMachineInterface
         if (!string.IsNullOrEmpty(serial))
         {
           logDb.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.Repository.EventLogMaterial()
+            new BlackMaple.MachineFramework.EventLogMaterial()
             {
               MaterialID = matId,
               Process = process,

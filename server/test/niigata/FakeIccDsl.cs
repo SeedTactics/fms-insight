@@ -438,7 +438,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
-          new Repository.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          new EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
           _settings.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
@@ -446,13 +446,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!string.IsNullOrEmpty(workorder))
       {
         _logDB.RecordWorkorderForMaterialID(
-          new Repository.EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          new EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
           workorder,
           _status.TimeOfStatusUTC
         );
       }
       var addLog = _logDB.RecordAddMaterialToQueue(
-        new Repository.EventLogMaterial()
+        new EventLogMaterial()
         {
           MaterialID = matId,
           Process = 0,
@@ -503,7 +503,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
-          new Repository.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
+          new EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
           _settings.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
@@ -511,13 +511,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!string.IsNullOrEmpty(workorder))
       {
         _logDB.RecordWorkorderForMaterialID(
-          new Repository.EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
+          new EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
           workorder,
           _status.TimeOfStatusUTC
         );
       }
       var addLog = _logDB.RecordAddMaterialToQueue(
-        new Repository.EventLogMaterial()
+        new EventLogMaterial()
         {
           MaterialID = matId,
           Process = proc,
@@ -566,7 +566,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public FakeIccDsl SetInQueue(LogMaterial mat, string queue, int pos)
     {
       _logDB.RecordAddMaterialToQueue(
-        new Repository.EventLogMaterial()
+        new EventLogMaterial()
         {
           MaterialID = mat.MaterialID,
           Process = mat.Process,
@@ -591,7 +591,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       foreach (var mat in mats)
       {
-        _logDB.RecordRemoveMaterialFromAllQueues(Repository.EventLogMaterial.FromLogMat(mat), operatorName: null, _status.TimeOfStatusUTC);
+        _logDB.RecordRemoveMaterialFromAllQueues(EventLogMaterial.FromLogMat(mat), operatorName: null, _status.TimeOfStatusUTC);
         _expectedMaterial.Remove(mat.MaterialID);
       }
       return this;
@@ -602,7 +602,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       foreach (var mat in mats)
       {
         _logDB.SignalMaterialForQuarantine(
-          Repository.EventLogMaterial.FromLogMat(mat),
+          EventLogMaterial.FromLogMat(mat),
           pallet: pal.ToString(),
           queue: q,
           timeUTC: _status.TimeOfStatusUTC
@@ -821,7 +821,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var remaining = _expectedJobRemainCount.Where(k => k.Key.uniq == uniq).ToList();
       _logDB.AddNewDecrement(new[] {
-        new Repository.NewDecrementQuantity() {
+        new NewDecrementQuantity() {
         JobUnique = uniq,
         Proc1Path = proc1path,
         Part = "part",
