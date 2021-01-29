@@ -391,10 +391,12 @@ function helpUrl(r: routes.RouteLocation): string {
       return "https://fms-insight.seedtactics.com/docs/client-operations.html";
 
     case routes.RouteLocation.Analysis_Efficiency:
-    case routes.RouteLocation.Analysis_CostPerPiece:
     case routes.RouteLocation.Analysis_DataExport:
     case routes.RouteLocation.Backup_Efficiency:
       return "https://fms-insight.seedtactics.com/docs/client-flexibility-analysis.html";
+
+    case routes.RouteLocation.Analysis_CostPerPiece:
+      return "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
 
     case routes.RouteLocation.Backup_InitialOpen:
       return "https://fms-insight.seedtactics.com/docs/client-backup-viewer.html";

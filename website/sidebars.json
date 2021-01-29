@@ -4,7 +4,8 @@
       "overview",
       "getting-started",
       "material-tracking",
-      "improve-fms"
+      "improve-fms",
+      "operator-procedures"
     ],
     "Server": [
       "server-config",
@@ -24,6 +25,7 @@
       "client-quality",
       "client-tools-programs",
       "client-flexibility-analysis",
+      "client-cost-per-piece",
       "client-backup-viewer"
     ],
     "Integrations": ["mazak", "makino", "niigata"]

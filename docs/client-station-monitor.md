@@ -40,9 +40,8 @@ the queue can be displayed along with the pallet regions.
 When a material sticky note is clicked or tapped, a dialog will open with a
 log of events for the piece of material. The dialog can also be opened by
 [using a scanner](client-scanners.md) or manually entering a serial via the
-magnifying glass button on the toolbar. In the dialog, a serial can be
-entered or changed, the part can be marked for inspection, assigned to a
-workorder, and [load instructions](part-instructions.md) can be opened.
+magnifying glass button on the toolbar. In the dialog, a variety of actions
+can be taken for the specific material.
 
 ## Queues
 
@@ -52,14 +51,13 @@ The queues screen shows the material currently inside one or more queues. On the
 one or more queues can be selected and the virtual whiteboard regions for the selected queues
 are then displayed. The queue screen allows the operator to edit the material in the queue.
 To add new material to the queue, click the plus icon button in the top-right of the queue
-virtual whiteboard region. This will bring up a dialog allowing you to enter a serial,
-scan a barcode, or manually select a job for the added material.
+virtual whiteboard region.
 
 ![Screenshot of Queue Material Dialog](assets/insight-queue-details.png)
 
 By clicking or tapping on a material sticky note, a dialog will open with
-details about the specific piece of material. The dialog will have a button
-at the bottom labeled "Remove From Queue".
+details about the specific piece of material. The dialog will have a variety of
+actions for the specific material.
 An attached [barcode scanner](client-scanners.md) can also be used to open the material
 dialog.
 
