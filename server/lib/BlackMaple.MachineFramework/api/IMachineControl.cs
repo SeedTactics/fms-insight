@@ -38,57 +38,57 @@ using System.Runtime.Serialization;
 namespace BlackMaple.MachineWatchInterface
 {
   [DataContract]
-  public class ToolInMachine
+  public record ToolInMachine
   {
     [DataMember(IsRequired = true)]
-    public string MachineGroupName { get; set; }
+    public string MachineGroupName { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int MachineNum { get; set; }
+    public int MachineNum { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Pocket { get; set; }
+    public int Pocket { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string ToolName { get; set; }
+    public string ToolName { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan CurrentUse { get; set; }
+    public TimeSpan CurrentUse { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public TimeSpan TotalLifeTime { get; set; }
+    public TimeSpan TotalLifeTime { get; init; }
   }
 
   [DataContract]
-  public class ProgramInCellController
+  public record ProgramInCellController
   {
     [DataMember(IsRequired = true)]
-    public string CellControllerProgramName { get; set; }
+    public string CellControllerProgramName { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string ProgramName { get; set; }
+    public string ProgramName { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public long? Revision { get; set; }
+    public long? Revision { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string Comment { get; set; }
+    public string Comment { get; init; }
   }
 
   [DataContract]
-  public class ProgramRevision
+  public record ProgramRevision
   {
     [DataMember(IsRequired = true)]
-    public string ProgramName { get; set; }
+    public string ProgramName { get; init; }
 
     [DataMember(IsRequired = true)]
-    public long Revision { get; set; }
+    public long Revision { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string Comment { get; set; }
+    public string Comment { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string CellControllerProgramName { get; set; }
+    public string CellControllerProgramName { get; init; }
   }
 
   public interface IMachineControl

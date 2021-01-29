@@ -1784,7 +1784,6 @@ namespace BlackMaple.FMSInsight.Niigata
         if (stop.ProgramRevision.HasValue)
         {
           var prog = jobDB.LoadProgram(stop.ProgramName, stop.ProgramRevision.Value);
-          progs[(stop.ProgramName, stop.ProgramRevision.Value)] = prog;
           if (!string.IsNullOrEmpty(prog.CellControllerProgramName) && int.TryParse(prog.CellControllerProgramName, out var progNum))
           {
             // operator might have deleted the program
@@ -1792,9 +1791,10 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               // clear it, so that the Assignment adds the program back as a new number
               jobDB.SetCellControllerProgramForProgram(prog.ProgramName, prog.Revision, null);
-              prog.CellControllerProgramName = null;
+              prog = prog with { CellControllerProgramName = null };
             }
           }
+          progs[(stop.ProgramName, stop.ProgramRevision.Value)] = prog;
         }
       }
 
@@ -1807,7 +1807,6 @@ namespace BlackMaple.FMSInsight.Niigata
             if (workProg.Revision.HasValue)
             {
               var prog = jobDB.LoadProgram(workProg.ProgramName, workProg.Revision.Value);
-              progs[(workProg.ProgramName, workProg.Revision.Value)] = prog;
               if (!string.IsNullOrEmpty(prog.CellControllerProgramName) && int.TryParse(prog.CellControllerProgramName, out var progNum))
               {
                 // operator might have deleted the program
@@ -1815,9 +1814,10 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   // clear it, so that the Assignment adds the program back as a new number
                   jobDB.SetCellControllerProgramForProgram(prog.ProgramName, prog.Revision, null);
-                  prog.CellControllerProgramName = null;
+                  prog = prog with { CellControllerProgramName = null };
                 }
               }
+              progs[(workProg.ProgramName, workProg.Revision.Value)] = prog;
             }
           }
         }

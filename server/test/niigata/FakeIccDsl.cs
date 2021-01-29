@@ -1791,7 +1791,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             cellSt = _createLog.BuildCellState(_logDB, _status, sch);
             cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
             cellSt.OldUnusedPrograms.Should().BeEquivalentTo(_expectedOldPrograms,
-              options => options.Excluding(p => p.Comment)
+              options => options.ComparingByMembers<ProgramRevision>().Excluding(p => p.Comment)
             );
           }
         }

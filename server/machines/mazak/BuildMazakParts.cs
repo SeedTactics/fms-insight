@@ -240,7 +240,7 @@ namespace MazakMachineInterface
 
     public abstract IEnumerable<string> Pallets();
     public abstract (string fixture, int face) FixtureFace();
-    public abstract BlackMaple.MachineWatchInterface.ProgramRevision PartProgram { get; }
+    public abstract BlackMaple.MachineWatchInterface.ProgramRevision PartProgram { get; set; }
 
     public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
 
@@ -260,7 +260,7 @@ namespace MazakMachineInterface
 
   public class MazakProcessFromJob : MazakProcess
   {
-    public override ProgramRevision PartProgram { get; }
+    public override ProgramRevision PartProgram { get; set; }
 
     public MazakProcessFromJob(MazakPart parent, int process, int pth, ProgramRevision prog)
       : base(parent, process, pth)
@@ -333,7 +333,7 @@ namespace MazakMachineInterface
 
   public class MazakProcessFromTemplate : MazakProcess
   {
-    public override ProgramRevision PartProgram { get; }
+    public override ProgramRevision PartProgram { get; set; }
 
     //Here, jobs have only one process.  The number of processes are copied from the template.
     public readonly MazakPartProcessRow TemplateProcessRow;
@@ -586,7 +586,7 @@ namespace MazakMachineInterface
               };
               newProgs[(newProg.ProgramName, newProg.ProgramRevision)] = newProg;
             }
-            proc.PartProgram.CellControllerProgramName = newProg.MainProgram;
+            proc.PartProgram = proc.PartProgram with { CellControllerProgramName = newProg.MainProgram };
           }
         }
       }
@@ -921,7 +921,7 @@ namespace MazakMachineInterface
                   {
                     if (mpProg == prog.ProgramName && mpRev == prog.Revision)
                     {
-                      prog.CellControllerProgramName = mp.MainProgram;
+                      prog = prog with { CellControllerProgramName = mp.MainProgram };
                       break;
                     }
                   }
