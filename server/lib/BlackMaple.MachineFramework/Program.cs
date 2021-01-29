@@ -148,7 +148,7 @@ namespace BlackMaple.MachineFramework
       Log.Logger = logConfig.CreateLogger();
     }
 
-    public static IHost BuildWebHost(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl)
+    public static IHost BuildWebHost(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl, bool useService)
     {
       return new HostBuilder()
           .UseContentRoot(ServerSettings.ContentRootDirectory)
@@ -183,6 +183,13 @@ namespace BlackMaple.MachineFramework
             })
             .UseStartup<Startup>();
           })
+#if SERVICE_AVAIL
+          .ConfigureServices(services => {
+            if (useService) {
+              services.AddSingleton<IHostLifetime, Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime>();
+            }
+          })
+#endif
           .Build();
     }
 
@@ -209,19 +216,9 @@ namespace BlackMaple.MachineFramework
         Serilog.Log.Error(ex, "Error initializing FMS Insight");
         return;
       }
-      var host = BuildWebHost(cfg, serverSt, fmsSt, fmsImpl);
+      var host = BuildWebHost(cfg, serverSt, fmsSt, fmsImpl, useService);
 
-#if SERVICE_AVAIL
-      if (useService)
-      {
-        Microsoft.AspNetCore.Hosting.WindowsServices.WebHostWindowsServiceExtensions
-          .RunAsService(host);
-      } else {
-        host.Run();
-      }
-#else
       host.Run();
-#endif
     }
   }
 }
