@@ -41,10 +41,10 @@ using System.Runtime.Serialization;
 namespace BlackMaple.MachineFramework.Controllers
 {
   [DataContract]
-  public class QueuePosition
+  public record QueuePosition
   {
-    [DataMember(IsRequired = true)] public string Queue { get; set; }
-    [DataMember(IsRequired = true)] public int Position { get; set; }
+    [DataMember(IsRequired = true)] public string Queue { get; init; }
+    [DataMember(IsRequired = true)] public int Position { get; init; }
   }
 
   [ApiController]
@@ -99,12 +99,12 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [DataContract]
-    public class WorkordersAndPrograms
+    public record WorkordersAndPrograms
     {
       [DataMember(IsRequired = true)]
-      public IList<PartWorkorder> Workorders { get; set; }
+      public IReadOnlyList<PartWorkorder> Workorders { get; init; }
       [DataMember(IsRequired = false, EmitDefaultValue = false)]
-      public IList<ProgramEntry> Programs { get; set; }
+      public IReadOnlyList<ProgramEntry> Programs { get; init; }
     }
 
     [HttpPut("unfilled-workorders/by-schid/{scheduleId}")]
@@ -208,10 +208,10 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [DataContract]
-    public class MatToPutOnPallet
+    public record MatToPutOnPallet
     {
-      [DataMember(IsRequired = true)] public string Pallet { get; set; }
-      [DataMember(IsRequired = true)] public long MaterialIDToSetOnPallet { get; set; }
+      [DataMember(IsRequired = true)] public string Pallet { get; init; }
+      [DataMember(IsRequired = true)] public long MaterialIDToSetOnPallet { get; init; }
     }
 
     [HttpPut("material/{materialId}/swap-off-pallet")]

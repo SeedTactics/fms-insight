@@ -41,12 +41,12 @@ using System.Web;
 
 namespace BlackMaple.MachineFramework
 {
-  public class MaterialToSendToExternalQueue
+  public record MaterialToSendToExternalQueue
   {
-    public string Server { get; set; }
-    public string PartName { get; set; }
-    public string Queue { get; set; }
-    public string Serial { get; set; }
+    public string Server { get; init; }
+    public string PartName { get; init; }
+    public string Queue { get; init; }
+    public string Serial { get; init; }
   }
 
   public interface ISendMaterialToExternalQueue

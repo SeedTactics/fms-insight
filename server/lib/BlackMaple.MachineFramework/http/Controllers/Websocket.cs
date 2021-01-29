@@ -43,19 +43,19 @@ using System.Runtime.Serialization;
 namespace BlackMaple.MachineFramework.Controllers
 {
   [DataContract]
-  public class ServerEvent
+  public record ServerEvent
   {
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public LogEntry LogEntry { get; set; }
+    public LogEntry LogEntry { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public NewJobs NewJobs { get; set; }
+    public NewJobs NewJobs { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public CurrentStatus NewCurrentStatus { get; set; }
+    public CurrentStatus NewCurrentStatus { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public EditMaterialInLogEvents EditMaterialInLog { get; set; }
+    public EditMaterialInLogEvents EditMaterialInLog { get; init; }
   }
 
   public class WebsocketManager

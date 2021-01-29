@@ -39,39 +39,42 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {
-  public class CSVLogEntry
+  public record CSVLogEntry
   {
-    public long Counter { get; set; }
-    public string EndTimeUTC { get; set; }
-    public LogType LogType { get; set; }
-    public string LocationName {get; set;}
-    public int LocationNum {get; set;}
+    public long Counter { get; init; }
+    public string EndTimeUTC { get; init; }
+    public LogType LogType { get; init; }
+    public string LocationName { get; init; }
+    public int LocationNum { get; init; }
 
-    public bool StartOfCycle { get; set; }
-    public string Pallet { get; set; }
-    public string Program { get; set; }
-    public string Result { get; set; }
+    public bool StartOfCycle { get; init; }
+    public string Pallet { get; init; }
+    public string Program { get; init; }
+    public string Result { get; init; }
 
-    public TimeSpan ElapsedTime { get; set; }
-    public TimeSpan ActiveOperationTime { get; set; }
+    public TimeSpan ElapsedTime { get; init; }
+    public TimeSpan ActiveOperationTime { get; init; }
 
-    public long MaterialID { get; set; }
-    public string JobUniqueStr { get; set; }
-    public string PartName { get; set; }
-    public int Process { get; set; }
-    public int NumProcesses { get; set; }
-    public string Face { get; set; }
+    public long MaterialID { get; init; }
+    public string JobUniqueStr { get; init; }
+    public string PartName { get; init; }
+    public int Process { get; init; }
+    public int NumProcesses { get; init; }
+    public string Face { get; init; }
 
-    public string ProgramDetails {get; set;}
+    public string ProgramDetails { get; init; }
   }
 
   public static class CSVLogConverter
   {
     private static string BuildProgramDetails(LogEntry e)
     {
-      if (e.ProgramDetails == null) {
+      if (e.ProgramDetails == null)
+      {
         return "";
-      } else {
+      }
+      else
+      {
         return string.Join(";",
           e.ProgramDetails.Select(k => k.Key + "=" + k.Value)
         );
@@ -80,8 +83,10 @@ namespace BlackMaple.MachineFramework
 
     public static IEnumerable<CSVLogEntry> ConvertLogToCSV(LogEntry e)
     {
-      if (e.Material.Any()) {
-        return e.Material.Select(mat => new CSVLogEntry() {
+      if (e.Material.Any())
+      {
+        return e.Material.Select(mat => new CSVLogEntry()
+        {
           Counter = e.Counter,
           EndTimeUTC = e.EndTimeUTC.ToString("yyyy-MM-ddTHH:mm:ssZ"),
           LogType = e.LogType,
@@ -105,7 +110,9 @@ namespace BlackMaple.MachineFramework
 
           ProgramDetails = BuildProgramDetails(e),
         });
-      } else {
+      }
+      else
+      {
         return new[] {
           new CSVLogEntry() {
             Counter = e.Counter,
@@ -157,21 +164,21 @@ namespace BlackMaple.MachineFramework
       var elapsedStations = new HashSet<string>();
       foreach (var p in ws.SelectMany(w => w.Parts))
       {
-          foreach (var k in p.ActiveStationTime.Keys)
-              activeStations.Add(k);
-          foreach (var k in p.ElapsedStationTime.Keys)
-              elapsedStations.Add(k);
+        foreach (var k in p.ActiveStationTime.Keys)
+          activeStations.Add(k);
+        foreach (var k in p.ElapsedStationTime.Keys)
+          elapsedStations.Add(k);
       }
 
       var actualKeys = activeStations.OrderBy(x => x).ToList();
       foreach (var k in actualKeys)
       {
-          csv.WriteField("Active " + k + " (minutes)");
+        csv.WriteField("Active " + k + " (minutes)");
       }
       var plannedKeys = elapsedStations.OrderBy(x => x).ToList();
       foreach (var k in plannedKeys)
       {
-          csv.WriteField("Elapsed " + k + " (minutes)");
+        csv.WriteField("Elapsed " + k + " (minutes)");
       }
       csv.NextRecord();
 
@@ -190,17 +197,17 @@ namespace BlackMaple.MachineFramework
 
           foreach (var k in actualKeys)
           {
-              if (p.ActiveStationTime.ContainsKey(k))
-                  csv.WriteField(p.ActiveStationTime[k].TotalMinutes);
-              else
-                  csv.WriteField(0);
+            if (p.ActiveStationTime.ContainsKey(k))
+              csv.WriteField(p.ActiveStationTime[k].TotalMinutes);
+            else
+              csv.WriteField(0);
           }
           foreach (var k in plannedKeys)
           {
-              if (p.ElapsedStationTime.ContainsKey(k))
-                  csv.WriteField(p.ElapsedStationTime[k].TotalMinutes);
-              else
-                  csv.WriteField(0);
+            if (p.ElapsedStationTime.ContainsKey(k))
+              csv.WriteField(p.ElapsedStationTime[k].TotalMinutes);
+            else
+              csv.WriteField(0);
           }
           csv.NextRecord();
         }
