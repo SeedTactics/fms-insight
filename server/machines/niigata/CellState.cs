@@ -1183,12 +1183,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
       string statName;
       int statNum;
-      IEnumerable<Repository.ToolPocketSnapshot> toolsAtStart;
+      IEnumerable<ToolPocketSnapshot> toolsAtStart;
       if (machStart != null)
       {
         statName = machStart.LocationName;
         statNum = machStart.LocationNum;
-        toolsAtStart = logDB.ToolPocketSnapshotForCycle(machStart.Counter) ?? Enumerable.Empty<Repository.ToolPocketSnapshot>();
+        toolsAtStart = logDB.ToolPocketSnapshotForCycle(machStart.Counter) ?? Enumerable.Empty<ToolPocketSnapshot>();
       }
       else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
       {
@@ -1240,7 +1240,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 {"ProgramRevision", ss.Revision.Value.ToString()}
         },
         tools: toolsAtStart == null || toolsAtEnd == null ? null :
-          Repository.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
+          Repository.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
       );
     }
 

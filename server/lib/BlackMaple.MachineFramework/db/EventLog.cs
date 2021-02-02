@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -830,124 +830,25 @@ namespace BlackMaple.MachineFramework
 
     #region Adding
 
-    public class ToolPocketSnapshot
+    private record NewEventLogEntry
     {
-      public int PocketNumber { get; set; }
-      public string Tool { get; set; }
-      public TimeSpan CurrentUse { get; set; }
-      public TimeSpan ToolLife { get; set; }
-
-      public static IDictionary<string, MachineWatchInterface.ToolUse> DiffSnapshots(IEnumerable<ToolPocketSnapshot> start, IEnumerable<ToolPocketSnapshot> end)
-      {
-        if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
-        if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
-        var endPockets = new Dictionary<(int, string), ToolPocketSnapshot>();
-        foreach (var t in end)
-        {
-          endPockets[(t.PocketNumber, t.Tool)] = t;
-        }
-
-        var tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
-        void addUse(string tool, MachineWatchInterface.ToolUse use)
-        {
-          if (tools.TryGetValue(tool, out var existingUse))
-          {
-            existingUse.ToolUseDuringCycle += use.ToolUseDuringCycle;
-            existingUse.ConfiguredToolLife += use.ConfiguredToolLife;
-            existingUse.TotalToolUseAtEndOfCycle += use.TotalToolUseAtEndOfCycle;
-            existingUse.ToolChangeOccurred = existingUse.ToolChangeOccurred.GetValueOrDefault() || use.ToolChangeOccurred.GetValueOrDefault();
-          }
-          else
-          {
-            tools[tool] = use;
-          }
-        }
-
-        foreach (var startPocket in start)
-        {
-          if (endPockets.TryGetValue((startPocket.PocketNumber, startPocket.Tool), out var endPocket))
-          {
-            endPockets.Remove((startPocket.PocketNumber, startPocket.Tool));
-
-            if (startPocket.CurrentUse < endPocket.CurrentUse)
-            {
-              // no tool change
-              addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
-              {
-                ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
-                TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-                ConfiguredToolLife = endPocket.ToolLife,
-                ToolChangeOccurred = false
-              });
-            }
-            else if (endPocket.CurrentUse < startPocket.CurrentUse)
-            {
-              // there was a tool change
-              addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
-              {
-                ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)) + endPocket.CurrentUse,
-                TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-                ConfiguredToolLife = endPocket.ToolLife,
-                ToolChangeOccurred = true
-              });
-            }
-            else
-            {
-              // tool was not used, use same at beginning and end
-            }
-          }
-          else
-          {
-            // no matching tool at end
-            // assume start tool was used until life
-            addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
-            {
-              ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)),
-              TotalToolUseAtEndOfCycle = TimeSpan.Zero,
-              ConfiguredToolLife = TimeSpan.Zero,
-              ToolChangeOccurred = true
-            });
-          }
-        }
-
-        // now any new tools which appeared
-        foreach (var endPocket in endPockets.Values)
-        {
-          if (endPocket.CurrentUse.Ticks > 0)
-          {
-            addUse(endPocket.Tool, new MachineWatchInterface.ToolUse()
-            {
-              ToolUseDuringCycle = endPocket.CurrentUse,
-              TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-              ConfiguredToolLife = endPocket.ToolLife,
-              ToolChangeOccurred = false
-            });
-          }
-        }
-
-        return tools;
-      }
-    }
-
-    private class NewEventLogEntry
-    {
-      public IEnumerable<EventLogMaterial> Material { get; set; }
-      public MachineWatchInterface.LogType LogType { get; set; }
-      public bool StartOfCycle { get; set; }
-      public DateTime EndTimeUTC { get; set; }
-      public string LocationName { get; set; }
-      public int LocationNum { get; set; }
-      public string Pallet { get; set; }
-      public string Program { get; set; }
-      public string Result { get; set; }
-      public bool EndOfRoute { get; set; }
-      public TimeSpan ElapsedTime { get; set; } = TimeSpan.FromMinutes(-1); //time from cycle-start to cycle-stop
-      public TimeSpan ActiveOperationTime { get; set; } //time that the machining or operation is actually active
+      public IEnumerable<EventLogMaterial> Material { get; init; }
+      public MachineWatchInterface.LogType LogType { get; init; }
+      public bool StartOfCycle { get; init; }
+      public DateTime EndTimeUTC { get; init; }
+      public string LocationName { get; init; }
+      public int LocationNum { get; init; }
+      public string Pallet { get; init; }
+      public string Program { get; init; }
+      public string Result { get; init; }
+      public bool EndOfRoute { get; init; }
+      public TimeSpan ElapsedTime { get; init; } = TimeSpan.FromMinutes(-1); //time from cycle-start to cycle-stop
+      public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
       private Dictionary<string, string> _details = new Dictionary<string, string>();
       public IDictionary<string, string> ProgramDetails { get { return _details; } }
       private Dictionary<string, MachineWatchInterface.ToolUse> _tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
       public IDictionary<string, MachineWatchInterface.ToolUse> Tools => _tools;
-      public IEnumerable<ToolPocketSnapshot> ToolPockets { get; set; }
+      public IEnumerable<ToolPocketSnapshot> ToolPockets { get; init; }
 
       internal MachineWatchInterface.LogEntry ToLogEntry(long newCntr, Func<long, MachineWatchInterface.MaterialDetails> getDetails)
       {
@@ -1455,6 +1356,97 @@ namespace BlackMaple.MachineFramework
           log.ProgramDetails[k.Key] = k.Value;
       }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+    }
+
+    public static IDictionary<string, MachineWatchInterface.ToolUse> DiffSnapshots(IEnumerable<ToolPocketSnapshot> start, IEnumerable<ToolPocketSnapshot> end)
+    {
+      if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
+      if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
+      var endPockets = new Dictionary<(int, string), ToolPocketSnapshot>();
+      foreach (var t in end)
+      {
+        endPockets[(t.PocketNumber, t.Tool)] = t;
+      }
+
+      var tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
+      void addUse(string tool, MachineWatchInterface.ToolUse use)
+      {
+        if (tools.TryGetValue(tool, out var existingUse))
+        {
+          existingUse.ToolUseDuringCycle += use.ToolUseDuringCycle;
+          existingUse.ConfiguredToolLife += use.ConfiguredToolLife;
+          existingUse.TotalToolUseAtEndOfCycle += use.TotalToolUseAtEndOfCycle;
+          existingUse.ToolChangeOccurred = existingUse.ToolChangeOccurred.GetValueOrDefault() || use.ToolChangeOccurred.GetValueOrDefault();
+        }
+        else
+        {
+          tools[tool] = use;
+        }
+      }
+
+      foreach (var startPocket in start)
+      {
+        if (endPockets.TryGetValue((startPocket.PocketNumber, startPocket.Tool), out var endPocket))
+        {
+          endPockets.Remove((startPocket.PocketNumber, startPocket.Tool));
+
+          if (startPocket.CurrentUse < endPocket.CurrentUse)
+          {
+            // no tool change
+            addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
+            {
+              ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
+              TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+              ConfiguredToolLife = endPocket.ToolLife,
+              ToolChangeOccurred = false
+            });
+          }
+          else if (endPocket.CurrentUse < startPocket.CurrentUse)
+          {
+            // there was a tool change
+            addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
+            {
+              ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)) + endPocket.CurrentUse,
+              TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+              ConfiguredToolLife = endPocket.ToolLife,
+              ToolChangeOccurred = true
+            });
+          }
+          else
+          {
+            // tool was not used, use same at beginning and end
+          }
+        }
+        else
+        {
+          // no matching tool at end
+          // assume start tool was used until life
+          addUse(startPocket.Tool, new MachineWatchInterface.ToolUse()
+          {
+            ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)),
+            TotalToolUseAtEndOfCycle = TimeSpan.Zero,
+            ConfiguredToolLife = TimeSpan.Zero,
+            ToolChangeOccurred = true
+          });
+        }
+      }
+
+      // now any new tools which appeared
+      foreach (var endPocket in endPockets.Values)
+      {
+        if (endPocket.CurrentUse.Ticks > 0)
+        {
+          addUse(endPocket.Tool, new MachineWatchInterface.ToolUse()
+          {
+            ToolUseDuringCycle = endPocket.CurrentUse,
+            TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+            ConfiguredToolLife = endPocket.ToolLife,
+            ToolChangeOccurred = false
+          });
+        }
+      }
+
+      return tools;
     }
 
     public MachineWatchInterface.LogEntry RecordMachineEnd(

@@ -123,7 +123,7 @@ namespace MazakMachineInterface
           // There should never be any pending loads since the pallet movement event should have fired.
           // Just in case, we check for pending loads here
           cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
-          IEnumerable<Repository.ToolPocketSnapshot> pockets = null;
+          IEnumerable<ToolPocketSnapshot> pockets = null;
           if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
           {
             pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
@@ -145,7 +145,7 @@ namespace MazakMachineInterface
 
           var machStart = FindMachineStart(e, cycle, e.StationNumber);
           TimeSpan elapsed;
-          IEnumerable<Repository.ToolPocketSnapshot> toolsAtStart;
+          IEnumerable<ToolPocketSnapshot> toolsAtStart;
           if (machStart != null)
           {
             elapsed = e.TimeUTC.Subtract(machStart.EndTimeUTC);
@@ -155,7 +155,7 @@ namespace MazakMachineInterface
           {
             Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
             elapsed = TimeSpan.Zero;
-            toolsAtStart = Enumerable.Empty<Repository.ToolPocketSnapshot>();
+            toolsAtStart = Enumerable.Empty<ToolPocketSnapshot>();
           }
           var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
 
@@ -172,7 +172,7 @@ namespace MazakMachineInterface
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
-              tools: Repository.ToolPocketSnapshot.DiffSnapshots(toolsAtStart, toolsAtEnd),
+              tools: Repository.DiffSnapshots(toolsAtStart, toolsAtEnd),
               pockets: toolsAtEnd,
               foreignId: e.ForeignID);
             HandleMachiningCompleted(s, machineMats);
@@ -854,12 +854,12 @@ namespace MazakMachineInterface
     #endregion
 
     #region Tools
-    private static IEnumerable<Repository.ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
+    private static IEnumerable<ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
     {
       if (tools == null) return null;
       return tools
         .Where(t => t.MachineNumber == machine && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
-        .Select(t => new Repository.ToolPocketSnapshot()
+        .Select(t => new ToolPocketSnapshot()
         {
           PocketNumber = t.PocketNumber.Value,
           Tool = t.GroupNo,
