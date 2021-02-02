@@ -176,11 +176,16 @@ action.)
 
 Consider when the operator unloads a piece of material which cannot continue with the normal
 flow but must be set aside to be reworked or possibly scrapped. If this is on the final process,
-nothing needs to be specified. If instead this is an in-process piece of material, it must be
-removed from the active in-process queue. Once the operator presses the button to signal
-the end of the load/unload operation, FMS Insight will add the material that was just unloaded
-into the in-process queue, visible on either the [load station or queues pages](client-station-monitor.md).
+nothing needs to be specified. If instead this is an in-process piece of material, it
+can be signaled to be quarantined after the unload completes. To do so, on the
+load station page, click the material card for the piece of material. The dialog that
+opens will contain a "Signal For Quarantine" action. Once clicked, FMS Insight will move
+the material to the quarantine queue once the unload finishes.
 
+If the material has already been unloaded without clicking the "Signal for Quarantine" action,
+FMS Insight will add the material that was unloaded
+into the in-process queue, visible on either the
+[load station or queues pages](client-station-monitor.md).
 To remove the material, the operator must click on the material card and then
 click either the "Remove From System" or "Quarantine Material" action
 (depending on if [quarantine queues](material-quarantine.md) are configured).
