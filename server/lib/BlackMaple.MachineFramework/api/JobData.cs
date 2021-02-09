@@ -152,11 +152,11 @@ namespace BlackMaple.MachineWatchInterface
     }
   }
 
-  [Serializable, DataContract]
-  public class PathInspection
+  [DataContract]
+  public record PathInspection
   {
     [DataMember(IsRequired = true)]
-    public string InspectionType;
+    public string InspectionType { get; init; }
 
     //There are two possible ways of triggering an inspection: counts and frequencies.
     // * For counts, the MaxVal will contain a number larger than zero and RandomFreq will contain -1
@@ -165,25 +165,25 @@ namespace BlackMaple.MachineWatchInterface
 
     //Every time a material completes, the counter string is expanded (see below).
     [DataMember(IsRequired = true)]
-    public string Counter;
+    public string Counter { get; init; }
 
     //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
     //we signal an inspection and reset the counter to 0.
     [DataMember(IsRequired = true)]
-    public int MaxVal;
+    public int MaxVal { get; init; }
 
     //The random frequency of inspection
     [DataMember(IsRequired = true)]
-    public double RandomFreq;
+    public double RandomFreq { get; init; }
 
     //If the last inspection signaled for this counter was longer than TimeInterval,
     //signal an inspection.  This can be disabled by using TimeSpan.Zero
     [DataMember(IsRequired = true)]
-    public TimeSpan TimeInterval;
+    public TimeSpan TimeInterval { get; init; }
 
     // Expected inspection type
-    [OptionalField, DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public TimeSpan? ExpectedInspectionTime;
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public TimeSpan? ExpectedInspectionTime { get; init; }
 
     //The final counter string is determined by replacing following substrings in the counter
     public static string PalletFormatFlag(int proc)
@@ -270,12 +270,6 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     private JobInspectionData() { } //for json deserialization
-
-    //The final counter string is determined by replacing following substrings in the counter
-    public static string PalletFormatFlag(int proc) => PathInspection.PalletFormatFlag(proc);
-    public static string LoadFormatFlag(int proc) => PathInspection.LoadFormatFlag(proc);
-    public static string UnloadFormatFlag(int proc) => PathInspection.UnloadFormatFlag(proc);
-    public static string StationFormatFlag(int proc, int routeNum) => PathInspection.StationFormatFlag(proc, routeNum);
   }
 
   [Serializable, DataContract]

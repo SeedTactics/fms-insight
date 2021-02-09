@@ -230,16 +230,16 @@ namespace MachineWatchTest
     public void TranslateCounter()
     {
       var counter = "counter1-" +
-        JobInspectionData.LoadFormatFlag(1) + "-" +
-        JobInspectionData.UnloadFormatFlag(1) + "-" +
-        JobInspectionData.LoadFormatFlag(2) + "-" +
-        JobInspectionData.UnloadFormatFlag(2) + "-" +
-        JobInspectionData.PalletFormatFlag(1) + "-" +
-        JobInspectionData.PalletFormatFlag(2) + "-" +
-        JobInspectionData.StationFormatFlag(1, 1) + "-" +
-        JobInspectionData.StationFormatFlag(1, 2) + "-" +
-        JobInspectionData.StationFormatFlag(2, 1) + "-" +
-        JobInspectionData.StationFormatFlag(2, 2);
+        PathInspection.LoadFormatFlag(1) + "-" +
+        PathInspection.UnloadFormatFlag(1) + "-" +
+        PathInspection.LoadFormatFlag(2) + "-" +
+        PathInspection.UnloadFormatFlag(2) + "-" +
+        PathInspection.PalletFormatFlag(1) + "-" +
+        PathInspection.PalletFormatFlag(2) + "-" +
+        PathInspection.StationFormatFlag(1, 1) + "-" +
+        PathInspection.StationFormatFlag(1, 2) + "-" +
+        PathInspection.StationFormatFlag(2, 1) + "-" +
+        PathInspection.StationFormatFlag(2, 2);
 
       var expandedCounter1 = "counter1-1-2-3-4-P1-P2-10-11-12-13";
       var expandedCounter2 = "counter1-6-8-7-9-P5-P4-15-16-18-19";

@@ -3563,21 +3563,21 @@ namespace BlackMaple.MachineFramework
       foreach (var p in actualPath.Values)
       {
         counter = counter.Replace(
-            MachineWatchInterface.JobInspectionData.PalletFormatFlag(p.Process),
+            MachineWatchInterface.PathInspection.PalletFormatFlag(p.Process),
             p.Pallet
         );
         counter = counter.Replace(
-            MachineWatchInterface.JobInspectionData.LoadFormatFlag(p.Process),
+            MachineWatchInterface.PathInspection.LoadFormatFlag(p.Process),
             p.LoadStation.ToString()
         );
         counter = counter.Replace(
-            MachineWatchInterface.JobInspectionData.UnloadFormatFlag(p.Process),
+            MachineWatchInterface.PathInspection.UnloadFormatFlag(p.Process),
             p.UnloadStation.ToString()
         );
         for (int stopNum = 1; stopNum <= p.Stops.Count; stopNum++)
         {
           counter = counter.Replace(
-              MachineWatchInterface.JobInspectionData.StationFormatFlag(p.Process, stopNum),
+              MachineWatchInterface.PathInspection.StationFormatFlag(p.Process, stopNum),
               p.Stops[stopNum - 1].StationNum.ToString()
           );
         }
