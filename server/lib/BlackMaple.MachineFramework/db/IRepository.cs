@@ -157,12 +157,12 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     MachineWatchInterface.JobPlan LoadJob(string UniqueStr);
     bool DoesJobExist(string unique);
-    List<MachineWatchInterface.JobPlan> LoadUnarchivedJobs();
-    List<MachineWatchInterface.JobPlan> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
+    IReadOnlyList<MachineWatchInterface.JobPlan> LoadUnarchivedJobs();
+    IReadOnlyList<MachineWatchInterface.JobPlan> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
     MachineWatchInterface.HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
     MachineWatchInterface.HistoricData LoadJobsAfterScheduleId(string schId);
     MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule();
-    List<MachineWatchInterface.PartWorkorder> MostRecentWorkorders();
+    IReadOnlyList<MachineWatchInterface.PartWorkorder> MostRecentWorkorders();
     List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
     List<MachineWatchInterface.PartWorkorder> WorkordersById(string workorderId);
 

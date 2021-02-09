@@ -337,7 +337,7 @@ namespace MazakMachineInterface
       string casting = partName;
 
       // try and see if there is a job for this part with an actual casting
-      List<JobPlan> sch;
+      IReadOnlyList<JobPlan> sch;
       using (var jdb = logDbCfg.OpenConnection())
       {
         sch = jdb.LoadUnarchivedJobs();

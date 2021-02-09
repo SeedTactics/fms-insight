@@ -1445,16 +1445,16 @@ namespace BlackMaple.MachineWatchInterface
        => Germinate.Producer.Produce(j, f);
   }
 
-  [Serializable, DataContract]
-  public class DecrementQuantity
+  [DataContract]
+  public record DecrementQuantity
   {
-    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
-    [DataMember(IsRequired = true)] public int Proc1Path { get; set; }
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
-    [DataMember(IsRequired = true)] public int Quantity { get; set; }
+    [DataMember(IsRequired = true)] public long DecrementId { get; init; }
+    [DataMember(IsRequired = true)] public int Proc1Path { get; init; }
+    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
+    [DataMember(IsRequired = true)] public int Quantity { get; init; }
   }
 
-  [Serializable, DataContract]
+  [DataContract]
   public class HistoricJob : JobPlan
   {
     public HistoricJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths) { }
@@ -1464,21 +1464,21 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "Decrements", IsRequired = false)] public List<DecrementQuantity> Decrements { get; set; }
   }
 
-  [Serializable, DataContract]
-  public struct HistoricData
+  [DataContract]
+  public record HistoricData
   {
-    [DataMember(IsRequired = true)] public IDictionary<string, HistoricJob> Jobs;
-    [DataMember(IsRequired = true)] public ICollection<SimulatedStationUtilization> StationUse;
+    [DataMember(IsRequired = true)] public ImmutableDictionary<string, HistoricJob> Jobs { get; init; }
+    [DataMember(IsRequired = true)] public ImmutableList<SimulatedStationUtilization> StationUse { get; init; }
   }
 
-  [Serializable, DataContract]
-  public struct PlannedSchedule
+  [DataContract]
+  public record PlannedSchedule
   {
-    [DataMember(IsRequired = true)] public string LatestScheduleId;
-    [DataMember(IsRequired = true)] public List<JobPlan> Jobs;
-    [DataMember(IsRequired = true)] public Dictionary<string, int> ExtraParts;
+    [DataMember(IsRequired = true)] public string LatestScheduleId { get; init; }
+    [DataMember(IsRequired = true)] public ImmutableList<JobPlan> Jobs { get; init; }
+    [DataMember(IsRequired = true)] public ImmutableDictionary<string, int> ExtraParts { get; init; }
 
-    [OptionalField, DataMember(IsRequired = false)]
-    public List<PartWorkorder> CurrentUnfilledWorkorders;
+    [DataMember(IsRequired = false)]
+    public ImmutableList<PartWorkorder> CurrentUnfilledWorkorders { get; init; }
   }
 }

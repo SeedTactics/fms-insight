@@ -81,7 +81,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public interface IBuildCellState
   {
-    CellState BuildCellState(IRepository jobDB, NiigataStatus status, List<JobPlan> unarchivedJobs);
+    CellState BuildCellState(IRepository jobDB, NiigataStatus status, IEnumerable<JobPlan> unarchivedJobs);
   }
 
   public class CreateCellState : IBuildCellState
@@ -98,7 +98,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _machConnection = machConn;
     }
 
-    public CellState BuildCellState(IRepository logDB, NiigataStatus status, List<JobPlan> unarchivedJobs)
+    public CellState BuildCellState(IRepository logDB, NiigataStatus status, IEnumerable<JobPlan> originalUnarchivedJobs)
     {
       var palletStateUpdated = false;
 
@@ -137,6 +137,7 @@ namespace BlackMaple.FMSInsight.Niigata
       pals.Sort((p1, p2) => p1.Status.Master.PalletNum.CompareTo(p2.Status.Master.PalletNum));
 
       // must calculate QueuedMaterial before loading programs, because QueuedMaterial might unarchive a job.
+      var unarchivedJobs = originalUnarchivedJobs.ToList();
       var queuedMats = QueuedMaterial(new HashSet<long>(
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
         ), logDB, unarchivedJobs, jobCache);
@@ -1503,6 +1504,7 @@ namespace BlackMaple.FMSInsight.Niigata
           if (job.Archived)
           {
             logDB.UnarchiveJob(matDetails.JobUnique);
+            job.Archived = false;
           }
           jobUniqs.Add(matDetails.JobUnique);
           unarchivedJobs.Add(job);

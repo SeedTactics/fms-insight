@@ -413,6 +413,7 @@ namespace MachineWatchTest
           Quantity = 5
         }},
         options => options
+          .ComparingByMembers<DecrementQuantity>()
           .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 20000)) // 20 secs
           .WhenTypeIs<DateTime>()
       );

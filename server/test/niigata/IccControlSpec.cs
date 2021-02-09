@@ -3559,6 +3559,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .SetJobRemainCnt(unique: "uniq1", path: 1, cnt: 0)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectUnarchiveJob(uniq: "uniq1"),
           FakeIccDsl.ExpectNewRoute(
             pal: 1,
             pri: 1,

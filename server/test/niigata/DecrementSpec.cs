@@ -93,6 +93,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           },
           options => options
+            .ComparingByMembers<DecrementQuantity>()
             .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
             .WhenTypeIs<DateTime>()
         );

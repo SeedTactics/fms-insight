@@ -412,7 +412,7 @@ namespace BlackMaple.FMSInsight.Niigata
       string casting = partName;
 
       // try and see if there is a job for this part with an actual casting
-      List<JobPlan> unarchived;
+      IReadOnlyList<JobPlan> unarchived;
       using (var jdb = _jobDbCfg.OpenConnection())
       {
         unarchived = jdb.LoadUnarchivedJobs();

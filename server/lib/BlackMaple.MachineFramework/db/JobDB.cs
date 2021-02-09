@@ -360,9 +360,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private List<MachineWatchInterface.JobPlan> LoadJobsHelper(IDbCommand cmd, IDbTransaction trans)
+    private ImmutableList<MachineWatchInterface.JobPlan> LoadJobsHelper(IDbCommand cmd, IDbTransaction trans)
     {
-      var ret = new List<MachineWatchInterface.JobPlan>();
+      var ret = ImmutableList.CreateBuilder<MachineWatchInterface.JobPlan>();
       using (var cmd2 = _connection.CreateCommand())
       {
         cmd2.CommandText = "SELECT Process, NumPaths FROM numpaths WHERE UniqueStr = $uniq";
@@ -417,16 +417,16 @@ namespace BlackMaple.MachineFramework
       foreach (var job in ret)
         LoadJobData(job, trans);
 
-      return ret;
+      return ret.ToImmutable();
     }
 
-    private Dictionary<string, int> LoadExtraParts(IDbTransaction trans, string schId)
+    private ImmutableDictionary<string, int> LoadExtraParts(IDbTransaction trans, string schId)
     {
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        var ret = new Dictionary<string, int>();
+        var ret = ImmutableDictionary.CreateBuilder<string, int>();
         cmd.CommandText = "SELECT Part, Quantity FROM scheduled_parts WHERE ScheduleId == $sid";
         cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
         using (IDataReader reader = cmd.ExecuteReader())
@@ -436,11 +436,11 @@ namespace BlackMaple.MachineFramework
             ret.Add(reader.GetString(0), reader.GetInt32(1));
           }
         }
-        return ret;
+        return ret.ToImmutable();
       }
     }
 
-    private List<MachineWatchInterface.PartWorkorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
+    private ImmutableList<MachineWatchInterface.PartWorkorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
     {
       using (var cmd = _connection.CreateCommand())
       using (var prgCmd = _connection.CreateCommand())
@@ -491,7 +491,7 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        return ret.Values.ToList();
+        return ret.Values.ToImmutableList();
       }
     }
 
@@ -515,10 +515,10 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private IList<MachineWatchInterface.SimulatedStationUtilization> LoadSimulatedStationUse(
+    private ImmutableList<MachineWatchInterface.SimulatedStationUtilization> LoadSimulatedStationUse(
         IDbCommand cmd, IDbTransaction trans)
     {
-      var ret = new List<MachineWatchInterface.SimulatedStationUtilization>();
+      var ret = ImmutableList.CreateBuilder<MachineWatchInterface.SimulatedStationUtilization>();
 
       using (var reader = cmd.ExecuteReader())
       {
@@ -538,16 +538,15 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      return ret;
+      return ret.ToImmutable();
     }
 
     private MachineWatchInterface.HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd)
     {
       lock (_cfg)
       {
-        var ret = default(BlackMaple.MachineWatchInterface.HistoricData);
-        ret.Jobs = new Dictionary<string, MachineWatchInterface.HistoricJob>();
-        ret.StationUse = new List<MachineWatchInterface.SimulatedStationUtilization>();
+        var jobs = ImmutableDictionary<string, MachineWatchInterface.HistoricJob>.Empty;
+        var statUse = ImmutableList<MachineWatchInterface.SimulatedStationUtilization>.Empty;
 
         var trans = _connection.BeginTransaction();
         try
@@ -555,12 +554,12 @@ namespace BlackMaple.MachineFramework
           jobCmd.Transaction = trans;
           simCmd.Transaction = trans;
 
-          ret.Jobs = LoadJobsHelper(jobCmd, trans).ToDictionary(j => j.UniqueStr, j => new MachineWatchInterface.HistoricJob(j));
-          foreach (var j in ret.Jobs)
+          jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr, j => new MachineWatchInterface.HistoricJob(j));
+          foreach (var j in jobs)
           {
             j.Value.Decrements = LoadDecrementsForJob(trans, j.Key);
           }
-          ret.StationUse = LoadSimulatedStationUse(simCmd, trans);
+          statUse = LoadSimulatedStationUse(simCmd, trans);
 
           trans.Commit();
         }
@@ -570,7 +569,11 @@ namespace BlackMaple.MachineFramework
           throw;
         }
 
-        return ret;
+        return new MachineWatchInterface.HistoricData()
+        {
+          Jobs = jobs,
+          StationUse = statUse
+        };
       }
     }
 
@@ -578,7 +581,7 @@ namespace BlackMaple.MachineFramework
     // Public Loading API
     // --------------------------------------------------------------------------------
 
-    public List<MachineWatchInterface.JobPlan> LoadUnarchivedJobs()
+    public IReadOnlyList<MachineWatchInterface.JobPlan> LoadUnarchivedJobs()
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -591,7 +594,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.JobPlan> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
+    public IReadOnlyList<MachineWatchInterface.JobPlan> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
     {
       var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
                   " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
@@ -648,7 +651,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.PartWorkorder> MostRecentWorkorders()
+    public IReadOnlyList<MachineWatchInterface.PartWorkorder> MostRecentWorkorders()
     {
       lock (_cfg)
       {
@@ -783,29 +786,19 @@ namespace BlackMaple.MachineFramework
 
         lock (_cfg)
         {
-          var ret = default(BlackMaple.MachineWatchInterface.PlannedSchedule);
-          ret.Jobs = new List<BlackMaple.MachineWatchInterface.JobPlan>();
-          ret.ExtraParts = new Dictionary<string, int>();
-
-          var trans = _connection.BeginTransaction();
-          try
+          using (var trans = _connection.BeginTransaction())
           {
-            ret.LatestScheduleId = LatestScheduleId(trans);
-            cmd.Parameters.Add("sid", SqliteType.Text).Value = ret.LatestScheduleId;
+            var latestSchId = LatestScheduleId(trans);
+            cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
             cmd.Transaction = trans;
-            ret.Jobs = LoadJobsHelper(cmd, trans);
-            ret.ExtraParts = LoadExtraParts(trans, ret.LatestScheduleId);
-            ret.CurrentUnfilledWorkorders = LoadUnfilledWorkorders(trans, ret.LatestScheduleId);
-
-            trans.Commit();
+            return new MachineWatchInterface.PlannedSchedule()
+            {
+              LatestScheduleId = latestSchId,
+              Jobs = LoadJobsHelper(cmd, trans),
+              ExtraParts = LoadExtraParts(trans, latestSchId),
+              CurrentUnfilledWorkorders = LoadUnfilledWorkorders(trans, latestSchId),
+            };
           }
-          catch
-          {
-            trans.Rollback();
-            throw;
-          }
-
-          return ret;
         }
       }
     }
@@ -1889,11 +1882,13 @@ namespace BlackMaple.MachineFramework
         {
           while (reader.Read())
           {
-            var j = new MachineWatchInterface.DecrementQuantity();
-            j.DecrementId = reader.GetInt64(0);
-            j.Proc1Path = reader.GetInt32(1);
-            j.TimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
-            j.Quantity = reader.GetInt32(3);
+            var j = new MachineWatchInterface.DecrementQuantity()
+            {
+              DecrementId = reader.GetInt64(0),
+              Proc1Path = reader.GetInt32(1),
+              TimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
+              Quantity = reader.GetInt32(3),
+            };
             ret.Add(j);
           }
           return ret;

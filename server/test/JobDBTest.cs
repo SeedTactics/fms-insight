@@ -553,10 +553,10 @@ namespace MachineWatchTest
       Assert.True(_jobDB.DoesJobExist(job1.UniqueStr));
       Assert.False(_jobDB.DoesJobExist("aoughwoeufeg"));
       var newAfter = _jobDB.LoadJobsAfterScheduleId(job1.ScheduleId);
-      Assert.Equal(1, newAfter.Jobs.Count);
+      newAfter.Jobs.Count.Should().Be(1);
       CheckSimStationEqual(job2simStationUse, newAfter.StationUse);
       CheckPlanEqual(job2, newAfter.Jobs["Unique2"], true);
-      Assert.Equal(0, _jobDB.LoadJobsAfterScheduleId(job2.ScheduleId).Jobs.Count);
+      _jobDB.LoadJobsAfterScheduleId(job2.ScheduleId).Jobs.Should().BeEmpty();
       CheckWorkordersEqual(
           new[] { job1unfilledWorks[0] }, // job2 is manual, so latest should be from job1
           _jobDB.MostRecentUnfilledWorkordersForPart(job2unfilledWorks[job2unfilledWorks.Count - 2].Part)

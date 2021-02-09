@@ -1652,15 +1652,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
+    private class ExpectedUnarchiveJob : ExpectedChange
+    {
+      public string Unique { get; set; }
+    }
+
+    public static ExpectedChange ExpectUnarchiveJob(string uniq)
+    {
+      return new ExpectedUnarchiveJob() { Unique = uniq };
+    }
+
     public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
-      var sch = _logDB.LoadUnarchivedJobs();
+      var sch = _logDB.LoadUnarchivedJobs().ToList();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status, sch);
+        foreach (var unarch in expectedChanges.OfType<ExpectedUnarchiveJob>())
+        {
+          sch.Add(_logDB.LoadJob(unarch.Unique));
+        }
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-        cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
+        cellSt.UnarchivedJobs.Should().BeEquivalentTo(
+          sch,
           options => options.CheckJsonEquals<JobPlan, JobPlan>()
         );
 
