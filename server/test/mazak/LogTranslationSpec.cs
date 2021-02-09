@@ -40,6 +40,7 @@ using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using MazakMachineInterface;
+using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
@@ -1495,9 +1496,9 @@ namespace MachineWatchTest
             Process = 1,
             Pallet = "2",
             LoadStation = 6,
-            Stops = new List<MaterialProcessActualPath.Stop> {
+            Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() {StationName = "machinespec", StationNum = 4}
-            },
+            ),
             UnloadStation = -1
           }
         }
@@ -1519,9 +1520,9 @@ namespace MachineWatchTest
             Process = 1,
             Pallet = "2",
             LoadStation = 6,
-            Stops = new List<MaterialProcessActualPath.Stop> {
+            Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() {StationName = "machinespec", StationNum = 4}
-            },
+            ),
             UnloadStation = 1
           },
           new MaterialProcessActualPath() {
@@ -1529,9 +1530,9 @@ namespace MachineWatchTest
             Process = 2,
             Pallet = "2",
             LoadStation = 1,
-            Stops = new List<MaterialProcessActualPath.Stop> {
+            Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() {StationName = "machinespec", StationNum = 7}
-            },
+            ),
             UnloadStation = -1
           }
         }

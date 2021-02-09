@@ -2212,7 +2212,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 );
                 newLog.ProgramDetails["InspectionType"] = insp.InspType;
                 newLog.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(
-                  insp.Path.Select(p => { p.MaterialID = mat.MaterialID; return p; })
+                  insp.Path.Select(p => p with { MaterialID = mat.MaterialID })
                 );
                 expectedLogs.Add(newLog);
               }

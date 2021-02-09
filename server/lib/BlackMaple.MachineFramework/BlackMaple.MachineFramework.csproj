@@ -5,6 +5,7 @@
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
     <OutputType>Library</OutputType>
     <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
 
     <Title>SeedTactics FMS Insight for Flexibile Manufacturing Systems</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -45,6 +46,9 @@
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.1" />
     <PackageReference Include="CsvHelper" Version="19.0.0"/>
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+
+    <PackageReference Include="Germinate" Version="0.5.1" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>

@@ -38,6 +38,7 @@ using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
+using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
@@ -298,10 +299,10 @@ namespace MachineWatchTest
           Process = 1,
           Pallet = "P1",
           LoadStation = 1,
-          Stops = {
+          Stops = ImmutableList.Create(
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 10},
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 11}
-          },
+          ),
           UnloadStation = 2,
         },
         new MaterialProcessActualPath() {
@@ -309,10 +310,10 @@ namespace MachineWatchTest
           Process = 2,
           Pallet = "P2",
           LoadStation = 3,
-          Stops = {
+          Stops = ImmutableList.Create(
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 12},
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 13}
-          },
+          ),
           UnloadStation = 4,
         }
       });
@@ -325,10 +326,10 @@ namespace MachineWatchTest
           Process = 1,
           Pallet = "P5",
           LoadStation = 6,
-          Stops = {
+          Stops = ImmutableList.Create(
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 15},
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 16}
-          },
+          ),
           UnloadStation = 8,
         },
         new MaterialProcessActualPath() {
@@ -336,10 +337,10 @@ namespace MachineWatchTest
           Process = 2,
           Pallet = "P4",
           LoadStation = 7,
-          Stops = {
+          Stops = ImmutableList.Create(
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 18},
             new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 19}
-          },
+          ),
           UnloadStation = 9,
         }
       });
@@ -437,7 +438,7 @@ namespace MachineWatchTest
           foundEntry = true;
           var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MaterialProcessActualPath>>(
             entry.ProgramDetails["ActualPath"]);
-          path.Should().BeEquivalentTo(expected);
+          path.Should().BeEquivalentTo(expected, options => options.ComparingByMembers<MaterialProcessActualPath>());
           break;
         }
       }

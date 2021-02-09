@@ -36,6 +36,7 @@ using System.Linq;
 using Xunit;
 using BlackMaple.MachineWatchInterface;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -207,11 +208,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectInspection(mat: fstMats, cntr: "Thecounter", inspTy: "InspTy", inspect: false, path: new[] {
             new MaterialProcessActualPath() {
-              Process = 1, Pallet = "1", LoadStation = 1, UnloadStation = -1, Stops = new List<MaterialProcessActualPath.Stop> {
+              Process = 1, Pallet = "1", LoadStation = 1, UnloadStation = -1, Stops = ImmutableList.Create(
                 new MaterialProcessActualPath.Stop() {
                   StationName = "TestMC", StationNum = 103
                 }
-              }
+              )
             }
           }),
           FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: false, mats: fstMats)
@@ -297,11 +298,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 3),
          FakeIccDsl.ExpectInspection(mat: sndMats, cntr: "Thecounter", inspTy: "InspTy", inspect: true, path: new[] {
            new MaterialProcessActualPath() {
-             Process = 1, Pallet = "1", LoadStation = 4, UnloadStation = -1, Stops = new List<MaterialProcessActualPath.Stop> {
+             Process = 1, Pallet = "1", LoadStation = 4, UnloadStation = -1, Stops = ImmutableList.Create(
                new MaterialProcessActualPath.Stop() {
                  StationName = "TestMC", StationNum = 106
                }
-             }
+             )
            }
          })
         })

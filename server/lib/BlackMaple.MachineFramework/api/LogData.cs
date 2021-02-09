@@ -36,6 +36,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Linq;
+using Germinate;
+using System.Collections.Immutable;
 
 namespace BlackMaple.MachineWatchInterface
 {
@@ -270,32 +272,38 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public Dictionary<int, int> Paths { get; set; } // key is process, value is path
   }
 
-  [DataContract, Serializable]
-  public class ToolUse
+  [DataContract, Draftable]
+  public record ToolUse
   {
-    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; set; }
-    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; set; }
+    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; init; }
+    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; init; }
+
+    public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f)
+       => t.Produce(f);
   }
 
   // stored serialized in json format in the details for inspection logs.
-  [DataContract, Serializable]
-  public class MaterialProcessActualPath
+  [DataContract, Draftable]
+  public record MaterialProcessActualPath
   {
     [DataContract]
-    public class Stop
+    public record Stop
     {
-      [DataMember(IsRequired = true)] public string StationName { get; set; }
-      [DataMember(IsRequired = true)] public int StationNum { get; set; }
+      [DataMember(IsRequired = true)] public string StationName { get; init; }
+      [DataMember(IsRequired = true)] public int StationNum { get; init; }
     }
 
-    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
-    [DataMember(IsRequired = true)] public int Process { get; set; }
-    [DataMember(IsRequired = true)] public string Pallet { get; set; }
-    [DataMember(IsRequired = true)] public int LoadStation { get; set; }
-    [DataMember(IsRequired = true)] public List<Stop> Stops { get; set; } = new List<Stop>();
-    [DataMember(IsRequired = true)] public int UnloadStation { get; set; }
+    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
+    [DataMember(IsRequired = true)] public int Process { get; init; }
+    [DataMember(IsRequired = true)] public string Pallet { get; init; }
+    [DataMember(IsRequired = true)] public int LoadStation { get; init; }
+    [DataMember(IsRequired = true)] public ImmutableList<Stop> Stops { get; init; } = ImmutableList<Stop>.Empty;
+    [DataMember(IsRequired = true)] public int UnloadStation { get; init; }
+
+    public static MaterialProcessActualPath operator %(MaterialProcessActualPath m, Action<IMaterialProcessActualPathDraft> f)
+       => m.Produce(f);
   }
 
 

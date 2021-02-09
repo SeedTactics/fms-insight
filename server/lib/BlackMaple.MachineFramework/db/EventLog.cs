@@ -36,6 +36,7 @@ using System.Linq;
 using System.Data;
 using System.Collections.Generic;
 using Microsoft.Data.Sqlite;
+using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -1373,10 +1374,13 @@ namespace BlackMaple.MachineFramework
       {
         if (tools.TryGetValue(tool, out var existingUse))
         {
-          existingUse.ToolUseDuringCycle += use.ToolUseDuringCycle;
-          existingUse.ConfiguredToolLife += use.ConfiguredToolLife;
-          existingUse.TotalToolUseAtEndOfCycle += use.TotalToolUseAtEndOfCycle;
-          existingUse.ToolChangeOccurred = existingUse.ToolChangeOccurred.GetValueOrDefault() || use.ToolChangeOccurred.GetValueOrDefault();
+          tools[tool] %= draft =>
+          {
+            draft.ToolUseDuringCycle += use.ToolUseDuringCycle;
+            draft.ConfiguredToolLife += use.ConfiguredToolLife;
+            draft.TotalToolUseAtEndOfCycle += use.TotalToolUseAtEndOfCycle;
+            draft.ToolChangeOccurred = existingUse.ToolChangeOccurred.GetValueOrDefault() || use.ToolChangeOccurred.GetValueOrDefault();
+          };
         }
         else
         {
@@ -3462,10 +3466,12 @@ namespace BlackMaple.MachineFramework
     private Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
     {
       var byProc = new Dictionary<int, MachineWatchInterface.MaterialProcessActualPath>();
-      MachineWatchInterface.MaterialProcessActualPath getPath(int proc)
+      void adjustPath(int proc, Action<IMaterialProcessActualPathDraft> f)
       {
         if (byProc.ContainsKey(proc))
-          return byProc[proc];
+        {
+          byProc[proc] %= f;
+        }
         else
         {
           var m = new MachineWatchInterface.MaterialProcessActualPath()
@@ -3476,8 +3482,7 @@ namespace BlackMaple.MachineFramework
             LoadStation = -1,
             UnloadStation = -1
           };
-          byProc.Add(proc, m);
-          return m;
+          byProc.Add(proc, m % f);
         }
       }
 
@@ -3507,28 +3512,29 @@ namespace BlackMaple.MachineFramework
             int statNum = reader.GetInt32(3);
             int process = reader.GetInt32(4);
 
-            var mat = getPath(process);
-
-            if (!string.IsNullOrEmpty(pal))
-              mat.Pallet = pal;
-
-            switch (logTy)
+            adjustPath(process, mat =>
             {
-              case MachineWatchInterface.LogType.LoadUnloadCycle:
-                if (mat.LoadStation == -1)
-                  mat.LoadStation = statNum;
-                else
-                  mat.UnloadStation = statNum;
-                break;
+              if (!string.IsNullOrEmpty(pal))
+                mat.Pallet = pal;
 
-              case MachineWatchInterface.LogType.MachineCycle:
-                mat.Stops.Add(new MachineWatchInterface.MaterialProcessActualPath.Stop()
-                {
-                  StationName = statName,
-                  StationNum = statNum
-                });
-                break;
-            }
+              switch (logTy)
+              {
+                case MachineWatchInterface.LogType.LoadUnloadCycle:
+                  if (mat.LoadStation == -1)
+                    mat.LoadStation = statNum;
+                  else
+                    mat.UnloadStation = statNum;
+                  break;
+
+                case MachineWatchInterface.LogType.MachineCycle:
+                  mat.Stops.Add(new MachineWatchInterface.MaterialProcessActualPath.Stop()
+                  {
+                    StationName = statName,
+                    StationNum = statNum
+                  });
+                  break;
+              }
+            });
           }
         }
       }
