@@ -1116,8 +1116,8 @@ namespace MachineWatchTest
         NumProcesses = 1,
         Serial = FMSSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
         Workorder = null,
-        Paths = new Dictionary<int, int> { { 1, 1 } }
-      });
+        Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      }, options => options.ComparingByMembers<MaterialDetails>());
     }
 
     [Fact]
@@ -1836,7 +1836,7 @@ namespace MachineWatchTest
         NumProcesses = mat3.NumProcess,
         Workorder = null,
         Serial = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0'),
-        Paths = new Dictionary<int, int>() { }
+        Paths = ImmutableDictionary<int, int>.Empty,
       });
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -1943,8 +1943,8 @@ namespace MachineWatchTest
         NumProcesses = 1,
         Serial = FMSSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
         Workorder = null,
-        Paths = new Dictionary<int, int> { { 1, 1 } }
-      });
+        Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      }, options => options.ComparingByMembers<MaterialDetails>());
 
     }
 

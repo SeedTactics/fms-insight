@@ -261,15 +261,16 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   [DataContract, Serializable]
-  public class MaterialDetails
+  public record MaterialDetails
   {
-    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
-    [DataMember] public string JobUnique { get; set; }
-    [DataMember] public string PartName { get; set; }
-    [DataMember] public int NumProcesses { get; set; }
-    [DataMember] public string Workorder { get; set; }
-    [DataMember] public string Serial { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public Dictionary<int, int> Paths { get; set; } // key is process, value is path
+    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
+    [DataMember] public string JobUnique { get; init; }
+    [DataMember] public string PartName { get; init; }
+    [DataMember] public int NumProcesses { get; init; }
+    [DataMember] public string Workorder { get; init; }
+    [DataMember] public string Serial { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableDictionary<int, int> Paths { get; init; } = ImmutableDictionary<int, int>.Empty; // key is process, value is path
   }
 
   [DataContract, Draftable]
@@ -307,84 +308,54 @@ namespace BlackMaple.MachineWatchInterface
   }
 
 
-  [Serializable, DataContract]
-  public class WorkorderPartSummary
+  [DataContract, Draftable]
+  public record WorkorderPartSummary
   {
     [DataMember(Name = "name", IsRequired = true)]
-    public string Part { get; set; }
+    public string Part { get; init; }
 
     [DataMember(Name = "completed-qty", IsRequired = true)]
-    public int PartsCompleted { get; set; }
+    public int PartsCompleted { get; init; }
 
     [DataMember(Name = "elapsed-station-time", IsRequired = true)]
-    private Dictionary<string, TimeSpan> _elapsedStatTime;
-
-    public Dictionary<string, TimeSpan> ElapsedStationTime
-    {
-      get
-      {
-        if (_elapsedStatTime == null) _elapsedStatTime = new Dictionary<string, TimeSpan>();
-        return _elapsedStatTime;
-      }
-    }
+    public ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty;
 
     [DataMember(Name = "active-stat-time", IsRequired = true)]
-    private Dictionary<string, TimeSpan> _activeStatTime;
+    public ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty;
 
-    public Dictionary<string, TimeSpan> ActiveStationTime
-    {
-      get
-      {
-        if (_activeStatTime == null) _activeStatTime = new Dictionary<string, TimeSpan>();
-        return _activeStatTime;
-      }
-    }
+    public static WorkorderPartSummary operator %(WorkorderPartSummary m, Action<IWorkorderPartSummaryDraft> f)
+       => m.Produce(f);
   }
 
-  [Serializable, DataContract]
-  public class WorkorderSummary
+  [DataContract, Draftable]
+  public record WorkorderSummary
   {
     [DataMember(Name = "id", IsRequired = true)]
-    public string WorkorderId { get; set; }
+    public string WorkorderId { get; init; }
 
     [DataMember(Name = "parts", IsRequired = true)]
-    private List<WorkorderPartSummary> _parts = new List<WorkorderPartSummary>();
-
-    public List<WorkorderPartSummary> Parts
-    {
-      get
-      {
-        if (_parts == null) _parts = new List<WorkorderPartSummary>();
-        return _parts;
-      }
-    }
+    public ImmutableList<WorkorderPartSummary> Parts { get; init; } = ImmutableList<WorkorderPartSummary>.Empty;
 
     [DataMember(Name = "serials", IsRequired = true)]
-    private List<string> _serials = new List<string>();
-
-    public List<string> Serials
-    {
-      get
-      {
-        if (_serials == null) _serials = new List<string>();
-        return _serials;
-      }
-    }
+    public ImmutableList<string> Serials { get; init; } = ImmutableList<string>.Empty;
 
     [DataMember(Name = "finalized", IsRequired = false, EmitDefaultValue = false)]
-    public DateTime? FinalizedTimeUTC { get; set; }
+    public DateTime? FinalizedTimeUTC { get; init; }
+
+    public static WorkorderSummary operator %(WorkorderSummary m, Action<IWorkorderSummaryDraft> f)
+       => m.Produce(f);
   }
 
   [DataContract]
-  public class EditMaterialInLogEvents
+  public record EditMaterialInLogEvents
   {
     [DataMember(IsRequired = true)]
-    public long OldMaterialID { get; set; }
+    public long OldMaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public long NewMaterialID { get; set; }
+    public long NewMaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public IEnumerable<LogEntry> EditedEvents { get; set; }
+    public IEnumerable<LogEntry> EditedEvents { get; init; }
   }
 }

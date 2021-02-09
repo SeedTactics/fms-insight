@@ -380,7 +380,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 PartNameOrCasting = m.PartNameOrCasting,
                 NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
                 QueuePosition = m.Position,
-                Paths = details?.Paths,
+                Paths = details?.Paths?.ToDictionary(k => k.Key, k => k.Value),
                 Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : logDB.WorkordersById(details?.Workorder)
               };
             })
@@ -524,7 +524,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   QueuePosition = m.Position,
                   PartNameOrCasting = m.PartNameOrCasting,
                   NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
-                  Paths = details?.Paths,
+                  Paths = details?.Paths?.ToDictionary(k => k.Key, k => k.Value),
                   Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : logDB.WorkordersById(details?.Workorder)
                 };
               })

@@ -39,6 +39,7 @@ using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using NSubstitute;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -500,7 +501,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         PartName = "c1",
         NumProcesses = 1,
         Serial = "aaa",
-        Paths = new Dictionary<int, int>()
       });
       _logDB.GetMaterialDetails(2).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -508,7 +508,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         PartName = "c1",
         NumProcesses = 1,
         Serial = null,
-        Paths = new Dictionary<int, int>()
       });
 
       var mats = _logDB.GetMaterialInQueue("q1").ToList();
@@ -580,8 +579,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NumProcesses = 2,
         Serial = "aaa",
         JobUnique = "uuu1",
-        Paths = new Dictionary<int, int>() { { 1, 2 } }
-      });
+        Paths = ImmutableDictionary<int, int>.Empty.Add(1, 2)
+      }, options => options.ComparingByMembers<MaterialDetails>());
 
       var mats = _logDB.GetMaterialInQueue("q1").ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);

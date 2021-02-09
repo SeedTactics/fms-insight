@@ -37,6 +37,7 @@ using System.Data;
 using System.Collections.Generic;
 using Microsoft.Data.Sqlite;
 using Germinate;
+using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
 {
@@ -729,65 +730,67 @@ namespace BlackMaple.MachineFramework
           timeCmd.Transaction = trans;
 
           var ret = new List<MachineWatchInterface.WorkorderSummary>();
-          var partMap = new Dictionary<string, MachineWatchInterface.WorkorderPartSummary>();
           foreach (var w in workorders)
           {
-            var summary = new MachineWatchInterface.WorkorderSummary();
-            summary.WorkorderId = w;
-            partMap.Clear();
-
-            countCmd.Parameters[0].Value = w;
-            using (var reader = countCmd.ExecuteReader())
+            var emptySummary = new MachineWatchInterface.WorkorderSummary()
             {
-              while (reader.Read())
+              WorkorderId = w
+            };
+            ret.Add(emptySummary.Produce(summary =>
+            {
+              var partMap = new Dictionary<string, MachineWatchInterface.WorkorderPartSummary>();
+
+              countCmd.Parameters[0].Value = w;
+              using (var reader = countCmd.ExecuteReader())
               {
-                var wPart = new MachineWatchInterface.WorkorderPartSummary
+                while (reader.Read())
                 {
-                  Part = reader.GetString(0),
-                  PartsCompleted = reader.GetInt32(1)
-                };
-                summary.Parts.Add(wPart);
-                partMap.Add(wPart.Part, wPart);
-              }
-            }
-
-            serialCmd.Parameters[0].Value = w;
-            using (var reader = serialCmd.ExecuteReader())
-            {
-              while (reader.Read())
-                summary.Serials.Add(reader.GetString(0));
-            }
-
-            finalizedCmd.Parameters[0].Value = w;
-            using (var reader = finalizedCmd.ExecuteReader())
-            {
-              if (reader.Read() && !reader.IsDBNull(0))
-              {
-                summary.FinalizedTimeUTC =
-                  new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
-              }
-            }
-
-            timeCmd.Parameters[0].Value = w;
-            using (var reader = timeCmd.ExecuteReader())
-            {
-              while (reader.Read())
-              {
-                var partName = reader.GetString(0);
-                var stat = reader.GetString(1);
-                //part name should exist because material query should return it
-                if (partMap.ContainsKey(partName))
-                {
-                  var detail = partMap[partName];
-                  if (!reader.IsDBNull(2))
-                    detail.ElapsedStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(2));
-                  if (!reader.IsDBNull(3))
-                    detail.ActiveStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(3));
+                  var wPart = new MachineWatchInterface.WorkorderPartSummary
+                  {
+                    Part = reader.GetString(0),
+                    PartsCompleted = reader.GetInt32(1)
+                  };
+                  partMap.Add(wPart.Part, wPart);
                 }
               }
-            }
 
-            ret.Add(summary);
+              serialCmd.Parameters[0].Value = w;
+              using (var reader = serialCmd.ExecuteReader())
+              {
+                while (reader.Read())
+                  summary.Serials.Add(reader.GetString(0));
+              }
+
+              finalizedCmd.Parameters[0].Value = w;
+              using (var reader = finalizedCmd.ExecuteReader())
+              {
+                if (reader.Read() && !reader.IsDBNull(0))
+                {
+                  summary.FinalizedTimeUTC =
+                    new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
+                }
+              }
+
+              timeCmd.Parameters[0].Value = w;
+              using (var reader = timeCmd.ExecuteReader())
+              {
+                while (reader.Read())
+                {
+                  var partName = reader.GetString(0);
+                  var stat = reader.GetString(1);
+                  //part name should exist because material query should return it
+                  if (partMap.ContainsKey(partName))
+                  {
+                    if (!reader.IsDBNull(2))
+                      partMap[partName] %= draft => draft.ElapsedStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(2));
+                    if (!reader.IsDBNull(3))
+                      partMap[partName] %= draft => draft.ActiveStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(3));
+                  }
+                }
+              }
+
+              summary.Parts.AddRange(partMap.Values);
+            }));
           }
 
           trans.Commit();
@@ -2395,18 +2398,21 @@ namespace BlackMaple.MachineFramework
         {
           if (reader.Read())
           {
-            ret = new MachineWatchInterface.MaterialDetails() { MaterialID = matID };
-            if (!reader.IsDBNull(0)) ret.JobUnique = reader.GetString(0);
-            if (!reader.IsDBNull(1)) ret.PartName = reader.GetString(1);
-            if (!reader.IsDBNull(2)) ret.NumProcesses = reader.GetInt32(2);
-            if (!reader.IsDBNull(3)) ret.Workorder = reader.GetString(3);
-            if (!reader.IsDBNull(4)) ret.Serial = reader.GetString(4);
+            ret = new MachineWatchInterface.MaterialDetails()
+            {
+              MaterialID = matID,
+              JobUnique = (!reader.IsDBNull(0)) ? reader.GetString(0) : null,
+              PartName = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
+              NumProcesses = (!reader.IsDBNull(2)) ? reader.GetInt32(2) : 0,
+              Workorder = (!reader.IsDBNull(3)) ? reader.GetString(3) : null,
+              Serial = (!reader.IsDBNull(4)) ? reader.GetString(4) : null,
+            };
           }
         }
 
         if (ret != null)
         {
-          ret.Paths = new Dictionary<int, int>();
+          var paths = ImmutableDictionary<int, int>.Empty.ToBuilder();
           cmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
           using (var reader = cmd.ExecuteReader())
           {
@@ -2414,9 +2420,10 @@ namespace BlackMaple.MachineFramework
             {
               var proc = reader.GetInt32(0);
               var path = reader.GetInt32(1);
-              ret.Paths[proc] = path;
+              paths[proc] = path;
             }
           }
+          ret = ret with { Paths = paths.ToImmutable() };
         }
 
         return ret;
@@ -2446,28 +2453,29 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                var mat = new MachineWatchInterface.MaterialDetails() { Serial = serial };
-                if (!reader.IsDBNull(0)) mat.MaterialID = reader.GetInt64(0);
-                if (!reader.IsDBNull(1)) mat.JobUnique = reader.GetString(1);
-                if (!reader.IsDBNull(2)) mat.PartName = reader.GetString(2);
-                if (!reader.IsDBNull(3)) mat.NumProcesses = reader.GetInt32(3);
-                if (!reader.IsDBNull(4)) mat.Workorder = reader.GetString(4);
-                ret.Add(mat);
-              }
-            }
-
-            foreach (var mat in ret)
-            {
-              cmd2.Parameters[0].Value = mat.MaterialID;
-              mat.Paths = new Dictionary<int, int>();
-              using (var reader = cmd2.ExecuteReader())
-              {
-                while (reader.Read())
+                var mat = new MachineWatchInterface.MaterialDetails()
                 {
-                  var proc = reader.GetInt32(0);
-                  var path = reader.GetInt32(1);
-                  mat.Paths[proc] = path;
+                  MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
+                  JobUnique = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
+                  PartName = (!reader.IsDBNull(2)) ? reader.GetString(2) : null,
+                  NumProcesses = (!reader.IsDBNull(3)) ? reader.GetInt32(3) : 0,
+                  Workorder = (!reader.IsDBNull(4)) ? reader.GetString(4) : null,
+                  Serial = serial,
+                };
+
+                cmd2.Parameters[0].Value = mat.MaterialID;
+                var paths = ImmutableDictionary<int, int>.Empty.ToBuilder();
+                using (var reader2 = cmd2.ExecuteReader())
+                {
+                  while (reader2.Read())
+                  {
+                    var proc = reader2.GetInt32(0);
+                    var path = reader2.GetInt32(1);
+                    paths[proc] = path;
+                  }
                 }
+                mat = mat with { Paths = paths.ToImmutable() };
+                ret.Add(mat);
               }
             }
 
@@ -2493,35 +2501,39 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Serial FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
         cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
 
+        pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
+        pathCmd.Transaction = trans;
+        var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
+
         var ret = new List<MachineWatchInterface.MaterialDetails>();
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            var mat = new MachineWatchInterface.MaterialDetails() { MaterialID = reader.GetInt64(0), Workorder = workorder };
-            if (!reader.IsDBNull(1)) mat.JobUnique = reader.GetString(1);
-            if (!reader.IsDBNull(2)) mat.PartName = reader.GetString(2);
-            if (!reader.IsDBNull(3)) mat.NumProcesses = reader.GetInt32(3);
-            if (!reader.IsDBNull(4)) mat.Serial = reader.GetString(4);
-            ret.Add(mat);
-          }
-        }
-
-        pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
-        pathCmd.Transaction = trans;
-        var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
-        foreach (var mat in ret)
-        {
-          mat.Paths = new Dictionary<int, int>();
-          param.Value = mat.MaterialID;
-          using (var reader = pathCmd.ExecuteReader())
-          {
-            while (reader.Read())
+            var mat = new MachineWatchInterface.MaterialDetails()
             {
-              var proc = reader.GetInt32(0);
-              var path = reader.GetInt32(1);
-              mat.Paths[proc] = path;
+              MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
+              JobUnique = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
+              PartName = (!reader.IsDBNull(2)) ? reader.GetString(2) : null,
+              NumProcesses = (!reader.IsDBNull(3)) ? reader.GetInt32(3) : 0,
+              Serial = (!reader.IsDBNull(4)) ? reader.GetString(4) : null,
+              Workorder = workorder,
+            };
+
+            var paths = ImmutableDictionary<int, int>.Empty.ToBuilder();
+            param.Value = mat.MaterialID;
+            using (var reader2 = pathCmd.ExecuteReader())
+            {
+              while (reader2.Read())
+              {
+                var proc = reader2.GetInt32(0);
+                var path = reader2.GetInt32(1);
+                paths[proc] = path;
+              }
             }
+
+            mat = mat with { Paths = paths.ToImmutable() };
+            ret.Add(mat);
           }
         }
 
@@ -2540,35 +2552,39 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT MaterialID, PartName, NumProcesses, Serial, Workorder FROM matdetails WHERE UniqueStr = $uniq ORDER BY Workorder, Serial";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
+        pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
+        pathCmd.Transaction = trans;
+        var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
+
         var ret = new List<MachineWatchInterface.MaterialDetails>();
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            var mat = new MachineWatchInterface.MaterialDetails() { MaterialID = reader.GetInt64(0), JobUnique = jobUnique };
-            if (!reader.IsDBNull(1)) mat.PartName = reader.GetString(1);
-            if (!reader.IsDBNull(2)) mat.NumProcesses = reader.GetInt32(2);
-            if (!reader.IsDBNull(3)) mat.Serial = reader.GetString(3);
-            if (!reader.IsDBNull(4)) mat.Workorder = reader.GetString(4);
-            ret.Add(mat);
-          }
-        }
-
-        pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
-        pathCmd.Transaction = trans;
-        var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
-        foreach (var mat in ret)
-        {
-          mat.Paths = new Dictionary<int, int>();
-          param.Value = mat.MaterialID;
-          using (var reader = pathCmd.ExecuteReader())
-          {
-            while (reader.Read())
+            var mat = new MachineWatchInterface.MaterialDetails()
             {
-              var proc = reader.GetInt32(0);
-              var path = reader.GetInt32(1);
-              mat.Paths[proc] = path;
+              MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
+              JobUnique = jobUnique,
+              PartName = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
+              NumProcesses = (!reader.IsDBNull(2)) ? reader.GetInt32(2) : 0,
+              Serial = (!reader.IsDBNull(3)) ? reader.GetString(3) : null,
+              Workorder = (!reader.IsDBNull(4)) ? reader.GetString(4) : null,
+            };
+
+            var paths = ImmutableDictionary<int, int>.Empty.ToBuilder();
+            param.Value = mat.MaterialID;
+            using (var reader2 = pathCmd.ExecuteReader())
+            {
+              while (reader2.Read())
+              {
+                var proc = reader2.GetInt32(0);
+                var path = reader2.GetInt32(1);
+                paths[proc] = path;
+              }
             }
+
+            mat = mat with { Paths = paths.ToImmutable() };
+            ret.Add(mat);
           }
         }
 
