@@ -39,6 +39,7 @@ using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using MazakMachineInterface;
+using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
@@ -160,7 +161,7 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -214,7 +215,7 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // add the material which matches the schedule
@@ -273,7 +274,7 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // add the material which matches the schedule
@@ -327,7 +328,7 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "transQ");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // put 2 allocated casting in queue
@@ -380,7 +381,7 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "transQ");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // put 2 allocated casting in queue
@@ -467,7 +468,7 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // put a different casting
@@ -539,7 +540,7 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
 
@@ -606,7 +607,7 @@ namespace MachineWatchTest
       j.SetInputQueue(1, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -673,7 +674,7 @@ namespace MachineWatchTest
       j.SetCasting(1, "cccc");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // put 3 unassigned castings in queue
@@ -722,7 +723,7 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -763,7 +764,7 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // put 2 assigned castings in queue
@@ -837,7 +838,7 @@ namespace MachineWatchTest
         j.SetCasting(2, casting);
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
     }
 
@@ -1331,7 +1332,7 @@ namespace MachineWatchTest
       j.SetInputQueue(1, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // put 1 castings in queue
@@ -1390,7 +1391,7 @@ namespace MachineWatchTest
       j.SetInputQueue(1, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       // put 1 castings in queue
@@ -1471,7 +1472,7 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j1, j2 }
+        Jobs = ImmutableList.Create(j1, j2)
       }, null);
 
 

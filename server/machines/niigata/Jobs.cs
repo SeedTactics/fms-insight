@@ -35,6 +35,7 @@ using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -80,7 +81,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         return CheckJobs(jdb, new NewJobs()
         {
-          Jobs = newJobs.ToList()
+          Jobs = newJobs.ToImmutableList()
         });
       }
     }

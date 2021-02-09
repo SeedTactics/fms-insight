@@ -37,6 +37,7 @@ using BlackMaple.MachineFramework;
 using Xunit;
 using FluentAssertions;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
@@ -254,7 +255,7 @@ namespace MachineWatchTest
 
       _log.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { newJob }
+        Jobs = ImmutableList.Create(newJob)
       }, null);
 
       JobEqualityChecks.CheckJobEqual(newJob, _log.LoadJob("mynewunique"), true);

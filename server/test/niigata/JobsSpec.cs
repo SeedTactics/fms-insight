@@ -369,7 +369,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Counter = "cntr",
         MaxVal = 10,
       });
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = new List<JobPlan> { completedJob, toKeepJob } }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create(completedJob, toKeepJob) }, null);
 
       _syncMock.CurrentCellState().Returns(new CellState()
       {
@@ -421,7 +421,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var newJobs = new NewJobs()
       {
         ScheduleId = "abcd",
-        Jobs = new List<JobPlan> { newJob1, newJob2 }
+        Jobs = ImmutableList.Create(newJob1, newJob2)
       };
 
       ((IJobControl)_jobs).AddJobs(newJobs, null);
@@ -565,7 +565,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       job.PartName = "p1";
       job.SetPathGroup(1, 1, 50);
       job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) }, null);
 
       //add an allocated material
       ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
@@ -640,7 +640,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       job.PartName = "p1";
       job.SetPathGroup(1, 1, 50);
       job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) }, null);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
 
@@ -682,23 +682,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       job.PartName = "p1";
       job.SetPathGroup(1, 1, 50);
       job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = new List<JobPlan> { job } }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) }, null);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
       _logDB.RecordSerialForMaterialID(materialID: 1, proc: 1, serial: "aaa");
-      _logDB.RecordLoadStart(new[] { new EventLogMaterial() { MaterialID = 1, Process = 1, Face = "" } }, "3", 2, DateTime.UtcNow);
+      _logDB.RecordLoadStart(new[] { new EventLogMaterial() { MaterialID = 1, Process = 1, Face = "" }
+          }, "3", 2, DateTime.UtcNow);
 
       ((IJobControl)_jobs).SetMaterialInQueue(materialId: 1, queue: "q1", position: -1);
 
       _syncMock.CurrentCellState().Returns(
-        new CellState()
-        {
-          Pallets = new List<PalletAndMaterial>(),
-          QueuedMaterial = new List<InProcessMaterialAndJob>() {
+            new CellState()
+            {
+              Pallets = new List<PalletAndMaterial>(),
+              QueuedMaterial = new List<InProcessMaterialAndJob>() {
             QueuedMat(matId: 1, job: job, part: "p1", proc: 1, path: 2, serial: "aaa", queue: "q1", pos: 0)
-          }
-        }
-      );
+              }
+            }
+          );
 
       ((IJobControl)_jobs).SignalMaterialForQuarantine(1, "q2", "theoper");
 
@@ -714,11 +715,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         RemoveFromQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
         AddToQueueExpectedEntry(logMat, cntr: 5, queue: "q2", position: 0, operName: "theoper", reason: "SetByOperator")
       }, options => options
-        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
-        .WhenTypeIs<DateTime>()
-        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
-        .WhenTypeIs<TimeSpan>()
-      );
+.Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+.WhenTypeIs<DateTime>()
+.Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+.WhenTypeIs<TimeSpan>()
+          );
     }
 
     private LogEntry MarkExpectedEntry(LogMaterial mat, long cntr, string serial, DateTime? timeUTC = null)

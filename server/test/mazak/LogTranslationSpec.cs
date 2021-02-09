@@ -1088,7 +1088,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1125,7 +1125,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1179,7 +1179,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 2);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1268,7 +1268,7 @@ namespace MachineWatchTest
       j.AddMachiningStop(process: 2, path: 2, r: stop2);
       var newJobs = new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       };
       jobLog.AddJobs(newJobs, null);
 
@@ -1321,7 +1321,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("uuuu", 2);
       j.PartName = "pppp";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
@@ -1372,7 +1372,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1420,7 +1420,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1478,7 +1478,7 @@ namespace MachineWatchTest
       );
       var newJobs = new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       };
       jobLog.AddJobs(newJobs, null);
 
@@ -1562,7 +1562,7 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       var newJobs = new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       };
       jobLog.AddJobs(newJobs, null);
 
@@ -1629,7 +1629,7 @@ namespace MachineWatchTest
       j.SetPathGroup(2, 2, 2);
       var newJobs = new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       };
       jobLog.AddJobs(newJobs, null);
 
@@ -1784,7 +1784,7 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       var newJobs = new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       };
       jobLog.AddJobs(newJobs, null);
 
@@ -1849,7 +1849,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow;
 
@@ -1907,7 +1907,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1953,7 +1953,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 1);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1985,7 +1985,7 @@ namespace MachineWatchTest
     {
       var j = new JobPlan("unique", 2);
       j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { j } }, null);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
 
       var t = DateTime.UtcNow.AddHours(-5);
 

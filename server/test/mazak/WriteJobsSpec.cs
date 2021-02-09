@@ -42,6 +42,7 @@ using BlackMaple.MachineWatchInterface;
 using MazakMachineInterface;
 using NSubstitute;
 using Newtonsoft.Json;
+using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
@@ -332,7 +333,7 @@ namespace MachineWatchTest
       var inProcJob = new JobPlan("uniq2", 1);
       inProcJob.PartName = "part2";
       inProcJob.SetPlannedCyclesOnFirstProcess(1, 15);
-      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { completedJob, inProcJob } }, null);
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null);
 
       _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq1", "uniq2" }
@@ -376,7 +377,7 @@ namespace MachineWatchTest
       var inProcJob = new JobPlan("uniq2", 1);
       inProcJob.PartName = "part2";
       inProcJob.SetPlannedCyclesOnFirstProcess(1, 20);
-      _jobDB.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { completedJob, inProcJob } }, null);
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null);
 
       _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq1", "uniq2" }

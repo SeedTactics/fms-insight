@@ -2168,14 +2168,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             (prog: "prog333", rev: 7L),
           },
           workorders: new[] {
-            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = new[] {
+            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
               new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = null },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 },
-            }},
-            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = new[] {
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+            )},
+            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
               new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 },
-            }}
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+            )}
           }
         )
         .ExpectNoChanges()

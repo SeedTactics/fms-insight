@@ -42,6 +42,7 @@ using Microsoft.Extensions.DependencyModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Germinate;
 
 namespace DebugMachineWatchApiServer
 {
@@ -526,21 +527,27 @@ namespace DebugMachineWatchApiServer
         _jsonSettings
       );
 
-      foreach (var newJobs in allNewJobs)
+      foreach (var newJobsOrig in allNewJobs)
       {
-        foreach (var j in newJobs.Jobs)
+        var newJobs = newJobsOrig.Produce(newJobs =>
         {
-          OffsetJob(j, offset);
-        }
-        foreach (var su in newJobs.StationUse)
-        {
-          su.StartUTC = su.StartUTC.Add(offset);
-          su.EndUTC = su.EndUTC.Add(offset);
-        }
-        foreach (var w in newJobs.CurrentUnfilledWorkorders)
-        {
-          w.DueDate = w.DueDate.Add(offset);
-        }
+          foreach (var j in newJobs.Jobs)
+          {
+            OffsetJob(j, offset);
+          }
+          for (int i = 0; i <= newJobs.StationUse.Count; i++)
+          {
+            newJobs.StationUse[i] %= draft =>
+            {
+              draft.StartUTC = draft.StartUTC.Add(offset);
+              draft.EndUTC = draft.EndUTC.Add(offset);
+            };
+          }
+          for (int i = 0; i <= newJobs.CurrentUnfilledWorkorders.Count; i++)
+          {
+            newJobs.CurrentUnfilledWorkorders[i] %= w => w.DueDate = w.DueDate.Add(offset);
+          }
+        });
 
         LogDB.AddJobs(newJobs, null);
       }

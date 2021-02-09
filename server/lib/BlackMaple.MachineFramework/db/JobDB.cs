@@ -36,6 +36,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Data;
 using Microsoft.Data.Sqlite;
+using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
 {
@@ -459,17 +460,16 @@ namespace BlackMaple.MachineFramework
           {
             var workId = reader.GetString(0);
             var part = reader.GetString(1);
-            MachineWatchInterface.PartWorkorder workorder;
-
-            if (!ret.TryGetValue((work: workId, part: part), out workorder))
+            if (!ret.ContainsKey((work: workId, part: part)))
             {
-              workorder = new MachineWatchInterface.PartWorkorder()
+              var workorder = new MachineWatchInterface.PartWorkorder()
               {
                 WorkorderId = workId,
                 Part = part,
                 Quantity = reader.GetInt32(2),
                 DueDate = new DateTime(reader.GetInt64(3)),
-                Priority = reader.GetInt32(4)
+                Priority = reader.GetInt32(4),
+                Programs = ImmutableList<MachineWatchInterface.WorkorderProgram>.Empty
               };
               ret.Add((work: workId, part: part), workorder);
             }
@@ -477,18 +477,16 @@ namespace BlackMaple.MachineFramework
             if (reader.IsDBNull(5)) continue;
 
             // add the program
-            if (workorder.Programs == null)
+            ret[(work: workId, part: part)] %= workorder =>
             {
-              workorder.Programs = new List<MachineWatchInterface.WorkorderProgram>();
-            }
-            var progs = (List<MachineWatchInterface.WorkorderProgram>)workorder.Programs;
-            progs.Add(new MachineWatchInterface.WorkorderProgram()
-            {
-              ProcessNumber = reader.GetInt32(5),
-              StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
-              ProgramName = reader.IsDBNull(7) ? null : reader.GetString(7),
-              Revision = reader.IsDBNull(8) ? (int?)null : (int?)reader.GetInt32(8)
-            });
+              workorder.Programs.Add(new MachineWatchInterface.WorkorderProgram()
+              {
+                ProcessNumber = reader.GetInt32(5),
+                StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
+                ProgramName = reader.IsDBNull(7) ? null : reader.GetString(7),
+                Revision = reader.IsDBNull(8) ? (int?)null : (int?)reader.GetInt32(8)
+              });
+            };
 
           }
         }
@@ -526,15 +524,16 @@ namespace BlackMaple.MachineFramework
       {
         while (reader.Read())
         {
-          var sim = new MachineWatchInterface.SimulatedStationUtilization(
-                  reader.GetString(0),
-                  reader.GetString(1),
-                  reader.GetInt32(2),
-                  new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
-                  new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
-                  TimeSpan.FromTicks(reader.GetInt64(5)),
-                  reader.IsDBNull(6) ? TimeSpan.Zero :
-                  TimeSpan.FromTicks(reader.GetInt64(6)));
+          var sim = new MachineWatchInterface.SimulatedStationUtilization()
+          {
+            ScheduleId = reader.GetString(0),
+            StationGroup = reader.GetString(1),
+            StationNum = reader.GetInt32(2),
+            StartUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+            EndUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+            UtilizationTime = TimeSpan.FromTicks(reader.GetInt64(5)),
+            PlannedDownTime = reader.IsDBNull(6) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(6))
+          };
           ret.Add(sim);
         }
       }
@@ -685,11 +684,9 @@ namespace BlackMaple.MachineFramework
             while (reader.Read())
             {
               var workId = reader.GetString(0);
-              MachineWatchInterface.PartWorkorder workorder;
-
-              if (!ret.TryGetValue(workId, out workorder))
+              if (!ret.ContainsKey(workId))
               {
-                workorder = new MachineWatchInterface.PartWorkorder()
+                var workorder = new MachineWatchInterface.PartWorkorder()
                 {
                   WorkorderId = workId,
                   Part = part,
@@ -703,18 +700,16 @@ namespace BlackMaple.MachineFramework
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              if (workorder.Programs == null)
+              ret[workId] %= workorder =>
               {
-                workorder.Programs = new List<MachineWatchInterface.WorkorderProgram>();
-              }
-              var progs = (List<MachineWatchInterface.WorkorderProgram>)workorder.Programs;
-              progs.Add(new MachineWatchInterface.WorkorderProgram()
-              {
-                ProcessNumber = reader.GetInt32(4),
-                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-              });
+                workorder.Programs.Add(new MachineWatchInterface.WorkorderProgram()
+                {
+                  ProcessNumber = reader.GetInt32(4),
+                  StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                  ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+                });
+              };
             }
           }
 
@@ -744,11 +739,10 @@ namespace BlackMaple.MachineFramework
             while (reader.Read())
             {
               var part = reader.GetString(0);
-              MachineWatchInterface.PartWorkorder workorder;
 
-              if (!ret.TryGetValue(part, out workorder))
+              if (!ret.ContainsKey(part))
               {
-                workorder = new MachineWatchInterface.PartWorkorder()
+                var workorder = new MachineWatchInterface.PartWorkorder()
                 {
                   WorkorderId = workorderId,
                   Part = part,
@@ -762,18 +756,16 @@ namespace BlackMaple.MachineFramework
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              if (workorder.Programs == null)
+              ret[part] %= workorder =>
               {
-                workorder.Programs = new List<MachineWatchInterface.WorkorderProgram>();
-              }
-              var progs = (List<MachineWatchInterface.WorkorderProgram>)workorder.Programs;
-              progs.Add(new MachineWatchInterface.WorkorderProgram()
-              {
-                ProcessNumber = reader.GetInt32(4),
-                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-              });
+                workorder.Programs.Add(new MachineWatchInterface.WorkorderProgram()
+                {
+                  ProcessNumber = reader.GetInt32(4),
+                  StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                  ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+                });
+              };
             }
           }
 

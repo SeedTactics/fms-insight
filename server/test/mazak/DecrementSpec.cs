@@ -40,6 +40,7 @@ using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using MazakMachineInterface;
+using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
@@ -113,7 +114,7 @@ namespace MachineWatchTest
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var now = DateTime.UtcNow;
@@ -167,7 +168,7 @@ namespace MachineWatchTest
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       _decr.Decrement(_jobDB);
@@ -208,7 +209,7 @@ namespace MachineWatchTest
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var now = DateTime.UtcNow.AddHours(-1);
@@ -292,7 +293,7 @@ namespace MachineWatchTest
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var now = DateTime.UtcNow;
@@ -344,7 +345,7 @@ namespace MachineWatchTest
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var now = DateTime.UtcNow;
@@ -433,7 +434,7 @@ namespace MachineWatchTest
       j.SetInputQueue(process: 1, path: 2, queue: "castings");
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { j }
+        Jobs = ImmutableList.Create(j)
       }, null);
 
       var now = DateTime.UtcNow;
@@ -506,7 +507,7 @@ namespace MachineWatchTest
       vvvv.RouteEndingTimeUTC = now.AddHours(12);
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = new List<JobPlan> { uuuu, vvvv }
+        Jobs = ImmutableList.Create(uuuu, vvvv)
       }, null);
 
       _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Select(j => j.UniqueStr)

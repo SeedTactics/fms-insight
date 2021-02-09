@@ -37,6 +37,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -793,7 +794,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var newJ = new NewJobs()
       {
         ScheduleId = DateTime.UtcNow.Ticks.ToString(),
-        Jobs = jobs.ToList(),
+        Jobs = jobs.ToImmutableList(),
         Programs =
             progs.Select(p =>
             new MachineWatchInterface.ProgramEntry()
@@ -802,8 +803,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Revision = p.rev,
               Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
               ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
-            }).ToList(),
-        CurrentUnfilledWorkorders = workorders?.ToList()
+            }).ToImmutableList(),
+        CurrentUnfilledWorkorders = workorders?.ToImmutableList()
       };
       _logDB.AddJobs(newJ, null);
       foreach (var j in jobs)

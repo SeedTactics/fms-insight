@@ -39,6 +39,7 @@ using BlackMaple.MachineFramework;
 using FluentAssertions;
 using BlackMaple.MachineWatchInterface;
 using NSubstitute;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -210,7 +211,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       AddJobs(new NewJobs()
       {
-        Jobs = jobs.ToList(),
+        Jobs = jobs.ToImmutableList(),
         Programs =
             progs.Select(p =>
             new MachineWatchInterface.ProgramEntry()
@@ -219,7 +220,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Revision = p.rev,
               Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
               ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
-            }).ToList()
+            }).ToImmutableList()
       });
     }
 
@@ -982,23 +983,33 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         }
       }
-      newJobs.CurrentUnfilledWorkorders = new List<PartWorkorder> {
-        new PartWorkorder() { WorkorderId = "work1", Part = "aaa", Programs = new[] {
-          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1},
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1},
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1},
-          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1},
-          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1}
-        }},
-        new PartWorkorder() { WorkorderId = "work2", Part = "aaa", Programs = new[] {
-          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2},
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2},
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2},
-          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1},
-          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1}
-        }}
-      };
-      newJobs.Programs.AddRange(new[] {
+      newJobs %= j => j.CurrentUnfilledWorkorders.AddRange(new[] {
+        new PartWorkorder()
+        {
+          WorkorderId = "work1",
+          Part = "aaa",
+          Programs = ImmutableList.Create(
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
+          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
+          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
+        )
+        },
+        new PartWorkorder()
+        {
+          WorkorderId = "work2",
+          Part = "aaa",
+          Programs = ImmutableList.Create(
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
+          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
+          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
+        )
+        }
+      });
+      newJobs %= j => j.Programs.AddRange(new[] {
         new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
         new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
         new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
