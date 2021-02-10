@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -56,153 +56,129 @@ namespace MazakMachineInterface
     Error = 9,
   }
 
-  public class MazakPartRow
+  public record MazakPartRow
   {
-    public string PartName { get; set; }
-    public string Comment { get; set; }
-    public double Price { get; set; }
-    public int TotalProcess { get; set; }
+    public string PartName { get; init; }
+    public string Comment { get; init; }
+    public double Price { get; init; }
+    public int TotalProcess { get; init; }
 
     // these columns are new on smooth
     private string _matName;
     public string MaterialName
     {
       get => _matName ?? "";
-      set => _matName = value;
+      init => _matName = value;
     }
-    public int Part_1 { get; set; }
-    public int Part_2 { get; set; }
+    public int Part_1 { get; init; }
+    public int Part_2 { get; init; }
 
     private string _part3;
     public string Part_3
     {
       get => _part3 ?? "";
-      set => _part3 = value;
+      init => _part3 = value;
     }
-    public int Part_4 { get; set; }
-    public int Part_5 { get; set; }
-    public int CheckCount { get; set; }
-    public int ProductCount { get; set; }
+    public int Part_4 { get; init; }
+    public int Part_5 { get; init; }
+    public int CheckCount { get; init; }
+    public int ProductCount { get; init; }
 
-    public IList<MazakPartProcessRow> Processes { get; set; } = new List<MazakPartProcessRow>();
+    public IList<MazakPartProcessRow> Processes { get; init; } = new List<MazakPartProcessRow>();
 
-    public MazakWriteCommand Command { get; set; } // only for transaction DB
-
-    public MazakPartRow Clone()
-    {
-      var p = (MazakPartRow)MemberwiseClone();
-      p.Processes =
-        Processes
-        .Select(proc => proc.Clone())
-        .ToList();
-      return p;
-    }
+    public MazakWriteCommand Command { get; init; } // only for transaction DB
   }
 
-  public class MazakPartProcessRow
+  public record MazakPartProcessRow
   {
-    public string PartName { get; set; }
-    public int ProcessNumber { get; set; }
+    public string PartName { get; init; }
+    public int ProcessNumber { get; init; }
 
-    public int FixQuantity { get; set; }
-    public int ContinueCut { get; set; }
-    public string CutMc { get; set; }
-    public string FixLDS { get; set; }
-    public string FixPhoto { get; set; }
-    public string Fixture { get; set; }
-    public string MainProgram { get; set; }
-    public string RemoveLDS { get; set; }
-    public string RemovePhoto { get; set; }
-    public int WashType { get; set; }
+    public int FixQuantity { get; init; }
+    public int ContinueCut { get; init; }
+    public string CutMc { get; init; }
+    public string FixLDS { get; init; }
+    public string FixPhoto { get; init; }
+    public string Fixture { get; init; }
+    public string MainProgram { get; init; }
+    public string RemoveLDS { get; init; }
+    public string RemovePhoto { get; init; }
+    public int WashType { get; init; }
 
     // these are new on smooth
-    public int PartProcess_1 { get; set; }
-    public int PartProcess_2 { get; set; }
-    public int PartProcess_3 { get; set; }
-    public int PartProcess_4 { get; set; }
-    public int FixTime { get; set; }
-    public int RemoveTime { get; set; }
-    public int CreateToolList_RA { get; set; }
-
-    public MazakPartProcessRow Clone() => (MazakPartProcessRow)MemberwiseClone();
+    public int PartProcess_1 { get; init; }
+    public int PartProcess_2 { get; init; }
+    public int PartProcess_3 { get; init; }
+    public int PartProcess_4 { get; init; }
+    public int FixTime { get; init; }
+    public int RemoveTime { get; init; }
+    public int CreateToolList_RA { get; init; }
   }
 
-  public class MazakScheduleRow
+  public record MazakScheduleRow
   {
-    public int Id { get; set; }
-    public string Comment { get; set; }
-    public string PartName { get; set; }
-    public int PlanQuantity { get; set; }
-    public int CompleteQuantity { get; set; }
-    public int Priority { get; set; }
+    public int Id { get; init; }
+    public string Comment { get; init; }
+    public string PartName { get; init; }
+    public int PlanQuantity { get; init; }
+    public int CompleteQuantity { get; init; }
+    public int Priority { get; init; }
 
-    public DateTime? DueDate { get; set; }
-    public int FixForMachine { get; set; }
-    public int HoldMode { get; set; }
-    public int MissingFixture { get; set; }
-    public int MissingProgram { get; set; }
-    public int MissingTool { get; set; }
-    public int MixScheduleID { get; set; }
-    public int ProcessingPriority { get; set; }
+    public DateTime? DueDate { get; init; }
+    public int FixForMachine { get; init; }
+    public int HoldMode { get; init; }
+    public int MissingFixture { get; init; }
+    public int MissingProgram { get; init; }
+    public int MissingTool { get; init; }
+    public int MixScheduleID { get; init; }
+    public int ProcessingPriority { get; init; }
 
     //these are only on Smooth
-    public int Schedule_1 { get; set; }
-    public int Schedule_2 { get; set; }
-    public int Schedule_3 { get; set; }
-    public int Schedule_4 { get; set; }
-    public int Schedule_5 { get; set; }
-    public int Schedule_6 { get; set; }
-    public DateTime? StartDate { get; set; }
-    public int SetNumber { get; set; }
-    public int SetQuantity { get; set; }
-    public int SetNumberSets { get; set; }
+    public int Schedule_1 { get; init; }
+    public int Schedule_2 { get; init; }
+    public int Schedule_3 { get; init; }
+    public int Schedule_4 { get; init; }
+    public int Schedule_5 { get; init; }
+    public int Schedule_6 { get; init; }
+    public DateTime? StartDate { get; init; }
+    public int SetNumber { get; init; }
+    public int SetQuantity { get; init; }
+    public int SetNumberSets { get; init; }
 
-    public IList<MazakScheduleProcessRow> Processes { get; set; } = new List<MazakScheduleProcessRow>();
+    public IList<MazakScheduleProcessRow> Processes { get; init; } = new List<MazakScheduleProcessRow>();
 
-    public MazakWriteCommand Command { get; set; } // only for transaction DB
-
-    public MazakScheduleRow Clone()
-    {
-      var s = (MazakScheduleRow)MemberwiseClone();
-      s.Processes =
-        Processes
-        .Select(proc => proc.Clone())
-        .ToList();
-      return s;
-    }
+    public MazakWriteCommand Command { get; init; } // only for transaction DB
   }
 
-  public class MazakScheduleProcessRow
+  public record MazakScheduleProcessRow
   {
-    public int MazakScheduleRowId { get; set; }
-    public int FixQuantity { get; set; }
+    public int MazakScheduleRowId { get; init; }
+    public int FixQuantity { get; init; }
 
-    public int ProcessNumber { get; set; }
-    public int ProcessMaterialQuantity { get; set; }
-    public int ProcessExecuteQuantity { get; set; }
-    public int ProcessBadQuantity { get; set; }
-    public int ProcessMachine { get; set; }
+    public int ProcessNumber { get; init; }
+    public int ProcessMaterialQuantity { get; init; }
+    public int ProcessExecuteQuantity { get; init; }
+    public int ProcessBadQuantity { get; init; }
+    public int ProcessMachine { get; init; }
 
     // these are only on Smooth
-    public int FixedMachineFlag { get; set; }
-    public int FixedMachineNumber { get; set; }
-    public int ScheduleProcess_1 { get; set; }
-    public int ScheduleProcess_2 { get; set; }
-    public int ScheduleProcess_3 { get; set; }
-    public int ScheduleProcess_4 { get; set; }
-    public int ScheduleProcess_5 { get; set; }
-
-    public MazakScheduleProcessRow Clone() => (MazakScheduleProcessRow)MemberwiseClone();
+    public int FixedMachineFlag { get; init; }
+    public int FixedMachineNumber { get; init; }
+    public int ScheduleProcess_1 { get; init; }
+    public int ScheduleProcess_2 { get; init; }
+    public int ScheduleProcess_3 { get; init; }
+    public int ScheduleProcess_4 { get; init; }
+    public int ScheduleProcess_5 { get; init; }
   }
 
-  public class MazakPalletRow
+  public record MazakPalletRow
   {
-    public int PalletNumber { get; set; }
-    public string Fixture { get; set; }
-    public int RecordID { get; set; }
-    public int AngleV1 { get; set; }
-    public int FixtureGroupV2 { get; set; }
-    public MazakWriteCommand Command { get; set; } // only for transaction DB
+    public int PalletNumber { get; init; }
+    public string Fixture { get; init; }
+    public int RecordID { get; init; }
+    public int AngleV1 { get; init; }
+    public int FixtureGroupV2 { get; init; }
+    public MazakWriteCommand Command { get; init; } // only for transaction DB
 
     public int FixtureGroup
     {
@@ -218,76 +194,72 @@ namespace MazakMachineInterface
         }
       }
     }
-
-    public MazakPalletRow Clone() => (MazakPalletRow)MemberwiseClone();
   }
 
-  public class MazakPalletSubStatusRow
+  public record MazakPalletSubStatusRow
   {
-    public int PalletNumber { get; set; }
-    public string FixtureName { get; set; }
-    public int ScheduleID { get; set; }
-    public string PartName { get; set; }
-    public int PartProcessNumber { get; set; }
-    public int FixQuantity { get; set; }
+    public int PalletNumber { get; init; }
+    public string FixtureName { get; init; }
+    public int ScheduleID { get; init; }
+    public string PartName { get; init; }
+    public int PartProcessNumber { get; init; }
+    public int FixQuantity { get; init; }
   }
 
-  public class MazakPalletPositionRow
+  public record MazakPalletPositionRow
   {
-    public int PalletNumber { get; set; }
-    public string PalletPosition { get; set; }
+    public int PalletNumber { get; init; }
+    public string PalletPosition { get; init; }
   }
 
-  public class MazakFixtureRow
+  public record MazakFixtureRow
   {
-    public string FixtureName { get; set; }
-    public string Comment { get; set; }
-    public MazakWriteCommand Command { get; set; } // only for transaction DB
-
-    public MazakFixtureRow Clone() => (MazakFixtureRow)MemberwiseClone();
+    public string FixtureName { get; init; }
+    public string Comment { get; init; }
+    public MazakWriteCommand Command { get; init; } // only for transaction DB
   }
 
-  public class MazakAlarmRow
+  public record MazakAlarmRow
   {
-    public int? AlarmNumber { get; set; }
-    public string AlarmMessage { get; set; }
+    public int? AlarmNumber { get; init; }
+    public string AlarmMessage { get; init; }
   }
 
-  public class ToolPocketRow
+  public record ToolPocketRow
   {
-    public int? MachineNumber { get; set; }
-    public int? PocketNumber { get; set; }
-    public int? PocketType { get; set; }
-    public int? ToolID { get; set; }
-    public int? ToolNameCode { get; set; }
-    public int? ToolNumber { get; set; }
-    public bool? IsLengthMeasured { get; set; }
-    public bool? IsToolDataValid { get; set; }
-    public bool? IsToolLifeOver { get; set; }
-    public bool? IsToolLifeBroken { get; set; }
-    public bool? IsDataAccessed { get; set; }
-    public bool? IsBeingUsed { get; set; }
-    public bool? UsableNow { get; set; }
-    public bool? WillBrokenInform { get; set; }
-    public int? InterferenceType { get; set; }
-    public int? LifeSpan { get; set; }
-    public int? LifeUsed { get; set; }
-    public string NominalDiameter { get; set; }
-    public int? SuffixCode { get; set; }
-    public int? ToolDiameter { get; set; }
-    public string GroupNo { get; set; }
+    public int? MachineNumber { get; init; }
+    public int? PocketNumber { get; init; }
+    public int? PocketType { get; init; }
+    public int? ToolID { get; init; }
+    public int? ToolNameCode { get; init; }
+    public int? ToolNumber { get; init; }
+    public bool? IsLengthMeasured { get; init; }
+    public bool? IsToolDataValid { get; init; }
+    public bool? IsToolLifeOver { get; init; }
+    public bool? IsToolLifeBroken { get; init; }
+    public bool? IsDataAccessed { get; init; }
+    public bool? IsBeingUsed { get; init; }
+    public bool? UsableNow { get; init; }
+    public bool? WillBrokenInform { get; init; }
+    public int? InterferenceType { get; init; }
+    public int? LifeSpan { get; init; }
+    public int? LifeUsed { get; init; }
+    public string NominalDiameter { get; init; }
+    public int? SuffixCode { get; init; }
+    public int? ToolDiameter { get; init; }
+    public string GroupNo { get; init; }
   }
 
 
-  public class LoadAction
+  public record LoadAction
   {
-    public int LoadStation { get; set; }
-    public bool LoadEvent { get; set; }
-    public string Unique { get; set; }
-    public string Part { get; set; }
-    public int Process { get; set; }
-    public int Path { get; set; }
-    public int Qty { get; set; }
+    public int LoadStation { get; init; }
+    public bool LoadEvent { get; init; }
+    public string Unique { get; init; }
+    public string Part { get; init; }
+    public int Process { get; init; }
+    public int Path { get; init; }
+    public int Qty { get; init; }
 
     public LoadAction(bool l, int stat, string p, string comment, int proc, int q)
     {
@@ -310,22 +282,16 @@ namespace MazakMachineInterface
     }
 
     [Newtonsoft.Json.JsonConstructor] public LoadAction() { }
-
-    public override string ToString()
-    {
-      return (LoadEvent ? "Load " : "Unload ") +
-        Part + "-" + Process.ToString() + " qty: " + Qty.ToString();
-    }
   }
 
 
-  public class MazakCurrentStatus
+  public record MazakCurrentStatus
   {
-    public IEnumerable<MazakScheduleRow> Schedules { get; set; }
-    public IEnumerable<LoadAction> LoadActions { get; set; }
-    public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; set; }
-    public IEnumerable<MazakPalletPositionRow> PalletPositions { get; set; }
-    public IEnumerable<MazakAlarmRow> Alarms { get; set; }
+    public IEnumerable<MazakScheduleRow> Schedules { get; init; }
+    public IEnumerable<LoadAction> LoadActions { get; init; }
+    public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; init; }
+    public IEnumerable<MazakPalletPositionRow> PalletPositions { get; init; }
+    public IEnumerable<MazakAlarmRow> Alarms { get; init; }
 
     public void FindSchedule(string mazakPartName, int proc, out string unique, out int path, out int numProc)
     {
@@ -347,23 +313,23 @@ namespace MazakMachineInterface
     }
   }
 
-  public class MazakCurrentStatusAndTools : MazakCurrentStatus
+  public record MazakCurrentStatusAndTools : MazakCurrentStatus
   {
-    public IEnumerable<ToolPocketRow> Tools { get; set; }
+    public IEnumerable<ToolPocketRow> Tools { get; init; }
   }
 
-  public class MazakProgramRow
+  public record MazakProgramRow
   {
-    public string MainProgram { get; set; }
-    public string Comment { get; set; }
+    public string MainProgram { get; init; }
+    public string Comment { get; init; }
   }
 
-  public class MazakAllData : MazakCurrentStatus
+  public record MazakAllData : MazakCurrentStatus
   {
-    public IEnumerable<MazakPartRow> Parts { get; set; }
-    public IEnumerable<MazakPalletRow> Pallets { get; set; }
-    public IEnumerable<MazakProgramRow> MainPrograms { get; set; }
-    public IEnumerable<MazakFixtureRow> Fixtures { get; set; }
+    public IEnumerable<MazakPartRow> Parts { get; init; }
+    public IEnumerable<MazakPalletRow> Pallets { get; init; }
+    public IEnumerable<MazakProgramRow> MainPrograms { get; init; }
+    public IEnumerable<MazakFixtureRow> Fixtures { get; init; }
   }
 
   public interface ICurrentLoadActions : IDisposable
@@ -385,23 +351,23 @@ namespace MazakMachineInterface
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
   }
 
-  public class NewMazakProgram
+  public record NewMazakProgram
   {
-    public string ProgramName { get; set; }
-    public long ProgramRevision { get; set; }
-    public string MainProgram { get; set; }
-    public string Comment { get; set; }
-    public MazakWriteCommand Command { get; set; }
-    public string ProgramContent { get; set; }
+    public string ProgramName { get; init; }
+    public long ProgramRevision { get; init; }
+    public string MainProgram { get; init; }
+    public string Comment { get; init; }
+    public MazakWriteCommand Command { get; init; }
+    public string ProgramContent { get; init; }
   }
 
-  public class MazakWriteData
+  public record MazakWriteData
   {
-    public IList<MazakScheduleRow> Schedules { get; set; } = new List<MazakScheduleRow>();
-    public IList<MazakPartRow> Parts { get; set; } = new List<MazakPartRow>();
-    public IList<MazakPalletRow> Pallets { get; set; } = new List<MazakPalletRow>();
-    public IList<MazakFixtureRow> Fixtures { get; set; } = new List<MazakFixtureRow>();
-    public IList<NewMazakProgram> Programs { get; set; } = new List<NewMazakProgram>();
+    public IReadOnlyList<MazakScheduleRow> Schedules { get; init; } = new List<MazakScheduleRow>();
+    public IReadOnlyList<MazakPartRow> Parts { get; init; } = new List<MazakPartRow>();
+    public IReadOnlyList<MazakPalletRow> Pallets { get; init; } = new List<MazakPalletRow>();
+    public IReadOnlyList<MazakFixtureRow> Fixtures { get; init; } = new List<MazakFixtureRow>();
+    public IReadOnlyList<NewMazakProgram> Programs { get; init; } = new List<NewMazakProgram>();
   }
 
   public interface IWriteData

@@ -47,21 +47,24 @@ namespace MazakMachineInterface
       RemoveCompletedSchedules(MazakCurrentStatus mazakData)
     {
       //remove all completed production
-      var transSet = new MazakWriteData();
+      var schs = new List<MazakScheduleRow>();
       var savedParts = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules)
       {
-        var newSchRow = schRow.Clone();
         if (schRow.PlanQuantity == schRow.CompleteQuantity)
         {
-          newSchRow.Command = MazakWriteCommand.Delete;
-          transSet.Schedules.Add(newSchRow);
+          var newSchRow = schRow with
+          {
+            Command = MazakWriteCommand.Delete
+          };
+          schs.Add(newSchRow);
         }
         else
         {
           savedParts.Add(schRow.PartName);
         }
       }
+      var transSet = new MazakWriteData() { Schedules = schs };
       return (transSet, savedParts);
     }
 
@@ -70,9 +73,9 @@ namespace MazakMachineInterface
       IEnumerable<JobPlan> jobs,
       bool UseStartingOffsetForDueDate)
     {
-      var transSet = new MazakWriteData();
-      if (!jobs.Any()) return transSet;
+      if (!jobs.Any()) return new MazakWriteData();
 
+      var schs = new List<MazakScheduleRow>();
       var routeStartDate = jobs.First().RouteStartingTimeUTC.ToLocalTime().Date;
 
       var usedScheduleIDs = new HashSet<int>();
@@ -123,8 +126,7 @@ namespace MazakMachineInterface
           {
             int schid = FindNextScheduleId(usedScheduleIDs);
             int earlierConflicts = CountEarlierConflicts(part, proc1path, jobs);
-            SchedulePart(
-              transSet: transSet,
+            schs.Add(SchedulePart(
               SchID: schid,
               mazakPartName: mazakPartName,
               mazakComment: mazakComment,
@@ -134,60 +136,65 @@ namespace MazakMachineInterface
               earlierConflicts: earlierConflicts,
               startingPriority: maxPriMatchingDate + 1,
               routeStartDate: routeStartDate,
-              UseStartingOffsetForDueDate: UseStartingOffsetForDueDate);
+              UseStartingOffsetForDueDate: UseStartingOffsetForDueDate));
           }
         }
       }
 
       if (UseStartingOffsetForDueDate)
-        SortSchedulesByDate(transSet);
-
-      return transSet;
+        return new MazakWriteData() { Schedules = SortSchedulesByDate(schs) };
+      else
+        return new MazakWriteData() { Schedules = schs };
     }
 
-    private static void SchedulePart(
-      MazakWriteData transSet, int SchID, string mazakPartName, string mazakComment, int numProcess,
+    private static MazakScheduleRow SchedulePart(
+      int SchID, string mazakPartName, string mazakComment, int numProcess,
       JobPlan part, int proc1path, int earlierConflicts, int startingPriority, DateTime routeStartDate, bool UseStartingOffsetForDueDate)
     {
-      var newSchRow = new MazakScheduleRow();
-      newSchRow.Command = MazakWriteCommand.Add;
-      newSchRow.Id = SchID;
-      newSchRow.PartName = mazakPartName;
-      newSchRow.PlanQuantity = part.GetPlannedCyclesOnFirstProcess(proc1path);
-      newSchRow.CompleteQuantity = 0;
-      newSchRow.FixForMachine = 0;
-      newSchRow.MissingFixture = 0;
-      newSchRow.MissingProgram = 0;
-      newSchRow.MissingTool = 0;
-      newSchRow.MixScheduleID = 0;
-      newSchRow.ProcessingPriority = 0;
-      newSchRow.Comment = mazakComment;
+      bool entireHold = false;
+      if (part.HoldEntireJob != null) entireHold = part.HoldEntireJob.IsJobOnHold;
+      bool machiningHold = false;
+      if (part.HoldMachining(1, proc1path) != null) machiningHold = part.HoldMachining(1, proc1path).IsJobOnHold;
+
+      var newSchRow = new MazakScheduleRow()
+      {
+        Command = MazakWriteCommand.Add,
+        Id = SchID,
+        PartName = mazakPartName,
+        PlanQuantity = part.GetPlannedCyclesOnFirstProcess(proc1path),
+        CompleteQuantity = 0,
+        FixForMachine = 0,
+        MissingFixture = 0,
+        MissingProgram = 0,
+        MissingTool = 0,
+        MixScheduleID = 0,
+        ProcessingPriority = 0,
+        Comment = mazakComment,
+        Priority = 75,
+        DueDate = DateTime.Parse("1/1/2008 12:00:00 AM"),
+        HoldMode = (int)HoldPattern.CalculateHoldMode(entireHold, machiningHold),
+      };
 
       if (UseStartingOffsetForDueDate)
       {
         if (part.GetSimulatedStartingTimeUTC(1, proc1path) != DateTime.MinValue)
         {
           var start = part.GetSimulatedStartingTimeUTC(1, proc1path);
-          newSchRow.DueDate = routeStartDate;
-          newSchRow.Priority = Math.Min(100, startingPriority + earlierConflicts);
+          newSchRow = newSchRow with
+          {
+            DueDate = routeStartDate,
+            Priority = Math.Min(100, startingPriority + earlierConflicts)
+          };
         }
         else
         {
-          newSchRow.DueDate = routeStartDate;
-          newSchRow.Priority = startingPriority;
+          newSchRow = newSchRow with
+          {
+            DueDate = routeStartDate,
+            Priority = startingPriority,
+          };
         }
       }
-      else
-      {
-        newSchRow.Priority = 75;
-        newSchRow.DueDate = DateTime.Parse("1/1/2008 12:00:00 AM");
-      }
-
-      bool entireHold = false;
-      if (part.HoldEntireJob != null) entireHold = part.HoldEntireJob.IsJobOnHold;
-      bool machiningHold = false;
-      if (part.HoldMachining(1, proc1path) != null) machiningHold = part.HoldMachining(1, proc1path).IsJobOnHold;
-      newSchRow.HoldMode = (int)HoldPattern.CalculateHoldMode(entireHold, machiningHold);
 
       int matQty = newSchRow.PlanQuantity;
 
@@ -199,25 +206,20 @@ namespace MazakMachineInterface
       //need to add all the ScheduleProcess rows
       for (int i = 1; i <= numProcess; i++)
       {
-        var newSchProcRow = new MazakScheduleProcessRow();
-        newSchProcRow.MazakScheduleRowId = SchID;
-        newSchProcRow.ProcessNumber = i;
-        if (i == 1)
+        var newSchProcRow = new MazakScheduleProcessRow()
         {
-          newSchProcRow.ProcessMaterialQuantity = matQty;
-        }
-        else
-        {
-          newSchProcRow.ProcessMaterialQuantity = 0;
-        }
-        newSchProcRow.ProcessBadQuantity = 0;
-        newSchProcRow.ProcessExecuteQuantity = 0;
-        newSchProcRow.ProcessMachine = 0;
+          MazakScheduleRowId = SchID,
+          ProcessNumber = i,
+          ProcessMaterialQuantity = (i == 1) ? matQty : 0,
+          ProcessBadQuantity = 0,
+          ProcessExecuteQuantity = 0,
+          ProcessMachine = 0,
+        };
 
         newSchRow.Processes.Add(newSchProcRow);
       }
 
-      transSet.Schedules.Add(newSchRow);
+      return newSchRow;
     }
 
     /// Count up how many JobPaths have an earlier simulation start time and also share a fixture/face with the current job
@@ -294,10 +296,9 @@ namespace MazakMachineInterface
       return earlierConflicts;
     }
 
-    private static void SortSchedulesByDate(MazakWriteData transSet)
+    private static IReadOnlyList<MazakScheduleRow> SortSchedulesByDate(List<MazakScheduleRow> schs)
     {
-      transSet.Schedules =
-        transSet.Schedules
+      return schs
         .OrderBy(x => x.DueDate)
         .ThenBy(x => -x.Priority)
         .ToList();

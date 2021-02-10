@@ -548,8 +548,9 @@ namespace MazakMachineInterface
     {
       if (loc.Location != PalletLocationEnum.LoadUnload)
         return null;
-      foreach (var act in currentLoads)
+      for (int i = 0; i < currentLoads.Count; i++)
       {
+        var act = currentLoads[i];
         if (act.LoadEvent == true
             && loc.Num == act.LoadStation
             && unique == act.Unique
@@ -562,7 +563,7 @@ namespace MazakMachineInterface
           }
           else
           {
-            act.Qty -= 1;
+            currentLoads[i] = act with { Qty = act.Qty - 1 };
           }
           return act;
         }
@@ -574,8 +575,9 @@ namespace MazakMachineInterface
     {
       if (loc.Location != PalletLocationEnum.LoadUnload)
         return null;
-      foreach (var act in currentLoads)
+      for (int i = 0; i < currentLoads.Count; i++)
       {
+        var act = currentLoads[i];
         if (act.LoadEvent == false
             && loc.Num == act.LoadStation
             && unique == act.Unique
@@ -588,7 +590,7 @@ namespace MazakMachineInterface
           }
           else
           {
-            act.Qty -= 1;
+            currentLoads[i] = act with { Qty = act.Qty - 1 };
           }
           return act;
         }

@@ -99,7 +99,7 @@ namespace MazakMachineInterface
       schs = LoadSchedules(jdb, mazakData);
       if (!schs.Any()) return null;
 
-      CalculateTargetMatQty(jdb, mazakData, schs);
+      CalculateTargetMatQty(jdb, schs);
       return UpdateMazakMaterialCounts(schs);
     }
 
@@ -216,7 +216,7 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    private void CalculateTargetMatQty(IRepository logDb, MazakCurrentStatus mazakData, IEnumerable<ScheduleWithQueues> schs)
+    private void CalculateTargetMatQty(IRepository logDb, IEnumerable<ScheduleWithQueues> schs)
     {
       // go through each job and process, and distribute the queued material among the various paths
       // for the job and process.
@@ -399,27 +399,32 @@ namespace MazakMachineInterface
         if (!sch.Procs.Values.Any(p => p.TargetMaterialCount.HasValue)) continue;
         log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.Id, sch.Unique, sch);
 
-        var newSch = sch.SchRow.Clone();
-        newSch.Command = MazakWriteCommand.ScheduleMaterialEdit;
-        newSchs.Add(newSch);
+        var newSch = sch.SchRow with
+        {
+          Command = MazakWriteCommand.ScheduleMaterialEdit,
+          Processes = sch.SchRow.Processes.ToList()
+        };
 
         if (sch.NewDueDate.HasValue)
         {
-          newSch.DueDate = sch.NewDueDate.Value;
+          newSch = newSch with { DueDate = sch.NewDueDate.Value };
         }
         if (sch.NewPriority.HasValue)
         {
-          newSch.Priority = sch.NewPriority.Value;
+          newSch = newSch with { Priority = sch.NewPriority.Value };
         }
 
-        foreach (var newProc in newSch.Processes)
+        for (int i = 0; i < newSch.Processes.Count; i++)
         {
+          var newProc = newSch.Processes[i];
           var oldProc = sch.Procs[newProc.ProcessNumber];
           if (oldProc.TargetMaterialCount.HasValue)
           {
-            newProc.ProcessMaterialQuantity = oldProc.TargetMaterialCount.Value;
+            newSch.Processes[i] = newProc with { ProcessMaterialQuantity = oldProc.TargetMaterialCount.Value };
           }
         }
+
+        newSchs.Add(newSch);
       }
 
       return new MazakWriteData()

@@ -176,52 +176,22 @@ namespace MazakMachineInterface
     internal static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
     {
       // Open Database Kit can lockup if too many commands are sent at once
-      var cur = new MazakWriteData();
-      var lst = new List<MazakWriteData> { cur };
-      int cnt = 0;
-
-      void incrementCnt()
-      {
-        cnt += 1;
-        if (cnt >= EntriesPerTransaction)
+      return
+        original.Schedules.Cast<object>()
+        .Concat(original.Parts)
+        .Concat(original.Pallets)
+        .Concat(original.Fixtures)
+        .Concat(original.Programs)
+        .Chunk(EntriesPerTransaction)
+        .Select(chunk => new MazakWriteData()
         {
-          cur = new MazakWriteData();
-          lst.Add(cur);
-          cnt = 0;
-        }
-      }
-
-      foreach (var s in original.Schedules)
-      {
-        cur.Schedules.Add(s);
-        incrementCnt();
-      }
-
-      foreach (var p in original.Parts)
-      {
-        cur.Parts.Add(p);
-        incrementCnt();
-      }
-
-      foreach (var p in original.Pallets)
-      {
-        cur.Pallets.Add(p);
-        incrementCnt();
-      }
-
-      foreach (var f in original.Fixtures)
-      {
-        cur.Fixtures.Add(f);
-        incrementCnt();
-      }
-
-      foreach (var p in original.Programs)
-      {
-        cur.Programs.Add(p);
-        incrementCnt();
-      }
-
-      return lst;
+          Schedules = chunk.OfType<MazakScheduleRow>().ToArray(),
+          Parts = chunk.OfType<MazakPartRow>().ToArray(),
+          Pallets = chunk.OfType<MazakPalletRow>().ToArray(),
+          Fixtures = chunk.OfType<MazakFixtureRow>().ToArray(),
+          Programs = chunk.OfType<NewMazakProgram>().ToArray(),
+        })
+        .ToList();
     }
 
     public void Save(MazakWriteData data, string prefix)
@@ -1023,19 +993,20 @@ namespace MazakMachineInterface
       var procs = conn.Query<MazakScheduleProcessRow>(_scheduleProcSelect, transaction: trans);
       foreach (var proc in procs)
       {
-        proc.FixQuantity = 1;
         if (schDict.ContainsKey(proc.MazakScheduleRowId))
         {
           var schRow = schDict[proc.MazakScheduleRowId];
-          schRow.Processes.Add(proc);
 
+          var fixQty = 1;
           foreach (var p in fixQtys)
           {
             if (p.PartName == schRow.PartName && p.ProcessNumber == proc.ProcessNumber)
             {
-              proc.FixQuantity = p.FixQuantity;
+              fixQty = p.FixQuantity;
             }
           }
+
+          schRow.Processes.Add(proc with { FixQuantity = fixQty });
         }
       }
       return schs;
@@ -1153,6 +1124,38 @@ namespace MazakMachineInterface
       });
 
       return data;
+    }
+  }
+
+  public static class ChunkList
+  {
+    public static IEnumerable<List<T>> Chunk<T>(this IEnumerable<T> enumerable, int chunkSize)
+    {
+      using (var enumerator = enumerable.GetEnumerator())
+      {
+        List<T> list = null;
+        while (enumerator.MoveNext())
+        {
+          if (list == null)
+          {
+            list = new List<T> { enumerator.Current };
+          }
+          else if (list.Count < chunkSize)
+          {
+            list.Add(enumerator.Current);
+          }
+          else
+          {
+            yield return list;
+            list = new List<T> { enumerator.Current };
+          }
+        }
+
+        if (list?.Count > 0)
+        {
+          yield return list;
+        }
+      }
     }
   }
 }

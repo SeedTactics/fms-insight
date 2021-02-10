@@ -145,21 +145,24 @@ namespace MazakMachineInterface
 
     private void ReducePlannedQuantity(ICollection<DecrSchedule> jobs)
     {
-      var write = new MazakWriteData();
+      var schs = new List<MazakScheduleRow>();
       foreach (var job in jobs)
       {
         if (job.Schedule.PlanQuantity > job.NewPlanQty)
         {
-          var newSchRow = job.Schedule.Clone();
-          newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
-          newSchRow.PlanQuantity = job.NewPlanQty;
-          newSchRow.Processes.Clear();
-          write.Schedules.Add(newSchRow);
+          var newSchRow = job.Schedule with
+          {
+            Command = MazakWriteCommand.ScheduleSafeEdit,
+            PlanQuantity = job.NewPlanQty,
+            Processes = new List<MazakScheduleProcessRow>()
+          };
+          schs.Add(newSchRow);
         }
       }
 
-      if (write.Schedules.Any())
+      if (schs.Count > 0)
       {
+        var write = new MazakWriteData() { Schedules = schs };
         _write.Save(write, "Decrement preventing new parts starting");
       }
     }

@@ -56,6 +56,7 @@ namespace MachineWatchTest
     private IMachineGroupName machGroupName;
     private FMSSettings settings;
     protected MazakCurrentStatusAndTools mazakData;
+    protected List<ToolPocketRow> mazakDataTools;
     private List<MazakScheduleRow> _schedules;
     private List<MazakPalletSubStatusRow> _palletSubStatus;
     private List<MazakPalletPositionRow> _palletPositions;
@@ -77,11 +78,12 @@ namespace MachineWatchTest
       _schedules = new List<MazakScheduleRow>();
       _palletSubStatus = new List<MazakPalletSubStatusRow>();
       _palletPositions = new List<MazakPalletPositionRow>();
+      mazakDataTools = new List<ToolPocketRow>();
       mazakData = new MazakCurrentStatusAndTools()
       {
         Schedules = _schedules,
         LoadActions = Enumerable.Empty<LoadAction>(),
-        Tools = Enumerable.Empty<ToolPocketRow>(),
+        Tools = mazakDataTools,
         PalletPositions = _palletPositions,
         PalletSubStatuses = _palletSubStatus
       };
@@ -1864,24 +1866,25 @@ namespace MachineWatchTest
 
       // some basic snapshots.  More complicated scenarios are tested as part of the Repository spec
 
-      mazakData.Tools = new[] {
+      mazakDataTools.AddRange(new[] {
         new ToolPocketRow() { MachineNumber = 1, PocketNumber = 10, GroupNo = "ignored", IsToolDataValid = true, LifeUsed = 20, LifeSpan = 101},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 10, GroupNo = "tool1", IsToolDataValid = true, LifeUsed = 30, LifeSpan = 102},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 20, GroupNo = "tool2", IsToolDataValid = true, LifeUsed = 40, LifeSpan = 103},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 30, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 50, LifeSpan = 104},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 40, GroupNo = null, IsToolDataValid = false, LifeUsed = 60, LifeSpan = 105},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = null, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 70, LifeSpan = 106}
-      };
+      });
       MachStart(p, offset: 4, mach: 2);
 
-      mazakData.Tools = new[] {
+      mazakDataTools.Clear();
+      mazakDataTools.AddRange(new[] {
         new ToolPocketRow() { MachineNumber = 1, PocketNumber = 10, GroupNo = "ignored", IsToolDataValid = true, LifeUsed = 22, LifeSpan = 101},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 10, GroupNo = "tool1", IsToolDataValid = true, LifeUsed = 33, LifeSpan = 102},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 20, GroupNo = "tool2", IsToolDataValid = true, LifeUsed = 44, LifeSpan = 103},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 30, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 55, LifeSpan = 104},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 40, GroupNo = null, IsToolDataValid = false, LifeUsed = 66, LifeSpan = 105},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = null, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 77, LifeSpan = 106}
-      };
+      });
       MachEnd(p, offset: 20, mach: 2, elapMin: 16, tools: new Dictionary<string, ToolUse>() {
         { "tool1",
           new ToolUse() {

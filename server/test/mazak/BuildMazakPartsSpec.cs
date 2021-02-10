@@ -1173,12 +1173,13 @@ namespace MachineWatchTest
       del.Schedules.Should().BeEmpty();
 
       del = pMap.DeleteOldPartRows();
-      dset.TestParts[0].Command = MazakWriteCommand.Delete;
-      dset.TestParts[0].TotalProcess = dset.TestParts[0].Processes.Count;
-      dset.TestParts[0].Processes.Clear();
       del.Parts.Should().BeEquivalentTo(new[] {
-        dset.TestParts[0]
-      });
+        dset.TestParts[0] with {
+          Command = MazakWriteCommand.Delete,
+          TotalProcess = dset.TestParts[0].Processes.Count(),
+          Processes = new List<MazakPartProcessRow>(),
+        }
+      }, options => options.ComparingByMembers<MazakPartRow>());
       del.Pallets.Should().BeEmpty();
       del.Fixtures.Should().BeEmpty();
       del.Schedules.Should().BeEmpty();
@@ -1383,7 +1384,7 @@ namespace MachineWatchTest
     }
 
     #region Checking
-    private class MazakTestData : MazakAllData
+    private record MazakTestData : MazakAllData
     {
       public List<MazakPartRow> TestParts { get; } = new List<MazakPartRow>();
       public List<MazakFixtureRow> TestFixtures { get; } = new List<MazakFixtureRow>();
@@ -1530,7 +1531,7 @@ namespace MachineWatchTest
         {
           Assert.Equal(comment, row.Comment);
           row.Processes.Should().BeEmpty();
-          dset.Parts.Remove(row);
+          ((List<MazakPartRow>)dset.Parts).Remove(row);
           break;
         }
       }
@@ -1574,7 +1575,7 @@ namespace MachineWatchTest
         {
           row.AngleV1.Should().Be(expectedAngle);
           row.FixtureGroupV2.Should().Be(expectedFixGroup);
-          dset.Pallets.Remove(row);
+          ((List<MazakPalletRow>)dset.Pallets).Remove(row);
         }
       }
     }

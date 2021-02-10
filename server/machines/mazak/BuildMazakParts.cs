@@ -56,13 +56,15 @@ namespace MazakMachineInterface
 
     public MazakPartRow ToDatabaseRow()
     {
-      var newPartRow = new MazakPartRow();
-      newPartRow.Command = MazakWriteCommand.Add;
-      newPartRow.PartName = PartName;
-      newPartRow.Comment = Comment;
-      newPartRow.Price = 0;
-      newPartRow.MaterialName = "";
-      newPartRow.TotalProcess = Processes.Count;
+      var newPartRow = new MazakPartRow()
+      {
+        Command = MazakWriteCommand.Add,
+        PartName = PartName,
+        Comment = Comment,
+        Price = 0,
+        MaterialName = "",
+        TotalProcess = Processes.Count,
+      };
       return newPartRow;
     }
 
@@ -280,17 +282,6 @@ namespace MazakMachineInterface
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
     {
-      var newPartProcRow = new MazakPartProcessRow();
-      newPartProcRow.PartName = Part.PartName;
-      newPartProcRow.ProcessNumber = ProcessNumber;
-      newPartProcRow.Fixture = fixture;
-      newPartProcRow.FixQuantity = Math.Max(1, Job.PartsPerPallet(ProcessNumber, Path));
-
-      newPartProcRow.ContinueCut = 0;
-      //newPartProcRow.FixPhoto = "";
-      //newPartProcRow.RemovePhoto = "";
-      newPartProcRow.WashType = 0;
-
       char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] Cut = { '0', '0', '0', '0', '0', '0', '0', '0' };
@@ -309,17 +300,29 @@ namespace MazakMachineInterface
       foreach (int statNum in Job.UnloadStations(ProcessNumber, Path))
         UnfixLDS[statNum - 1] = statNum.ToString()[0];
 
-      newPartProcRow.MainProgram = PartProgram.CellControllerProgramName;
-      newPartProcRow.FixLDS = new string(FixLDS);
-      newPartProcRow.RemoveLDS = new string(UnfixLDS);
-      newPartProcRow.CutMc = new string(Cut);
-
-      if (mazakTy != MazakDbType.MazakVersionE)
+      var newPartProcRow = new MazakPartProcessRow()
       {
-        newPartProcRow.FixLDS = ConvertStatStrV1ToV2(newPartProcRow.FixLDS).ToString();
-        newPartProcRow.RemoveLDS = ConvertStatStrV1ToV2(newPartProcRow.RemoveLDS).ToString();
-        newPartProcRow.CutMc = ConvertStatStrV1ToV2(newPartProcRow.CutMc).ToString();
-      }
+        PartName = Part.PartName,
+        ProcessNumber = ProcessNumber,
+        Fixture = fixture,
+        FixQuantity = Math.Max(1, Job.PartsPerPallet(ProcessNumber, Path)),
+
+        ContinueCut = 0,
+        //newPartProcRow.FixPhoto = "";
+        //newPartProcRow.RemovePhoto = "";
+        WashType = 0,
+
+        MainProgram = PartProgram.CellControllerProgramName,
+        FixLDS = mazakTy != MazakDbType.MazakVersionE ?
+            ConvertStatStrV1ToV2(new string(FixLDS)).ToString()
+          : new string(FixLDS),
+        RemoveLDS = mazakTy != MazakDbType.MazakVersionE ?
+            ConvertStatStrV1ToV2(new string(UnfixLDS)).ToString()
+          : new string(UnfixLDS),
+        CutMc = mazakTy != MazakDbType.MazakVersionE ?
+            ConvertStatStrV1ToV2(new string(Cut)).ToString()
+          : new string(Cut),
+      };
 
       newPart.Processes.Add(newPartProcRow);
     }
@@ -379,21 +382,22 @@ namespace MazakMachineInterface
         UnfixLDS[statNum - 1] = statNum.ToString()[0];
       }
 
-      var newPartProcRow = TemplateProcessRow.Clone();
-      newPartProcRow.PartName = Part.PartName;
-      newPartProcRow.Fixture = fixture;
-      newPartProcRow.ProcessNumber = ProcessNumber;
-
-      newPartProcRow.FixLDS = new string(FixLDS);
-      newPartProcRow.RemoveLDS = new string(UnfixLDS);
-      newPartProcRow.CutMc = new string(Cut);
-
-      if (mazakTy != MazakDbType.MazakVersionE)
+      var newPartProcRow = TemplateProcessRow with
       {
-        newPartProcRow.FixLDS = ConvertStatStrV1ToV2(newPartProcRow.FixLDS).ToString();
-        newPartProcRow.RemoveLDS = ConvertStatStrV1ToV2(newPartProcRow.RemoveLDS).ToString();
-        newPartProcRow.CutMc = ConvertStatStrV1ToV2(newPartProcRow.CutMc).ToString();
-      }
+        PartName = Part.PartName,
+        Fixture = fixture,
+        ProcessNumber = ProcessNumber,
+
+        FixLDS = mazakTy != MazakDbType.MazakVersionE ?
+          ConvertStatStrV1ToV2(new string(FixLDS)).ToString()
+        : new string(FixLDS),
+        RemoveLDS = mazakTy != MazakDbType.MazakVersionE ?
+          ConvertStatStrV1ToV2(new string(UnfixLDS)).ToString()
+        : new string(UnfixLDS),
+        CutMc = mazakTy != MazakDbType.MazakVersionE ?
+          ConvertStatStrV1ToV2(new string(Cut)).ToString()
+        : new string(Cut),
+      };
 
       newPart.Processes.Add(newPartProcRow);
     }
@@ -446,23 +450,16 @@ namespace MazakMachineInterface
         if (foundExisting) continue;
 
         //Add rows to both V1 and V2.
-        var newRow = new MazakPalletRow();
-        newRow.Command = MazakWriteCommand.Add;
-        newRow.PalletNumber = palNum;
-        newRow.Fixture = MazakFixtureName;
-        newRow.RecordID = 0;
-
-        if (OverrideFixtureGroupToZero)
+        var newRow = new MazakPalletRow()
         {
-          newRow.FixtureGroupV2 = 0;
-          newRow.AngleV1 = 0;
-        }
-        else
-        {
-          newRow.FixtureGroupV2 = FixtureGroup;
+          Command = MazakWriteCommand.Add,
+          PalletNumber = palNum,
+          Fixture = MazakFixtureName,
+          RecordID = 0,
+          FixtureGroupV2 = OverrideFixtureGroupToZero ? 0 : FixtureGroup,
           //combos with an angle in the range 0-999, and we don't want to conflict with that
-          newRow.AngleV1 = (FixtureGroup * 1000);
-        }
+          AngleV1 = OverrideFixtureGroupToZero ? 0 : (FixtureGroup * 1000),
+        };
 
         ret.Add(newRow);
       }
@@ -490,7 +487,8 @@ namespace MazakMachineInterface
 
     public MazakWriteData DeleteFixtureAndProgramDatabaseRows()
     {
-      var ret = new MazakWriteData();
+      var fixRows = new List<MazakFixtureRow>();
+      var progs = new List<NewMazakProgram>();
 
       //delete unused fixtures
       foreach (var fixRow in OldMazakData.Fixtures)
@@ -499,9 +497,11 @@ namespace MazakMachineInterface
         {
           if (!UsedFixtures.Contains(fixRow.FixtureName))
           {
-            var newFixRow = fixRow.Clone();
-            newFixRow.Command = MazakWriteCommand.Delete;
-            ret.Fixtures.Add(newFixRow);
+            var newFixRow = fixRow with
+            {
+              Command = MazakWriteCommand.Delete,
+            };
+            fixRows.Add(newFixRow);
           }
         }
       }
@@ -521,7 +521,7 @@ namespace MazakMachineInterface
         if (!MazakProcess.TryParseMainProgramComment(prog.Comment, out string pName, out long rev)) continue;
         if (rev >= maxRevForProg[pName]) continue;
 
-        ret.Programs.Add(new NewMazakProgram()
+        progs.Add(new NewMazakProgram()
         {
           Command = MazakWriteCommand.Delete,
           MainProgram = prog.MainProgram,
@@ -529,12 +529,12 @@ namespace MazakMachineInterface
         });
       }
 
-      return ret;
+      return new MazakWriteData() { Fixtures = fixRows, Programs = progs };
     }
 
     public MazakWriteData AddFixtureAndProgramDatabaseRows(Func<string, long, string> getProgramContent, string programDir)
     {
-      var ret = new MazakWriteData();
+      var fixRows = new List<MazakFixtureRow>();
 
       //add new fixtures
       foreach (string fixture in UsedFixtures)
@@ -548,11 +548,13 @@ namespace MazakMachineInterface
           }
         }
 
-        var newFixRow = new MazakFixtureRow();
-        newFixRow.Command = MazakWriteCommand.Add;
-        newFixRow.FixtureName = fixture;
-        newFixRow.Comment = "Insight";
-        ret.Fixtures.Add(newFixRow);
+        var newFixRow = new MazakFixtureRow()
+        {
+          Command = MazakWriteCommand.Add,
+          FixtureName = fixture,
+          Comment = "Insight",
+        };
+        fixRows.Add(newFixRow);
       found:;
       }
 
@@ -590,19 +592,19 @@ namespace MazakMachineInterface
           }
         }
       }
-      foreach (var n in newProgs.Values)
-        ret.Programs.Add(n);
 
-      return ret;
+      return new MazakWriteData() { Fixtures = fixRows, Programs = newProgs.Values.ToArray() };
     }
 
     public MazakWriteData CreatePartPalletDatabaseRows()
     {
-      var ret = new MazakWriteData();
-      foreach (var p in AllParts)
-        ret.Parts.Add(p.ToDatabaseRow());
+      var partRows = new List<MazakPartRow>();
+      var palRows = new List<MazakPalletRow>();
 
-      var byName = ret.Parts.ToDictionary(p => p.PartName, p => p);
+      foreach (var p in AllParts)
+        partRows.Add(p.ToDatabaseRow());
+
+      var byName = partRows.ToDictionary(p => p.PartName, p => p);
 
       foreach (var g in Fixtures)
       {
@@ -612,35 +614,37 @@ namespace MazakMachineInterface
         }
 
         foreach (var p in g.CreateDatabasePalletRows(OldMazakData, DownloadUID))
-          ret.Pallets.Add(p);
+          palRows.Add(p);
       }
 
-      return ret;
+      return new MazakWriteData() { Parts = partRows, Pallets = palRows };
     }
 
     public MazakWriteData DeleteOldPartRows()
     {
-      var transSet = new MazakWriteData();
+      var partRows = new List<MazakPartRow>();
       foreach (var partRow in OldMazakData.Parts)
       {
         if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
         {
           if (!SavedParts.Contains(partRow.PartName))
           {
-            var newPartRow = partRow.Clone();
-            newPartRow.Command = MazakWriteCommand.Delete;
-            newPartRow.TotalProcess = newPartRow.Processes.Count();
-            newPartRow.Processes.Clear(); // when deleting, don't need to add process rows
-            transSet.Parts.Add(newPartRow);
+            var newPartRow = partRow with
+            {
+              Command = MazakWriteCommand.Delete,
+              TotalProcess = partRow.Processes.Count(),
+              Processes = new List<MazakPartProcessRow>() // when deleting, don't need to add process rows
+            };
+            partRows.Add(newPartRow);
           }
         }
       }
-      return transSet;
+      return new MazakWriteData() { Parts = partRows };
     }
 
     public MazakWriteData DeleteOldPalletRows()
     {
-      var transSet = new MazakWriteData();
+      var palRows = new List<MazakPalletRow>();
       foreach (var palRow in OldMazakData.Pallets)
       {
         int idx = palRow.Fixture.IndexOf(':');
@@ -653,13 +657,15 @@ namespace MazakMachineInterface
           if (!UsedFixtures.Contains(palRow.Fixture))
           {
             //not found, can delete it
-            var newPalRow = palRow.Clone();
-            newPalRow.Command = MazakWriteCommand.Delete;
-            transSet.Pallets.Add(newPalRow);
+            var newPalRow = palRow with
+            {
+              Command = MazakWriteCommand.Delete
+            };
+            palRows.Add(newPalRow);
           }
         }
       }
-      return transSet;
+      return new MazakWriteData() { Pallets = palRows };
     }
   }
 

@@ -115,11 +115,16 @@ namespace MazakMachineInterface
 
       public void ChangeHoldMode(HoldMode newHold)
       {
-        var transSet = new MazakWriteData();
-        var newSchRow = _schRow.Clone();
-        newSchRow.Command = MazakWriteCommand.ScheduleSafeEdit;
-        newSchRow.HoldMode = (int)newHold;
-        transSet.Schedules.Add(newSchRow);
+        var transSet = new MazakWriteData()
+        {
+          Schedules = new[] {
+            _schRow with
+            {
+              Command = MazakWriteCommand.ScheduleSafeEdit,
+              HoldMode = (int)newHold,
+            }
+          }
+        };
 
         _parent.database.Save(transSet, "Hold Mode");
       }

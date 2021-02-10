@@ -429,7 +429,7 @@ namespace MachineWatchTest
       trans.Schedules[0].Processes[1].ProcessNumber.Should().Be(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.Should().Be(3); // set the material back to 3
 
-      read.Schedules[0].Processes[1].ProcessMaterialQuantity = 3;
+      read.Schedules[0].Processes[1] = read.Schedules[0].Processes[1] with { ProcessMaterialQuantity = 3 };
 
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();

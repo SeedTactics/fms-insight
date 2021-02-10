@@ -165,7 +165,7 @@ namespace MachineWatchTest
             new MazakPartRow() {
               PartName = "part1:1:1",
               Comment = MazakPart.CreateComment("uniq1", new[] {1}, false),
-              Processes = {
+              Processes = new[] {
                 new MazakPartProcessRow() {
                   PartName = "part1:1:1",
                   ProcessNumber = 1,
@@ -178,7 +178,7 @@ namespace MachineWatchTest
             new MazakPartRow() {
               PartName = "part2:1:1",
               Comment = MazakPart.CreateComment("uniq2", new[] {1}, false),
-              Processes = {
+              Processes = new[] {
                 new MazakPartProcessRow() {
                   PartName = "part2:1:1",
                   ProcessNumber = 1,
@@ -258,7 +258,7 @@ namespace MachineWatchTest
       _repoCfg.CloseMemoryConnection();
     }
 
-    private void ShouldMatchSnapshot<T>(T val, string snapshot, Action<T> adjust = null)
+    private void ShouldMatchSnapshot<T>(T val, string snapshot)
     {
       /*
       File.WriteAllText(
@@ -272,32 +272,18 @@ namespace MachineWatchTest
           jsonSettings
       );
 
-      if (adjust != null)
-        adjust(expected);
-
-      val.Should().BeEquivalentTo(expected);
-    }
-
-    private static void AdjustProgramPath(MazakWriteData w)
-    {
-      // snapshots contain forward slash since they were made on linux
-      if (System.IO.Path.DirectorySeparatorChar == '/') return;
-
-      foreach (var part in w.Parts)
-      {
-        foreach (var proc in part.Processes)
-        {
-          if (!proc.MainProgram.Contains('/')) continue;
-          var path = proc.MainProgram.Split('/');
-          proc.MainProgram = System.IO.Path.Combine(path);
-        }
-      }
-      foreach (var prog in w.Programs)
-      {
-        if (!prog.MainProgram.Contains('/')) continue;
-        var path = prog.MainProgram.Split('/');
-        prog.MainProgram = System.IO.Path.Combine(path);
-      }
+      val.Should().BeEquivalentTo(expected,
+        options => options
+          .ComparingByMembers<MazakPartRow>()
+          .ComparingByMembers<MazakScheduleRow>()
+          .ComparingByMembers<MazakWriteData>()
+          .Using<string>(ctx =>
+          {
+            var path = ctx.Expectation.Split('/');
+            ctx.Subject.Should().Be(System.IO.Path.Combine(path));
+          })
+          .When(info => info.SelectedMemberPath.EndsWith("MainProgram"))
+      );
     }
 
     [Fact]
@@ -350,8 +336,8 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
       _writeMock.DeletePallets.Pallets.Should().BeEmpty();
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
@@ -394,8 +380,8 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "path-groups-delparts.json");
       _writeMock.DeletePallets.Pallets.Should().BeEmpty();
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "path-groups-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "path-groups-del-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "path-groups-add-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "path-groups-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
 
@@ -452,9 +438,9 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "managed-progs-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "managed-progs-del-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "managed-progs-add-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "managed-progs-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
     }
 
@@ -475,8 +461,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       _writeMock.AddSchedules.Should().BeNull();
 
@@ -501,8 +487,8 @@ namespace MachineWatchTest
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json", AdjustProgramPath);
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json", AdjustProgramPath);
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
@@ -541,53 +527,66 @@ namespace MachineWatchTest
     public void SplitsWrites()
     {
       //Arrange
-      var orig = new MazakWriteData();
       var rng = new Random();
 
       int cnt = rng.Next(15, 25);
+      var schs = new List<MazakScheduleRow>();
       for (int i = 0; i < cnt; i++)
       {
-        orig.Schedules.Add(new MazakScheduleRow()
+        schs.Add(new MazakScheduleRow()
         {
           Id = i
         });
       }
 
       cnt = rng.Next(15, 25);
+      var parts = new List<MazakPartRow>();
       for (int i = 0; i < cnt; i++)
       {
-        orig.Parts.Add(new MazakPartRow()
+        parts.Add(new MazakPartRow()
         {
           PartName = "Part" + i.ToString()
         });
       }
 
       cnt = rng.Next(15, 25);
+      var pals = new List<MazakPalletRow>();
       for (int i = 0; i < cnt; i++)
       {
-        orig.Pallets.Add(new MazakPalletRow()
+        pals.Add(new MazakPalletRow()
         {
           PalletNumber = i
         });
       }
 
       cnt = rng.Next(15, 25);
+      var fixtures = new List<MazakFixtureRow>();
       for (int i = 0; i < cnt; i++)
       {
-        orig.Fixtures.Add(new MazakFixtureRow()
+        fixtures.Add(new MazakFixtureRow()
         {
           FixtureName = "fix" + i.ToString()
         });
       }
 
       cnt = rng.Next(15, 25);
+      var progs = new List<NewMazakProgram>();
       for (int i = 0; i < cnt; i++)
       {
-        orig.Programs.Add(new NewMazakProgram()
+        progs.Add(new NewMazakProgram()
         {
           ProgramName = "prog " + i.ToString()
         });
       }
+
+      var orig = new MazakWriteData()
+      {
+        Schedules = schs,
+        Parts = parts,
+        Pallets = pals,
+        Fixtures = fixtures,
+        Programs = progs
+      };
 
 
       //act

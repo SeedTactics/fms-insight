@@ -89,9 +89,9 @@ namespace MachineWatchTest
 
       var (actions, tokeep) = BuildMazakSchedules.RemoveCompletedSchedules(schedules);
 
-      schedules.Schedules.First().Command = MazakWriteCommand.Delete;
-
-      actions.Schedules.Should().BeEquivalentTo(new[] { schedules.Schedules.First() });
+      actions.Schedules.Should().BeEquivalentTo(new[] { schedules.Schedules.First() with {
+        Command = MazakWriteCommand.Delete
+      } });
       actions.Parts.Should().BeEmpty();
       actions.Fixtures.Should().BeEmpty();
       actions.Pallets.Should().BeEmpty();
@@ -306,7 +306,7 @@ namespace MachineWatchTest
             },
           }
         }
-      });
+      }, options => options.ComparingByMembers<MazakScheduleRow>());
     }
   }
 }

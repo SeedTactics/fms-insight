@@ -53,7 +53,7 @@ namespace MachineWatchTest
     private class WriteMock : IWriteData
     {
       public MazakDbType MazakType => MazakDbType.MazakSmooth;
-      public IList<MazakScheduleRow> Schedules { get; private set; }
+      public IReadOnlyList<MazakScheduleRow> Schedules { get; private set; }
       public void Save(MazakWriteData data, string prefix)
       {
         Schedules = data.Schedules;
