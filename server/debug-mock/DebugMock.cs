@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -43,6 +43,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Germinate;
+using System.Collections.Immutable;
 
 namespace DebugMachineWatchApiServer
 {
@@ -163,12 +164,17 @@ namespace DebugMachineWatchApiServer
       {
         if (CurrentStatus.Alarms.Count > 0)
         {
-          CurrentStatus.Alarms.Clear();
+          CurrentStatus = CurrentStatus with { Alarms = ImmutableList<string>.Empty };
         }
         else
         {
-          CurrentStatus.Alarms.Add("Test alarm " + _curStatusLoadCount.ToString());
-          CurrentStatus.Alarms.Add("Another alarm");
+          CurrentStatus = CurrentStatus with
+          {
+            Alarms = ImmutableList.Create(
+              "Test alarm " + _curStatusLoadCount.ToString(),
+              "Another alarm"
+            )
+          };
         }
       }
 
@@ -228,7 +234,7 @@ namespace DebugMachineWatchApiServer
             Type = InProcessMaterialAction.ActionType.Waiting
           }
         };
-        CurrentStatus.Material.Add(m);
+        CurrentStatus %= st => st.Material.Add(m);
         ret.Add(m);
       }
       OnNewCurrentStatus?.Invoke(CurrentStatus);
@@ -260,7 +266,7 @@ namespace DebugMachineWatchApiServer
           Type = InProcessMaterialAction.ActionType.Waiting
         }
       };
-      CurrentStatus.Material.Add(m);
+      CurrentStatus %= st => st.Material.Add(m);
       OnNewCurrentStatus?.Invoke(CurrentStatus);
       return m;
     }
@@ -272,32 +278,42 @@ namespace DebugMachineWatchApiServer
       if (toMove == null) return;
 
       // shift old downward
-      foreach (var m in CurrentStatus.Material)
+      CurrentStatus = CurrentStatus with
       {
-        if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+        Material = CurrentStatus.Material.Select(m =>
+          {
+            int pos = m.Location.QueuePosition ?? 0;
+
+            if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
             && m.Location.CurrentQueue == toMove.Location.CurrentQueue
             && m.Location.QueuePosition > toMove.Location.QueuePosition)
-        {
-          m.Location.QueuePosition -= 1;
-        }
-      }
+            {
+              pos -= 1;
+            }
+            if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+                && m.Location.CurrentQueue == queue
+                && m.Location.QueuePosition >= position)
+            {
+              pos += 1;
+            }
 
-      // shift new upward
-      foreach (var m in CurrentStatus.Material)
-      {
-        if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-            && m.Location.CurrentQueue == queue
-            && m.Location.QueuePosition >= position)
-        {
-          m.Location.QueuePosition += 1;
-        }
-      }
-
-      toMove.Location = new InProcessMaterialLocation()
-      {
-        Type = InProcessMaterialLocation.LocType.InQueue,
-        CurrentQueue = queue,
-        QueuePosition = position
+            if (m.MaterialID == toMove.MaterialID)
+            {
+              return m with
+              {
+                Location = new()
+                {
+                  Type = InProcessMaterialLocation.LocType.InQueue,
+                  CurrentQueue = queue,
+                  QueuePosition = position
+                }
+              };
+            }
+            else
+            {
+              return m with { Location = m.Location with { QueuePosition = pos } };
+            }
+          }).ToImmutableList()
       };
 
       LogDB.RecordAddMaterialToQueue(
@@ -341,17 +357,21 @@ namespace DebugMachineWatchApiServer
         if (toRemove == null) return;
 
         // shift downward
-        foreach (var m in CurrentStatus.Material)
+        CurrentStatus %= st =>
         {
-          if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-              && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
-              && m.Location.QueuePosition < toRemove.Location.QueuePosition)
+          for (int i = 0; i < st.Material.Count; i++)
           {
-            m.Location.QueuePosition -= 1;
+            var m = st.Material[i];
+            if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+                && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
+                && m.Location.QueuePosition < toRemove.Location.QueuePosition)
+            {
+              st.Material[i] = m %= mat => mat.Location.QueuePosition -= 1;
+            }
           }
-        }
 
-        CurrentStatus.Material.Remove(toRemove);
+          st.Material.Remove(toRemove);
+        };
       }
 
       OnNewStatus(CurrentStatus);
@@ -566,7 +586,7 @@ namespace DebugMachineWatchApiServer
           typeof(BlackMaple.MachineWatchInterface.CurrentStatus),
           _jsonSettings
         );
-        curSt.TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset);
+        curSt = curSt with { TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset) };
 
         foreach (var uniq in curSt.Jobs.Keys)
         {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -35,17 +35,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Collections.Immutable;
+using Germinate;
 
 namespace BlackMaple.MachineWatchInterface
 {
   ///Stores what is currently happening to a piece of material.
-  [Serializable, DataContract]
-  public class InProcessMaterialAction
+  [DataContract, Draftable]
+  public record InProcessMaterialAction
   {
     // This should be a sum type, and while C# sum types can work with some helper code it doesn't work
     // well for serialization.
 
-    [Serializable, DataContract]
+    [DataContract]
     public enum ActionType
     {
       Waiting = 0,
@@ -54,78 +56,80 @@ namespace BlackMaple.MachineWatchInterface
       UnloadToCompletedMaterial, // unload and the material has been completed
       Machining
     }
-    [DataMember(IsRequired = true)] public ActionType Type { get; set; }
+    [DataMember(IsRequired = true)] public ActionType Type { get; init; }
 
     // If Type = Loading
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string LoadOntoPallet { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? LoadOntoFace { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? ProcessAfterLoad { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? PathAfterLoad { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string LoadOntoPallet { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? LoadOntoFace { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? ProcessAfterLoad { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? PathAfterLoad { get; init; }
 
     //If Type = UnloadToInProcess
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string UnloadIntoQueue { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string UnloadIntoQueue { get; init; }
 
     //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedLoadUnloadTime { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedLoadUnloadTime { get; init; }
 
     // If Type = Machining
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Program { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedMachiningTime { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ExpectedRemainingMachiningTime { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Program { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedMachiningTime { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ExpectedRemainingMachiningTime { get; init; }
   }
 
   ///Stores the current location of a piece of material.  If a transfer operation is currently in process
   ///(such as unloading), the location will store the previous location and the action will store the new location.
-  [Serializable, DataContract]
-  public class InProcessMaterialLocation
+  [DataContract, Draftable]
+  public record InProcessMaterialLocation
   {
     //Again, this should be a sum type.
-    [Serializable, DataContract]
+    [DataContract]
     public enum LocType
     {
       Free = 0,
       OnPallet,
       InQueue,
     }
-    [DataMember(IsRequired = true)] public LocType Type { get; set; }
+    [DataMember(IsRequired = true)] public LocType Type { get; init; }
 
     //If Type == OnPallet
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Pallet { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? Face { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Pallet { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? Face { get; init; }
 
     //If Type == InQueue
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string CurrentQueue { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string CurrentQueue { get; init; }
 
     //If Type == InQueue or Type == Free
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? QueuePosition { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? QueuePosition { get; init; }
   }
 
   //Stores information about a piece of material, where it is, and what is happening to it.
-  [Serializable, DataContract]
-  public class InProcessMaterial
+  [DataContract, Draftable]
+  public record InProcessMaterial
   {
     // Information about the material
-    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; set; }
-    [DataMember(IsRequired = true)] public string PartName { get; set; }
-    [DataMember(IsRequired = true)] public int Process { get; set; }  // When in a queue, the process is the last completed process
-    [DataMember(IsRequired = true)] public int Path { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Serial { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string WorkorderId { get; set; }
-    [DataMember(IsRequired = true)] public List<string> SignaledInspections { get; set; } = new List<string>();
+    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
+    [DataMember(IsRequired = true)] public string JobUnique { get; init; }
+    [DataMember(IsRequired = true)] public string PartName { get; init; }
+    [DataMember(IsRequired = true)] public int Process { get; init; }  // When in a queue, the process is the last completed process
+    [DataMember(IsRequired = true)] public int Path { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Serial { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string WorkorderId { get; init; }
+    [DataMember(IsRequired = true)] public IReadOnlyList<string> SignaledInspections { get; init; } = new string[] { };
 
     // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
     // indicate no machining stops have yet completed.
-    [DataMember(IsRequired = false)] public int? LastCompletedMachiningRouteStopIndex { get; set; }
+    [DataMember(IsRequired = false)] public int? LastCompletedMachiningRouteStopIndex { get; init; }
 
     // Where is the material?
-    [DataMember(IsRequired = true)] public InProcessMaterialLocation Location { get; set; }
+    [DataMember(IsRequired = true)] public InProcessMaterialLocation Location { get; init; }
 
     // What is currently happening to the material?
-    [DataMember(IsRequired = true)] public InProcessMaterialAction Action { get; set; }
+    [DataMember(IsRequired = true)] public InProcessMaterialAction Action { get; init; }
+
+    public static InProcessMaterial operator %(InProcessMaterial m, Action<IInProcessMaterialDraft> f) => m.Produce(f);
   }
 
-  [Serializable, DataContract]
+  [DataContract]
   public enum PalletLocationEnum
   {
     [EnumMember] LoadUnload,
@@ -135,25 +139,20 @@ namespace BlackMaple.MachineWatchInterface
     [EnumMember] Cart
   }
 
-  [Serializable, DataContract]
-  public struct PalletLocation : IComparable
+  [DataContract]
+  public record PalletLocation
   {
 
     [DataMember(Name = "loc", IsRequired = true)]
-    public PalletLocationEnum Location { get; set; }
+    public PalletLocationEnum Location { get; init; }
 
     [DataMember(Name = "group", IsRequired = true)]
-    public string StationGroup { get; set; }
+    public string StationGroup { get; init; }
 
     [DataMember(Name = "num", IsRequired = true)]
-    public int Num { get; set; }
+    public int Num { get; init; }
 
-    public PalletLocation(PalletLocationEnum l, string group)
-    {
-      Location = l;
-      StationGroup = group;
-      Num = 1;
-    }
+    public PalletLocation() { }
 
     public PalletLocation(PalletLocationEnum l, string group, int n)
     {
@@ -161,44 +160,30 @@ namespace BlackMaple.MachineWatchInterface
       StationGroup = group;
       Num = n;
     }
-
-    public int CompareTo(object obj)
-    {
-      PalletLocation other = (PalletLocation)obj;
-      int cmp = Location.CompareTo(other.Location);
-      if (cmp < 0)
-        return -1;
-      if (cmp > 0)
-        return 1;
-      cmp = StationGroup.CompareTo(other.StationGroup);
-      if (cmp < 0)
-        return -1;
-      if (cmp > 0)
-        return 1;
-      return Num.CompareTo(other.Num);
-    }
   }
 
-  [Serializable, DataContract]
-  public class PalletStatus
+  [DataContract, Draftable]
+  public record PalletStatus
   {
-    [DataMember(IsRequired = true)] public string Pallet { get; set; }
-    [DataMember(IsRequired = true)] public string FixtureOnPallet { get; set; }
-    [DataMember(IsRequired = true)] public bool OnHold { get; set; }
-    [DataMember(IsRequired = true)] public PalletLocation CurrentPalletLocation { get; set; }
+    [DataMember(IsRequired = true)] public string Pallet { get; init; }
+    [DataMember(IsRequired = true)] public string FixtureOnPallet { get; init; }
+    [DataMember(IsRequired = true)] public bool OnHold { get; init; }
+    [DataMember(IsRequired = true)] public PalletLocation CurrentPalletLocation { get; init; }
 
     // If the pallet is at a load station and a new fixture should be loaded, this is filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string NewFixture { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string NewFixture { get; init; }
 
     // num faces on new fixture, or current fixture if no change
-    [DataMember(IsRequired = true)] public int NumFaces { get; set; }
+    [DataMember(IsRequired = true)] public int NumFaces { get; init; }
 
     //If CurrentPalletLocation is Cart, the following two fields will be filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public PalletLocation? TargetLocation { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public decimal? PercentMoveCompleted { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public PalletLocation TargetLocation { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public decimal? PercentMoveCompleted { get; init; }
+
+    public static PalletStatus operator %(PalletStatus s, Action<IPalletStatusDraft> f) => s.Produce(f);
   }
 
-  [SerializableAttribute, DataContract]
+  [DataContract]
   public class InProcessJob : JobPlan
   {
     public int GetCompleted(int process, int path)
@@ -326,56 +311,43 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "AssignedWorkorders", IsRequired = false), OptionalField] private IList<string> _workorders;
   }
 
-  [SerializableAttribute, DataContract]
-  public class CurrentStatus
+  [DataContract, Draftable]
+  public record CurrentStatus
   {
-    [DataMember(IsRequired = true)] public DateTime TimeOfCurrentStatusUTC { get; set; }
-    public IDictionary<string, InProcessJob> Jobs => _jobs;
-    public IDictionary<string, PalletStatus> Pallets => _pals;
-    public IList<InProcessMaterial> Material => _material;
-    public IList<string> Alarms => _alarms;
-    public Dictionary<string, QueueSize> QueueSizes => _queues;
-
-    public CurrentStatus(DateTime? nowUTC = null)
-    {
-      TimeOfCurrentStatusUTC = nowUTC ?? DateTime.UtcNow;
-      _jobs = new Dictionary<string, InProcessJob>();
-      _pals = new Dictionary<string, PalletStatus>();
-      _material = new List<InProcessMaterial>();
-      _alarms = new List<string>();
-      _queues = new Dictionary<string, QueueSize>();
-    }
+    [DataMember(IsRequired = true)]
+    public DateTime TimeOfCurrentStatusUTC { get; init; }
 
     [DataMember(Name = "Jobs", IsRequired = true)]
-    private Dictionary<string, InProcessJob> _jobs;
+    public ImmutableDictionary<string, InProcessJob> Jobs { get; init; } = ImmutableDictionary<string, InProcessJob>.Empty;
 
     [DataMember(Name = "Pallets", IsRequired = true)]
-    private Dictionary<string, PalletStatus> _pals;
+    public ImmutableDictionary<string, PalletStatus> Pallets { get; init; } = ImmutableDictionary<string, PalletStatus>.Empty;
 
     [DataMember(Name = "Material", IsRequired = true)]
-    private List<InProcessMaterial> _material;
+    public ImmutableList<InProcessMaterial> Material { get; init; } = ImmutableList<InProcessMaterial>.Empty;
 
     [DataMember(Name = "Alarms", IsRequired = true)]
-    private List<string> _alarms;
+    public ImmutableList<string> Alarms { get; init; } = ImmutableList<string>.Empty;
 
     [DataMember(Name = "Queues", IsRequired = true)]
-    private Dictionary<string, QueueSize> _queues;
+    public ImmutableDictionary<string, QueueSize> QueueSizes { get; init; } = ImmutableDictionary<string, QueueSize>.Empty;
+
+    public static CurrentStatus operator %(CurrentStatus s, Action<ICurrentStatusDraft> f) => s.Produce(f);
   }
 
-  [Serializable, DataContract]
-  public struct JobAndDecrementQuantity
+  [DataContract]
+  public record JobAndDecrementQuantity
   {
-    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; set; }
-    [DataMember(IsRequired = true)] public int Proc1Path { get; set; }
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
-    [DataMember(IsRequired = true)] public string Part { get; set; }
-    [DataMember(IsRequired = true)] public int Quantity { get; set; }
+    [DataMember(IsRequired = true)] public long DecrementId { get; init; }
+    [DataMember(IsRequired = true)] public string JobUnique { get; init; }
+    [DataMember(IsRequired = true)] public int Proc1Path { get; init; }
+    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
+    [DataMember(IsRequired = true)] public string Part { get; init; }
+    [DataMember(IsRequired = true)] public int Quantity { get; init; }
   }
 
   // The following is only used for old decrement for backwards compatibility,
   // and shouldn't be used for anything else.
-  [Serializable]
   public class JobAndPath : IEquatable<JobAndPath>
   {
     public readonly string UniqueStr;

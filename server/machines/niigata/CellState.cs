@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
@@ -214,7 +215,7 @@ namespace BlackMaple.FMSInsight.Niigata
               logDB.LookupInspectionDecisions(m.MaterialID)
               .Where(x => x.Inspect)
               .Select(x => x.InspType)
-              .ToList(),
+              .ToArray(),
             LastCompletedMachiningRouteStopIndex = null,
             Location = new InProcessMaterialLocation()
             {
@@ -252,7 +253,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           if (completedMachineSteps > 0)
           {
-            inProcMat.LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1;
+            inProcMat %= m => m.LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1;
           }
         }
 
@@ -548,7 +549,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       .Where(x => x.Inspect)
                       .Select(x => x.InspType)
                       .Distinct()
-                      .ToList(),
+                      .ToArray(),
                   Process = actionIsLoading ? face.Process - 1 : face.Process,
                   Path = actionIsLoading ? (mat.Paths != null && mat.Paths.TryGetValue(Math.Max(face.Process - 1, 1), out var path) ? path : 1) : face.Path,
                   Location = actionIsLoading ?
@@ -769,7 +770,7 @@ namespace BlackMaple.FMSInsight.Niigata
         SetMaterialToLoadOnFace(pallet, allocateNew: false, actionIsLoading: true, nowUtc: nowUtc, currentlyLoading: currentlyLoading, unusedMatsOnPal: unusedMatsOnPal, logDB: jobDB);
         foreach (var mat in pallet.Material)
         {
-          mat.Mat.Action.ElapsedLoadUnloadTime = elapsedLoadTime;
+          mat.Mat %= m => m.Action.ElapsedLoadUnloadTime = elapsedLoadTime;
           loadingIds.Add(mat.Mat.MaterialID);
         }
       }
@@ -779,20 +780,20 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (mat.Mat.Process == mat.Job.NumProcesses)
         {
-          mat.Mat.Action = new InProcessMaterialAction()
+          mat.Mat %= m => m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = elapsedLoadTime
-          };
+          });
         }
         else
         {
-          mat.Mat.Action = new InProcessMaterialAction()
+          mat.Mat %= m => m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log),
             ElapsedLoadUnloadTime = elapsedLoadTime
-          };
+          });
         }
         pallet.Material.Add(mat);
       }
@@ -882,9 +883,8 @@ namespace BlackMaple.FMSInsight.Niigata
         var matOnFace = pallet.Material.Where(
           m => m.Mat.JobUnique == face.Job.UniqueStr && m.Mat.Process == face.Process && m.Mat.Path == face.Path && m.Mat.Location.Face == face.Face
         )
-        .Select(m => m.Mat)
         .ToList();
-        var matIdsOnFace = new HashSet<long>(matOnFace.Select(m => m.MaterialID));
+        var matIdsOnFace = new HashSet<long>(matOnFace.Select(m => m.Mat.MaterialID));
 
         foreach (var ss in MatchStopsAndSteps(jobDB, pallet, face))
         {
@@ -1102,7 +1102,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return ret;
     }
 
-    private void RecordPalletAtMachine(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry machineStart, LogEntry machineEnd, DateTime nowUtc, IRepository jobDB, ref bool palletStateUpdated)
+    private void RecordPalletAtMachine(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterialAndJob> matOnFace, StopAndStep ss, LogEntry machineStart, LogEntry machineEnd, DateTime nowUtc, IRepository jobDB, ref bool palletStateUpdated)
     {
       bool runningProgram = false;
       bool runningAnyProgram = false;
@@ -1129,8 +1129,8 @@ namespace BlackMaple.FMSInsight.Niigata
         jobDB.RecordMachineStart(
           mats: matOnFace.Select(m => new EventLogMaterial()
           {
-            MaterialID = m.MaterialID,
-            Process = m.Process,
+            MaterialID = m.Mat.MaterialID,
+            Process = m.Mat.Process,
             Face = face.Face.ToString(),
           }),
           pallet: pallet.Status.Master.PalletNum.ToString(),
@@ -1146,12 +1146,15 @@ namespace BlackMaple.FMSInsight.Niigata
 
         foreach (var m in matOnFace)
         {
-          m.Action = new InProcessMaterialAction()
+          m.Mat = m.Mat with
           {
-            Type = InProcessMaterialAction.ActionType.Machining,
-            Program = ss.Revision.HasValue ? ss.ProgramName + " rev" + ss.Revision.Value.ToString() : ss.ProgramName,
-            ElapsedMachiningTime = TimeSpan.Zero,
-            ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Machining,
+              Program = ss.Revision.HasValue ? ss.ProgramName + " rev" + ss.Revision.Value.ToString() : ss.ProgramName,
+              ElapsedMachiningTime = TimeSpan.Zero,
+              ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime
+            }
           };
         }
       }
@@ -1161,12 +1164,15 @@ namespace BlackMaple.FMSInsight.Niigata
         var elapsed = machineStart == null ? TimeSpan.Zero : nowUtc.Subtract(machineStart.EndTimeUTC);
         foreach (var m in matOnFace)
         {
-          m.Action = new InProcessMaterialAction()
+          m.Mat = m.Mat with
           {
-            Type = InProcessMaterialAction.ActionType.Machining,
-            Program = ss.Revision.HasValue ? ss.ProgramName + " rev" + ss.Revision.Value.ToString() : ss.ProgramName,
-            ElapsedMachiningTime = elapsed,
-            ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime.Subtract(elapsed)
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Machining,
+              Program = ss.Revision.HasValue ? ss.ProgramName + " rev" + ss.Revision.Value.ToString() : ss.ProgramName,
+              ElapsedMachiningTime = elapsed,
+              ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime.Subtract(elapsed)
+            }
           };
         }
       }
@@ -1177,7 +1183,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private void RecordMachineEnd(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry machStart, DateTime nowUtc, IRepository logDB, ref bool palletStateUpdated)
+    private void RecordMachineEnd(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterialAndJob> matOnFace, StopAndStep ss, LogEntry machStart, DateTime nowUtc, IRepository logDB, ref bool palletStateUpdated)
     {
       Log.Debug("Recording machine end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, machStart);
       palletStateUpdated = true;
@@ -1225,8 +1231,8 @@ namespace BlackMaple.FMSInsight.Niigata
       logDB.RecordMachineEnd(
         mats: matOnFace.Select(m => new EventLogMaterial()
         {
-          MaterialID = m.MaterialID,
-          Process = m.Process,
+          MaterialID = m.Mat.MaterialID,
+          Process = m.Mat.Process,
           Face = face.Face.ToString()
         }),
         pallet: pallet.Status.Master.PalletNum.ToString(),
@@ -1245,7 +1251,7 @@ namespace BlackMaple.FMSInsight.Niigata
       );
     }
 
-    private void MarkReclampInProgress(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry reclampStart, DateTime nowUtc, IRepository logDB, ref bool palletStateUpdated)
+    private void MarkReclampInProgress(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterialAndJob> matOnFace, StopAndStep ss, LogEntry reclampStart, DateTime nowUtc, IRepository logDB, ref bool palletStateUpdated)
     {
       if (reclampStart == null)
       {
@@ -1254,8 +1260,8 @@ namespace BlackMaple.FMSInsight.Niigata
         logDB.RecordManualWorkAtLULStart(
           mats: matOnFace.Select(m => new EventLogMaterial()
           {
-            MaterialID = m.MaterialID,
-            Process = m.Process,
+            MaterialID = m.Mat.MaterialID,
+            Process = m.Mat.Process,
             Face = face.Face.ToString()
           }),
           pallet: pallet.Status.Master.PalletNum.ToString(),
@@ -1266,10 +1272,13 @@ namespace BlackMaple.FMSInsight.Niigata
 
         foreach (var m in matOnFace)
         {
-          m.Action = new InProcessMaterialAction()
+          m.Mat = m.Mat with
           {
-            Type = InProcessMaterialAction.ActionType.Loading,
-            ElapsedLoadUnloadTime = TimeSpan.Zero
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Loading,
+              ElapsedLoadUnloadTime = TimeSpan.Zero
+            }
           };
         }
       }
@@ -1277,16 +1286,19 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         foreach (var m in matOnFace)
         {
-          m.Action = new InProcessMaterialAction()
+          m.Mat = m.Mat with
           {
-            Type = InProcessMaterialAction.ActionType.Loading,
-            ElapsedLoadUnloadTime = nowUtc.Subtract(reclampStart.EndTimeUTC)
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Loading,
+              ElapsedLoadUnloadTime = nowUtc.Subtract(reclampStart.EndTimeUTC)
+            }
           };
         }
       }
     }
 
-    private void RecordReclampEnd(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterial> matOnFace, StopAndStep ss, LogEntry reclampStart, DateTime nowUtc, IRepository logDB, ref bool palletStateUpdated)
+    private void RecordReclampEnd(PalletAndMaterial pallet, PalletFace face, IEnumerable<InProcessMaterialAndJob> matOnFace, StopAndStep ss, LogEntry reclampStart, DateTime nowUtc, IRepository logDB, ref bool palletStateUpdated)
     {
       Log.Debug("Recording reclamp end for {@pallet} and face {@face} for stop {@ss} with logs {@machStart}", pallet, face, ss, reclampStart);
       palletStateUpdated = true;
@@ -1320,8 +1332,8 @@ namespace BlackMaple.FMSInsight.Niigata
       logDB.RecordManualWorkAtLULEnd(
         mats: matOnFace.Select(m => new EventLogMaterial()
         {
-          MaterialID = m.MaterialID,
-          Process = m.Process,
+          MaterialID = m.Mat.MaterialID,
+          Process = m.Mat.Process,
           Face = face.Face.ToString()
         }),
         pallet: pallet.Status.Master.PalletNum.ToString(),
@@ -1348,7 +1360,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               if (log.ProgramDetails != null && log.ProgramDetails.TryGetValue("InspectionType", out var iType))
               {
-                mat.Mat.SignaledInspections.Add(iType);
+                mat.Mat %= m => m.SignaledInspections.Append(iType).ToArray();
               }
             }
             palletStateUpdated = true;
@@ -1527,7 +1539,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .Distinct()
-                .ToList(),
+                .ToArray(),
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.InQueue,

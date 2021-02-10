@@ -35,6 +35,7 @@ using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -47,15 +48,12 @@ namespace BlackMaple.FMSInsight.Niigata
         return new CurrentStatus();
       }
 
-      var curStatus = new CurrentStatus(status.Status.TimeOfStatusUTC);
-
-      foreach (var k in settings.Queues) curStatus.QueueSizes[k.Key] = k.Value;
-
       // jobs
+      var jobsByUniq = ImmutableDictionary.CreateBuilder<string, InProcessJob>();
       foreach (var j in status.UnarchivedJobs)
       {
         var curJob = new InProcessJob(j);
-        curStatus.Jobs.Add(curJob.UniqueStr, curJob);
+        jobsByUniq.Add(curJob.UniqueStr, curJob);
         var evts = jobDB.GetLogForJobUnique(j.UniqueStr);
         foreach (var e in evts)
         {
@@ -101,7 +99,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // set precedence
       var proc1paths =
-        curStatus.Jobs.Values.SelectMany(job =>
+        jobsByUniq.Values.SelectMany(job =>
           Enumerable.Range(1, job.GetNumPaths(1)).Select(proc1path => (job, proc1path))
         )
         .OrderBy(x => x.job.RouteStartingTimeUTC)
@@ -130,9 +128,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // pallets
+      var palletsByName = ImmutableDictionary.CreateBuilder<string, MachineWatchInterface.PalletStatus>();
       foreach (var pal in status.Pallets)
       {
-        curStatus.Pallets.Add(pal.Status.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
+        palletsByName.Add(pal.Status.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
         {
           Pallet = pal.Status.Master.PalletNum.ToString(),
           FixtureOnPallet = "",
@@ -142,81 +141,33 @@ namespace BlackMaple.FMSInsight.Niigata
         });
       }
 
-      // material on pallets
-      foreach (var mat in status.Pallets.SelectMany(pal => pal.Material))
+      return new CurrentStatus()
       {
-        curStatus.Material.Add(mat.Mat);
-      }
-
-      // queued mats
-      foreach (var mat in status.QueuedMaterial)
-      {
-        curStatus.Material.Add(mat.Mat);
-      }
-
-      SetLongTool(curStatus, status);
-
-      //alarms
-      foreach (var pal in status.Pallets)
-      {
-        if (pal.Status.Tracking.Alarm)
-        {
-          string msg = " has alarm code " + pal.Status.Tracking.AlarmCode.ToString();
-          switch (pal.Status.Tracking.AlarmCode)
-          {
-            case PalletAlarmCode.AlarmSetOnScreen:
-              msg = " has alarm set by operator";
-              break;
-            case PalletAlarmCode.M165:
-              msg = " has alarm M165";
-              break;
-            case PalletAlarmCode.RoutingFault:
-              msg = " has routing fault";
-              break;
-            case PalletAlarmCode.LoadingFromAutoLULStation:
-              msg = " is loading from auto L/UL station";
-              break;
-            case PalletAlarmCode.ProgramRequestAlarm:
-              msg = " has program request alarm";
-              break;
-            case PalletAlarmCode.ProgramRespondingAlarm:
-              msg = " has program responding alarm";
-              break;
-            case PalletAlarmCode.ProgramTransferAlarm:
-              msg = " has program transfer alarm";
-              break;
-            case PalletAlarmCode.ProgramTransferFinAlarm:
-              msg = " has program transfer alarm";
-              break;
-            case PalletAlarmCode.MachineAutoOff:
-              msg = " at machine with auto off";
-              break;
-            case PalletAlarmCode.MachinePowerOff:
-              msg = " at machine which is powered off";
-              break;
-            case PalletAlarmCode.IccExited:
-              msg = " can't communicate with ICC";
-              break;
-          }
-          curStatus.Alarms.Add("Pallet " + pal.Status.Master.PalletNum.ToString() + msg);
-        }
-      }
-      foreach (var mc in status.Status.Machines.Values)
-      {
-        if (mc.Alarm)
-        {
-          curStatus.Alarms.Add("Machine " + mc.MachineNumber.ToString() + " has an alarm");
-        }
-      }
-      if (status.Status.Alarm)
-      {
-        curStatus.Alarms.Add("ICC has an alarm");
-      }
-
-      return curStatus;
+        TimeOfCurrentStatusUTC = status.Status.TimeOfStatusUTC,
+        Jobs = jobsByUniq.ToImmutable(),
+        Pallets = palletsByName.ToImmutable(),
+        Material =
+          status.Pallets.SelectMany(pal => pal.Material)
+          .Concat(status.QueuedMaterial)
+          .Select(m => m.Mat)
+          .Concat(SetLongTool(status))
+          .ToImmutableList(),
+        QueueSizes = settings.Queues.ToImmutableDictionary(),
+        Alarms =
+          status.Pallets.Where(pal => pal.Status.Tracking.Alarm).Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
+          .Concat(
+            status.Status.Machines.Values.Where(mc => mc.Alarm)
+            .Select(mc => "Machine " + mc.MachineNumber.ToString() + " has an alarm"
+            )
+          )
+          .Concat(
+            status.Status.Alarm ? new[] { "ICC has an alarm" } : new string[] { }
+          )
+          .ToImmutableList()
+      };
     }
 
-    private static void SetLongTool(CurrentStatus curStatus, CellState status)
+    private static IEnumerable<InProcessMaterial> SetLongTool(CellState status)
     {
       // tool loads/unloads
       foreach (var pal in status.Pallets.Where(p => p.Status.Master.ForLongToolMaintenance && p.Status.HasWork))
@@ -227,7 +178,7 @@ namespace BlackMaple.FMSInsight.Niigata
           case LoadStep load:
             if (pal.Status.Tracking.BeforeCurrentStep)
             {
-              curStatus.Material.Add(new InProcessMaterial()
+              yield return new InProcessMaterial()
               {
                 MaterialID = -1,
                 JobUnique = "",
@@ -246,13 +197,13 @@ namespace BlackMaple.FMSInsight.Niigata
                   ProcessAfterLoad = 1,
                   PathAfterLoad = 1
                 }
-              });
+              };
             }
             break;
           case UnloadStep unload:
             if (pal.Status.Tracking.BeforeCurrentStep)
             {
-              curStatus.Material.Add(new InProcessMaterial()
+              yield return new InProcessMaterial()
               {
                 MaterialID = -1,
                 JobUnique = "",
@@ -269,11 +220,53 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
                 }
-              });
+              };
             }
             break;
         }
       }
+    }
+
+    private static string AlarmCodeToString(int palletNum, PalletAlarmCode code)
+    {
+      string msg = " has alarm code " + code.ToString();
+      switch (code)
+      {
+        case PalletAlarmCode.AlarmSetOnScreen:
+          msg = " has alarm set by operator";
+          break;
+        case PalletAlarmCode.M165:
+          msg = " has alarm M165";
+          break;
+        case PalletAlarmCode.RoutingFault:
+          msg = " has routing fault";
+          break;
+        case PalletAlarmCode.LoadingFromAutoLULStation:
+          msg = " is loading from auto L/UL station";
+          break;
+        case PalletAlarmCode.ProgramRequestAlarm:
+          msg = " has program request alarm";
+          break;
+        case PalletAlarmCode.ProgramRespondingAlarm:
+          msg = " has program responding alarm";
+          break;
+        case PalletAlarmCode.ProgramTransferAlarm:
+          msg = " has program transfer alarm";
+          break;
+        case PalletAlarmCode.ProgramTransferFinAlarm:
+          msg = " has program transfer alarm";
+          break;
+        case PalletAlarmCode.MachineAutoOff:
+          msg = " at machine with auto off";
+          break;
+        case PalletAlarmCode.MachinePowerOff:
+          msg = " at machine which is powered off";
+          break;
+        case PalletAlarmCode.IccExited:
+          msg = " can't communicate with ICC";
+          break;
+      }
+      return "Pallet " + palletNum.ToString() + msg;
     }
   }
 }

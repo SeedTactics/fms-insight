@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -38,6 +38,7 @@ using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using System.Collections.Immutable;
+using Germinate;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -579,12 +580,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         reason: "TestAddCasting",
         timeUTC: _status.TimeOfStatusUTC
       );
-      _expectedMaterial[mat.MaterialID].Location = new InProcessMaterialLocation()
+      _expectedMaterial[mat.MaterialID] %= m => m.SetLocation(new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.InQueue,
         CurrentQueue = queue,
         QueuePosition = pos
-      };
+      });
       return this;
     }
 
@@ -639,11 +640,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl SetExpectedCastingElapsedLoadUnloadTime(int pal, int mins)
     {
-      foreach (var m in _expectedLoadCastings)
+      for (int i = 0; i < _expectedLoadCastings.Count; i++)
       {
+        var m = _expectedLoadCastings[i];
         if (m.Action.LoadOntoPallet == pal.ToString())
         {
-          m.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(mins);
+          _expectedLoadCastings[i] = m % (mat => mat.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(mins));
         }
       }
       return this;
@@ -655,23 +657,27 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl UpdateExpectedMaterial(long matId, Action<InProcessMaterial> f)
+    public FakeIccDsl UpdateExpectedMaterial(long matId, Action<IInProcessMaterialDraft> f)
     {
-      f(_expectedMaterial[matId]);
+      _expectedMaterial[matId] %= f;
       return this;
     }
 
-    public FakeIccDsl UpdateExpectedMaterial(IEnumerable<long> matIds, Action<InProcessMaterial> f)
+    public FakeIccDsl UpdateExpectedMaterial(IEnumerable<long> matIds, Action<IInProcessMaterialDraft> f)
     {
       foreach (var matId in matIds)
-        f(_expectedMaterial[matId]);
+      {
+        _expectedMaterial[matId] %= f;
+      }
       return this;
     }
 
-    public FakeIccDsl UpdateExpectedMaterial(IEnumerable<LogMaterial> mats, Action<InProcessMaterial> f)
+    public FakeIccDsl UpdateExpectedMaterial(IEnumerable<LogMaterial> mats, Action<IInProcessMaterialDraft> f)
     {
       foreach (var mat in mats)
-        f(_expectedMaterial[mat.MaterialID]);
+      {
+        _expectedMaterial[mat.MaterialID] %= f;
+      }
       return this;
     }
 
@@ -733,38 +739,43 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         timeUTC: _status.TimeOfStatusUTC
       );
 
-      var matOnPal = _expectedMaterial[matOnPalId];
-      var matToAdd = _expectedMaterial[matToAddId];
-      var queue = matToAdd.Location.CurrentQueue;
+      var oldMatOnPal = _expectedMaterial[matOnPalId];
+      var oldMatToAdd = _expectedMaterial[matToAddId];
+      var queue = oldMatToAdd.Location.CurrentQueue;
 
-      (matToAdd.JobUnique, matOnPal.JobUnique) = (matOnPal.JobUnique, matToAdd.JobUnique);
-
-      (matToAdd.Process, matOnPal.Process) = (matOnPal.Process, matToAdd.Process);
-
-      (matToAdd.Path, matOnPal.Path) = (matOnPal.Path, matToAdd.Path);
-
-      var face = matOnPal.Location.Face;
-      matOnPal.Location = new InProcessMaterialLocation()
+      _expectedMaterial[matOnPalId] %= mat =>
       {
-        Type = InProcessMaterialLocation.LocType.InQueue,
-        CurrentQueue = queue,
-        QueuePosition =
-            _expectedMaterial.Where(n => n.Value.Location.Type == InProcessMaterialLocation.LocType.InQueue && n.Value.Location.CurrentQueue == queue)
-            .Select(n => n.Value.Location.QueuePosition)
-            .Max()
+        mat.JobUnique = oldMatToAdd.JobUnique;
+        mat.Process = oldMatToAdd.Process;
+        mat.Path = oldMatToAdd.Path;
+        mat.SetLocation(new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.InQueue,
+          CurrentQueue = queue,
+          QueuePosition =
+              _expectedMaterial.Where(n => n.Value.Location.Type == InProcessMaterialLocation.LocType.InQueue && n.Value.Location.CurrentQueue == queue)
+              .Select(n => n.Value.Location.QueuePosition)
+              .Max()
+        });
       };
 
-      matToAdd.Location = new InProcessMaterialLocation()
+      _expectedMaterial[matToAddId] %= mat =>
       {
-        Type = InProcessMaterialLocation.LocType.OnPallet,
-        Pallet = pal.ToString(),
-        Face = face
+        mat.JobUnique = oldMatOnPal.JobUnique;
+        mat.Process = oldMatOnPal.Process;
+        mat.Path = oldMatOnPal.Path;
+        mat.SetLocation(new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          Pallet = pal.ToString(),
+          Face = oldMatOnPal.Location.Face
+        });
       };
 
-      int numProc = _logDB.LoadJob(matToAdd.JobUnique).NumProcesses;
+      int numProc = _logDB.LoadJob(oldMatOnPal.JobUnique).NumProcesses;
 
       newMat = new[] {
-        new LogMaterial(matID: matToAddId, uniq: matToAdd.JobUnique, proc: matToAdd.Process, part: matToAdd.PartName, numProc: numProc, serial: matToAdd.Serial, workorder: matToAdd.WorkorderId ?? "", face: face.ToString())
+        new LogMaterial(matID: matToAddId, uniq: oldMatOnPal.JobUnique, proc: oldMatOnPal.Process, part: oldMatOnPal.PartName, numProc: numProc, serial: oldMatToAdd.Serial, workorder: oldMatToAdd.WorkorderId ?? "", face: oldMatOnPal.Location.Face.ToString())
       };
 
       return this;
@@ -1118,12 +1129,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 return m.Location.Pallet == palNum.ToString();
               }
               return false;
-            })
+            }),
+          options => options.ComparingByMembers<InProcessMaterial>()
         );
       }
       actualSt.QueuedMaterial.Select(m => m.Mat).Should().BeEquivalentTo(_expectedMaterial.Values.Where(
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
-      ));
+      ), options => options.ComparingByMembers<InProcessMaterial>());
       actualSt.JobQtyRemainingOnProc1.Should().BeEquivalentTo(_expectedJobRemainCount);
       actualSt.OldUnusedPrograms.Should()
         .BeEquivalentTo(_expectedOldPrograms, options => options.Excluding(p => p.Comment));
@@ -1170,11 +1182,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Path { get; set; }
       public int ElapsedMin { get; set; }
       public int ActiveMins { get; set; }
-      public Action<InProcessMaterial> MatAdjust { get; set; }
+      public Action<IInProcessMaterialDraft> MatAdjust { get; set; }
       public List<LogMaterial> OutMaterial { get; set; }
     }
 
-    public static ExpectedChange LoadCastingToFace(int pal, int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats, Action<InProcessMaterial> adj = null)
+    public static ExpectedChange LoadCastingToFace(int pal, int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats, Action<IInProcessMaterialDraft> adj = null)
     {
       var e = new ExpectedLoadCastingEvt()
       {
@@ -1965,7 +1977,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 };
                 if (load.MatAdjust != null)
                 {
-                  load.MatAdjust(_expectedMaterial[m.MaterialID]);
+                  _expectedMaterial[m.MaterialID] %= load.MatAdjust;
                 }
               }
 

@@ -237,6 +237,9 @@ namespace MachineWatchTest
 
       status.Should().BeEquivalentTo(expectedStatus, options =>
         options.Excluding(c => c.TimeOfCurrentStatusUTC)
+          .ComparingByMembers<CurrentStatus>()
+          .ComparingByMembers<InProcessMaterial>()
+          .ComparingByMembers<PalletStatus>()
       );
     }
 
@@ -274,6 +277,9 @@ namespace MachineWatchTest
 
       status.Should().BeEquivalentTo(expectedStatus, options =>
         options.Excluding(c => c.TimeOfCurrentStatusUTC)
+          .ComparingByMembers<CurrentStatus>()
+          .ComparingByMembers<InProcessMaterial>()
+          .ComparingByMembers<PalletStatus>()
       );
     }
 

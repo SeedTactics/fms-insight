@@ -1929,14 +1929,15 @@ namespace BlackMaple.MachineFramework
       {
         while (reader.Read())
         {
-          var j = default(MachineWatchInterface.JobAndDecrementQuantity);
-          j.DecrementId = reader.GetInt64(0);
-          j.JobUnique = reader.GetString(1);
-          j.Proc1Path = reader.GetInt32(2);
-          j.TimeUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc);
-          j.Part = reader.GetString(4);
-          j.Quantity = reader.GetInt32(5);
-          ret.Add(j);
+          ret.Add(new MachineWatchInterface.JobAndDecrementQuantity()
+          {
+            DecrementId = reader.GetInt64(0),
+            JobUnique = reader.GetString(1),
+            Proc1Path = reader.GetInt32(2),
+            TimeUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+            Part = reader.GetString(4),
+            Quantity = reader.GetInt32(5),
+          });
         }
         return ret;
       }

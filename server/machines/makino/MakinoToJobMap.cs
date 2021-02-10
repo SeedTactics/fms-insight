@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 using System.Linq;
+using System.Collections.Immutable;
 
 namespace Makino
 {
@@ -214,7 +215,7 @@ namespace Makino
               _logDb.LookupInspectionDecisions(matID)
                   .Where(x => x.Inspect)
                   .Select(x => x.InspType)
-      .Distinct()
+                  .Distinct()
                   .ToList(),
         Action = new InProcessMaterialAction()
         {
@@ -290,8 +291,7 @@ namespace Makino
 
       if (_pallets.ContainsKey(palletNum.ToString()))
       {
-        var p = _pallets[palletNum.ToString()];
-        p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
+        _pallets[palletNum.ToString()] %= p => p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
         return;
       }
 
@@ -332,19 +332,20 @@ namespace Makino
         ms = new List<InProcessMaterial>();
         _fixPalIDToMaterial.Add(fixturePalletID, ms);
       }
-      ms.Add(mat);
 
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
       var pal = _pallets[palletNum.ToString()];
 
       if (pal.CurrentPalletLocation.Location == PalletLocationEnum.Machine && mat.Action.Program != "")
       {
-        mat.Action.Type = InProcessMaterialAction.ActionType.Machining;
+        mat %= m => m.Action.Type = InProcessMaterialAction.ActionType.Machining;
       }
       else
       {
-        mat.Action.Program = "";
+        mat %= m => m.Action.Program = "";
       }
+
+      ms.Add(mat);
     }
 
     public void SetMaterialAsUnload(int fixturePalletID, bool completed)
@@ -355,15 +356,14 @@ namespace Makino
 
       if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
       {
-        foreach (var mat in _fixPalIDToMaterial[fixturePalletID])
-        {
-          mat.Action = new InProcessMaterialAction()
+        _fixPalIDToMaterial[fixturePalletID] = _fixPalIDToMaterial[fixturePalletID].Select(mat => mat % (draft =>
+          draft.SetAction(new InProcessMaterialAction()
           {
             Type = completed
                   ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
                   : InProcessMaterialAction.ActionType.UnloadToInProcess
-          };
-        }
+          })
+        )).ToList();
       }
     }
 

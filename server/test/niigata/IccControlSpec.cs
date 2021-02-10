@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -277,7 +277,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(sndMats, im =>
           {
-            im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
             im.LastCompletedMachiningRouteStopIndex = 0;
           }
         )
@@ -291,7 +291,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           m.Action.Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial;
           m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
-          m.SignaledInspections.Add("InspTy");
+          m.SignaledInspections = m.SignaledInspections.Append("InspTy").ToArray();
         })
         // no load of new, since qty is 3 and have produced 2 on pallet 1 and there is still a pending load assigned to pallet 2
         .ExpectTransition(new[] {
@@ -410,14 +410,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           m.JobUnique = "uniq1";
           m.PartName = "part1";
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = 1.ToString(),
             LoadOntoFace = 1,
             ProcessAfterLoad = 1,
             PathAfterLoad = 1
-          };
+          });
         })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
@@ -441,13 +441,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(queuedMat.MaterialID, m =>
         {
           m.Process = 1;
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          m.Location = new InProcessMaterialLocation()
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "1",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
@@ -631,7 +631,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           im.Process = 2;
           im.Path = 1;
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.Location.Face = 2;
         })
         .ExpectTransition(new[] {
@@ -658,7 +658,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 5, program: 2200)
         .UpdateExpectedMaterial(BBBproc1, im =>
           {
-            im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           }
         )
         .UpdateExpectedMaterial(AAAproc2, im =>
@@ -682,7 +682,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         )
         .UpdateExpectedMaterial(AAAproc2, im =>
           {
-            im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
             im.LastCompletedMachiningRouteStopIndex = 0;
           }
         )
@@ -699,7 +699,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .DecrJobRemainCnt("uniq1", path: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
          {
-           im.Action = new InProcessMaterialAction()
+           im.SetAction(new InProcessMaterialAction()
            {
              Type = InProcessMaterialAction.ActionType.Loading,
              LoadOntoFace = 2,
@@ -707,16 +707,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
              ProcessAfterLoad = 2,
              PathAfterLoad = 1,
              ElapsedLoadUnloadTime = TimeSpan.Zero
-           };
+           });
            im.LastCompletedMachiningRouteStopIndex = null;
          })
         .UpdateExpectedMaterial(AAAproc2, im =>
          {
-           im.Action = new InProcessMaterialAction()
+           im.SetAction(new InProcessMaterialAction()
            {
              Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
              ElapsedLoadUnloadTime = TimeSpan.Zero
-           };
+           });
            im.LastCompletedMachiningRouteStopIndex = null;
          })
         .ExpectTransition(new[] {
@@ -727,7 +727,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .RemoveExpectedMaterial(AAAproc2.Select(m => m.MaterialID))
         .UpdateExpectedMaterial(BBBproc1.Select(m => m.MaterialID), im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.Location.Face = 2;
           im.Process = 2;
           im.Path = 1;
@@ -760,7 +760,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 6, program: 2100)
         .UpdateExpectedMaterial(BBBproc2, im =>
           {
-            im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           }
         )
         .UpdateExpectedMaterial(CCCproc1, im =>
@@ -783,7 +783,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .UpdateExpectedMaterial(CCCproc1, im =>
           {
-            im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+            im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
             im.LastCompletedMachiningRouteStopIndex = 0;
           }
         )
@@ -796,7 +796,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToLoad(pal: 1, lul: 3)
         .UpdateExpectedMaterial(CCCproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoFace = 2,
@@ -804,16 +804,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             ProcessAfterLoad = 2,
             PathAfterLoad = 1,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .UpdateExpectedMaterial(BBBproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .SetExpectedLoadCastings(new[] {
@@ -840,7 +840,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .RemoveExpectedMaterial(BBBproc2)
         .UpdateExpectedMaterial(CCCproc1, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.Location.Face = 2;
           im.Process = 2;
           im.Path = 1;
@@ -872,7 +872,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 6, program: 2200)
         .UpdateExpectedMaterial(DDDproc1, im =>
         {
-          im.Action = new InProcessMaterialAction { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction { Type = InProcessMaterialAction.ActionType.Waiting });
         })
         .UpdateExpectedMaterial(CCCproc2, im =>
         {
@@ -894,7 +894,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .UpdateExpectedMaterial(CCCproc2, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -906,7 +906,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToLoad(pal: 1, lul: 3)
         .UpdateExpectedMaterial(DDDproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoFace = 2,
@@ -914,16 +914,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             ProcessAfterLoad = 2,
             PathAfterLoad = 1,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .UpdateExpectedMaterial(CCCproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .ExpectTransition(new[] {
@@ -944,7 +944,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .RemoveExpectedMaterial(CCCproc2.Select(m => m.MaterialID))
         .UpdateExpectedMaterial(DDDproc1.Select(m => m.MaterialID), im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.Location.Face = 2;
           im.Process = 2;
           im.Path = 1;
@@ -977,7 +977,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(DDDproc2, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -987,11 +987,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetBeforeUnload(pal: 1)
         .UpdateExpectedMaterial(DDDproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
         })
         // nothing new loaded
         .ExpectTransition(new[] {
@@ -1110,12 +1110,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .DecrJobRemainCnt("uniq1", path: 1)
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "qqq",
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
@@ -1128,20 +1128,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ClearExpectedLoadCastings()
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "2",
             LoadOntoFace = 1,
             ProcessAfterLoad = 2,
             PathAfterLoad = 1
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "qqq",
             QueuePosition = 0
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
@@ -1178,16 +1178,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           im.Process = 2;
           im.Path = 1;
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Waiting,
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "2",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
@@ -1201,13 +1201,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 6, program: 654)
         .UpdateExpectedMaterial(AAAproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "654",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(10)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineBegin(pal: 2, machine: 6, program: "654", mat: AAAproc2)
@@ -1223,13 +1223,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "prog111 rev5",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, elapMin: 7 + 4, waitForMach: true, mats: BBBproc1),
@@ -1255,7 +1255,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToMachineQueue(pal: 1, mach: 5)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
         })
         .ExpectNoChanges()
 
@@ -1263,13 +1263,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToMachine(pal: 1, mach: 5)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "prog111 rev5",
             ElapsedMachiningTime = TimeSpan.FromMinutes(2),
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14 - 2)
-          };
+          });
         })
         .ExpectNoChanges()
         .StartMachine(mach: 5, program: 2100)
@@ -1294,7 +1294,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .UpdateExpectedMaterial(AAAproc2, im =>
@@ -1310,7 +1310,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 2)
         .UpdateExpectedMaterial(AAAproc2, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -1333,12 +1333,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .DecrJobRemainCnt("uniq1", path: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "qqq",
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .ExpectTransition(new[] {
@@ -1350,13 +1350,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterLoad(pal: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          im.Location = new InProcessMaterialLocation()
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "qqq",
             QueuePosition = 0
-          };
+          });
         })
         .ClearExpectedLoadCastings()
         .ExpectTransition(new[] {
@@ -1372,16 +1372,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetBeforeUnload(pal: 2)
         .UpdateExpectedMaterial(AAAproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoFace = 1,
@@ -1389,7 +1389,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             PathAfterLoad = 1,
             ProcessAfterLoad = 2,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: CCCproc1),
@@ -1404,13 +1404,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           im.Process = 2;
           im.Path = 1;
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          im.Location = new InProcessMaterialLocation()
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "2",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 60 - 34),
@@ -1426,13 +1426,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 5, program: 2100)
         .UpdateExpectedMaterial(CCCproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "prog111 rev5",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, waitForMach: true, elapMin: 12, mats: CCCproc1),
@@ -1444,7 +1444,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(CCCproc1, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -1456,13 +1456,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 5, program: 654)
         .UpdateExpectedMaterial(BBBproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "654",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(10)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerEnd(pal: 2, stocker: 2, waitForMach: true, elapMin: 1, mats: BBBproc2),
@@ -1474,7 +1474,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 2)
         .UpdateExpectedMaterial(BBBproc2, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -1490,11 +1490,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetBeforeUnload(pal: 2)
         .UpdateExpectedMaterial(BBBproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerEnd(pal: 2, stocker: 2, waitForMach: false, elapMin: 0, mats: BBBproc2),
@@ -1514,12 +1514,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetBeforeUnload(pal: 1)
         .UpdateExpectedMaterial(CCCproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "qqq",
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, elapMin: 5, waitForMach: false, mats: CCCproc1),
@@ -1529,20 +1529,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetNoWork(pal: 1)
         .UpdateExpectedMaterial(CCCproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "2",
             LoadOntoFace = 1,
             ProcessAfterLoad = 2,
             PathAfterLoad = 1
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "qqq",
             QueuePosition = 0
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .ExpectTransition(new[] {
@@ -1571,13 +1571,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           im.Process = 2;
           im.Path = 1;
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          im.Location = new InProcessMaterialLocation()
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "2",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 91 - 66),
@@ -1675,7 +1675,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .SetAfterMC(pal: 1)
       .UpdateExpectedMaterial(AAAproc1, im =>
       {
-        im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+        im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
         im.LastCompletedMachiningRouteStopIndex = 0;
       })
       .ExpectTransition(new[] {
@@ -1688,12 +1688,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .MoveToLoad(pal: 1, lul: 4)
       .UpdateExpectedMaterial(AAAproc1, im =>
       {
-        im.Action = new InProcessMaterialAction()
+        im.SetAction(new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
           UnloadIntoQueue = "qqq",
           ElapsedLoadUnloadTime = TimeSpan.Zero
-        };
+        });
       })
       .ExpectTransition(new[] {
         FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4)
@@ -1703,20 +1703,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .SetNoWork(pal: 1)
       .UpdateExpectedMaterial(AAAproc1, im =>
       {
-        im.Action = new InProcessMaterialAction()
+        im.SetAction(new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Loading,
           LoadOntoPallet = "2",
           LoadOntoFace = 1,
           ProcessAfterLoad = 2,
           PathAfterLoad = 1
-        };
-        im.Location = new InProcessMaterialLocation()
+        });
+        im.SetLocation(new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
           CurrentQueue = "qqq",
           QueuePosition = 0
-        };
+        });
         im.LastCompletedMachiningRouteStopIndex = null;
       })
       .ExpectTransition(new[] {
@@ -1773,16 +1773,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         im.Process = 2;
         im.Path = 1;
-        im.Action = new InProcessMaterialAction()
+        im.SetAction(new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Waiting,
-        };
-        im.Location = new InProcessMaterialLocation()
+        });
+        im.SetLocation(new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
           Pallet = "2",
           Face = 1
-        };
+        });
       })
       .ExpectTransition(new[] {
         FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
@@ -1887,7 +1887,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 1, machStepOffset: 0)
         .UpdateExpectedMaterial(fstMats, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -1931,7 +1931,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 1, machStepOffset: 1)
         .UpdateExpectedMaterial(fstMats, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 1;
         })
         .ExpectTransition(new[] {
@@ -1946,11 +1946,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges()
         .UpdateExpectedMaterial(fstMats, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
         })
         .MoveToLoad(pal: 1, lul: 2)
         .ExpectTransition(new[] {
@@ -1966,7 +1966,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterReclamp(pal: 1, reclampStepOffset: 0)
         .UpdateExpectedMaterial(fstMats, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 2;
         })
         .ExpectTransition(new[] {
@@ -1981,11 +1981,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetBeforeUnload(pal: 1)
         .UpdateExpectedMaterial(fstMats, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .SetExpectedLoadCastings(new[] {
@@ -2080,11 +2080,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetBeforeUnload(pal: 1)
         .UpdateExpectedMaterial(fstMats, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
         })
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1),
@@ -2187,14 +2187,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           m.JobUnique = "uniq1";
           m.PartName = "part1";
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = 1.ToString(),
             LoadOntoFace = 1,
             ProcessAfterLoad = 1,
             PathAfterLoad = 1
-          };
+          });
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectAddNewProgram(progNum: 2100, name: "prog111", rev: 5, mcMin: 14),
@@ -2232,13 +2232,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(queuedMat1.MaterialID, m =>
         {
           m.Process = 1;
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          m.Location = new InProcessMaterialLocation()
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "1",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
@@ -2250,13 +2250,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 6, program: 2100)
         .UpdateExpectedMaterial(mat1, m =>
         {
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "prog111 rev5",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog111", rev: 5, mat: mat1)
@@ -2266,7 +2266,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .EndMachine(mach: 6)
         .UpdateExpectedMaterial(mat1, m =>
         {
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           m.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -2280,14 +2280,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           m.JobUnique = "uniq1";
           m.PartName = "part1";
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = 2.ToString(),
             LoadOntoFace = 1,
             ProcessAfterLoad = 1,
             PathAfterLoad = 1
-          };
+          });
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(
@@ -2308,13 +2308,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(queuedMat2.MaterialID, m =>
         {
           m.Process = 1;
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          m.Location = new InProcessMaterialLocation()
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "2",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
@@ -2326,13 +2326,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 5, program: 2101)
         .UpdateExpectedMaterial(mat2, m =>
         {
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "prog111 rev4",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineBegin(pal: 2, machine: 5, program: "prog111", rev: 4, mat: mat2)
@@ -2342,7 +2342,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .EndMachine(mach: 5)
         .UpdateExpectedMaterial(mat2, m =>
         {
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           m.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -2355,14 +2355,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AddAllocatedMaterial(queue: "qqq", uniq: "uniq1", part: "part1", workorder: "work1", proc: 1, path: 1, numProc: 2, mat: out var queuedMat4)
         .UpdateExpectedMaterial(queuedMat3.MaterialID, m =>
         {
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = 4.ToString(),
             LoadOntoFace = 1,
             ProcessAfterLoad = 2,
             PathAfterLoad = 1
-          };
+          });
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(
@@ -2393,13 +2393,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(queuedMat3.MaterialID, m =>
         {
           m.Process = 2;
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          m.Location = new InProcessMaterialLocation()
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "4",
             Face = 1
-          };
+          });
         })
         .DecrJobRemainCnt("uniq1", 1)
         .ExpectTransition(new[] {
@@ -2532,13 +2532,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 5, program: 2100)
         .UpdateExpectedMaterial(AAAProc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "prog111 rev5",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 5, program: "prog111", rev: 5, mat: AAAProc1),
@@ -2557,13 +2557,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 6, program: 2100)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "prog111 rev5",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerEnd(pal: 2, stocker: 2, elapMin: 5, waitForMach: true, mats: BBBproc1),
@@ -2576,10 +2576,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(AAAProc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Waiting
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -2593,10 +2593,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterMC(pal: 2)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Waiting
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -2610,11 +2610,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToBuffer(pal: 1, buff: 1)
         .UpdateExpectedMaterial(AAAProc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "sizedQ",
-          };
+          });
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           // no unhold of pallet 2
@@ -2651,11 +2651,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToBuffer(pal: 2, buff: 2)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "sizedQ",
-          };
+          });
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectStockerStart(pal: 2, stocker: 2, waitForMach: false, mats: BBBproc1)
@@ -2666,20 +2666,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ClearExpectedLoadCastings()
         .UpdateExpectedMaterial(AAAProc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "4",
             LoadOntoFace = 1,
             ProcessAfterLoad = 2,
             PathAfterLoad = 1
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "sizedQ",
             QueuePosition = 0
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 24 - 2),
@@ -2714,16 +2714,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           im.Process = 2;
           im.Path = 1;
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Waiting
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "4",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 4, mins: 0),
@@ -2737,13 +2737,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 6, program: 654)
         .UpdateExpectedMaterial(AAAproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "654",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(10)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineBegin(pal: 4, machine: 6, program: "654", mat: AAAproc2)
@@ -2753,7 +2753,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .EndMachine(mach: 6)
         .UpdateExpectedMaterial(AAAproc2, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.LastCompletedMachiningRouteStopIndex = 0;
         })
         .ExpectTransition(new[] {
@@ -2765,11 +2765,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetBeforeUnload(pal: 4)
         .UpdateExpectedMaterial(AAAproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectLoadBegin(pal: 4, lul: 3)
@@ -3144,12 +3144,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .DecrJobRemainCnt("uniq1", path: 1)
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "qqq",
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
@@ -3162,20 +3162,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ClearExpectedLoadCastings()
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "2",
             LoadOntoFace = 1,
             ProcessAfterLoad = 2,
             PathAfterLoad = 1
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "qqq",
             QueuePosition = 0
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
@@ -3318,12 +3318,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .DecrJobRemainCnt("uniq1", path: 1)
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "qqq",
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
@@ -3336,20 +3336,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ClearExpectedLoadCastings()
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "2",
             LoadOntoFace = 1,
             ProcessAfterLoad = 2,
             PathAfterLoad = 1
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "qqq",
             QueuePosition = 0
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
@@ -3385,7 +3385,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetNoWork(pal: 2)
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
+          im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
         })
         .ExpectTransition(new[] {
             FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0)
@@ -3462,12 +3462,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .MoveToCart(pal: 1)
         .UpdateExpectedMaterial(fstMats, im =>
           {
-            im.Location = new InProcessMaterialLocation()
+            im.SetLocation(new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.InQueue,
               CurrentQueue = "Quarantine",
               QueuePosition = 0
-            };
+            });
           }
         )
         .ExpectTransition(new[] {
@@ -3548,14 +3548,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AddAllocatedMaterial(queue: "rawmat", uniq: "uniq1", part: "part1", proc: 0, path: 1, numProc: 1, out var mat1)
         .UpdateExpectedMaterial(mat1.MaterialID, m =>
         {
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "1",
             LoadOntoFace = 1,
             ProcessAfterLoad = 1,
             PathAfterLoad = 1
-          };
+          });
         })
         .SetJobRemainCnt(unique: "uniq1", path: 1, cnt: 0)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
@@ -3582,13 +3582,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(mat1.MaterialID, f =>
         {
           f.Process = 1;
-          f.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          f.Location = new InProcessMaterialLocation()
+          f.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          f.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "1",
             Face = 1
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 0),
@@ -3700,12 +3700,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .DecrJobRemainCnt("uniq1", path: 1)
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = "qqq",
             ElapsedLoadUnloadTime = TimeSpan.Zero
-          };
+          });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 0)
@@ -3727,16 +3727,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ClearExpectedLoadCastings()
         .UpdateExpectedMaterial(AAAproc1, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Waiting,
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "Quarantine",
             QueuePosition = 0
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 17 - 2),
@@ -3785,14 +3785,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           m.JobUnique = "uniq1";
           m.PartName = "part1";
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "1",
             LoadOntoFace = 1,
             ProcessAfterLoad = 1,
             PathAfterLoad = 1
-          };
+          });
         })
         .DecrJobRemainCnt("uniq1", path: 1)
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
@@ -3814,13 +3814,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .UpdateExpectedMaterial(qmat1.MaterialID, m =>
         {
           m.Process = 1;
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          m.Location = new InProcessMaterialLocation()
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "1",
             Face = 1
-          };
+          });
         })
         .UpdateExpectedMaterial(qmat2.MaterialID, m => m.Location.QueuePosition = 0)
         .ExpectTransition(new[] {
@@ -3911,14 +3911,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AddAllocatedMaterial(queue: "qqq", uniq: "uniq1", part: "part1", proc: 1, path: 1, numProc: 2, out var Bproc1)
         .UpdateExpectedMaterial(AAAproc1.MaterialID, m =>
         {
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Loading,
             LoadOntoPallet = "2",
             LoadOntoFace = 1,
             ProcessAfterLoad = 2,
             PathAfterLoad = 1,
-          };
+          });
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectNewRoute(
@@ -3946,16 +3946,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           im.Process = 2;
           im.Path = 1;
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Waiting,
-          };
-          im.Location = new InProcessMaterialLocation()
+          });
+          im.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             Pallet = "2",
             Face = 1
-          };
+          });
         })
         .UpdateExpectedMaterial(Bproc1.MaterialID, im =>
         {
@@ -3982,13 +3982,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 5, program: 654)
         .UpdateExpectedMaterial(BBBproc2, im =>
         {
-          im.Action = new InProcessMaterialAction()
+          im.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "654",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(10)
-          };
+          });
         })
         .ExpectTransition(new[] {
             FakeIccDsl.ExpectStockerEnd(pal: 2, stocker: 2, elapMin: 4, waitForMach: true, mats: BBBproc2),
@@ -4082,13 +4082,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetManualControl(pal: 1, manual: true)
         .UpdateExpectedMaterial(fstMats, m =>
         {
-          m.Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
-          m.Location = new InProcessMaterialLocation()
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.SetLocation(new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = "Quarantine",
             QueuePosition = 0
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.AddToQueue(queue: "Quarantine", pos: 0, reason: "PalletToManualControl", mat: FakeIccDsl.ClearFaces(fstMats)),
@@ -4260,13 +4260,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .StartMachine(mach: 3, program: 1111)
         .UpdateExpectedMaterial(fstMats, m =>
         {
-          m.Action = new InProcessMaterialAction()
+          m.SetAction(new InProcessMaterialAction()
           {
             Type = InProcessMaterialAction.ActionType.Machining,
             Program = "1111",
             ElapsedMachiningTime = TimeSpan.Zero,
             ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(14)
-          };
+          });
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, elapMin: 5, waitForMach: true, mats: fstMats),

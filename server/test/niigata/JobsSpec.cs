@@ -40,6 +40,7 @@ using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using System.Collections.Immutable;
+using Germinate;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -173,7 +174,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Path = 1,
                 Serial = "serial2",
                 WorkorderId = "work2",
-                SignaledInspections = new List<string> {"insp2"},
+                SignaledInspections = ImmutableList.Create("insp2"),
                 Location = new InProcessMaterialLocation() {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
                   Pallet = "1"
@@ -222,7 +223,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Path = 5,
               Serial = "serial3",
               WorkorderId = null,
-              SignaledInspections = new List<string>(),
+              SignaledInspections = ImmutableList<string>.Empty,
               Location = new InProcessMaterialLocation() {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
                 Pallet = "2"
@@ -251,7 +252,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Path = 1,
           Serial = "serial4",
           WorkorderId = "work4",
-          SignaledInspections = new List<string> { "insp4" },
+          SignaledInspections = ImmutableList.Create("insp4"),
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
@@ -292,55 +293,58 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
 
 
-      var expectedSt = new CurrentStatus(status.TimeOfStatusUTC);
-      var expectedJob = new InProcessJob(j);
-      expectedJob.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 70 - 30);
-      expectedJob.SetCompleted(1, 1, 1);
-      expectedJob.Decrements.Add(new DecrementQuantity()
+      var expectedSt = (new CurrentStatus()).Produce(st =>
       {
-        DecrementId = 0,
-        Proc1Path = 1,
-        TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-        Quantity = 30
-      });
-      expectedJob.SetPrecedence(1, 1, 3); // has last precedence
-      expectedJob.Workorders = new List<string>() { "work1", "work2", "work4" };
-      expectedSt.Jobs.Add("u1", expectedJob);
+        st.TimeOfCurrentStatusUTC = status.TimeOfStatusUTC;
+        var expectedJob = new InProcessJob(j);
+        expectedJob.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 70 - 30);
+        expectedJob.SetCompleted(1, 1, 1);
+        expectedJob.Decrements.Add(new DecrementQuantity()
+        {
+          DecrementId = 0,
+          Proc1Path = 1,
+          TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
+          Quantity = 30
+        });
+        expectedJob.SetPrecedence(1, 1, 3); // has last precedence
+        expectedJob.Workorders = new List<string>() { "work1", "work2", "work4" };
+        st.Jobs.Add("u1", expectedJob);
 
-      var expectedJob2 = new InProcessJob(j2);
-      expectedJob2.SetPrecedence(1, 1, 2); // has middle precedence
-      expectedJob2.Workorders = new List<string>();
-      expectedSt.Jobs.Add("u2", expectedJob2);
+        var expectedJob2 = new InProcessJob(j2);
+        expectedJob2.SetPrecedence(1, 1, 2); // has middle precedence
+        expectedJob2.Workorders = new List<string>();
+        st.Jobs.Add("u2", expectedJob2);
 
-      var expectedJob3 = new InProcessJob(j3);
-      expectedJob3.SetPrecedence(1, 1, 1); // has first precedence
-      expectedJob3.Workorders = new List<string>();
-      expectedSt.Jobs.Add("u3", expectedJob3);
+        var expectedJob3 = new InProcessJob(j3);
+        expectedJob3.SetPrecedence(1, 1, 1); // has first precedence
+        expectedJob3.Workorders = new List<string>();
+        st.Jobs.Add("u3", expectedJob3);
 
-      expectedSt.Material.Add(pal1.Material[0].Mat);
-      expectedSt.Material.Add(pal2.Material[0].Mat);
-      expectedSt.Material.Add(queuedMat.Mat);
-      expectedSt.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
-      {
-        Pallet = "1",
-        FixtureOnPallet = "",
-        OnHold = true,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
-        NumFaces = 1
+        st.Material.Add(pal1.Material[0].Mat);
+        st.Material.Add(pal2.Material[0].Mat);
+        st.Material.Add(queuedMat.Mat);
+        st.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
+        {
+          Pallet = "1",
+          FixtureOnPallet = "",
+          OnHold = true,
+          CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
+          NumFaces = 1
+        });
+        st.Pallets.Add("2", new MachineWatchInterface.PalletStatus()
+        {
+          Pallet = "2",
+          FixtureOnPallet = "",
+          OnHold = false,
+          CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 2),
+          NumFaces = 1
+        });
+        st.Alarms.Add("Pallet 2 has routing fault");
+        st.Alarms.Add("Machine 2 has an alarm");
+        st.Alarms.Add("ICC has an alarm");
+        st.QueueSizes.Add("q1", new QueueSize());
+        st.QueueSizes.Add("q2", new QueueSize());
       });
-      expectedSt.Pallets.Add("2", new MachineWatchInterface.PalletStatus()
-      {
-        Pallet = "2",
-        FixtureOnPallet = "",
-        OnHold = false,
-        CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 2),
-        NumFaces = 1
-      });
-      expectedSt.Alarms.Add("Pallet 2 has routing fault");
-      expectedSt.Alarms.Add("Machine 2 has an alarm");
-      expectedSt.Alarms.Add("ICC has an alarm");
-      expectedSt.QueueSizes.Add("q1", new QueueSize());
-      expectedSt.QueueSizes.Add("q2", new QueueSize());
 
       _syncMock.CurrentCellState().Returns(new CellState()
       {
@@ -351,7 +355,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       });
 
       ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt,
-        options => options.CheckJsonEquals<CurrentStatus, InProcessJob>()
+        options => options
+          .CheckJsonEquals<CurrentStatus, InProcessJob>()
+          .ComparingByMembers<CurrentStatus>()
+          .ComparingByMembers<InProcessMaterial>()
+          .ComparingByMembers<PalletStatus>()
       );
     }
 
@@ -494,7 +502,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .Should().BeEquivalentTo(new[] {
           QueuedMat(matId: 1, job: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0).Mat,
           QueuedMat(matId: 2, job: null, part: "c1", proc: 0, path: 1, serial: null, queue: "q1", pos: 1).Mat,
-        });
+        }, options => options.ComparingByMembers<InProcessMaterial>());
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
         MaterialID = 1,
@@ -570,7 +578,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       //add an allocated material
       ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
         .Should().BeEquivalentTo(
-          QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 2, serial: "aaa", queue: "q1", pos: 0).Mat
+          QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 2, serial: "aaa", queue: "q1", pos: 0).Mat,
+          options => options.ComparingByMembers<InProcessMaterial>()
         );
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {

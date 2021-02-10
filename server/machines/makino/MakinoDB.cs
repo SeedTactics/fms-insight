@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
 using BlackMaple.MachineWatchInterface;
 
@@ -793,11 +794,13 @@ namespace Makino
 
         //TODO: inspections (from jobdb), holds
 
-        var st = new CurrentStatus();
-        foreach (var j in map.Jobs) st.Jobs.Add(j.UniqueStr, j);
-        foreach (var p in palMap.Pallets) st.Pallets.Add(p);
-        foreach (var m in palMap.Material) st.Material.Add(m);
-        return st;
+        return new CurrentStatus()
+        {
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = map.Jobs.ToImmutableDictionary(j => j.UniqueStr),
+          Pallets = palMap.Pallets.ToImmutableDictionary(),
+          Material = palMap.Material.ToImmutableList()
+        };
       }
     }
 
