@@ -345,23 +345,4 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)] public string Part { get; init; }
     [DataMember(IsRequired = true)] public int Quantity { get; init; }
   }
-
-  // The following is only used for old decrement for backwards compatibility,
-  // and shouldn't be used for anything else.
-  public class JobAndPath : IEquatable<JobAndPath>
-  {
-    public readonly string UniqueStr;
-    public readonly int Path;
-
-    public JobAndPath(string unique, int path)
-    {
-      UniqueStr = unique;
-      Path = path;
-    }
-
-    public bool Equals(JobAndPath other)
-    {
-      return (UniqueStr == other.UniqueStr && Path == other.Path);
-    }
-  }
 }

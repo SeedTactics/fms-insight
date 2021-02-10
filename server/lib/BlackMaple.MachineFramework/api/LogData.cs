@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Linq;
 using Germinate;
@@ -41,7 +40,7 @@ using System.Collections.Immutable;
 
 namespace BlackMaple.MachineWatchInterface
 {
-  [Serializable, DataContract]
+  [DataContract]
   public class LogMaterial
   {
     [DataMember(Name = "id", IsRequired = true)]
@@ -83,7 +82,7 @@ namespace BlackMaple.MachineWatchInterface
     private LogMaterial() { } //for json deserialization
   }
 
-  [Serializable, DataContract]
+  [DataContract]
   public enum LogType
   {
     [EnumMember] LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
@@ -107,7 +106,7 @@ namespace BlackMaple.MachineWatchInterface
     // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
   }
 
-  [Serializable, DataContract, KnownType(typeof(MaterialProcessActualPath))]
+  [DataContract, KnownType(typeof(MaterialProcessActualPath))]
   public class LogEntry
   {
     [DataMember(Name = "counter", IsRequired = true)]
@@ -260,7 +259,7 @@ namespace BlackMaple.MachineWatchInterface
     }
   }
 
-  [DataContract, Serializable]
+  [DataContract]
   public record MaterialDetails
   {
     [DataMember(IsRequired = true)] public long MaterialID { get; init; }

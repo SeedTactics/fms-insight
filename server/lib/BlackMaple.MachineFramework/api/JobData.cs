@@ -41,7 +41,7 @@ namespace BlackMaple.MachineWatchInterface
 {
 
   //stores information about a single "stop" of the pallet in a route
-  [Serializable, DataContract]
+  [DataContract]
   public class JobMachiningStop
   {
     public string StationGroup
@@ -207,7 +207,7 @@ namespace BlackMaple.MachineWatchInterface
 
   // JobInspectionData is the old format before we added ability to control per-path
   // It is kept for backwards compatability, but new stuff should use PathInspection instead.
-  [Serializable, DataContract]
+  [DataContract]
   public class JobInspectionData
   {
     [DataMember(IsRequired = true)]
@@ -272,7 +272,7 @@ namespace BlackMaple.MachineWatchInterface
     private JobInspectionData() { } //for json deserialization
   }
 
-  [Serializable, DataContract]
+  [DataContract]
   public class JobHoldPattern
   {
     // All of the following hold types are an OR, meaning if any one of them says a hold is in effect,
@@ -409,7 +409,7 @@ namespace BlackMaple.MachineWatchInterface
     }
   }
 
-  [Serializable, DataContract]
+  [DataContract]
   public partial class JobPlan
   {
     public string UniqueStr
@@ -1142,7 +1142,7 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "CyclesOnFirstProcess", IsRequired = true)]
     private int[] _pCycles;
 
-    [Serializable, DataContract]
+    [DataContract]
     private struct FixtureFace : IComparable<FixtureFace>
     {
 #pragma warning disable CS0649
@@ -1164,14 +1164,14 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
-    [Serializable, DataContract]
+    [DataContract]
     public struct SimulatedProduction
     {
       [DataMember(IsRequired = true)] public DateTime TimeUTC;
       [DataMember(IsRequired = true)] public int Quantity; //total quantity simulated to be completed at TimeUTC
     }
 
-    [Serializable, DataContract]
+    [DataContract]
     private struct ProcessInfo
     {
       [DataMember(Name = "paths", IsRequired = true)]
@@ -1180,7 +1180,7 @@ namespace BlackMaple.MachineWatchInterface
       public int NumPaths => Paths.Length;
     }
 
-    [Serializable, DataContract]
+    [DataContract]
     private struct ProcPathInfo
     {
       [DataMember(IsRequired = true)]

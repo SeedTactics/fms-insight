@@ -115,11 +115,4 @@ namespace BlackMaple.MachineWatchInterface
       string operatorName = null
     );
   }
-
-  public interface IOldJobDecrement
-  {
-    //The old method of decrementing, which stores only a single decrement until finalize is called.
-    Dictionary<JobAndPath, int> OldDecrementJobQuantites();
-    void OldFinalizeDecrement();
-  }
 }

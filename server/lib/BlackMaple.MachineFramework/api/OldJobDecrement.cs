@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -36,17 +36,29 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
-  public interface IMachineWatchVersion
+  // The following is only used for old decrement for backwards compatibility,
+  // and shouldn't be used for anything else.
+  public class JobAndPath : IEquatable<JobAndPath>
   {
-    string Version();
-    string PluginName();
+    public readonly string UniqueStr;
+    public readonly int Path;
+
+    public JobAndPath(string unique, int path)
+    {
+      UniqueStr = unique;
+      Path = path;
+    }
+
+    public bool Equals(JobAndPath other)
+    {
+      return (UniqueStr == other.UniqueStr && Path == other.Path);
+    }
   }
 
-  //Only used for legacy SAIL API access.  Do not use in any new code.
-  public interface IStoreSettings
+  public interface IOldJobDecrement
   {
-    string GetSettings(string ID);
-    void SetSettings(string ID, string settingsJson);
+    //The old method of decrementing, which stores only a single decrement until finalize is called.
+    Dictionary<JobAndPath, int> OldDecrementJobQuantites();
+    void OldFinalizeDecrement();
   }
 }
-
