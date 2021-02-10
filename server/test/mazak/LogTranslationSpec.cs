@@ -667,20 +667,22 @@ namespace MachineWatchTest
 
     protected void MovePallet(DateTime t, int offset, int pal, int load, int elapMin, bool addExpected = true)
     {
-      var e = new MazakMachineInterface.LogEntry();
-      e.Code = LogCode.PalletMoving;
-      e.TimeUTC = t.AddMinutes(offset);
-      e.ForeignID = "";
+      var e = new MazakMachineInterface.LogEntry()
+      {
+        Code = LogCode.PalletMoving,
+        TimeUTC = t.AddMinutes(offset),
+        ForeignID = "",
 
-      e.Pallet = pal;
-      e.FullPartName = "";
-      e.JobPartName = "";
-      e.Process = 1;
-      e.FixedQuantity = -1;
-      e.Program = "";
+        Pallet = pal,
+        FullPartName = "",
+        JobPartName = "",
+        Process = 1,
+        FixedQuantity = -1,
+        Program = "",
 
-      e.TargetPosition = "S011"; //stacker
-      e.FromPosition = "LS01" + load.ToString();
+        TargetPosition = "S011", //stacker
+        FromPosition = "LS01" + load.ToString(),
+      };
 
       HandleEvent(e);
 

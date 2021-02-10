@@ -64,24 +64,24 @@ namespace MazakMachineInterface
     //EndOffsetProgram = 436
   }
 
-  public class LogEntry
+  public record LogEntry
   {
-    public DateTime TimeUTC { get; set; }
-    public LogCode Code { get; set; }
-    public string ForeignID { get; set; }
+    public DateTime TimeUTC { get; init; }
+    public LogCode Code { get; init; }
+    public string ForeignID { get; init; }
 
     //Only sometimes filled in depending on the log code
-    public int Pallet { get; set; }
-    public string FullPartName { get; set; } //Full part name in the mazak system
-    public string JobPartName { get; set; }  //Part name with : stripped off
-    public int Process { get; set; }
-    public int FixedQuantity { get; set; }
-    public string Program { get; set; }
-    public int StationNumber { get; set; }
+    public int Pallet { get; init; }
+    public string FullPartName { get; init; } //Full part name in the mazak system
+    public string JobPartName { get; init; }  //Part name with : stripped off
+    public int Process { get; init; }
+    public int FixedQuantity { get; init; }
+    public string Program { get; init; }
+    public int StationNumber { get; init; }
 
     //Only filled in for pallet movement
-    public string TargetPosition { get; set; }
-    public string FromPosition { get; set; }
+    public string TargetPosition { get; init; }
+    public string FromPosition { get; init; }
   }
 
   public delegate void MazakLogEventDel(LogEntry e, BlackMaple.MachineFramework.IRepository jobDB);
@@ -574,33 +574,26 @@ namespace MazakMachineInterface
               continue;
             }
 
-            var e = new LogEntry();
+            string fullPartName = s[10].Trim();
+            int idx = fullPartName.IndexOf(':');
 
-            e.ForeignID = filename;
-            e.TimeUTC = new DateTime(int.Parse(s[0]), int.Parse(s[1]), int.Parse(s[2]),
+            var e = new LogEntry()
+            {
+              ForeignID = filename,
+              TimeUTC = new DateTime(int.Parse(s[0]), int.Parse(s[1]), int.Parse(s[2]),
                                      int.Parse(s[3]), int.Parse(s[4]), int.Parse(s[5]),
-                                     DateTimeKind.Local);
-            e.TimeUTC = e.TimeUTC.ToUniversalTime();
-            e.Code = (LogCode)code;
-
-            e.Pallet = -1;
-            if (int.TryParse(s[13], out var pal))
-              e.Pallet = pal;
-            e.FullPartName = s[10].Trim();
-            int idx = e.FullPartName.IndexOf(':');
-            if (idx > 0)
-              e.JobPartName = e.FullPartName.Substring(0, idx);
-            else
-              e.JobPartName = e.FullPartName;
-            int.TryParse(s[11], out var proc);
-            e.Process = proc;
-            int.TryParse(s[12], out var fixQty);
-            e.FixedQuantity = fixQty;
-            e.Program = s[14];
-            int.TryParse(s[8], out var statNum);
-            e.StationNumber = statNum;
-            e.FromPosition = s[16];
-            e.TargetPosition = s[17];
+                                     DateTimeKind.Local).ToUniversalTime(),
+              Code = (LogCode)code,
+              Pallet = (int.TryParse(s[13], out var pal)) ? pal : -1,
+              FullPartName = fullPartName,
+              JobPartName = (idx > 0) ? fullPartName.Substring(0, idx) : fullPartName,
+              Process = int.TryParse(s[11], out var proc) ? proc : 0,
+              FixedQuantity = int.TryParse(s[12], out var fixQty) ? fixQty : 0,
+              Program = s[14],
+              StationNumber = int.TryParse(s[8], out var statNum) ? statNum : 0,
+              FromPosition = s[16],
+              TargetPosition = s[17],
+            };
 
             ret.Add(e);
           }
