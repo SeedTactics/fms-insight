@@ -500,38 +500,17 @@ namespace DebugMachineWatchApiServer
             // ignore inspection complete
             continue;
           }
-          var e2 = new BlackMaple.MachineWatchInterface.LogEntry(
-              cntr: e.Counter,
-              mat: e.Material,
-              pal: e.Pallet,
-              ty: e.LogType,
-              locName: e.LocationName,
-              locNum: e.LocationNum,
-              prog: e.Program,
-              start: e.StartOfCycle,
-              endTime: e.EndTimeUTC.Add(offset),
-              result: e.Result,
-              endOfRoute: e.EndOfRoute,
-              elapsed: e.ElapsedTime,
-              active: e.ActiveOperationTime
-          );
-          if (e.ProgramDetails != null)
+          var e2 = e.Produce(draft =>
           {
-            foreach (var x in e.ProgramDetails)
-              e2.ProgramDetails.Add(x.Key, x.Value);
-          }
-          if (e.Tools != null)
-          {
-            foreach (var x in e.Tools)
-              e2.Tools[x.Key] = x.Value;
-          }
-          if (tools.TryGetValue(e.Counter, out var usage))
-          {
-            foreach (var u in usage)
+            draft.EndTimeUTC = draft.EndTimeUTC.Add(offset);
+            if (tools.TryGetValue(e.Counter, out var usage))
             {
-              e2.Tools[u.Key] = u.Value;
+              foreach (var u in usage)
+              {
+                draft.Tools[u.Key] = u.Value;
+              }
             }
-          }
+          });
           ((Repository)LogDB).AddLogEntryFromUnitTest(e2);
         }
       }

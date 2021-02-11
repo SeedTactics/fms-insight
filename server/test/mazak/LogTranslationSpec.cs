@@ -403,10 +403,13 @@ namespace MachineWatchTest
       );
       if (tools != null)
       {
-        foreach (var t in tools)
+        newEntry %= e =>
         {
-          newEntry.Tools[t.Key] = t.Value;
-        }
+          foreach (var t in tools)
+          {
+            e.Tools[t.Key] = t.Value;
+          }
+        };
       }
       expected.Add(newEntry);
     }
@@ -435,8 +438,11 @@ namespace MachineWatchTest
         result: result.ToString(),
         endOfRoute: false
       );
-      e.ProgramDetails["InspectionType"] = inspTy;
-      e.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(path.ToList());
+      e %= entry =>
+      {
+        entry.ProgramDetails["InspectionType"] = inspTy;
+        entry.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(path.ToList());
+      };
       expected.Add(e);
     }
 
@@ -1060,6 +1066,7 @@ namespace MachineWatchTest
 
       log.Should().BeEquivalentTo(expected, options =>
         options
+        .ComparingByMembers<BlackMaple.MachineWatchInterface.LogEntry>()
         .Excluding(e => e.Counter)
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1000))
           .WhenTypeIs<DateTime>()

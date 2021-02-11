@@ -552,6 +552,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .WhenTypeIs<DateTime>()
         .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<TimeSpan>()
+        .ComparingByMembers<LogEntry>()
       );
 
       _logDB.GetLogForMaterial(materialID: 2).Should().BeEquivalentTo(new[] {
@@ -561,6 +562,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .WhenTypeIs<DateTime>()
         .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<TimeSpan>()
+        .ComparingByMembers<LogEntry>()
       );
     }
 
@@ -638,6 +640,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .WhenTypeIs<DateTime>()
         .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<TimeSpan>()
+        .ComparingByMembers<LogEntry>()
       );
     }
 
@@ -681,6 +684,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }, options => options
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
         .WhenTypeIs<DateTime>()
+        .ComparingByMembers<LogEntry>()
       );
     }
 
@@ -724,11 +728,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         RemoveFromQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
         AddToQueueExpectedEntry(logMat, cntr: 5, queue: "q2", position: 0, operName: "theoper", reason: "SetByOperator")
       }, options => options
-.Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
-.WhenTypeIs<DateTime>()
-.Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
-.WhenTypeIs<TimeSpan>()
-          );
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<DateTime>()
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .WhenTypeIs<TimeSpan>()
+        .ComparingByMembers<LogEntry>()
+      );
     }
 
     private LogEntry MarkExpectedEntry(LogMaterial mat, long cntr, string serial, DateTime? timeUTC = null)
@@ -781,7 +786,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           endOfRoute: false);
       if (!string.IsNullOrEmpty(operName))
       {
-        e.ProgramDetails.Add("operator", operName);
+        e %= en => en.ProgramDetails.Add("operator", operName);
       }
       return e;
     }
@@ -802,7 +807,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           endOfRoute: false);
       if (!string.IsNullOrEmpty(operName))
       {
-        e.ProgramDetails.Add("operator", operName);
+        e %= en => en.ProgramDetails.Add("operator", operName);
       }
       return e;
     }
@@ -825,7 +830,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           active: TimeSpan.Zero);
       if (!string.IsNullOrEmpty(operName))
       {
-        e.ProgramDetails.Add("operator", operName);
+        e %= en => en.ProgramDetails.Add("operator", operName);
       }
       return e;
     }

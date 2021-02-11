@@ -141,7 +141,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          var matLst = new List<MachineWatchInterface.LogMaterial>();
+          var matLst = ImmutableList.CreateBuilder<MachineWatchInterface.LogMaterial>();
           matCmd.Parameters[0].Value = ctr;
           using (var matReader = matCmd.ExecuteReader())
           {
@@ -166,32 +166,34 @@ namespace BlackMaple.MachineFramework
               if (!matReader.IsDBNull(7))
                 workorder = matReader.GetString(7);
               matLst.Add(new MachineWatchInterface.LogMaterial(
-                  matID: matReader.GetInt64(0),
-                                                                uniq: uniq,
-                                                                proc: matReader.GetInt32(2),
-                                                                part: part, numProc: numProc, serial: serial, workorder: workorder, face: face));
+                matID: matReader.GetInt64(0),
+                uniq: uniq,
+                proc: matReader.GetInt32(2),
+                part: part,
+                numProc: numProc,
+                serial: serial,
+                workorder: workorder,
+                face: face));
             }
           }
 
-          var logRow = new MachineWatchInterface.LogEntry(ctr, matLst, pal,
-                ty, locName, locNum,
-              prog, start, timeUTC, result, endOfRoute, elapsed, active);
-
           detailCmd.Parameters[0].Value = ctr;
+          var progDetails = ImmutableDictionary.CreateBuilder<string, string>();
           using (var detailReader = detailCmd.ExecuteReader())
           {
             while (detailReader.Read())
             {
-              logRow.ProgramDetails[detailReader.GetString(0)] = detailReader.GetString(1);
+              progDetails[detailReader.GetString(0)] = detailReader.GetString(1);
             }
           }
 
           toolCmd.Parameters[0].Value = ctr;
+          var tools = ImmutableDictionary.CreateBuilder<string, MachineWatchInterface.ToolUse>();
           using (var toolReader = toolCmd.ExecuteReader())
           {
             while (toolReader.Read())
             {
-              logRow.Tools[toolReader.GetString(0)] = new MachineWatchInterface.ToolUse()
+              tools[toolReader.GetString(0)] = new MachineWatchInterface.ToolUse()
               {
                 ToolUseDuringCycle = TimeSpan.FromTicks(toolReader.GetInt64(1)),
                 TotalToolUseAtEndOfCycle = TimeSpan.FromTicks(toolReader.GetInt64(2)),
@@ -201,7 +203,24 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          lst.Add(logRow);
+          lst.Add(new MachineWatchInterface.LogEntry()
+          {
+            Counter = ctr,
+            Material = matLst.ToImmutable(),
+            Pallet = pal,
+            LogType = ty,
+            LocationName = locName,
+            LocationNum = locNum,
+            Program = prog,
+            StartOfCycle = start,
+            EndTimeUTC = timeUTC,
+            Result = result,
+            EndOfRoute = endOfRoute,
+            ElapsedTime = elapsed,
+            ActiveOperationTime = active,
+            ProgramDetails = progDetails.ToImmutable(),
+            Tools = tools.ToImmutable()
+          });
         }
 
         return lst;
@@ -856,48 +875,37 @@ namespace BlackMaple.MachineFramework
 
       internal MachineWatchInterface.LogEntry ToLogEntry(long newCntr, Func<long, MachineWatchInterface.MaterialDetails> getDetails)
       {
-        var e = new MachineWatchInterface.LogEntry(
-          cntr: newCntr,
-          mat: this.Material.Select(m =>
-          {
-            var details = getDetails(m.MaterialID);
-            return new MachineWatchInterface.LogMaterial(
-                matID: m.MaterialID,
-                proc: m.Process,
-                face: m.Face,
-                uniq: details?.JobUnique ?? "",
-                part: details?.PartName ?? "",
-                numProc: details?.NumProcesses ?? 1,
-                serial: details?.Serial ?? "",
-                workorder: details?.Workorder ?? ""
-            );
-          }).ToList(),
-          pal: this.Pallet,
-          ty: this.LogType,
-          locName: this.LocationName,
-          locNum: this.LocationNum,
-          prog: this.Program,
-          start: this.StartOfCycle,
-          endTime: this.EndTimeUTC,
-          result: this.Result,
-          endOfRoute: this.EndOfRoute,
-          elapsed: this.ElapsedTime,
-          active: this.ActiveOperationTime
-        );
-        foreach (var d in this.ProgramDetails)
+        return new MachineWatchInterface.LogEntry()
         {
-          e.ProgramDetails[d.Key] = d.Value;
-        }
-        foreach (var t in this.Tools)
-        {
-          e.Tools[t.Key] = new MachineWatchInterface.ToolUse()
-          {
-            ToolUseDuringCycle = t.Value.ToolUseDuringCycle,
-            TotalToolUseAtEndOfCycle = t.Value.TotalToolUseAtEndOfCycle,
-            ConfiguredToolLife = t.Value.ConfiguredToolLife
-          };
-        }
-        return e;
+          Counter = newCntr,
+          Material = this.Material.Select(m =>
+            {
+              var details = getDetails(m.MaterialID);
+              return new MachineWatchInterface.LogMaterial(
+                  matID: m.MaterialID,
+                  proc: m.Process,
+                  face: m.Face,
+                  uniq: details?.JobUnique ?? "",
+                  part: details?.PartName ?? "",
+                  numProc: details?.NumProcesses ?? 1,
+                  serial: details?.Serial ?? "",
+                  workorder: details?.Workorder ?? ""
+              );
+            }).ToImmutableList(),
+          LogType = this.LogType,
+          StartOfCycle = this.StartOfCycle,
+          EndTimeUTC = this.EndTimeUTC,
+          LocationName = this.LocationName,
+          LocationNum = this.LocationNum,
+          Pallet = this.Pallet,
+          Program = this.Program,
+          Result = this.Result,
+          EndOfRoute = this.EndOfRoute,
+          ElapsedTime = this.ElapsedTime,
+          ActiveOperationTime = this.ActiveOperationTime,
+          ProgramDetails = this.ProgramDetails?.ToImmutableDictionary(),
+          Tools = this.Tools?.ToImmutableDictionary()
+        };
       }
 
       internal static NewEventLogEntry FromLogEntry(MachineWatchInterface.LogEntry e)
@@ -1996,8 +2004,10 @@ namespace BlackMaple.MachineFramework
               updateMatsCmd.Parameters[1].Value = evt.Counter;
               updateMatsCmd.ExecuteNonQuery();
 
-              changedLogEntries.Add(new MachineWatchInterface.LogEntry(evt,
-                newMats: evt.Material.Select(m =>
+              changedLogEntries.Add(evt with
+              {
+                Material =
+                evt.Material.Select(m =>
                   m.MaterialID == oldMatId
                     ? new MachineWatchInterface.LogMaterial(
                         matID: newMatId,
@@ -2009,8 +2019,8 @@ namespace BlackMaple.MachineFramework
                         workorder: newMatDetails.Workorder ?? "",
                         face: m.Face)
                     : m
-                )
-              ));
+                ).ToImmutableList()
+              });
             }
           }
 

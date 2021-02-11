@@ -40,32 +40,34 @@ using System.Collections.Immutable;
 
 namespace BlackMaple.MachineWatchInterface
 {
-  [DataContract]
-  public class LogMaterial
+  [DataContract, Draftable]
+  public record LogMaterial
   {
     [DataMember(Name = "id", IsRequired = true)]
-    public long MaterialID { get; private set; }
+    public long MaterialID { get; init; }
 
     [DataMember(Name = "uniq", IsRequired = true)]
-    public string JobUniqueStr { get; private set; }
+    public string JobUniqueStr { get; init; }
 
     [DataMember(Name = "part", IsRequired = true)]
-    public string PartName { get; private set; }
+    public string PartName { get; init; }
 
     [DataMember(Name = "proc", IsRequired = true)]
-    public int Process { get; private set; }
+    public int Process { get; init; }
 
     [DataMember(Name = "numproc", IsRequired = true)]
-    public int NumProcesses { get; private set; }
+    public int NumProcesses { get; init; }
 
     [DataMember(Name = "face", IsRequired = true)]
-    public string Face { get; private set; }
+    public string Face { get; init; }
 
     [DataMember(Name = "serial", IsRequired = false, EmitDefaultValue = false)]
-    public string Serial { get; private set; }
+    public string Serial { get; init; }
 
     [DataMember(Name = "workorder", IsRequired = false, EmitDefaultValue = false)]
-    public string Workorder { get; private set; }
+    public string Workorder { get; init; }
+
+    public LogMaterial() { }
 
     public LogMaterial(long matID, string uniq, int proc, string part, int numProc, string serial, string workorder, string face)
     {
@@ -79,7 +81,7 @@ namespace BlackMaple.MachineWatchInterface
       Workorder = workorder;
     }
 
-    private LogMaterial() { } //for json deserialization
+    public static LogMaterial operator %(LogMaterial m, Action<ILogMaterialDraft> f) => m.Produce(f);
   }
 
   [DataContract]
@@ -106,57 +108,58 @@ namespace BlackMaple.MachineWatchInterface
     // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
   }
 
-  [DataContract, KnownType(typeof(MaterialProcessActualPath))]
-  public class LogEntry
+  [DataContract, Draftable, KnownType(typeof(MaterialProcessActualPath))]
+  public record LogEntry
   {
     [DataMember(Name = "counter", IsRequired = true)]
-    public long Counter { get; private set; }
+    public long Counter { get; init; }
 
     [DataMember(Name = "material", IsRequired = true)]
-    public IEnumerable<LogMaterial> Material { get; private set; }
+    public ImmutableList<LogMaterial> Material { get; init; } = ImmutableList<LogMaterial>.Empty;
 
     [DataMember(Name = "type", IsRequired = true)]
-    public LogType LogType { get; private set; }
+    public LogType LogType { get; init; }
 
     [DataMember(Name = "startofcycle", IsRequired = true)]
-    public bool StartOfCycle { get; private set; }
+    public bool StartOfCycle { get; init; }
 
     [DataMember(Name = "endUTC", IsRequired = true)]
-    public DateTime EndTimeUTC { get; private set; }
+    public DateTime EndTimeUTC { get; init; }
 
     [DataMember(Name = "loc", IsRequired = true)]
-    public string LocationName { get; private set; }
+    public string LocationName { get; init; }
 
     [DataMember(Name = "locnum", IsRequired = true)]
-    public int LocationNum { get; private set; }
+    public int LocationNum { get; init; }
 
     [DataMember(Name = "pal", IsRequired = true)]
-    public string Pallet { get; private set; }
+    public string Pallet { get; init; }
 
     [DataMember(Name = "program", IsRequired = true)]
-    public string Program { get; private set; }
+    public string Program { get; init; }
 
     [DataMember(Name = "result", IsRequired = true)]
-    public string Result { get; private set; }
+    public string Result { get; init; }
 
     // End of route is kept only for backwards compatbility.
     // Instead, the user who is processing the data should determine what event
     // to use to determine when the material should be considered "complete"
     [IgnoreDataMember]
-    public bool EndOfRoute { get; private set; }
+    public bool EndOfRoute { get; init; }
 
     [DataMember(Name = "elapsed", IsRequired = true)]
-    public TimeSpan ElapsedTime { get; private set; } //time from cycle-start to cycle-stop
+    public TimeSpan ElapsedTime { get; init; } //time from cycle-start to cycle-stop
 
     [DataMember(Name = "active", IsRequired = true)]
-    public TimeSpan ActiveOperationTime { get; private set; } //time that the machining or operation is actually active
+    public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
 
     [DataMember(Name = "details", IsRequired = false, EmitDefaultValue = false)]
-    private Dictionary<string, string> _details;
-    public IDictionary<string, string> ProgramDetails { get { return _details; } }
+    public ImmutableDictionary<string, string> ProgramDetails { get; init; } = ImmutableDictionary<string, string>.Empty;
 
     [DataMember(Name = "tools", IsRequired = false, EmitDefaultValue = false)]
-    public IDictionary<string, ToolUse> Tools { get; private set; }
+    public ImmutableDictionary<string, ToolUse> Tools { get; init; } = ImmutableDictionary<string, ToolUse>.Empty;
+
+    public LogEntry() { }
 
     public LogEntry(
         long cntr,
@@ -190,7 +193,7 @@ namespace BlackMaple.MachineWatchInterface
         TimeSpan active)
     {
       Counter = cntr;
-      Material = mat; // ok since material is immutable
+      Material = mat.ToImmutableList();
       Pallet = pal;
       LogType = ty;
       LocationName = locName;
@@ -202,61 +205,21 @@ namespace BlackMaple.MachineWatchInterface
       EndOfRoute = endOfRoute;
       ElapsedTime = elapsed;
       ActiveOperationTime = active;
-      _details = new Dictionary<string, string>();
-      Tools = new Dictionary<string, ToolUse>();
+      ProgramDetails = ImmutableDictionary<string, string>.Empty;
+      Tools = ImmutableDictionary<string, ToolUse>.Empty;
     }
-
-    public LogEntry(LogEntry copy, long newCounter)
-    {
-      Counter = newCounter;
-      Material = copy.Material; // ok since material is immutable
-      Pallet = copy.Pallet;
-      LogType = copy.LogType;
-      LocationName = copy.LocationName;
-      LocationNum = copy.LocationNum;
-      Program = copy.Program;
-      StartOfCycle = copy.StartOfCycle;
-      EndTimeUTC = copy.EndTimeUTC;
-      Result = copy.Result;
-      EndOfRoute = copy.EndOfRoute;
-      ElapsedTime = copy.ElapsedTime;
-      ActiveOperationTime = copy.ActiveOperationTime;
-      _details = new Dictionary<string, string>(copy._details);
-      Tools = new Dictionary<string, ToolUse>(copy.Tools);
-    }
-
-    public LogEntry(LogEntry copy, IEnumerable<LogMaterial> newMats)
-    {
-      Counter = copy.Counter;
-      Material = newMats;
-      Pallet = copy.Pallet;
-      LogType = copy.LogType;
-      LocationName = copy.LocationName;
-      LocationNum = copy.LocationNum;
-      Program = copy.Program;
-      StartOfCycle = copy.StartOfCycle;
-      EndTimeUTC = copy.EndTimeUTC;
-      Result = copy.Result;
-      EndOfRoute = copy.EndOfRoute;
-      ElapsedTime = copy.ElapsedTime;
-      ActiveOperationTime = copy.ActiveOperationTime;
-      _details = new Dictionary<string, string>(copy._details);
-      Tools = new Dictionary<string, ToolUse>(copy.Tools);
-    }
-
-    public LogEntry(LogEntry copy) : this(copy, copy.Counter) { }
-
-    private LogEntry() { } //for json deserialization
 
     public bool ShouldSerializeProgramDetails()
     {
-      return _details.Count > 0;
+      return ProgramDetails != null && ProgramDetails.Count > 0;
     }
 
     public bool ShouldSerializeTools()
     {
-      return Tools.Count > 0;
+      return Tools != null && Tools.Count > 0;
     }
+
+    public static LogEntry operator %(LogEntry e, Action<ILogEntryDraft> f) => e.Produce(f);
   }
 
   [DataContract]

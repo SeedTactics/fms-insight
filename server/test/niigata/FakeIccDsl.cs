@@ -2062,49 +2062,49 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
             case ExpectMachineBeginEvent machBegin:
               {
-                var newLog = new LogEntry(
-                    cntr: -1,
-                    mat: machBegin.Material,
-                    pal: machBegin.Pallet.ToString(),
-                    ty: LogType.MachineCycle,
-                    locName: "TestMC",
-                    locNum: 100 + machBegin.Machine,
-                    prog: machBegin.Program,
-                    start: true,
-                    endTime: _status.TimeOfStatusUTC,
-                    result: "",
-                    endOfRoute: false
-                );
-                if (machBegin.Revision.HasValue)
+                expectedLogs.Add(new LogEntry()
                 {
-                  newLog.ProgramDetails["ProgramRevision"] = machBegin.Revision.Value.ToString();
-                }
-                expectedLogs.Add(newLog);
+                  Counter = -1,
+                  Material = machBegin.Material.ToImmutableList(),
+                  Pallet = machBegin.Pallet.ToString(),
+                  LogType = LogType.MachineCycle,
+                  LocationName = "TestMC",
+                  LocationNum = 100 + machBegin.Machine,
+                  Program = machBegin.Program,
+                  StartOfCycle = true,
+                  EndTimeUTC = _status.TimeOfStatusUTC,
+                  Result = "",
+                  EndOfRoute = false,
+                  ElapsedTime = TimeSpan.FromMinutes(-1),
+                  ProgramDetails = machBegin.Revision.HasValue
+                    ? ImmutableDictionary<string, string>.Empty.Add("ProgramRevision", machBegin.Revision.Value.ToString())
+                    : ImmutableDictionary<string, string>.Empty
+                });
               }
               break;
 
             case ExpectMachineEndEvent machEnd:
               {
-                var newLog = new LogEntry(
-                  cntr: -1,
-                  mat: machEnd.Material,
-                  pal: machEnd.Pallet.ToString(),
-                  ty: LogType.MachineCycle,
-                  locName: "TestMC",
-                  locNum: 100 + machEnd.Machine,
-                  prog: machEnd.Program,
-                  start: false,
-                  endTime: _status.TimeOfStatusUTC,
-                  result: "",
-                  endOfRoute: false,
-                  elapsed: TimeSpan.FromMinutes(machEnd.ElapsedMin),
-                  active: TimeSpan.FromMinutes(machEnd.ActiveMin)
-                );
-                if (machEnd.Revision.HasValue)
+
+                expectedLogs.Add(new LogEntry()
                 {
-                  newLog.ProgramDetails["ProgramRevision"] = machEnd.Revision.Value.ToString();
-                }
-                expectedLogs.Add(newLog);
+                  Counter = -1,
+                  Material = machEnd.Material.ToImmutableList(),
+                  Pallet = machEnd.Pallet.ToString(),
+                  LogType = LogType.MachineCycle,
+                  LocationName = "TestMC",
+                  LocationNum = 100 + machEnd.Machine,
+                  Program = machEnd.Program,
+                  StartOfCycle = false,
+                  EndTimeUTC = _status.TimeOfStatusUTC,
+                  Result = "",
+                  EndOfRoute = false,
+                  ElapsedTime = TimeSpan.FromMinutes(machEnd.ElapsedMin),
+                  ActiveOperationTime = TimeSpan.FromMinutes(machEnd.ActiveMin),
+                  ProgramDetails = machEnd.Revision.HasValue
+                    ? ImmutableDictionary<string, string>.Empty.Add("ProgramRevision", machEnd.Revision.Value.ToString())
+                    : ImmutableDictionary<string, string>.Empty
+                });
               }
               break;
 
@@ -2225,24 +2225,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             case ExpectInspectionDecision insp:
               foreach (var mat in insp.Material)
               {
-                var newLog = new LogEntry(
-                  cntr: -1,
-                  mat: new[] { new LogMaterial(matID: mat.MaterialID, uniq: mat.JobUniqueStr, proc: mat.Process, part: mat.PartName, numProc: mat.NumProcesses, serial: mat.Serial, workorder: mat.Workorder, face: "") },
-                  pal: "",
-                  ty: LogType.Inspection,
-                  locName: "Inspect",
-                  locNum: 1,
-                  prog: insp.Counter,
-                  start: false,
-                  endTime: _status.TimeOfStatusUTC,
-                  result: insp.Inspect.ToString(),
-                  endOfRoute: false
-                );
-                newLog.ProgramDetails["InspectionType"] = insp.InspType;
-                newLog.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(
-                  insp.Path.Select(p => p with { MaterialID = mat.MaterialID })
-                );
-                expectedLogs.Add(newLog);
+                expectedLogs.Add(new LogEntry()
+                {
+                  Counter = -1,
+                  Material = ImmutableList.Create(new LogMaterial(matID: mat.MaterialID, uniq: mat.JobUniqueStr, proc: mat.Process, part: mat.PartName, numProc: mat.NumProcesses, serial: mat.Serial, workorder: mat.Workorder, face: "")),
+                  Pallet = "",
+                  LogType = LogType.Inspection,
+                  LocationName = "Inspect",
+                  LocationNum = 1,
+                  Program = insp.Counter,
+                  StartOfCycle = false,
+                  EndTimeUTC = _status.TimeOfStatusUTC,
+                  Result = insp.Inspect.ToString(),
+                  EndOfRoute = false,
+                  ElapsedTime = TimeSpan.FromMinutes(-1),
+                  ProgramDetails = ImmutableDictionary<string, string>.Empty
+                    .Add("InspectionType", insp.InspType)
+                    .Add("ActualPath", Newtonsoft.Json.JsonConvert.SerializeObject(
+                      insp.Path.Select(p => p with { MaterialID = mat.MaterialID })
+                    ))
+                });
               }
 
               break;
@@ -2258,7 +2260,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           logMonitor.Should().NotRaise("NewLogEntry");
         }
         evts.Should().BeEquivalentTo(expectedLogs,
-          options => options.Excluding(e => e.Counter)
+          options => options.Excluding(e => e.Counter).ComparingByMembers<LogEntry>()
         );
       }
 

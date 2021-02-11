@@ -171,7 +171,7 @@ namespace MachineWatchTest
           endOfRoute: false
         ),
       }, options =>
-        options.Excluding(x => x.Counter)
+        options.Excluding(x => x.Counter).ComparingByMembers<LogEntry>()
       );
 
       _log.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
