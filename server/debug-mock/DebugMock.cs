@@ -555,7 +555,7 @@ namespace DebugMachineWatchApiServer
           {
             OffsetJob(j, offset);
           }
-          for (int i = 0; i <= newJobs.StationUse.Count; i++)
+          for (int i = 0; i < newJobs.StationUse.Count; i++)
           {
             newJobs.StationUse[i] %= draft =>
             {
@@ -563,7 +563,7 @@ namespace DebugMachineWatchApiServer
               draft.EndUTC = draft.EndUTC.Add(offset);
             };
           }
-          for (int i = 0; i <= newJobs.CurrentUnfilledWorkorders.Count; i++)
+          for (int i = 0; i < newJobs.CurrentUnfilledWorkorders.Count; i++)
           {
             newJobs.CurrentUnfilledWorkorders[i] %= w => w.DueDate = w.DueDate.Add(offset);
           }

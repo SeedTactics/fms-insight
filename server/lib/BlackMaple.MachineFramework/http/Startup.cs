@@ -192,7 +192,13 @@ namespace BlackMaple.MachineFramework
 
       app.UseWebSockets();
 
-      app.UseOpenApi();
+      app.UseOpenApi(settings => settings.PostProcess = (doc, req) =>
+      {
+        doc.Host = null;
+        doc.BasePath = null;
+        doc.Schemes = null;
+        doc.Servers.Clear();
+      });
       app.UseSwaggerUi3();
 
       app.UseEndpoints(endpoints =>

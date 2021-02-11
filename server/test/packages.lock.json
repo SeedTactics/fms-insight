@@ -140,11 +140,8 @@
       },
       "CsvHelper": {
         "type": "Transitive",
-        "resolved": "19.0.0",
-        "contentHash": "vUHF8wPOVvdtUQ4sXQI62jEIGcz5p7MG3Qf4Hazg+3EZQFh+UoTASEG0a1tsGmhNsHZ/Y+qRO+SgLMZO8jNcSg==",
-        "dependencies": {
-          "Microsoft.CSharp": "4.5.0"
-        }
+        "resolved": "22.1.2",
+        "contentHash": "VF4iFdkW4D1HJUFXKVD5VIw7KQBpq+7TXhNpkIOgqhDC2hUK5oDQlIeGZ0p1/ks98Wl8bJY7vxIRK3nvqFS4kw=="
       },
       "Dapper": {
         "type": "Transitive",
@@ -767,8 +764,8 @@
       },
       "Npgsql": {
         "type": "Transitive",
-        "resolved": "5.0.1.1",
-        "contentHash": "vblKEzmyX/RkrC8ykx4yaiEOiURovDSnEw93KkY6nKDRJRLES95OM6hN4aYOoHfwkzPgENSFu1JMbMenoL1k9w==",
+        "resolved": "5.0.3",
+        "contentHash": "IDx2tijhyXGz7tVXQH0iGnCnW0ReSUy3UC99ytSklJKscob5WV8eLZWuT/jqYBq0l07RmZOSrdjUEDEetsgDIA==",
         "dependencies": {
           "System.Runtime.CompilerServices.Unsafe": "4.6.0"
         }
@@ -2304,17 +2301,17 @@
         "dependencies": {
           "BlackMaple.MachineFramework": "1.0.0",
           "Dapper": "2.0.78",
-          "Npgsql": "5.0.1.1"
+          "Npgsql": "5.0.3"
         }
       },
       "blackmaple.machineframework": {
         "type": "Project",
         "dependencies": {
-          "CsvHelper": "19.0.0",
+          "CsvHelper": "22.1.2",
           "Germinate": "0.5.1",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "5.0.0",
           "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "5.0.0",
-          "Microsoft.Data.Sqlite": "5.0.1",
+          "Microsoft.Data.Sqlite": "5.0.3",
           "NSwag.AspNetCore": "13.9.4",
           "Serilog": "2.10.0",
           "Serilog.AspNetCore": "3.4.0",

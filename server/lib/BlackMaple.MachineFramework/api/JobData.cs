@@ -1424,9 +1424,6 @@ namespace BlackMaple.MachineWatchInterface
     public ImmutableList<PartWorkorder> CurrentUnfilledWorkorders { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<string, QueueSize> QueueSizes { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ProgramEntry> Programs { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
