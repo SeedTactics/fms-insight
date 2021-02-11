@@ -1394,4 +1394,14 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "AssignedWorkorders", IsRequired = false), OptionalField] private IList<string> _workorders;
   }
 
+  [DataContract]
+  public class HistoricJob : JobPlan
+  {
+    public HistoricJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths) { }
+    public HistoricJob(JobPlan job) : base(job) { }
+    private HistoricJob() { } //for json deserialization
+
+    [DataMember(Name = "Decrements", IsRequired = false)] public List<DecrementQuantity> Decrements { get; set; }
+  }
+
 }

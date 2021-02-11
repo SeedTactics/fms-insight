@@ -37,11 +37,105 @@ using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {
+  public interface IJobControl
+  {
+    ///loads info
+    CurrentStatus GetCurrentStatus();
+
+    //checks to see if the jobs are valid.  Some machine types might not support all the different
+    //pallet->part->machine->process combinations.
+    //Return value is a list of strings, detailing the problems.
+    //An empty list or nothing signals the jobs are valid.
+    List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs);
+
+    ///Adds new jobs into the cell controller
+    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
+    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs);
+
+    void SetJobComment(string jobUnique, string comment);
+
+    //Remove all planned parts from all jobs in the system.
+    //
+    //The function does 2 things:
+    // - Check for planned but not yet machined quantities and if found remove them
+    //   and store locally in the machine watch database with a new DecrementId.
+    // - Load all decremented quantities (including the potentially new quantities)
+    //   strictly after the given decrement ID.
+    //Thus this function can be called multiple times to receive the same data.
+    List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId);
+    List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC);
+
+    //In-process queues
+
+    /// Add new raw material for part.  The part material has not yet been assigned to a specific job,
+    /// and will be assigned to the job with remaining demand and earliest priority.
+    /// The serial is optional and is passed only if the material has already been marked with a serial.
+    InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName = null);
+
+    /// Add new castings.  The casting has not yet been assigned to a specific job,
+    /// and will be assigned to the job with remaining demand and earliest priority.
+    /// The serial is optional and is passed only if the material has already been marked with a serial.
+    List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName = null);
+
+    /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
+    /// and is passed only if the material has already been marked with a serial.
+    /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
+    InProcessMaterial AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      int lastCompletedProcess,
+      int pathGroup,
+      string queue,
+      int position,
+      string serial,
+      string operatorName = null
+    );
+
+    /// Add material into a queue or just into free material if the queue name is the empty string.
+    /// The material will be inserted into the given position, bumping any later material to a
+    /// larger position.  If the material is currently in another queue or a different position,
+    /// it will be removed and placed in the given position.
+    void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null);
+
+    /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
+    /// If the material is still on a pallet, it will be moved after unload completes.
+    void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null);
+
+    void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
+
+    void SwapMaterialOnPallet(
+        string pallet,
+        long oldMatId,
+        long newMatId,
+        string operatorName = null
+    );
+
+    void InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue = null,
+      string operatorName = null
+    );
+  }
+
+  public interface IMachineControl
+  {
+    List<ToolInMachine> CurrentToolsInMachines();
+    List<ProgramInCellController> CurrentProgramsInCellController();
+    List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart);
+    string GetProgramContent(string programName, long? revision);
+  }
+
+  public interface IOldJobDecrement
+  {
+    //The old method of decrementing, which stores only a single decrement until finalize is called.
+    Dictionary<JobAndPath, int> OldDecrementJobQuantites();
+    void OldFinalizeDecrement();
+  }
+
   public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
   public delegate void NewCurrentStatus(CurrentStatus status);
   public delegate void NewJobsDelegate(NewJobs j);
   public delegate void EditMaterialInLogDelegate(MachineWatchInterface.EditMaterialInLogEvents o);
-
 
   public interface IFMSBackend : IDisposable
   {
@@ -58,23 +152,4 @@ namespace BlackMaple.MachineFramework
 
     bool SupportsQuarantineAtLoadStation { get; }
   }
-
-  public interface IBackgroundWorker : IDisposable { }
-
-  public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
-  public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
-
-  public class FMSImplementation
-  {
-    public string Name { get; set; }
-    public string Version { get; set; }
-    public IFMSBackend Backend { get; set; }
-    public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
-    public CustomizeInstructionPath InstructionPath { get; set; } = null;
-    public bool UsingLabelPrinterForSerials { get; set; } = false;
-    public PrintLabelForMaterial PrintLabel { get; set; } = null;
-    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
-    public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
-  }
-
 }

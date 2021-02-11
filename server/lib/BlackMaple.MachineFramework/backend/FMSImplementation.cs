@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -33,25 +33,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using BlackMaple.MachineWatchInterface;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
-  // The following is only used for old decrement for backwards compatibility,
-  // and shouldn't be used for anything else.
-  public class JobAndPath : IEquatable<JobAndPath>
+  public interface IBackgroundWorker : IDisposable { }
+
+  public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
+  public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
+
+  public class FMSImplementation
   {
-    public readonly string UniqueStr;
-    public readonly int Path;
-
-    public JobAndPath(string unique, int path)
-    {
-      UniqueStr = unique;
-      Path = path;
-    }
-
-    public bool Equals(JobAndPath other)
-    {
-      return (UniqueStr == other.UniqueStr && Path == other.Path);
-    }
+    public string Name { get; set; }
+    public string Version { get; set; }
+    public IFMSBackend Backend { get; set; }
+    public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
+    public CustomizeInstructionPath InstructionPath { get; set; } = null;
+    public bool UsingLabelPrinterForSerials { get; set; } = false;
+    public PrintLabelForMaterial PrintLabel { get; set; } = null;
+    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
+    public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
   }
+
 }

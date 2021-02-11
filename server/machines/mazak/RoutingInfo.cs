@@ -37,7 +37,7 @@ using BlackMaple.MachineWatchInterface;
 
 namespace MazakMachineInterface
 {
-  public class RoutingInfo : IJobControl, IOldJobDecrement
+  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl, BlackMaple.MachineFramework.IOldJobDecrement
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
 
@@ -99,7 +99,7 @@ namespace MazakMachineInterface
     }
 
     #region Reading
-    CurrentStatus IJobControl.GetCurrentStatus()
+    CurrentStatus BlackMaple.MachineFramework.IJobControl.GetCurrentStatus()
     {
       using (var log = logDbCfg.OpenConnection())
       {
@@ -130,7 +130,7 @@ namespace MazakMachineInterface
 
     #region "Write Routing Info"
 
-    List<string> IJobControl.CheckValidRoutes(IEnumerable<JobPlan> jobs)
+    List<string> BlackMaple.MachineFramework.IJobControl.CheckValidRoutes(IEnumerable<JobPlan> jobs)
     {
       var logMessages = new List<string>();
       MazakAllData mazakData;
@@ -197,7 +197,7 @@ namespace MazakMachineInterface
       return logMessages;
     }
 
-    void IJobControl.AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
+    void BlackMaple.MachineFramework.IJobControl.AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -250,7 +250,7 @@ namespace MazakMachineInterface
       }
     }
 
-    void IJobControl.SetJobComment(string jobUnique, string comment)
+    void BlackMaple.MachineFramework.IJobControl.SetJobComment(string jobUnique, string comment)
     {
       CurrentStatus st;
       using (var jdb = logDbCfg.OpenConnection())
@@ -275,7 +275,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region "Decrement Plan Quantity"
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
+    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -297,7 +297,7 @@ namespace MazakMachineInterface
       logReader.RecheckQueues(wait: false);
       return ret;
     }
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
+    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -320,19 +320,19 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    Dictionary<JobAndPath, int> IOldJobDecrement.OldDecrementJobQuantites()
+    Dictionary<JobAndPath, int> BlackMaple.MachineFramework.IOldJobDecrement.OldDecrementJobQuantites()
     {
       throw new NotImplementedException();
     }
 
-    void IOldJobDecrement.OldFinalizeDecrement()
+    void BlackMaple.MachineFramework.IOldJobDecrement.OldFinalizeDecrement()
     {
       throw new NotImplementedException();
     }
     #endregion
 
     #region Queues
-    InProcessMaterial IJobControl.AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
     {
       string casting = partName;
 
@@ -355,11 +355,11 @@ namespace MazakMachineInterface
         }
       }
 
-      var mats = ((IJobControl)this).AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
+      var mats = ((BlackMaple.MachineFramework.IJobControl)this).AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
       return mats.FirstOrDefault();
     }
 
-    List<InProcessMaterial> IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    List<InProcessMaterial> BlackMaple.MachineFramework.IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -412,7 +412,7 @@ namespace MazakMachineInterface
       return newSt.Material.Where(m => matIds.Contains(m.MaterialID)).ToList();
     }
 
-    InProcessMaterial IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -472,7 +472,7 @@ namespace MazakMachineInterface
       return st.Material.FirstOrDefault(m => m.MaterialID == matId);
     }
 
-    void IJobControl.SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
+    void BlackMaple.MachineFramework.IJobControl.SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -502,7 +502,7 @@ namespace MazakMachineInterface
       _onCurStatusChange(status);
     }
 
-    void IJobControl.RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
+    void BlackMaple.MachineFramework.IJobControl.RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
 
@@ -522,7 +522,7 @@ namespace MazakMachineInterface
       _onCurStatusChange(status);
     }
 
-    void IJobControl.SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
+    void BlackMaple.MachineFramework.IJobControl.SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
       if (!fmsSettings.Queues.ContainsKey(queue))
@@ -545,7 +545,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          ((IJobControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
+          ((BlackMaple.MachineFramework.IJobControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
         }
       }
     }

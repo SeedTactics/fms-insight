@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.Serialization;
+using Germinate;
 
 namespace BlackMaple.MachineWatchInterface
 {
@@ -59,43 +59,16 @@ namespace BlackMaple.MachineWatchInterface
     public TimeSpan TotalLifeTime { get; init; }
   }
 
-  [DataContract]
-  public record ProgramInCellController
+  [DataContract, Draftable]
+  public record ToolUse
   {
-    [DataMember(IsRequired = true)]
-    public string CellControllerProgramName { get; init; }
+    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; init; }
+    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; init; }
 
-    [DataMember(IsRequired = true)]
-    public string ProgramName { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public long? Revision { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string Comment { get; init; }
+    public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f)
+       => t.Produce(f);
   }
 
-  [DataContract]
-  public record ProgramRevision
-  {
-    [DataMember(IsRequired = true)]
-    public string ProgramName { get; init; }
-
-    [DataMember(IsRequired = true)]
-    public long Revision { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string Comment { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string CellControllerProgramName { get; init; }
-  }
-
-  public interface IMachineControl
-  {
-    List<ToolInMachine> CurrentToolsInMachines();
-    List<ProgramInCellController> CurrentProgramsInCellController();
-    List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart);
-    string GetProgramContent(string programName, long? revision);
-  }
 }

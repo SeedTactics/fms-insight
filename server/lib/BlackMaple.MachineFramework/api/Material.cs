@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Collections.Immutable;
 using Germinate;
@@ -130,91 +129,15 @@ namespace BlackMaple.MachineWatchInterface
   }
 
   [DataContract]
-  public enum PalletLocationEnum
+  public record MaterialDetails
   {
-    [EnumMember] LoadUnload,
-    [EnumMember] Machine,
-    [EnumMember] MachineQueue,
-    [EnumMember] Buffer,
-    [EnumMember] Cart
-  }
-
-  [DataContract]
-  public record PalletLocation
-  {
-
-    [DataMember(Name = "loc", IsRequired = true)]
-    public PalletLocationEnum Location { get; init; }
-
-    [DataMember(Name = "group", IsRequired = true)]
-    public string StationGroup { get; init; }
-
-    [DataMember(Name = "num", IsRequired = true)]
-    public int Num { get; init; }
-
-    public PalletLocation() { }
-
-    public PalletLocation(PalletLocationEnum l, string group, int n)
-    {
-      Location = l;
-      StationGroup = group;
-      Num = n;
-    }
-  }
-
-  [DataContract, Draftable]
-  public record PalletStatus
-  {
-    [DataMember(IsRequired = true)] public string Pallet { get; init; }
-    [DataMember(IsRequired = true)] public string FixtureOnPallet { get; init; }
-    [DataMember(IsRequired = true)] public bool OnHold { get; init; }
-    [DataMember(IsRequired = true)] public PalletLocation CurrentPalletLocation { get; init; }
-
-    // If the pallet is at a load station and a new fixture should be loaded, this is filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string NewFixture { get; init; }
-
-    // num faces on new fixture, or current fixture if no change
-    [DataMember(IsRequired = true)] public int NumFaces { get; init; }
-
-    //If CurrentPalletLocation is Cart, the following two fields will be filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public PalletLocation TargetLocation { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public decimal? PercentMoveCompleted { get; init; }
-
-    public static PalletStatus operator %(PalletStatus s, Action<IPalletStatusDraft> f) => s.Produce(f);
-  }
-
-  [DataContract, Draftable]
-  public record CurrentStatus
-  {
-    [DataMember(IsRequired = true)]
-    public DateTime TimeOfCurrentStatusUTC { get; init; }
-
-    [DataMember(Name = "Jobs", IsRequired = true)]
-    public ImmutableDictionary<string, InProcessJob> Jobs { get; init; } = ImmutableDictionary<string, InProcessJob>.Empty;
-
-    [DataMember(Name = "Pallets", IsRequired = true)]
-    public ImmutableDictionary<string, PalletStatus> Pallets { get; init; } = ImmutableDictionary<string, PalletStatus>.Empty;
-
-    [DataMember(Name = "Material", IsRequired = true)]
-    public ImmutableList<InProcessMaterial> Material { get; init; } = ImmutableList<InProcessMaterial>.Empty;
-
-    [DataMember(Name = "Alarms", IsRequired = true)]
-    public ImmutableList<string> Alarms { get; init; } = ImmutableList<string>.Empty;
-
-    [DataMember(Name = "Queues", IsRequired = true)]
-    public ImmutableDictionary<string, QueueSize> QueueSizes { get; init; } = ImmutableDictionary<string, QueueSize>.Empty;
-
-    public static CurrentStatus operator %(CurrentStatus s, Action<ICurrentStatusDraft> f) => s.Produce(f);
-  }
-
-  [DataContract]
-  public record JobAndDecrementQuantity
-  {
-    [DataMember(IsRequired = true)] public long DecrementId { get; init; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; init; }
-    [DataMember(IsRequired = true)] public int Proc1Path { get; init; }
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
-    [DataMember(IsRequired = true)] public string Part { get; init; }
-    [DataMember(IsRequired = true)] public int Quantity { get; init; }
+    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
+    [DataMember] public string JobUnique { get; init; }
+    [DataMember] public string PartName { get; init; }
+    [DataMember] public int NumProcesses { get; init; }
+    [DataMember] public string Workorder { get; init; }
+    [DataMember] public string Serial { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableDictionary<int, int> Paths { get; init; } = ImmutableDictionary<int, int>.Empty; // key is process, value is path
   }
 }

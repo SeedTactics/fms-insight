@@ -36,7 +36,7 @@ using BlackMaple.MachineWatchInterface;
 
 namespace Makino
 {
-  public class Jobs : IJobControl, IOldJobDecrement
+  public class Jobs : BlackMaple.MachineFramework.IJobControl, BlackMaple.MachineFramework.IOldJobDecrement
   {
     private MakinoDB _db;
     private Func<BlackMaple.MachineFramework.IRepository> _openJobDB;
@@ -104,7 +104,7 @@ namespace Makino
       _onNewJobs(newJ);
     }
 
-    void IJobControl.SetJobComment(string jobUnique, string comment)
+    void BlackMaple.MachineFramework.IJobControl.SetJobComment(string jobUnique, string comment)
     {
       using (var jdb = _openJobDB())
       {
@@ -114,7 +114,7 @@ namespace Makino
     }
 
     #region Decrement
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
+    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       return new List<JobAndDecrementQuantity>();
     }

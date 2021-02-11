@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using System.Linq;
 using Germinate;
 using System.Collections.Immutable;
 
@@ -222,31 +221,6 @@ namespace BlackMaple.MachineWatchInterface
     public static LogEntry operator %(LogEntry e, Action<ILogEntryDraft> f) => e.Produce(f);
   }
 
-  [DataContract]
-  public record MaterialDetails
-  {
-    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember] public string JobUnique { get; init; }
-    [DataMember] public string PartName { get; init; }
-    [DataMember] public int NumProcesses { get; init; }
-    [DataMember] public string Workorder { get; init; }
-    [DataMember] public string Serial { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<int, int> Paths { get; init; } = ImmutableDictionary<int, int>.Empty; // key is process, value is path
-  }
-
-  [DataContract, Draftable]
-  public record ToolUse
-  {
-    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; init; }
-
-    public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f)
-       => t.Produce(f);
-  }
-
   // stored serialized in json format in the details for inspection logs.
   [DataContract, Draftable]
   public record MaterialProcessActualPath
@@ -266,45 +240,6 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)] public int UnloadStation { get; init; }
 
     public static MaterialProcessActualPath operator %(MaterialProcessActualPath m, Action<IMaterialProcessActualPathDraft> f)
-       => m.Produce(f);
-  }
-
-
-  [DataContract, Draftable]
-  public record WorkorderPartSummary
-  {
-    [DataMember(Name = "name", IsRequired = true)]
-    public string Part { get; init; }
-
-    [DataMember(Name = "completed-qty", IsRequired = true)]
-    public int PartsCompleted { get; init; }
-
-    [DataMember(Name = "elapsed-station-time", IsRequired = true)]
-    public ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty;
-
-    [DataMember(Name = "active-stat-time", IsRequired = true)]
-    public ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty;
-
-    public static WorkorderPartSummary operator %(WorkorderPartSummary m, Action<IWorkorderPartSummaryDraft> f)
-       => m.Produce(f);
-  }
-
-  [DataContract, Draftable]
-  public record WorkorderSummary
-  {
-    [DataMember(Name = "id", IsRequired = true)]
-    public string WorkorderId { get; init; }
-
-    [DataMember(Name = "parts", IsRequired = true)]
-    public ImmutableList<WorkorderPartSummary> Parts { get; init; } = ImmutableList<WorkorderPartSummary>.Empty;
-
-    [DataMember(Name = "serials", IsRequired = true)]
-    public ImmutableList<string> Serials { get; init; } = ImmutableList<string>.Empty;
-
-    [DataMember(Name = "finalized", IsRequired = false, EmitDefaultValue = false)]
-    public DateTime? FinalizedTimeUTC { get; init; }
-
-    public static WorkorderSummary operator %(WorkorderSummary m, Action<IWorkorderSummaryDraft> f)
        => m.Produce(f);
   }
 
