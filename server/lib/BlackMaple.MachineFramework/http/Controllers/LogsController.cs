@@ -42,27 +42,27 @@ using Microsoft.AspNetCore.Cors;
 namespace BlackMaple.MachineFramework.Controllers
 {
   [DataContract]
-  public struct NewInspectionCompleted
+  public record NewInspectionCompleted
   {
-    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
-    [DataMember(IsRequired = true)] public int Process { get; set; }
-    [DataMember(IsRequired = true)] public int InspectionLocationNum { get; set; }
-    [DataMember(IsRequired = true)] public string InspectionType { get; set; }
-    [DataMember(IsRequired = true)] public bool Success { get; set; }
-    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; set; }
-    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; set; }
-    [DataMember(IsRequired = true)] public TimeSpan Active { get; set; }
+    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
+    [DataMember(IsRequired = true)] public int Process { get; init; }
+    [DataMember(IsRequired = true)] public int InspectionLocationNum { get; init; }
+    [DataMember(IsRequired = true)] public string InspectionType { get; init; }
+    [DataMember(IsRequired = true)] public bool Success { get; init; }
+    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; init; }
+    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; init; }
+    [DataMember(IsRequired = true)] public TimeSpan Active { get; init; }
   }
 
   [DataContract]
-  public struct NewWash
+  public record NewWash
   {
-    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
-    [DataMember(IsRequired = true)] public int Process { get; set; }
-    [DataMember(IsRequired = true)] public int WashLocationNum { get; set; }
-    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; set; }
-    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; set; }
-    [DataMember(IsRequired = true)] public TimeSpan Active { get; set; }
+    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
+    [DataMember(IsRequired = true)] public int Process { get; init; }
+    [DataMember(IsRequired = true)] public int WashLocationNum { get; init; }
+    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; init; }
+    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; init; }
+    [DataMember(IsRequired = true)] public TimeSpan Active { get; init; }
   }
 
   [ApiController]
