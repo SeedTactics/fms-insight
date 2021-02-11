@@ -35,9 +35,8 @@ using System;
 using System.Collections.Immutable;
 using System.Runtime.Serialization;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
-
   [DataContract]
   public record PathInspection
   {

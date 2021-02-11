@@ -282,7 +282,7 @@ namespace BlackMaple.MachineFramework
         {
           while (reader.Read())
           {
-            var insp = new MachineWatchInterface.PathInspection()
+            var insp = new PathInspection()
             {
               InspectionType = reader.GetString(2),
               Counter = reader.GetString(3),
@@ -1862,7 +1862,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(string unique)
+    public List<DecrementQuantity> LoadDecrementsForJob(string unique)
     {
       lock (_cfg)
       {
@@ -1870,19 +1870,19 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(IDbTransaction trans, string unique)
+    private List<DecrementQuantity> LoadDecrementsForJob(IDbTransaction trans, string unique)
     {
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
         cmd.CommandText = "SELECT DecrementId,Proc1Path,TimeUTC,Quantity FROM job_decrements WHERE JobUnique = $uniq";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-        var ret = new List<MachineWatchInterface.DecrementQuantity>();
+        var ret = new List<DecrementQuantity>();
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            var j = new MachineWatchInterface.DecrementQuantity()
+            var j = new DecrementQuantity()
             {
               DecrementId = reader.GetInt64(0),
               Proc1Path = reader.GetInt32(1),

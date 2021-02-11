@@ -899,13 +899,13 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
-    public ICollection<PathInspection> PathInspections(int process, int path)
+    public ICollection<MachineFramework.PathInspection> PathInspections(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
         if (_procPath[process - 1].Paths[path - 1].Inspections == null)
         {
-          _procPath[process - 1].Paths[path - 1].Inspections = new List<PathInspection>();
+          _procPath[process - 1].Paths[path - 1].Inspections = new List<MachineFramework.PathInspection>();
         }
         return _procPath[process - 1].Paths[path - 1].Inspections;
       }
@@ -1201,7 +1201,7 @@ namespace BlackMaple.MachineWatchInterface
       public string OutputQueue;
 
       [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
-      public List<PathInspection> Inspections;
+      public List<MachineFramework.PathInspection> Inspections;
 
       [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public string Casting;
@@ -1336,12 +1336,12 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
-    public IList<DecrementQuantity> Decrements
+    public IList<MachineFramework.DecrementQuantity> Decrements
     {
       get
       {
         if (_decrQtys == null)
-          _decrQtys = new List<DecrementQuantity>();
+          _decrQtys = new List<MachineFramework.DecrementQuantity>();
         return _decrQtys;
       }
       set
@@ -1385,7 +1385,7 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(Name = "Completed", IsRequired = false)] private int[][] _completed;
 
-    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private IList<DecrementQuantity> _decrQtys;
+    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private IList<MachineFramework.DecrementQuantity> _decrQtys;
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
@@ -1401,7 +1401,7 @@ namespace BlackMaple.MachineWatchInterface
     public HistoricJob(JobPlan job) : base(job) { }
     private HistoricJob() { } //for json deserialization
 
-    [DataMember(Name = "Decrements", IsRequired = false)] public List<DecrementQuantity> Decrements { get; set; }
+    [DataMember(Name = "Decrements", IsRequired = false)] public List<MachineFramework.DecrementQuantity> Decrements { get; set; }
   }
 
 }

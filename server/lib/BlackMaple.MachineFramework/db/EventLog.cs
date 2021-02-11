@@ -3573,21 +3573,21 @@ namespace BlackMaple.MachineFramework
       foreach (var p in actualPath.Values)
       {
         counter = counter.Replace(
-            MachineWatchInterface.PathInspection.PalletFormatFlag(p.Process),
+            PathInspection.PalletFormatFlag(p.Process),
             p.Pallet
         );
         counter = counter.Replace(
-            MachineWatchInterface.PathInspection.LoadFormatFlag(p.Process),
+            PathInspection.LoadFormatFlag(p.Process),
             p.LoadStation.ToString()
         );
         counter = counter.Replace(
-            MachineWatchInterface.PathInspection.UnloadFormatFlag(p.Process),
+            PathInspection.UnloadFormatFlag(p.Process),
             p.UnloadStation.ToString()
         );
         for (int stopNum = 1; stopNum <= p.Stops.Count; stopNum++)
         {
           counter = counter.Replace(
-              MachineWatchInterface.PathInspection.StationFormatFlag(p.Process, stopNum),
+              PathInspection.StationFormatFlag(p.Process, stopNum),
               p.Stops[stopNum - 1].StationNum.ToString()
           );
         }
@@ -3700,7 +3700,7 @@ namespace BlackMaple.MachineFramework
     public IEnumerable<MachineWatchInterface.LogEntry> MakeInspectionDecisions(
         long matID,
         int process,
-        IEnumerable<MachineWatchInterface.PathInspection> inspections,
+        IEnumerable<PathInspection> inspections,
         DateTime? mutcNow = null)
     {
       return AddEntryInTransaction(trans =>
@@ -3712,7 +3712,7 @@ namespace BlackMaple.MachineFramework
         IDbTransaction trans,
         long matID,
         int process,
-        IEnumerable<MachineWatchInterface.PathInspection> inspections,
+        IEnumerable<PathInspection> inspections,
         DateTime? mutcNow)
     {
       var utcNow = mutcNow ?? DateTime.UtcNow;
@@ -3724,9 +3724,9 @@ namespace BlackMaple.MachineFramework
           LookupInspectionDecisions(trans, matID)
           .ToLookup(d => d.InspType, d => d);
 
-      Dictionary<string, MachineWatchInterface.PathInspection> insps;
+      Dictionary<string, PathInspection> insps;
       if (inspections == null)
-        insps = new Dictionary<string, MachineWatchInterface.PathInspection>();
+        insps = new Dictionary<string, PathInspection>();
       else
         insps = inspections.ToDictionary(x => x.InspectionType, x => x);
 
@@ -3738,7 +3738,7 @@ namespace BlackMaple.MachineFramework
         string counter = "";
         bool alreadyRecorded = false;
 
-        MachineWatchInterface.PathInspection iProg = null;
+        PathInspection iProg = null;
         if (insps.ContainsKey(inspType))
         {
           iProg = insps[inspType];

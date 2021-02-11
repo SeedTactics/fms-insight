@@ -143,7 +143,7 @@ namespace BlackMaple.MachineFramework
     List<InspectCount> LoadInspectCounts();
     void SetInspectCounts(IEnumerable<InspectCount> counts);
     IList<Decision> LookupInspectionDecisions(long matID);
-    IEnumerable<MachineWatchInterface.LogEntry> MakeInspectionDecisions(long matID, int process, IEnumerable<MachineWatchInterface.PathInspection> inspections, DateTime? mutcNow = null);
+    IEnumerable<MachineWatchInterface.LogEntry> MakeInspectionDecisions(long matID, int process, IEnumerable<PathInspection> inspections, DateTime? mutcNow = null);
     MachineWatchInterface.LogEntry ForceInspection(long matID, string inspType);
     MachineWatchInterface.LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect);
     MachineWatchInterface.LogEntry ForceInspection(EventLogMaterial mat, string inspType, bool inspect);
@@ -188,7 +188,7 @@ namespace BlackMaple.MachineFramework
     // Decrements
     // --------------------------------------------------------------------------------
     void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null, IEnumerable<RemovedBooking> removedBookings = null);
-    List<MachineWatchInterface.DecrementQuantity> LoadDecrementsForJob(string unique);
+    List<DecrementQuantity> LoadDecrementsForJob(string unique);
     List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId);
     List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC);
 
