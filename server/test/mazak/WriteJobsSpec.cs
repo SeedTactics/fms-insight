@@ -277,10 +277,19 @@ namespace MachineWatchTest
           .ComparingByMembers<MazakPartRow>()
           .ComparingByMembers<MazakScheduleRow>()
           .ComparingByMembers<MazakWriteData>()
+          .ComparingByMembers<NewMazakProgram>()
+          .ComparingByMembers<MazakPartProcessRow>()
           .Using<string>(ctx =>
           {
-            var path = ctx.Expectation.Split('/');
-            ctx.Subject.Should().Be(System.IO.Path.Combine(path));
+            if (ctx.Expectation == null)
+            {
+              ctx.Subject.Should().BeNull();
+            }
+            else
+            {
+              var path = ctx.Expectation.Split('/');
+              ctx.Subject.Should().Be(System.IO.Path.Combine(path));
+            }
           })
           .When(info => info.SelectedMemberPath.EndsWith("MainProgram"))
       );
