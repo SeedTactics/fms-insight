@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -43,7 +45,7 @@ namespace BlackMaple.MachineFramework
   public record PathInspection
   {
     [DataMember(IsRequired = true)]
-    public string InspectionType { get; init; }
+    public string InspectionType { get; init; } = "";
 
     //There are two possible ways of triggering an inspection: counts and frequencies.
     // * For counts, the MaxVal will contain a number larger than zero and RandomFreq will contain -1
@@ -52,7 +54,7 @@ namespace BlackMaple.MachineFramework
 
     //Every time a material completes, the counter string is expanded (see below).
     [DataMember(IsRequired = true)]
-    public string Counter { get; init; }
+    public string Counter { get; init; } = "";
 
     //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
     //we signal an inspection and reset the counter to 0.
@@ -95,13 +97,13 @@ namespace BlackMaple.MachineFramework
   public record MachiningStop
   {
     [DataMember(Name = "StationGroup", IsRequired = true)]
-    public string StationGroup { get; init; }
+    public string StationGroup { get; init; } = "";
 
     [DataMember(Name = "StationNums")]
-    public ImmutableList<int> Stations { get; init; }
+    public ImmutableList<int>? Stations { get; init; }
 
     [DataMember(Name = "Program")]
-    public string Program { get; init; }
+    public string? Program { get; init; }
 
     // During Download:
     //   * A null or zero revision value means use the latest program, either the one already in the cell controller
@@ -135,7 +137,7 @@ namespace BlackMaple.MachineFramework
     public bool UserHold { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string ReasonForUserHold { get; init; }
+    public string ReasonForUserHold { get; init; } = "";
 
     //A list of timespans the job should be on hold/not on hold.
     //During the first timespan, the job is on hold.
@@ -161,7 +163,7 @@ namespace BlackMaple.MachineFramework
   public record ProcessInfo
   {
     [DataMember(Name = "paths", IsRequired = true)]
-    public ImmutableList<ProcPathInfo> Paths { get; init; }
+    public ImmutableList<ProcPathInfo> Paths { get; init; } = ImmutableList<ProcPathInfo>.Empty;
   }
 
   [DataContract, Draftable]
@@ -171,31 +173,31 @@ namespace BlackMaple.MachineFramework
     public int PathGroup { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<string> Pallets { get; init; }
+    public IReadOnlyList<string> Pallets { get; init; } = new string[] { };
 
     [DataMember(IsRequired = false)]
-    public string Fixture { get; init; }
+    public string? Fixture { get; init; }
 
     [DataMember(IsRequired = false)]
     public int? Face { get; init; }
 
     [DataMember(IsRequired = true)]
-    public IReadOnlyList<int> Load { get; init; }
+    public IReadOnlyList<int> Load { get; init; } = new int[] { };
 
     [DataMember(IsRequired = false)]
     public TimeSpan ExpectedLoadTime { get; init; }
 
     [DataMember(IsRequired = true)]
-    public IReadOnlyList<int> Unload { get; init; }
+    public IReadOnlyList<int> Unload { get; init; } = new int[] { };
 
     [DataMember(IsRequired = false)]
     public TimeSpan ExpectedUnloadTime { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<MachiningStop> Stops { get; init; }
+    public ImmutableList<MachiningStop> Stops { get; init; } = ImmutableList<MachiningStop>.Empty;
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<SimulatedProduction> SimulatedProduction { get; init; }
+    public ImmutableList<SimulatedProduction>? SimulatedProduction { get; init; }
 
     [DataMember(IsRequired = true)]
     public DateTime SimulatedStartingUTC { get; init; }
@@ -204,32 +206,32 @@ namespace BlackMaple.MachineFramework
     public TimeSpan SimulatedAverageFlowTime { get; init; } // average time a part takes to complete the entire sequence
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public HoldPattern HoldMachining { get; init; }
+    public HoldPattern? HoldMachining { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public HoldPattern HoldLoadUnload { get; init; }
+    public HoldPattern? HoldLoadUnload { get; init; }
 
     [DataMember(IsRequired = true)]
     public int PartsPerPallet { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string InputQueue { get; init; }
+    public string? InputQueue { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string OutputQueue { get; init; }
+    public string? OutputQueue { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<MachineFramework.PathInspection> Inspections { get; init; }
+    public ImmutableList<MachineFramework.PathInspection>? Inspections { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string Casting { get; init; }
+    public string? Casting { get; init; }
   }
 
   [DataContract, Draftable]
   public record Job
   {
     [DataMember(Name = "Unique", IsRequired = true)]
-    public string UniqueStr { get; init; }
+    public string UniqueStr { get; init; } = "";
 
     [DataMember(Name = "RouteStartUTC", IsRequired = true)]
     public DateTime RouteStartUTC { get; init; }
@@ -244,28 +246,28 @@ namespace BlackMaple.MachineFramework
     public bool CopiedToSystem { get; init; }
 
     [DataMember(Name = "PartName", IsRequired = true)]
-    public string PartName { get; init; }
+    public string PartName { get; init; } = "";
 
     [DataMember(Name = "Comment", IsRequired = false, EmitDefaultValue = false)]
-    public string Comment { get; init; }
+    public string? Comment { get; init; }
 
     [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
-    public string ScheduleId { get; init; }
+    public string? ScheduleId { get; init; }
 
     [DataMember(Name = "Bookings", IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<string> ScheduledIds { get; init; }
+    public ImmutableList<string>? ScheduledIds { get; init; }
 
     [DataMember(Name = "ManuallyCreated", IsRequired = true)]
     public bool ManuallyCreated { get; init; }
 
     [DataMember(Name = "HoldEntireJob", IsRequired = false, EmitDefaultValue = false)]
-    public HoldPattern HoldJob { get; init; }
+    public HoldPattern? HoldJob { get; init; }
 
     [DataMember(Name = "CyclesOnFirstProcess", IsRequired = true)]
-    public ImmutableList<int> CyclesOnFirstProcess { get; init; }
+    public IReadOnlyList<int> CyclesOnFirstProcess { get; init; } = new int[] { };
 
     [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
-    public ImmutableList<ProcessInfo> Processes { get; init; }
+    public ImmutableList<ProcessInfo> Processes { get; init; } = ImmutableList<ProcessInfo>.Empty;
 
 #pragma warning disable CS0169
     // priority, CreateMarkingData, and Inspections field is no longer used but this is kept for backwards network compatibility
@@ -276,7 +278,7 @@ namespace BlackMaple.MachineFramework
     private bool _createMarker;
 
     [DataMember(Name = "Inspections", IsRequired = false, EmitDefaultValue = false), Obsolete]
-    internal System.Collections.Generic.IEnumerable<MachineWatchInterface.JobInspectionData> OldJobInspections;
+    internal System.Collections.Generic.IEnumerable<MachineWatchInterface.JobInspectionData>? OldJobInspections;
 #pragma warning restore CS0169
   }
 
@@ -293,25 +295,25 @@ namespace BlackMaple.MachineFramework
   public record ActiveJob : Job
   {
     [DataMember(Name = "Completed", IsRequired = false)]
-    private IReadOnlyList<IReadOnlyList<int>> Completed { get; init; }
+    private IReadOnlyList<IReadOnlyList<int>>? Completed { get; init; }
 
     [DataMember(Name = "Decrements", IsRequired = false)]
-    public ImmutableList<DecrementQuantity> Decrements { get; init; }
+    public ImmutableList<DecrementQuantity>? Decrements { get; init; }
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
     [DataMember(Name = "Precedence", IsRequired = false)]
-    private IReadOnlyList<IReadOnlyList<long>> Precedence { get; init; }
+    private IReadOnlyList<IReadOnlyList<long>>? Precedence { get; init; }
 
     [DataMember(Name = "AssignedWorkorders", IsRequired = false)]
-    public ImmutableList<string> AssignedWorkorders { get; init; }
+    public ImmutableList<string>? AssignedWorkorders { get; init; }
   }
 
   [DataContract]
   public record HistoricJobAsRecord : Job
   {
     [DataMember(Name = "Decrements", IsRequired = false)]
-    public ImmutableList<DecrementQuantity> Decrements { get; init; }
+    public ImmutableList<DecrementQuantity>? Decrements { get; init; }
   }
 
 }
