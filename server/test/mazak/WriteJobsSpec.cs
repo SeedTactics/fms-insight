@@ -303,7 +303,7 @@ namespace MachineWatchTest
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
           jsonSettings
       );
-      _jobDB.AddJobs(newJobs, null);
+      _jobDB.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       var newJobsMultiFace = JsonConvert.DeserializeObject<NewJobs>(
         File.ReadAllText(
@@ -322,13 +322,21 @@ namespace MachineWatchTest
     [Fact]
     public void BasicCreate()
     {
-      var completedJob = new JobPlan("uniq1", 1);
-      completedJob.PartName = "part1";
-      completedJob.SetPlannedCyclesOnFirstProcess(1, 15);
-      var inProcJob = new JobPlan("uniq2", 1);
-      inProcJob.PartName = "part2";
-      inProcJob.SetPlannedCyclesOnFirstProcess(1, 15);
-      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null);
+      var completedJob = new Job()
+      {
+        UniqueStr = "uniq1",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 15 }
+      };
+      var inProcJob = new Job()
+      {
+        UniqueStr = "uniq2",
+        PartName = "part2",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 15 }
+      };
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null, addAsCopiedToSystem: true);
 
       _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq1", "uniq2" }
@@ -350,7 +358,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
-      var start = newJobs.Jobs.First().RouteStartingTimeUTC;
+      var start = newJobs.Jobs.First().RouteStartUTC;
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
 
       // uniq1 was archived
@@ -366,13 +374,22 @@ namespace MachineWatchTest
     public void MultiPathGroups()
     {
       // mazak has 15 planned quantity, set job to have 20
-      var completedJob = new JobPlan("uniq1", 1);
-      completedJob.PartName = "part1";
-      completedJob.SetPlannedCyclesOnFirstProcess(1, 20);
-      var inProcJob = new JobPlan("uniq2", 1);
-      inProcJob.PartName = "part2";
-      inProcJob.SetPlannedCyclesOnFirstProcess(1, 20);
-      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null);
+      var completedJob = new Job()
+      {
+        UniqueStr = "uniq1",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 20 }
+      };
+      var inProcJob = new Job()
+      {
+        UniqueStr = "uniq2",
+        PartName = "part2",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 20 }
+      };
+
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null, addAsCopiedToSystem: true);
 
       _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq1", "uniq2" }
@@ -441,7 +458,7 @@ namespace MachineWatchTest
           Revision = 3,
           ProgramContent = "prog-bbb-1 content rev 3"
         }
-      }, newJobs.Jobs.First().RouteStartingTimeUTC);
+      }, newJobs.Jobs.First().RouteStartUTC);
 
       _writeJobs.AddJobs(_jobDB, newJobs, null);
 
@@ -475,7 +492,7 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       _writeMock.AddSchedules.Should().BeNull();
 
-      var start = newJobs.Jobs.First().RouteStartingTimeUTC;
+      var start = newJobs.Jobs.First().RouteStartUTC;
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
     }
 
@@ -501,13 +518,9 @@ namespace MachineWatchTest
       ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
 
-      var start = newJobs.Jobs.First().RouteStartingTimeUTC;
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
-        .Should().BeEquivalentTo(
-          newJobs.Jobs,
-          options => options
-            .Excluding(j => j.Comment)
-            .Excluding(j => j.HoldEntireJob));
+      var start = newJobs.Jobs.First().RouteStartUTC;
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Select(j => j.UniqueStr)
+        .Should().BeEquivalentTo(newJobs.Jobs.Select(j => j.UniqueStr));
 
       //try again still with error
       _writeMock.AddSchedules = null;
@@ -517,12 +530,8 @@ namespace MachineWatchTest
         .WithMessage("Sample error");
 
       ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
-        .Should().BeEquivalentTo(
-          newJobs.Jobs,
-          options => options
-            .Excluding(j => j.Comment)
-            .Excluding(j => j.HoldEntireJob));
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Select(j => j.UniqueStr)
+        .Should().BeEquivalentTo(newJobs.Jobs.Select(j => j.UniqueStr));
 
       //finally succeed without error
       _writeMock.errorForPrefix = null;

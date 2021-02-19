@@ -75,7 +75,7 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
     #region Jobs
-    List<string> IJobControl.CheckValidRoutes(IEnumerable<JobPlan> newJobs)
+    List<string> IJobControl.CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       using (var jdb = _jobDbCfg.OpenConnection())
       {
@@ -98,55 +98,56 @@ namespace BlackMaple.FMSInsight.Niigata
 
       foreach (var j in jobs.Jobs)
       {
-        for (var proc = 1; proc <= j.NumProcesses; proc++)
+        for (var proc = 1; proc <= j.Processes.Count; proc++)
         {
-          for (var path = 1; path <= j.GetNumPaths(proc); path++)
+          for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
           {
-            if (!j.LoadStations(proc, path).Any())
+            var pathData = j.Processes[proc - 1].Paths[path - 1];
+            if (!pathData.Load.Any())
             {
               errors.Add("Part " + j.PartName + " does not have any assigned load stations");
             }
-            if (!j.UnloadStations(proc, path).Any())
+            if (!pathData.Unload.Any())
             {
               errors.Add("Part " + j.PartName + " does not have any assigned load stations");
             }
-            if (string.IsNullOrEmpty(j.PlannedFixture(proc, path).fixture))
+            if (string.IsNullOrEmpty(pathData.Fixture))
             {
               errors.Add("Part " + j.PartName + " does not have an assigned fixture");
             }
-            if (!j.PlannedPallets(proc, path).Any())
+            if (!pathData.Pallets.Any())
             {
               errors.Add("Part " + j.PartName + " does not have any pallets");
             }
-            foreach (var pal in j.PlannedPallets(proc, path))
+            foreach (var pal in pathData.Pallets)
             {
               if (!int.TryParse(pal, out var p))
               {
                 errors.Add("Part " + j.PartName + " has non-integer pallets");
               }
             }
-            if (!string.IsNullOrEmpty(j.GetInputQueue(proc, path)) && !_settings.Queues.ContainsKey(j.GetInputQueue(proc, path)))
+            if (!string.IsNullOrEmpty(pathData.InputQueue) && !_settings.Queues.ContainsKey(pathData.InputQueue))
             {
-              errors.Add(" Part " + j.PartName + " has an input queue " + j.GetInputQueue(proc, path) + " which is not configured as a local queue in FMS Insight.");
+              errors.Add(" Part " + j.PartName + " has an input queue " + pathData.InputQueue + " which is not configured as a local queue in FMS Insight.");
             }
-            if (!string.IsNullOrEmpty(j.GetOutputQueue(proc, path)) && !_settings.Queues.ContainsKey(j.GetOutputQueue(proc, path)))
+            if (!string.IsNullOrEmpty(pathData.OutputQueue) && !_settings.Queues.ContainsKey(pathData.OutputQueue))
             {
-              errors.Add(" Part " + j.PartName + " has an output queue " + j.GetOutputQueue(proc, path) + " which is not configured as a queue in FMS Insight.");
+              errors.Add(" Part " + j.PartName + " has an output queue " + pathData.OutputQueue + " which is not configured as a queue in FMS Insight.");
             }
-            if (_requireRawMatQueue && proc == 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
+            if (_requireRawMatQueue && proc == 1 && string.IsNullOrEmpty(pathData.InputQueue))
             {
               errors.Add("Input queue is required on process 1 for part " + j.PartName);
             }
-            if (_requireInProcessQueues && proc > 1 && string.IsNullOrEmpty(j.GetInputQueue(proc, path)))
+            if (_requireInProcessQueues && proc > 1 && string.IsNullOrEmpty(pathData.InputQueue))
             {
               errors.Add("Input queue required for part " + j.PartName + ", process " + proc.ToString());
             }
-            if (_requireInProcessQueues && proc < j.NumProcesses && string.IsNullOrEmpty(j.GetOutputQueue(proc, path)))
+            if (_requireInProcessQueues && proc < j.Processes.Count && string.IsNullOrEmpty(pathData.OutputQueue))
             {
               errors.Add("Output queue required for part " + j.PartName + ", process " + proc.ToString());
             }
 
-            foreach (var stop in j.GetMachiningStop(proc, path))
+            foreach (var stop in pathData.Stops)
             {
               if (_statNames != null && _statNames.ReclampGroupNames.Contains(stop.StationGroup))
               {
@@ -157,7 +158,7 @@ namespace BlackMaple.FMSInsight.Niigata
               }
               else
               {
-                if (string.IsNullOrEmpty(stop.ProgramName))
+                if (string.IsNullOrEmpty(stop.Program))
                 {
                   if (_requireProgramsInJobs)
                   {
@@ -166,7 +167,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
                 else
                 {
-                  CheckProgram(stop.ProgramName, stop.ProgramRevision, jobs.Programs, cellState, jobDB, "Part " + j.PartName, errors);
+                  CheckProgram(stop.Program, stop.ProgramRevision, jobs.Programs, cellState, jobDB, "Part " + j.PartName, errors);
                 }
               }
             }
@@ -240,11 +241,7 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
 
-        foreach (var j in jobs.Jobs)
-        {
-          j.JobCopiedToSystem = true;
-        }
-        jdb.AddJobs(jobs, expectedPreviousScheduleId);
+        jdb.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       }
 
       _onNewJobs(jobs);
@@ -252,11 +249,11 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    private bool IsJobCompleted(JobPlan job, CellState st)
+    private bool IsJobCompleted(HistoricJob job, CellState st)
     {
       if (st == null) return false;
 
-      for (int path = 1; path <= job.GetNumPaths(process: 1); path++)
+      for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
       {
         if (st.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: path), out var qty) && qty > 0)
         {
@@ -412,7 +409,7 @@ namespace BlackMaple.FMSInsight.Niigata
       string casting = partName;
 
       // try and see if there is a job for this part with an actual casting
-      IReadOnlyList<JobPlan> unarchived;
+      IReadOnlyList<HistoricJob> unarchived;
       using (var jdb = _jobDbCfg.OpenConnection())
       {
         unarchived = jdb.LoadUnarchivedJobs();
@@ -420,11 +417,12 @@ namespace BlackMaple.FMSInsight.Niigata
       var job = unarchived.FirstOrDefault(j => j.PartName == partName);
       if (job != null)
       {
-        for (int path = 1; path <= job.GetNumPaths(1); path++)
+        for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
         {
-          if (!string.IsNullOrEmpty(job.GetCasting(path)))
+          var jobCasting = job.Processes[0].Paths[path - 1].Casting;
+          if (!string.IsNullOrEmpty(jobCasting))
           {
-            casting = job.GetCasting(path);
+            casting = jobCasting;
             break;
           }
         }

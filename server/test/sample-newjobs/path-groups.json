@@ -31,22 +31,16 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixAA",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixAA",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT4M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1001",
-                    "2": "1001"
-                  },
+                  "Program": "1001",
+                  "StationNums": [1, 2],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT20M"
@@ -77,22 +71,16 @@
             {
               "PathGroup": 1,
               "Pallets": ["3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixAA",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixAA",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT4M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
-                  "Stations": {
-                    "3": "1001",
-                    "4": "1001"
-                  },
+                  "Program": "1001",
+                  "StationNums": [3, 4],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT20M"
@@ -115,22 +103,16 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixAA",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixAA",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT4M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1002",
-                    "2": "1002"
-                  },
+                  "Program": "1002",
+                  "StationNums": [1, 2],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT10M"
@@ -161,22 +143,16 @@
             {
               "PathGroup": 1,
               "Pallets": ["3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixAA",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixAA",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT4M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
-                  "Stations": {
-                    "3": "1002",
-                    "4": "1002"
-                  },
+                  "Program": "1002",
+                  "StationNums": [3, 4],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT10M"
@@ -225,22 +201,16 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixBB",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixBB",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1003",
-                    "2": "1003"
-                  },
+                  "Program": "1003",
+                  "StationNums": [1, 2],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT30M"
@@ -271,22 +241,16 @@
             {
               "PathGroup": 1,
               "Pallets": ["3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixBB",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixBB",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "3": "1003",
-                    "4": "1003"
-                  },
+                  "Program": "1003",
+                  "StationNums": [3, 4],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT30M"
@@ -309,22 +273,16 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixBB",
-                  "Face": "2"
-                }
-              ],
+              "Fixture": "fixBB",
+              "Face": "2",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1004",
-                    "2": "1004"
-                  },
+                  "Program": "1004",
+                  "StationNums": [1, 2],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT18M"
@@ -355,22 +313,16 @@
             {
               "PathGroup": 1,
               "Pallets": ["3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixBB",
-                  "Face": "2"
-                }
-              ],
+              "Fixture": "fixBB",
+              "Face": "2",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "3": "1004",
-                    "4": "1004"
-                  },
+                  "Program": "1004",
+                  "StationNums": [3, 4],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT18M"
@@ -419,22 +371,16 @@
             {
               "PathGroup": 0,
               "Pallets": ["5"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixCC",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixCC",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT6M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT6M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1005",
-                    "2": "1005"
-                  },
+                  "Program": "1005",
+                  "StationNums": [1, 2],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT40M"
@@ -461,22 +407,16 @@
             {
               "PathGroup": 0,
               "Pallets": ["6"],
-              "Fixtures": [
-                {
-                  "Fixture": "fixCC",
-                  "Face": "1"
-                }
-              ],
+              "Fixture": "fixCC",
+              "Face": "1",
               "Load": [1, 2],
               "ExpectedLoadTime": "PT6M",
               "Unload": [1, 2],
               "ExpectedUnloadTime": "PT6M",
               "Stops": [
                 {
-                  "Stations": {
-                    "3": "1005",
-                    "4": "1005"
-                  },
+                  "Program": "1005",
+                  "StationNums": [3, 4],
                   "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT40M"

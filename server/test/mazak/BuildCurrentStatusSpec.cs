@@ -194,7 +194,7 @@ namespace MachineWatchTest
         );
 
       }
-      repository.AddJobs(newJobs, null);
+      repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       var allData = JsonConvert.DeserializeObject<MazakAllData>(
         File.ReadAllText(
@@ -251,7 +251,7 @@ namespace MachineWatchTest
           Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
-      _memoryLog.AddJobs(newJobs, null);
+      _memoryLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       var allData = JsonConvert.DeserializeObject<MazakAllData>(
         File.ReadAllText(

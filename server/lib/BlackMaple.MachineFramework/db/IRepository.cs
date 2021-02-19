@@ -157,8 +157,8 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     MachineWatchInterface.JobPlan LoadJob(string UniqueStr);
     bool DoesJobExist(string unique);
-    IReadOnlyList<MachineWatchInterface.JobPlan> LoadUnarchivedJobs();
-    IReadOnlyList<MachineWatchInterface.JobPlan> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
+    IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
+    IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
     MachineWatchInterface.HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
     MachineWatchInterface.HistoricData LoadJobsAfterScheduleId(string schId);
     MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule();
@@ -170,7 +170,7 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs
     // --------------------------------------------------------------------------------
-    void AddJobs(MachineWatchInterface.NewJobs newJobs, string expectedPreviousScheduleId);
+    void AddJobs(MachineWatchInterface.NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
     void AddPrograms(IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime startingUtc);
     void ArchiveJob(string UniqueStr);
     void ArchiveJobs(IEnumerable<string> uniqueStrs, IEnumerable<NewDecrementQuantity> newDecrements = null, DateTime? nowUTC = null);
@@ -178,9 +178,9 @@ namespace BlackMaple.MachineFramework
     void UnarchiveJobs(IEnumerable<string> uniqueStrs, DateTime? nowUTC = null);
     void MarkJobCopiedToSystem(string UniqueStr);
     void SetJobComment(string unique, string comment);
-    void UpdateJobHold(string unique, MachineWatchInterface.JobHoldPattern newHold);
-    void UpdateJobLoadUnloadHold(string unique, int proc, int path, MachineWatchInterface.JobHoldPattern newHold);
-    void UpdateJobMachiningHold(string unique, int proc, int path, MachineWatchInterface.JobHoldPattern newHold);
+    void UpdateJobHold(string unique, HoldPattern newHold);
+    void UpdateJobLoadUnloadHold(string unique, int proc, int path, HoldPattern newHold);
+    void UpdateJobMachiningHold(string unique, int proc, int path, HoldPattern newHold);
     void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime? nowUtc = null);
 
 

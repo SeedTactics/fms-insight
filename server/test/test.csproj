@@ -22,7 +22,6 @@
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="*" />
     <PackageReference Include="System.Data.Common" Version="*" />
     <PackageReference Include="System.Reflection" Version="*" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="*" />
 
     <PackageReference Include="FluentAssertions" Version="5.*" />
     <PackageReference Include="FluentAssertions.Json" Version="5.*" />

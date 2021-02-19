@@ -211,7 +211,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       AddJobs(new NewJobs()
       {
-        Jobs = jobs.ToImmutableList(),
+        Jobs = jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(),
         Programs =
             progs.Select(p =>
             new MachineWatchInterface.ProgramEntry()
@@ -236,7 +236,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private void AddJobs(NewJobs jobs, bool expectNewRoute = true)
     {
-      _logDB.AddJobs(jobs, null);
+      _logDB.AddJobs(jobs, null, addAsCopiedToSystem: true);
       using (var logMonitor = _logDBCfg.Monitor())
       {
         _sync.SynchronizePallets(false);
@@ -965,57 +965,62 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
         jsonSettings
       );
-      foreach (var j in newJobs.Jobs)
+      newJobs %= j =>
       {
-        for (int proc = 1; proc <= j.NumProcesses; proc++)
+        for (int jobIdx = 0; jobIdx < j.Jobs.Count; jobIdx++)
         {
-          for (int path = 1; path <= j.GetNumPaths(proc); path++)
+          j.Jobs[jobIdx] %= draftJob =>
           {
-            if (proc == 1)
-            {
-              j.SetInputQueue(proc, path, "castingQ");
-            }
-            foreach (var stop in j.GetMachiningStop(proc, path))
-            {
-              stop.ProgramName = null;
-              stop.ProgramRevision = null;
-            }
+            draftJob.Processes = draftJob.Processes.Select((proc, procIdx) =>
+              new ProcessInfo()
+              {
+                Paths = proc.Paths.Select(path => path with
+                {
+                  InputQueue = procIdx == 0 ? "castingQ" : path.InputQueue,
+                  Stops = path.Stops.Select(stop => stop with
+                  {
+                    Program = null,
+                    ProgramRevision = null
+                  }).ToArray()
+                }).ToArray()
+              }
+            ).ToArray();
+          };
+        }
+        j.CurrentUnfilledWorkorders.AddRange(new[] {
+          new PartWorkorder()
+          {
+            WorkorderId = "work1",
+            Part = "aaa",
+            Programs = ImmutableList.Create(
+            new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
+            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
+            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
+            new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
+            new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
+          )
+          },
+          new PartWorkorder()
+          {
+            WorkorderId = "work2",
+            Part = "aaa",
+            Programs = ImmutableList.Create(
+            new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
+            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
+            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
+            new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
+            new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
+          )
           }
-        }
-      }
-      newJobs %= j => j.CurrentUnfilledWorkorders.AddRange(new[] {
-        new PartWorkorder()
-        {
-          WorkorderId = "work1",
-          Part = "aaa",
-          Programs = ImmutableList.Create(
-          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
-          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
-          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
-        )
-        },
-        new PartWorkorder()
-        {
-          WorkorderId = "work2",
-          Part = "aaa",
-          Programs = ImmutableList.Create(
-          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
-          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
-          new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
-          new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
-        )
-        }
-      });
-      newJobs %= j => j.Programs.AddRange(new[] {
-        new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
-        new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
-        new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
-        new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
-        new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
-      });
+        });
+        j.Programs.AddRange(new[] {
+          new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
+          new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
+          new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
+          new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
+          new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
+        });
+      };
 
       AddJobs(newJobs, expectNewRoute: false); // no route yet because no material
 

@@ -10,9 +10,9 @@
       },
       "Germinate": {
         "type": "Direct",
-        "requested": "[0.5.1, )",
-        "resolved": "0.5.1",
-        "contentHash": "EGkwoCgsaeqoOH7sqGLveYD7lNGQ/ABPHOCU8yIZc9VDuT/J5SkJk5+kzFSuPKYYvr0DEmWEUkEWt7aZ9D4v9w=="
+        "requested": "[0.7.0, )",
+        "resolved": "0.7.0",
+        "contentHash": "yyOxoKVwh8EFAo9pyFTselHyn4gxOah9V5sggg66M24EYDVzisH1yC98fXItpQHF4oyLVxZo1Apzlsp+T5UHFA=="
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "Direct",

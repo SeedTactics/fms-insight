@@ -805,7 +805,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var newJ = new NewJobs()
       {
         ScheduleId = DateTime.UtcNow.Ticks.ToString(),
-        Jobs = jobs.ToImmutableList(),
+        Jobs = jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(),
         Programs =
             progs.Select(p =>
             new MachineWatchInterface.ProgramEntry()
@@ -817,7 +817,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }).ToImmutableList(),
         CurrentUnfilledWorkorders = workorders?.ToImmutableList()
       };
-      _logDB.AddJobs(newJ, null);
+      _logDB.AddJobs(newJ, null, addAsCopiedToSystem: true);
       foreach (var j in jobs)
       {
         for (int path = 1; path <= j.GetNumPaths(1); path++)
@@ -1143,7 +1143,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectNoChanges()
     {
-      var unarchJobs = _logDB.LoadUnarchivedJobs();
+      var unarchJobs = _logDB.LoadUnarchivedJobs().Select(j => LegacyJobConversions.ToLegacyJob(j, j.CopiedToSystem)).ToList();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
@@ -1676,7 +1676,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
-      var sch = _logDB.LoadUnarchivedJobs().ToList();
+      var sch = _logDB.LoadUnarchivedJobs().Select(j => LegacyJobConversions.ToLegacyJob(j, j.CopiedToSystem)).ToList();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {

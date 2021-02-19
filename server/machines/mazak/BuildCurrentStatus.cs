@@ -325,7 +325,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          jobsByUniq.Add(j.UniqueStr, new InProcessJob(j));
+          jobsByUniq.Add(j.UniqueStr, new InProcessJob(LegacyJobConversions.ToLegacyJob(j, copiedToSystem: j.CopiedToSystem)));
         }
       }
 

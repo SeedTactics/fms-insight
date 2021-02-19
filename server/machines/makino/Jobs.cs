@@ -32,7 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using BlackMaple.MachineWatchInterface;
+using Germinate;
 
 namespace Makino
 {
@@ -63,7 +66,7 @@ namespace Makino
         return _db.LoadCurrentInfo();
     }
 
-    public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
+    public List<string> CheckValidRoutes(IEnumerable<BlackMaple.MachineFramework.Job> newJobs)
     {
       return new List<string>();
     }
@@ -73,32 +76,32 @@ namespace Makino
       var newJobs = new List<JobPlan>();
       using (var jdb = _openJobDB())
       {
+        newJ = newJ with
+        {
+          Jobs = newJ.Jobs.Select(j =>
+            j with
+            {
+              Archived = true,
+              Processes = j.Processes.Select(proc =>
+                proc with
+                {
+                  Paths = proc.Paths.Select(path => path with
+                  {
+                    Stops = path.Stops.Select(stop => stop with
+                    {
+                      StationGroup = "MC"
+                    }).ToArray()
+                  }).ToArray()
+                }
+              ).ToArray()
+            }).ToImmutableList()
+        };
         foreach (var j in newJ.Jobs)
         {
-          j.Archived = true;
-          j.JobCopiedToSystem = true;
-          if (!jdb.DoesJobExist(j.UniqueStr))
-          {
-            for (int proc = 1; proc <= j.NumProcesses; proc++)
-            {
-              for (int path = 1; path <= j.GetNumPaths(proc); path++)
-              {
-                foreach (var stop in j.GetMachiningStop(proc, path))
-                {
-                  //The station group name on the job and the LocationName from the
-                  //generated log entries must match.  Rather than store and try and lookup
-                  //the station name when creating log entries, since we only support a single
-                  //machine group, just set the group name to MC here during storage and
-                  //always create log entries with MC.
-                  stop.StationGroup = "MC";
-                }
-              }
-            }
-            newJobs.Add(j);
-          }
+          newJobs.Add(LegacyJobConversions.ToLegacyJob(j, copiedToSystem: true));
         }
 
-        jdb.AddJobs(newJ, expectedPreviousScheduleId);
+        jdb.AddJobs(newJ, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       }
       OrderXML.WriteOrderXML(System.IO.Path.Combine(_xmlPath, "sail.xml"), newJobs, _onlyOrders);
       _onNewJobs(newJ);

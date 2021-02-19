@@ -161,8 +161,8 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
@@ -215,8 +215,8 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // add the material which matches the schedule
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
@@ -274,8 +274,8 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // add the material which matches the schedule
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
@@ -328,8 +328,8 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "transQ");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // put 2 allocated casting in queue
       var proc1Mat = Enumerable.Range(0, 2).Select(i =>
@@ -381,8 +381,8 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "transQ");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // put 2 allocated casting in queue
       var proc1Mat = Enumerable.Range(0, 2).Select(i =>
@@ -468,8 +468,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // put a different casting
       var mat0 = AddCasting("unused", "thequeue");
@@ -540,8 +540,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
 
       // put 1 unassigned castings in queue
@@ -607,8 +607,8 @@ namespace MachineWatchTest
       j.SetInputQueue(1, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
@@ -674,8 +674,8 @@ namespace MachineWatchTest
       j.SetCasting(1, "cccc");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // put 3 unassigned castings in queue
       var mat1 = AddCasting("cccc", "thequeue");
@@ -723,8 +723,8 @@ namespace MachineWatchTest
       j.PartName = "pppp";
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
@@ -764,8 +764,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // put 2 assigned castings in queue
       var mat1 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
@@ -838,8 +838,8 @@ namespace MachineWatchTest
         j.SetCasting(2, casting);
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
     }
 
     [Fact]
@@ -1332,8 +1332,8 @@ namespace MachineWatchTest
       j.SetInputQueue(1, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // put 1 castings in queue
       var matId = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
@@ -1391,8 +1391,8 @@ namespace MachineWatchTest
       j.SetInputQueue(1, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       // put 1 castings in queue
       var matId = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
@@ -1472,8 +1472,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j1, j2)
-      }, null);
+        Jobs = ImmutableList.Create<Job>(j1.ToHistoricJob(), j2.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
 
       //put something at the load station for uuu2

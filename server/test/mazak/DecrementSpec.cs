@@ -109,13 +109,17 @@ namespace MachineWatchTest
         }
       });
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
+      var j = new Job
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        CyclesOnFirstProcess = new[] { 50 },
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+      };
       _jobDB.AddJobs(new NewJobs()
       {
         Jobs = ImmutableList.Create(j)
-      }, null);
+      }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow;
       _decr.Decrement(_jobDB, now);
@@ -163,13 +167,17 @@ namespace MachineWatchTest
         }
       });
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
+      var j = new Job
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        CyclesOnFirstProcess = new[] { 50 },
+        Processes = new[] { new ProcessInfo() { } }
+      };
       _jobDB.AddJobs(new NewJobs()
       {
         Jobs = ImmutableList.Create(j)
-      }, null);
+      }, null, addAsCopiedToSystem: true);
 
       _decr.Decrement(_jobDB);
 
@@ -204,13 +212,17 @@ namespace MachineWatchTest
         }
       });
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
+      var j = new Job
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        CyclesOnFirstProcess = new[] { 50 },
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+      };
       _jobDB.AddJobs(new NewJobs()
       {
         Jobs = ImmutableList.Create(j)
-      }, null);
+      }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow.AddHours(-1);
       _jobDB.AddNewDecrement(new[] {
@@ -288,13 +300,17 @@ namespace MachineWatchTest
         }
       });
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
+      var j = new Job
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        CyclesOnFirstProcess = new[] { 50 },
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+      };
       _jobDB.AddJobs(new NewJobs()
       {
         Jobs = ImmutableList.Create(j)
-      }, null);
+      }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow;
       _decr.Decrement(_jobDB, now);
@@ -340,13 +356,17 @@ namespace MachineWatchTest
         }
       });
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
+      var j = new Job
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        CyclesOnFirstProcess = new[] { 50 },
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+      };
       _jobDB.AddJobs(new NewJobs()
       {
         Jobs = ImmutableList.Create(j)
-      }, null);
+      }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow;
       _decr.Decrement(_jobDB, now);
@@ -434,8 +454,8 @@ namespace MachineWatchTest
       j.SetInputQueue(process: 1, path: 2, queue: "castings");
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
-      }, null);
+        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow;
       _decr.Decrement(_jobDB, now);
@@ -497,18 +517,17 @@ namespace MachineWatchTest
       uuuu.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
       uuuu.RouteStartingTimeUTC = now.AddHours(-12);
       uuuu.RouteEndingTimeUTC = now.AddHours(12);
-      uuuu.JobCopiedToSystem = true;
       var vvvv = new JobPlan("vvvv", 1, new[] { 2 });
       vvvv.PartName = "oooo";
-      vvvv.JobCopiedToSystem = false;
       vvvv.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 4);
       vvvv.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 7);
       vvvv.RouteStartingTimeUTC = now.AddHours(-12);
       vvvv.RouteEndingTimeUTC = now.AddHours(12);
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(uuuu, vvvv)
-      }, null);
+        Jobs = ImmutableList.Create((Job)uuuu.ToHistoricJob(), vvvv.ToHistoricJob())
+      }, null, addAsCopiedToSystem: false);
+      _jobDB.MarkJobCopiedToSystem("uuuu");
 
       _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false).Select(j => j.UniqueStr)
         .Should().BeEquivalentTo(new[] { "vvvv" });

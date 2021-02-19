@@ -32,16 +32,6 @@
           "Newtonsoft.Json": "10.0.1"
         }
       },
-      "Microsoft.Data.Sqlite": {
-        "type": "Direct",
-        "requested": "[*, )",
-        "resolved": "5.0.3",
-        "contentHash": "2Udv0yEtqNaIAdhwrm1FmnxZQwyMfB9Xe5S0mYJzeNm7xCyGINjO7Dv0EC0NfvwEqeTK19tx5cYJ7ANSM3TWKQ==",
-        "dependencies": {
-          "Microsoft.Data.Sqlite.Core": "5.0.3",
-          "SQLitePCLRaw.bundle_e_sqlite3": "2.0.4"
-        }
-      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[15.*, )",
@@ -158,8 +148,8 @@
       },
       "Germinate": {
         "type": "Transitive",
-        "resolved": "0.5.1",
-        "contentHash": "EGkwoCgsaeqoOH7sqGLveYD7lNGQ/ABPHOCU8yIZc9VDuT/J5SkJk5+kzFSuPKYYvr0DEmWEUkEWt7aZ9D4v9w=="
+        "resolved": "0.7.0",
+        "contentHash": "yyOxoKVwh8EFAo9pyFTselHyn4gxOah9V5sggg66M24EYDVzisH1yC98fXItpQHF4oyLVxZo1Apzlsp+T5UHFA=="
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "Transitive",
@@ -384,6 +374,15 @@
         "type": "Transitive",
         "resolved": "4.7.0",
         "contentHash": "pTj+D3uJWyN3My70i2Hqo+OXixq3Os2D1nJ2x92FFo6sk8fYS1m1WLNTs0Dc1uPaViH0YvEEwvzddQ7y4rhXmA=="
+      },
+      "Microsoft.Data.Sqlite": {
+        "type": "Transitive",
+        "resolved": "5.0.3",
+        "contentHash": "2Udv0yEtqNaIAdhwrm1FmnxZQwyMfB9Xe5S0mYJzeNm7xCyGINjO7Dv0EC0NfvwEqeTK19tx5cYJ7ANSM3TWKQ==",
+        "dependencies": {
+          "Microsoft.Data.Sqlite.Core": "5.0.3",
+          "SQLitePCLRaw.bundle_e_sqlite3": "2.0.4"
+        }
       },
       "Microsoft.Data.Sqlite.Core": {
         "type": "Transitive",
@@ -2308,7 +2307,7 @@
         "type": "Project",
         "dependencies": {
           "CsvHelper": "22.1.2",
-          "Germinate": "0.5.1",
+          "Germinate": "0.7.0",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "5.0.0",
           "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "5.0.0",
           "Microsoft.Data.Sqlite": "5.0.3",

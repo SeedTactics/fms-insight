@@ -188,14 +188,14 @@ namespace MazakMachineInterface
       var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddHours(1), includeDecremented: false);
       foreach (var j in oldJobs)
       {
-        for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
+        for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
         {
           decrAmt.Add(new NewDecrementQuantity()
           {
             JobUnique = j.UniqueStr,
             Proc1Path = path,
             Part = j.PartName,
-            Quantity = j.GetPlannedCyclesOnFirstProcess(path)
+            Quantity = j.CyclesOnFirstProcess[path - 1]
           });
         }
       }

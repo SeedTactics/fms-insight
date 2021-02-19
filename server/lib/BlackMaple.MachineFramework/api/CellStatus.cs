@@ -86,7 +86,7 @@ namespace BlackMaple.MachineWatchInterface
   [DataContract]
   public record HistoricData
   {
-    [DataMember(IsRequired = true)] public ImmutableDictionary<string, HistoricJob> Jobs { get; init; }
+    [DataMember(IsRequired = true)] public ImmutableDictionary<string, MachineFramework.HistoricJob> Jobs { get; init; }
     [DataMember(IsRequired = true)] public ImmutableList<SimulatedStationUtilization> StationUse { get; init; }
   }
 
@@ -94,7 +94,7 @@ namespace BlackMaple.MachineWatchInterface
   public record PlannedSchedule
   {
     [DataMember(IsRequired = true)] public string LatestScheduleId { get; init; }
-    [DataMember(IsRequired = true)] public ImmutableList<JobPlan> Jobs { get; init; }
+    [DataMember(IsRequired = true)] public ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; }
     [DataMember(IsRequired = true)] public ImmutableDictionary<string, int> ExtraParts { get; init; }
 
     [DataMember(IsRequired = false)]

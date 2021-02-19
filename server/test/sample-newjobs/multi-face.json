@@ -48,12 +48,8 @@
                             "ExpectedUnloadTime": "PT5M",
                             "Stops": [
                                 {
-                                    "Stations": {
-                                        "1": "1001",
-                                        "2": "1001",
-                                        "3": "1001",
-                                        "4": "1001"
-                                    },
+                                    "Program": "1001",
+                                    "StationNums": [1, 2, 3, 4],
                                     "Tools": {},
                                     "StationGroup": "MC",
                                     "ExpectedCycleTime": "PT12M12S"
@@ -215,12 +211,8 @@
                             "ExpectedUnloadTime": "PT5M",
                             "Stops": [
                                 {
-                                    "Stations": {
-                                        "1": "1002",
-                                        "2": "1002",
-                                        "3": "1002",
-                                        "4": "1002"
-                                    },
+                                    "Program": "1002",
+                                    "StationNums": [1, 2, 3, 4],
                                     "Tools": {},
                                     "StationGroup": "MC",
                                     "ExpectedCycleTime": "PT9M18S"
@@ -404,12 +396,8 @@
                             "ExpectedUnloadTime": "PT5M",
                             "Stops": [
                                 {
-                                    "Stations": {
-                                        "1": "1001",
-                                        "2": "1001",
-                                        "3": "1001",
-                                        "4": "1001"
-                                    },
+                                    "Program": "1001",
+                                    "StationNums": [1, 2, 3, 4],
                                     "Tools": {},
                                     "StationGroup": "MC",
                                     "ExpectedCycleTime": "PT4M"
@@ -611,12 +599,8 @@
                             "ExpectedUnloadTime": "PT5M",
                             "Stops": [
                                 {
-                                    "Stations": {
-                                        "1": "1002",
-                                        "2": "1002",
-                                        "3": "1002",
-                                        "4": "1002"
-                                    },
+                                    "Program": "1002",
+                                    "StationNums": [1, 2, 3, 4],
                                     "Tools": {},
                                     "StationGroup": "MC",
                                     "ExpectedCycleTime": "PT20M"
@@ -840,12 +824,8 @@
                             "ExpectedUnloadTime": "PT5M",
                             "Stops": [
                                 {
-                                    "Stations": {
-                                        "1": "1003",
-                                        "2": "1003",
-                                        "3": "1003",
-                                        "4": "1003"
-                                    },
+                                    "Program": "1003",
+                                    "StationNums": [1, 2, 3, 4],
                                     "Tools": {},
                                     "StationGroup": "MC",
                                     "ExpectedCycleTime": "PT40M"
@@ -975,12 +955,8 @@
                             "ExpectedUnloadTime": "PT5M",
                             "Stops": [
                                 {
-                                    "Stations": {
-                                        "1": "1004",
-                                        "2": "1004",
-                                        "3": "1004",
-                                        "4": "1004"
-                                    },
+                                    "Program": "1004",
+                                    "StationNums": [1, 2, 3, 4],
                                     "Tools": {},
                                     "StationGroup": "MC",
                                     "ExpectedCycleTime": "PT15M30S"

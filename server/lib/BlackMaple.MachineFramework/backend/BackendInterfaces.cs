@@ -46,7 +46,7 @@ namespace BlackMaple.MachineFramework
     //pallet->part->machine->process combinations.
     //Return value is a list of strings, detailing the problems.
     //An empty list or nothing signals the jobs are valid.
-    List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs);
+    List<string> CheckValidRoutes(IEnumerable<Job> newJobs);
 
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);

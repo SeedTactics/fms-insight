@@ -1394,14 +1394,114 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "AssignedWorkorders", IsRequired = false), OptionalField] private IList<string> _workorders;
   }
 
-  [DataContract]
-  public class HistoricJob : JobPlan
+  public static class LegacyJobConversions
   {
-    public HistoricJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths) { }
-    public HistoricJob(JobPlan job) : base(job) { }
-    private HistoricJob() { } //for json deserialization
+    public static JobPlan ToLegacyJob(MachineFramework.Job job, bool copiedToSystem)
+    {
+      var newJob = new JobPlan(job.UniqueStr, job.Processes.Count, job.Processes.Select(p => p.Paths.Count).ToArray());
+      ToMachineWatchJob(job, newJob, copiedToSystem);
+      return newJob;
+    }
 
-    [DataMember(Name = "Decrements", IsRequired = false)] public List<MachineFramework.DecrementQuantity> Decrements { get; set; }
+    private static JobHoldPattern ToLegacyHold(MachineFramework.HoldPattern h)
+    {
+      var ret = new JobHoldPattern()
+      {
+        UserHold = h.UserHold,
+        ReasonForUserHold = h.ReasonForUserHold,
+        HoldUnholdPatternStartUTC = h.HoldUnholdPatternStartUTC,
+        HoldUnholdPatternRepeats = h.HoldUnholdPatternRepeats
+      };
+      foreach (var p in h.HoldUnholdPattern) ret.HoldUnholdPattern.Add(p);
+      return ret;
+    }
+
+    private static void ToMachineWatchJob(MachineFramework.Job source, JobPlan dest, bool copiedToSystem)
+    {
+      dest.Comment = source.Comment;
+      dest.ManuallyCreatedJob = source.ManuallyCreated;
+      if (source.BookingIds != null) foreach (var b in source.BookingIds) dest.ScheduledBookingIds.Add(b);
+      dest.ScheduleId = source.ScheduleId;
+      dest.PartName = source.PartName;
+      dest.JobCopiedToSystem = copiedToSystem;
+      dest.Archived = source.Archived;
+      dest.RouteStartingTimeUTC = source.RouteStartUTC;
+      dest.RouteEndingTimeUTC = source.RouteEndUTC;
+      if (source.HoldJob != null) dest.HoldEntireJob = ToLegacyHold(source.HoldJob);
+
+      var firstProcCycles = source.CyclesOnFirstProcess.ToList();
+      for (int path = 1; path <= firstProcCycles.Count; path++)
+      {
+        dest.SetPlannedCyclesOnFirstProcess(path: path, numCycles: firstProcCycles[path - 1]);
+      }
+
+      // Ignore obsolete job-level inspections
+
+      // ProcsAndPaths
+      var procs = source.Processes.ToList();
+      for (int proc = 1; proc <= procs.Count; proc++)
+      {
+        var paths = procs[proc - 1].Paths.ToList();
+        for (int path = 1; path <= paths.Count; path++)
+        {
+          var p = paths[path - 1];
+
+          dest.SetExpectedUnloadTime(proc, path, p.ExpectedUnloadTime);
+          dest.SetOutputQueue(proc, path, p.OutputQueue);
+          dest.SetInputQueue(proc, path, p.InputQueue);
+          dest.SetPartsPerPallet(proc, path, p.PartsPerPallet);
+          if (p.HoldLoadUnload != null) dest.SetHoldLoadUnload(proc, path, ToLegacyHold(p.HoldLoadUnload));
+          if (p.HoldMachining != null) dest.SetHoldMachining(proc, path, ToLegacyHold(p.HoldMachining));
+          dest.SetSimulatedAverageFlowTime(proc, path, p.SimulatedAverageFlowTime);
+          dest.SetSimulatedStartingTimeUTC(proc, path, p.SimulatedStartingUTC);
+          if (p.SimulatedProduction != null)
+          {
+            dest.SetSimulatedProduction(proc, path, p.SimulatedProduction.Select(s => new JobPlan.SimulatedProduction()
+            {
+              TimeUTC = s.TimeUTC,
+              Quantity = s.Quantity
+            }).ToList());
+          }
+          if (p.Stops != null)
+          {
+            foreach (var s in p.Stops)
+            {
+              var newStop = new JobMachiningStop(s.StationGroup)
+              {
+                StationGroup = s.StationGroup,
+                ExpectedCycleTime = s.ExpectedCycleTime,
+                ProgramName = s.Program,
+                ProgramRevision = s.ProgramRevision,
+              };
+              if (s.Stations != null) foreach (var n in s.Stations) newStop.Stations.Add(n);
+              if (s.Tools != null) foreach (var t in s.Tools) newStop.Tools.Add(t.Key, t.Value);
+              dest.AddMachiningStop(proc, path, newStop);
+            }
+          }
+          if (proc == 1) dest.SetCasting(path, p.Casting);
+          if (p.Unload != null) foreach (var s in p.Unload) dest.AddUnloadStation(proc, path, s);
+          dest.SetExpectedLoadTime(proc, path, p.ExpectedLoadTime);
+          if (p.Load != null) foreach (var s in p.Load) dest.AddLoadStation(proc, path, s);
+          if (!string.IsNullOrEmpty(p.Fixture)) dest.SetFixtureFace(proc, path, p.Fixture, p.Face ?? 1);
+          if (p.Pallets != null) foreach (var pal in p.Pallets) dest.AddProcessOnPallet(proc, path, pal);
+          dest.SetPathGroup(proc, path, p.PathGroup);
+          if (p.Inspections != null)
+          {
+            foreach (var i in p.Inspections)
+            {
+              dest.PathInspections(proc, path).Add(new MachineFramework.PathInspection()
+              {
+                InspectionType = i.InspectionType,
+                Counter = i.Counter,
+                MaxVal = i.MaxVal,
+                RandomFreq = i.RandomFreq,
+                TimeInterval = i.TimeInterval,
+                ExpectedInspectionTime = i.ExpectedInspectionTime
+              });
+            }
+          }
+        }
+      }
+    }
   }
-
 }

@@ -1097,9 +1097,14 @@ namespace MachineWatchTest
     [Fact]
     public void SingleMachineCycle()
     {
-      var j = new JobPlan("unique", 1);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1134,9 +1139,14 @@ namespace MachineWatchTest
     [Fact]
     public void MultipleMachineCycles()
     {
-      var j = new JobPlan("unique", 1);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1188,9 +1198,14 @@ namespace MachineWatchTest
     [Fact]
     public void MultipleProcess()
     {
-      var j = new JobPlan("unique", 2);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } }, new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1279,9 +1294,9 @@ namespace MachineWatchTest
       j.AddMachiningStop(process: 2, path: 2, r: stop2);
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
       };
-      jobLog.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       LoadStart(proc1path1, offset: 0, load: 1);
       LoadStart(proc1path2, offset: 1, load: 2);
@@ -1330,9 +1345,14 @@ namespace MachineWatchTest
     [Fact]
     public void LargeFixedQuantites()
     {
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } }, new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
@@ -1381,9 +1401,14 @@ namespace MachineWatchTest
     [Fact]
     public void SkipShortMachineCycle()
     {
-      var j = new JobPlan("unique", 1);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1429,9 +1454,14 @@ namespace MachineWatchTest
     [Fact]
     public void Remachining()
     {
-      var j = new JobPlan("unique", 1);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1489,9 +1519,9 @@ namespace MachineWatchTest
       );
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
       };
-      jobLog.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       LoadStart(proc1, offset: 0, load: 6);
       LoadEnd(proc1, offset: 2, cycleOffset: 5, load: 6, elapMin: 2);
@@ -1573,9 +1603,9 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
       };
-      jobLog.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       LoadStart(proc1, offset: 0, load: 1);
       LoadEnd(proc1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5);
@@ -1640,9 +1670,9 @@ namespace MachineWatchTest
       j.SetPathGroup(2, 2, 2);
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
       };
-      jobLog.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       LoadStart(proc1path1, offset: 0, load: 10);
       LoadEnd(proc1path1, offset: 2, cycleOffset: 3, load: 10, elapMin: 2);
@@ -1795,9 +1825,9 @@ namespace MachineWatchTest
       j.SetInputQueue(2, 1, "thequeue");
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
       };
-      jobLog.AddJobs(newJobs, null);
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 0, allocate: AllocateTy.Assigned);
       AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
@@ -1858,9 +1888,14 @@ namespace MachineWatchTest
     [Fact]
     public void Tools()
     {
-      var j = new JobPlan("unique", 1);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow;
 
@@ -1917,9 +1952,14 @@ namespace MachineWatchTest
     [Fact]
     public void StockerAndRotaryTable()
     {
-      var j = new JobPlan("unique", 1);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1963,9 +2003,14 @@ namespace MachineWatchTest
     [Fact]
     public void LeaveInboundRotary()
     {
-      var j = new JobPlan("unique", 1);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1995,9 +2040,14 @@ namespace MachineWatchTest
     [Fact]
     public void QuarantinesMaterial()
     {
-      var j = new JobPlan("unique", 2);
-      j.PartName = "part1";
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null);
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } }, new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
+        CyclesOnFirstProcess = new[] { 0 },
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 

@@ -37,6 +37,7 @@ using System.Linq;
 using System.Data;
 using Microsoft.Data.Sqlite;
 using System.Collections.Immutable;
+using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -44,27 +45,146 @@ namespace BlackMaple.MachineFramework
   public partial class Repository
   {
     #region "Loading Jobs"
-    private struct JobPath
+    private record PathStopRow
     {
-      public string Unique;
-      public int Process;
-      public int Path;
+      public string StationGroup { get; init; } = "";
+      public List<int> Stations { get; } = new List<int>();
+      public string Program { get; init; }
+      public long? ProgramRevision { get; init; }
+      public Dictionary<string, TimeSpan> Tools { get; } = new Dictionary<string, TimeSpan>();
+      public TimeSpan ExpectedCycleTime { get; init; }
     }
 
-    private void LoadJobData(MachineWatchInterface.JobPlan job, IDbTransaction trans)
+    private record HoldRow
+    {
+      public bool UserHold { get; init; }
+      public string ReasonForUserHold { get; init; } = "";
+      public List<TimeSpan> HoldUnholdPattern { get; } = new List<TimeSpan>();
+      public DateTime HoldUnholdPatternStartUTC { get; init; }
+      public bool HoldUnholdPatternRepeats { get; init; }
+
+      public HoldPattern ToHoldPattern()
+      {
+        return new HoldPattern()
+        {
+          UserHold = this.UserHold,
+          ReasonForUserHold = this.ReasonForUserHold,
+          HoldUnholdPattern = this.HoldUnholdPattern,
+          HoldUnholdPatternRepeats = this.HoldUnholdPatternRepeats,
+          HoldUnholdPatternStartUTC = this.HoldUnholdPatternStartUTC
+        };
+      }
+    }
+
+    private record PathDataRow
+    {
+      public int Process { get; init; }
+      public int Path { get; init; }
+      public DateTime StartingUTC { get; init; }
+      public int PartsPerPallet { get; init; }
+      public int PathGroup { get; init; }
+      public TimeSpan SimAverageFlowTime { get; init; }
+      public string InputQueue { get; init; }
+      public string OutputQueue { get; init; }
+      public TimeSpan LoadTime { get; init; }
+      public TimeSpan UnloadTime { get; init; }
+      public string Fixture { get; init; }
+      public int? Face { get; init; }
+      public string Casting { get; init; }
+      public List<int> Loads { get; } = new List<int>();
+      public List<int> Unloads { get; } = new List<int>();
+      public List<PathInspection> Insps { get; } = new List<PathInspection>();
+      public List<string> Pals { get; } = new List<string>();
+      public List<SimulatedProduction> SimProd { get; } = new List<SimulatedProduction>();
+      public SortedList<int, PathStopRow> Stops { get; } = new SortedList<int, PathStopRow>();
+      public HoldRow MachHold { get; set; } = null;
+      public HoldRow LoadHold { get; set; } = null;
+    }
+
+    private record JobDetails
+    {
+      public IReadOnlyList<int> CyclesOnFirstProc { get; init; }
+      public IReadOnlyList<string> Bookings { get; init; }
+      public IReadOnlyList<ProcessInfo> Procs { get; init; }
+      public HoldRow Hold { get; init; }
+    }
+
+    private JobDetails LoadJobData(string uniq, IDbTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.Parameters.Add("$uniq", SqliteType.Text).Value = job.UniqueStr;
+        cmd.Parameters.Add("$uniq", SqliteType.Text).Value = uniq;
 
         //read plan quantity
         cmd.CommandText = "SELECT Path, PlanQty FROM planqty WHERE UniqueStr = $uniq";
+        var cyclesOnFirstProc = new SortedDictionary<int, int>();
         using (IDataReader reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            job.SetPlannedCyclesOnFirstProcess(reader.GetInt32(0), reader.GetInt32(1));
+            cyclesOnFirstProc[reader.GetInt32(0)] = reader.GetInt32(1);
+          }
+        }
+
+        //scheduled bookings
+        cmd.CommandText = "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq";
+        var bookings = new List<string>();
+        using (IDataReader reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            bookings.Add(reader.GetString(0));
+          }
+        }
+
+        //path data
+        var pathDatRows = new Dictionary<(int proc, int path), PathDataRow>();
+        cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq";
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
+          {
+            var proc = reader.GetInt32(0);
+            var path = reader.GetInt32(1);
+
+            string fixture = null;
+            int? face = null;
+            if (!reader.IsDBNull(10) && !reader.IsDBNull(11))
+            {
+              var faceTy = reader.GetFieldType(11);
+              if (faceTy == typeof(string))
+              {
+                if (int.TryParse(reader.GetString(11), out int f))
+                {
+                  fixture = reader.GetString(10);
+                  face = f;
+                }
+              }
+              else
+              {
+                fixture = reader.GetString(10);
+                face = reader.GetInt32(11);
+              }
+            }
+
+
+            pathDatRows[(proc, path)] = new PathDataRow()
+            {
+              Process = proc,
+              Path = path,
+              StartingUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
+              PartsPerPallet = reader.GetInt32(3),
+              PathGroup = reader.GetInt32(4),
+              SimAverageFlowTime = reader.IsDBNull(5) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(5)),
+              InputQueue = reader.IsDBNull(6) ? null : reader.GetString(6),
+              OutputQueue = reader.IsDBNull(7) ? null : reader.GetString(7),
+              LoadTime = reader.IsDBNull(8) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(8)),
+              UnloadTime = reader.IsDBNull(9) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(9)),
+              Fixture = fixture,
+              Face = face,
+              Casting = reader.IsDBNull(12) ? null : reader.GetString(12)
+            };
           }
         }
 
@@ -74,102 +194,31 @@ namespace BlackMaple.MachineFramework
         {
           while (reader.Read())
           {
-            job.AddProcessOnPallet(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2));
+            if (pathDatRows.TryGetValue((proc: reader.GetInt32(0), path: reader.GetInt32(1)), out var pathRow))
+            {
+              pathRow.Pals.Add(reader.GetString(2));
+            }
           }
         }
 
         //simulated production
         cmd.CommandText = "SELECT Process, Path, TimeUTC, Quantity FROM simulated_production WHERE UniqueStr = $uniq ORDER BY Process,Path,TimeUTC";
-        var simProd = new Dictionary<JobPath, List<MachineWatchInterface.JobPlan.SimulatedProduction>>();
         using (IDataReader reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            var key = new JobPath();
-            key.Unique = job.UniqueStr;
-            key.Process = reader.GetInt32(0);
-            key.Path = reader.GetInt32(1);
-            List<MachineWatchInterface.JobPlan.SimulatedProduction> prodL;
-            if (simProd.ContainsKey(key))
+            var key = (proc: reader.GetInt32(0), path: reader.GetInt32(1));
+            if (pathDatRows.TryGetValue(key, out var pathRow))
             {
-              prodL = simProd[key];
-            }
-            else
-            {
-              prodL = new List<MachineWatchInterface.JobPlan.SimulatedProduction>();
-              simProd.Add(key, prodL);
-            }
-            var prod = default(MachineWatchInterface.JobPlan.SimulatedProduction);
-            prod.TimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc);
-            prod.Quantity = reader.GetInt32(3);
-            prodL.Add(prod);
-          }
-        }
-        foreach (var entry in simProd)
-        {
-          job.SetSimulatedProduction(entry.Key.Process, entry.Key.Path, entry.Value);
-        }
-
-        //scheduled bookings
-        cmd.CommandText = "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq";
-        using (IDataReader reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            job.ScheduledBookingIds.Add(reader.GetString(0));
-          }
-        }
-
-        //path data
-        cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq";
-        using (var reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            var proc = reader.GetInt32(0);
-            var path = reader.GetInt32(1);
-            job.SetSimulatedStartingTimeUTC(proc,
-                                            path,
-                                            new DateTime(reader.GetInt64(2), DateTimeKind.Utc));
-            job.SetPartsPerPallet(proc, path, reader.GetInt32(3));
-            job.SetPathGroup(proc, path, reader.GetInt32(4));
-            if (!reader.IsDBNull(5))
-            {
-              job.SetSimulatedAverageFlowTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(5)));
-            }
-            if (!reader.IsDBNull(6))
-              job.SetInputQueue(proc, path, reader.GetString(6));
-            if (!reader.IsDBNull(7))
-              job.SetOutputQueue(proc, path, reader.GetString(7));
-            if (!reader.IsDBNull(8))
-              job.SetExpectedLoadTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(8)));
-            if (!reader.IsDBNull(9))
-              job.SetExpectedUnloadTime(proc, path, TimeSpan.FromTicks(reader.GetInt64(9)));
-
-            if (!reader.IsDBNull(10) && !reader.IsDBNull(11))
-            {
-              var faceTy = reader.GetFieldType(11);
-              if (faceTy == typeof(string))
+              pathRow.SimProd.Add(new SimulatedProduction()
               {
-                if (int.TryParse(reader.GetString(11), out int face))
-                {
-                  job.SetFixtureFace(proc, path, reader.GetString(10), face);
-                }
-              }
-              else
-              {
-                job.SetFixtureFace(proc, path, reader.GetString(10), reader.GetInt32(11));
-              }
-            }
-
-            if (!reader.IsDBNull(12) && proc == 1)
-            {
-              job.SetCasting(path, reader.GetString(12));
+                TimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
+                Quantity = reader.GetInt32(3),
+              });
             }
           }
         }
 
-        var routes = new Dictionary<JobPath, SortedList<int, MachineWatchInterface.JobMachiningStop>>();
 
         //now add routes
         cmd.CommandText = "SELECT Process, Path, RouteNum, StatGroup, ExpectedCycleTime, Program, ProgramRevision FROM stops WHERE UniqueStr = $uniq";
@@ -177,41 +226,20 @@ namespace BlackMaple.MachineFramework
         {
           while (reader.Read())
           {
-            JobPath key = new JobPath();
-            key.Unique = job.UniqueStr;
-            key.Process = reader.GetInt32(0);
-            key.Path = reader.GetInt32(1);
+            var key = (proc: reader.GetInt32(0), path: reader.GetInt32(1));
             int routeNum = reader.GetInt32(2);
 
-            SortedList<int, MachineWatchInterface.JobMachiningStop> rList = null;
-            if (routes.ContainsKey(key))
+            if (pathDatRows.TryGetValue(key, out var pathRow))
             {
-              rList = routes[key];
+              var stop = new PathStopRow()
+              {
+                StationGroup = reader.GetString(3),
+                ExpectedCycleTime = reader.IsDBNull(4) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(4)),
+                Program = reader.IsDBNull(5) ? null : reader.GetString(5),
+                ProgramRevision = reader.IsDBNull(6) ? null : reader.GetInt64(6),
+              };
+              pathRow.Stops[routeNum] = stop;
             }
-            else
-            {
-              rList = new SortedList<int, MachineWatchInterface.JobMachiningStop>();
-              routes.Add(key, rList);
-            }
-
-            var stop = new MachineWatchInterface.JobMachiningStop(reader.GetString(3));
-            if (!reader.IsDBNull(4))
-              stop.ExpectedCycleTime = TimeSpan.FromTicks(reader.GetInt64(4));
-
-            if (!reader.IsDBNull(5))
-              stop.ProgramName = reader.GetString(5);
-            if (!reader.IsDBNull(6))
-              stop.ProgramRevision = reader.GetInt64(6);
-
-            rList[routeNum] = stop;
-          }
-        }
-
-        foreach (var key in routes.Keys)
-        {
-          foreach (var r in routes[key].Values)
-          {
-            job.AddMachiningStop(key.Process, key.Path, r);
           }
         }
 
@@ -221,17 +249,13 @@ namespace BlackMaple.MachineFramework
         {
           while (reader.Read())
           {
-            JobPath key = new JobPath();
-            key.Unique = job.UniqueStr;
-            key.Process = reader.GetInt32(0);
-            key.Path = reader.GetInt32(1);
+            var key = (proc: reader.GetInt32(0), path: reader.GetInt32(1));
             int routeNum = reader.GetInt32(2);
-            if (routes.ContainsKey(key))
+            if (pathDatRows.TryGetValue(key, out var pathRow))
             {
-              var stops = routes[key];
-              if (stops.ContainsKey(routeNum))
+              if (pathRow.Stops.TryGetValue(routeNum, out var stop))
               {
-                stops[routeNum].Stations.Add(reader.GetInt32(3));
+                stop.Stations.Add(reader.GetInt32(3));
               }
             }
           }
@@ -243,17 +267,13 @@ namespace BlackMaple.MachineFramework
         {
           while (reader.Read())
           {
-            JobPath key = new JobPath();
-            key.Unique = job.UniqueStr;
-            key.Process = reader.GetInt32(0);
-            key.Path = reader.GetInt32(1);
+            var key = (proc: reader.GetInt32(0), path: reader.GetInt32(1));
             int routeNum = reader.GetInt32(2);
-            if (routes.ContainsKey(key))
+            if (pathDatRows.TryGetValue(key, out var pathRow))
             {
-              var stops = routes[key];
-              if (stops.ContainsKey(routeNum))
+              if (pathRow.Stops.TryGetValue(routeNum, out var stop))
               {
-                stops[routeNum].Tools[reader.GetString(3)] = TimeSpan.FromTicks(reader.GetInt64(4));
+                stop.Tools[reader.GetString(3)] = TimeSpan.FromTicks(reader.GetInt64(4));
               }
             }
           }
@@ -265,13 +285,17 @@ namespace BlackMaple.MachineFramework
         {
           while (reader.Read())
           {
-            if (reader.GetBoolean(3))
+            var key = (proc: reader.GetInt32(0), path: reader.GetInt32(1));
+            if (pathDatRows.TryGetValue(key, out var pathData))
             {
-              job.AddLoadStation(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
-            }
-            else
-            {
-              job.AddUnloadStation(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
+              if (reader.GetBoolean(3))
+              {
+                pathData.Loads.Add(reader.GetInt32(2));
+              }
+              else
+              {
+                pathData.Unloads.Add(reader.GetInt32(2));
+              }
             }
           }
         }
@@ -298,20 +322,24 @@ namespace BlackMaple.MachineFramework
             if (path < 1)
             {
               // all paths
-              for (path = 1; path <= job.GetNumPaths(proc); path++)
+              foreach (var pathData in pathDatRows.Values.Where(p => p.Process == proc))
               {
-                job.PathInspections(proc, path).Add(insp);
+                pathData.Insps.Add(insp);
               }
             }
             else
             {
               // single path
-              job.PathInspections(proc, path).Add(insp);
+              if (pathDatRows.TryGetValue((proc, path), out var pathData))
+              {
+                pathData.Insps.Add(insp);
+              }
             }
           }
         }
 
         //hold
+        HoldRow jobHold = null;
         cmd.CommandText = "SELECT Process, Path, LoadUnload, UserHold, UserHoldReason, HoldPatternStartUTC, HoldPatternRepeats FROM holds WHERE UniqueStr = $uniq";
         using (var reader = cmd.ExecuteReader())
         {
@@ -321,18 +349,33 @@ namespace BlackMaple.MachineFramework
             int path = reader.GetInt32(1);
             bool load = reader.GetBoolean(2);
 
-            MachineWatchInterface.JobHoldPattern hold;
-            if (proc < 0)
-              hold = job.HoldEntireJob;
-            else if (load)
-              hold = job.HoldLoadUnload(proc, path);
-            else
-              hold = job.HoldMachining(proc, path);
+            var hold = new HoldRow()
+            {
+              UserHold = reader.GetBoolean(3),
+              ReasonForUserHold = reader.GetString(4),
+              HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(5), DateTimeKind.Utc),
+              HoldUnholdPatternRepeats = reader.GetBoolean(6),
+            };
 
-            hold.UserHold = reader.GetBoolean(3);
-            hold.ReasonForUserHold = reader.GetString(4);
-            hold.HoldUnholdPatternStartUTC = new DateTime(reader.GetInt64(5), DateTimeKind.Utc);
-            hold.HoldUnholdPatternRepeats = reader.GetBoolean(6);
+            if (proc < 0)
+            {
+              jobHold = hold;
+            }
+            else if (load)
+            {
+              if (pathDatRows.TryGetValue((proc, path), out var pathRow))
+              {
+                pathRow.LoadHold = hold;
+              }
+            }
+            else
+            {
+              if (pathDatRows.TryGetValue((proc, path), out var pathRow))
+              {
+                pathRow.MachHold = hold;
+              }
+            }
+
           }
         }
 
@@ -345,77 +388,107 @@ namespace BlackMaple.MachineFramework
             int proc = reader.GetInt32(0);
             int path = reader.GetInt32(1);
             bool load = reader.GetBoolean(2);
-
-            MachineWatchInterface.JobHoldPattern hold;
+            var time = TimeSpan.FromTicks(reader.GetInt64(3));
             if (proc < 0)
-              hold = job.HoldEntireJob;
+            {
+              jobHold?.HoldUnholdPattern.Add(time);
+            }
             else if (load)
-              hold = job.HoldLoadUnload(proc, path);
+            {
+              if (pathDatRows.TryGetValue((proc, path), out var pathRow))
+              {
+                pathRow.LoadHold?.HoldUnholdPattern.Add(time);
+              }
+            }
             else
-              hold = job.HoldMachining(proc, path);
-
-            hold.HoldUnholdPattern.Add(TimeSpan.FromTicks(reader.GetInt64(3)));
+            {
+              if (pathDatRows.TryGetValue((proc, path), out var pathRow))
+              {
+                pathRow.MachHold?.HoldUnholdPattern.Add(time);
+              }
+            }
           }
         }
+
+        return new JobDetails()
+        {
+          Hold = jobHold,
+          CyclesOnFirstProc = cyclesOnFirstProc.Values.ToArray(),
+          Bookings = bookings,
+          Procs =
+            pathDatRows.Values
+            .GroupBy(p => p.Process)
+            .Select(proc => new ProcessInfo()
+            {
+              Paths =
+                proc
+                .OrderBy(p => p.Path)
+                .Select(p => new ProcPathInfo()
+                {
+                  PathGroup = p.PathGroup,
+                  Pallets = p.Pals,
+                  Fixture = p.Fixture,
+                  Face = p.Face,
+                  Load = p.Loads,
+                  ExpectedLoadTime = p.LoadTime,
+                  Unload = p.Unloads,
+                  ExpectedUnloadTime = p.UnloadTime,
+                  Stops = p.Stops.Values.Select(s => new MachiningStop()
+                  {
+                    StationGroup = s.StationGroup,
+                    Stations = s.Stations,
+                    Program = s.Program,
+                    ProgramRevision = s.ProgramRevision,
+                    Tools = s.Tools,
+                    ExpectedCycleTime = s.ExpectedCycleTime
+                  }).ToArray(),
+                  SimulatedProduction = p.SimProd,
+                  SimulatedStartingUTC = p.StartingUTC,
+                  SimulatedAverageFlowTime = p.SimAverageFlowTime,
+                  HoldMachining = p.MachHold?.ToHoldPattern(),
+                  HoldLoadUnload = p.LoadHold?.ToHoldPattern(),
+                  PartsPerPallet = p.PartsPerPallet,
+                  InputQueue = p.InputQueue,
+                  OutputQueue = p.OutputQueue,
+                  Inspections = p.Insps,
+                  Casting = p.Casting
+                })
+                .ToArray()
+            })
+            .ToArray()
+        };
       }
     }
 
-    private ImmutableList<MachineWatchInterface.JobPlan> LoadJobsHelper(IDbCommand cmd, IDbTransaction trans)
+    private ImmutableList<HistoricJob> LoadJobsHelper(IDbCommand cmd, IDbTransaction trans)
     {
-      var ret = ImmutableList.CreateBuilder<MachineWatchInterface.JobPlan>();
-      using (var cmd2 = _connection.CreateCommand())
+      var ret = ImmutableList.CreateBuilder<HistoricJob>();
+      using (IDataReader reader = cmd.ExecuteReader())
       {
-        cmd2.CommandText = "SELECT Process, NumPaths FROM numpaths WHERE UniqueStr = $uniq";
-        cmd2.Parameters.Add("uniq", SqliteType.Text);
-        ((IDbCommand)cmd2).Transaction = trans;
-
-        using (IDataReader reader = cmd.ExecuteReader())
+        while (reader.Read())
         {
-          while (reader.Read())
+          string unique = reader.GetString(0);
+          var details = LoadJobData(unique, trans);
+
+          ret.Add(new HistoricJob()
           {
-
-            string unique = reader.GetString(0);
-
-            //load the list of number of paths
-            int[] numPaths = new int[reader.GetInt32(2)];
-            for (int i = 0; i < numPaths.Length; i++)
-              numPaths[i] = 1;
-            cmd2.Parameters[0].Value = unique;
-            using (IDataReader reader2 = cmd2.ExecuteReader())
-            {
-              while (reader2.Read())
-              {
-                int proc = reader2.GetInt32(0);
-                if (proc >= 1 && proc <= numPaths.Length)
-                  numPaths[proc - 1] = reader2.GetInt32(1);
-              }
-            }
-
-            var job = new MachineWatchInterface.JobPlan(unique, reader.GetInt32(2), numPaths);
-            job.PartName = reader.GetString(1);
-
-            if (!reader.IsDBNull(3))
-              job.Comment = reader.GetString(3);
-
-            if (!reader.IsDBNull(4))
-              job.RouteStartingTimeUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc);
-            if (!reader.IsDBNull(5))
-              job.RouteEndingTimeUTC = new DateTime(reader.GetInt64(5), DateTimeKind.Utc);
-            job.Archived = reader.GetBoolean(6);
-            if (!reader.IsDBNull(7))
-              job.JobCopiedToSystem = reader.GetBoolean(7);
-            if (!reader.IsDBNull(8))
-              job.ScheduleId = reader.GetString(8);
-            job.ManuallyCreatedJob = !reader.IsDBNull(9) && reader.GetBoolean(9);
-
-            ret.Add(job);
-
-          }
+            UniqueStr = unique,
+            PartName = reader.GetString(1),
+            Comment = reader.IsDBNull(3) ? "" : reader.GetString(3),
+            RouteStartUTC = reader.IsDBNull(4) ? DateTime.MinValue : new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+            RouteEndUTC = reader.IsDBNull(5) ? DateTime.MaxValue : new DateTime(reader.GetInt64(5), DateTimeKind.Utc),
+            Archived = reader.GetBoolean(6),
+            CopiedToSystem = reader.IsDBNull(7) ? false : reader.GetBoolean(7),
+            ScheduleId = reader.IsDBNull(8) ? null : reader.GetString(8),
+            ManuallyCreated = !reader.IsDBNull(9) && reader.GetBoolean(9),
+            CyclesOnFirstProcess = details.CyclesOnFirstProc,
+            Processes = details.Procs,
+            BookingIds = details.Bookings,
+            HoldJob = details.Hold?.ToHoldPattern(),
+            Decrements = LoadDecrementsForJob(trans, unique)
+          });
         }
       }
-
-      foreach (var job in ret)
-        LoadJobData(job, trans);
 
       return ret.ToImmutable();
     }
@@ -448,7 +521,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
         ((IDbCommand)prgCmd).Transaction = trans;
 
-        var ret = new Dictionary<(string work, string part), MachineWatchInterface.PartWorkorder>();
+        var ret = new Dictionary<(string work, string part), (MachineWatchInterface.PartWorkorder work, List<MachineWatchInterface.WorkorderProgram> progs)>();
         cmd.CommandText = "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision " +
           " FROM unfilled_workorders w " +
           " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -471,27 +544,23 @@ namespace BlackMaple.MachineFramework
                 Priority = reader.GetInt32(4),
                 Programs = ImmutableList<MachineWatchInterface.WorkorderProgram>.Empty
               };
-              ret.Add((work: workId, part: part), workorder);
+              ret.Add((work: workId, part: part), (work: workorder, progs: new List<MachineWatchInterface.WorkorderProgram>()));
             }
 
             if (reader.IsDBNull(5)) continue;
 
             // add the program
-            ret[(work: workId, part: part)] %= workorder =>
+            ret[(work: workId, part: part)].progs.Add(new MachineWatchInterface.WorkorderProgram()
             {
-              workorder.Programs.Add(new MachineWatchInterface.WorkorderProgram()
-              {
-                ProcessNumber = reader.GetInt32(5),
-                StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
-                ProgramName = reader.IsDBNull(7) ? null : reader.GetString(7),
-                Revision = reader.IsDBNull(8) ? (int?)null : (int?)reader.GetInt32(8)
-              });
-            };
-
+              ProcessNumber = reader.GetInt32(5),
+              StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
+              ProgramName = reader.IsDBNull(7) ? null : reader.GetString(7),
+              Revision = reader.IsDBNull(8) ? (int?)null : (int?)reader.GetInt32(8)
+            });
           }
         }
 
-        return ret.Values.ToImmutableList();
+        return ret.Values.Select(w => w.work with { Programs = w.progs }).ToImmutableList();
       }
     }
 
@@ -545,7 +614,7 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var jobs = ImmutableDictionary<string, MachineWatchInterface.HistoricJob>.Empty;
+        var jobs = ImmutableDictionary<string, HistoricJob>.Empty;
         var statUse = ImmutableList<MachineWatchInterface.SimulatedStationUtilization>.Empty;
 
         var trans = _connection.BeginTransaction();
@@ -554,11 +623,7 @@ namespace BlackMaple.MachineFramework
           jobCmd.Transaction = trans;
           simCmd.Transaction = trans;
 
-          jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr, j => new MachineWatchInterface.HistoricJob(j));
-          foreach (var j in jobs)
-          {
-            j.Value.Decrements = LoadDecrementsForJob(trans, j.Key);
-          }
+          jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr);
           statUse = LoadSimulatedStationUse(simCmd, trans);
 
           trans.Commit();
@@ -581,7 +646,7 @@ namespace BlackMaple.MachineFramework
     // Public Loading API
     // --------------------------------------------------------------------------------
 
-    public IReadOnlyList<MachineWatchInterface.JobPlan> LoadUnarchivedJobs()
+    public IReadOnlyList<HistoricJob> LoadUnarchivedJobs()
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -594,7 +659,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IReadOnlyList<MachineWatchInterface.JobPlan> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
+    public IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
     {
       var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
                   " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
@@ -674,7 +739,7 @@ namespace BlackMaple.MachineFramework
 
           var sid = LatestScheduleId(trans);
 
-          var ret = new Dictionary<string, MachineWatchInterface.PartWorkorder>();
+          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, List<MachineWatchInterface.WorkorderProgram> progs)>();
           cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -697,27 +762,24 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(workId, workorder);
+                ret.Add(workId, (work: workorder, progs: new List<MachineWatchInterface.WorkorderProgram>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[workId] %= workorder =>
+              ret[workId].progs.Add(new MachineWatchInterface.WorkorderProgram()
               {
-                workorder.Programs.Add(new MachineWatchInterface.WorkorderProgram()
-                {
-                  ProcessNumber = reader.GetInt32(4),
-                  StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                  ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                  Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-                });
-              };
+                ProcessNumber = reader.GetInt32(4),
+                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+              });
             }
           }
 
           trans.Commit();
-          return ret.Values.ToList();
+          return ret.Values.Select(w => w.work with { Programs = w.progs }).ToList();
         }
       }
     }
@@ -728,7 +790,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          var ret = new Dictionary<string, MachineWatchInterface.PartWorkorder>();
+          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, List<MachineWatchInterface.WorkorderProgram> progs)>();
           cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -753,26 +815,23 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(part, workorder);
+                ret.Add(part, (work: workorder, progs: new List<MachineWatchInterface.WorkorderProgram>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[part] %= workorder =>
+              ret[part].progs.Add(new MachineWatchInterface.WorkorderProgram()
               {
-                workorder.Programs.Add(new MachineWatchInterface.WorkorderProgram()
-                {
-                  ProcessNumber = reader.GetInt32(4),
-                  StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                  ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                  Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-                });
-              };
+                ProcessNumber = reader.GetInt32(4),
+                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+              });
             }
           }
 
-          return ret.Values.ToList();
+          return ret.Values.Select(w => w.work with { Programs = w.progs }).ToList();
         }
       }
     }
@@ -808,65 +867,43 @@ namespace BlackMaple.MachineFramework
       lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
-        using (var cmd2 = _connection.CreateCommand())
         {
 
-          MachineWatchInterface.JobPlan job = null;
+          HistoricJob job = null;
 
           cmd.CommandText = "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual FROM jobs WHERE UniqueStr = $uniq";
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
-          cmd2.CommandText = "SELECT Process, NumPaths FROM numpaths WHERE UniqueStr = $uniq";
-          cmd2.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
-
 
           var trans = _connection.BeginTransaction();
           try
           {
             cmd.Transaction = trans;
-            cmd2.Transaction = trans;
 
             using (IDataReader reader = cmd.ExecuteReader())
             {
               if (reader.Read())
               {
 
-                //load the list of number of paths
-                int[] numPaths = new int[reader.GetInt32(1)];
-                for (int i = 0; i < numPaths.Length; i++)
-                  numPaths[i] = 1;
-                using (IDataReader reader2 = cmd2.ExecuteReader())
+                var details = LoadJobData(UniqueStr, trans);
+
+                job = new HistoricJob()
                 {
-                  while (reader2.Read())
-                  {
-                    int proc = reader2.GetInt32(0);
-                    if (proc >= 1 && proc <= numPaths.Length)
-                      numPaths[proc - 1] = reader2.GetInt32(1);
-                  }
-                }
-
-                job = new MachineWatchInterface.JobPlan(UniqueStr, reader.GetInt32(1), numPaths);
-                job.PartName = reader.GetString(0);
-
-                if (!reader.IsDBNull(2))
-                  job.Comment = reader.GetString(2);
-
-                if (!reader.IsDBNull(3))
-                  job.RouteStartingTimeUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc);
-                if (!reader.IsDBNull(4))
-                  job.RouteEndingTimeUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc);
-                job.Archived = reader.GetBoolean(5);
-                if (!reader.IsDBNull(6))
-                  job.JobCopiedToSystem = reader.GetBoolean(6);
-                if (!reader.IsDBNull(7))
-                  job.ScheduleId = reader.GetString(7);
-                job.ManuallyCreatedJob = !reader.IsDBNull(8) && reader.GetBoolean(8);
-
+                  UniqueStr = UniqueStr,
+                  PartName = reader.GetString(0),
+                  Comment = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                  RouteStartUTC = reader.IsDBNull(3) ? DateTime.MinValue : new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+                  RouteEndUTC = reader.IsDBNull(4) ? DateTime.MaxValue : new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+                  Archived = reader.GetBoolean(5),
+                  CopiedToSystem = reader.IsDBNull(6) ? false : reader.GetBoolean(6),
+                  ScheduleId = reader.IsDBNull(7) ? null : reader.GetString(7),
+                  ManuallyCreated = !reader.IsDBNull(8) && reader.GetBoolean(8),
+                  CyclesOnFirstProcess = details.CyclesOnFirstProc,
+                  Processes = details.Procs,
+                  BookingIds = details.Bookings,
+                  HoldJob = details.Hold?.ToHoldPattern(),
+                  Decrements = LoadDecrementsForJob(trans, UniqueStr)
+                };
               }
-            }
-
-            if (job != null)
-            {
-              LoadJobData(job, trans);
             }
 
             trans.Commit();
@@ -877,7 +914,14 @@ namespace BlackMaple.MachineFramework
             throw;
           }
 
-          return job;
+          if (job != null)
+          {
+            return MachineWatchInterface.LegacyJobConversions.ToLegacyJob(job, copiedToSystem: job.CopiedToSystem);
+          }
+          else
+          {
+            return null;
+          }
         }
       }
     }
@@ -904,13 +948,8 @@ namespace BlackMaple.MachineFramework
 
     #region "Adding and deleting"
 
-    public void AddJobs(BlackMaple.MachineWatchInterface.NewJobs newJobs, string expectedPreviousScheduleId)
+    public void AddJobs(BlackMaple.MachineWatchInterface.NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem)
     {
-      foreach (var j in newJobs.Jobs)
-      {
-        if (string.IsNullOrEmpty(j.ScheduleId))
-          j.ScheduleId = newJobs.ScheduleId;
-      }
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
@@ -929,14 +968,14 @@ namespace BlackMaple.MachineFramework
           var startingUtc = DateTime.UtcNow;
           if (newJobs.Jobs.Any())
           {
-            startingUtc = newJobs.Jobs[0].RouteStartingTimeUTC;
+            startingUtc = newJobs.Jobs[0].RouteStartUTC;
           }
 
           var negRevisionMap = AddPrograms(trans, newJobs.Programs, startingUtc);
 
           foreach (var job in newJobs.Jobs)
           {
-            AddJob(trans, job, negRevisionMap);
+            AddJob(trans, job, negRevisionMap, addAsCopiedToSystem, newJobs.ScheduleId);
           }
 
           AddSimulatedStations(trans, newJobs.StationUse);
@@ -991,7 +1030,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddJob(IDbTransaction trans, MachineWatchInterface.JobPlan job, Dictionary<(string prog, long rev), long> negativeRevisionMap)
+    private void AddJob(IDbTransaction trans, Job job, Dictionary<(string prog, long rev), long> negativeRevisionMap, bool addAsCopiedToSystem, string schId)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -1003,30 +1042,34 @@ namespace BlackMaple.MachineFramework
 
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("part", SqliteType.Text).Value = job.PartName;
-        cmd.Parameters.Add("proc", SqliteType.Integer).Value = job.NumProcesses;
+        cmd.Parameters.Add("proc", SqliteType.Integer).Value = job.Processes.Count;
         if (string.IsNullOrEmpty(job.Comment))
           cmd.Parameters.Add("comment", SqliteType.Text).Value = DBNull.Value;
         else
           cmd.Parameters.Add("comment", SqliteType.Text).Value = job.Comment;
-        cmd.Parameters.Add("start", SqliteType.Integer).Value = job.RouteStartingTimeUTC.Ticks;
-        cmd.Parameters.Add("end", SqliteType.Integer).Value = job.RouteEndingTimeUTC.Ticks;
+        cmd.Parameters.Add("start", SqliteType.Integer).Value = job.RouteStartUTC.Ticks;
+        cmd.Parameters.Add("end", SqliteType.Integer).Value = job.RouteEndUTC.Ticks;
         cmd.Parameters.Add("archived", SqliteType.Integer).Value = job.Archived;
-        cmd.Parameters.Add("copied", SqliteType.Integer).Value = job.JobCopiedToSystem;
-        if (string.IsNullOrEmpty(job.ScheduleId))
+        cmd.Parameters.Add("copied", SqliteType.Integer).Value = addAsCopiedToSystem;
+        if (!string.IsNullOrEmpty(job.ScheduleId))
+        {
+          schId = job.ScheduleId;
+        }
+        if (string.IsNullOrEmpty(schId))
           cmd.Parameters.Add("sid", SqliteType.Text).Value = DBNull.Value;
         else
-          cmd.Parameters.Add("sid", SqliteType.Text).Value = job.ScheduleId;
-        cmd.Parameters.Add("manual", SqliteType.Integer).Value = job.ManuallyCreatedJob;
+          cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+        cmd.Parameters.Add("manual", SqliteType.Integer).Value = job.ManuallyCreated;
 
         cmd.ExecuteNonQuery();
 
-        if (job.ScheduledBookingIds != null)
+        if (job.BookingIds != null)
         {
           cmd.CommandText = "INSERT INTO scheduled_bookings(UniqueStr, BookingId) VALUES ($uniq,$booking)";
           cmd.Parameters.Clear();
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
           cmd.Parameters.Add("booking", SqliteType.Text);
-          foreach (var b in job.ScheduledBookingIds)
+          foreach (var b in job.BookingIds)
           {
             cmd.Parameters[1].Value = b;
             cmd.ExecuteNonQuery();
@@ -1039,10 +1082,10 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("proc", SqliteType.Integer);
         cmd.Parameters.Add("path", SqliteType.Integer);
 
-        for (int i = 1; i <= job.NumProcesses; i++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
           cmd.Parameters[1].Value = i;
-          cmd.Parameters[2].Value = job.GetNumPaths(i);
+          cmd.Parameters[2].Value = job.Processes[i - 1].Paths.Count;
           cmd.ExecuteNonQuery();
         }
 
@@ -1052,10 +1095,10 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("path", SqliteType.Integer);
         cmd.Parameters.Add("plan", SqliteType.Integer);
 
-        for (int i = 1; i <= job.GetNumPaths(1); i++)
+        for (int i = 0; i < job.Processes[0].Paths.Count; i++)
         {
           cmd.Parameters[1].Value = i;
-          cmd.Parameters[2].Value = job.GetPlannedCyclesOnFirstProcess(i);
+          cmd.Parameters[2].Value = job.CyclesOnFirstProcess[i];
           cmd.ExecuteNonQuery();
         }
 
@@ -1067,12 +1110,14 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("time", SqliteType.Integer);
         cmd.Parameters.Add("qty", SqliteType.Integer);
 
-        for (int i = 1; i <= job.NumProcesses; i++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int j = 1; j <= job.GetNumPaths(i); j++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
-            if (job.GetSimulatedProduction(i, j) == null) continue;
-            foreach (var prod in job.GetSimulatedProduction(i, j))
+            var path = proc.Paths[j - 1];
+            if (path.SimulatedProduction == null) continue;
+            foreach (var prod in path.SimulatedProduction)
             {
               cmd.Parameters[1].Value = i;
               cmd.Parameters[2].Value = j;
@@ -1090,11 +1135,13 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("path", SqliteType.Integer);
         cmd.Parameters.Add("pal", SqliteType.Text);
 
-        for (int i = 1; i <= job.NumProcesses; i++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int j = 1; j <= job.GetNumPaths(i); j++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
-            foreach (string pal in job.PlannedPallets(i, j))
+            var path = proc.Paths[j - 1];
+            foreach (string pal in path.Pallets)
             {
               cmd.Parameters[1].Value = i;
               cmd.Parameters[2].Value = j;
@@ -1121,34 +1168,36 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("fix", SqliteType.Text);
         cmd.Parameters.Add("face", SqliteType.Integer);
         cmd.Parameters.Add("casting", SqliteType.Text);
-        for (int i = 1; i <= job.NumProcesses; i++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int j = 1; j <= job.GetNumPaths(i); j++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
+            var path = proc.Paths[j - 1];
             cmd.Parameters[1].Value = i;
             cmd.Parameters[2].Value = j;
-            cmd.Parameters[3].Value = job.GetSimulatedStartingTimeUTC(i, j).Ticks;
-            cmd.Parameters[4].Value = job.PartsPerPallet(i, j);
-            cmd.Parameters[5].Value = job.GetPathGroup(i, j);
-            cmd.Parameters[6].Value = job.GetSimulatedAverageFlowTime(i, j).Ticks;
-            var iq = job.GetInputQueue(i, j);
+            cmd.Parameters[3].Value = path.SimulatedStartingUTC.Ticks;
+            cmd.Parameters[4].Value = path.PartsPerPallet;
+            cmd.Parameters[5].Value = path.PathGroup;
+            cmd.Parameters[6].Value = path.SimulatedAverageFlowTime.Ticks;
+            var iq = path.InputQueue;
             if (string.IsNullOrEmpty(iq))
               cmd.Parameters[7].Value = DBNull.Value;
             else
               cmd.Parameters[7].Value = iq;
-            var oq = job.GetOutputQueue(i, j);
+            var oq = path.OutputQueue;
             if (string.IsNullOrEmpty(oq))
               cmd.Parameters[8].Value = DBNull.Value;
             else
               cmd.Parameters[8].Value = oq;
-            cmd.Parameters[9].Value = job.GetExpectedLoadTime(i, j).Ticks;
-            cmd.Parameters[10].Value = job.GetExpectedUnloadTime(i, j).Ticks;
-            var (fix, face) = job.PlannedFixture(i, j);
+            cmd.Parameters[9].Value = path.ExpectedLoadTime.Ticks;
+            cmd.Parameters[10].Value = path.ExpectedUnloadTime.Ticks;
+            var (fix, face) = (path.Fixture, path.Face);
             cmd.Parameters[11].Value = string.IsNullOrEmpty(fix) ? DBNull.Value : (object)fix;
-            cmd.Parameters[12].Value = face;
+            cmd.Parameters[12].Value = face ?? 0;
             if (i == 1)
             {
-              var casting = job.GetCasting(j);
+              var casting = path.Casting;
               cmd.Parameters[13].Value = string.IsNullOrEmpty(casting) ? DBNull.Value : (object)casting;
             }
             else
@@ -1172,26 +1221,28 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("rev", SqliteType.Integer);
 
 
-        for (int i = 1; i <= job.NumProcesses; i++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int j = 1; j <= job.GetNumPaths(i); j++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
+            var path = proc.Paths[j - 1];
             int routeNum = 0;
-            foreach (var entry in job.GetMachiningStop(i, j))
+            foreach (var entry in path.Stops)
             {
               long? rev = null;
               if (!entry.ProgramRevision.HasValue || entry.ProgramRevision.Value == 0)
               {
-                if (!string.IsNullOrEmpty(entry.ProgramName))
+                if (!string.IsNullOrEmpty(entry.Program))
                 {
-                  rev = LatestRevisionForProgram(trans, entry.ProgramName);
+                  rev = LatestRevisionForProgram(trans, entry.Program);
                 }
               }
               else if (entry.ProgramRevision.Value > 0)
               {
                 rev = entry.ProgramRevision.Value;
               }
-              else if (negativeRevisionMap.TryGetValue((prog: entry.ProgramName, rev: entry.ProgramRevision.Value), out long convertedRev))
+              else if (negativeRevisionMap.TryGetValue((prog: entry.Program, rev: entry.ProgramRevision.Value), out long convertedRev))
               {
                 rev = convertedRev;
               }
@@ -1205,7 +1256,7 @@ namespace BlackMaple.MachineFramework
               cmd.Parameters[3].Value = routeNum;
               cmd.Parameters[4].Value = entry.StationGroup;
               cmd.Parameters[5].Value = entry.ExpectedCycleTime.Ticks;
-              cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.ProgramName) ? DBNull.Value : (object)entry.ProgramName;
+              cmd.Parameters[6].Value = string.IsNullOrEmpty(entry.Program) ? DBNull.Value : (object)entry.Program;
               cmd.Parameters[7].Value = rev != null ? (object)rev : DBNull.Value;
               cmd.ExecuteNonQuery();
               routeNum += 1;
@@ -1222,12 +1273,14 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("route", SqliteType.Integer);
         cmd.Parameters.Add("num", SqliteType.Integer);
 
-        for (int i = 1; i <= job.NumProcesses; i++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int j = 1; j <= job.GetNumPaths(i); j++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
+            var path = proc.Paths[j - 1];
             int routeNum = 0;
-            foreach (var entry in job.GetMachiningStop(i, j))
+            foreach (var entry in path.Stops)
             {
               foreach (var stat in entry.Stations)
               {
@@ -1253,12 +1306,14 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("tool", SqliteType.Text);
         cmd.Parameters.Add("use", SqliteType.Integer);
 
-        for (int i = 1; i <= job.NumProcesses; i++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int j = 1; j <= job.GetNumPaths(i); j++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
+            var path = proc.Paths[j - 1];
             int routeNum = 0;
-            foreach (var entry in job.GetMachiningStop(i, j))
+            foreach (var entry in path.Stops)
             {
               foreach (var tool in entry.Tools)
               {
@@ -1282,20 +1337,22 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("stat", SqliteType.Integer);
         cmd.Parameters.Add("load", SqliteType.Integer);
 
-        for (int proc = 1; proc <= job.NumProcesses; proc++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int path = 1; path <= job.GetNumPaths(proc); path++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
-            cmd.Parameters[1].Value = proc;
-            cmd.Parameters[2].Value = path;
+            var path = proc.Paths[j - 1];
+            cmd.Parameters[1].Value = i;
+            cmd.Parameters[2].Value = j;
             cmd.Parameters[4].Value = true;
-            foreach (int statNum in job.LoadStations(proc, path))
+            foreach (int statNum in path.Load)
             {
               cmd.Parameters[3].Value = statNum;
               cmd.ExecuteNonQuery();
             }
             cmd.Parameters[4].Value = false;
-            foreach (int statNum in job.UnloadStations(proc, path))
+            foreach (int statNum in path.Unload)
             {
               cmd.Parameters[3].Value = statNum;
               cmd.ExecuteNonQuery();
@@ -1316,29 +1373,35 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("time", SqliteType.Integer);
         cmd.Parameters.Add("freq", SqliteType.Real);
         cmd.Parameters.Add("expected", SqliteType.Integer);
-        for (int proc = 1; proc <= job.NumProcesses; proc++)
+        for (int i = 1; i <= job.Processes.Count; i++)
         {
-          for (int path = 1; path <= job.GetNumPaths(proc); path++)
+          var proc = job.Processes[i - 1];
+          for (int j = 1; j <= proc.Paths.Count; j++)
           {
-            cmd.Parameters[1].Value = proc;
-            cmd.Parameters[2].Value = path;
-
-            foreach (var insp in job.PathInspections(proc, path))
+            var path = proc.Paths[j - 1];
+            if (path.Inspections != null)
             {
-              cmd.Parameters[3].Value = insp.InspectionType;
-              cmd.Parameters[4].Value = insp.Counter;
-              cmd.Parameters[5].Value = insp.MaxVal > 0 ? (object)insp.MaxVal : DBNull.Value;
-              cmd.Parameters[6].Value = insp.TimeInterval.Ticks > 0 ? (object)insp.TimeInterval.Ticks : DBNull.Value;
-              cmd.Parameters[7].Value = insp.RandomFreq > 0 ? (object)insp.RandomFreq : DBNull.Value;
-              cmd.Parameters[8].Value = insp.ExpectedInspectionTime.HasValue && insp.ExpectedInspectionTime.Value.Ticks > 0 ?
-                (object)insp.ExpectedInspectionTime.Value.Ticks : DBNull.Value;
-              cmd.ExecuteNonQuery();
+              cmd.Parameters[1].Value = i;
+              cmd.Parameters[2].Value = j;
+
+              foreach (var insp in path.Inspections)
+              {
+                cmd.Parameters[3].Value = insp.InspectionType;
+                cmd.Parameters[4].Value = insp.Counter;
+                cmd.Parameters[5].Value = insp.MaxVal > 0 ? (object)insp.MaxVal : DBNull.Value;
+                cmd.Parameters[6].Value = insp.TimeInterval.Ticks > 0 ? (object)insp.TimeInterval.Ticks : DBNull.Value;
+                cmd.Parameters[7].Value = insp.RandomFreq > 0 ? (object)insp.RandomFreq : DBNull.Value;
+                cmd.Parameters[8].Value = insp.ExpectedInspectionTime.HasValue && insp.ExpectedInspectionTime.Value.Ticks > 0 ?
+                  (object)insp.ExpectedInspectionTime.Value.Ticks : DBNull.Value;
+                cmd.ExecuteNonQuery();
+              }
             }
           }
         }
-        foreach (var insp in job.GetOldObsoleteInspections() ?? Enumerable.Empty<MachineWatchInterface.JobInspectionData>())
+#pragma warning disable CS1633, CS0612
+        foreach (var insp in job.OldJobInspections ?? Enumerable.Empty<MachineWatchInterface.JobInspectionData>())
         {
-          cmd.Parameters[1].Value = insp.InspectSingleProcess > 0 ? Math.Min(insp.InspectSingleProcess, job.NumProcesses) : job.NumProcesses;
+          cmd.Parameters[1].Value = insp.InspectSingleProcess > 0 ? Math.Min(insp.InspectSingleProcess, job.Processes.Count) : job.Processes.Count;
           cmd.Parameters[2].Value = -1; // Path = -1 is loaded above for all paths
           cmd.Parameters[3].Value = insp.InspectionType;
           cmd.Parameters[4].Value = insp.Counter;
@@ -1348,15 +1411,18 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[8].Value = DBNull.Value;
           cmd.ExecuteNonQuery();
         }
+#pragma warning restore CS1633, CS0612
       }
 
-      InsertHold(job.UniqueStr, -1, -1, false, job.HoldEntireJob, trans);
-      for (int proc = 1; proc <= job.NumProcesses; proc++)
+      InsertHold(job.UniqueStr, -1, -1, false, job.HoldJob, trans);
+      for (int i = 1; i <= job.Processes.Count; i++)
       {
-        for (int path = 1; path <= job.GetNumPaths(proc); path++)
+        var proc = job.Processes[i - 1];
+        for (int j = 1; j <= proc.Paths.Count; j++)
         {
-          InsertHold(job.UniqueStr, proc, path, true, job.HoldLoadUnload(proc, path), trans);
-          InsertHold(job.UniqueStr, proc, path, false, job.HoldMachining(proc, path), trans);
+          var path = proc.Paths[j - 1];
+          InsertHold(job.UniqueStr, i, j, true, path.HoldLoadUnload, trans);
+          InsertHold(job.UniqueStr, i, j, false, path.HoldMachining, trans);
         }
       }
     }
@@ -1489,7 +1555,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void InsertHold(string unique, int proc, int path, bool load, MachineWatchInterface.JobHoldPattern newHold,
+    private void InsertHold(string unique, int proc, int path, bool load, HoldPattern newHold,
                             IDbTransaction trans)
     {
       if (newHold == null) return;
@@ -1664,22 +1730,22 @@ namespace BlackMaple.MachineFramework
         }
       }
     }
-    public void UpdateJobHold(string unique, MachineWatchInterface.JobHoldPattern newHold)
+    public void UpdateJobHold(string unique, HoldPattern newHold)
     {
       UpdateJobHoldHelper(unique, -1, -1, false, newHold);
     }
 
-    public void UpdateJobMachiningHold(string unique, int proc, int path, MachineWatchInterface.JobHoldPattern newHold)
+    public void UpdateJobMachiningHold(string unique, int proc, int path, HoldPattern newHold)
     {
       UpdateJobHoldHelper(unique, proc, path, false, newHold);
     }
 
-    public void UpdateJobLoadUnloadHold(string unique, int proc, int path, MachineWatchInterface.JobHoldPattern newHold)
+    public void UpdateJobLoadUnloadHold(string unique, int proc, int path, HoldPattern newHold)
     {
       UpdateJobHoldHelper(unique, proc, path, true, newHold);
     }
 
-    private void UpdateJobHoldHelper(string unique, int proc, int path, bool load, MachineWatchInterface.JobHoldPattern newHold)
+    private void UpdateJobHoldHelper(string unique, int proc, int path, bool load, HoldPattern newHold)
     {
       lock (_cfg)
       {

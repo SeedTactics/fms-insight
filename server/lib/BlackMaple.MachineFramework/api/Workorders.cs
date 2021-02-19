@@ -36,6 +36,7 @@ using System.Runtime.Serialization;
 using System.Linq;
 using Germinate;
 using System.Collections.Immutable;
+using System.Collections.Generic;
 
 namespace BlackMaple.MachineWatchInterface
 {
@@ -77,7 +78,7 @@ namespace BlackMaple.MachineWatchInterface
        => m.Produce(f);
   }
 
-  [DataContract, Germinate.Draftable]
+  [DataContract, Draftable]
   public record WorkorderProgram
   {
     /// <summary>Identifies the process on the part that this program is for.</summary>
@@ -98,11 +99,11 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public long? Revision { get; init; }
 
-    public static WorkorderProgram operator %(WorkorderProgram w, Action<Germinate.IWorkorderProgramDraft> f)
-       => Germinate.Producer.Produce(w, f);
+    public static WorkorderProgram operator %(WorkorderProgram w, Action<IWorkorderProgramDraft> f)
+       => w.Produce(f);
   }
 
-  [DataContract, Germinate.Draftable]
+  [DataContract, Draftable]
   public record PartWorkorder
   {
     [DataMember(IsRequired = true)] public string WorkorderId { get; init; }
@@ -113,10 +114,10 @@ namespace BlackMaple.MachineWatchInterface
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<WorkorderProgram> Programs { get; init; }
+    public IReadOnlyList<WorkorderProgram> Programs { get; init; }
 
-    public static PartWorkorder operator %(PartWorkorder w, Action<Germinate.IPartWorkorderDraft> f)
-       => Germinate.Producer.Produce(w, f);
+    public static PartWorkorder operator %(PartWorkorder w, Action<IPartWorkorderDraft> f)
+       => w.Produce(f);
   }
 
 }

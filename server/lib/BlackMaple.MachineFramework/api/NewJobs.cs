@@ -34,11 +34,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Immutable;
 using System.Runtime.Serialization;
+using Germinate;
 
 namespace BlackMaple.MachineWatchInterface
 {
 
-  [DataContract, Germinate.Draftable]
+  [DataContract, Draftable]
   public record SimulatedStationUtilization
   {
     [DataMember(IsRequired = true)] public string ScheduleId { get; init; }
@@ -49,8 +50,8 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)] public TimeSpan UtilizationTime { get; init; } //time between StartUTC and EndUTC the station is busy.
     [DataMember(IsRequired = true)] public TimeSpan PlannedDownTime { get; init; } //time between StartUTC and EndUTC the station is planned to be down.
 
-    public static SimulatedStationUtilization operator %(SimulatedStationUtilization s, Action<Germinate.ISimulatedStationUtilizationDraft> f)
-       => Germinate.Producer.Produce(s, f);
+    public static SimulatedStationUtilization operator %(SimulatedStationUtilization s, Action<ISimulatedStationUtilizationDraft> f)
+       => s.Produce(f);
   }
 
   [DataContract, Germinate.Draftable]
@@ -60,7 +61,7 @@ namespace BlackMaple.MachineWatchInterface
     public string ScheduleId { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<JobPlan> Jobs { get; init; }
+    public ImmutableList<MachineFramework.Job> Jobs { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationUtilization> StationUse { get; init; }
@@ -80,7 +81,7 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false)]
     public bool ArchiveCompletedJobs { get; init; } = true;
 
-    public static NewJobs operator %(NewJobs j, Action<Germinate.INewJobsDraft> f)
-       => Germinate.Producer.Produce(j, f);
+    public static NewJobs operator %(NewJobs j, Action<INewJobsDraft> f)
+       => j.Produce(f);
   }
 }

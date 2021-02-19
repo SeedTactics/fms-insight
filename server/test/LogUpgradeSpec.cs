@@ -38,6 +38,7 @@ using Xunit;
 using FluentAssertions;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace MachineWatchTest
 {
@@ -255,8 +256,8 @@ namespace MachineWatchTest
 
       _log.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(newJob)
-      }, null);
+        Jobs = ImmutableList.Create((Job)newJob.ToHistoricJob())
+      }, null, addAsCopiedToSystem: true);
 
       JobEqualityChecks.CheckJobEqual(newJob, _log.LoadJob("mynewunique"), true);
 
@@ -564,6 +565,97 @@ namespace MachineWatchTest
       _jobs.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { job1 } }, null);
     }
     */
+
+  }
+
+  public static class LegacyToNewJobConvert
+  {
+
+    private static HoldPattern ToInsightHold(JobHoldPattern h)
+    {
+      if (h == null) return null;
+
+      return new HoldPattern()
+      {
+        UserHold = h.UserHold,
+        ReasonForUserHold = h.ReasonForUserHold,
+        HoldUnholdPatternStartUTC = h.HoldUnholdPatternStartUTC,
+        HoldUnholdPattern = h.HoldUnholdPattern.ToArray(),
+        HoldUnholdPatternRepeats = h.HoldUnholdPatternRepeats
+      };
+    }
+
+    public static HistoricJob ToHistoricJob(this JobPlan job)
+    {
+      return new HistoricJob()
+      {
+        Comment = job.Comment,
+        HoldJob = ToInsightHold(job.HoldEntireJob),
+        // ignoring obsolete job-level inspections
+        // ignoring Priority, CreateMarkingData
+        ManuallyCreated = job.ManuallyCreatedJob,
+        BookingIds = job.ScheduledBookingIds.ToArray(),
+        ScheduleId = job.ScheduleId,
+        UniqueStr = job.UniqueStr,
+        PartName = job.PartName,
+        CopiedToSystem = job.JobCopiedToSystem,
+        Archived = job.Archived,
+        RouteStartUTC = job.RouteStartingTimeUTC,
+        RouteEndUTC = job.RouteEndingTimeUTC,
+        CyclesOnFirstProcess = Enumerable.Range(1, job.GetNumPaths(process: 1)).Select(job.GetPlannedCyclesOnFirstProcess).ToList(),
+        Processes = Enumerable.Range(1, job.NumProcesses).Select(proc =>
+          new ProcessInfo()
+          {
+            Paths = Enumerable.Range(1, job.GetNumPaths(process: proc)).Select(path =>
+              new ProcPathInfo()
+              {
+                ExpectedUnloadTime = job.GetExpectedUnloadTime(proc, path),
+                OutputQueue = job.GetOutputQueue(proc, path),
+                InputQueue = job.GetInputQueue(proc, path),
+                PartsPerPallet = job.PartsPerPallet(proc, path),
+                HoldLoadUnload = ToInsightHold(job.HoldLoadUnload(proc, path)),
+                HoldMachining = ToInsightHold(job.HoldMachining(proc, path)),
+                SimulatedAverageFlowTime = job.GetSimulatedAverageFlowTime(proc, path),
+                SimulatedStartingUTC = job.GetSimulatedStartingTimeUTC(proc, path),
+                SimulatedProduction = job.GetSimulatedProduction(proc, path).Select(s => new SimulatedProduction()
+                {
+                  TimeUTC = s.TimeUTC,
+                  Quantity = s.Quantity
+                }).ToList(),
+                Stops = job.GetMachiningStop(proc, path).Select(stop => new MachiningStop()
+                {
+                  Stations = stop.Stations.ToArray(),
+                  Program = stop.ProgramName,
+                  ProgramRevision = stop.ProgramRevision,
+                  Tools = stop.Tools.ToDictionary(k => k.Key, k => k.Value),
+                  StationGroup = stop.StationGroup,
+                  ExpectedCycleTime = stop.ExpectedCycleTime
+                }).ToList(),
+                Casting = proc == 1 ? job.GetCasting(path) : null,
+                Unload = job.UnloadStations(proc, path).ToList(),
+                ExpectedLoadTime = job.GetExpectedLoadTime(proc, path),
+                Load = job.LoadStations(proc, path).ToList(),
+                Face = job.PlannedFixture(proc, path).face,
+                Fixture = job.PlannedFixture(proc, path).fixture,
+                Pallets = job.PlannedPallets(proc, path).ToList(),
+                PathGroup = job.GetPathGroup(proc, path),
+                Inspections =
+                  job.PathInspections(proc, path).Select(i => new PathInspection()
+                  {
+                    InspectionType = i.InspectionType,
+                    Counter = i.Counter,
+                    MaxVal = i.MaxVal,
+                    RandomFreq = i.RandomFreq,
+                    TimeInterval = i.TimeInterval,
+                    ExpectedInspectionTime = i.ExpectedInspectionTime
+                  }
+                  ).ToList()
+              }
+            ).ToList()
+          }
+        ).ToList()
+      };
+    }
 
   }
 

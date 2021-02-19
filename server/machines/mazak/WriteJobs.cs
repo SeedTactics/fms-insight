@@ -86,11 +86,11 @@ namespace MazakMachineInterface
       {
         foreach (var j in sch.Jobs)
         {
-          for (int proc = 1; proc <= j.NumProcesses; proc++)
+          foreach (var proc in j.Processes)
           {
-            for (int path = 1; path <= j.GetNumPaths(proc); path++)
+            foreach (var path in proc.Paths)
             {
-              foreach (var stop in j.GetMachiningStop(proc, path))
+              foreach (var stop in path.Stops)
               {
                 if (!string.IsNullOrEmpty(stop.StationGroup))
                 {
@@ -226,7 +226,7 @@ namespace MazakMachineInterface
 
       var jobErrs = new List<string>();
       var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        jobs: newJ.Jobs,
+        jobs: newJ.Jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false)).ToArray(),
         downloadUID: UID,
         mazakData: mazakData,
         savedParts: savedParts,
@@ -278,12 +278,12 @@ namespace MazakMachineInterface
       writeDb.Save(transSet, "Add Parts");
     }
 
-    private void AddSchedules(IRepository jobDB, IEnumerable<JobPlan> jobs)
+    private void AddSchedules(IRepository jobDB, IEnumerable<Job> jobs)
     {
       var mazakData = readDatabase.LoadAllData();
       Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
 
-      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, _useStartingOffsetForDueDate);
+      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false)).ToArray(), _useStartingOffsetForDueDate);
       if (transSet.Schedules.Any())
       {
         writeDb.Save(transSet, "Add Schedules");
@@ -296,20 +296,16 @@ namespace MazakMachineInterface
 
     private void AddJobsToDB(IRepository jobDB, NewJobs newJ)
     {
-      foreach (var j in newJ.Jobs)
-      {
-        j.JobCopiedToSystem = false;
-      }
-      jobDB.AddJobs(newJ, null);
+      jobDB.AddJobs(newJ, null, addAsCopiedToSystem: false);
 
       //update the station group name
       foreach (var j in newJ.Jobs)
       {
-        for (int proc = 1; proc <= j.NumProcesses; proc++)
+        foreach (var proc in j.Processes)
         {
-          for (int path = 1; path <= j.GetNumPaths(proc); path++)
+          foreach (var path in proc.Paths)
           {
-            foreach (var stop in j.GetMachiningStop(proc, path))
+            foreach (var stop in path.Stops)
             {
               if (!string.IsNullOrEmpty(stop.StationGroup))
               {
@@ -351,19 +347,19 @@ namespace MazakMachineInterface
 
       var newDecrs =
         unarchived
-        .SelectMany(j => Enumerable.Range(1, j.GetNumPaths(process: 1)).Select(path => new { j, path }))
+        .SelectMany(j => Enumerable.Range(1, j.Processes[0].Paths.Count).Select(path => new { j, path }))
         .Select(jobAndPath =>
         {
           if (completed.TryGetValue((uniq: jobAndPath.j.UniqueStr, proc1path: jobAndPath.path), out var compCnt))
           {
-            if (compCnt < jobAndPath.j.GetPlannedCyclesOnFirstProcess(jobAndPath.path))
+            if (compCnt < jobAndPath.j.CyclesOnFirstProcess[jobAndPath.path - 1])
             {
               return new NewDecrementQuantity()
               {
                 JobUnique = jobAndPath.j.UniqueStr,
                 Proc1Path = jobAndPath.path,
                 Part = jobAndPath.j.PartName,
-                Quantity = jobAndPath.j.GetPlannedCyclesOnFirstProcess(jobAndPath.path) - compCnt
+                Quantity = jobAndPath.j.CyclesOnFirstProcess[jobAndPath.path - 1] - compCnt
               };
             }
           }

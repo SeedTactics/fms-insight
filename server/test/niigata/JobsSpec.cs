@@ -41,6 +41,7 @@ using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using System.Collections.Immutable;
 using Germinate;
+using MachineWatchTest;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -377,7 +378,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Counter = "cntr",
         MaxVal = 10,
       });
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create(completedJob, toKeepJob) }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create<Job>(completedJob.ToHistoricJob(), toKeepJob.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       _syncMock.CurrentCellState().Returns(new CellState()
       {
@@ -429,14 +430,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var newJobs = new NewJobs()
       {
         ScheduleId = "abcd",
-        Jobs = ImmutableList.Create(newJob1, newJob2)
+        Jobs = ImmutableList.Create<Job>(newJob1.ToHistoricJob(), newJob2.ToHistoricJob())
       };
 
       ((IJobControl)_jobs).AddJobs(newJobs, null);
 
-      _logDB.LoadUnarchivedJobs().Should().BeEquivalentTo(new[] { toKeepJob, newJob1, newJob2 },
-        options => options.CheckJsonEquals<JobPlan, JobPlan>()
-      );
+      _logDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(new[] { toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr });
       _logDB.LoadJob("old").Archived.Should().BeTrue();
 
       _syncMock.Received().JobsOrQueuesChanged();
@@ -575,7 +574,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       job.PartName = "p1";
       job.SetPathGroup(1, 1, 50);
       job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       //add an allocated material
       ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
@@ -652,7 +651,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       job.PartName = "p1";
       job.SetPathGroup(1, 1, 50);
       job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
 
@@ -695,7 +694,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       job.PartName = "p1";
       job.SetPathGroup(1, 1, 50);
       job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) }, null);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
       _logDB.RecordSerialForMaterialID(materialID: 1, proc: 1, serial: "aaa");

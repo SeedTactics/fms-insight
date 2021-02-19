@@ -130,7 +130,7 @@ namespace MazakMachineInterface
 
     #region "Write Routing Info"
 
-    List<string> BlackMaple.MachineFramework.IJobControl.CheckValidRoutes(IEnumerable<JobPlan> jobs)
+    List<string> BlackMaple.MachineFramework.IJobControl.CheckValidRoutes(IEnumerable<BlackMaple.MachineFramework.Job> jobs)
     {
       var logMessages = new List<string>();
       MazakAllData mazakData;
@@ -169,7 +169,7 @@ namespace MazakMachineInterface
           //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
           var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-            jobs: jobs,
+            jobs: jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false)).ToArray(),
             downloadUID: 1,
             mazakData: mazakData,
             savedParts: new HashSet<string>(),
@@ -337,7 +337,7 @@ namespace MazakMachineInterface
       string casting = partName;
 
       // try and see if there is a job for this part with an actual casting
-      IReadOnlyList<JobPlan> sch;
+      IReadOnlyList<BlackMaple.MachineFramework.HistoricJob> sch;
       using (var jdb = logDbCfg.OpenConnection())
       {
         sch = jdb.LoadUnarchivedJobs();
@@ -345,11 +345,12 @@ namespace MazakMachineInterface
       var job = sch.FirstOrDefault(j => j.PartName == partName);
       if (job != null)
       {
-        for (int path = 1; path <= job.GetNumPaths(1); path++)
+        for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
         {
-          if (!string.IsNullOrEmpty(job.GetCasting(path)))
+          var jobCasting = job.Processes[0].Paths[path - 1].Casting;
+          if (!string.IsNullOrEmpty(casting))
           {
-            casting = job.GetCasting(path);
+            casting = jobCasting;
             break;
           }
         }

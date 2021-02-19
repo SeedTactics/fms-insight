@@ -3492,7 +3492,7 @@ namespace BlackMaple.MachineFramework
     private Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
     {
       var byProc = new Dictionary<int, MachineWatchInterface.MaterialProcessActualPath>();
-      void adjustPath(int proc, Action<IMaterialProcessActualPathDraft> f)
+      void adjustPath(int proc, Action<MachineWatchInterface.IMaterialProcessActualPathDraft> f)
       {
         if (byProc.ContainsKey(proc))
         {

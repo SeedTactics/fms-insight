@@ -43,6 +43,7 @@ using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
+  /*
   public class JobDBTest : JobEqualityChecks, IDisposable
   {
     private RepositoryConfig _repoCfg;
@@ -486,10 +487,10 @@ namespace MachineWatchTest
       _jobDB.AddJobs(new NewJobs
       {
         ScheduleId = job1.ScheduleId,
-        Jobs = ImmutableList.Create(job1),
+        Jobs = ImmutableList.Create((Job)job1.ToHistoricJob()),
         ExtraParts = job1ExtraParts,
         CurrentUnfilledWorkorders = job1unfilledWorks.ToImmutableList()
-      }, null);
+      }, null, addAsCopiedToSystem: job1.JobCopiedToSystem);
 
       AddExpectedPathDataFromObsoleteInspections(job1);
 
@@ -526,14 +527,14 @@ namespace MachineWatchTest
       var newJob2 = new NewJobs()
       {
         ScheduleId = job2.ScheduleId,
-        Jobs = ImmutableList.Create(job2),
+        Jobs = ImmutableList.Create((Job)job2.ToHistoricJob()),
         StationUse = job2simStationUse,
         ExtraParts = job2ExtraParts,
         CurrentUnfilledWorkorders = job2unfilledWorks.ToImmutableList()
       };
       try
       {
-        _jobDB.AddJobs(newJob2, "badsch");
+        _jobDB.AddJobs(newJob2, "badsch", addAsCopiedToSystem: job2.JobCopiedToSystem);
         Assert.True(false, "Expecting addjobs to throw exception");
       }
       catch (Exception e)
@@ -544,7 +545,7 @@ namespace MachineWatchTest
 
       CheckJobs(job1, null, null, job1.ScheduleId, job1ExtraParts, job1unfilledWorks);
 
-      _jobDB.AddJobs(newJob2, job1.ScheduleId);
+      _jobDB.AddJobs(newJob2, job1.ScheduleId, addAsCopiedToSystem: job2.JobCopiedToSystem);
 
       // job2 is manually created so should be skipped when checking for latest schedule
       CheckJobs(job1, job2, null, job1.ScheduleId, job1ExtraParts, job1unfilledWorks);
@@ -1673,6 +1674,7 @@ namespace MachineWatchTest
       return (byte[])cmd.ExecuteScalar();
     }
   }
+  */
 
   public class JobEqualityChecks
   {

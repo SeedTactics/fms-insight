@@ -181,14 +181,14 @@ namespace DebugMachineWatchApiServer
       return CurrentStatus;
     }
 
-    public List<string> CheckValidRoutes(IEnumerable<JobPlan> newJobs)
+    public List<string> CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       return new List<string>();
     }
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
-      LogDB.AddJobs(jobs, expectedPreviousScheduleId);
+      LogDB.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       OnNewJobs?.Invoke(jobs);
     }
 
@@ -526,17 +526,16 @@ namespace DebugMachineWatchApiServer
         _jsonSettings
       );
 
-      foreach (var newJobsOrig in allNewJobs)
+      foreach (var newJobs in allNewJobs)
       {
-        var newJobs = newJobsOrig.Produce(newJobs =>
+        var newJobsOffset = newJobs.Produce(newJobsDraft =>
         {
-          foreach (var j in newJobs.Jobs)
-          {
-            OffsetJob(j, offset);
-          }
+          newJobsDraft.Jobs.Clear();
+          newJobsDraft.Jobs.AddRange(newJobsDraft.Jobs.Select(j => OffsetJob(j, offset)));
+
           for (int i = 0; i < newJobs.StationUse.Count; i++)
           {
-            newJobs.StationUse[i] %= draft =>
+            newJobsDraft.StationUse[i] %= draft =>
             {
               draft.StartUTC = draft.StartUTC.Add(offset);
               draft.EndUTC = draft.EndUTC.Add(offset);
@@ -544,11 +543,11 @@ namespace DebugMachineWatchApiServer
           }
           for (int i = 0; i < newJobs.CurrentUnfilledWorkorders.Count; i++)
           {
-            newJobs.CurrentUnfilledWorkorders[i] %= w => w.DueDate = w.DueDate.Add(offset);
+            newJobsDraft.CurrentUnfilledWorkorders[i] %= w => w.DueDate = w.DueDate.Add(offset);
           }
         });
 
-        LogDB.AddJobs(newJobs, null);
+        LogDB.AddJobs(newJobsOffset, null, addAsCopiedToSystem: true);
       }
     }
 
@@ -569,7 +568,7 @@ namespace DebugMachineWatchApiServer
 
         foreach (var uniq in curSt.Jobs.Keys)
         {
-          MockServerBackend.OffsetJob(curSt.Jobs[uniq], offset);
+          //MockServerBackend.OffsetJob(curSt.Jobs[uniq], offset);
         }
         Statuses.Add(name, curSt);
       }
@@ -583,30 +582,27 @@ namespace DebugMachineWatchApiServer
       {
         CurrentStatus = Statuses[statusFromEnv];
       }
+      throw new NotImplementedException(); // offset status job
     }
 
-    public static void OffsetJob(JobPlan j, TimeSpan offset)
+    public static Job OffsetJob(Job originalJob, TimeSpan offset)
     {
-      j.RouteStartingTimeUTC = j.RouteStartingTimeUTC.Add(offset);
-      j.RouteEndingTimeUTC = j.RouteEndingTimeUTC.Add(offset);
-      for (int proc = 1; proc <= j.NumProcesses; proc++)
+      return originalJob.Produce(j =>
       {
-        for (int path = 1; path <= j.GetNumPaths(proc); path++)
+        j.RouteStartUTC = j.RouteStartUTC.Add(offset);
+        j.RouteEndUTC = j.RouteEndUTC.Add(offset);
+        j.Processes = j.Processes.Select(proc => new ProcessInfo()
         {
-          j.SetSimulatedStartingTimeUTC(proc, path,
-              j.GetSimulatedStartingTimeUTC(proc, path).Add(offset)
-          );
-          var prod = new List<JobPlan.SimulatedProduction>();
-          foreach (var p in j.GetSimulatedProduction(proc, path))
+          Paths = proc.Paths.Select(path => path with
           {
-            prod.Add(new JobPlan.SimulatedProduction()
+            SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
+            SimulatedProduction = path.SimulatedProduction.Select(prod => prod with
             {
-              TimeUTC = p.TimeUTC.Add(offset),
-              Quantity = p.Quantity,
-            });
-          }
-        }
-      }
+              TimeUTC = prod.TimeUTC.Add(offset)
+            }).ToArray()
+          }).ToArray()
+        }).ToArray();
+      });
       // not converted: hold patterns
     }
 
