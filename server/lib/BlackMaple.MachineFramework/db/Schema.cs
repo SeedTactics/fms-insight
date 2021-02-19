@@ -173,9 +173,6 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX jobs_schedule_id ON jobs(ScheduleId) WHERE ScheduleId IS NOT NULL";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE numpaths(UniqueStr TEXT, Process INTEGER, NumPaths INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Process))";
-        cmd.ExecuteNonQuery();
-
         cmd.CommandText = "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
         cmd.ExecuteNonQuery();
 
@@ -762,7 +759,6 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters.Clear();
 
           var jobTableNames = new[] {
-            "numpaths",
             "planqty",
             "pathdata",
             "pallets",

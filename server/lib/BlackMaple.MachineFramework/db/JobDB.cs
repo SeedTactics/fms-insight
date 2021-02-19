@@ -1076,19 +1076,6 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        cmd.CommandText = "INSERT INTO numpaths(UniqueStr, Process, NumPaths) VALUES ($uniq,$proc,$path)";
-        cmd.Parameters.Clear();
-        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-        cmd.Parameters.Add("proc", SqliteType.Integer);
-        cmd.Parameters.Add("path", SqliteType.Integer);
-
-        for (int i = 1; i <= job.Processes.Count; i++)
-        {
-          cmd.Parameters[1].Value = i;
-          cmd.Parameters[2].Value = job.Processes[i - 1].Paths.Count;
-          cmd.ExecuteNonQuery();
-        }
-
         cmd.CommandText = "INSERT INTO planqty(UniqueStr, Path, PlanQty) VALUES ($uniq,$path,$plan)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
