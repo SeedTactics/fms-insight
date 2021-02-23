@@ -458,7 +458,7 @@ namespace BlackMaple.FMSInsight.Niigata
       JobPlan job;
       using (var jdb = _jobDbCfg.OpenConnection())
       {
-        job = jdb.LoadJob(jobUnique);
+        job = jdb.LoadJob(jobUnique)?.ToLegacyJob();
       }
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 

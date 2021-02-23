@@ -155,7 +155,7 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Loading Jobs
     // --------------------------------------------------------------------------------
-    MachineWatchInterface.JobPlan LoadJob(string UniqueStr);
+    HistoricJob LoadJob(string UniqueStr);
     bool DoesJobExist(string unique);
     IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
     IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);

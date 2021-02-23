@@ -1396,11 +1396,16 @@ namespace BlackMaple.MachineWatchInterface
 
   public static class LegacyJobConversions
   {
-    public static JobPlan ToLegacyJob(MachineFramework.Job job, bool copiedToSystem)
+    public static JobPlan ToLegacyJob(this MachineFramework.Job job, bool copiedToSystem)
     {
       var newJob = new JobPlan(job.UniqueStr, job.Processes.Count, job.Processes.Select(p => p.Paths.Count).ToArray());
       ToMachineWatchJob(job, newJob, copiedToSystem);
       return newJob;
+    }
+
+    public static JobPlan ToLegacyJob(this MachineFramework.HistoricJob job)
+    {
+      return ToLegacyJob(job, job.CopiedToSystem);
     }
 
     private static JobHoldPattern ToLegacyHold(MachineFramework.HoldPattern h)

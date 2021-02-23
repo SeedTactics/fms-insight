@@ -136,7 +136,7 @@ namespace MazakMachineInterface
 
         MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
 
-        var job = jdb.LoadJob(unique);
+        var job = jdb.LoadJob(unique)?.ToLegacyJob();
         if (job == null) continue;
 
         var casting = job.GetCasting(procToPath.PathForProc(1));

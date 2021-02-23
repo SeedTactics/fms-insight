@@ -427,7 +427,7 @@ namespace MazakMachineInterface
       long matId;
       using (var logDb = logDbCfg.OpenConnection())
       {
-        var job = logDb.LoadJob(jobUnique);
+        var job = logDb.LoadJob(jobUnique)?.ToLegacyJob();
         if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 
         int? path = null;

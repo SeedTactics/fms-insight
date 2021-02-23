@@ -103,7 +103,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var palletStateUpdated = false;
 
-      var jobCache = Memoize<string, JobPlan>(logDB.LoadJob);
+      var jobCache = Memoize<string, JobPlan>(u => logDB.LoadJob(u)?.ToLegacyJob());
       var pals = status.Pallets
         .Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
         .OrderBy(p =>

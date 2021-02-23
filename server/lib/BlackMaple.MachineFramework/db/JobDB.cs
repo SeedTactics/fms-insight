@@ -862,7 +862,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public MachineWatchInterface.JobPlan LoadJob(string UniqueStr)
+    public HistoricJob LoadJob(string UniqueStr)
     {
       lock (_cfg)
       {
@@ -914,14 +914,7 @@ namespace BlackMaple.MachineFramework
             throw;
           }
 
-          if (job != null)
-          {
-            return MachineWatchInterface.LegacyJobConversions.ToLegacyJob(job, copiedToSystem: job.CopiedToSystem);
-          }
-          else
-          {
-            return null;
-          }
+          return job;
         }
       }
     }

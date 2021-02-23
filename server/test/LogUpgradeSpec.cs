@@ -230,7 +230,7 @@ namespace MachineWatchTest
     public void ConvertsJobFromV16()
     {
       var expected = CreateJob();
-      var actual = _log.LoadJob("Unique1");
+      var actual = _log.LoadJob("Unique1")?.ToLegacyJob();
 
       JobEqualityChecks.CheckJobEqual(expected, actual, true);
 
@@ -259,7 +259,7 @@ namespace MachineWatchTest
         Jobs = ImmutableList.Create((Job)newJob.ToHistoricJob())
       }, null, addAsCopiedToSystem: true);
 
-      JobEqualityChecks.CheckJobEqual(newJob, _log.LoadJob("mynewunique"), true);
+      JobEqualityChecks.CheckJobEqual(newJob, _log.LoadJob("mynewunique")?.ToLegacyJob(), true);
 
       var now = DateTime.UtcNow;
       _log.AddNewDecrement(new[] {

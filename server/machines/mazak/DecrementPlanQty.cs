@@ -108,7 +108,7 @@ namespace MazakMachineInterface
 
         //load the job
         if (string.IsNullOrEmpty(unique)) continue;
-        var job = jobDB.LoadJob(unique);
+        var job = jobDB.LoadJob(unique)?.ToLegacyJob();
         if (job == null) continue;
 
         // if already decremented, ignore

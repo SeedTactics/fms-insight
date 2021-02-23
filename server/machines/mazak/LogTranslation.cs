@@ -78,7 +78,7 @@ namespace MazakMachineInterface
         return _jobs[unique];
       else
       {
-        var j = _log.LoadJob(unique);
+        var j = _log.LoadJob(unique)?.ToLegacyJob();
         _jobs.Add(unique, j);
         return j;
       }

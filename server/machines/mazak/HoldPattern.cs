@@ -137,7 +137,7 @@ namespace MazakMachineInterface
         if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
         {
           MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
-          var job = jdb.LoadJob(unique);
+          var job = jdb.LoadJob(unique)?.ToLegacyJob();
           if (job != null)
           {
             HoldEntireJob = job.HoldEntireJob;

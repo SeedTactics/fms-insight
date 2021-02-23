@@ -325,7 +325,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          jobsByUniq.Add(j.UniqueStr, new InProcessJob(LegacyJobConversions.ToLegacyJob(j, copiedToSystem: j.CopiedToSystem)));
+          jobsByUniq.Add(j.UniqueStr, new InProcessJob(j.ToLegacyJob()));
         }
       }
 
@@ -491,7 +491,7 @@ namespace MazakMachineInterface
 
     private static void AddDataFromJobDB(IRepository jobDB, JobPlan jobFromMazak)
     {
-      var jobFromDb = jobDB.LoadJob(jobFromMazak.UniqueStr);
+      var jobFromDb = jobDB.LoadJob(jobFromMazak.UniqueStr)?.ToLegacyJob();
       if (jobFromDb == null) return;
 
       jobFromMazak.RouteStartingTimeUTC = jobFromDb.RouteStartingTimeUTC;

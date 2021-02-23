@@ -150,7 +150,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("job/{jobUnique}/plan")]
-    public JobPlan GetJobPlan(string jobUnique)
+    public HistoricJob GetJobPlan(string jobUnique)
     {
       using (var db = _backend.OpenRepository())
       {

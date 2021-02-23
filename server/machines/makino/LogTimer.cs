@@ -223,7 +223,7 @@ namespace Makino
         return;
 
       JobPlan job;
-      job = logDb.LoadJob(m.OrderName);
+      job = logDb.LoadJob(m.OrderName)?.ToLegacyJob();
       if (job == null)
         return;
 

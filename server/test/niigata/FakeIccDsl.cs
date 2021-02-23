@@ -772,7 +772,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
       };
 
-      int numProc = _logDB.LoadJob(oldMatOnPal.JobUnique).NumProcesses;
+      int numProc = _logDB.LoadJob(oldMatOnPal.JobUnique).Processes.Count;
 
       newMat = new[] {
         new LogMaterial(matID: matToAddId, uniq: oldMatOnPal.JobUnique, proc: oldMatOnPal.Process, part: oldMatOnPal.PartName, numProc: numProc, serial: oldMatToAdd.Serial, workorder: oldMatToAdd.WorkorderId ?? "", face: oldMatOnPal.Location.Face.ToString())
@@ -1093,7 +1093,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
         current.CurrentOrLoadingFaces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
         {
-          var job = _logDB.LoadJob(face.unique);
+          var job = _logDB.LoadJob(face.unique)?.ToLegacyJob();
           return new PalletFace()
           {
             Job = job,
@@ -1143,7 +1143,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectNoChanges()
     {
-      var unarchJobs = _logDB.LoadUnarchivedJobs().Select(j => LegacyJobConversions.ToLegacyJob(j, j.CopiedToSystem)).ToList();
+      var unarchJobs = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
@@ -1676,14 +1676,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
-      var sch = _logDB.LoadUnarchivedJobs().Select(j => LegacyJobConversions.ToLegacyJob(j, j.CopiedToSystem)).ToList();
+      var sch = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status, sch);
         foreach (var unarch in expectedChanges.OfType<ExpectedUnarchiveJob>())
         {
-          sch.Add(_logDB.LoadJob(unarch.Unique));
+          sch.Add(_logDB.LoadJob(unarch.Unique)?.ToLegacyJob());
         }
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
         cellSt.UnarchivedJobs.Should().BeEquivalentTo(
