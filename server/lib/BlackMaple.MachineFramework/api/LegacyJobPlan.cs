@@ -1266,134 +1266,6 @@ namespace BlackMaple.MachineWatchInterface
   }
 
 
-  [DataContract]
-  public class InProcessJob : JobPlan
-  {
-    public int GetCompleted(int process, int path)
-    {
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        return _completed[process - 1][path - 1];
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-    public void SetCompleted(int process, int path, int comp)
-    {
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        _completed[process - 1][path - 1] = comp;
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-    public void AdjustCompleted(int process, int path, Func<int, int> f)
-    {
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        _completed[process - 1][path - 1] = f(_completed[process - 1][path - 1]);
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-
-    public long GetPrecedence(int process, int path)
-    {
-      if (_precedence == null) return -1;
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        return _precedence[process - 1][path - 1];
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-
-    public void SetPrecedence(int process, int path, long precedence)
-    {
-      if (_precedence == null)
-      {
-        _precedence = new long[base.NumProcesses][];
-        for (int proc = 1; proc <= base.NumProcesses; proc++)
-        {
-          _precedence[proc - 1] = Enumerable.Repeat(-1L, base.GetNumPaths(proc)).ToArray();
-        }
-      }
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        _precedence[process - 1][path - 1] = precedence;
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-
-    public IList<MachineFramework.DecrementQuantity> Decrements
-    {
-      get
-      {
-        if (_decrQtys == null)
-          _decrQtys = new List<MachineFramework.DecrementQuantity>();
-        return _decrQtys;
-      }
-      set
-      {
-        _decrQtys = value;
-      }
-    }
-
-    public IList<string> Workorders
-    {
-      get
-      {
-        if (_workorders == null)
-          _workorders = new List<string>();
-        return _workorders;
-      }
-      set
-      {
-        _workorders = value;
-      }
-    }
-
-    public InProcessJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths)
-    {
-      _completed = new int[base.NumProcesses][];
-      for (int proc = 1; proc <= base.NumProcesses; proc++)
-      {
-        _completed[proc - 1] = Enumerable.Repeat(0, base.GetNumPaths(proc)).ToArray();
-      }
-    }
-    public InProcessJob(JobPlan job) : base(job)
-    {
-      _completed = new int[base.NumProcesses][];
-      for (int proc = 1; proc <= base.NumProcesses; proc++)
-      {
-        _completed[proc - 1] = Enumerable.Repeat(0, base.GetNumPaths(proc)).ToArray();
-      }
-    }
-
-    private InProcessJob() { } //for json deserialization
-
-    [DataMember(Name = "Completed", IsRequired = false)] private int[][] _completed;
-
-    [DataMember(Name = "Decrements", IsRequired = false), OptionalField] private IList<MachineFramework.DecrementQuantity> _decrQtys;
-
-    // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
-    // lower numbers come first, while -1 means no-data.
-    [DataMember(Name = "Precedence", IsRequired = false), OptionalField] private long[][] _precedence;
-
-    [DataMember(Name = "AssignedWorkorders", IsRequired = false), OptionalField] private IList<string> _workorders;
-  }
-
   public static class LegacyJobConversions
   {
     public static JobPlan ToLegacyJob(this MachineFramework.Job job, bool copiedToSystem)
@@ -1490,6 +1362,7 @@ namespace BlackMaple.MachineWatchInterface
           if (!string.IsNullOrEmpty(p.Fixture)) dest.SetFixtureFace(proc, path, p.Fixture, p.Face ?? 1);
           if (p.Pallets != null) foreach (var pal in p.Pallets) dest.AddProcessOnPallet(proc, path, pal);
           dest.SetPathGroup(proc, path, p.PathGroup);
+          dest.PathInspections(proc, path); // always create the inspections to be non-null
           if (p.Inspections != null)
           {
             foreach (var i in p.Inspections)

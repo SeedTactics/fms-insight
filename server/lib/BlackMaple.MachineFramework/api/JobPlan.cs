@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.Serialization;
 using Germinate;
 
@@ -296,25 +297,27 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)] public int Quantity { get; init; }
   }
 
-  [DataContract]
+  [DataContract, Draftable]
   public record ActiveJob : Job
   {
     [DataMember(Name = "CopiedToSystem", IsRequired = true)]
     public bool CopiedToSystem { get; init; }
 
     [DataMember(Name = "Completed", IsRequired = false)]
-    private IReadOnlyList<IReadOnlyList<int>>? Completed { get; init; }
+    public IReadOnlyList<IReadOnlyList<int>>? Completed { get; init; }
 
     [DataMember(Name = "Decrements", IsRequired = false)]
-    public ImmutableList<DecrementQuantity>? Decrements { get; init; }
+    public IReadOnlyList<DecrementQuantity>? Decrements { get; init; }
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
     [DataMember(Name = "Precedence", IsRequired = false)]
-    private IReadOnlyList<IReadOnlyList<long>>? Precedence { get; init; }
+    public IReadOnlyList<IReadOnlyList<long>>? Precedence { get; init; }
 
     [DataMember(Name = "AssignedWorkorders", IsRequired = false)]
-    public ImmutableList<string>? AssignedWorkorders { get; init; }
+    public IReadOnlyList<string>? AssignedWorkorders { get; init; }
+
+    public static ActiveJob operator %(ActiveJob j, Action<IActiveJobDraft> f) => j.Produce(f);
   }
 
   [DataContract, Draftable]
@@ -327,4 +330,39 @@ namespace BlackMaple.MachineFramework
     public IReadOnlyList<DecrementQuantity>? Decrements { get; init; }
   }
 
+  public static class JobAdjustment
+  {
+    public static Job AdjustPath(this Job job, int proc, int path, Action<IProcPathInfoDraft> f)
+    {
+      return job.Produce(d => AdjustPath(d, proc, path, f));
+    }
+
+    public static void AdjustPath(this IJobDraft job, int proc, int path, Action<IProcPathInfoDraft> f)
+    {
+      job.Processes = job.Processes.Select((p, procIdx) =>
+      {
+        if (procIdx == proc - 1)
+        {
+          return new ProcessInfo()
+          {
+            Paths = p.Paths.Select((pathR, pathIdx) =>
+            {
+              if (pathIdx == path - 1)
+              {
+                return pathR % f;
+              }
+              else
+              {
+                return pathR;
+              }
+            }).ToArray()
+          };
+        }
+        else
+        {
+          return p;
+        }
+      }).ToArray();
+    }
+  }
 }

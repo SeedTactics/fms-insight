@@ -1,14 +1,15 @@
 {
+  "TimeOfCurrentStatusUTC": "2021-02-24T20:20:23.827164Z",
   "Jobs": {},
   "Pallets": {
-    "1": {
-      "Pallet": "1",
+    "4": {
+      "Pallet": "4",
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "LoadUnload",
-        "group": "L/U",
-        "num": 2
+        "loc": "MachineQueue",
+        "group": "MC",
+        "num": 4
       },
       "NumFaces": 1
     },
@@ -23,6 +24,17 @@
       },
       "NumFaces": 1
     },
+    "1": {
+      "Pallet": "1",
+      "FixtureOnPallet": "F:1:abfix:1",
+      "OnHold": false,
+      "CurrentPalletLocation": {
+        "loc": "LoadUnload",
+        "group": "L/U",
+        "num": 2
+      },
+      "NumFaces": 1
+    },
     "3": {
       "Pallet": "3",
       "FixtureOnPallet": "F:1:abfix:1",
@@ -31,17 +43,6 @@
         "loc": "Machine",
         "group": "MC",
         "num": 3
-      },
-      "NumFaces": 1
-    },
-    "4": {
-      "Pallet": "4",
-      "FixtureOnPallet": "F:1:abfix:1",
-      "OnHold": false,
-      "CurrentPalletLocation": {
-        "loc": "MachineQueue",
-        "group": "MC",
-        "num": 4
       },
       "NumFaces": 1
     }
@@ -107,10 +108,9 @@
   ],
   "Alarms": [],
   "Queues": {
-    "castings": {},
-    "queueAAA": {},
+    "queueCCC": {},
     "queueBBB": {},
-    "queueCCC": {}
-  },
-  "TimeOfCurrentStatusUTC": "2020-05-22T18:54:38.6665568Z"
+    "queueAAA": {},
+    "castings": {}
+  }
 }

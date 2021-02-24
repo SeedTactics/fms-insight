@@ -35,16 +35,13 @@
       },
       "CsvHelper": {
         "type": "Transitive",
-        "resolved": "19.0.0",
-        "contentHash": "vUHF8wPOVvdtUQ4sXQI62jEIGcz5p7MG3Qf4Hazg+3EZQFh+UoTASEG0a1tsGmhNsHZ/Y+qRO+SgLMZO8jNcSg==",
-        "dependencies": {
-          "Microsoft.CSharp": "4.5.0"
-        }
+        "resolved": "22.1.2",
+        "contentHash": "VF4iFdkW4D1HJUFXKVD5VIw7KQBpq+7TXhNpkIOgqhDC2hUK5oDQlIeGZ0p1/ks98Wl8bJY7vxIRK3nvqFS4kw=="
       },
       "Germinate": {
         "type": "Transitive",
-        "resolved": "0.5.1",
-        "contentHash": "EGkwoCgsaeqoOH7sqGLveYD7lNGQ/ABPHOCU8yIZc9VDuT/J5SkJk5+kzFSuPKYYvr0DEmWEUkEWt7aZ9D4v9w=="
+        "resolved": "0.7.0",
+        "contentHash": "yyOxoKVwh8EFAo9pyFTselHyn4gxOah9V5sggg66M24EYDVzisH1yC98fXItpQHF4oyLVxZo1Apzlsp+T5UHFA=="
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "Transitive",
@@ -1656,8 +1653,8 @@
       "blackmaple.machineframework": {
         "type": "Project",
         "dependencies": {
-          "CsvHelper": "19.0.0",
-          "Germinate": "0.5.1",
+          "CsvHelper": "22.1.2",
+          "Germinate": "0.7.0",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "5.0.0",
           "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "5.0.0",
           "Microsoft.Data.Sqlite": "5.0.3",

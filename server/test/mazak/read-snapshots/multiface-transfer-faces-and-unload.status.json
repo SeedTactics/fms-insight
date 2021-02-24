@@ -1,405 +1,77 @@
 {
+  "TimeOfCurrentStatusUTC": "2021-02-24T20:20:23.9794896Z",
   "Jobs": {
-    "aaa-schId1234": {
-      "Completed": [[4], [0]],
-      "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
-      "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
-      "Archived": false,
-      "CopiedToSystem": true,
-      "PartName": "aaa",
-      "Comment": "",
-      "Unique": "aaa-schId1234",
-      "Priority": 75,
-      "ScheduleId": "schId1234",
-      "Bookings": ["book1", "book2"],
-      "ManuallyCreated": false,
-      "CreateMarkingData": false,
-      "Inspections": [],
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
-      "CyclesOnFirstProcess": [30],
-      "ProcsAndPaths": [
-        {
-          "paths": [
-            {
-              "PathGroup": 1,
-              "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [],
-              "Load": [1, 2],
-              "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
-              "ExpectedUnloadTime": "PT5M",
-              "Stops": [
-                {
-                  "Stations": {
-                    "1": "1001",
-                    "2": "1001",
-                    "3": "1001",
-                    "4": "1001"
-                  },
-                  "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT12M12S"
-                }
-              ],
-              "SimulatedProduction": [
-                {
-                  "TimeUTC": "2018-07-21T20:16:09.89949Z",
-                  "Quantity": 1
-                },
-                {
-                  "TimeUTC": "2018-07-21T20:17:25.89949Z",
-                  "Quantity": 2
-                },
-                {
-                  "TimeUTC": "2018-07-21T20:34:57.89949Z",
-                  "Quantity": 3
-                },
-                {
-                  "TimeUTC": "2018-07-21T20:36:13.89949Z",
-                  "Quantity": 4
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:00:31.89949Z",
-                  "Quantity": 5
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:01:47.89949Z",
-                  "Quantity": 6
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:24:23.89949Z",
-                  "Quantity": 7
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:25:39.89949Z",
-                  "Quantity": 8
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:48:45.89949Z",
-                  "Quantity": 9
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:50:01.89949Z",
-                  "Quantity": 10
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:13:07.89949Z",
-                  "Quantity": 11
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:14:23.89949Z",
-                  "Quantity": 12
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:37:29.89949Z",
-                  "Quantity": 13
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:38:45.89949Z",
-                  "Quantity": 14
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:01:51.89949Z",
-                  "Quantity": 15
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:03:07.89949Z",
-                  "Quantity": 16
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:26:13.89949Z",
-                  "Quantity": 17
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:27:29.89949Z",
-                  "Quantity": 18
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:50:35.89949Z",
-                  "Quantity": 19
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:51:51.89949Z",
-                  "Quantity": 20
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:14:57.89949Z",
-                  "Quantity": 21
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:16:13.89949Z",
-                  "Quantity": 22
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:39:19.89949Z",
-                  "Quantity": 23
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:40:35.89949Z",
-                  "Quantity": 24
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:03:41.89949Z",
-                  "Quantity": 25
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:04:57.89949Z",
-                  "Quantity": 26
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:28:03.89949Z",
-                  "Quantity": 27
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:29:19.89949Z",
-                  "Quantity": 28
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:52:25.89949Z",
-                  "Quantity": 29
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:53:41.89949Z",
-                  "Quantity": 30
-                }
-              ],
-              "SimulatedStartingUTC": "2018-07-21T20:16:09.89949Z",
-              "SimulatedAverageFlowTime": "PT1H3M58S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "PartsPerPallet": 1
-            }
-          ]
-        },
-        {
-          "paths": [
-            {
-              "PathGroup": 1,
-              "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [],
-              "Load": [1, 2],
-              "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
-              "ExpectedUnloadTime": "PT5M",
-              "Stops": [
-                {
-                  "Stations": {
-                    "1": "1002",
-                    "2": "1002",
-                    "3": "1002",
-                    "4": "1002"
-                  },
-                  "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT9M18S"
-                }
-              ],
-              "SimulatedProduction": [
-                {
-                  "TimeUTC": "2018-07-21T21:00:31.89949Z",
-                  "Quantity": 1
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:01:47.89949Z",
-                  "Quantity": 2
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:24:23.89949Z",
-                  "Quantity": 3
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:25:39.89949Z",
-                  "Quantity": 4
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:48:45.89949Z",
-                  "Quantity": 5
-                },
-                {
-                  "TimeUTC": "2018-07-21T21:50:01.89949Z",
-                  "Quantity": 6
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:13:07.89949Z",
-                  "Quantity": 7
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:14:23.89949Z",
-                  "Quantity": 8
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:37:29.89949Z",
-                  "Quantity": 9
-                },
-                {
-                  "TimeUTC": "2018-07-21T22:38:45.89949Z",
-                  "Quantity": 10
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:01:51.89949Z",
-                  "Quantity": 11
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:03:07.89949Z",
-                  "Quantity": 12
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:26:13.89949Z",
-                  "Quantity": 13
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:27:29.89949Z",
-                  "Quantity": 14
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:50:35.89949Z",
-                  "Quantity": 15
-                },
-                {
-                  "TimeUTC": "2018-07-21T23:51:51.89949Z",
-                  "Quantity": 16
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:14:57.89949Z",
-                  "Quantity": 17
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:16:13.89949Z",
-                  "Quantity": 18
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:39:19.89949Z",
-                  "Quantity": 19
-                },
-                {
-                  "TimeUTC": "2018-07-22T00:40:35.89949Z",
-                  "Quantity": 20
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:03:41.89949Z",
-                  "Quantity": 21
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:04:57.89949Z",
-                  "Quantity": 22
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:28:03.89949Z",
-                  "Quantity": 23
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:29:19.89949Z",
-                  "Quantity": 24
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:52:25.89949Z",
-                  "Quantity": 25
-                },
-                {
-                  "TimeUTC": "2018-07-22T01:53:41.89949Z",
-                  "Quantity": 26
-                },
-                {
-                  "TimeUTC": "2018-07-22T02:16:13.89949Z",
-                  "Quantity": 27
-                },
-                {
-                  "TimeUTC": "2018-07-22T02:17:29.89949Z",
-                  "Quantity": 28
-                },
-                {
-                  "TimeUTC": "2018-07-22T02:40:01.89949Z",
-                  "Quantity": 29
-                },
-                {
-                  "TimeUTC": "2018-07-22T02:41:17.89949Z",
-                  "Quantity": 30
-                }
-              ],
-              "SimulatedStartingUTC": "2018-07-21T21:00:31.89949Z",
-              "SimulatedAverageFlowTime": "PT1H7M40.5333333S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "PartsPerPallet": 1
-            }
-          ]
-        }
-      ]
-    },
     "bbb-schId1234": {
-      "Completed": [[0], [0]],
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
+      "Completed": [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "Decrements": null,
+      "Precedence": [
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      "AssignedWorkorders": null,
+      "Unique": "bbb-schId1234",
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
-      "CopiedToSystem": true,
       "PartName": "bbb",
       "Comment": "",
-      "Unique": "bbb-schId1234",
-      "Priority": 75,
       "ScheduleId": "schId1234",
-      "Bookings": ["book1", "book2"],
+      "Bookings": [
+        "book1",
+        "book2"
+      ],
       "ManuallyCreated": false,
-      "CreateMarkingData": false,
-      "Inspections": [],
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
-      "CyclesOnFirstProcess": [40],
+      "CyclesOnFirstProcess": [
+        40
+      ],
       "ProcsAndPaths": [
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "Fixture": null,
+              "Face": null,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1001",
-                    "2": "1001",
-                    "3": "1001",
-                    "4": "1001"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1001",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
               ],
@@ -567,20 +239,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T02:16:13.89949Z",
               "SimulatedAverageFlowTime": "PT1H7M5.5S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1
             }
           ]
@@ -588,23 +246,37 @@
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "Fixture": null,
+              "Face": null,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1002",
-                    "2": "1002",
-                    "3": "1002",
-                    "4": "1002"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1002",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT20M"
                 }
               ],
@@ -772,20 +444,375 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T03:03:49.89949Z",
               "SimulatedAverageFlowTime": "PT1H5M23.8S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
+              "PartsPerPallet": 1
+            }
+          ]
+        }
+      ]
+    },
+    "aaa-schId1234": {
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
+      "Completed": [
+        [
+          4
+        ],
+        [
+          0
+        ]
+      ],
+      "Decrements": null,
+      "Precedence": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "AssignedWorkorders": null,
+      "Unique": "aaa-schId1234",
+      "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
+      "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
+      "Archived": false,
+      "PartName": "aaa",
+      "Comment": "",
+      "ScheduleId": "schId1234",
+      "Bookings": [
+        "book1",
+        "book2"
+      ],
+      "ManuallyCreated": false,
+      "CyclesOnFirstProcess": [
+        30
+      ],
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "Fixture": null,
+              "Face": null,
+              "Load": [
+                1,
+                2
+              ],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [
+                1,
+                2
+              ],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1001",
+                  "ProgramRevision": null,
+                  "Tools": {},
+                  "ExpectedCycleTime": "PT12M12S"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2018-07-21T20:16:09.89949Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2018-07-21T20:17:25.89949Z",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2018-07-21T20:34:57.89949Z",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2018-07-21T20:36:13.89949Z",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:00:31.89949Z",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:01:47.89949Z",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:24:23.89949Z",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:25:39.89949Z",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:48:45.89949Z",
+                  "Quantity": 9
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:50:01.89949Z",
+                  "Quantity": 10
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:13:07.89949Z",
+                  "Quantity": 11
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:14:23.89949Z",
+                  "Quantity": 12
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:37:29.89949Z",
+                  "Quantity": 13
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:38:45.89949Z",
+                  "Quantity": 14
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:01:51.89949Z",
+                  "Quantity": 15
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:03:07.89949Z",
+                  "Quantity": 16
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:26:13.89949Z",
+                  "Quantity": 17
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:27:29.89949Z",
+                  "Quantity": 18
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:50:35.89949Z",
+                  "Quantity": 19
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:51:51.89949Z",
+                  "Quantity": 20
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:14:57.89949Z",
+                  "Quantity": 21
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:16:13.89949Z",
+                  "Quantity": 22
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:39:19.89949Z",
+                  "Quantity": 23
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:40:35.89949Z",
+                  "Quantity": 24
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:03:41.89949Z",
+                  "Quantity": 25
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:04:57.89949Z",
+                  "Quantity": 26
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:28:03.89949Z",
+                  "Quantity": 27
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:29:19.89949Z",
+                  "Quantity": 28
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:52:25.89949Z",
+                  "Quantity": 29
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:53:41.89949Z",
+                  "Quantity": 30
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-21T20:16:09.89949Z",
+              "SimulatedAverageFlowTime": "PT1H3M58S",
+              "PartsPerPallet": 1
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "Fixture": null,
+              "Face": null,
+              "Load": [
+                1,
+                2
+              ],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [
+                1,
+                2
+              ],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1002",
+                  "ProgramRevision": null,
+                  "Tools": {},
+                  "ExpectedCycleTime": "PT9M18S"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2018-07-21T21:00:31.89949Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:01:47.89949Z",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:24:23.89949Z",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:25:39.89949Z",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:48:45.89949Z",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2018-07-21T21:50:01.89949Z",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:13:07.89949Z",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:14:23.89949Z",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:37:29.89949Z",
+                  "Quantity": 9
+                },
+                {
+                  "TimeUTC": "2018-07-21T22:38:45.89949Z",
+                  "Quantity": 10
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:01:51.89949Z",
+                  "Quantity": 11
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:03:07.89949Z",
+                  "Quantity": 12
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:26:13.89949Z",
+                  "Quantity": 13
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:27:29.89949Z",
+                  "Quantity": 14
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:50:35.89949Z",
+                  "Quantity": 15
+                },
+                {
+                  "TimeUTC": "2018-07-21T23:51:51.89949Z",
+                  "Quantity": 16
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:14:57.89949Z",
+                  "Quantity": 17
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:16:13.89949Z",
+                  "Quantity": 18
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:39:19.89949Z",
+                  "Quantity": 19
+                },
+                {
+                  "TimeUTC": "2018-07-22T00:40:35.89949Z",
+                  "Quantity": 20
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:03:41.89949Z",
+                  "Quantity": 21
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:04:57.89949Z",
+                  "Quantity": 22
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:28:03.89949Z",
+                  "Quantity": 23
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:29:19.89949Z",
+                  "Quantity": 24
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:52:25.89949Z",
+                  "Quantity": 25
+                },
+                {
+                  "TimeUTC": "2018-07-22T01:53:41.89949Z",
+                  "Quantity": 26
+                },
+                {
+                  "TimeUTC": "2018-07-22T02:16:13.89949Z",
+                  "Quantity": 27
+                },
+                {
+                  "TimeUTC": "2018-07-22T02:17:29.89949Z",
+                  "Quantity": 28
+                },
+                {
+                  "TimeUTC": "2018-07-22T02:40:01.89949Z",
+                  "Quantity": 29
+                },
+                {
+                  "TimeUTC": "2018-07-22T02:41:17.89949Z",
+                  "Quantity": 30
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-21T21:00:31.89949Z",
+              "SimulatedAverageFlowTime": "PT1H7M40.5333333S",
               "PartsPerPallet": 1
             }
           ]
@@ -793,49 +820,76 @@
       ]
     },
     "ccc-schId1234": {
-      "Completed": [[0], [0]],
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
+      "Completed": [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "Decrements": null,
+      "Precedence": [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "AssignedWorkorders": null,
+      "Unique": "ccc-schId1234",
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
-      "CopiedToSystem": true,
       "PartName": "ccc",
       "Comment": "",
-      "Unique": "ccc-schId1234",
-      "Priority": 75,
       "ScheduleId": "schId1234",
-      "Bookings": ["book1", "book2"],
+      "Bookings": [
+        "book1",
+        "book2"
+      ],
       "ManuallyCreated": false,
-      "CreateMarkingData": false,
-      "Inspections": [],
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
-      "CyclesOnFirstProcess": [22],
+      "CyclesOnFirstProcess": [
+        22
+      ],
       "ProcsAndPaths": [
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "Fixture": null,
+              "Face": null,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1003",
-                    "2": "1003",
-                    "3": "1003",
-                    "4": "1003"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1003",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT40M"
                 }
               ],
@@ -931,20 +985,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T10:55:25.89949Z",
               "SimulatedAverageFlowTime": "PT1H31M29.6363636S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1
             }
           ]
@@ -952,23 +992,37 @@
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "1",
+                "2",
+                "3",
+                "4"
+              ],
+              "Fixture": null,
+              "Face": null,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1004",
-                    "2": "1004",
-                    "3": "1004",
-                    "4": "1004"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1004",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT15M30S"
                 }
               ],
@@ -1064,20 +1118,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T12:13:47.89949Z",
               "SimulatedAverageFlowTime": "PT1H26M7.8181818S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1
             }
           ]
@@ -1086,14 +1126,14 @@
     }
   },
   "Pallets": {
-    "1": {
-      "Pallet": "1",
+    "4": {
+      "Pallet": "4",
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "LoadUnload",
-        "group": "L/U",
-        "num": 2
+        "loc": "MachineQueue",
+        "group": "MC",
+        "num": 4
       },
       "NumFaces": 2
     },
@@ -1108,6 +1148,17 @@
       },
       "NumFaces": 2
     },
+    "1": {
+      "Pallet": "1",
+      "FixtureOnPallet": "F:1:abfix:1",
+      "OnHold": false,
+      "CurrentPalletLocation": {
+        "loc": "LoadUnload",
+        "group": "L/U",
+        "num": 2
+      },
+      "NumFaces": 2
+    },
     "3": {
       "Pallet": "3",
       "FixtureOnPallet": "F:1:abfix:1",
@@ -1116,17 +1167,6 @@
         "loc": "Machine",
         "group": "MC",
         "num": 3
-      },
-      "NumFaces": 2
-    },
-    "4": {
-      "Pallet": "4",
-      "FixtureOnPallet": "F:1:abfix:1",
-      "OnHold": false,
-      "CurrentPalletLocation": {
-        "loc": "MachineQueue",
-        "group": "MC",
-        "num": 4
       },
       "NumFaces": 2
     }
@@ -1139,6 +1179,7 @@
       "Process": 1,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "1",
@@ -1159,6 +1200,7 @@
       "Process": 2,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "1",
@@ -1175,6 +1217,7 @@
       "Process": 0,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "Free"
       },
@@ -1193,6 +1236,7 @@
       "Process": 1,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "2",
@@ -1209,6 +1253,7 @@
       "Process": 2,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "2",
@@ -1225,6 +1270,7 @@
       "Process": 1,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "3",
@@ -1241,6 +1287,7 @@
       "Process": 2,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "3",
@@ -1257,6 +1304,7 @@
       "Process": 2,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "4",
@@ -1273,6 +1321,7 @@
       "Process": 1,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "4",
@@ -1285,10 +1334,9 @@
   ],
   "Alarms": [],
   "Queues": {
-    "castings": {},
-    "queueAAA": {},
+    "queueCCC": {},
     "queueBBB": {},
-    "queueCCC": {}
-  },
-  "TimeOfCurrentStatusUTC": "2018-08-23T14:10:37.9058844Z"
+    "queueAAA": {},
+    "castings": {}
+  }
 }

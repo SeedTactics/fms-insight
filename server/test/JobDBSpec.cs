@@ -1415,37 +1415,4 @@ namespace MachineWatchTest
     }
   }
 
-  public static class JobAdjustment
-  {
-    public static Job AdjustPath(this Job job, int proc, int path, Action<IProcPathInfoDraft> f)
-    {
-      return job with
-      {
-        Processes = job.Processes.Select((p, procIdx) =>
-        {
-          if (procIdx == proc - 1)
-          {
-            return new ProcessInfo()
-            {
-              Paths = p.Paths.Select((pathR, pathIdx) =>
-              {
-                if (pathIdx == path - 1)
-                {
-                  return pathR % f;
-                }
-                else
-                {
-                  return pathR;
-                }
-              }).ToArray()
-            };
-          }
-          else
-          {
-            return p;
-          }
-        }).ToArray()
-      };
-    }
-  }
 }

@@ -30,13 +30,6 @@
       "Bookings": [],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
       "CyclesOnFirstProcess": [
         20
       ],
@@ -48,8 +41,8 @@
               "Pallets": [
                 "2"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixtureBB",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -165,20 +158,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T22:16:00.112578Z",
               "SimulatedAverageFlowTime": "PT28M0.8S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "InputQueue": "castings",
               "OutputQueue": "queueBBB"
@@ -192,8 +171,8 @@
               "Pallets": [
                 "2"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixtureBB",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -309,20 +288,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T22:58:52.112578Z",
               "SimulatedAverageFlowTime": "PT54M25.7S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "InputQueue": "queueBBB"
             }
@@ -360,13 +325,6 @@
       "Bookings": [],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
       "CyclesOnFirstProcess": [
         11
       ],
@@ -378,8 +336,8 @@
               "Pallets": [
                 "1"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixtureAA1",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -459,20 +417,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T22:25:28.112578Z",
               "SimulatedAverageFlowTime": "PT35M32.3636363S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "InputQueue": "castings",
               "OutputQueue": "queueAAA"
@@ -486,8 +430,8 @@
               "Pallets": [
                 "1"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixtureAA2",
+              "Face": 2,
               "Load": [
                 1,
                 2
@@ -567,20 +511,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T23:48:38.112578Z",
               "SimulatedAverageFlowTime": "PT1H35M20.9090909S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "InputQueue": "queueAAA"
             }
@@ -618,13 +548,6 @@
       "Bookings": [],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
       "CyclesOnFirstProcess": [
         38
       ],
@@ -636,8 +559,8 @@
               "Pallets": [
                 "5"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixtureCC5",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -749,20 +672,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T22:39:48.112578Z",
               "SimulatedAverageFlowTime": "PT41M58.0526315S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 2,
               "OutputQueue": "queueCCC"
             }
@@ -775,8 +684,8 @@
               "Pallets": [
                 "6"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixtureCC6",
+              "Face": 2,
               "Load": [
                 1,
                 2
@@ -888,20 +797,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-19T00:00:42.112578Z",
               "SimulatedAverageFlowTime": "PT43M54.1578947S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 2,
               "InputQueue": "queueCCC"
             }

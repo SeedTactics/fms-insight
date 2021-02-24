@@ -450,7 +450,7 @@ namespace BlackMaple.MachineFramework
                   PartsPerPallet = p.PartsPerPallet,
                   InputQueue = p.InputQueue,
                   OutputQueue = p.OutputQueue,
-                  Inspections = p.Insps,
+                  Inspections = p.Insps.Count == 0 ? null : p.Insps,
                   Casting = p.Casting
                 })
                 .ToArray()

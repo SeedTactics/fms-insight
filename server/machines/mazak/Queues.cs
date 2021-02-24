@@ -433,13 +433,13 @@ namespace MazakMachineInterface
       };
     }
 
-    private static int? FindPathGroup(IRepository log, JobPlan job, long matId)
+    private static int? FindPathGroup(IRepository log, Func<int, int, int> getPathGroup, long matId)
     {
       var details = log.GetMaterialDetails(matId);
       if (details.Paths.Count > 0)
       {
         var path = details.Paths.Aggregate((max, v) => max.Key > v.Key ? max : v);
-        return job.GetPathGroup(process: path.Key, path: path.Value);
+        return getPathGroup(path.Key, path.Value);
       }
       else
       {
@@ -450,14 +450,19 @@ namespace MazakMachineInterface
 
     public static List<QueuedMaterial> QueuedMaterialForLoading(JobPlan job, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
     {
+      return QueuedMaterialForLoading(job.UniqueStr, job.GetNumPaths(proc), job.GetPathGroup, materialToSearch, proc, path, log);
+    }
+
+    public static List<QueuedMaterial> QueuedMaterialForLoading(string jobUniq, int numPathsForProc, Func<int, int, int> getPathGroup, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
+    {
       var mats = new List<QueuedMaterial>();
       foreach (var m in materialToSearch)
       {
-        if (m.Unique != job.UniqueStr) continue;
+        if (m.Unique != jobUniq) continue;
         if ((log.NextProcessForQueuedMaterial(m.MaterialID) ?? 1) != proc) continue;
-        if (job.GetNumPaths(proc) > 1)
+        if (numPathsForProc > 1)
         {
-          if (FindPathGroup(log, job, m.MaterialID) != job.GetPathGroup(proc, path)) continue;
+          if (FindPathGroup(log, getPathGroup, m.MaterialID) != getPathGroup(proc, path)) continue;
         }
 
         mats.Add(m);

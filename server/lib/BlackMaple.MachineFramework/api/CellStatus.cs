@@ -55,7 +55,7 @@ namespace BlackMaple.MachineWatchInterface
     public DateTime TimeOfCurrentStatusUTC { get; init; }
 
     [DataMember(Name = "Jobs", IsRequired = true)]
-    public ImmutableDictionary<string, InProcessJob> Jobs { get; init; } = ImmutableDictionary<string, InProcessJob>.Empty;
+    public ImmutableDictionary<string, MachineFramework.ActiveJob> Jobs { get; init; } = ImmutableDictionary<string, MachineFramework.ActiveJob>.Empty;
 
     [DataMember(Name = "Pallets", IsRequired = true)]
     public ImmutableDictionary<string, PalletStatus> Pallets { get; init; } = ImmutableDictionary<string, PalletStatus>.Empty;

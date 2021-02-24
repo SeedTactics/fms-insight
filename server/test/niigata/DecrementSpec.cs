@@ -78,7 +78,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         d.DecrementJobs(_jobDB,
           new CellState()
           {
-            UnarchivedJobs = new[] { j1, j2 },
+            UnarchivedLegacyJobs = new[] { j1, j2 },
             JobQtyRemainingOnProc1 = qtyRemaining
           }
         ).Should().Be(i == 0); // only something changed first time

@@ -1,11 +1,10 @@
 {
+  "TimeOfCurrentStatusUTC": "2021-02-24T20:20:24.0229288Z",
   "Jobs": {
-    "part2-schId1234": {
+    "part3-schId1234": {
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
       "Completed": [
-        [
-          0,
-          0
-        ],
         [
           0,
           0
@@ -14,22 +13,17 @@
       "Decrements": null,
       "Precedence": [
         [
-          1,
-          2
-        ],
-        [
-          1,
-          2
+          5,
+          6
         ]
       ],
+      "AssignedWorkorders": null,
+      "Unique": "part3-schId1234",
       "RouteStartUTC": "2016-11-05T12:00:00Z",
       "RouteEndUTC": "2016-11-06T13:00:00Z",
       "Archived": false,
-      "CopiedToSystem": true,
-      "PartName": "part2",
+      "PartName": "part3",
       "Comment": "",
-      "Unique": "part2-schId1234",
-      "CreateMarkingData": false,
       "ScheduleId": "schId1234",
       "Bookings": [
         "book1",
@@ -37,16 +31,9 @@
         "book3"
       ],
       "ManuallyCreated": false,
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
       "CyclesOnFirstProcess": [
-        4,
-        1
+        3,
+        2
       ],
       "ProcsAndPaths": [
         {
@@ -54,211 +41,54 @@
             {
               "PathGroup": 0,
               "Pallets": [
-                "1",
-                "2"
+                "5"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixCC",
+              "Face": 1,
               "Load": [
                 1,
                 2
               ],
-              "ExpectedLoadTime": "PT5M",
+              "ExpectedLoadTime": "PT6M",
               "Unload": [
                 1,
                 2
               ],
-              "ExpectedUnloadTime": "PT5M",
+              "ExpectedUnloadTime": "PT6M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     1,
                     2
                   ],
-                  "Program": "1003",
+                  "Program": "1005",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT30M",
-                  "Stations": {
-                    "1": "1003",
-                    "2": "1003"
-                  }
+                  "ExpectedCycleTime": "PT40M"
                 }
               ],
               "SimulatedProduction": [
                 {
-                  "TimeUTC": "2016-11-05T20:29:00Z",
+                  "TimeUTC": "2016-11-06T03:30:00Z",
                   "Quantity": 1
                 },
                 {
-                  "TimeUTC": "2016-11-05T21:26:00Z",
+                  "TimeUTC": "2016-11-06T05:10:00Z",
                   "Quantity": 2
                 },
                 {
-                  "TimeUTC": "2016-11-05T22:42:00Z",
+                  "TimeUTC": "2016-11-06T06:38:00Z",
                   "Quantity": 3
-                },
-                {
-                  "TimeUTC": "2016-11-05T23:58:00Z",
-                  "Quantity": 4
                 }
               ],
-              "SimulatedStartingUTC": "2016-11-05T20:29:00Z",
-              "SimulatedAverageFlowTime": "PT2H23M15S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "PartsPerPallet": 1
-            },
-            {
-              "PathGroup": 1,
-              "Pallets": [
-                "3",
-                "4"
-              ],
-              "Fixture": null,
-              "Face": 0,
-              "Load": [
-                1,
-                2
-              ],
-              "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
-              "ExpectedUnloadTime": "PT5M",
-              "Stops": [
-                {
-                  "StationNums": [
-                    3,
-                    4
-                  ],
-                  "Program": "1003",
-                  "ProgramRevision": null,
-                  "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT30M",
-                  "Stations": {
-                    "3": "1003",
-                    "4": "1003"
-                  }
-                }
-              ],
-              "SimulatedProduction": [
-                {
-                  "TimeUTC": "2016-11-05T21:40:00Z",
-                  "Quantity": 1
-                }
-              ],
-              "SimulatedStartingUTC": "2016-11-05T21:40:00Z",
-              "SimulatedAverageFlowTime": "PT1H45M",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "PartsPerPallet": 1
-            }
-          ]
-        },
-        {
-          "paths": [
-            {
-              "PathGroup": 0,
-              "Pallets": [
-                "1",
-                "2"
-              ],
-              "Fixture": null,
-              "Face": 0,
-              "Load": [
-                1,
-                2
-              ],
-              "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
-              "ExpectedUnloadTime": "PT5M",
-              "Stops": [
-                {
-                  "StationNums": [
-                    1,
-                    2
-                  ],
-                  "Program": "1004",
-                  "ProgramRevision": null,
-                  "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT18M",
-                  "Stations": {
-                    "1": "1004",
-                    "2": "1004"
-                  }
-                }
-              ],
-              "SimulatedProduction": [
-                {
-                  "TimeUTC": "2016-11-05T22:42:00Z",
-                  "Quantity": 1
-                },
-                {
-                  "TimeUTC": "2016-11-05T23:58:00Z",
-                  "Quantity": 2
-                },
-                {
-                  "TimeUTC": "2016-11-06T00:07:00Z",
-                  "Quantity": 3
-                },
-                {
-                  "TimeUTC": "2016-11-06T01:23:00Z",
-                  "Quantity": 4
-                }
-              ],
-              "SimulatedStartingUTC": "2016-11-05T22:42:00Z",
-              "SimulatedAverageFlowTime": "PT2H8M45S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
+              "SimulatedStartingUTC": "2016-11-06T03:30:00Z",
+              "SimulatedAverageFlowTime": "PT2H45M20S",
               "PartsPerPallet": 1,
               "Inspections": [
                 {
                   "InspectionType": "CMM",
-                  "Counter": "part2,CMM,P%pal1%,S%stat1,1%,P%pal2%,S%stat2,1%",
+                  "Counter": "part3,CMM,P%pal1%,S%stat1,1%",
                   "MaxVal": 7,
                   "RandomFreq": 0.0,
                   "TimeInterval": "P4DT4H"
@@ -266,67 +96,52 @@
               ]
             },
             {
-              "PathGroup": 1,
+              "PathGroup": 0,
               "Pallets": [
-                "3",
-                "4"
+                "6"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixCC",
+              "Face": 1,
               "Load": [
                 1,
                 2
               ],
-              "ExpectedLoadTime": "PT5M",
+              "ExpectedLoadTime": "PT6M",
               "Unload": [
                 1,
                 2
               ],
-              "ExpectedUnloadTime": "PT5M",
+              "ExpectedUnloadTime": "PT6M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     3,
                     4
                   ],
-                  "Program": "1004",
+                  "Program": "1005",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT18M",
-                  "Stations": {
-                    "3": "1004",
-                    "4": "1004"
-                  }
+                  "ExpectedCycleTime": "PT40M"
                 }
               ],
               "SimulatedProduction": [
                 {
-                  "TimeUTC": "2016-11-06T01:04:00Z",
+                  "TimeUTC": "2016-11-06T04:20:00Z",
                   "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2016-11-06T05:54:00Z",
+                  "Quantity": 2
                 }
               ],
-              "SimulatedStartingUTC": "2016-11-06T01:04:00Z",
-              "SimulatedAverageFlowTime": "PT3H34M",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
+              "SimulatedStartingUTC": "2016-11-06T04:20:00Z",
+              "SimulatedAverageFlowTime": "PT1H46M",
               "PartsPerPallet": 1,
               "Inspections": [
                 {
                   "InspectionType": "CMM",
-                  "Counter": "part2,CMM,P%pal1%,S%stat1,1%,P%pal2%,S%stat2,1%",
+                  "Counter": "part3,CMM,P%pal1%,S%stat1,1%",
                   "MaxVal": 7,
                   "RandomFreq": 0.0,
                   "TimeInterval": "P4DT4H"
@@ -338,6 +153,8 @@
       ]
     },
     "part1-schId1234": {
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
       "Completed": [
         [
           0,
@@ -359,14 +176,13 @@
           4
         ]
       ],
+      "AssignedWorkorders": null,
+      "Unique": "part1-schId1234",
       "RouteStartUTC": "2016-11-05T12:00:00Z",
       "RouteEndUTC": "2016-11-06T13:00:00Z",
       "Archived": false,
-      "CopiedToSystem": true,
       "PartName": "part1",
       "Comment": "",
-      "Unique": "part1-schId1234",
-      "CreateMarkingData": false,
       "ScheduleId": "schId1234",
       "Bookings": [
         "book1",
@@ -374,13 +190,6 @@
         "book3"
       ],
       "ManuallyCreated": false,
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
       "CyclesOnFirstProcess": [
         3,
         2
@@ -394,8 +203,8 @@
                 "1",
                 "2"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixAA",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -408,6 +217,7 @@
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     1,
                     2
@@ -415,12 +225,7 @@
                   "Program": "1001",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT20M",
-                  "Stations": {
-                    "1": "1001",
-                    "2": "1001"
-                  }
+                  "ExpectedCycleTime": "PT20M"
                 }
               ],
               "SimulatedProduction": [
@@ -443,20 +248,6 @@
               ],
               "SimulatedStartingUTC": "2016-11-05T14:02:00Z",
               "SimulatedAverageFlowTime": "PT2H2M",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1
             },
             {
@@ -465,8 +256,8 @@
                 "3",
                 "4"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixAA",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -479,6 +270,7 @@
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     3,
                     4
@@ -486,12 +278,7 @@
                   "Program": "1001",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT20M",
-                  "Stations": {
-                    "3": "1001",
-                    "4": "1001"
-                  }
+                  "ExpectedCycleTime": "PT20M"
                 }
               ],
               "SimulatedProduction": [
@@ -502,20 +289,6 @@
               ],
               "SimulatedStartingUTC": "2016-11-05T16:34:00Z",
               "SimulatedAverageFlowTime": "PT2H59M",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1
             }
           ]
@@ -528,8 +301,8 @@
                 "1",
                 "2"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixAA",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -542,6 +315,7 @@
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     1,
                     2
@@ -549,12 +323,7 @@
                   "Program": "1002",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT10M",
-                  "Stations": {
-                    "1": "1002",
-                    "2": "1002"
-                  }
+                  "ExpectedCycleTime": "PT10M"
                 }
               ],
               "SimulatedProduction": [
@@ -577,20 +346,6 @@
               ],
               "SimulatedStartingUTC": "2016-11-05T15:18:00Z",
               "SimulatedAverageFlowTime": "PT1H24M30S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "Inspections": [
                 {
@@ -608,8 +363,8 @@
                 "3",
                 "4"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixAA",
+              "Face": 1,
               "Load": [
                 1,
                 2
@@ -622,6 +377,7 @@
               "ExpectedUnloadTime": "PT4M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     3,
                     4
@@ -629,12 +385,7 @@
                   "Program": "1002",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT10M",
-                  "Stations": {
-                    "3": "1002",
-                    "4": "1002"
-                  }
+                  "ExpectedCycleTime": "PT10M"
                 }
               ],
               "SimulatedProduction": [
@@ -645,20 +396,6 @@
               ],
               "SimulatedStartingUTC": "2016-11-05T20:04:00Z",
               "SimulatedAverageFlowTime": "PT3H38M",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "Inspections": [
                 {
@@ -674,8 +411,14 @@
         }
       ]
     },
-    "part3-schId1234": {
+    "part2-schId1234": {
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
       "Completed": [
+        [
+          0,
+          0
+        ],
         [
           0,
           0
@@ -684,18 +427,21 @@
       "Decrements": null,
       "Precedence": [
         [
-          5,
-          6
+          1,
+          2
+        ],
+        [
+          1,
+          2
         ]
       ],
+      "AssignedWorkorders": null,
+      "Unique": "part2-schId1234",
       "RouteStartUTC": "2016-11-05T12:00:00Z",
       "RouteEndUTC": "2016-11-06T13:00:00Z",
       "Archived": false,
-      "CopiedToSystem": true,
-      "PartName": "part3",
+      "PartName": "part2",
       "Comment": "",
-      "Unique": "part3-schId1234",
-      "CreateMarkingData": false,
       "ScheduleId": "schId1234",
       "Bookings": [
         "book1",
@@ -703,16 +449,9 @@
         "book3"
       ],
       "ManuallyCreated": false,
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
       "CyclesOnFirstProcess": [
-        3,
-        2
+        4,
+        1
       ],
       "ProcsAndPaths": [
         {
@@ -720,72 +459,157 @@
             {
               "PathGroup": 0,
               "Pallets": [
-                "5"
+                "1",
+                "2"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixBB",
+              "Face": 1,
               "Load": [
                 1,
                 2
               ],
-              "ExpectedLoadTime": "PT6M",
+              "ExpectedLoadTime": "PT5M",
               "Unload": [
                 1,
                 2
               ],
-              "ExpectedUnloadTime": "PT6M",
+              "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     1,
                     2
                   ],
-                  "Program": "1005",
+                  "Program": "1003",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT40M",
-                  "Stations": {
-                    "1": "1005",
-                    "2": "1005"
-                  }
+                  "ExpectedCycleTime": "PT30M"
                 }
               ],
               "SimulatedProduction": [
                 {
-                  "TimeUTC": "2016-11-06T03:30:00Z",
+                  "TimeUTC": "2016-11-05T20:29:00Z",
                   "Quantity": 1
                 },
                 {
-                  "TimeUTC": "2016-11-06T05:10:00Z",
+                  "TimeUTC": "2016-11-05T21:26:00Z",
                   "Quantity": 2
                 },
                 {
-                  "TimeUTC": "2016-11-06T06:38:00Z",
+                  "TimeUTC": "2016-11-05T22:42:00Z",
                   "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2016-11-05T23:58:00Z",
+                  "Quantity": 4
                 }
               ],
-              "SimulatedStartingUTC": "2016-11-06T03:30:00Z",
-              "SimulatedAverageFlowTime": "PT2H45M20S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
+              "SimulatedStartingUTC": "2016-11-05T20:29:00Z",
+              "SimulatedAverageFlowTime": "PT2H23M15S",
+              "PartsPerPallet": 1
+            },
+            {
+              "PathGroup": 1,
+              "Pallets": [
+                "3",
+                "4"
+              ],
+              "Fixture": "fixBB",
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [
+                1,
+                2
+              ],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [
+                    3,
+                    4
+                  ],
+                  "Program": "1003",
+                  "ProgramRevision": null,
+                  "Tools": {},
+                  "ExpectedCycleTime": "PT30M"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2016-11-05T21:40:00Z",
+                  "Quantity": 1
+                }
+              ],
+              "SimulatedStartingUTC": "2016-11-05T21:40:00Z",
+              "SimulatedAverageFlowTime": "PT1H45M",
+              "PartsPerPallet": 1
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "1",
+                "2"
+              ],
+              "Fixture": "fixBB",
+              "Face": 2,
+              "Load": [
+                1,
+                2
+              ],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [
+                1,
+                2
+              ],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2
+                  ],
+                  "Program": "1004",
+                  "ProgramRevision": null,
+                  "Tools": {},
+                  "ExpectedCycleTime": "PT18M"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2016-11-05T22:42:00Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2016-11-05T23:58:00Z",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2016-11-06T00:07:00Z",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2016-11-06T01:23:00Z",
+                  "Quantity": 4
+                }
+              ],
+              "SimulatedStartingUTC": "2016-11-05T22:42:00Z",
+              "SimulatedAverageFlowTime": "PT2H8M45S",
               "PartsPerPallet": 1,
               "Inspections": [
                 {
                   "InspectionType": "CMM",
-                  "Counter": "part3,CMM,P%pal1%,S%stat1,1%",
+                  "Counter": "part2,CMM,P%pal1%,S%stat1,1%,P%pal2%,S%stat2,1%",
                   "MaxVal": 7,
                   "RandomFreq": 0.0,
                   "TimeInterval": "P4DT4H"
@@ -793,70 +617,49 @@
               ]
             },
             {
-              "PathGroup": 0,
+              "PathGroup": 1,
               "Pallets": [
-                "6"
+                "3",
+                "4"
               ],
-              "Fixture": null,
-              "Face": 0,
+              "Fixture": "fixBB",
+              "Face": 2,
               "Load": [
                 1,
                 2
               ],
-              "ExpectedLoadTime": "PT6M",
+              "ExpectedLoadTime": "PT5M",
               "Unload": [
                 1,
                 2
               ],
-              "ExpectedUnloadTime": "PT6M",
+              "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
+                  "StationGroup": "MC",
                   "StationNums": [
                     3,
                     4
                   ],
-                  "Program": "1005",
+                  "Program": "1004",
                   "ProgramRevision": null,
                   "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT40M",
-                  "Stations": {
-                    "3": "1005",
-                    "4": "1005"
-                  }
+                  "ExpectedCycleTime": "PT18M"
                 }
               ],
               "SimulatedProduction": [
                 {
-                  "TimeUTC": "2016-11-06T04:20:00Z",
+                  "TimeUTC": "2016-11-06T01:04:00Z",
                   "Quantity": 1
-                },
-                {
-                  "TimeUTC": "2016-11-06T05:54:00Z",
-                  "Quantity": 2
                 }
               ],
-              "SimulatedStartingUTC": "2016-11-06T04:20:00Z",
-              "SimulatedAverageFlowTime": "PT1H46M",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
+              "SimulatedStartingUTC": "2016-11-06T01:04:00Z",
+              "SimulatedAverageFlowTime": "PT3H34M",
               "PartsPerPallet": 1,
               "Inspections": [
                 {
                   "InspectionType": "CMM",
-                  "Counter": "part3,CMM,P%pal1%,S%stat1,1%",
+                  "Counter": "part2,CMM,P%pal1%,S%stat1,1%,P%pal2%,S%stat2,1%",
                   "MaxVal": 7,
                   "RandomFreq": 0.0,
                   "TimeInterval": "P4DT4H"
@@ -869,39 +672,6 @@
     }
   },
   "Pallets": {
-    "1": {
-      "Pallet": "1",
-      "FixtureOnPallet": "F:1:fixAA:1:1",
-      "OnHold": false,
-      "CurrentPalletLocation": {
-        "loc": "LoadUnload",
-        "group": "L/U",
-        "num": 1
-      },
-      "NumFaces": 1
-    },
-    "2": {
-      "Pallet": "2",
-      "FixtureOnPallet": "F:1:fixAA:1:1",
-      "OnHold": false,
-      "CurrentPalletLocation": {
-        "loc": "LoadUnload",
-        "group": "L/U",
-        "num": 2
-      },
-      "NumFaces": 1
-    },
-    "3": {
-      "Pallet": "3",
-      "FixtureOnPallet": "F:1:fixAA:3:1",
-      "OnHold": false,
-      "CurrentPalletLocation": {
-        "loc": "Buffer",
-        "group": "Buffer",
-        "num": 3
-      },
-      "NumFaces": 1
-    },
     "4": {
       "Pallet": "4",
       "FixtureOnPallet": "F:1:fixAA:3:1",
@@ -924,6 +694,28 @@
       },
       "NumFaces": 1
     },
+    "2": {
+      "Pallet": "2",
+      "FixtureOnPallet": "F:1:fixAA:1:1",
+      "OnHold": false,
+      "CurrentPalletLocation": {
+        "loc": "LoadUnload",
+        "group": "L/U",
+        "num": 2
+      },
+      "NumFaces": 1
+    },
+    "1": {
+      "Pallet": "1",
+      "FixtureOnPallet": "F:1:fixAA:1:1",
+      "OnHold": false,
+      "CurrentPalletLocation": {
+        "loc": "LoadUnload",
+        "group": "L/U",
+        "num": 1
+      },
+      "NumFaces": 1
+    },
     "6": {
       "Pallet": "6",
       "FixtureOnPallet": "F:1:fixCC:6:1",
@@ -932,6 +724,17 @@
         "loc": "Buffer",
         "group": "Buffer",
         "num": 6
+      },
+      "NumFaces": 1
+    },
+    "3": {
+      "Pallet": "3",
+      "FixtureOnPallet": "F:1:fixAA:3:1",
+      "OnHold": false,
+      "CurrentPalletLocation": {
+        "loc": "Buffer",
+        "group": "Buffer",
+        "num": 3
       },
       "NumFaces": 1
     }
@@ -978,10 +781,9 @@
   ],
   "Alarms": [],
   "Queues": {
-    "castings": {},
-    "queueAAA": {},
+    "queueCCC": {},
     "queueBBB": {},
-    "queueCCC": {}
-  },
-  "TimeOfCurrentStatusUTC": "2020-10-22T15:59:01.1544382Z"
+    "queueAAA": {},
+    "castings": {}
+  }
 }

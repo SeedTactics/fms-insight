@@ -71,7 +71,8 @@ namespace BlackMaple.FMSInsight.Niigata
   public class CellState
   {
     public NiigataStatus Status { get; set; }
-    public ICollection<JobPlan> UnarchivedJobs { get; set; }
+    public IReadOnlyList<Job> UnarchivedJobs { get; set; }
+    public IReadOnlyList<JobPlan> UnarchivedLegacyJobs { get; set; }
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterialAndJob> QueuedMaterial { get; set; }
@@ -82,7 +83,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public interface IBuildCellState
   {
-    CellState BuildCellState(IRepository jobDB, NiigataStatus status, IEnumerable<JobPlan> unarchivedJobs);
+    CellState BuildCellState(IRepository jobDB, NiigataStatus status);
   }
 
   public class CreateCellState : IBuildCellState
@@ -99,13 +100,13 @@ namespace BlackMaple.FMSInsight.Niigata
       _machConnection = machConn;
     }
 
-    public CellState BuildCellState(IRepository logDB, NiigataStatus status, IEnumerable<JobPlan> originalUnarchivedJobs)
+    public CellState BuildCellState(IRepository logDB, NiigataStatus status)
     {
       var palletStateUpdated = false;
 
-      var jobCache = Memoize<string, JobPlan>(u => logDB.LoadJob(u)?.ToLegacyJob());
+      var jobCache = new JobCache(logDB);
       var pals = status.Pallets
-        .Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
+        .Select(p => BuildCurrentPallet(status.Machines, jobCache.Lookup, p, logDB))
         .OrderBy(p =>
         {
           // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
@@ -138,26 +139,27 @@ namespace BlackMaple.FMSInsight.Niigata
       pals.Sort((p1, p2) => p1.Status.Master.PalletNum.CompareTo(p2.Status.Master.PalletNum));
 
       // must calculate QueuedMaterial before loading programs, because QueuedMaterial might unarchive a job.
-      var unarchivedJobs = originalUnarchivedJobs.ToList();
       var queuedMats = QueuedMaterial(new HashSet<long>(
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
-        ), logDB, unarchivedJobs, jobCache);
-      var progsInUse = FindProgramNums(logDB, unarchivedJobs, queuedMats, status);
+        ), logDB, jobCache.Lookup);
+
+      var progsInUse = FindProgramNums(logDB, jobCache.AllJobs.Select(j => j.legacyJob), queuedMats, status);
 
       return new CellState()
       {
         Status = status,
-        UnarchivedJobs = unarchivedJobs,
+        UnarchivedJobs = jobCache.AllJobs.Select(j => j.job with { Archived = false }).ToArray(),
+        UnarchivedLegacyJobs = jobCache.AllJobs.Select(j => { j.legacyJob.Archived = false; return j.legacyJob; }).ToArray(),
         PalletStateUpdated = palletStateUpdated,
         Pallets = pals,
         QueuedMaterial = queuedMats,
-        JobQtyRemainingOnProc1 = CountRemainingQuantity(logDB, unarchivedJobs, pals),
+        JobQtyRemainingOnProc1 = CountRemainingQuantity(logDB, jobCache.AllJobs.Select(j => j.legacyJob), pals),
         ProgramsInUse = progsInUse,
         OldUnusedPrograms = OldUnusedPrograms(logDB, status, progsInUse)
       };
     }
 
-    private PalletAndMaterial BuildCurrentPallet(IReadOnlyDictionary<int, MachineStatus> machines, Func<string, JobPlan> jobCache, PalletStatus pallet, IRepository logDB)
+    private PalletAndMaterial BuildCurrentPallet(IReadOnlyDictionary<int, MachineStatus> machines, Func<string, (HistoricJob, JobPlan)> jobCache, PalletStatus pallet, IRepository logDB)
     {
       MachineStatus machStatus = null;
       if (pallet.CurStation.Location.Location == PalletLocationEnum.Machine)
@@ -175,7 +177,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .Load(pallet.Master.Comment, logDB)
         .Select(m =>
         {
-          var job = jobCache(m.Unique);
+          var job = jobCache(m.Unique).Item2;
           return new PalletFace()
           {
             Job = job,
@@ -228,7 +230,7 @@ namespace BlackMaple.FMSInsight.Niigata
               Type = InProcessMaterialAction.ActionType.Waiting
             },
           };
-        var job = jobCache(m.JobUniqueStr);
+        var job = jobCache(m.JobUniqueStr).Item2;
         if (job != null)
         {
           var stops = job.GetMachiningStop(inProcMat.Process, inProcMat.Path).ToList();
@@ -1495,36 +1497,30 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
     #region Material Computations
-    private List<InProcessMaterialAndJob> QueuedMaterial(HashSet<long> matsOnPallets, IRepository logDB, List<JobPlan> unarchivedJobs, Func<string, JobPlan> loadJob)
+    private record QueuedMatsAndUnarchivedJobs
+    {
+      public List<InProcessMaterialAndJob> QueuedMats { get; init; }
+      public IEnumerable<Job> UnarchivedJobs { get; init; }
+      public IEnumerable<JobPlan> UnarchivedLegacyJobs { get; init; }
+    }
+    private List<InProcessMaterialAndJob> QueuedMaterial(HashSet<long> matsOnPallets, IRepository logDB, Func<string, (HistoricJob, JobPlan)> loadJob)
     {
       var mats = new List<InProcessMaterialAndJob>();
-      var jobUniqs = new HashSet<string>(unarchivedJobs.Select(j => j.UniqueStr));
 
       foreach (var mat in logDB.GetMaterialInAllQueues())
       {
         if (matsOnPallets.Contains(mat.MaterialID)) continue;
-
 
         var nextProc = logDB.NextProcessForQueuedMaterial(mat.MaterialID);
         var lastProc = (nextProc ?? 1) - 1;
 
         var matDetails = logDB.GetMaterialDetails(mat.MaterialID);
 
-        JobPlan job = string.IsNullOrEmpty(matDetails.JobUnique) ? null : loadJob(matDetails.JobUnique);
-        if (job != null && !jobUniqs.Contains(matDetails.JobUnique))
-        {
-          if (job.Archived)
-          {
-            logDB.UnarchiveJob(matDetails.JobUnique);
-            job.Archived = false;
-          }
-          jobUniqs.Add(matDetails.JobUnique);
-          unarchivedJobs.Add(job);
-        }
+        var (job, legacyJob) = string.IsNullOrEmpty(matDetails.JobUnique) ? (null, null) : loadJob(matDetails.JobUnique);
 
         mats.Add(new InProcessMaterialAndJob()
         {
-          Job = job,
+          Job = legacyJob,
           Mat = new InProcessMaterial()
           {
             MaterialID = mat.MaterialID,
@@ -1920,6 +1916,40 @@ namespace BlackMaple.FMSInsight.Niigata
           return b;
         }
       };
+    }
+
+    private class JobCache
+    {
+      private Dictionary<string, (HistoricJob job, JobPlan legacyJob)> _jobs;
+      private IRepository _repo;
+
+      public JobCache(IRepository repo)
+      {
+        _repo = repo;
+        _jobs = repo.LoadUnarchivedJobs().ToDictionary(j => j.UniqueStr, j => (job: j, legacyJob: j.ToLegacyJob()));
+      }
+
+      public (HistoricJob job, JobPlan legacyJob) Lookup(string uniq)
+      {
+        if (_jobs.TryGetValue(uniq, out var j))
+        {
+          return j;
+        }
+        else
+        {
+          var job = _repo.LoadJob(uniq);
+          if (job != null && job.Archived)
+          {
+            _repo.UnarchiveJob(job.UniqueStr);
+            job = job with { Archived = false };
+          }
+          var legacyJob = job?.ToLegacyJob();
+          _jobs.Add(uniq, (job, legacyJob));
+          return (job, legacyJob);
+        }
+      }
+
+      public IEnumerable<(HistoricJob job, JobPlan legacyJob)> AllJobs => _jobs.Values;
     }
     #endregion
   }

@@ -196,10 +196,13 @@ namespace DebugMachineWatchApiServer
     {
       Serilog.Log.Information("Setting comment for {job} to {comment}", jobUnique, comment);
       LogDB.SetJobComment(jobUnique, comment);
-      if (CurrentStatus.Jobs.TryGetValue(jobUnique, out var job))
+      CurrentStatus = CurrentStatus.Produce(draft =>
       {
-        job.Comment = comment;
-      }
+        if (draft.Jobs.ContainsKey(jobUnique))
+        {
+          draft.Jobs[jobUnique] %= j => j.Comment = comment;
+        }
+      });
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 

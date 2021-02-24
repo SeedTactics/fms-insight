@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using BlackMaple.MachineWatchInterface;
 using System.Linq;
 using System.Collections.Immutable;
+using BlackMaple.MachineFramework;
 
 namespace Makino
 {
@@ -59,23 +60,23 @@ namespace Makino
 		 * fixture id => list of process ids
 		 *
 		 */
-    private Dictionary<int, JobPlan> _byPartID = new Dictionary<int, JobPlan>();
+    private Dictionary<int, Job> _byPartID = new Dictionary<int, Job>();
     private Dictionary<int, int> _procIDToProcNum = new Dictionary<int, int>();
     private Dictionary<int, int> _procIDToPartID = new Dictionary<int, int>();
     private Dictionary<int, int> _jobIDToNum = new Dictionary<int, int>();
     private Dictionary<int, int> _jobIDToProcID = new Dictionary<int, int>();
     private Dictionary<int, string> _programs = new Dictionary<int, string>();
-    private Dictionary<int, JobMachiningStop> _stops = new Dictionary<int, JobMachiningStop>();
-    private Dictionary<int, InProcessJob> _byOrderID = new Dictionary<int, InProcessJob>();
+    private Dictionary<int, MachiningStop> _stops = new Dictionary<int, MachiningStop>();
+    private Dictionary<int, ActiveJob> _byOrderID = new Dictionary<int, ActiveJob>();
 
-    private BlackMaple.MachineFramework.IRepository _logDb;
+    private IRepository _logDb;
 
-    public MakinoToJobMap(BlackMaple.MachineFramework.IRepository log)
+    public MakinoToJobMap(IRepository log)
     {
       _logDb = log;
     }
 
-    public IEnumerable<InProcessJob> Jobs
+    public IEnumerable<ActiveJob> Jobs
     {
       get { return _byOrderID.Values; }
     }
@@ -86,7 +87,7 @@ namespace Makino
       _procIDToPartID.Add(processID, partID);
     }
 
-    public JobPlan CreateJob(string unique, int partID)
+    public void CreateJob(string unique, int partID, string partName, string comment)
     {
       int numProc = 1;
       foreach (var p in _procIDToPartID)
@@ -98,9 +99,13 @@ namespace Makino
       }
       var job = new JobPlan(unique, numProc);
 
-      _byPartID.Add(partID, job);
-
-      return job;
+      _byPartID.Add(partID, new BlackMaple.MachineFramework.Job()
+      {
+        UniqueStr = unique,
+        PartName = partName,
+        Comment = comment,
+        ManuallyCreated = false
+      });
     }
 
     public void AddJobToProcess(int processID, int jobNumber, int jobID)
@@ -123,24 +128,29 @@ namespace Makino
         var job = _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]];
 
         if (jobNum == 1)
-          job.AddLoadStation(proc, 1, loc.Num);
+        {
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j => j.AdjustPath(proc, 1, p => p.Load = p.Load.Append(loc.Num).ToArray());
+        }
         else
-          job.AddUnloadStation(proc, 1, loc.Num);
-
+        {
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j => j.AdjustPath(proc, 1, p => p.Unload = p.Unload.Append(loc.Num).ToArray());
+        }
       }
       else
       {
         if (!_stops.ContainsKey(jobID))
         {
-          _stops.Add(jobID, new JobMachiningStop("MC"));
-          if (_programs.ContainsKey(jobID))
+          _stops.Add(jobID, new MachiningStop
           {
-            _stops[jobID].ProgramName = _programs[jobID];
-          }
-
+            StationGroup = "MC",
+            Program = _programs[jobID],
+            Stations = new[] { loc.Num }
+          });
         }
-        _stops[jobID].Stations.Add(loc.Num);
-
+        else
+        {
+          _stops[jobID] %= s => s.Stations = s.Stations.Append(loc.Num).ToArray();
+        }
       }
     }
 
@@ -150,9 +160,7 @@ namespace Makino
       {
 
         var procNum = _procIDToProcNum[proc.Key];
-        var job = _byPartID[proc.Value];
-
-        var stops = new SortedList<int, JobMachiningStop>();
+        var stops = new SortedList<int, MachiningStop>();
 
         foreach (var jobStop in _stops)
         {
@@ -163,25 +171,23 @@ namespace Makino
         }
 
         if (stops.Count > 0)
-          job.AddMachiningStops(procNum, 1, stops.Values);
+          _byPartID[proc.Value] %= j => j.AdjustPath(procNum, 1, d => d.Stops = stops.Values.ToArray());
       }
     }
 
     public void AddFixtureToProcess(int processID, int fixtureID, IEnumerable<int> pals)
     {
       var procNum = _procIDToProcNum[processID];
-      var job = _byPartID[_procIDToPartID[processID]];
 
       if (pals == null) return;
 
-      foreach (var pal in pals)
-        job.AddProcessOnPallet(procNum, 1, pal.ToString());
+      _byPartID[_procIDToPartID[processID]] %= j => j.AdjustPath(procNum, 1, p => p.Pallets = p.Pallets.Concat(pals.Select(pal => pal.ToString())).ToArray());
     }
 
-    public InProcessJob DuplicateForOrder(int orderID, string order, int partID)
+    public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)
     {
       var job = _byPartID[partID];
-      var newJob = new InProcessJob(new JobPlan(job, order));
+      var newJob = job.CloneToDerived<ActiveJob, Job>() with { UniqueStr = order, Completed = job.Processes.Select(_ => new int[] { 0 }).ToArray() };
       _byOrderID.Add(orderID, newJob);
       return newJob;
     }
@@ -191,7 +197,12 @@ namespace Makino
       var job = _byOrderID[orderID];
       var procNum = _procIDToProcNum[processID];
 
-      job.SetCompleted(procNum, 1, completed);
+      _byOrderID[orderID] %= j =>
+      {
+        var comp = j.Completed.Select(c => c.ToArray()).ToArray();
+        comp[procNum - 1][0] = completed;
+        j.Completed = comp;
+      };
     }
 
     public InProcessMaterial CreateMaterial(int orderID, int processID, int jobID, int palletNum, int face, long matID)
@@ -231,7 +242,7 @@ namespace Makino
       };
     }
 
-    public InProcessJob JobForOrder(int orderID)
+    public BlackMaple.MachineFramework.ActiveJob JobForOrder(int orderID)
     {
       if (_byOrderID.ContainsKey(orderID))
         return _byOrderID[orderID];

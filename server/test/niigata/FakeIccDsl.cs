@@ -1143,13 +1143,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectNoChanges()
     {
-      var unarchJobs = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
-
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_logDB, _status, unarchJobs);
+        var cellSt = _createLog.BuildCellState(_logDB, _status);
         cellSt.PalletStateUpdated.Should().BeFalse();
-        cellSt.UnarchivedJobs.Should().BeEquivalentTo(unarchJobs,
+
+        var unarchJobs = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
+        cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(unarchJobs,
           options => options.CheckJsonEquals<JobPlan, JobPlan>()
         );
         CheckCellStMatchesExpected(cellSt);
@@ -1664,29 +1664,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
-    private class ExpectedUnarchiveJob : ExpectedChange
-    {
-      public string Unique { get; set; }
-    }
-
-    public static ExpectedChange ExpectUnarchiveJob(string uniq)
-    {
-      return new ExpectedUnarchiveJob() { Unique = uniq };
-    }
-
     public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
     {
-      var sch = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
 
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_logDB, _status, sch);
-        foreach (var unarch in expectedChanges.OfType<ExpectedUnarchiveJob>())
-        {
-          sch.Add(_logDB.LoadJob(unarch.Unique)?.ToLegacyJob());
-        }
+        var cellSt = _createLog.BuildCellState(_logDB, _status);
+
+        var sch = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-        cellSt.UnarchivedJobs.Should().BeEquivalentTo(
+        cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(
           sch,
           options => options.CheckJsonEquals<JobPlan, JobPlan>()
         );
@@ -1708,9 +1695,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_logDB, _status, sch);
+          cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
+          cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(sch,
             options => options.CheckJsonEquals<JobPlan, JobPlan>()
           );
         }
@@ -1736,7 +1723,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[pal - 1].Tracking.RouteInvalid = true;
 
           // reload
-          cellSt = _createLog.BuildCellState(_logDB, _status, sch);
+          cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.PalletStateUpdated.Should().Be(false);
         }
 
@@ -1816,7 +1803,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               _expectedOldPrograms.RemoveAll(p => p.CellControllerProgramName == expectDelete.Expected.ProgramNum.ToString());
             }
             // reload cell state
-            cellSt = _createLog.BuildCellState(_logDB, _status, sch);
+            cellSt = _createLog.BuildCellState(_logDB, _status);
             cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
             cellSt.OldUnusedPrograms.Should().BeEquivalentTo(_expectedOldPrograms,
               options => options.ComparingByMembers<ProgramRevision>().Excluding(p => p.Comment)
@@ -1854,9 +1841,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork = expectNoWork.NoWork;
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_logDB, _status, sch);
+          cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.PalletStateUpdated.Should().Be(true);
-          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch,
+          cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(sch,
             options => options.CheckJsonEquals<JobPlan, JobPlan>()
           );
         }

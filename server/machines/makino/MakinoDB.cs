@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
+using System.Linq;
 using BlackMaple.MachineWatchInterface;
 
 namespace Makino
@@ -618,13 +619,7 @@ namespace Makino
           if (!reader.IsDBNull(2))
             partName += reader.GetString(2);
 
-          var job = map.CreateJob(partName, partID);
-
-          job.JobCopiedToSystem = true;
-          job.PartName = reader.GetString(1);
-          if (!reader.IsDBNull(3))
-            job.Comment = reader.GetString(3);
-          job.ManuallyCreatedJob = false;
+          map.CreateJob(partName, partID, reader.GetString(1), reader.IsDBNull(3) ? null : reader.GetString(3));
         });
 
 
@@ -675,19 +670,19 @@ namespace Makino
 
             var newJob = map.DuplicateForOrder(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2));
 
-            if (!reader.IsDBNull(3))
-              newJob.Comment = reader.GetString(3);
-
-            newJob.SetPlannedCyclesOnFirstProcess(1, reader.GetInt32(4));
-
-            if (!reader.IsDBNull(5))
-              newJob.SetPrecedence(1, 1, reader.GetInt16(5));
-
             DateTime start = DateTime.SpecifyKind(reader.GetDateTime(6), DateTimeKind.Local);
             start = start.ToUniversalTime();
 
-            for (int i = 1; i <= newJob.NumProcesses; i++)
-              newJob.SetSimulatedStartingTimeUTC(i, 1, start);
+            newJob = newJob with
+            {
+              Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
+              CyclesOnFirstProcess = new[] { reader.GetInt32(4) },
+              Precedence = new[] { new long[] { reader.GetInt16(5) } },
+              Processes = newJob.Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
+              {
+                Paths = proc.Paths.Select(path => path with { SimulatedStartingUTC = start }).ToArray()
+              }).ToArray()
+            };
           });
 
         Load("SELECT OrderID, ProcessID, RemainingQuantity, NormalQuantity, ScrapQuantity " +
@@ -771,7 +766,7 @@ namespace Makino
               var procNum = map.ProcessForJobID(unclampJobID);
               var job = map.JobForOrder(unclampOrder);
               if (job != null)
-                palMap.SetMaterialAsUnload(palfixID, job.NumProcesses == procNum);
+                palMap.SetMaterialAsUnload(palfixID, job.Processes.Count == procNum);
             }
 
             if (!reader.IsDBNull(3) && !reader.IsDBNull(4))

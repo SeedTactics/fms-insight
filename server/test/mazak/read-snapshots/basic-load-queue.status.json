@@ -1,256 +1,71 @@
 {
+  "TimeOfCurrentStatusUTC": "2021-02-24T20:20:23.5114668Z",
   "Jobs": {
-    "aaa-schId1234": {
-      "Completed": [[0], [0]],
-      "RouteStartUTC": "2018-07-18T21:51:36.112578Z",
-      "RouteEndUTC": "2018-07-19T21:51:36.112589Z",
-      "Archived": false,
-      "CopiedToSystem": true,
-      "PartName": "aaa",
-      "Comment": "",
-      "Unique": "aaa-schId1234",
-      "Priority": 75,
-      "ScheduleId": "schId1234",
-      "Bookings": [],
-      "ManuallyCreated": false,
-      "CreateMarkingData": false,
-      "Inspections": [],
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
-      "CyclesOnFirstProcess": [11],
-      "ProcsAndPaths": [
-        {
-          "paths": [
-            {
-              "PathGroup": 1,
-              "Pallets": ["1"],
-              "Fixtures": [],
-              "Load": [1, 2],
-              "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
-              "ExpectedUnloadTime": "PT5M",
-              "Stops": [
-                {
-                  "Stations": {
-                    "1": "1001",
-                    "2": "1001",
-                    "3": "1001",
-                    "4": "1001"
-                  },
-                  "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT12M12S"
-                }
-              ],
-              "SimulatedProduction": [
-                {
-                  "TimeUTC": "2018-07-18T22:25:28.112578Z",
-                  "Quantity": 1
-                },
-                {
-                  "TimeUTC": "2018-07-19T00:14:30.112578Z",
-                  "Quantity": 2
-                },
-                {
-                  "TimeUTC": "2018-07-19T02:05:16.112578Z",
-                  "Quantity": 3
-                },
-                {
-                  "TimeUTC": "2018-07-19T03:56:02.112578Z",
-                  "Quantity": 4
-                },
-                {
-                  "TimeUTC": "2018-07-19T05:50:20.112578Z",
-                  "Quantity": 5
-                },
-                {
-                  "TimeUTC": "2018-07-19T07:38:34.112578Z",
-                  "Quantity": 6
-                },
-                {
-                  "TimeUTC": "2018-07-19T09:26:48.112578Z",
-                  "Quantity": 7
-                },
-                {
-                  "TimeUTC": "2018-07-19T11:18:22.112578Z",
-                  "Quantity": 8
-                },
-                {
-                  "TimeUTC": "2018-07-19T13:13:04.112578Z",
-                  "Quantity": 9
-                },
-                {
-                  "TimeUTC": "2018-07-19T15:01:18.112578Z",
-                  "Quantity": 10
-                },
-                {
-                  "TimeUTC": "2018-07-19T16:52:04.112578Z",
-                  "Quantity": 11
-                }
-              ],
-              "SimulatedStartingUTC": "2018-07-18T22:25:28.112578Z",
-              "SimulatedAverageFlowTime": "PT35M32.3636363S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "PartsPerPallet": 1,
-              "InputQueue": "castings",
-              "OutputQueue": "queueAAA"
-            }
-          ]
-        },
-        {
-          "paths": [
-            {
-              "PathGroup": 1,
-              "Pallets": ["1"],
-              "Fixtures": [],
-              "Load": [1, 2],
-              "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
-              "ExpectedUnloadTime": "PT5M",
-              "Stops": [
-                {
-                  "Stations": {
-                    "1": "1002",
-                    "2": "1002",
-                    "3": "1002",
-                    "4": "1002"
-                  },
-                  "Tools": {},
-                  "StationGroup": "MC",
-                  "ExpectedCycleTime": "PT1H10M18S"
-                }
-              ],
-              "SimulatedProduction": [
-                {
-                  "TimeUTC": "2018-07-18T23:48:38.112578Z",
-                  "Quantity": 1
-                },
-                {
-                  "TimeUTC": "2018-07-19T01:40:12.112578Z",
-                  "Quantity": 2
-                },
-                {
-                  "TimeUTC": "2018-07-19T03:30:58.112578Z",
-                  "Quantity": 3
-                },
-                {
-                  "TimeUTC": "2018-07-19T05:19:12.112578Z",
-                  "Quantity": 4
-                },
-                {
-                  "TimeUTC": "2018-07-19T07:13:30.112578Z",
-                  "Quantity": 5
-                },
-                {
-                  "TimeUTC": "2018-07-19T09:01:44.112578Z",
-                  "Quantity": 6
-                },
-                {
-                  "TimeUTC": "2018-07-19T10:52:30.112578Z",
-                  "Quantity": 7
-                },
-                {
-                  "TimeUTC": "2018-07-19T12:48:00.112578Z",
-                  "Quantity": 8
-                },
-                {
-                  "TimeUTC": "2018-07-19T14:36:14.112578Z",
-                  "Quantity": 9
-                },
-                {
-                  "TimeUTC": "2018-07-19T16:27:00.112578Z",
-                  "Quantity": 10
-                },
-                {
-                  "TimeUTC": "2018-07-19T18:22:38.112578Z",
-                  "Quantity": 11
-                }
-              ],
-              "SimulatedStartingUTC": "2018-07-18T23:48:38.112578Z",
-              "SimulatedAverageFlowTime": "PT1H35M20.9090909S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "PartsPerPallet": 1,
-              "InputQueue": "queueAAA"
-            }
-          ]
-        }
-      ]
-    },
     "bbb-schId1234": {
-      "Completed": [[0], [0]],
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
+      "Completed": [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "Decrements": null,
+      "Precedence": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "AssignedWorkorders": null,
+      "Unique": "bbb-schId1234",
       "RouteStartUTC": "2018-07-18T21:51:36.112578Z",
       "RouteEndUTC": "2018-07-19T21:51:36.112589Z",
       "Archived": false,
-      "CopiedToSystem": true,
       "PartName": "bbb",
       "Comment": "",
-      "Unique": "bbb-schId1234",
-      "Priority": 75,
       "ScheduleId": "schId1234",
       "Bookings": [],
       "ManuallyCreated": false,
-      "CreateMarkingData": false,
-      "Inspections": [],
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
-      "CyclesOnFirstProcess": [20],
+      "CyclesOnFirstProcess": [
+        20
+      ],
       "ProcsAndPaths": [
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["2"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "2"
+              ],
+              "Fixture": "fixtureBB",
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1001",
-                    "2": "1001",
-                    "3": "1001",
-                    "4": "1001"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1001",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
               ],
@@ -338,20 +153,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T22:16:00.112578Z",
               "SimulatedAverageFlowTime": "PT28M0.8S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "InputQueue": "castings",
               "OutputQueue": "queueBBB"
@@ -361,23 +162,34 @@
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["2"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "2"
+              ],
+              "Fixture": "fixtureBB",
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1002",
-                    "2": "1002",
-                    "3": "1002",
-                    "4": "1002"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1002",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT30M"
                 }
               ],
@@ -465,20 +277,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T22:58:52.112578Z",
               "SimulatedAverageFlowTime": "PT54M25.7S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 1,
               "InputQueue": "queueBBB"
             }
@@ -486,50 +284,282 @@
         }
       ]
     },
-    "ccc-schId1234": {
-      "Completed": [[2], [0]],
+    "aaa-schId1234": {
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
+      "Completed": [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "Decrements": null,
+      "Precedence": [
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      "AssignedWorkorders": null,
+      "Unique": "aaa-schId1234",
       "RouteStartUTC": "2018-07-18T21:51:36.112578Z",
       "RouteEndUTC": "2018-07-19T21:51:36.112589Z",
       "Archived": false,
-      "CopiedToSystem": true,
-      "PartName": "ccc",
+      "PartName": "aaa",
       "Comment": "",
-      "Unique": "ccc-schId1234",
-      "Priority": 75,
       "ScheduleId": "schId1234",
       "Bookings": [],
       "ManuallyCreated": false,
-      "CreateMarkingData": false,
-      "Inspections": [],
-      "HoldEntireJob": {
-        "UserHold": false,
-        "ReasonForUserHold": "",
-        "HoldUnholdPattern": [],
-        "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-        "HoldUnholdPatternRepeats": false
-      },
-      "CyclesOnFirstProcess": [38],
+      "CyclesOnFirstProcess": [
+        11
+      ],
       "ProcsAndPaths": [
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["5"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "1"
+              ],
+              "Fixture": "fixtureAA1",
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1003",
-                    "2": "1003",
-                    "3": "1003",
-                    "4": "1003"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1001",
+                  "ProgramRevision": null,
+                  "Tools": {},
+                  "ExpectedCycleTime": "PT12M12S"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2018-07-18T22:25:28.112578Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2018-07-19T00:14:30.112578Z",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2018-07-19T02:05:16.112578Z",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2018-07-19T03:56:02.112578Z",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2018-07-19T05:50:20.112578Z",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2018-07-19T07:38:34.112578Z",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2018-07-19T09:26:48.112578Z",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2018-07-19T11:18:22.112578Z",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2018-07-19T13:13:04.112578Z",
+                  "Quantity": 9
+                },
+                {
+                  "TimeUTC": "2018-07-19T15:01:18.112578Z",
+                  "Quantity": 10
+                },
+                {
+                  "TimeUTC": "2018-07-19T16:52:04.112578Z",
+                  "Quantity": 11
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-18T22:25:28.112578Z",
+              "SimulatedAverageFlowTime": "PT35M32.3636363S",
+              "PartsPerPallet": 1,
+              "InputQueue": "castings",
+              "OutputQueue": "queueAAA"
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "1"
+              ],
+              "Fixture": "fixtureAA2",
+              "Face": 2,
+              "Load": [
+                1,
+                2
+              ],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [
+                1,
+                2
+              ],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1002",
+                  "ProgramRevision": null,
+                  "Tools": {},
+                  "ExpectedCycleTime": "PT1H10M18S"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2018-07-18T23:48:38.112578Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2018-07-19T01:40:12.112578Z",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2018-07-19T03:30:58.112578Z",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2018-07-19T05:19:12.112578Z",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2018-07-19T07:13:30.112578Z",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2018-07-19T09:01:44.112578Z",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2018-07-19T10:52:30.112578Z",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2018-07-19T12:48:00.112578Z",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2018-07-19T14:36:14.112578Z",
+                  "Quantity": 9
+                },
+                {
+                  "TimeUTC": "2018-07-19T16:27:00.112578Z",
+                  "Quantity": 10
+                },
+                {
+                  "TimeUTC": "2018-07-19T18:22:38.112578Z",
+                  "Quantity": 11
+                }
+              ],
+              "SimulatedStartingUTC": "2018-07-18T23:48:38.112578Z",
+              "SimulatedAverageFlowTime": "PT1H35M20.9090909S",
+              "PartsPerPallet": 1,
+              "InputQueue": "queueAAA"
+            }
+          ]
+        }
+      ]
+    },
+    "ccc-schId1234": {
+      "CreateMarkingData": false,
+      "CopiedToSystem": true,
+      "Completed": [
+        [
+          2
+        ],
+        [
+          0
+        ]
+      ],
+      "Decrements": null,
+      "Precedence": [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "AssignedWorkorders": null,
+      "Unique": "ccc-schId1234",
+      "RouteStartUTC": "2018-07-18T21:51:36.112578Z",
+      "RouteEndUTC": "2018-07-19T21:51:36.112589Z",
+      "Archived": false,
+      "PartName": "ccc",
+      "Comment": "",
+      "ScheduleId": "schId1234",
+      "Bookings": [],
+      "ManuallyCreated": false,
+      "CyclesOnFirstProcess": [
+        38
+      ],
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "PathGroup": 0,
+              "Pallets": [
+                "5"
+              ],
+              "Fixture": "fixtureCC5",
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [
+                1,
+                2
+              ],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1003",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
               ],
@@ -613,20 +643,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-18T22:39:48.112578Z",
               "SimulatedAverageFlowTime": "PT41M58.0526315S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 2,
               "OutputQueue": "queueCCC"
             }
@@ -635,23 +651,34 @@
         {
           "paths": [
             {
-              "PathGroup": 1,
-              "Pallets": ["6"],
-              "Fixtures": [],
-              "Load": [1, 2],
+              "PathGroup": 0,
+              "Pallets": [
+                "6"
+              ],
+              "Fixture": "fixtureCC6",
+              "Face": 2,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "Stations": {
-                    "1": "1004",
-                    "2": "1004",
-                    "3": "1004",
-                    "4": "1004"
-                  },
-                  "Tools": {},
                   "StationGroup": "MC",
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  "Program": "1004",
+                  "ProgramRevision": null,
+                  "Tools": {},
                   "ExpectedCycleTime": "PT45M30S"
                 }
               ],
@@ -735,20 +762,6 @@
               ],
               "SimulatedStartingUTC": "2018-07-19T00:00:42.112578Z",
               "SimulatedAverageFlowTime": "PT43M54.1578947S",
-              "HoldMachining": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
-              "HoldLoadUnload": {
-                "UserHold": false,
-                "ReasonForUserHold": "",
-                "HoldUnholdPattern": [],
-                "HoldUnholdPatternStartUTC": "2000-01-01T00:00:00Z",
-                "HoldUnholdPatternRepeats": false
-              },
               "PartsPerPallet": 2,
               "InputQueue": "queueCCC"
             }
@@ -758,13 +771,13 @@
     }
   },
   "Pallets": {
-    "1": {
-      "Pallet": "1",
-      "FixtureOnPallet": "F:0:fixtureAA1:1",
+    "5": {
+      "Pallet": "5",
+      "FixtureOnPallet": "F:0:fixtureCC:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "Buffer",
-        "group": "Buffer",
+        "loc": "MachineQueue",
+        "group": "MC",
         "num": 1
       },
       "NumFaces": 1
@@ -780,13 +793,13 @@
       },
       "NumFaces": 1
     },
-    "5": {
-      "Pallet": "5",
-      "FixtureOnPallet": "F:0:fixtureCC:1",
+    "1": {
+      "Pallet": "1",
+      "FixtureOnPallet": "F:0:fixtureAA1:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "MachineQueue",
-        "group": "MC",
+        "loc": "Buffer",
+        "group": "Buffer",
         "num": 1
       },
       "NumFaces": 1
@@ -812,6 +825,7 @@
       "Path": 1,
       "Serial": "000000abcf",
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "5",
@@ -829,6 +843,7 @@
       "Path": 1,
       "Serial": "000000abcg",
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
         "Pallet": "5",
@@ -846,6 +861,7 @@
       "Path": 1,
       "Serial": "000000abcd",
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "InQueue",
         "CurrentQueue": "queueCCC",
@@ -868,6 +884,7 @@
       "Path": 1,
       "Serial": "000000abce",
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "InQueue",
         "CurrentQueue": "queueCCC",
@@ -889,6 +906,7 @@
       "Process": 0,
       "Path": 1,
       "SignaledInspections": [],
+      "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "InQueue",
         "CurrentQueue": "castings",
@@ -901,10 +919,9 @@
   ],
   "Alarms": [],
   "Queues": {
-    "castings": {},
-    "queueAAA": {},
+    "queueCCC": {},
     "queueBBB": {},
-    "queueCCC": {}
-  },
-  "TimeOfCurrentStatusUTC": "2018-08-23T14:10:37.9700089Z"
+    "queueAAA": {},
+    "castings": {}
+  }
 }

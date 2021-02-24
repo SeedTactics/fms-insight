@@ -188,13 +188,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
               _newCurStatus.Reset();
               status = _icc.LoadNiigataStatus();
-              var jobs = jdb.LoadUnarchivedJobs();
 
-              Log.Debug("Loaded pallets {@status} and jobs {@jobs}", status, jobs.Select(j => j.UniqueStr));
+              Log.Debug("Loaded pallets {@status}", status);
 
-              var legacyJobs = jobs.Select(j => j.ToLegacyJob()).ToArray();
-
-              cellSt = _createLog.BuildCellState(jdb, status, legacyJobs);
+              cellSt = _createLog.BuildCellState(jdb, status);
               raisePalletChanged = raisePalletChanged || cellSt.PalletStateUpdated;
 
               lock (_curStLock)
@@ -233,9 +230,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // is deciding what to put onto a pallet
       lock (_changeLock)
       {
-        var jobs = jobDB.LoadUnarchivedJobs();
-        var legacyJobs = jobs.Select(j => j.ToLegacyJob()).ToArray();
-        var cellSt = _createLog.BuildCellState(jobDB, _icc.LoadNiigataStatus(), legacyJobs);
+        var cellSt = _createLog.BuildCellState(jobDB, _icc.LoadNiigataStatus());
 
         var changed = _decrJobs.DecrementJobs(jobDB, cellSt);
 

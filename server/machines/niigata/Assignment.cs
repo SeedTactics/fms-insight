@@ -166,7 +166,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private IList<JobPath> FindPathsForPallet(CellState cellSt, int pallet, int? loadStation)
     {
       return
-        cellSt.UnarchivedJobs
+        cellSt.UnarchivedLegacyJobs
         .SelectMany(job => Enumerable.Range(1, job.NumProcesses).Select(proc => new { job, proc }))
         .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath { Job = j.job, Process = j.proc, Path = path }))
         .Where(j =>
@@ -777,7 +777,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // search for program in job
       var procAndStopFromJob =
-        cellSt.UnarchivedJobs
+        cellSt.UnarchivedLegacyJobs
           .SelectMany(j => Enumerable.Range(1, j.NumProcesses).Select(proc => new { j, proc }))
           .SelectMany(j => Enumerable.Range(1, j.j.GetNumPaths(j.proc)).Select(path => new { j = j.j, proc = j.proc, path }))
           .SelectMany(j => j.j.GetMachiningStop(j.proc, j.path).Select(stop => new { stop, proc = j.proc }))
@@ -797,7 +797,7 @@ namespace BlackMaple.FMSInsight.Niigata
           if (workProg != null)
           {
             process = workProg.ProcessNumber;
-            var job = cellSt.UnarchivedJobs.Where(j => j.PartName == work.Part).FirstOrDefault();
+            var job = cellSt.UnarchivedLegacyJobs.Where(j => j.PartName == work.Part).FirstOrDefault();
             if (job != null && process >= 1 && process <= job.NumProcesses)
             {
               elapsed = job.GetMachiningStop(process, 1).ElementAtOrDefault(workProg.StopIndex ?? 0)?.ExpectedCycleTime ?? TimeSpan.Zero;

@@ -48,12 +48,24 @@ namespace BlackMaple.FMSInsight.Niigata
         return new CurrentStatus();
       }
 
+      var proc1paths =
+        status.UnarchivedJobs.SelectMany(job =>
+          Enumerable.Range(1, job.Processes[0].Paths.Count).Select(proc1path => (job, proc1path))
+        )
+        .OrderBy(x => x.job.RouteStartUTC)
+        .ThenBy(x => x.job.Processes[0].Paths[x.proc1path - 1].SimulatedStartingUTC)
+        .Select((x, idx) => new { Uniq = x.job.UniqueStr, Proc1Path = x.proc1path, Prec = idx + 1 })
+        .ToLookup(x => x.Uniq);
+
       // jobs
-      var jobsByUniq = ImmutableDictionary.CreateBuilder<string, InProcessJob>();
+      var jobsByUniq = ImmutableDictionary.CreateBuilder<string, ActiveJob>();
       foreach (var j in status.UnarchivedJobs)
       {
-        var curJob = new InProcessJob(j);
-        jobsByUniq.Add(curJob.UniqueStr, curJob);
+        // completed
+        var completed =
+          j.Processes.Select(
+            proc => new int[proc.Paths.Count] // defaults to fill with zeros
+          ).ToArray();
         var evts = jobDB.GetLogForJobUnique(j.UniqueStr);
         foreach (var e in evts)
         {
@@ -65,66 +77,63 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 var details = jobDB.GetMaterialDetails(mat.MaterialID);
                 int matPath = details?.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
-                curJob.AdjustCompleted(mat.Process, matPath, x => x + 1);
+                completed[mat.Process - 1][matPath - 1] += 1;
               }
             }
           }
         }
 
+        // precedence
+        var proc1precs = proc1paths.Contains(j.UniqueStr) ? proc1paths[j.UniqueStr] : null;
+        var precedence =
+          j.Processes.Select((proc, procIdx) =>
+          {
+            if (procIdx == 0)
+            {
+              return proc.Paths.Select((_, pathIdx) =>
+                proc1precs?.FirstOrDefault(x => x.Proc1Path == pathIdx + 1)?.Prec ?? 0L
+              ).ToArray();
+            }
+            else
+            {
+              return proc.Paths.Select(path =>
+                proc1precs?.FirstOrDefault(x => j.Processes[0].Paths[x.Proc1Path - 1].PathGroup == path.PathGroup)?.Prec ?? 0L
+              ).ToArray();
+            }
+          }).ToArray();
+
         var decrs = jobDB.LoadDecrementsForJob(j.UniqueStr);
 
-        foreach (var d in decrs)
-          curJob.Decrements.Add(d);
-
         // take decremented quantity out of the planned cycles
-        for (int proc1path = 1; proc1path <= j.GetNumPaths(process: 1); proc1path += 1)
+        var newPlanned = j.CyclesOnFirstProcess.ToArray();
+
+        for (int proc1path = 1; proc1path <= j.Processes.Count; proc1path += 1)
         {
           int decrQty = decrs.Where(p => p.Proc1Path == proc1path).Sum(d => d.Quantity);
           if (decrQty > 0)
           {
-            var planned = curJob.GetPlannedCyclesOnFirstProcess(proc1path);
+            var planned = newPlanned[proc1path - 1];
             if (planned < decrQty)
             {
-              curJob.SetPlannedCyclesOnFirstProcess(path: proc1path, numCycles: 0);
+              newPlanned[proc1path - 1] = 0;
             }
             else
             {
-              curJob.SetPlannedCyclesOnFirstProcess(path: proc1path, numCycles: planned - decrQty);
+              newPlanned[proc1path - 1] = planned - decrQty;
             }
           }
         }
 
-        curJob.Workorders = jobDB.GetWorkordersForUnique(j.UniqueStr);
-      }
-
-      // set precedence
-      var proc1paths =
-        jobsByUniq.Values.SelectMany(job =>
-          Enumerable.Range(1, job.GetNumPaths(1)).Select(proc1path => (job, proc1path))
-        )
-        .OrderBy(x => x.job.RouteStartingTimeUTC)
-        .ThenBy(x => x.job.GetSimulatedStartingTimeUTC(1, x.proc1path));
-      int precedence = 0;
-      foreach (var (j, proc1path) in proc1paths)
-      {
-        precedence += 1;
-        j.SetPrecedence(1, proc1path, precedence);
-
-        // now set the rest of the processes
-        for (int proc = 2; proc <= j.NumProcesses; proc++)
+        var curJob = j.CloneToDerived<ActiveJob, Job>() with
         {
-          for (int path = 1; path <= j.GetNumPaths(proc); path++)
-          {
-            if (j.GetPathGroup(proc, path) == j.GetPathGroup(1, proc1path))
-            {
-              // only set if it hasn't already been set
-              if (j.GetPrecedence(proc, path) <= 0)
-              {
-                j.SetPrecedence(proc, path, precedence);
-              }
-            }
-          }
-        }
+          CopiedToSystem = true,
+          Completed = completed,
+          CyclesOnFirstProcess = newPlanned,
+          Decrements = decrs,
+          Precedence = precedence,
+          AssignedWorkorders = jobDB.GetWorkordersForUnique(j.UniqueStr)
+        };
+        jobsByUniq.Add(curJob.UniqueStr, curJob);
       }
 
       // pallets

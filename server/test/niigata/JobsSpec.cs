@@ -297,28 +297,45 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var expectedSt = (new CurrentStatus()).Produce(st =>
       {
         st.TimeOfCurrentStatusUTC = status.TimeOfStatusUTC;
-        var expectedJob = new InProcessJob(j);
-        expectedJob.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 70 - 30);
-        expectedJob.SetCompleted(1, 1, 1);
-        expectedJob.Decrements.Add(new DecrementQuantity()
+        var expectedJob = j.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
         {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-          Quantity = 30
-        });
-        expectedJob.SetPrecedence(1, 1, 3); // has last precedence
-        expectedJob.Workorders = new List<string>() { "work1", "work2", "work4" };
+          CopiedToSystem = true,
+          CyclesOnFirstProcess = new[] { 70 - 30 },
+          Completed = new[] { new[] { 1 } },
+          Precedence = new[] { new[] { 3L } }, // has last precedence
+          Decrements = new[] {
+            new DecrementQuantity()
+              {
+                DecrementId = 0,
+                Proc1Path = 1,
+                TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
+                Quantity = 30
+              }
+          },
+          AssignedWorkorders = new[] { "work1", "work2", "work4" }
+        };
         st.Jobs.Add("u1", expectedJob);
 
-        var expectedJob2 = new InProcessJob(j2);
-        expectedJob2.SetPrecedence(1, 1, 2); // has middle precedence
-        expectedJob2.Workorders = new List<string>();
+        var expectedJob2 = j2.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
+        {
+          CopiedToSystem = true,
+          CyclesOnFirstProcess = new[] { 0 },
+          Completed = new[] { new[] { 0 } },
+          Precedence = new[] { new[] { 2L } }, // has middle precedence
+          Decrements = new DecrementQuantity[] { },
+          AssignedWorkorders = new string[] { }
+        };
         st.Jobs.Add("u2", expectedJob2);
 
-        var expectedJob3 = new InProcessJob(j3);
-        expectedJob3.SetPrecedence(1, 1, 1); // has first precedence
-        expectedJob3.Workorders = new List<string>();
+        var expectedJob3 = j3.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
+        {
+          CopiedToSystem = true,
+          CyclesOnFirstProcess = new[] { 0 },
+          Completed = new[] { new[] { 0 } },
+          Precedence = new[] { new[] { 1L } }, // has first precedence
+          Decrements = new DecrementQuantity[] { },
+          AssignedWorkorders = new string[] { }
+        };
         st.Jobs.Add("u3", expectedJob3);
 
         st.Material.Add(pal1.Material[0].Mat);
@@ -352,13 +369,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Status = status,
         Pallets = new List<PalletAndMaterial> { pal1, pal2 },
         QueuedMaterial = new List<InProcessMaterialAndJob> { queuedMat },
-        UnarchivedJobs = new List<JobPlan> { j, j2, j3 }
+        UnarchivedJobs = new List<Job> { j.ToHistoricJob(), j2.ToHistoricJob(), j3.ToHistoricJob() },
+        UnarchivedLegacyJobs = new List<JobPlan> { j, j2, j3 }
       });
 
       ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt,
         options => options
-          .CheckJsonEquals<CurrentStatus, InProcessJob>()
           .ComparingByMembers<CurrentStatus>()
+          .ComparingByMembers<ActiveJob>()
+          .ComparingByMembers<ProcessInfo>()
+          .ComparingByMembers<ProcPathInfo>()
+          .ComparingByMembers<MachiningStop>()
           .ComparingByMembers<InProcessMaterial>()
           .ComparingByMembers<PalletStatus>()
       );

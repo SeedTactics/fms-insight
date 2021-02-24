@@ -220,13 +220,10 @@ namespace MachineWatchTest
       }
 
       /*
-      if (scenario == "pathgroups-load")
-      {
-        File.WriteAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
-          JsonConvert.SerializeObject(status, jsonSettings)
-        );
-      }
+      File.WriteAllText(
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
+        JsonConvert.SerializeObject(status, jsonSettings)
+      );
       */
 
       var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
@@ -238,6 +235,10 @@ namespace MachineWatchTest
       status.Should().BeEquivalentTo(expectedStatus, options =>
         options.Excluding(c => c.TimeOfCurrentStatusUTC)
           .ComparingByMembers<CurrentStatus>()
+          .ComparingByMembers<ActiveJob>()
+          .ComparingByMembers<ProcessInfo>()
+          .ComparingByMembers<ProcPathInfo>()
+          .ComparingByMembers<MachiningStop>()
           .ComparingByMembers<InProcessMaterial>()
           .ComparingByMembers<PalletStatus>()
       );
@@ -278,6 +279,10 @@ namespace MachineWatchTest
       status.Should().BeEquivalentTo(expectedStatus, options =>
         options.Excluding(c => c.TimeOfCurrentStatusUTC)
           .ComparingByMembers<CurrentStatus>()
+          .ComparingByMembers<ActiveJob>()
+          .ComparingByMembers<ProcessInfo>()
+          .ComparingByMembers<ProcPathInfo>()
+          .ComparingByMembers<MachiningStop>()
           .ComparingByMembers<InProcessMaterial>()
           .ComparingByMembers<PalletStatus>()
       );
