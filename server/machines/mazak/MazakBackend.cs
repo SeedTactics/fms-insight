@@ -90,8 +90,7 @@ namespace MazakMachineInterface
       OnNewCurrentStatus?.Invoke(((IJobControl)routing).GetCurrentStatus());
     }
 
-
-    public MazakBackend(IConfiguration configuration, FMSSettings st)
+    public MazakBackend(IConfiguration configuration, FMSSettings st, MazakConfig mazakCfg = null)
     {
       var cfg = configuration.GetSection("Mazak");
       string localDbPath = cfg.GetValue<string>("Database Path");
@@ -260,7 +259,8 @@ namespace MazakMachineInterface
         settings: st,
         onNewJobs: j => OnNewJobs?.Invoke(j),
         onStatusChange: s => OnNewCurrentStatus?.Invoke(s),
-        onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o)
+        onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o),
+        mazakCfg: mazakCfg
       );
 
       MazakMachineControl = new MazakMachineControl(jobDBConfig, _readDB, writeJobs);

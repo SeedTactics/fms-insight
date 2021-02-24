@@ -5,8 +5,8 @@
       "AutoFixture": {
         "type": "Direct",
         "requested": "[4.*, )",
-        "resolved": "4.14.0",
-        "contentHash": "Hs6Tcxd4gVZVPCNhuDccnpaBSvcbi33eIPiwAhKw+WRu5z1ClFIDamkw100oADo8Ay1HchGEBU8klwkJfCDMNg==",
+        "resolved": "4.15.0",
+        "contentHash": "TZTWBoxqCHKYob3//v5MaWuGj6rF6rLsD1V0ta20gQpzulnjT4oTnMIy05/Y5VKtyZ1D3VqcokOKMq27lWEpuQ==",
         "dependencies": {
           "Fare": "[2.1.1, 3.0.0)",
           "System.ComponentModel.Annotations": "4.3.0"
@@ -34,11 +34,11 @@
       },
       "Microsoft.Data.Sqlite": {
         "type": "Direct",
-        "requested": "(, )",
-        "resolved": "5.0.1",
-        "contentHash": "rG5x65qk01rtB+OH+i07rcl4KVHGMPCJDFohUYIn59MFgfqRdDDePXtC4MDyR7E/6FOX9Rk5HpK3eU4d8S3GEQ==",
+        "requested": "[*, )",
+        "resolved": "5.0.3",
+        "contentHash": "2Udv0yEtqNaIAdhwrm1FmnxZQwyMfB9Xe5S0mYJzeNm7xCyGINjO7Dv0EC0NfvwEqeTK19tx5cYJ7ANSM3TWKQ==",
         "dependencies": {
-          "Microsoft.Data.Sqlite.Core": "5.0.1",
+          "Microsoft.Data.Sqlite.Core": "5.0.3",
           "SQLitePCLRaw.bundle_e_sqlite3": "2.0.4"
         }
       },
@@ -76,7 +76,7 @@
       },
       "System.Data.Common": {
         "type": "Direct",
-        "requested": "(, )",
+        "requested": "[*, )",
         "resolved": "4.3.0",
         "contentHash": "lm6E3T5u7BOuEH0u18JpbJHxBfOJPuCyl4Kg1RH10ktYLp5uEEE1xKrHW56/We4SnZpGAuCc9N0MJpSDhTHZGQ==",
         "dependencies": {
@@ -92,7 +92,7 @@
       },
       "System.Reflection": {
         "type": "Direct",
-        "requested": "(, )",
+        "requested": "[*, )",
         "resolved": "4.3.0",
         "contentHash": "KMiAFoW7MfJGa9nDFNcfu+FpEdiHpWgTcS2HdMpDvt9saK3y/G4GwprPyzqjFH9NTaGPQeWNHU+iDlDILj96aQ==",
         "dependencies": {
@@ -105,7 +105,7 @@
       },
       "System.Runtime.Serialization.Primitives": {
         "type": "Direct",
-        "requested": "(, )",
+        "requested": "[*, )",
         "resolved": "4.3.0",
         "contentHash": "Wz+0KOukJGAlXjtKr+5Xpuxf8+c8739RI1C+A2BoQZT+wMCCoMDDdO8/4IRHfaVINqL78GO8dW8G2lW/e45Mcw==",
         "dependencies": {
@@ -658,8 +658,8 @@
       },
       "Microsoft.Data.Sqlite.Core": {
         "type": "Transitive",
-        "resolved": "5.0.1",
-        "contentHash": "coC0Lo7PgP9d7XXBd/aYik/hNWTc4cJ+fzJqPgYXNVI1OlbwdrvM5vQWwS0edWsBNnWn0+qkKPN4rTtTiKxPhg==",
+        "resolved": "5.0.3",
+        "contentHash": "4nfSZVXex4PqQkcVu78/W0E2p3m24mwwqwMadnTPukHWx9Mh234WKg95qG9hs/ynULVGMfMyA1eUJdYDMeKFPw==",
         "dependencies": {
           "SQLitePCLRaw.core": "2.0.4"
         }
