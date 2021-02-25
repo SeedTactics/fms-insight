@@ -71,7 +71,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class CellState
   {
     public NiigataStatus Status { get; set; }
-    public IReadOnlyList<Job> UnarchivedJobs { get; set; }
+    public IReadOnlyList<HistoricJob> UnarchivedJobs { get; set; }
     public IReadOnlyList<JobPlan> UnarchivedLegacyJobs { get; set; }
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }

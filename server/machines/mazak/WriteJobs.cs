@@ -133,7 +133,7 @@ namespace MazakMachineInterface
         Log.Information("Resuming copy of job schedules into mazak {uniqs}",
             oldJobs.Select(j => j.UniqueStr).ToList());
 
-        AddSchedules(jobDB, oldJobs);
+        AddSchedules(jobDB, oldJobs.Select(j => j.ToLegacyJob()).ToArray());
       }
 
       // add programs here first so that they exist in the database when looking up most recent revision for use in parts
@@ -141,7 +141,7 @@ namespace MazakMachineInterface
 
       //add fixtures, pallets, parts.  If this fails, just throw an exception,
       //they will be deleted during the next download.
-      AddFixturesPalletsParts(jobDB, newJ);
+      var legacyJobs = AddFixturesPalletsParts(jobDB, newJ);
 
       //Now that the parts have been added and we are confident that there no problems with the jobs,
       //add them to the database.  Once this occurrs, the timer will pick up and eventually
@@ -150,7 +150,7 @@ namespace MazakMachineInterface
 
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
 
-      AddSchedules(jobDB, newJ.Jobs);
+      AddSchedules(jobDB, legacyJobs);
 
     }
 
@@ -166,7 +166,7 @@ namespace MazakMachineInterface
 
       List<string> logMessages = new List<string>();
 
-      AddSchedules(jobDB, jobs);
+      AddSchedules(jobDB, jobs.Select(j => j.ToLegacyJob()).ToArray());
 
     }
 
@@ -182,7 +182,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddFixturesPalletsParts(IRepository jobDB, NewJobs newJ)
+    private IReadOnlyList<JobPlan> AddFixturesPalletsParts(IRepository jobDB, NewJobs newJ)
     {
       var mazakData = readDatabase.LoadAllData();
 
@@ -224,9 +224,11 @@ namespace MazakMachineInterface
 
       Log.Debug("Saved Parts: {parts}", savedParts);
 
+      var legacyJobs = newJ.Jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false, scheduleId: newJ.ScheduleId)).ToArray();
+
       var jobErrs = new List<string>();
       var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        jobs: newJ.Jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false)).ToArray(),
+        jobs: legacyJobs,
         downloadUID: UID,
         mazakData: mazakData,
         savedParts: savedParts,
@@ -276,14 +278,16 @@ namespace MazakMachineInterface
       //now save the pallets and parts
       transSet = mazakJobs.CreatePartPalletDatabaseRows();
       writeDb.Save(transSet, "Add Parts");
+
+      return legacyJobs;
     }
 
-    private void AddSchedules(IRepository jobDB, IEnumerable<Job> jobs)
+    private void AddSchedules(IRepository jobDB, IReadOnlyList<JobPlan> jobs)
     {
       var mazakData = readDatabase.LoadAllData();
       Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
 
-      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false)).ToArray(), _useStartingOffsetForDueDate);
+      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, _useStartingOffsetForDueDate);
       if (transSet.Schedules.Any())
       {
         writeDb.Save(transSet, "Add Schedules");

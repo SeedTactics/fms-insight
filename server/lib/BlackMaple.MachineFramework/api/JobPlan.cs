@@ -255,9 +255,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "Comment", IsRequired = false, EmitDefaultValue = false)]
     public string? Comment { get; init; }
 
-    [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
-    public string? ScheduleId { get; init; }
-
     [DataMember(Name = "Bookings", IsRequired = false, EmitDefaultValue = false)]
     public IReadOnlyList<string>? BookingIds { get; init; }
 
@@ -298,16 +295,23 @@ namespace BlackMaple.MachineFramework
   }
 
   [DataContract, Draftable]
-  public record ActiveJob : Job
+  public record HistoricJob : Job
   {
+    [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
+    public string? ScheduleId { get; init; }
+
     [DataMember(Name = "CopiedToSystem", IsRequired = true)]
     public bool CopiedToSystem { get; init; }
 
-    [DataMember(Name = "Completed", IsRequired = false)]
-    public IReadOnlyList<IReadOnlyList<int>>? Completed { get; init; }
-
     [DataMember(Name = "Decrements", IsRequired = false)]
     public IReadOnlyList<DecrementQuantity>? Decrements { get; init; }
+  }
+
+  [DataContract, Draftable]
+  public record ActiveJob : HistoricJob
+  {
+    [DataMember(Name = "Completed", IsRequired = false)]
+    public IReadOnlyList<IReadOnlyList<int>>? Completed { get; init; }
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
@@ -318,16 +322,6 @@ namespace BlackMaple.MachineFramework
     public IReadOnlyList<string>? AssignedWorkorders { get; init; }
 
     public static ActiveJob operator %(ActiveJob j, Action<IActiveJobDraft> f) => j.Produce(f);
-  }
-
-  [DataContract, Draftable]
-  public record HistoricJob : Job
-  {
-    [DataMember(Name = "CopiedToSystem", IsRequired = true)]
-    public bool CopiedToSystem { get; init; }
-
-    [DataMember(Name = "Decrements", IsRequired = false)]
-    public IReadOnlyList<DecrementQuantity>? Decrements { get; init; }
   }
 
   public static class JobAdjustment

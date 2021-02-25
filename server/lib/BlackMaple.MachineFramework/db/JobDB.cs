@@ -1044,10 +1044,6 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("end", SqliteType.Integer).Value = job.RouteEndUTC.Ticks;
         cmd.Parameters.Add("archived", SqliteType.Integer).Value = job.Archived;
         cmd.Parameters.Add("copied", SqliteType.Integer).Value = addAsCopiedToSystem;
-        if (!string.IsNullOrEmpty(job.ScheduleId))
-        {
-          schId = job.ScheduleId;
-        }
         if (string.IsNullOrEmpty(schId))
           cmd.Parameters.Add("sid", SqliteType.Text).Value = DBNull.Value;
         else

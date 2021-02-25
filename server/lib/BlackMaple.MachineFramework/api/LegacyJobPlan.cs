@@ -1268,16 +1268,16 @@ namespace BlackMaple.MachineWatchInterface
 
   public static class LegacyJobConversions
   {
-    public static JobPlan ToLegacyJob(this MachineFramework.Job job, bool copiedToSystem)
+    public static JobPlan ToLegacyJob(this MachineFramework.Job job, bool copiedToSystem, string scheduleId)
     {
       var newJob = new JobPlan(job.UniqueStr, job.Processes.Count, job.Processes.Select(p => p.Paths.Count).ToArray());
-      ToMachineWatchJob(job, newJob, copiedToSystem);
+      ToLegacyJob(job, newJob, copiedToSystem, scheduleId);
       return newJob;
     }
 
     public static JobPlan ToLegacyJob(this MachineFramework.HistoricJob job)
     {
-      return ToLegacyJob(job, job.CopiedToSystem);
+      return ToLegacyJob(job, job.CopiedToSystem, job.ScheduleId);
     }
 
     private static JobHoldPattern ToLegacyHold(MachineFramework.HoldPattern h)
@@ -1293,12 +1293,12 @@ namespace BlackMaple.MachineWatchInterface
       return ret;
     }
 
-    private static void ToMachineWatchJob(MachineFramework.Job source, JobPlan dest, bool copiedToSystem)
+    private static void ToLegacyJob(MachineFramework.Job source, JobPlan dest, bool copiedToSystem, string scheduleId)
     {
       dest.Comment = source.Comment;
       dest.ManuallyCreatedJob = source.ManuallyCreated;
       if (source.BookingIds != null) foreach (var b in source.BookingIds) dest.ScheduledBookingIds.Add(b);
-      dest.ScheduleId = source.ScheduleId;
+      dest.ScheduleId = scheduleId;
       dest.PartName = source.PartName;
       dest.JobCopiedToSystem = copiedToSystem;
       dest.Archived = source.Archived;

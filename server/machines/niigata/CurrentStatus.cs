@@ -102,14 +102,12 @@ namespace BlackMaple.FMSInsight.Niigata
             }
           }).ToArray();
 
-        var decrs = jobDB.LoadDecrementsForJob(j.UniqueStr);
-
         // take decremented quantity out of the planned cycles
         var newPlanned = j.CyclesOnFirstProcess.ToArray();
 
         for (int proc1path = 1; proc1path <= j.Processes.Count; proc1path += 1)
         {
-          int decrQty = decrs.Where(p => p.Proc1Path == proc1path).Sum(d => d.Quantity);
+          int decrQty = j.Decrements?.Where(p => p.Proc1Path == proc1path)?.Sum(d => d.Quantity) ?? 0;
           if (decrQty > 0)
           {
             var planned = newPlanned[proc1path - 1];
@@ -124,14 +122,17 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
 
+        var workorders = jobDB.GetWorkordersForUnique(j.UniqueStr);
+
         var curJob = j.CloneToDerived<ActiveJob, Job>() with
         {
           CopiedToSystem = true,
           Completed = completed,
           CyclesOnFirstProcess = newPlanned,
-          Decrements = decrs,
+          ScheduleId = j.ScheduleId,
           Precedence = precedence,
-          AssignedWorkorders = jobDB.GetWorkordersForUnique(j.UniqueStr)
+          Decrements = j.Decrements == null || j.Decrements.Count == 0 ? null : j.Decrements,
+          AssignedWorkorders = workorders == null || workorders.Count == 0 ? null : workorders
         };
         jobsByUniq.Add(curJob.UniqueStr, curJob);
       }

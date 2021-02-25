@@ -78,17 +78,18 @@ namespace MachineWatchTest
     [Fact]
     public void AddsJobs()
     {
+      var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
       var job1ExtraParts = _fixture.Create<Dictionary<string, int>>();
       var job1UnfilledWorks = _fixture.Create<List<PartWorkorder>>();
-      var job1StatUse = RandSimStationUse(job1.ScheduleId, job1.RouteStartUTC);
+      var job1StatUse = RandSimStationUse(schId, job1.RouteStartUTC);
       var addAsCopied = _fixture.Create<bool>();
 
       // Add first job
 
       _jobDB.AddJobs(new NewJobs()
       {
-        ScheduleId = job1.ScheduleId,
+        ScheduleId = schId,
         Jobs = ImmutableList.Create(job1),
         ExtraParts = job1ExtraParts.ToImmutableDictionary(),
         CurrentUnfilledWorkorders = job1UnfilledWorks.ToImmutableList(),
@@ -97,6 +98,7 @@ namespace MachineWatchTest
 
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId,
         CopiedToSystem = addAsCopied,
         Decrements = new DecrementQuantity[] { }
       };
@@ -124,7 +126,7 @@ namespace MachineWatchTest
       _jobDB.LoadMostRecentSchedule().Should().BeEquivalentTo(
         new PlannedSchedule()
         {
-          LatestScheduleId = job1.ScheduleId,
+          LatestScheduleId = schId,
           Jobs = ImmutableList.Create(job1history),
           ExtraParts = job1ExtraParts.ToImmutableDictionary(),
           CurrentUnfilledWorkorders = job1UnfilledWorks.ToImmutableList()
@@ -132,13 +134,13 @@ namespace MachineWatchTest
       );
 
       // Add second job
+      var schId2 = "ZZ" + schId;
       var job2 = RandJob(job1.RouteStartUTC.AddHours(4)) with
       {
-        ScheduleId = "ZZ" + job1.ScheduleId,
         ManuallyCreated = true,
         PartName = job1.PartName
       };
-      var job2SimUse = RandSimStationUse(job2.ScheduleId, job2.RouteStartUTC);
+      var job2SimUse = RandSimStationUse(schId2, job2.RouteStartUTC);
       var job2ExtraParts = _fixture.Create<Dictionary<string, int>>();
       var job2UnfilledWorks = _fixture.Create<List<PartWorkorder>>();
       job2UnfilledWorks.Add(_fixture.Create<PartWorkorder>() with
@@ -148,7 +150,7 @@ namespace MachineWatchTest
 
       var newJobs2 = new NewJobs()
       {
-        ScheduleId = job2.ScheduleId,
+        ScheduleId = schId2,
         Jobs = ImmutableList.Create<Job>(job2),
         StationUse = job2SimUse,
         ExtraParts = job2ExtraParts.ToImmutableDictionary(),
@@ -157,19 +159,20 @@ namespace MachineWatchTest
 
       _jobDB.Invoking(d => d.AddJobs(newJobs2, "badsch", true))
         .Should().Throw<Exception>().WithMessage(
-          "Mismatch in previous schedule: expected 'badsch' but got '" + job1.ScheduleId + "'"
+          "Mismatch in previous schedule: expected 'badsch' but got '" + schId + "'"
         );
 
       _jobDB.LoadJob(job2.UniqueStr).Should().BeNull();
       _jobDB.DoesJobExist(job2.UniqueStr).Should().BeFalse();
-      _jobDB.LoadMostRecentSchedule().LatestScheduleId.Should().Be(job1.ScheduleId);
+      _jobDB.LoadMostRecentSchedule().LatestScheduleId.Should().Be(schId);
 
-      _jobDB.AddJobs(newJobs2, expectedPreviousScheduleId: job1.ScheduleId, addAsCopiedToSystem: true);
+      _jobDB.AddJobs(newJobs2, expectedPreviousScheduleId: schId, addAsCopiedToSystem: true);
 
       _jobDB.DoesJobExist(job2.UniqueStr).Should().BeTrue();
 
       var job2history = job2.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId2,
         CopiedToSystem = true,
         Decrements = new DecrementQuantity[] { }
       };
@@ -189,7 +192,7 @@ namespace MachineWatchTest
         }
       );
 
-      _jobDB.LoadJobsAfterScheduleId(job1.ScheduleId).Should().BeEquivalentTo(
+      _jobDB.LoadJobsAfterScheduleId(schId).Should().BeEquivalentTo(
         new HistoricData()
         {
           Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
@@ -197,7 +200,7 @@ namespace MachineWatchTest
         }
       );
 
-      _jobDB.LoadJobsAfterScheduleId(job2.ScheduleId).Should().BeEquivalentTo(
+      _jobDB.LoadJobsAfterScheduleId(schId2).Should().BeEquivalentTo(
         new HistoricData()
         {
           Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -209,7 +212,7 @@ namespace MachineWatchTest
         // job2 is manually created and should be ignored
         new PlannedSchedule()
         {
-          LatestScheduleId = job1.ScheduleId,
+          LatestScheduleId = schId,
           Jobs = ImmutableList.Create(job1history),
           ExtraParts = job1ExtraParts.ToImmutableDictionary(),
           CurrentUnfilledWorkorders = job1UnfilledWorks.ToImmutableList()
@@ -225,16 +228,18 @@ namespace MachineWatchTest
     [Fact]
     public void SetsComment()
     {
+      var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
 
       _jobDB.AddJobs(new NewJobs()
       {
-        ScheduleId = job1.ScheduleId,
+        ScheduleId = schId,
         Jobs = ImmutableList.Create(job1),
       }, null, addAsCopiedToSystem: true);
 
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId,
         CopiedToSystem = true,
         Decrements = new DecrementQuantity[] { }
       };
@@ -252,16 +257,18 @@ namespace MachineWatchTest
     [Fact]
     public void UpdatesHold()
     {
+      var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
 
       _jobDB.AddJobs(new NewJobs()
       {
-        ScheduleId = job1.ScheduleId,
+        ScheduleId = schId,
         Jobs = ImmutableList.Create(job1),
       }, null, addAsCopiedToSystem: true);
 
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId,
         CopiedToSystem = true,
         Decrements = new DecrementQuantity[] { }
       };
@@ -333,16 +340,18 @@ namespace MachineWatchTest
     [Fact]
     public void MarksAsCopied()
     {
+      var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
 
       _jobDB.AddJobs(new NewJobs()
       {
-        ScheduleId = job1.ScheduleId,
+        ScheduleId = schId,
         Jobs = ImmutableList.Create(job1),
       }, null, addAsCopiedToSystem: false);
 
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId,
         CopiedToSystem = false,
         Decrements = new DecrementQuantity[] { }
       };
@@ -366,16 +375,18 @@ namespace MachineWatchTest
     [Fact]
     public void ArchivesJobs()
     {
+      var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { Archived = false };
 
       _jobDB.AddJobs(new NewJobs()
       {
-        ScheduleId = job1.ScheduleId,
+        ScheduleId = schId,
         Jobs = ImmutableList.Create(job1),
       }, null, addAsCopiedToSystem: true);
 
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId,
         CopiedToSystem = true,
         Decrements = new DecrementQuantity[] { }
       };
@@ -653,6 +664,7 @@ namespace MachineWatchTest
     [Fact]
     public void Programs()
     {
+      var schId = "SchId" + _fixture.Create<string>();
       var job1 =
         RandJob()
         .AdjustPath(1, 1, d => d.Stops = new[] {
@@ -693,7 +705,7 @@ namespace MachineWatchTest
 
       _jobDB.AddJobs(new NewJobs
       {
-        ScheduleId = job1.ScheduleId,
+        ScheduleId = schId,
         Jobs = ImmutableList.Create(job1),
         CurrentUnfilledWorkorders = initialWorks.ToImmutableList(),
         Programs = ImmutableList.Create(
@@ -737,6 +749,7 @@ namespace MachineWatchTest
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId,
         CopiedToSystem = true,
         Decrements = new DecrementQuantity[] { }
       });
@@ -856,7 +869,7 @@ namespace MachineWatchTest
         };
       }));
 
-      _jobDB.ReplaceWorkordersForSchedule(job1.ScheduleId, newWorkorders, new[] {
+      _jobDB.ReplaceWorkordersForSchedule(schId, newWorkorders, new[] {
         new ProgramEntry() {
           ProgramName = "ccc",
           Revision = 0,
@@ -886,8 +899,10 @@ namespace MachineWatchTest
       });
 
       // now should ignore when program content matches exact revision or most recent revision
+      var schId2 = "ZZ" + schId;
       _jobDB.AddJobs(new NewJobs
       {
+        ScheduleId = schId2,
         Jobs = ImmutableList<Job>.Empty,
         Programs = ImmutableList.Create(
               new ProgramEntry()
@@ -912,7 +927,7 @@ namespace MachineWatchTest
                 ProgramContent = "ccc first program" // content matches most recent revision
               }
             )
-      }, null, addAsCopiedToSystem: true);
+      }, schId, addAsCopiedToSystem: true);
 
       _jobDB.LoadProgram("aaa", 2).Should().BeEquivalentTo(new ProgramRevision()
       {
@@ -1138,6 +1153,7 @@ namespace MachineWatchTest
           )
       }, null, addAsCopiedToSystem: true);
 
+      var schId = "SchId" + _fixture.Create<string>();
       var job1 =
         RandJob()
         .AdjustPath(1, 1, d => d.Stops = new[] {
@@ -1186,7 +1202,7 @@ namespace MachineWatchTest
 
       _jobDB.AddJobs(new NewJobs
       {
-        ScheduleId = job1.ScheduleId,
+        ScheduleId = schId,
         Jobs = ImmutableList.Create(job1),
         CurrentUnfilledWorkorders = initialWorks.ToImmutableList(),
         Programs = ImmutableList.Create(
@@ -1282,6 +1298,7 @@ namespace MachineWatchTest
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1.CloneToDerived<HistoricJob, Job>() with
       {
+        ScheduleId = schId,
         CopiedToSystem = true,
         Decrements = new DecrementQuantity[] { }
       });

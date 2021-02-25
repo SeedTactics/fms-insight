@@ -343,6 +343,7 @@ namespace MazakMachineInterface
         {
           Completed = j.Processes.Select(p => new int[p.Paths.Count]).ToArray(),
           Decrements = j.Decrements,
+          ScheduleId = j.ScheduleId,
           CopiedToSystem = false,
           Precedence = null,
           AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(j.UniqueStr))

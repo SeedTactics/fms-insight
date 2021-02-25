@@ -256,6 +256,7 @@ namespace MachineWatchTest
 
       _log.AddJobs(new NewJobs()
       {
+        ScheduleId = newJob.ScheduleId,
         Jobs = ImmutableList.Create((Job)newJob.ToHistoricJob())
       }, null, addAsCopiedToSystem: true);
 

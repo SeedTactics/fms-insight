@@ -98,7 +98,7 @@ namespace Makino
         };
         foreach (var j in newJ.Jobs)
         {
-          newJobs.Add(LegacyJobConversions.ToLegacyJob(j, copiedToSystem: true));
+          newJobs.Add(LegacyJobConversions.ToLegacyJob(j, copiedToSystem: true, scheduleId: newJ.ScheduleId));
         }
 
         jdb.AddJobs(newJ, expectedPreviousScheduleId, addAsCopiedToSystem: true);

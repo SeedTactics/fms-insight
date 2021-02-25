@@ -117,14 +117,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         elapsed: TimeSpan.FromMinutes(10),
         active: TimeSpan.Zero
       );
-      _logDB.AddNewDecrement(new[] {
-        new NewDecrementQuantity() {
-          JobUnique = "u1",
+      var job1Decrements = new[] {
+        new DecrementQuantity()
+        {
+          DecrementId = 0,
           Proc1Path = 1,
-          Part = "p1",
+          TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
           Quantity = 30
         }
-      }, new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc));
+      };
 
       // a second job with the same  route starting time and earlier simulated starting time
       var j2 = new JobPlan("u2", 1);
@@ -299,42 +300,37 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         st.TimeOfCurrentStatusUTC = status.TimeOfStatusUTC;
         var expectedJob = j.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
         {
+          ScheduleId = j.ScheduleId,
           CopiedToSystem = true,
           CyclesOnFirstProcess = new[] { 70 - 30 },
           Completed = new[] { new[] { 1 } },
           Precedence = new[] { new[] { 3L } }, // has last precedence
-          Decrements = new[] {
-            new DecrementQuantity()
-              {
-                DecrementId = 0,
-                Proc1Path = 1,
-                TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-                Quantity = 30
-              }
-          },
+          Decrements = job1Decrements,
           AssignedWorkorders = new[] { "work1", "work2", "work4" }
         };
         st.Jobs.Add("u1", expectedJob);
 
         var expectedJob2 = j2.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
         {
+          ScheduleId = j2.ScheduleId,
           CopiedToSystem = true,
           CyclesOnFirstProcess = new[] { 0 },
           Completed = new[] { new[] { 0 } },
           Precedence = new[] { new[] { 2L } }, // has middle precedence
-          Decrements = new DecrementQuantity[] { },
-          AssignedWorkorders = new string[] { }
+          Decrements = null,
+          AssignedWorkorders = null,
         };
         st.Jobs.Add("u2", expectedJob2);
 
         var expectedJob3 = j3.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
         {
+          ScheduleId = j3.ScheduleId,
           CopiedToSystem = true,
           CyclesOnFirstProcess = new[] { 0 },
           Completed = new[] { new[] { 0 } },
           Precedence = new[] { new[] { 1L } }, // has first precedence
-          Decrements = new DecrementQuantity[] { },
-          AssignedWorkorders = new string[] { }
+          Decrements = null,
+          AssignedWorkorders = null
         };
         st.Jobs.Add("u3", expectedJob3);
 
@@ -369,7 +365,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Status = status,
         Pallets = new List<PalletAndMaterial> { pal1, pal2 },
         QueuedMaterial = new List<InProcessMaterialAndJob> { queuedMat },
-        UnarchivedJobs = new List<Job> { j.ToHistoricJob(), j2.ToHistoricJob(), j3.ToHistoricJob() },
+        UnarchivedJobs = new List<HistoricJob> { j.ToHistoricJob() with { Decrements = job1Decrements }, j2.ToHistoricJob(), j3.ToHistoricJob() },
         UnarchivedLegacyJobs = new List<JobPlan> { j, j2, j3 }
       });
 
