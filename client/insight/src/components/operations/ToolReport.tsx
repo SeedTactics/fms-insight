@@ -45,7 +45,13 @@ import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Tooltip from "@material-ui/core/Tooltip";
-import { ToolReport, currentToolReport, toolReportRefreshTime } from "../../data/tools-programs";
+import {
+  ToolReport,
+  currentToolReport,
+  toolReportRefreshTime,
+  toolReportMachineFilter,
+  copyToolReportToClipboard,
+} from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
@@ -58,15 +64,28 @@ import clsx from "clsx";
 import { useRecoilState, useRecoilValueLoadable, useRecoilValue } from "recoil";
 import { useIsDemo } from "../IsDemo";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
+import Select from "@material-ui/core/Select";
+import ImportExport from "@material-ui/icons/ImportExport";
+import MenuItem from "@material-ui/core/MenuItem";
+import { useSelector } from "../../store/store";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
+  readonly showMachine: boolean;
 }
 
-const useRowStyles = makeStyles({
+const useRowStyles = makeStyles((theme) => ({
   mainRow: {
     "& > *": {
       borderBottom: "unset",
+    },
+    [theme.breakpoints.up("lg")]: {
+      "& td:not(:last-child), & th:not(:last-child)": {
+        whiteSpace: "nowrap",
+      },
+      "& td:last-child, & th:last-child": {
+        width: "100%",
+      },
     },
   },
   collapseCell: {
@@ -95,7 +114,7 @@ const useRowStyles = makeStyles({
   noticeRow: {
     backgroundColor: "#E0E0E0",
   },
-});
+}));
 
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
@@ -121,11 +140,23 @@ function ToolRow(props: ToolRowProps) {
         <TableCell>{props.tool.toolName}</TableCell>
         <TableCell align="right">{schUse.toFixed(1)}</TableCell>
         <TableCell align="right">{totalLife.toFixed(1)}</TableCell>
-        <TableCell align="right">{props.tool.minRemainingMinutes.toFixed(1)}</TableCell>
-        <TableCell>{props.tool.minRemainingMachine}</TableCell>
+        {props.showMachine ? (
+          <>
+            <TableCell align="right">{props.tool.minRemainingMinutes.toFixed(1)}</TableCell>
+            <TableCell>{props.tool.minRemainingMachine}</TableCell>
+          </>
+        ) : (
+          <TableCell>
+            {props.tool.machines
+              .map((m) => m.pocket.toString())
+              .toArray()
+              .join(", ")}
+          </TableCell>
+        )}
+        <TableCell />
       </TableRow>
       <TableRow>
-        <TableCell className={classes.collapseCell} colSpan={6}>
+        <TableCell className={classes.collapseCell} colSpan={props.showMachine ? 7 : 6}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <div className={classes.detailContainer}>
               {props.tool.parts.isEmpty() ? undefined : (
@@ -189,10 +220,15 @@ function ToolRow(props: ToolRowProps) {
 
 type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemainingLife" | "MinRemainingMachine";
 
+const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
+
 function ToolSummaryTable() {
+  const [machineFilter, setMachineFilter] = useRecoilState(toolReportMachineFilter);
   const tools = useRecoilValue(currentToolReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const machineNames = useSelector((st) => st.Events.last30.cycles.machine_names);
+  const tableRowStyles = useRowStyles();
 
   if (tools === null) {
     return <div />;
@@ -243,12 +279,45 @@ function ToolSummaryTable() {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <ToolIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Tools</div>
+            <div style={{ flexGrow: 1 }} />
+            <Select
+              autoWidth
+              displayEmpty
+              value={machineFilter ?? FilterAnyMachineKey}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => {
+                if (e.target.value === FilterAnyMachineKey) {
+                  setMachineFilter(null);
+                } else {
+                  setMachineFilter(e.target.value as string);
+                }
+              }}
+            >
+              <MenuItem value={FilterAnyMachineKey}>
+                <em>All Machines</em>
+              </MenuItem>
+              {machineNames.toArray({ sortOn: (x) => x }).map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+            <Tooltip title="Copy to Clipboard">
+              <IconButton
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                onClick={() => copyToolReportToClipboard(tools, machineFilter !== null)}
+              >
+                <ImportExport />
+              </IconButton>
+            </Tooltip>
           </div>
         }
       />
       <CardContent>
         <Table>
-          <TableHead>
+          <TableHead className={tableRowStyles.mainRow}>
             <TableRow>
               <TableCell />
               <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
@@ -282,33 +351,40 @@ function ToolSummaryTable() {
                   </TableSortLabel>
                 </Tooltip>
               </TableCell>
-              <TableCell sortDirection={sortCol === "MinRemainingLife" ? sortDir : false} align="right">
-                <Tooltip title="Machine with the least remaining life">
-                  <TableSortLabel
-                    active={sortCol === "MinRemainingLife"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("MinRemainingLife")}
-                  >
-                    Smallest Remaining Life (min)
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
-              <TableCell sortDirection={sortCol === "MinRemainingMachine" ? sortDir : false}>
-                <Tooltip title="Machine with the least remaining life">
-                  <TableSortLabel
-                    active={sortCol === "MinRemainingMachine"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("MinRemainingMachine")}
-                  >
-                    Machine With Smallest Remaining Life
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
+              {machineFilter === null ? (
+                <>
+                  <TableCell sortDirection={sortCol === "MinRemainingLife" ? sortDir : false} align="right">
+                    <Tooltip title="Machine with the least remaining life">
+                      <TableSortLabel
+                        active={sortCol === "MinRemainingLife"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("MinRemainingLife")}
+                      >
+                        Smallest Remaining Life (min)
+                      </TableSortLabel>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sortDirection={sortCol === "MinRemainingMachine" ? sortDir : false}>
+                    <Tooltip title="Machine with the least remaining life">
+                      <TableSortLabel
+                        active={sortCol === "MinRemainingMachine"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("MinRemainingMachine")}
+                      >
+                        Machine With Smallest Remaining Life
+                      </TableSortLabel>
+                    </Tooltip>
+                  </TableCell>
+                </>
+              ) : (
+                <TableCell>Pockets</TableCell>
+              )}
+              <TableCell />
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map((tool) => (
-              <ToolRow key={tool.toolName} tool={tool} />
+              <ToolRow key={tool.toolName} tool={tool} showMachine={machineFilter === null} />
             ))}
           </TableBody>
         </Table>
