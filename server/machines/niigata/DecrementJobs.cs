@@ -49,11 +49,11 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool DecrementJobs(IRepository jobDB, CellState cellSt)
     {
       var decrs = new List<NewDecrementQuantity>();
-      foreach (var j in cellSt.UnarchivedLegacyJobs)
+      foreach (var j in cellSt.UnarchivedJobs)
       {
-        if (j.ManuallyCreatedJob || jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
+        if (j.ManuallyCreated || jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
 
-        for (int path = 1; path <= j.GetNumPaths(process: 1); path++)
+        for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
         {
           if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
           {

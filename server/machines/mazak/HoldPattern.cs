@@ -32,10 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Threading;
 using BlackMaple.MachineWatchInterface;
-using Microsoft.Data.Sqlite;
 
 namespace MazakMachineInterface
 {
@@ -110,8 +107,8 @@ namespace MazakMachineInterface
         get { return (HoldMode)_schRow.HoldMode; }
       }
 
-      public JobHoldPattern HoldEntireJob { get; }
-      public JobHoldPattern HoldMachining { get; }
+      public BlackMaple.MachineFramework.HoldPattern HoldEntireJob { get; }
+      public BlackMaple.MachineFramework.HoldPattern HoldMachining { get; }
 
       public void ChangeHoldMode(HoldMode newHold)
       {
@@ -137,11 +134,11 @@ namespace MazakMachineInterface
         if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
         {
           MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
-          var job = jdb.LoadJob(unique)?.ToLegacyJob();
+          var job = jdb.LoadJob(unique);
           if (job != null)
           {
-            HoldEntireJob = job.HoldEntireJob;
-            HoldMachining = job.HoldMachining(process: 1, path: paths.PathForProc(proc: 1));
+            HoldEntireJob = job.HoldJob;
+            HoldMachining = job.Processes[0].Paths[paths.PathForProc(proc: 1) - 1].HoldMachining;
           }
         }
       }
@@ -186,9 +183,9 @@ namespace MazakMachineInterface
           DateTime machNext = DateTime.MaxValue;
 
           if (pair.Value.HoldEntireJob != null)
-            pair.Value.HoldEntireJob.HoldInformation(nowUTC, out allHold, out allNext);
+            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(pair.Value.HoldEntireJob, nowUTC, out allHold, out allNext);
           if (pair.Value.HoldMachining != null)
-            pair.Value.HoldMachining.HoldInformation(nowUTC, out machHold, out machNext);
+            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(pair.Value.HoldMachining, nowUTC, out allHold, out allNext);
 
           HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
 

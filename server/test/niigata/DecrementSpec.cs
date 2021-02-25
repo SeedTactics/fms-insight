@@ -62,11 +62,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var qtyRemaining = new Dictionary<(string uniq, int proc1path), int>();
 
-      var j1 = new JobPlan("u1", numProcess: 2, numPaths: new[] { 2, 1 });
+      var j1 = new HistoricJob()
+      {
+        UniqueStr = "u1",
+        Processes = new[] {
+          new ProcessInfo() {
+            Paths = new[] { new ProcPathInfo(), new ProcPathInfo() }
+          },
+          new ProcessInfo() {
+            Paths = new[] { new ProcPathInfo() }
+          }
+        }
+      };
       qtyRemaining[(uniq: "u1", proc1path: 1)] = 5;
       qtyRemaining[(uniq: "u1", proc1path: 2)] = 7;
 
-      var j2 = new JobPlan("u2", numProcess: 1);
+      var j2 = new HistoricJob()
+      {
+        UniqueStr = "u2",
+        Processes = new[] {
+          new ProcessInfo() {
+            Paths = new[] { new ProcPathInfo() }
+          },
+        }
+      };
       qtyRemaining[(uniq: "u2", proc1path: 1)] = 0;
 
       var d = new DecrementNotYetStartedJobs();
@@ -78,7 +97,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         d.DecrementJobs(_jobDB,
           new CellState()
           {
-            UnarchivedLegacyJobs = new[] { j1, j2 },
+            UnarchivedJobs = new[] { j1, j2 },
             JobQtyRemainingOnProc1 = qtyRemaining
           }
         ).Should().Be(i == 0); // only something changed first time

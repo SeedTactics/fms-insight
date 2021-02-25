@@ -89,7 +89,7 @@ namespace MazakMachineInterface
     private class DecrSchedule
     {
       public MazakScheduleRow Schedule { get; set; }
-      public JobPlan Job { get; set; }
+      public HistoricJob Job { get; set; }
       public int Proc1Path { get; set; }
       public int NewPlanQty { get; set; }
     }
@@ -108,7 +108,7 @@ namespace MazakMachineInterface
 
         //load the job
         if (string.IsNullOrEmpty(unique)) continue;
-        var job = jobDB.LoadJob(unique)?.ToLegacyJob();
+        var job = jobDB.LoadJob(unique);
         if (job == null) continue;
 
         // if already decremented, ignore
@@ -172,7 +172,7 @@ namespace MazakMachineInterface
       var decrAmt = new List<NewDecrementQuantity>();
       foreach (var decr in decrs)
       {
-        var planned = decr.Job.GetPlannedCyclesOnFirstProcess(path: decr.Proc1Path);
+        var planned = decr.Job.CyclesOnFirstProcess[decr.Proc1Path - 1];
         if (planned > decr.NewPlanQty)
         {
           decrAmt.Add(new NewDecrementQuantity()

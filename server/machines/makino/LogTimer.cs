@@ -222,14 +222,13 @@ namespace Makino
       if (logDb == null)
         return;
 
-      JobPlan job;
-      job = logDb.LoadJob(m.OrderName)?.ToLegacyJob();
+      var job = logDb.LoadJob(m.OrderName);
       if (job == null)
         return;
 
       foreach (var mat in material)
       {
-        logDb.MakeInspectionDecisions(mat.MaterialID, m.ProcessNum, job.PathInspections(m.ProcessNum, path: 1));
+        logDb.MakeInspectionDecisions(mat.MaterialID, m.ProcessNum, job.Processes[m.ProcessNum - 1].Paths[0].Inspections);
       }
     }
 

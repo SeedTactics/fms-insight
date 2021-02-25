@@ -777,15 +777,15 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // search for program in job
       var procAndStopFromJob =
-        cellSt.UnarchivedLegacyJobs
-          .SelectMany(j => Enumerable.Range(1, j.NumProcesses).Select(proc => new { j, proc }))
-          .SelectMany(j => Enumerable.Range(1, j.j.GetNumPaths(j.proc)).Select(path => new { j = j.j, proc = j.proc, path }))
-          .SelectMany(j => j.j.GetMachiningStop(j.proc, j.path).Select(stop => new { stop, proc = j.proc }))
-          .FirstOrDefault(s => s.stop.ProgramName == prog.ProgramName && s.stop.ProgramRevision == prog.Revision);
+        cellSt.UnarchivedJobs
+          .SelectMany(j => j.Processes.Select((p, idx) => new { proc = p, procNum = idx + 1 }))
+          .SelectMany(p => p.proc.Paths.Select(path => new { path, procNum = p.procNum }))
+          .SelectMany(p => p.path.Stops.Select(stop => new { stop, procNum = p.procNum }))
+          .FirstOrDefault(s => s.stop.Program == prog.ProgramName && s.stop.ProgramRevision == prog.Revision);
 
       if (procAndStopFromJob != null)
       {
-        process = procAndStopFromJob.proc;
+        process = procAndStopFromJob.procNum;
         elapsed = procAndStopFromJob.stop.ExpectedCycleTime;
       }
       else
@@ -797,10 +797,10 @@ namespace BlackMaple.FMSInsight.Niigata
           if (workProg != null)
           {
             process = workProg.ProcessNumber;
-            var job = cellSt.UnarchivedLegacyJobs.Where(j => j.PartName == work.Part).FirstOrDefault();
-            if (job != null && process >= 1 && process <= job.NumProcesses)
+            var job = cellSt.UnarchivedJobs.Where(j => j.PartName == work.Part).FirstOrDefault();
+            if (job != null && process >= 1 && process <= job.Processes.Count)
             {
-              elapsed = job.GetMachiningStop(process, 1).ElementAtOrDefault(workProg.StopIndex ?? 0)?.ExpectedCycleTime ?? TimeSpan.Zero;
+              elapsed = job.Processes[process - 1].Paths[0].Stops.ElementAtOrDefault(workProg.StopIndex ?? 0)?.ExpectedCycleTime ?? TimeSpan.Zero;
             }
           }
         }

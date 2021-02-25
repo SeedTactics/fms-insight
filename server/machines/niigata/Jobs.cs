@@ -455,17 +455,20 @@ namespace BlackMaple.FMSInsight.Niigata
         jobUnique, process, queue, position, serial
       );
 
-      JobPlan job;
+      HistoricJob job;
       using (var jdb = _jobDbCfg.OpenConnection())
       {
-        job = jdb.LoadJob(jobUnique)?.ToLegacyJob();
+        job = jdb.LoadJob(jobUnique);
       }
       if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 
+      int procToCheck = Math.Max(1, process);
+      if (procToCheck > job.Processes.Count) throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
+
       int? path = null;
-      for (var p = 1; p <= job.GetNumPaths(Math.Max(1, process)); p++)
+      for (var p = 1; p <= job.Processes[procToCheck - 1].Paths.Count; p++)
       {
-        if (job.GetPathGroup(Math.Max(1, process), p) == pathGroup)
+        if (job.Processes[procToCheck - 1].Paths[p - 1].PathGroup == pathGroup)
         {
           path = p;
           break;
@@ -477,7 +480,7 @@ namespace BlackMaple.FMSInsight.Niigata
       IEnumerable<LogEntry> logEvt;
       using (var ldb = _jobDbCfg.OpenConnection())
       {
-        matId = ldb.AllocateMaterialID(jobUnique, job.PartName, job.NumProcesses);
+        matId = ldb.AllocateMaterialID(jobUnique, job.PartName, job.Processes.Count);
         if (!string.IsNullOrEmpty(serial))
         {
           ldb.RecordSerialForMaterialID(
