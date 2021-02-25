@@ -419,12 +419,13 @@ interface HeaderProps {
 function Header(p: HeaderProps) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const alarms = useRecoilValue(currentStatus).alarms;
+  const hasAlarms = alarms && alarms.length > 0;
 
-  const alarmTooltip = alarms ? alarms.join(". ") : "No Alarms";
+  const alarmTooltip = hasAlarms ? alarms.join(". ") : "No Alarms";
   const Alarms = () => (
     <Tooltip title={alarmTooltip}>
-      <Badge badgeContent={alarms ? alarms.length : 0}>
-        <Notifications color={alarms ? "error" : undefined} />
+      <Badge badgeContent={hasAlarms ? alarms.length : 0}>
+        <Notifications color={hasAlarms ? "error" : undefined} />
       </Badge>
     </Tooltip>
   );

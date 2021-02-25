@@ -49,14 +49,13 @@ namespace MazakMachineInterface
     private IMachineGroupName _machineGroupName;
     private IDecrementPlanQty _decr;
     private readonly IQueueSyncFault queueFault;
+    private readonly MazakConfig _mazakCfg;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
     private readonly Action<NewJobs> _onNewJobs;
     private readonly Action<CurrentStatus> _onCurStatusChange;
     private readonly Action<EditMaterialInLogEvents> _onEditMatInLog;
     public readonly bool _useStartingOffsetForDueDate;
-
-    public Action<NewJobs> NewJobTransform = null;
 
     public RoutingInfo(
       IWriteData d,
@@ -71,7 +70,8 @@ namespace MazakMachineInterface
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<NewJobs> onNewJobs,
       Action<CurrentStatus> onStatusChange,
-      Action<EditMaterialInLogEvents> onEditMatInLog
+      Action<EditMaterialInLogEvents> onEditMatInLog,
+      MazakConfig mazakCfg
     )
     {
       writeDb = d;
@@ -81,6 +81,7 @@ namespace MazakMachineInterface
       logDbCfg = jLogCfg;
       _writeJobs = wJobs;
       _decr = decrement;
+      _mazakCfg = mazakCfg;
       _machineGroupName = machineGroupName;
       queueFault = queueSyncFault;
       _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
@@ -123,7 +124,12 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      return MazakMachineInterface.BuildCurrentStatus.Build(eventLogDB, fmsSettings, _machineGroupName, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
+      var st = MazakMachineInterface.BuildCurrentStatus.Build(eventLogDB, fmsSettings, _machineGroupName, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
+      if (_mazakCfg != null && _mazakCfg.AdjustCurrentStatus != null)
+      {
+        st = _mazakCfg.AdjustCurrentStatus(eventLogDB, st);
+      }
+      return st;
     }
 
     #endregion
@@ -206,7 +212,10 @@ namespace MazakMachineInterface
       CurrentStatus curSt;
       try
       {
-        NewJobTransform?.Invoke(newJ);
+        if (_mazakCfg != null && _mazakCfg.NewJobTransform != null)
+        {
+          newJ = _mazakCfg.NewJobTransform(newJ);
+        }
         using (var jobDB = logDbCfg.OpenConnection())
         {
           _writeJobs.AddJobs(jobDB, newJ, expectedPreviousScheduleId);
