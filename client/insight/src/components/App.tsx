@@ -77,7 +77,6 @@ import DataExport from "./analysis/DataExport";
 import ChooseMode from "./ChooseMode";
 import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
-import { Store, connect } from "../store/store";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
 import logo from "../seedtactics-logo.svg";
@@ -110,8 +109,8 @@ const tabsStyle = {
 interface HeaderNavProps {
   readonly demo: boolean;
   readonly full: boolean;
-  readonly setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
-  readonly routeState: routes.State;
+  readonly setRoute: (r: routes.RouteState) => void;
+  readonly routeState: routes.RouteState;
 }
 
 function OperationsTabs(p: HeaderNavProps) {
@@ -122,8 +121,8 @@ function OperationsTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={p.routeState.current}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+      value={p.routeState.route}
+      onChange={(e, v) => p.setRoute({ route: v })}
     >
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
@@ -144,8 +143,8 @@ function QualityTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={p.routeState.current}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+      value={p.routeState.route}
+      onChange={(e, v) => p.setRoute({ route: v })}
     >
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
@@ -163,8 +162,8 @@ function ToolsTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={p.routeState.current}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+      value={p.routeState.route}
+      onChange={(e, v) => p.setRoute({ route: v })}
     >
       <Tab label="Tools" value={routes.RouteLocation.Tools_Dashboard} />
       <Tab label="Programs" value={routes.RouteLocation.Tools_Programs} />
@@ -180,8 +179,8 @@ function AnalysisTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={p.routeState.current}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+      value={p.routeState.route}
+      onChange={(e, v) => p.setRoute({ route: v })}
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
@@ -196,8 +195,10 @@ function DemoNav(p: HeaderNavProps) {
       <ListSubheader>Shop Floor</ListSubheader>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Station_LoadMonitor}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_LoadMonitor, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Station_LoadMonitor}
+        onClick={() =>
+          p.setRoute({ route: routes.RouteLocation.Station_LoadMonitor, loadNum: 1, free: false, queues: [] })
+        }
       >
         <ListItemIcon>
           <DirectionsIcon />
@@ -206,8 +207,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Station_Queues}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_Queues, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Station_Queues}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Station_Queues, free: false, queues: ["Queue1"] })}
       >
         <ListItemIcon>
           <ExtensionIcon />
@@ -216,8 +217,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Station_InspectionMonitor}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_InspectionMonitor, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Station_InspectionMonitorWithType}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Station_InspectionMonitorWithType, inspType: "CMM" })}
       >
         <ListItemIcon>
           <InfoIcon />
@@ -226,8 +227,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Station_WashMonitor}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Station_WashMonitor, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Station_WashMonitor}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Station_WashMonitor })}
       >
         <ListItemIcon>
           <OpacityIcon />
@@ -237,8 +238,8 @@ function DemoNav(p: HeaderNavProps) {
       <ListSubheader>Daily Monitoring</ListSubheader>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Operations_Dashboard}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Dashboard, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Operations_Dashboard}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Dashboard })}
       >
         <ListItemIcon>
           <ShoppingBasket />
@@ -247,8 +248,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Operations_LoadStation}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_LoadStation, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Operations_LoadStation}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_LoadStation })}
       >
         <ListItemIcon>
           <PersonIcon />
@@ -257,8 +258,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Operations_Machines}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Machines, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Operations_Machines}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Machines })}
       >
         <ListItemIcon>
           <MemoryIcon />
@@ -267,8 +268,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Operations_CompletedParts}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_CompletedParts, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Operations_CompletedParts}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_CompletedParts })}
       >
         <ListItemIcon>
           <CheckIcon />
@@ -277,8 +278,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Quality_Dashboard}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Quality_Dashboard, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Quality_Dashboard}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Quality_Dashboard })}
       >
         <ListItemIcon>
           <StarIcon />
@@ -287,8 +288,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Quality_Serials}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Quality_Serials, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Quality_Serials}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Quality_Serials })}
       >
         <ListItemIcon>
           <BugIcon />
@@ -297,8 +298,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Operations_Tools}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Tools, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Operations_Tools}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Tools })}
       >
         <ListItemIcon>
           <ToolIcon />
@@ -307,8 +308,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Operations_Programs}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Operations_Programs, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Operations_Programs}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Programs })}
       >
         <ListItemIcon>
           <ProgramIcon />
@@ -318,8 +319,8 @@ function DemoNav(p: HeaderNavProps) {
       <ListSubheader>Monthly Review</ListSubheader>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Analysis_Efficiency}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Analysis_Efficiency, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Analysis_Efficiency}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Analysis_Efficiency })}
       >
         <ListItemIcon>
           <ChartIcon />
@@ -328,8 +329,8 @@ function DemoNav(p: HeaderNavProps) {
       </ListItem>
       <ListItem
         button
-        selected={p.routeState.current === routes.RouteLocation.Analysis_CostPerPiece}
-        onClick={() => p.setRoute({ ty: routes.RouteLocation.Analysis_CostPerPiece, curSt: p.routeState })}
+        selected={p.routeState.route === routes.RouteLocation.Analysis_CostPerPiece}
+        onClick={() => p.setRoute({ route: routes.RouteLocation.Analysis_CostPerPiece })}
       >
         <ListItemIcon>
           <MoneyIcon />
@@ -345,8 +346,8 @@ function BackupTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={p.routeState.current}
-      onChange={(e, v) => p.setRoute({ ty: v, curSt: p.routeState })}
+      value={p.routeState}
+      onChange={(e, v) => p.setRoute({ route: v })}
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
       <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
@@ -354,13 +355,11 @@ function BackupTabs(p: HeaderNavProps) {
   );
 }
 
-function helpUrl(r: routes.RouteLocation): string {
-  switch (r) {
-    case routes.RouteLocation.ChooseMode:
-      return "https://fms-insight.seedtactics.com/docs/client-launch.html";
-
+function helpUrl(r: routes.RouteState): string {
+  switch (r.route) {
     case routes.RouteLocation.Station_LoadMonitor:
     case routes.RouteLocation.Station_InspectionMonitor:
+    case routes.RouteLocation.Station_InspectionMonitorWithType:
     case routes.RouteLocation.Station_WashMonitor:
     case routes.RouteLocation.Station_Queues:
       return "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
@@ -400,6 +399,10 @@ function helpUrl(r: routes.RouteLocation): string {
 
     case routes.RouteLocation.Backup_InitialOpen:
       return "https://fms-insight.seedtactics.com/docs/client-backup-viewer.html";
+
+    case routes.RouteLocation.ChooseMode:
+    default:
+      return "https://fms-insight.seedtactics.com/docs/client-launch.html";
   }
 }
 
@@ -409,11 +412,11 @@ interface HeaderProps {
   showLogout: boolean;
   showSearch: boolean;
   showOperator: boolean;
-  children?: (p: HeaderNavProps) => React.ReactNode;
-
-  routeState: routes.State;
   fmsInfo: Readonly<api.IFMSInfo> | null;
-  setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
+  readonly setRoute: (r: routes.RouteState) => void;
+  readonly routeState: routes.RouteState;
+
+  children?: (p: HeaderNavProps) => React.ReactNode;
 }
 
 function Header(p: HeaderProps) {
@@ -432,7 +435,7 @@ function Header(p: HeaderProps) {
 
   const HelpButton = () => (
     <Tooltip title="Help">
-      <IconButton aria-label="Help" href={helpUrl(p.routeState.current)} target="_help">
+      <IconButton aria-label="Help" href={helpUrl(p.routeState)} target="_help">
         <HelpOutline />
       </IconButton>
     </Tooltip>
@@ -548,13 +551,9 @@ export interface AppProps {
   backupViewerOnRequestOpenFile?: () => void;
 }
 
-interface AppConnectedProps extends AppProps {
-  route: routes.State;
-  setRoute: (arg: { ty: routes.RouteLocation; curSt: routes.State }) => void;
-}
-
-const App = React.memo(function App(props: AppConnectedProps) {
+const App = React.memo(function App(props: AppProps) {
   const fmsInfoLoadable = useRecoilValueLoadable(serverSettings.fmsInformation);
+  const [route, setRoute] = routes.useCurrentRoute();
 
   // BaseLoadable<T>.valueMaybe() has the wrong type so hard to use :(
   const fmsInfo = fmsInfoLoadable.state === "hasValue" ? fmsInfoLoadable.valueOrThrow() : null;
@@ -567,15 +566,21 @@ const App = React.memo(function App(props: AppConnectedProps) {
   let showOperator = false;
   let addBasicMaterialDialog = true;
   if (fmsInfo && (!serverSettings.requireLogin(fmsInfo) || fmsInfo.user)) {
-    switch (props.route.current) {
+    switch (route.route) {
       case routes.RouteLocation.Station_LoadMonitor:
-        page = <LoadStation />;
+        page = <LoadStation loadNum={route.loadNum} showFree={route.free} queues={route.queues} />;
         navigation = (p) => <StationToolbar full={p.full} />;
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_InspectionMonitor:
-        page = <Inspection />;
+        page = <Inspection focusInspectionType={null} />;
+        navigation = (p) => <StationToolbar full={p.full} />;
+        showOperator = true;
+        addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Station_InspectionMonitorWithType:
+        page = <Inspection focusInspectionType={route.inspType} />;
         navigation = (p) => <StationToolbar full={p.full} />;
         showOperator = true;
         addBasicMaterialDialog = false;
@@ -587,7 +592,7 @@ const App = React.memo(function App(props: AppConnectedProps) {
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_Queues:
-        page = <Queues />;
+        page = <Queues showFree={route.free} queues={route.queues} />;
         navigation = (p) => <StationToolbar full={p.full} />;
         showOperator = true;
         addBasicMaterialDialog = false;
@@ -699,7 +704,7 @@ const App = React.memo(function App(props: AppConnectedProps) {
         if (props.demo) {
           page = <OperationDashboard />;
         } else {
-          page = <ChooseMode />;
+          page = <ChooseMode setRoute={setRoute} />;
           showSearch = false;
           showAlarms = false;
         }
@@ -728,14 +733,14 @@ const App = React.memo(function App(props: AppConnectedProps) {
   return (
     <div id="App">
       <Header
-        routeState={props.route}
+        routeState={route}
         fmsInfo={fmsInfo}
         demo={props.demo}
         showAlarms={showAlarms}
         showSearch={showSearch}
         showLogout={showLogout}
         showOperator={showOperator}
-        setRoute={props.setRoute}
+        setRoute={setRoute}
       >
         {navigation}
       </Header>
@@ -743,7 +748,7 @@ const App = React.memo(function App(props: AppConnectedProps) {
         <div style={{ display: "flex" }}>
           <Hidden smDown>
             <div style={{ borderRight: "1px solid" }}>
-              <DemoNav full={false} setRoute={props.setRoute} demo={true} routeState={props.route} />
+              <DemoNav full={false} setRoute={setRoute} demo={true} routeState={route} />
             </div>
           </Hidden>
           <div style={{ width: "100%" }}>{page}</div>
@@ -758,11 +763,4 @@ const App = React.memo(function App(props: AppConnectedProps) {
   );
 });
 
-export default connect(
-  (s: Store) => ({
-    route: s.Route,
-  }),
-  {
-    setRoute: ({ ty, curSt }: { ty: routes.RouteLocation; curSt: routes.State }) => routes.displayPage(ty, curSt),
-  }
-)(App);
+export default App;

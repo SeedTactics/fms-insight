@@ -31,15 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as events from "../data/events";
-import * as routes from "../data/routes";
 
 import { createStore, StoreState, StoreActions, ACPayload, mkACF } from "./typed-redux";
 import * as redux from "redux";
 import * as reactRedux from "react-redux";
 import { middleware } from "./middleware";
-
-import { connectRoutes, LocationState } from "redux-first-router";
-import * as queryString from "query-string";
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
@@ -54,13 +50,7 @@ export const useSelector: reactRedux.TypedUseSelectorHook<Store> = reactRedux.us
 
 export let reduxStore: redux.Store<Store> | null = null;
 
-export function initStore({ useRouter }: { useRouter: boolean }) {
-  const router = useRouter
-    ? connectRoutes(routes.routeMap, {
-        querySerializer: queryString,
-      })
-    : undefined;
-
+export function initStore() {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const composeEnhancers =
     typeof window === "object" && (window as any)["__REDUX_DEVTOOLS_EXTENSION_COMPOSE__"]
@@ -71,13 +61,9 @@ export function initStore({ useRouter }: { useRouter: boolean }) {
   const store = createStore(
     {
       Events: events.reducer,
-      Route: routes.reducer,
-      location: router ? router.reducer : (s: LocationState<string>, _: object) => s || {},
     },
     middleware,
-    router
-      ? (m) => composeEnhancers(router.enhancer, redux.applyMiddleware(m, router.middleware))
-      : (m) => composeEnhancers(redux.applyMiddleware(m))
+    (m) => composeEnhancers(redux.applyMiddleware(m))
   );
 
   reduxStore = store as any;

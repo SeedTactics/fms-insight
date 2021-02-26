@@ -62,7 +62,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import { PartIdenticon } from "../station-monitor/Material";
 import clsx from "clsx";
 import { useRecoilState, useRecoilValueLoadable, useRecoilValue } from "recoil";
-import { useIsDemo } from "../IsDemo";
+import { useIsDemo } from "../../data/routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import Select from "@material-ui/core/Select";
 import ImportExport from "@material-ui/icons/ImportExport";

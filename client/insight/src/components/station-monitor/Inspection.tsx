@@ -37,9 +37,8 @@ import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
 import Tooltip from "@material-ui/core/Tooltip";
 import DialogActions from "@material-ui/core/DialogActions";
-import { createSelector } from "reselect";
 
-import { Store, connect } from "../../store/store";
+import { Store, useSelector } from "../../store/store";
 import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../data/material-details";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
@@ -118,7 +117,7 @@ function InspButtons(props: InspButtonsProps) {
 }
 
 interface InspDialogProps {
-  readonly focusInspectionType: string;
+  readonly focusInspectionType: string | null;
 }
 
 function InspDialog(props: InspDialogProps) {
@@ -161,119 +160,116 @@ function InspDialog(props: InspDialogProps) {
   );
 }
 
-const ConnectedInspDialog = connect((st) => ({
-  focusInspectionType: st.Route.selected_insp_type || "",
-}))(InspDialog);
-
 interface PartsForInspection {
   readonly waiting_to_inspect: ReadonlyArray<MaterialSummary>;
   readonly inspect_completed: ReadonlyArray<MaterialSummary>;
 }
 
 interface InspectionProps {
-  readonly recent_inspections: PartsForInspection;
-  readonly focusInspectionType: string;
+  readonly focusInspectionType: string | null;
 }
 
 function Inspection(props: InspectionProps) {
   React.useEffect(() => {
     let title = "Inspection - FMS Insight";
-    if (props.focusInspectionType !== "") {
+    if (props.focusInspectionType != null && props.focusInspectionType !== "") {
       title = "Inspection " + props.focusInspectionType + " - FMS Insight";
     }
     document.title = title;
   }, [props.focusInspectionType]);
+
+  const matsById = useSelector((st: Store) => st.Events.last30.mat_summary.matsById);
+  const recent_inspections = React.useMemo(() => extractRecentInspections(matsById, props.focusInspectionType), [
+    matsById,
+    props.focusInspectionType,
+  ]);
 
   return (
     <main data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
-            {props.recent_inspections.waiting_to_inspect.map((m, idx) => (
+            {recent_inspections.waiting_to_inspect.map((m, idx) => (
               <MatSummary key={idx} mat={m} focusInspectionType={props.focusInspectionType} hideInspectionIcon />
             ))}
           </WhiteboardRegion>
         </Grid>
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
-            {props.recent_inspections.inspect_completed.map((m, idx) => (
+            {recent_inspections.inspect_completed.map((m, idx) => (
               <MatSummary key={idx} mat={m} focusInspectionType={props.focusInspectionType} hideInspectionIcon />
             ))}
           </WhiteboardRegion>
         </Grid>
       </Grid>
-      <ConnectedInspDialog />
+      <InspDialog focusInspectionType={props.focusInspectionType} />
     </main>
   );
 }
 
-const extractRecentInspections = createSelector(
-  (st: Store) => st.Events.last30.mat_summary.matsById,
-  (st: Store) => st.Route.selected_insp_type,
-  (mats: HashMap<number, MaterialSummaryAndCompletedData>, inspType: string | undefined): PartsForInspection => {
-    const uninspectedCutoff = addDays(new Date(), -7);
-    const inspectedCutoff = addDays(new Date(), -1);
+function extractRecentInspections(
+  mats: HashMap<number, MaterialSummaryAndCompletedData>,
+  inspType: string | null
+): PartsForInspection {
+  const uninspectedCutoff = addDays(new Date(), -7);
+  const inspectedCutoff = addDays(new Date(), -1);
 
-    function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
-      return HashSet.ofIterable(m.signaledInspections)
-        .removeAll(m.completedInspections ? Object.keys(m.completedInspections) : [])
-        .isEmpty();
-    }
-
-    const uninspected = Array.from(
-      inspType === undefined
-        ? LazySeq.ofIterable(mats.valueIterable()).filter(
-            (m) =>
-              m.last_unload_time !== undefined &&
-              m.last_unload_time >= uninspectedCutoff &&
-              m.signaledInspections.length > 0 &&
-              !checkAllCompleted(m)
-          )
-        : LazySeq.ofIterable(mats.valueIterable()).filter(
-            (m) =>
-              m.last_unload_time !== undefined &&
-              m.last_unload_time >= uninspectedCutoff &&
-              m.signaledInspections.includes(inspType) &&
-              (m.completedInspections || {})[inspType] === undefined
-          )
-    );
-    // sort descending
-    uninspected.sort((e1, e2) =>
-      e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
-    );
-
-    const inspected = Array.from(
-      inspType === undefined
-        ? LazySeq.ofIterable(mats.valueIterable()).filter(
-            (m) =>
-              m.completed_inspect_time !== undefined &&
-              m.completed_inspect_time >= inspectedCutoff &&
-              m.signaledInspections.length > 0 &&
-              checkAllCompleted(m)
-          )
-        : LazySeq.ofIterable(mats.valueIterable()).filter(
-            (m) =>
-              m.completed_inspect_time !== undefined &&
-              m.completed_inspect_time >= inspectedCutoff &&
-              m.signaledInspections.includes(inspType) &&
-              (m.completedInspections || {})[inspType] !== undefined
-          )
-    );
-    // sort descending
-    inspected.sort((e1, e2) =>
-      e1.completed_inspect_time && e2.completed_inspect_time
-        ? e2.completed_inspect_time.getTime() - e1.completed_inspect_time.getTime()
-        : 0
-    );
-
-    return {
-      waiting_to_inspect: uninspected,
-      inspect_completed: inspected,
-    };
+  function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
+    return HashSet.ofIterable(m.signaledInspections)
+      .removeAll(m.completedInspections ? Object.keys(m.completedInspections) : [])
+      .isEmpty();
   }
-);
 
-export default connect((st: Store) => ({
-  recent_inspections: extractRecentInspections(st),
-  focusInspectionType: st.Route.selected_insp_type || "",
-}))(Inspection);
+  const uninspected = Array.from(
+    inspType === null
+      ? LazySeq.ofIterable(mats.valueIterable()).filter(
+          (m) =>
+            m.last_unload_time !== undefined &&
+            m.last_unload_time >= uninspectedCutoff &&
+            m.signaledInspections.length > 0 &&
+            !checkAllCompleted(m)
+        )
+      : LazySeq.ofIterable(mats.valueIterable()).filter(
+          (m) =>
+            m.last_unload_time !== undefined &&
+            m.last_unload_time >= uninspectedCutoff &&
+            m.signaledInspections.includes(inspType) &&
+            (m.completedInspections || {})[inspType] === undefined
+        )
+  );
+  // sort descending
+  uninspected.sort((e1, e2) =>
+    e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
+  );
+
+  const inspected = Array.from(
+    inspType === null
+      ? LazySeq.ofIterable(mats.valueIterable()).filter(
+          (m) =>
+            m.completed_inspect_time !== undefined &&
+            m.completed_inspect_time >= inspectedCutoff &&
+            m.signaledInspections.length > 0 &&
+            checkAllCompleted(m)
+        )
+      : LazySeq.ofIterable(mats.valueIterable()).filter(
+          (m) =>
+            m.completed_inspect_time !== undefined &&
+            m.completed_inspect_time >= inspectedCutoff &&
+            m.signaledInspections.includes(inspType) &&
+            (m.completedInspections || {})[inspType] !== undefined
+        )
+  );
+  // sort descending
+  inspected.sort((e1, e2) =>
+    e1.completed_inspect_time && e2.completed_inspect_time
+      ? e2.completed_inspect_time.getTime() - e1.completed_inspect_time.getTime()
+      : 0
+  );
+
+  return {
+    waiting_to_inspect: uninspected,
+    inspect_completed: inspected,
+  };
+}
+
+export default Inspection;

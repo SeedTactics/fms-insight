@@ -50,7 +50,7 @@ import { HashMap } from "prelude-ts";
 import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 import { DataTableActionZoomType } from "./DataTable";
-import { useIsDemo } from "../IsDemo";
+import { useIsDemo } from "../../data/routes";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;
