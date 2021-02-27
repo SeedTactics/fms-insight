@@ -109,6 +109,7 @@ namespace BlackMaple.MachineFramework
           .AddJsonFormatters()
           .AddJsonOptions(options =>
           {
+            options.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
             options.SerializerSettings.Converters.Add(new StringEnumConverter());
             options.SerializerSettings.Converters.Add(new TimespanConverter());
             options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
