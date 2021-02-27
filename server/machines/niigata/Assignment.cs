@@ -155,6 +155,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public JobPlan Job { get; set; }
       public int Process { get; set; }
       public int Path { get; set; }
+      public int JobQtyRemainingOnProc1 { get; set; }
     }
 
     private class JobPathAndPrograms : JobPath
@@ -168,13 +169,19 @@ namespace BlackMaple.FMSInsight.Niigata
       return
         cellSt.UnarchivedJobs
         .SelectMany(job => Enumerable.Range(1, job.NumProcesses).Select(proc => new { job, proc }))
-        .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath { Job = j.job, Process = j.proc, Path = path }))
+        .SelectMany(j => Enumerable.Range(1, j.job.GetNumPaths(j.proc)).Select(path => new JobPath
+        {
+          Job = j.job,
+          Process = j.proc,
+          Path = path,
+          JobQtyRemainingOnProc1 = j.proc > 1 ? 0 : cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.job.UniqueStr, proc1path: path), out var qty) ? qty : 0
+        }))
         .Where(j =>
           j.Process > 1
           ||
           !string.IsNullOrEmpty(j.Job.GetInputQueue(j.Process, j.Path))
           ||
-          (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.Job.UniqueStr, proc1path: j.Path), out int qty) && qty > 0)
+          j.JobQtyRemainingOnProc1 > 0
         )
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
         .Where(j => j.Job.PlannedPallets(j.Process, j.Path).Contains(pallet.ToString()))
@@ -320,12 +327,14 @@ namespace BlackMaple.FMSInsight.Niigata
           .Where(m => m.Mat.Location.CurrentQueue == inputQueue
                     && !currentlyLoading.Contains(m.Mat.MaterialID)
           )
-          .OrderBy(m => m.Mat.Location.QueuePosition)
-          .ToList();
+          .OrderBy(m => m.Mat.Location.QueuePosition);
 
         foreach (var mat in matInQueue)
         {
           if (!CanMaterialLoadOntoPath(mat, path, programs)) continue;
+
+          // don't load from casting if quantity exceeded and material not yet assigned to the job
+          if (availMatIds.Count >= path.JobQtyRemainingOnProc1 && string.IsNullOrEmpty(mat.Mat.JobUnique)) continue;
 
           if (programs == null)
           {
