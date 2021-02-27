@@ -1024,11 +1024,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       AddJobs(newJobs, expectNewRoute: false); // no route yet because no material
 
-      for (int i = 0; i < 9; i++)
+      // plan quantity of 9, but add 10 parts
+      var addTime = DateTime.UtcNow;
+      for (int i = 0; i < 10; i++)
       {
         var m = _logDB.AllocateMaterialIDForCasting("aaa");
         _logDB.RecordWorkorderForMaterialID(m, 0, i % 2 == 0 ? "work1" : "work2");
-        _logDB.RecordAddMaterialToQueue(new EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite");
+        _logDB.RecordAddMaterialToQueue(new EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite", addTime);
       }
 
       ExpectNewRoute();
@@ -1074,6 +1076,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               }
         );
       }
+
+      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
+        new QueuedMaterial() {
+          MaterialID = 10,
+          Queue = "castingQ",
+          Position = 0,
+          Unique = "",
+          PartNameOrCasting = "aaa",
+          NumProcesses = 1,
+          AddTimeUTC = addTime
+        }
+      });
     }
   }
 }
