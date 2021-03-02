@@ -1362,7 +1362,7 @@ namespace MachineWatchTest
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(false, false)]
-    public void BulkAddCastings(bool useSerial, bool existingMats)
+    public void BulkAddRemoveCastings(bool useSerial, bool existingMats)
     {
       var addTime = DateTime.UtcNow.AddHours(-2);
 
@@ -1459,6 +1459,44 @@ namespace MachineWatchTest
           MaterialID = i,
           Queue = "queueQQ",
           Position = i - 1,
+          Unique = "",
+          PartNameOrCasting = "castingQ",
+          NumProcesses = 1,
+          AddTimeUTC = addTime
+        })
+      );
+
+      var removeTime = DateTime.UtcNow.AddHours(-1);
+
+      _jobLog.BulkRemoveMaterialFromAllQueues(new long[] { 1, 2 }, null, removeTime).Should().BeEquivalentTo(
+        (new long[] { 1, 2 }).Select(matId =>
+           new LogEntry(
+             cntr: -1,
+             mat: new[] { new LogMaterial(matID: matId, uniq: "", proc: 0, part: "castingQ", numProc: 1,
+                                          serial: useSerial ? (existingMats ? (matId == 2 ? "1" : "") : matId.ToString()) : "",
+                                          workorder: "", face: "") },
+             pal: "",
+             ty: LogType.RemoveFromQueue,
+             locName: "queueQQ",
+             locNum: 0,
+             prog: "",
+             start: false,
+             endTime: removeTime,
+             result: "",
+             endOfRoute: false,
+             elapsed: removeTime.Subtract(addTime),
+             active: TimeSpan.Zero
+           )
+        ), options => options.Excluding(o => o.Counter)
+      );
+
+      _jobLog.GetMaterialInAllQueues().Should().BeEquivalentTo(
+        Enumerable.Range(3, existingMats ? 4 : 3)
+        .Select(i => new EventLogDB.QueuedMaterial()
+        {
+          MaterialID = i,
+          Queue = "queueQQ",
+          Position = i - 3,
           Unique = "",
           PartNameOrCasting = "castingQ",
           NumProcesses = 1,

@@ -930,19 +930,19 @@ export class JobsClient {
         return Promise.resolve<void>(<any>null);
     }
 
-    bulkRemoveMaterialFromQueues(id: number[] | null, operName: string | null | undefined): Promise<void> {
+    bulkRemoveMaterialFromQueues(id: number[], operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material?";
-        if (id === undefined)
-            throw new Error("The parameter 'id' must be defined.");
-        else
-            id && id.forEach(item => { url_ += "id=" + encodeURIComponent("" + item) + "&"; });
         if (operName !== undefined)
             url_ += "operName=" + encodeURIComponent("" + operName) + "&"; 
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(id);
+
         let options_ = <RequestInit>{
+            body: content_,
             method: "DELETE",
             headers: {
+                "Content-Type": "application/json", 
             }
         };
 

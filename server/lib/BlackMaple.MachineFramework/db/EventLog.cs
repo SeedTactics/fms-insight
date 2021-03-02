@@ -2586,6 +2586,23 @@ namespace BlackMaple.MachineFramework
       );
     }
 
+    public IEnumerable<MachineWatchInterface.LogEntry> BulkRemoveMaterialFromAllQueues(
+      IEnumerable<long> matIds, string operatorName = null, DateTime? timeUTC = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+      {
+        var evts = new List<MachineWatchInterface.LogEntry>();
+        foreach (var matId in matIds)
+        {
+          var nextProc = NextProcessForQueuedMaterial(trans, matId);
+          var proc = (nextProc ?? 1) - 1;
+          evts.AddRange(RemoveFromAllQueues(trans, matId, proc, operatorName, timeUTC ?? DateTime.UtcNow));
+        }
+        return evts;
+      });
+    }
+
     public MachineWatchInterface.LogEntry SignalMaterialForQuarantine(
       EventLogMaterial mat,
       string pallet,
@@ -3830,8 +3847,20 @@ namespace BlackMaple.MachineFramework
     {
       lock (_config)
       {
+        using (var trans = _connection.BeginTransaction())
+        {
+          return NextProcessForQueuedMaterial(trans, matId);
+        }
+      }
+    }
+
+    private int? NextProcessForQueuedMaterial(IDbTransaction trans, long matId)
+    {
+      lock (_config)
+      {
         using (var loadCmd = _connection.CreateCommand())
         {
+          ((IDbCommand)loadCmd).Transaction = trans;
           loadCmd.CommandText = "SELECT MAX(m.Process) FROM " +
             " stations_mat m " +
             " WHERE m.MaterialID = $matid AND " +

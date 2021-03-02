@@ -536,12 +536,7 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Removing {@matId} from all queues", materialIds);
       using (var ldb = _logDbCfg.OpenConnection())
       {
-        foreach (var materialId in materialIds)
-        {
-          var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
-          var proc = (nextProc ?? 1) - 1;
-          ldb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
-        }
+        ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
       }
       _sync.JobsOrQueuesChanged();
     }

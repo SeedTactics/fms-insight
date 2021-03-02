@@ -499,12 +499,7 @@ namespace MazakMachineInterface
       CurrentStatus status;
       using (var logDb = logDbCfg.OpenConnection())
       {
-        foreach (var materialId in materialIds)
-        {
-          var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
-          var proc = (nextProc ?? 1) - 1;
-          logDb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
-        }
+        logDb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
         logReader.RecheckQueues(wait: true);
 
         using (var jdb = jobDBCfg.OpenConnection())
