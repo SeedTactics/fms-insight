@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { WithStyles, createStyles, withStyles, makeStyles } from "@material-ui/core/styles";
 import { SortEnd } from "react-sortable-hoc";
-import { HashSet } from "prelude-ts";
 import Table from "@material-ui/core/Table";
 import TableHead from "@material-ui/core/TableHead";
 import TableCell from "@material-ui/core/TableCell";
@@ -66,8 +65,7 @@ import {
   MaterialDetailTitle,
 } from "./Material";
 import * as api from "../../data/api";
-import * as routes from "../../data/routes";
-import { Store, connect } from "../../store/store";
+import { connect, useSelector } from "../../store/store";
 import * as events from "../../data/events";
 import {
   QueueMaterialDialog,
@@ -669,8 +667,8 @@ const queueStyles = createStyles({
 });
 
 interface QueueProps {
-  readonly route: routes.State;
-  readonly rawMaterialQueues: HashSet<string>;
+  readonly queues: ReadonlyArray<string>;
+  readonly showFree: boolean;
 }
 
 const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
@@ -679,16 +677,13 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   }, []);
   const operator = useRecoilValue(currentOperator);
   const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
-  const data = React.useMemo(
-    () =>
-      selectQueueData(
-        props.route.standalone_free_material,
-        props.route.standalone_queues,
-        currentSt,
-        props.rawMaterialQueues
-      ),
-    [currentSt, props.route, props.rawMaterialQueues]
-  );
+  const rawMaterialQueues = useSelector((st) => st.Events.last30.sim_use.rawMaterialQueues);
+  const data = React.useMemo(() => selectQueueData(props.showFree, props.queues, currentSt, rawMaterialQueues), [
+    currentSt,
+    props.queues,
+    props.showFree,
+    rawMaterialQueues,
+  ]);
 
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
@@ -762,9 +757,9 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
           </SortableWhiteboardRegion>
         </div>
       ))}
-      <QueueMaterialDialog />
+      <QueueMaterialDialog queueNames={props.queues} />
       <AddBySerialDialog />
-      <AddWithoutSerialDialog />
+      <AddWithoutSerialDialog queueNames={props.queues} />
       <BulkAddCastingWithoutSerialDialog />
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
@@ -773,7 +768,4 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   );
 });
 
-export default connect((st: Store) => ({
-  rawMaterialQueues: st.Events.last30.sim_use.rawMaterialQueues,
-  route: st.Route,
-}))(Queues);
+export default Queues;

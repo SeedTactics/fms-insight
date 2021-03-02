@@ -51,8 +51,6 @@ import {
   InstructionButton,
 } from "./Material";
 import * as api from "../../data/api";
-import * as routes from "../../data/routes";
-import { Store, connect } from "../../store/store";
 import * as matDetails from "../../data/material-details";
 import { SelectWorkorderDialog } from "./SelectWorkorder";
 import SelectInspTypeDialog, { selectInspTypeDialogOpen } from "./SelectInspType";
@@ -557,7 +555,9 @@ const loadStyles = createStyles({
 });
 
 interface LoadStationProps {
-  readonly route: routes.State;
+  readonly loadNum: number;
+  readonly showFree: boolean;
+  readonly queues: ReadonlyArray<string>;
 }
 
 interface LoadStationDisplayProps extends LoadStationProps {
@@ -568,14 +568,8 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
   const operator = useRecoilValue(currentOperator);
   const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
   const data = React.useMemo(
-    () =>
-      selectLoadStationAndQueueProps(
-        props.route.selected_load_id,
-        props.route.load_queues,
-        props.route.load_free_material,
-        currentSt
-      ),
-    [currentSt, props.route]
+    () => selectLoadStationAndQueueProps(props.loadNum, props.queues, props.showFree, currentSt),
+    [currentSt, props.loadNum, props.showFree, props.queues]
   );
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
 
@@ -716,8 +710,8 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
 
 function LoadStationCheckWidth(props: LoadStationProps) {
   React.useEffect(() => {
-    document.title = "Load " + props.route.selected_load_id.toString() + " - FMS Insight";
-  }, [props.route.selected_load_id]);
+    document.title = "Load " + props.loadNum.toString() + " - FMS Insight";
+  }, [props.loadNum]);
   return (
     <div>
       <Hidden mdDown>
@@ -730,4 +724,4 @@ function LoadStationCheckWidth(props: LoadStationProps) {
   );
 }
 
-export default connect((st: Store) => ({ route: st.Route }))(LoadStationCheckWidth);
+export default LoadStationCheckWidth;

@@ -204,17 +204,17 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
 interface AddSerialFoundProps {
   readonly current_quarantine_queue: string | null;
   readonly display_material: matDetails.MaterialDetail;
+  readonly queueNames: ReadonlyArray<string>;
 }
 
 function AddSerialFound(props: AddSerialFoundProps) {
-  const queueNames = useSelector((s) => s.Route.standalone_queues);
   const [selected_queue, setSelectedQueue] = React.useState<string | null>(null);
   const operator = useRecoilValue(currentOperator);
   const [matToShow, setMatToShow] = useRecoilState(matDetails.materialToShowInDialog);
   const [addMat, addingMat] = matDetails.useAddExistingMaterialToQueue();
 
   let queue: string | null;
-  let queueDests = queueNames.filter((q) => q !== props.current_quarantine_queue);
+  let queueDests = props.queueNames.filter((q) => q !== props.current_quarantine_queue);
   let promptForQueue = false;
   if (queueDests.length === 1) {
     queue = queueDests[0];
@@ -384,6 +384,7 @@ function SelectJob(props: SelectJobProps) {
 }
 
 interface AddNewMaterialProps {
+  readonly queueNames: ReadonlyArray<string>;
   readonly not_found_serial?: string;
   readonly addToQueue?: string;
   readonly onClose: () => void;
@@ -396,7 +397,6 @@ interface AddNewJobProcessState {
 }
 
 function AddNewMaterialBody(props: AddNewMaterialProps) {
-  const queueNames = useSelector((s) => s.Route.standalone_queues);
   const selectedOperator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
   const [selected_job, setSelectedJob] = React.useState<AddNewJobProcessState | undefined>(undefined);
@@ -427,8 +427,8 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
 
   let queue: string | null;
   let promptForQueue = false;
-  if (queueNames.length === 1) {
-    queue = queueNames[0];
+  if (props.queueNames.length === 1) {
+    queue = props.queueNames[0];
   } else if (props.addToQueue) {
     queue = props.addToQueue;
   } else {
@@ -453,7 +453,7 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
             <div style={{ marginRight: "1em" }}>
               <p>Select a queue.</p>
               <List>
-                {queueNames.map((q, idx) => (
+                {props.queueNames.map((q, idx) => (
                   <MenuItem key={idx} selected={q === selected_queue} onClick={() => setSelectedQueue(q)}>
                     {q}
                   </MenuItem>
@@ -547,7 +547,11 @@ function matCurrentlyInQueue(
   return { type: "NotInQueue" };
 }
 
-export const QueueMaterialDialog = React.memo(function QueueMaterialDialog() {
+export interface QueueMaterialDialogProps {
+  readonly queueNames: ReadonlyArray<string>;
+}
+
+export const QueueMaterialDialog = React.memo(function QueueMaterialDialog(props: QueueMaterialDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const currentSt = useRecoilValue(currentStatus);
   const displayMat = useRecoilValue(matDetails.materialDetail);
@@ -567,6 +571,7 @@ export const QueueMaterialDialog = React.memo(function QueueMaterialDialog() {
         <AddSerialFound
           current_quarantine_queue={matInQueue.type === "InQuarantine" ? matInQueue.queue : null}
           display_material={displayMat}
+          queueNames={props.queueNames}
         />
       );
     } else if (fmsInfo.requireExistingMaterialWhenAddingToQueue) {
@@ -577,6 +582,7 @@ export const QueueMaterialDialog = React.memo(function QueueMaterialDialog() {
           not_found_serial={displayMat.serial}
           addToQueue={matToShow && matToShow.type === "Serial" ? matToShow.addToQueue : undefined}
           onClose={() => setMatToShow(null)}
+          queueNames={props.queueNames}
         />
       );
     }
@@ -643,11 +649,17 @@ export const addMaterialWithoutSerial = atom<string | null>({
   default: null,
 });
 
-export const AddWithoutSerialDialog = React.memo(function AddWithoutSerialDialog() {
+export const AddWithoutSerialDialog = React.memo(function AddWithoutSerialDialog(props: {
+  readonly queueNames: ReadonlyArray<string>;
+}) {
   const [queue, setQueue] = useRecoilState(addMaterialWithoutSerial);
   return (
     <Dialog open={queue !== null} onClose={() => setQueue(null)} maxWidth="md">
-      <AddNewMaterialBody addToQueue={queue ?? undefined} onClose={() => setQueue(null)} />
+      <AddNewMaterialBody
+        addToQueue={queue ?? undefined}
+        onClose={() => setQueue(null)}
+        queueNames={props.queueNames}
+      />
     </Dialog>
   );
 });

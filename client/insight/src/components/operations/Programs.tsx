@@ -73,7 +73,7 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Button from "@material-ui/core/Button";
 import DialogActions from "@material-ui/core/DialogActions";
-import { useIsDemo } from "../IsDemo";
+import { useIsDemo } from "../../data/routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import { Vector } from "prelude-ts";
 import { IProgramRevision } from "../../data/api";

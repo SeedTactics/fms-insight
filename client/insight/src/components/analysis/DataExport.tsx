@@ -42,7 +42,6 @@ import CardHeader from "@material-ui/core/CardHeader";
 import CardActions from "@material-ui/core/CardActions";
 import Grid from "@material-ui/core/Grid";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
-import * as queryString from "query-string";
 
 import * as api from "../../data/api";
 import { Store, connect } from "../../store/store";
@@ -60,10 +59,10 @@ class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
   render() {
     const startDate = df.parseISO(this.state.exportDate);
     const endDate = df.addDays(startDate, 1);
-    const startEndQuery = queryString.stringify({
-      startUTC: startDate.toISOString(),
-      endUTC: endDate.toISOString(),
-    });
+    const queryString = new URLSearchParams();
+    queryString.append("startUTC", startDate.toISOString());
+    queryString.append("endUTC", endDate.toISOString());
+    const startEndQuery = queryString.toString();
     const curlUrl = window.location.protocol + "//" + window.location.host + "/api/v1/log/events/all?" + startEndQuery;
 
     return (
@@ -116,9 +115,9 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
   };
 
   render() {
-    const startEndQuery = queryString.stringify({
-      ids: this.state.exportWorkorder,
-    });
+    const queryString = new URLSearchParams();
+    queryString.append("ids", this.state.exportWorkorder);
+    const startEndQuery = queryString.toString();
     const curlUrl = window.location.protocol + "//" + window.location.host + "/api/v1/log/workorders?" + startEndQuery;
 
     return (
