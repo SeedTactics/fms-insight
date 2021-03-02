@@ -42,9 +42,10 @@ import { LogBackend, JobsBackend } from "./store-backend";
 import { AppProps } from "../../insight/src/components/App";
 import * as routes from "../../insight/src/data/routes";
 
-const store = initStore({ useRouter: false });
+window.history.pushState(null, "", routes.RouteLocation.Backup_InitialOpen);
+
+const store = initStore();
 registerBackend(LogBackend, JobsBackend, FmsServerBackend);
-store.dispatch({ type: routes.RouteLocation.Backup_InitialOpen });
 
 const props: AppProps = {
   demo: false,
@@ -54,7 +55,7 @@ const props: AppProps = {
 };
 
 window.electronIpc.on("file-opened", () => {
-  store.dispatch({ type: routes.RouteLocation.Backup_Efficiency });
+  window.history.pushState(null, "", routes.RouteLocation.Backup_Efficiency);
   store.dispatch(loadLast30Days());
 });
 
