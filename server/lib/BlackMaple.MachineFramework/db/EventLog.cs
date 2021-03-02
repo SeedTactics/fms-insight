@@ -3769,7 +3769,7 @@ namespace BlackMaple.MachineFramework
       public DateTime? AddTimeUTC { get; set; }
     }
 
-    public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
+    public IEnumerable<QueuedMaterial> GetMaterialInQueueByUnique(string queue, string unique)
     {
       lock (_config)
       {
@@ -3783,9 +3783,56 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
               " FROM queues " +
               " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
-              " WHERE Queue = $q " +
+              " WHERE Queue = $q AND UniqueStr = $uniq " +
               " ORDER BY Position";
             cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+            cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+            using (var reader = cmd.ExecuteReader())
+            {
+              while (reader.Read())
+              {
+                ret.Add(new QueuedMaterial()
+                {
+                  MaterialID = reader.GetInt64(0),
+                  Queue = queue,
+                  Position = reader.GetInt32(1),
+                  Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                  PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                  NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                  AddTimeUTC = reader.IsDBNull(5) ? null : ((DateTime?)(new DateTime(reader.GetInt64(5), DateTimeKind.Utc))),
+                });
+              }
+            }
+            trans.Commit();
+          }
+          return ret;
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      }
+    }
+
+    public IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(string queue, string partNameOrCasting)
+    {
+      lock (_config)
+      {
+        var trans = _connection.BeginTransaction();
+        var ret = new List<QueuedMaterial>();
+        try
+        {
+          using (var cmd = _connection.CreateCommand())
+          {
+            cmd.Transaction = trans;
+            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
+              " FROM queues " +
+              " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
+              " WHERE Queue = $q AND UniqueStr IS NULL AND PartName = $part " +
+              " ORDER BY Position";
+            cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+            cmd.Parameters.Add("part", SqliteType.Text).Value = partNameOrCasting;
             using (var reader = cmd.ExecuteReader())
             {
               while (reader.Read())

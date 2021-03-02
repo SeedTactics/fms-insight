@@ -419,7 +419,7 @@ namespace MazakMachineInterface
 
         // material can be queued if it is removed by the operator from the pallet, which is
         // detected in CheckPalletStatusMatchesLogs() below
-        if (oldEvents[i].Material.Any(m => !_log.IsMaterialInQueue(m.MaterialID)))
+        if (oldEvents[i].Material.Any(m => _log.IsMaterialInQueue(m.MaterialID)))
         {
           continue;
         }
@@ -513,7 +513,7 @@ namespace MazakMachineInterface
           Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
             job.GetInputQueue(proc, path), unique, proc);
 
-          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueue(job.GetInputQueue(proc, path)), proc, path, _log);
+          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueueByUnique(job.GetInputQueue(proc, path), job.UniqueStr), proc, path, _log);
 
           for (int i = 1; i <= fixQty; i++)
           {
