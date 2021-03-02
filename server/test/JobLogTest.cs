@@ -1357,6 +1357,116 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().Be(5);
     }
 
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void BulkAddCastings(bool useSerial, bool existingMats)
+    {
+      var addTime = DateTime.UtcNow.AddHours(-2);
+
+      long matOffset = 0;
+      int posOffset = 0;
+
+      if (existingMats)
+      {
+        matOffset = 1;
+        posOffset = 1;
+        _jobLog.AllocateMaterialIDForCasting("castingQ").Should().Be(1);
+        _jobLog.RecordAddMaterialToQueue(matID: 1, process: 0, queue: "queueQQ", position: 0, operatorName: null, reason: null, addTime);
+      }
+
+      var matRet = _jobLog.BulkAddNewCastingsInQueue(
+        casting: "castingQ",
+        qty: 5,
+        queue: "queueQQ",
+        useSerial ? new[] { "1", "2", "3", "4", "5" } : new string[] { },
+        operatorName: "operName",
+        reason: "TheReason",
+        timeUTC: addTime);
+
+      matRet.MaterialIds.Should().BeEquivalentTo(Enumerable.Range(1, 5).Select(i => matOffset + i));
+
+      var expectedLogs =
+        Enumerable.Range(1, 5).Select(i =>
+        {
+          var l = new LogEntry(
+            cntr: -1,
+            mat: new[] { new LogMaterial(matID: matOffset + i, uniq: "", proc: 0, part: "castingQ", numProc: 1, serial: useSerial ? i.ToString() : "", workorder: "", face: "") },
+            pal: "",
+            ty: LogType.AddToQueue,
+            locName: "queueQQ",
+            locNum: posOffset + i - 1,
+            prog: "TheReason",
+            start: false,
+            endTime: addTime,
+            result: "",
+            endOfRoute: false
+          );
+          l.ProgramDetails["operator"] = "operName";
+          return l;
+        })
+        .ToList();
+
+      if (useSerial)
+      {
+        expectedLogs.AddRange(Enumerable.Range(1, 5).Select(i =>
+          new LogEntry(
+            cntr: -1,
+            mat: new[] { new LogMaterial(matID: matOffset + i, uniq: "", proc: 0, part: "castingQ", numProc: 1, serial: useSerial ? i.ToString() : "", workorder: "", face: "") },
+            pal: "",
+            ty: LogType.PartMark,
+            locName: "Mark",
+            locNum: 1,
+            prog: "MARK",
+            start: false,
+            endTime: addTime,
+            result: i.ToString(),
+            endOfRoute: false
+          )
+        ));
+      }
+
+      matRet.Logs.Should().BeEquivalentTo(expectedLogs, options => options.Excluding(o => o.Counter));
+
+      _jobLog.GetLog(-1).Should().BeEquivalentTo(
+        expectedLogs
+        .Concat(existingMats ?
+          new[] {
+            new LogEntry(
+              cntr: -1,
+              mat: new[] { new LogMaterial(matID: 1, uniq: "", proc: 0, part: "castingQ", numProc: 1, serial: "", workorder: "", face: "") },
+              pal: "",
+              ty: LogType.AddToQueue,
+              locName: "queueQQ",
+              locNum: 0,
+              prog: "",
+              start: false,
+              endTime: addTime,
+              result: "",
+              endOfRoute: false
+            )
+          }
+          : Enumerable.Empty<LogEntry>()
+        )
+        , options => options.Excluding(o => o.Counter));
+
+      _jobLog.GetMaterialInAllQueues().Should().BeEquivalentTo(
+        Enumerable.Range(1, existingMats ? 6 : 5)
+        .Select(i => new EventLogDB.QueuedMaterial()
+        {
+          MaterialID = i,
+          Queue = "queueQQ",
+          Position = i - 1,
+          Unique = "",
+          PartNameOrCasting = "castingQ",
+          NumProcesses = 1,
+          AddTimeUTC = addTime
+        })
+      );
+    }
+
     [Fact]
     public void AllocateCastingsFromQueues()
     {

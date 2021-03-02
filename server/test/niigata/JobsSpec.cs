@@ -496,7 +496,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       ((IJobControl)_jobs).AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, operatorName: "theoper")
         .Should().BeEquivalentTo(new[] {
           QueuedMat(matId: 1, job: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0).Mat,
-          QueuedMat(matId: 2, job: null, part: "c1", proc: 0, path: 1, serial: null, queue: "q1", pos: 1).Mat,
+          QueuedMat(matId: 2, job: null, part: "c1", proc: 0, path: 1, serial: "", queue: "q1", pos: 1).Mat,
         });
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
