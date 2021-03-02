@@ -34,14 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { initStore } from "./store/store";
 import { registerMockBackend } from "./data/backend";
 import * as events from "./data/events";
-import * as routes from "./data/routes";
 import { render } from "./renderer";
 
-const store = initStore({ useRouter: false });
-store.dispatch({ type: routes.RouteLocation.Station_Queues, meta: { query: { queue: "Queue1" } } });
-store.dispatch({ type: routes.RouteLocation.Station_InspectionMonitor, meta: { query: { type: "CMM" } } });
-store.dispatch({ type: routes.RouteLocation.Operations_Dashboard });
-
+const store = initStore();
 registerMockBackend();
 store.dispatch(events.loadLast30Days());
 

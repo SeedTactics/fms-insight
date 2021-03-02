@@ -35,7 +35,7 @@ import { initStore } from "./store/store";
 import * as websocket from "./store/websocket";
 import { render } from "./renderer";
 
-const store = initStore({ useRouter: true });
+const store = initStore();
 
 websocket.configureWebsocket(
   (a) => store.dispatch(a),

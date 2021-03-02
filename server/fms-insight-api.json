@@ -938,18 +938,25 @@
           "jobs"
         ],
         "operationId": "jobs_BulkRemoveMaterialFromQueues",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "parameters": [
           {
-            "type": "array",
             "name": "id",
-            "in": "query",
+            "in": "body",
             "required": true,
-            "collectionFormat": "multi",
-            "x-nullable": true,
-            "items": {
-              "type": "integer",
-              "format": "int64"
-            }
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            },
+            "x-nullable": false
           },
           {
             "type": "string",

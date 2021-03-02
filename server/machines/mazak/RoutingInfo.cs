@@ -380,41 +380,11 @@ namespace MazakMachineInterface
       }
 
       CurrentStatus newSt;
-      var matIds = new HashSet<long>();
+      HashSet<long> matIds;
       using (var logDb = logDbCfg.OpenConnection())
       {
-        for (int i = 0; i < qty; i++)
-        {
-          var matId = logDb.AllocateMaterialIDForCasting(casting);
-          matIds.Add(matId);
-
-          Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
-                    "Assigned matId {matId}",
-            casting, queue, position, serial, matId
-          );
-
-          if (i < serial.Count)
-          {
-            logDb.RecordSerialForMaterialID(
-              new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
-              {
-                MaterialID = matId,
-                Process = 0,
-                Face = ""
-              },
-              serial[i]);
-          }
-          // the add to queue log entry will use the process, so later when we lookup the latest completed process
-          // for the material in the queue, it will be correctly computed.
-          logDb.RecordAddMaterialToQueue(
-            matID: matId,
-            process: 0,
-            queue: queue,
-            position: position >= 0 ? position + i : -1,
-            operatorName: operatorName,
-            reason: "SetByOperator"
-          );
-        }
+        var mats = logDb.BulkAddNewCastingsInQueue(casting, qty, queue, serial, operatorName, reason: "SetByOperator");
+        matIds = mats.MaterialIds;
 
         logReader.RecheckQueues(wait: true);
 
@@ -529,12 +499,7 @@ namespace MazakMachineInterface
       CurrentStatus status;
       using (var logDb = logDbCfg.OpenConnection())
       {
-        foreach (var materialId in materialIds)
-        {
-          var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
-          var proc = (nextProc ?? 1) - 1;
-          logDb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
-        }
+        logDb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
         logReader.RecheckQueues(wait: true);
 
         using (var jdb = jobDBCfg.OpenConnection())

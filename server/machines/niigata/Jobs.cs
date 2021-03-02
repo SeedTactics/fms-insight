@@ -353,46 +353,24 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // num proc will be set later once it is allocated to a specific job
       var mats = new List<InProcessMaterial>();
-      for (int i = 0; i < qty; i++)
+
+      var newMats = logDB.BulkAddNewCastingsInQueue(casting, qty, queue, serial, operatorName, reason: "SetByOperator");
+
+      foreach (var log in newMats.Logs.Where(l => l.LogType == LogType.AddToQueue))
       {
-        var matId = logDB.AllocateMaterialIDForCasting(casting);
-
-        Log.Debug("Adding unprocessed casting for casting {casting} to queue {queue} in position {pos} with serial {serial}. " +
-                  "Assigned matId {matId}",
-          casting, queue, position, serial, matId
-        );
-
-        if (i < serial.Count)
-        {
-          logDB.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.EventLogDB.EventLogMaterial()
-            {
-              MaterialID = matId,
-              Process = 0,
-              Face = ""
-            },
-            serial[i]);
-        }
-        var logEvt = logDB.RecordAddMaterialToQueue(
-          matID: matId,
-          process: 0,
-          queue: queue,
-          position: position >= 0 ? position + i : -1,
-          operatorName: operatorName,
-          reason: "SetByOperator");
         mats.Add(new InProcessMaterial()
         {
-          MaterialID = matId,
+          MaterialID = log.Material.First().MaterialID,
           JobUnique = null,
           PartName = casting,
           Process = 0,
           Path = 1,
-          Serial = i < serial.Count ? serial[i] : null,
+          Serial = log.Material.First().Serial,
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
             CurrentQueue = queue,
-            QueuePosition = logEvt.LastOrDefault()?.LocationNum
+            QueuePosition = log.LocationNum
           },
           Action = new InProcessMaterialAction()
           {
@@ -558,12 +536,7 @@ namespace BlackMaple.FMSInsight.Niigata
       Log.Debug("Removing {@matId} from all queues", materialIds);
       using (var ldb = _logDbCfg.OpenConnection())
       {
-        foreach (var materialId in materialIds)
-        {
-          var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
-          var proc = (nextProc ?? 1) - 1;
-          ldb.RecordRemoveMaterialFromAllQueues(materialId, proc, operatorName);
-        }
+        ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
       }
       _sync.JobsOrQueuesChanged();
     }

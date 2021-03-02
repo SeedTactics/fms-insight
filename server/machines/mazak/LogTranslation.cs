@@ -54,7 +54,6 @@ namespace MazakMachineInterface
     private Action<LogEntry> _onMazakLog;
     private MazakCurrentStatusAndTools _mazakSchedules;
     private Dictionary<string, JobPlan> _jobs;
-    private HashSet<long> _queuedMatIds;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
@@ -72,7 +71,6 @@ namespace MazakMachineInterface
       _settings = settings;
       _onMazakLog = onMazakLogMessage;
       _jobs = new Dictionary<string, JobPlan>();
-      _queuedMatIds = new HashSet<long>(_log.GetMaterialInAllQueues().Select(m => m.MaterialID));
     }
 
     private JobPlan GetJob(string unique)
@@ -326,7 +324,7 @@ namespace MazakMachineInterface
       return oldEvents
         .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
         .SelectMany(e => e.Material)
-        .Where(m => !_queuedMatIds.Contains(m.MaterialID))
+        .Where(m => !_log.IsMaterialInQueue(m.MaterialID))
         .GroupBy(m => m.MaterialID)
         .Select(ms => ms.First())
         .ToList();
@@ -421,7 +419,7 @@ namespace MazakMachineInterface
 
         // material can be queued if it is removed by the operator from the pallet, which is
         // detected in CheckPalletStatusMatchesLogs() below
-        if (oldEvents[i].Material.Any(m => _queuedMatIds.Contains(m.MaterialID)))
+        if (oldEvents[i].Material.Any(m => _log.IsMaterialInQueue(m.MaterialID)))
         {
           continue;
         }
@@ -515,7 +513,7 @@ namespace MazakMachineInterface
           Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
             job.GetInputQueue(proc, path), unique, proc);
 
-          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueue(job.GetInputQueue(proc, path)), proc, path, _log);
+          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueueByUnique(job.GetInputQueue(proc, path), job.UniqueStr), proc, path, _log);
 
           for (int i = 1; i <= fixQty; i++)
           {

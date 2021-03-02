@@ -45,13 +45,15 @@ import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";
 import { ThemeProvider } from "@material-ui/core/styles";
 import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
-import { MutableSnapshot, RecoilRoot } from "recoil";
+import { RecoilRoot } from "recoil";
+import { Router } from "wouter";
 import { enableMapSet } from "immer";
 enableMapSet();
 
 import App, { AppProps } from "./components/App";
 import { Store } from "./store/typed-redux";
-import { isDemo } from "./components/IsDemo";
+import { useDemoLocation } from "./data/routes";
+import useLocation from "./store/use-location";
 
 export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null) {
   const theme = createMuiTheme({
@@ -61,20 +63,18 @@ export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElem
     },
   });
 
-  function init(s: MutableSnapshot): void {
-    s.set(isDemo, props.demo);
-  }
-
   ReactDOM.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RecoilRoot initializeState={init}>
-        <store.Provider>
-          {/* <React.StrictMode> */}
-          <App {...props} />
-          {/* </React.StrictMode> */}
-        </store.Provider>
-      </RecoilRoot>
+      <Router hook={props.demo ? useDemoLocation : useLocation}>
+        <RecoilRoot>
+          <store.Provider>
+            {/* <React.StrictMode> */}
+            <App {...props} />
+            {/* </React.StrictMode> */}
+          </store.Provider>
+        </RecoilRoot>
+      </Router>
     </ThemeProvider>,
     elem
   );

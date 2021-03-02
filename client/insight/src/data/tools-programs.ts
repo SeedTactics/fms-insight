@@ -44,10 +44,13 @@ import {
   StationOperation,
   EstimatedCycleTimes,
   ActiveCycleTime,
+  stat_name_and_num,
 } from "./events.cycles";
 import { reduxStore } from "../store/store";
 import { MachineBackend } from "./backend";
 import { currentStatus } from "./current-status";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const copy = require("copy-to-clipboard");
 
 function averageToolUse(
   usage: ToolUsage,
@@ -97,7 +100,8 @@ export interface ToolReport {
 
 export async function calcToolReport(
   currentSt: Readonly<ICurrentStatus>,
-  usage: ToolUsage
+  usage: ToolUsage,
+  machineFilter: string | null
 ): Promise<Vector<ToolReport>> {
   let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
@@ -171,6 +175,7 @@ export async function calcToolReport(
 
   const toolsInMach = await MachineBackend.getToolsInMachines();
   return LazySeq.ofIterable(toolsInMach)
+    .filter((t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum))
     .groupBy((t) => t.toolName)
     .toVector()
     .map(([toolName, tools]) => {
@@ -216,6 +221,11 @@ export const toolReportRefreshTime = atom<Date | null>({
   default: null,
 });
 
+export const toolReportMachineFilter = atom<string | null>({
+  key: "tool-report-machine-filter",
+  default: null,
+});
+
 export const currentToolReport = selector<Vector<ToolReport> | null>({
   key: "tool-report",
   get: async ({ get }) => {
@@ -224,12 +234,53 @@ export const currentToolReport = selector<Vector<ToolReport> | null>({
       return null;
     } else {
       if (reduxStore === null) return null;
+      const machineFilter = get(toolReportMachineFilter);
       const currentSt = get(currentStatus);
       const usage = reduxStore.getState().Events.last30.cycles.tool_usage;
-      return await calcToolReport(currentSt, usage);
+      return await calcToolReport(currentSt, usage, machineFilter);
     }
   },
 });
+
+export function buildToolReportHTML(tools: Vector<ToolReport>, singleMachine: boolean): string {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Tool</th>";
+  table += "<th>Scheduled Use (min)</th>";
+  table += "<th>Total Remaining Life (min)</th>";
+  if (singleMachine) {
+    table += "<th>Pockets</th>";
+  } else {
+    table += "<th>Smallest Remaining Life (min)</th>";
+    table += "<th>Machine With Smallest Remaining Life</th>";
+  }
+  table += "</tr></thead>\n<tbody>\n";
+
+  for (const tool of tools) {
+    table += "<tr><td>" + tool.toolName + "</td>";
+
+    const schUse = tool.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
+    table += "<td>" + schUse.toFixed(1) + "</td>";
+
+    const totalLife = tool.machines.sumOn((m) => m.remainingMinutes);
+    table += "<td>" + totalLife.toFixed(1) + "</td>";
+
+    if (singleMachine) {
+      const pockets = tool.machines.map((m) => m.pocket.toString()).toArray();
+      table += "<td>" + pockets.join(", ") + "</td>";
+    } else {
+      table += "<td>" + tool.minRemainingMinutes.toFixed(1) + "</td>";
+      table += "<td>" + tool.minRemainingMachine + "</td>";
+    }
+    table += "</tr>\n";
+  }
+  table += "</tbody></table>";
+
+  return table;
+}
+
+export function copyToolReportToClipboard(tools: Vector<ToolReport>, singleMachine: boolean): void {
+  copy(buildToolReportHTML(tools, singleMachine));
+}
 
 export interface CellControllerProgram {
   readonly programName: string;

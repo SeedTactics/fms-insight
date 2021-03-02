@@ -167,7 +167,7 @@ const matStyles = createStyles({
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>; // TODO: deep readonly
   readonly action?: string;
-  readonly focusInspectionType?: string;
+  readonly focusInspectionType?: string | null;
   readonly hideInspectionIcon?: boolean;
   readonly displayJob?: boolean;
   readonly draggableProvided?: DraggableProvided;

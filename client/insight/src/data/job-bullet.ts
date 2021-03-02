@@ -54,7 +54,7 @@ function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
     const x = duration(stops[i].expectedCycleTime);
     cycleTime = cycleTime.add(x);
   }
-  const cycleTimeHours = cycleTime.asHours();
+  const cycleTimeHours = cycleTime.asHours() / job.procsAndPaths[proc].paths[0].partsPerPallet;
   return {
     part: job.partName + "-" + (proc + 1).toString(),
     completed: cycleTimeHours * completed,

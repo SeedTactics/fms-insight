@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -48,19 +48,10 @@ import InfoIcon from "@material-ui/icons/Info";
 import OpacityIcon from "@material-ui/icons/Opacity";
 import MemoryIcon from "@material-ui/icons/Memory";
 
-import * as routes from "../data/routes";
-import { connect } from "../store/store";
+import { RouteState, RouteLocation } from "../data/routes";
 
 export interface ChooseModeProps {
-  readonly setLoad: () => void;
-  readonly setQueue: () => void;
-  readonly setInspect: () => void;
-  readonly setWash: () => void;
-  readonly setOperations: () => void;
-  readonly setEngieering: () => void;
-  readonly setQuality: () => void;
-  readonly setAnalysis: () => void;
-  readonly setTools: () => void;
+  readonly setRoute: (r: RouteState) => void;
 }
 
 export function ChooseMode(p: ChooseModeProps) {
@@ -68,57 +59,83 @@ export function ChooseMode(p: ChooseModeProps) {
     <Paper>
       <List component="nav">
         <ListSubheader>Shop Floor</ListSubheader>
-        <ListItem button onClick={p.setLoad}>
+        <ListItem
+          button
+          onClick={() =>
+            p.setRoute({
+              route: RouteLocation.Station_LoadMonitor,
+              loadNum: 1,
+              free: false,
+              queues: [],
+            })
+          }
+        >
           <ListItemIcon>
             <DirectionsIcon />
           </ListItemIcon>
           <ListItemText>Load Station</ListItemText>
         </ListItem>
-        <ListItem button onClick={p.setQueue}>
+        <ListItem
+          button
+          onClick={() =>
+            p.setRoute({
+              route: RouteLocation.Station_Queues,
+              free: false,
+              queues: [],
+            })
+          }
+        >
           <ListItemIcon>
             <ExtensionIcon />
           </ListItemIcon>
           <ListItemText>Queue Management</ListItemText>
         </ListItem>
-        <ListItem button onClick={p.setInspect}>
+        <ListItem
+          button
+          onClick={() =>
+            p.setRoute({
+              route: RouteLocation.Station_InspectionMonitor,
+            })
+          }
+        >
           <ListItemIcon>
             <InfoIcon />
           </ListItemIcon>
           <ListItemText>Inspection Stand</ListItemText>
         </ListItem>
-        <ListItem button onClick={p.setWash}>
+        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Station_WashMonitor })}>
           <ListItemIcon>
             <OpacityIcon />
           </ListItemIcon>
           <ListItemText>Wash</ListItemText>
         </ListItem>
-        <ListItem button onClick={p.setTools}>
+        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Tools_Dashboard })}>
           <ListItemIcon>
             <BuildIcon />
           </ListItemIcon>
           <ListItemText>Tool Management</ListItemText>
         </ListItem>
         <ListSubheader>Daily Monitoring</ListSubheader>
-        <ListItem button onClick={p.setOperations}>
+        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Operations_Dashboard })}>
           <ListItemIcon>
             <ShoppingBasket />
           </ListItemIcon>
           <ListItemText>Operation Management</ListItemText>
         </ListItem>
-        <ListItem button onClick={p.setEngieering}>
+        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Engineering })}>
           <ListItemIcon>
             <MemoryIcon />
           </ListItemIcon>
           <ListItemText>Engineering</ListItemText>
         </ListItem>
-        <ListItem button onClick={p.setQuality}>
+        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Quality_Dashboard })}>
           <ListItemIcon>
             <StarIcon />
           </ListItemIcon>
           <ListItemText>Quality Analysis</ListItemText>
         </ListItem>
         <ListSubheader>Monthly Review</ListSubheader>
-        <ListItem button onClick={p.setAnalysis}>
+        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Analysis_Efficiency })}>
           <ListItemIcon>
             <ChartIcon />
           </ListItemIcon>
@@ -149,33 +166,4 @@ export function ChooseMode(p: ChooseModeProps) {
   );
 }
 
-export default connect(() => ({}), {
-  setLoad: () => ({
-    type: routes.RouteLocation.Station_LoadMonitor,
-    payload: { num: 1 },
-  }),
-  setQueue: () => ({
-    type: routes.RouteLocation.Station_Queues,
-  }),
-  setEngieering: () => ({
-    type: routes.RouteLocation.Engineering,
-  }),
-  setInspect: () => ({
-    type: routes.RouteLocation.Station_InspectionMonitor,
-  }),
-  setWash: () => ({
-    type: routes.RouteLocation.Station_WashMonitor,
-  }),
-  setOperations: () => ({
-    type: routes.RouteLocation.Operations_Dashboard,
-  }),
-  setQuality: () => ({
-    type: routes.RouteLocation.Quality_Dashboard,
-  }),
-  setAnalysis: () => ({
-    type: routes.RouteLocation.Analysis_Efficiency,
-  }),
-  setTools: () => ({
-    type: routes.RouteLocation.Tools_Dashboard,
-  }),
-})(ChooseMode);
+export default ChooseMode;

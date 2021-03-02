@@ -208,7 +208,7 @@ namespace MachineWatchTest
 
       _log.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(mat), "queue", 5, null, null, now.AddHours(2));
 
-      _log.GetMaterialInQueue("queue").Should().BeEquivalentTo(new[] {
+      _log.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
         new EventLogDB.QueuedMaterial() {
           MaterialID = matId,
           Queue = "queue",
