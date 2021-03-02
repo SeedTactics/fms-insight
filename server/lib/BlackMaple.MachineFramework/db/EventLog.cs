@@ -3744,6 +3744,20 @@ namespace BlackMaple.MachineFramework
 
     }
 
+    public bool IsMaterialInQueue(long matId)
+    {
+      lock (_config)
+      {
+        using (var cmd = _connection.CreateCommand())
+        {
+          cmd.CommandText = "SELECT COUNT(*) FROM queues WHERE MaterialID = $matid";
+          cmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+          var ret = cmd.ExecuteScalar();
+          return (ret != null && ret != DBNull.Value && (long)ret > 0);
+        }
+      }
+    }
+
     public struct QueuedMaterial
     {
       public long MaterialID { get; set; }

@@ -1072,9 +1072,13 @@ namespace MachineWatchTest
 
       var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100, "", "", "");
       _jobLog.CreateMaterialID(100, "uniq100", "part100", 100);
+
+      _jobLog.IsMaterialInQueue(100).Should().BeFalse();
+
       _jobLog.RecordAddMaterialToQueue(EventLogDB.EventLogMaterial.FromLogMat(otherQueueMat), "BBBB", 0, "theoper", "thereason", start.AddHours(-1))
           .Should().BeEquivalentTo(new[] { AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1), "theoper", "thereason") });
 
+      _jobLog.IsMaterialInQueue(100).Should().BeTrue();
 
       var expectedLogs = new List<LogEntry>();
 
@@ -1096,6 +1100,7 @@ namespace MachineWatchTest
           .Should().BeEquivalentTo(new[] {
                     new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start}
           });
+      _jobLog.IsMaterialInQueue(mat1.MaterialID).Should().BeTrue();
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().BeNull();
       _jobLog.NextProcessForQueuedMaterial(mat3.MaterialID).Should().BeNull();
@@ -1150,6 +1155,7 @@ namespace MachineWatchTest
                     new EventLogDB.QueuedMaterial() { MaterialID = 1, Queue = "AAAA", Position = 0, Unique = "uniq1", PartNameOrCasting = "part111", NumProcesses = 19, AddTimeUTC = start},
                     new EventLogDB.QueuedMaterial() { MaterialID = 2, Queue = "AAAA", Position = 1, Unique = "uniq2", PartNameOrCasting = "part2", NumProcesses = 22, AddTimeUTC = start.AddMinutes(10)}
           });
+      _jobLog.IsMaterialInQueue(mat3.MaterialID).Should().BeFalse();
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(2);
       _jobLog.NextProcessForQueuedMaterial(mat3.MaterialID).Should().Be(4);
