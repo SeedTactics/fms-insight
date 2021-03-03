@@ -264,7 +264,7 @@ namespace MazakMachineInterface
                       .Where(x => x.Inspect)
                       .Select(x => x.InspType)
                       .Distinct()
-                      .ToArray(),
+                      .ToImmutableList(),
                 LastCompletedMachiningRouteStopIndex =
                   oldCycles.Any(
                       c => c.LogType == LogType.MachineCycle
@@ -317,7 +317,7 @@ namespace MazakMachineInterface
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .Distinct()
-                .ToArray(),
+                .ToImmutableList(),
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
@@ -696,7 +696,7 @@ namespace MazakMachineInterface
                           log.LookupInspectionDecisions(matID)
                           .Where(x => x.Inspect)
                           .Select(x => x.InspType)
-                          .ToArray(),
+                          .ToImmutableList(),
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,

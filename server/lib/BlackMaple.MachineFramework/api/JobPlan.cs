@@ -122,7 +122,7 @@ namespace BlackMaple.MachineFramework
     public long? ProgramRevision { get; init; }
 
     [DataMember(Name = "Tools", IsRequired = true)]
-    public IReadOnlyDictionary<string, TimeSpan> Tools { get; init; } = new Dictionary<string, TimeSpan>(); //key is tool, value is expected cutting time
+    public ImmutableDictionary<string, TimeSpan> Tools { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty; //key is tool, value is expected cutting time
 
     [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
     public TimeSpan ExpectedCycleTime { get; init; }

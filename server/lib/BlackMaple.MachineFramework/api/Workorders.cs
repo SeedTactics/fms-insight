@@ -114,7 +114,7 @@ namespace BlackMaple.MachineWatchInterface
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public IReadOnlyList<WorkorderProgram> Programs { get; init; }
+    public ImmutableList<WorkorderProgram> Programs { get; init; } = ImmutableList<WorkorderProgram>.Empty;
 
     public static PartWorkorder operator %(PartWorkorder w, Action<IPartWorkorderDraft> f)
        => w.Produce(f);

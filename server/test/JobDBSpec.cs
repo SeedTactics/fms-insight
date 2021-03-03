@@ -68,6 +68,7 @@ namespace MachineWatchTest
       );
 
       _fixture = new Fixture();
+      _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
     }
 
     public void Dispose()
@@ -694,13 +695,21 @@ namespace MachineWatchTest
         ;
 
       var initialWorks = _fixture.Create<List<PartWorkorder>>();
-      initialWorks[0] %= w => w.Programs = new[] {
-        new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = null },
-        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
-        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = null }
+      initialWorks[0] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
+          new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = null },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = null }
+        });
       };
-      initialWorks[1] %= w => w.Programs = new[] {
-        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 6 }
+      initialWorks[1] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 6 }
+        });
       };
 
       _jobDB.AddJobs(new NewJobs
@@ -741,10 +750,14 @@ namespace MachineWatchTest
           }
         })
         ;
-      initialWorks[0] %= w => w.Programs = new[] {
-        new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
-        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+      initialWorks[0] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
+          new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+        });
       };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1.CloneToDerived<HistoricJob, Job>() with
@@ -851,22 +864,31 @@ namespace MachineWatchTest
 
       // replaces workorders
       var newWorkorders = _fixture.Create<List<PartWorkorder>>();
-      newWorkorders[0] %= w => w.Programs = new[] {
-        new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
-        new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+      newWorkorders[0] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
+          new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
+          new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+        });
       };
-      newWorkorders[1] %= w => w.Programs = new[] {
-        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+      newWorkorders[1] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+        });
       };
 
       // replace an existing
       newWorkorders.Add(initialWorks[1] % (draft =>
       {
         draft.Quantity = 10;
-        draft.Programs = new[] {
+        draft.Programs.Clear();
+        draft.Programs.AddRange(new[] {
           new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
-        };
+        });
       }));
 
       _jobDB.ReplaceWorkordersForSchedule(schId, newWorkorders, new[] {
@@ -879,11 +901,19 @@ namespace MachineWatchTest
       });
 
       // update with allocated revisions
-      newWorkorders[1] %= w => w.Programs = new[] {
-        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+      newWorkorders[1] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+        });
       };
-      newWorkorders[newWorkorders.Count - 1] %= w => w.Programs = new[] {
-        new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+      newWorkorders[newWorkorders.Count - 1] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
+          new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+        });
       };
 
       _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(newWorkorders); // initialWorks have been archived and don't appear
@@ -1189,16 +1219,24 @@ namespace MachineWatchTest
         ;
 
       var initialWorks = _fixture.Create<List<PartWorkorder>>();
-      initialWorks[0] %= w => w.Programs = new[] {
+      initialWorks[0] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
             new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = -1 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = -2 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = -1 }
-          };
-      initialWorks[1] %= w => w.Programs = new[] {
+          });
+      };
+      initialWorks[1] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
             new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = -2 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = -1 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = -2 }
-          };
+          });
+      };
 
       _jobDB.AddJobs(new NewJobs
       {
@@ -1285,16 +1323,24 @@ namespace MachineWatchTest
         ;
 
 
-      initialWorks[0] %= w => w.Programs = new[] {
+      initialWorks[0] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
             new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
-          };
-      initialWorks[1] %= w => w.Programs = new[] {
+          });
+      };
+      initialWorks[1] %= w =>
+      {
+        w.Programs.Clear();
+        w.Programs.AddRange(new[] {
             new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 7 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = 3 },
             new WorkorderProgram() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = 5 }
-          };
+          });
+      };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1.CloneToDerived<HistoricJob, Job>() with
       {

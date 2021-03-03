@@ -217,7 +217,7 @@ namespace BlackMaple.FMSInsight.Niigata
               logDB.LookupInspectionDecisions(m.MaterialID)
               .Where(x => x.Inspect)
               .Select(x => x.InspType)
-              .ToArray(),
+              .ToImmutableList(),
             LastCompletedMachiningRouteStopIndex = null,
             Location = new InProcessMaterialLocation()
             {
@@ -553,7 +553,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       .Where(x => x.Inspect)
                       .Select(x => x.InspType)
                       .Distinct()
-                      .ToArray(),
+                      .ToImmutableList(),
                   Process = actionIsLoading ? face.Process - 1 : face.Process,
                   Path = actionIsLoading ? (mat.Paths != null && mat.Paths.TryGetValue(Math.Max(face.Process - 1, 1), out var path) ? path : 1) : face.Path,
                   Location = actionIsLoading ?
@@ -1537,7 +1537,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .Distinct()
-                .ToArray(),
+                .ToImmutableList(),
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.InQueue,

@@ -628,7 +628,7 @@ namespace MachineWatchTest
                   Stations = stop.Stations.ToArray(),
                   Program = stop.ProgramName,
                   ProgramRevision = stop.ProgramRevision,
-                  Tools = stop.Tools.ToDictionary(k => k.Key, k => k.Value),
+                  Tools = stop.Tools.ToImmutableDictionary(k => k.Key, k => k.Value),
                   StationGroup = stop.StationGroup,
                   ExpectedCycleTime = stop.ExpectedCycleTime
                 }).ToList(),

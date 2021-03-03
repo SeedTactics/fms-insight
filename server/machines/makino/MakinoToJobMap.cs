@@ -227,7 +227,7 @@ namespace Makino
                   .Where(x => x.Inspect)
                   .Select(x => x.InspType)
                   .Distinct()
-                  .ToList(),
+                  .ToImmutableList(),
         Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Waiting,

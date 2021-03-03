@@ -291,7 +291,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           m.Action.Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial;
           m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
-          m.SignaledInspections = m.SignaledInspections.Append("InspTy").ToArray();
+          m.SignaledInspections.Add("InspTy");
         })
         // no load of new, since qty is 3 and have produced 2 on pallet 1 and there is still a pending load assigned to pallet 2
         .ExpectTransition(new[] {

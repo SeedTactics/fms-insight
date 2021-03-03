@@ -51,7 +51,7 @@ namespace BlackMaple.MachineFramework
       public List<int> Stations { get; } = new List<int>();
       public string Program { get; init; }
       public long? ProgramRevision { get; init; }
-      public Dictionary<string, TimeSpan> Tools { get; } = new Dictionary<string, TimeSpan>();
+      public ImmutableDictionary<string, TimeSpan>.Builder Tools { get; } = ImmutableDictionary.CreateBuilder<string, TimeSpan>();
       public TimeSpan ExpectedCycleTime { get; init; }
     }
 
@@ -439,7 +439,7 @@ namespace BlackMaple.MachineFramework
                     Stations = s.Stations,
                     Program = s.Program,
                     ProgramRevision = s.ProgramRevision,
-                    Tools = s.Tools,
+                    Tools = s.Tools.ToImmutable(),
                     ExpectedCycleTime = s.ExpectedCycleTime
                   }).ToArray(),
                   SimulatedProduction = p.SimProd,
@@ -521,7 +521,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
         ((IDbCommand)prgCmd).Transaction = trans;
 
-        var ret = new Dictionary<(string work, string part), (MachineWatchInterface.PartWorkorder work, List<MachineWatchInterface.WorkorderProgram> progs)>();
+        var ret = new Dictionary<(string work, string part), (MachineWatchInterface.PartWorkorder work, ImmutableList<MachineWatchInterface.WorkorderProgram>.Builder progs)>();
         cmd.CommandText = "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision " +
           " FROM unfilled_workorders w " +
           " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -544,7 +544,7 @@ namespace BlackMaple.MachineFramework
                 Priority = reader.GetInt32(4),
                 Programs = ImmutableList<MachineWatchInterface.WorkorderProgram>.Empty
               };
-              ret.Add((work: workId, part: part), (work: workorder, progs: new List<MachineWatchInterface.WorkorderProgram>()));
+              ret.Add((work: workId, part: part), (work: workorder, progs: ImmutableList.CreateBuilder<MachineWatchInterface.WorkorderProgram>()));
             }
 
             if (reader.IsDBNull(5)) continue;
@@ -560,7 +560,7 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        return ret.Values.Select(w => w.work with { Programs = w.progs }).ToImmutableList();
+        return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToImmutableList();
       }
     }
 
@@ -739,7 +739,7 @@ namespace BlackMaple.MachineFramework
 
           var sid = LatestScheduleId(trans);
 
-          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, List<MachineWatchInterface.WorkorderProgram> progs)>();
+          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, ImmutableList<MachineWatchInterface.WorkorderProgram>.Builder progs)>();
           cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -762,7 +762,7 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(workId, (work: workorder, progs: new List<MachineWatchInterface.WorkorderProgram>()));
+                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<MachineWatchInterface.WorkorderProgram>()));
               }
 
               if (reader.IsDBNull(4)) continue;
@@ -779,7 +779,7 @@ namespace BlackMaple.MachineFramework
           }
 
           trans.Commit();
-          return ret.Values.Select(w => w.work with { Programs = w.progs }).ToList();
+          return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
         }
       }
     }
@@ -790,7 +790,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, List<MachineWatchInterface.WorkorderProgram> progs)>();
+          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, ImmutableList<MachineWatchInterface.WorkorderProgram>.Builder progs)>();
           cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -815,7 +815,7 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(part, (work: workorder, progs: new List<MachineWatchInterface.WorkorderProgram>()));
+                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<MachineWatchInterface.WorkorderProgram>()));
               }
 
               if (reader.IsDBNull(4)) continue;
@@ -831,7 +831,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          return ret.Values.Select(w => w.work with { Programs = w.progs }).ToList();
+          return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
         }
       }
     }
