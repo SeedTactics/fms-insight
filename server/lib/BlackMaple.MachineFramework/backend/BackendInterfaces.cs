@@ -70,12 +70,12 @@ namespace BlackMaple.MachineFramework
     /// Add new raw material for part.  The part material has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName = null);
+    InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName = null);
 
     /// Add new castings.  The casting has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName = null);
+    List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName = null);
 
     /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
     /// and is passed only if the material has already been marked with a serial.

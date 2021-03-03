@@ -337,7 +337,7 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Queues
-    private List<InProcessMaterial> AddUnallocatedCastingToQueue(IRepository logDB, string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    private List<InProcessMaterial> AddUnallocatedCastingToQueue(IRepository logDB, string casting, int qty, string queue, IList<string> serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -377,7 +377,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return mats;
     }
 
-    InProcessMaterial IJobControl.AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
+    InProcessMaterial IJobControl.AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -409,16 +409,16 @@ namespace BlackMaple.FMSInsight.Niigata
       using (var ldb = _jobDbCfg.OpenConnection())
       {
         return
-          AddUnallocatedCastingToQueue(ldb, casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName)
+          AddUnallocatedCastingToQueue(ldb, casting, 1, queue, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName)
           .FirstOrDefault();
       }
     }
 
-    List<InProcessMaterial> IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    List<InProcessMaterial> IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName)
     {
       using (var ldb = _jobDbCfg.OpenConnection())
       {
-        return AddUnallocatedCastingToQueue(ldb, casting, qty, queue, position, serial, operatorName);
+        return AddUnallocatedCastingToQueue(ldb, casting, qty, queue, serial, operatorName);
       }
     }
 

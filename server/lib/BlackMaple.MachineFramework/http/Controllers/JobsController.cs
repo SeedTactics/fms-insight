@@ -130,23 +130,23 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("part/{partName}/casting")]
-    public InProcessMaterial AddUnallocatedCastingToQueueByPart(string partName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial, [FromQuery] string operName = null)
+    public InProcessMaterial AddUnallocatedCastingToQueueByPart(string partName, [FromQuery] string queue, [FromBody] string serial, [FromQuery] string operName = null)
     {
       if (string.IsNullOrEmpty(partName))
         throw new BadRequestException("Part name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      return _backend.JobControl.AddUnallocatedPartToQueue(partName, queue, pos, serial, operName);
+      return _backend.JobControl.AddUnallocatedPartToQueue(partName, queue, serial, operName);
     }
 
     [HttpPost("casting/{castingName}")]
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromQuery] int pos, [FromBody] List<string> serials, [FromQuery] int qty = 1, [FromQuery] string operName = null)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromBody] List<string> serials, [FromQuery] int qty = 1, [FromQuery] string operName = null)
     {
       if (string.IsNullOrEmpty(castingName))
         throw new BadRequestException("Casting name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      return _backend.JobControl.AddUnallocatedCastingToQueue(castingName, qty, queue, pos, serials, operName);
+      return _backend.JobControl.AddUnallocatedCastingToQueue(castingName, qty, queue, serials, operName);
     }
 
     [HttpGet("job/{jobUnique}/plan")]

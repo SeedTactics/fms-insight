@@ -341,7 +341,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName)
     {
       string casting = partName;
 
@@ -365,11 +365,11 @@ namespace MazakMachineInterface
         }
       }
 
-      var mats = ((BlackMaple.MachineFramework.IJobControl)this).AddUnallocatedCastingToQueue(casting, 1, queue, position, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
+      var mats = ((BlackMaple.MachineFramework.IJobControl)this).AddUnallocatedCastingToQueue(casting, 1, queue, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
       return mats.FirstOrDefault();
     }
 
-    List<InProcessMaterial> BlackMaple.MachineFramework.IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName)
+    List<InProcessMaterial> BlackMaple.MachineFramework.IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {

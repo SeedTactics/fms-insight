@@ -206,15 +206,15 @@ namespace DebugMachineWatchApiServer
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
-    public InProcessMaterial AddUnallocatedPartToQueue(string part, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnallocatedPartToQueue(string part, string queue, string serial, string operatorName = null)
     {
-      Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {position} {serial} {oper}", part, queue, position, serial, operatorName);
+      Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {serial} {oper}", part, queue, serial, operatorName);
       return null;
     }
 
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serials, string operatorName = null)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serials, string operatorName = null)
     {
-      Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {position} {@serials} {oper}", casting, qty, queue, position, serials, operatorName);
+      Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {@serials} {oper}", casting, qty, queue, serials, operatorName);
       var ret = new List<InProcessMaterial>();
       for (int i = 0; i < qty; i++)
       {

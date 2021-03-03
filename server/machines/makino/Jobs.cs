@@ -144,12 +144,12 @@ namespace Makino
     #endregion
 
     #region Queues
-    public InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName = null)
     {
       //do nothing
       return null;
     }
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, int position, IList<string> serial, string operatorName = null)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName = null)
     {
       //do nothing
       return new List<InProcessMaterial>();
