@@ -238,7 +238,7 @@ namespace MazakMachineInterface
         var schProc = sch.Procs[proc];
         if (string.IsNullOrEmpty(schProc.InputQueue)) continue;
 
-        var matInQueue = QueuedMaterialForLoading(jobPlan, logDb.GetMaterialInQueue(schProc.InputQueue), proc, schProc.Path, logDb);
+        var matInQueue = QueuedMaterialForLoading(jobPlan, logDb.GetMaterialInQueueByUnique(schProc.InputQueue, jobPlan.UniqueStr), proc, schProc.Path, logDb);
         var numMatInQueue = matInQueue.Count;
 
         if (proc == 1)
@@ -339,17 +339,13 @@ namespace MazakMachineInterface
         if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
         {
           // find some new castings
-          var unassignedCastings =
-            logDb.GetMaterialInQueue(schProc1.InputQueue)
-            .Where(m => string.IsNullOrEmpty(m.Unique) && (m.PartNameOrCasting == schProc1.Casting || m.PartNameOrCasting == sch.Job.PartName))
-            .Count();
-
           var toAdd =
             _waitForAllCastings
             ? sch.SchRow.PlanQuantity - started - curCastings
             : schProc1.SchProcRow.FixQuantity - curCastings;
 
-          if (toAdd > 0 && unassignedCastings >= toAdd)
+          bool foundEnough = false;
+          if (toAdd > 0)
           {
             var allocated = logDb.AllocateCastingsInQueue(
               queue: schProc1.InputQueue,
@@ -359,28 +355,29 @@ namespace MazakMachineInterface
               proc1Path: schProc1.Path,
               numProcesses: sch.Job.NumProcesses,
               count: toAdd);
-            if (allocated.Count != toAdd)
+            // if not enough material, AllocateCastingsInQueue does nothing and returns an empty list
+            if (allocated.Count == toAdd)
             {
-              Log.Error("Did not allocate {toAdd} parts from queue! {sch}, {queue}", toAdd, sch, unassignedCastings);
-            }
-            schProc1.TargetMaterialCount = allocated.Count;
+              foundEnough = true;
+              schProc1.TargetMaterialCount = allocated.Count;
 
-            // if another schedule with a later priority is currently running, adding material to this
-            // schedule will interrupt that one.  Instead, increase priority
-            var dueDateOfRunningSch = IsLaterPriorityCurrentlyRunning(sch, allSchs);
-            if (dueDateOfRunningSch.HasValue)
-            {
-              if (sch.SchRow.DueDate != dueDateOfRunningSch.Value)
+              // if another schedule with a later priority is currently running, adding material to this
+              // schedule will interrupt that one.  Instead, increase priority
+              var dueDateOfRunningSch = IsLaterPriorityCurrentlyRunning(sch, allSchs);
+              if (dueDateOfRunningSch.HasValue)
               {
-                sch.NewDueDate = dueDateOfRunningSch.Value;
+                if (sch.SchRow.DueDate != dueDateOfRunningSch.Value)
+                {
+                  sch.NewDueDate = dueDateOfRunningSch.Value;
+                }
+                sch.NewPriority =
+                  allSchs.Where(s => s.SchRow.DueDate == dueDateOfRunningSch.Value).Max(s => s.SchRow.Priority)
+                  + 1;
               }
-              sch.NewPriority =
-                allSchs.Where(s => s.SchRow.DueDate == dueDateOfRunningSch.Value).Max(s => s.SchRow.Priority)
-                + 1;
             }
           }
 
-          if (toAdd > 0 && _waitForAllCastings && unassignedCastings < toAdd)
+          if (toAdd > 0 && _waitForAllCastings && !foundEnough)
           {
             // if we tried to add but didn't have enough, dont let schedules with higher priority
             // snatch up these castings.  If the user wants to run it, they can edit priority

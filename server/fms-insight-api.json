@@ -1020,6 +1020,12 @@
           "jobs"
         ],
         "operationId": "jobs_BulkRemoveMaterialFromQueues",
+        "consumes": [
+          "application/json-patch+json",
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "parameters": [
           {
             "name": "id",

@@ -228,7 +228,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpDelete("material")]
     [ProducesResponseType(typeof(void), 200)]
-    public void BulkRemoveMaterialFromQueues([FromQuery] List<long> id, [FromQuery] string operName = null)
+    public void BulkRemoveMaterialFromQueues([FromBody] List<long> id, [FromQuery] string operName = null)
     {
       if (id == null || id.Count == 0) return;
       _backend.JobControl.RemoveMaterialFromAllQueues(id, operName);

@@ -570,8 +570,8 @@ exports[`renders the dashboard: current jobs plot 1`] = `
       <rect
         height="29.27777777777779"
         style="opacity: 1; stroke: #795548; fill: #795548;"
-        width="20.661157024793386"
-        x="-20.661157024793386"
+        width="10.330578512396693"
+        x="-10.330578512396693"
         y="209.25"
       />
       <rect
@@ -647,7 +647,7 @@ exports[`renders the dashboard: current jobs plot 1`] = `
       </g>
       <g
         class="rv-xy-plot__series--custom-svg"
-        transform="translate(-57.85123966942149,223.88888888888889)"
+        transform="translate(-28.925619834710744,223.88888888888889)"
       >
         <rect
           fill="black"

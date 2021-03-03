@@ -95,6 +95,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(long matID, int process, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null);
     IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(EventLogMaterial mat, string operatorName = null, DateTime? timeUTC = null);
     IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(long matID, int process, string operatorName = null, DateTime? timeUTC = null);
+    IEnumerable<MachineWatchInterface.LogEntry> BulkRemoveMaterialFromAllQueues(IEnumerable<long> matIds, string operatorName = null, DateTime? timeUTC = null);
     MachineWatchInterface.LogEntry RecordGeneralMessage(EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null, string originalMessage = null, IDictionary<string, string> extraData = null);
     MachineWatchInterface.LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName);
     MachineWatchInterface.LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName, DateTime? timeUtc);
@@ -122,9 +123,12 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count);
     void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting);
-    IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue);
+    bool IsMaterialInQueue(long matId);
+    IEnumerable<QueuedMaterial> GetMaterialInQueueByUnique(string queue, string jobUnique);
+    IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(string queue, string partNameOrCasting);
     IEnumerable<QueuedMaterial> GetMaterialInAllQueues();
     int? NextProcessForQueuedMaterial(long matId);
+    BulkAddCastingResult BulkAddNewCastingsInQueue(string casting, int qty, string queue, IList<string> serials, string operatorName, string reason = null, DateTime? timeUTC = null);
 
 
     // --------------------------------------------------------------------------------
@@ -288,5 +292,10 @@ namespace BlackMaple.MachineFramework
     public TimeSpan ToolLife { get; init; }
   }
 
+  public record BulkAddCastingResult
+  {
+    public HashSet<long> MaterialIds { get; init; }
+    public IReadOnlyList<MachineWatchInterface.LogEntry> Logs { get; init; }
+  }
 
 }

@@ -370,8 +370,10 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           // load castings from queue
           var castings =
-            logDB.GetMaterialInQueue(inputQueue)
+            logDB.GetUnallocatedMaterialInQueue(inputQueue, string.IsNullOrEmpty(face.Job.GetCasting(face.Path)) ? face.Job.PartName : face.Job.GetCasting(face.Path))
+            .Concat(logDB.GetMaterialInQueueByUnique(inputQueue, face.Job.UniqueStr))
             .Where(m => !currentlyLoading.Contains(m.MaterialID))
+            .OrderBy(m => m.Position)
             .Select(m =>
             {
               var details = logDB.GetMaterialDetails(m.MaterialID);
@@ -514,7 +516,7 @@ namespace BlackMaple.FMSInsight.Niigata
           if (!string.IsNullOrEmpty(inputQueue))
           {
             var availableMaterial =
-              logDB.GetMaterialInQueue(inputQueue)
+              logDB.GetMaterialInQueueByUnique(inputQueue, face.Job.UniqueStr)
               .Where(m => !currentlyLoading.Contains(m.MaterialID))
               .Select(m =>
               {

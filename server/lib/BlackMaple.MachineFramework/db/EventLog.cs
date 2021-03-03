@@ -1865,6 +1865,23 @@ namespace BlackMaple.MachineFramework
       );
     }
 
+    public IEnumerable<MachineWatchInterface.LogEntry> BulkRemoveMaterialFromAllQueues(
+      IEnumerable<long> matIds, string operatorName = null, DateTime? timeUTC = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+      {
+        var evts = new List<MachineWatchInterface.LogEntry>();
+        foreach (var matId in matIds)
+        {
+          var nextProc = NextProcessForQueuedMaterial(trans, matId);
+          var proc = (nextProc ?? 1) - 1;
+          evts.AddRange(RemoveFromAllQueues(trans, matId, proc, operatorName, timeUTC ?? DateTime.UtcNow));
+        }
+        return evts;
+      });
+    }
+
     public MachineWatchInterface.LogEntry SignalMaterialForQuarantine(
       EventLogMaterial mat,
       string pallet,
@@ -2794,6 +2811,107 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public BulkAddCastingResult BulkAddNewCastingsInQueue(string casting, int qty, string queue, IList<string> serials, string operatorName, string reason = null, DateTime? timeUTC = null)
+    {
+      var ret = new List<MachineWatchInterface.LogEntry>();
+      var matIds = new HashSet<long>();
+      var addTimeUTC = timeUTC ?? DateTime.UtcNow;
+
+      lock (_cfg)
+      {
+        using (var trans = _connection.BeginTransaction())
+        using (var maxPosCmd = _connection.CreateCommand())
+        using (var allocateCmd = _connection.CreateCommand())
+        using (var getMatIdCmd = _connection.CreateCommand())
+        using (var addToQueueCmd = _connection.CreateCommand())
+        {
+          maxPosCmd.Transaction = trans;
+          maxPosCmd.CommandText = "SELECT MAX(Position) FROM queues WHERE Queue = $q";
+          maxPosCmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+          var posObj = maxPosCmd.ExecuteScalar();
+          int maxExistingPos = -1;
+          if (posObj != null && posObj != DBNull.Value)
+          {
+            maxExistingPos = Convert.ToInt32(posObj);
+          }
+
+          allocateCmd.Transaction = trans;
+          allocateCmd.CommandText = "INSERT INTO matdetails(PartName, NumProcesses, Serial) VALUES ($casting,1,$serial)";
+          allocateCmd.Parameters.Add("casting", SqliteType.Text).Value = casting;
+          var allocateSerialParam = allocateCmd.Parameters.Add("serial", SqliteType.Text);
+
+          getMatIdCmd.Transaction = trans;
+          getMatIdCmd.CommandText = "SELECT last_insert_rowid()";
+
+          addToQueueCmd.Transaction = trans;
+          addToQueueCmd.CommandText =
+              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
+              " VALUES ($m, $q, $pos, $t)";
+          var addQueueMatIdParam = addToQueueCmd.Parameters.Add("m", SqliteType.Integer);
+          addToQueueCmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+          var addQueuePosCmd = addToQueueCmd.Parameters.Add("pos", SqliteType.Integer);
+          addToQueueCmd.Parameters.Add("t", SqliteType.Integer).Value = addTimeUTC.Ticks;
+
+          for (int i = 0; i < qty; i++)
+          {
+            allocateSerialParam.Value = i < serials.Count ? (object)serials[i] : DBNull.Value;
+            allocateCmd.ExecuteNonQuery();
+            var matID = (long)getMatIdCmd.ExecuteScalar();
+            matIds.Add(matID);
+
+            if (i < serials.Count)
+            {
+              var serLog = new NewEventLogEntry()
+              {
+                Material = new[] { new EventLogMaterial() { MaterialID = matID, Process = 0, Face = "" } },
+                Pallet = "",
+                LogType = MachineWatchInterface.LogType.PartMark,
+                LocationName = "Mark",
+                LocationNum = 1,
+                Program = "MARK",
+                StartOfCycle = false,
+                EndTimeUTC = addTimeUTC,
+                Result = serials[i],
+                EndOfRoute = false
+              };
+              ret.Add(AddLogEntry(trans, serLog, null, null));
+            }
+
+            addQueueMatIdParam.Value = matID;
+            addQueuePosCmd.Value = maxExistingPos + i + 1;
+            addToQueueCmd.ExecuteNonQuery();
+
+            var log = new NewEventLogEntry()
+            {
+              Material = new[] { new EventLogMaterial() { MaterialID = matID, Process = 0, Face = "" } },
+              Pallet = "",
+              LogType = MachineWatchInterface.LogType.AddToQueue,
+              LocationName = queue,
+              LocationNum = maxExistingPos + i + 1,
+              Program = reason ?? "",
+              StartOfCycle = false,
+              EndTimeUTC = addTimeUTC,
+              Result = "",
+              EndOfRoute = false
+            };
+            if (!string.IsNullOrEmpty(operatorName))
+            {
+              log.ProgramDetails["operator"] = operatorName;
+            }
+
+            ret.Add(AddLogEntry(trans, log, null, null));
+          }
+
+          trans.Commit();
+        }
+      }
+      return new BulkAddCastingResult()
+      {
+        MaterialIds = matIds,
+        Logs = ret
+      };
+    }
+
     /// Find parts without an assigned unique in the queue, and assign them to the given unique
     public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count)
     {
@@ -2903,7 +3021,21 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    public IEnumerable<QueuedMaterial> GetMaterialInQueue(string queue)
+    public bool IsMaterialInQueue(long matId)
+    {
+      lock (_cfg)
+      {
+        using (var cmd = _connection.CreateCommand())
+        {
+          cmd.CommandText = "SELECT COUNT(*) FROM queues WHERE MaterialID = $matid";
+          cmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+          var ret = cmd.ExecuteScalar();
+          return (ret != null && ret != DBNull.Value && (long)ret > 0);
+        }
+      }
+    }
+
+    public IEnumerable<QueuedMaterial> GetMaterialInQueueByUnique(string queue, string unique)
     {
       lock (_cfg)
       {
@@ -2917,9 +3049,56 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
               " FROM queues " +
               " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
-              " WHERE Queue = $q " +
+              " WHERE Queue = $q AND UniqueStr = $uniq " +
               " ORDER BY Position";
             cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+            cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+            using (var reader = cmd.ExecuteReader())
+            {
+              while (reader.Read())
+              {
+                ret.Add(new QueuedMaterial()
+                {
+                  MaterialID = reader.GetInt64(0),
+                  Queue = queue,
+                  Position = reader.GetInt32(1),
+                  Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                  PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                  NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                  AddTimeUTC = reader.IsDBNull(5) ? null : ((DateTime?)(new DateTime(reader.GetInt64(5), DateTimeKind.Utc))),
+                });
+              }
+            }
+            trans.Commit();
+          }
+          return ret;
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      }
+    }
+
+    public IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(string queue, string partNameOrCasting)
+    {
+      lock (_cfg)
+      {
+        var trans = _connection.BeginTransaction();
+        var ret = new List<QueuedMaterial>();
+        try
+        {
+          using (var cmd = _connection.CreateCommand())
+          {
+            cmd.Transaction = trans;
+            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
+              " FROM queues " +
+              " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
+              " WHERE Queue = $q AND UniqueStr IS NULL AND PartName = $part " +
+              " ORDER BY Position";
+            cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+            cmd.Parameters.Add("part", SqliteType.Text).Value = partNameOrCasting;
             using (var reader = cmd.ExecuteReader())
             {
               while (reader.Read())
@@ -2995,8 +3174,20 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
+        using (var trans = _connection.BeginTransaction())
+        {
+          return NextProcessForQueuedMaterial(trans, matId);
+        }
+      }
+    }
+
+    private int? NextProcessForQueuedMaterial(IDbTransaction trans, long matId)
+    {
+      lock (_cfg)
+      {
         using (var loadCmd = _connection.CreateCommand())
         {
+          ((IDbCommand)loadCmd).Transaction = trans;
           loadCmd.CommandText = "SELECT MAX(m.Process) FROM " +
             " stations_mat m " +
             " WHERE m.MaterialID = $matid AND " +

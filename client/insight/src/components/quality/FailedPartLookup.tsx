@@ -45,7 +45,7 @@ import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
 import { LogType } from "../../data/api";
 import { InspectionSankey } from "../analysis/InspectionSankey";
 import { DataTableActionZoomType } from "../analysis/DataTable";
-import { useIsDemo } from "../IsDemo";
+import { useIsDemo } from "../../data/routes";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";

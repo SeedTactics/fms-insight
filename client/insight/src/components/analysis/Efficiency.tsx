@@ -91,7 +91,7 @@ import {
 import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
 import { BufferChart } from "./BufferChart";
-import { useIsDemo } from "../IsDemo";
+import { useIsDemo } from "../../data/routes";
 import { useSetRecoilState } from "recoil";
 
 // --------------------------------------------------------------------------------

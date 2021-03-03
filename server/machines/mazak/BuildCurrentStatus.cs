@@ -739,7 +739,7 @@ namespace MazakMachineInterface
                 queuedMat = queuedMats[key];
               else
               {
-                queuedMat = QueuedMaterialForLoading(job, log.GetMaterialInQueue(queue), operation.Process, operation.Path, log);
+                queuedMat = QueuedMaterialForLoading(job, log.GetMaterialInQueueByUnique(queue, job.UniqueStr), operation.Process, operation.Path, log);
                 queuedMats.Add(key, queuedMat);
               }
             }
@@ -825,7 +825,7 @@ namespace MazakMachineInterface
 
         if (!string.IsNullOrEmpty(inputQueue))
         {
-          var qs = QueuedMaterialForLoading(job, log.GetMaterialInQueue(inputQueue), proc, path, log);
+          var qs = QueuedMaterialForLoading(job, log.GetMaterialInQueueByUnique(inputQueue, job.UniqueStr), proc, path, log);
           return qs.Select(m => m.MaterialID).ToList();
         }
         else if (proc == 1)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -31,288 +31,188 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { NOT_FOUND } from "redux-first-router";
+import { useCallback, useMemo } from "react";
+import { atom, useRecoilState } from "recoil";
+import { useRouter } from "wouter";
 
 export enum RouteLocation {
-  ChooseMode = "ROUTE_ChooseMode",
+  ChooseMode = "/",
 
-  Station_LoadMonitor = "ROUTE_Station_LoadMonitor",
-  Station_InspectionMonitor = "ROUTE_Station_Inspection",
-  Station_WashMonitor = "ROUTE_Station_Wash",
-  Station_Queues = "ROUTE_Station_Queues",
+  Station_LoadMonitor = "/station/loadunload/:num",
+  Station_InspectionMonitor = "/station/inspection",
+  Station_InspectionMonitorWithType = "/station/inspection/:type",
+  Station_WashMonitor = "/station/wash",
+  Station_Queues = "/station/queues",
 
-  Operations_Dashboard = "ROUTE_Operations_Dashboard",
-  Operations_LoadStation = "ROUTE_Operations_LoadStation",
-  Operations_Machines = "ROUTE_Operations_Machines",
-  Operations_AllMaterial = "ROUTE_Operations_AllMaterial",
-  Operations_CompletedParts = "ROUTE_Operations_CompletedParts",
-  Operations_Tools = "ROUTE_Operations_Tools",
-  Operations_Programs = "ROUTE_Operations_Programs",
+  Operations_Dashboard = "/operations",
+  Operations_LoadStation = "/operations/loadunload",
+  Operations_Machines = "/operations/machines",
+  Operations_AllMaterial = "/operations/material",
+  Operations_CompletedParts = "/operations/completed",
+  Operations_Tools = "/operations/tools",
+  Operations_Programs = "/operations/programs",
 
-  Engineering = "ROUTE_Engineering",
+  Engineering = "/engineering",
 
-  Quality_Dashboard = "ROUTE_Quality_Dashboard",
-  Quality_Serials = "ROUTE_Quality_Serials",
-  Quality_Paths = "ROUTE_Quality_Paths",
-  Quality_Quarantine = "ROUTE_Quality_Quarantine",
+  Quality_Dashboard = "/quality",
+  Quality_Serials = "/quality/serials",
+  Quality_Paths = "/quality/paths",
+  Quality_Quarantine = "/quality/quarantine",
 
-  Tools_Dashboard = "ROUTE_Tools_Dashboard",
-  Tools_Programs = "ROUTE_Tools_Programs",
+  Tools_Dashboard = "/tools",
+  Tools_Programs = "/tools/programs",
 
-  Analysis_Efficiency = "ROUTE_Analysis_Efficiency",
-  Analysis_CostPerPiece = "ROUTE_Analysis_CostPerPiece",
-  Analysis_DataExport = "ROUTE_Analysis_DataExport",
+  Analysis_Efficiency = "/analysis/efficiency",
+  Analysis_CostPerPiece = "/analysis/cost",
+  Analysis_DataExport = "/analysis/data-export",
 
-  Backup_InitialOpen = "ROUTE_Backup_Initial",
-  Backup_Efficiency = "ROUTE_Backup_Efficiency",
-  Backup_PartLookup = "ROUTE_Backup_PartLookup",
+  Backup_InitialOpen = "/backup/open",
+  Backup_Efficiency = "/backup/efficiency",
+  Backup_PartLookup = "/backup/lookup",
 }
 
-export const routeMap = {
-  [RouteLocation.ChooseMode]: "/",
+export type RouteState =
+  | { route: RouteLocation.ChooseMode }
+  | { route: RouteLocation.Station_LoadMonitor; loadNum: number; free: boolean; queues: ReadonlyArray<string> }
+  | { route: RouteLocation.Station_InspectionMonitor }
+  | { route: RouteLocation.Station_InspectionMonitorWithType; inspType: string }
+  | { route: RouteLocation.Station_WashMonitor }
+  | { route: RouteLocation.Station_Queues; queues: ReadonlyArray<string>; free: boolean }
+  | { route: RouteLocation.Operations_Dashboard }
+  | { route: RouteLocation.Operations_LoadStation }
+  | { route: RouteLocation.Operations_Machines }
+  | { route: RouteLocation.Operations_AllMaterial }
+  | { route: RouteLocation.Operations_CompletedParts }
+  | { route: RouteLocation.Operations_Tools }
+  | { route: RouteLocation.Operations_Programs }
+  | { route: RouteLocation.Engineering }
+  | { route: RouteLocation.Quality_Dashboard }
+  | { route: RouteLocation.Quality_Serials }
+  | { route: RouteLocation.Quality_Paths }
+  | { route: RouteLocation.Quality_Quarantine }
+  | { route: RouteLocation.Tools_Dashboard }
+  | { route: RouteLocation.Tools_Programs }
+  | { route: RouteLocation.Analysis_Efficiency }
+  | { route: RouteLocation.Analysis_CostPerPiece }
+  | { route: RouteLocation.Analysis_DataExport }
+  | { route: RouteLocation.Backup_InitialOpen }
+  | { route: RouteLocation.Backup_Efficiency }
+  | { route: RouteLocation.Backup_PartLookup };
 
-  [RouteLocation.Station_LoadMonitor]: "/station/loadunload/:num",
-  [RouteLocation.Station_InspectionMonitor]: "/station/inspection",
-  [RouteLocation.Station_WashMonitor]: "/station/wash",
-  [RouteLocation.Station_Queues]: "/station/queues",
-
-  [RouteLocation.Operations_Dashboard]: "/operations",
-  [RouteLocation.Operations_LoadStation]: "/operations/loadunload",
-  [RouteLocation.Operations_Machines]: "/operations/machines",
-  [RouteLocation.Operations_AllMaterial]: "/operations/material",
-  [RouteLocation.Operations_CompletedParts]: "/operations/completed",
-  [RouteLocation.Operations_Tools]: "/operations/tools",
-  [RouteLocation.Operations_Programs]: "/operations/programs",
-
-  [RouteLocation.Engineering]: "/engineering",
-
-  [RouteLocation.Quality_Dashboard]: "/quality",
-  [RouteLocation.Quality_Serials]: "/quality/serials",
-  [RouteLocation.Quality_Paths]: "/quality/paths",
-  [RouteLocation.Quality_Quarantine]: "/quality/quarantine",
-
-  [RouteLocation.Tools_Dashboard]: "/tools",
-  [RouteLocation.Tools_Programs]: "/tools/programs",
-
-  [RouteLocation.Analysis_Efficiency]: "/analysis/efficiency",
-  [RouteLocation.Analysis_CostPerPiece]: "/analysis/cost",
-  [RouteLocation.Analysis_DataExport]: "/analysis/data-export",
-
-  [RouteLocation.Backup_InitialOpen]: "/backup/open",
-  [RouteLocation.Backup_Efficiency]: "/backup/efficiency",
-  [RouteLocation.Backup_PartLookup]: "/backup/lookup",
-};
-
-export type Action =
-  | { type: RouteLocation.ChooseMode }
-  | {
-      type: RouteLocation.Station_LoadMonitor;
-      payload: { num: number | string };
-      meta?: {
-        query?: {
-          queue?: string | ReadonlyArray<string>;
-          free?: null;
-        };
-      };
-    }
-  | {
-      type: RouteLocation.Station_InspectionMonitor;
-      meta?: {
-        query?: {
-          type?: string;
-        };
-      };
-    }
-  | {
-      type: RouteLocation.Station_WashMonitor;
-    }
-  | {
-      type: RouteLocation.Station_Queues;
-      meta?: {
-        query?: {
-          queue?: string | ReadonlyArray<string>;
-          free?: null;
-        };
-      };
-    }
-  | { type: RouteLocation.Operations_Dashboard }
-  | { type: RouteLocation.Operations_LoadStation }
-  | { type: RouteLocation.Operations_Machines }
-  | { type: RouteLocation.Operations_AllMaterial }
-  | { type: RouteLocation.Operations_CompletedParts }
-  | { type: RouteLocation.Operations_Tools }
-  | { type: RouteLocation.Operations_Programs }
-  | { type: RouteLocation.Engineering }
-  | { type: RouteLocation.Quality_Dashboard }
-  | { type: RouteLocation.Quality_Serials }
-  | { type: RouteLocation.Quality_Paths }
-  | { type: RouteLocation.Quality_Quarantine }
-  | { type: RouteLocation.Tools_Dashboard }
-  | { type: RouteLocation.Tools_Programs }
-  | { type: RouteLocation.Analysis_Efficiency }
-  | { type: RouteLocation.Analysis_CostPerPiece }
-  | { type: RouteLocation.Analysis_DataExport }
-  | { type: RouteLocation.Backup_InitialOpen }
-  | { type: RouteLocation.Backup_Efficiency }
-  | { type: RouteLocation.Backup_PartLookup }
-  | { type: typeof NOT_FOUND };
-
-export interface State {
-  readonly current: RouteLocation;
-  readonly selected_load_id: number;
-  readonly selected_insp_type?: string;
-  readonly load_queues: ReadonlyArray<string>;
-  readonly load_free_material: boolean;
-  readonly standalone_queues: ReadonlyArray<string>;
-  readonly standalone_free_material: boolean;
-}
-
-export const initial: State = {
-  current: RouteLocation.ChooseMode,
-  selected_load_id: 1,
-  selected_insp_type: undefined,
-  load_queues: [],
-  load_free_material: false,
-  standalone_queues: [],
-  standalone_free_material: false,
-};
-
-export function displayLoadStation(num: number, queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
-  return {
-    type: RouteLocation.Station_LoadMonitor,
-    payload: { num },
-    meta: {
-      query: {
-        queue: queues.length === 0 ? undefined : queues,
-        free: freeMaterial ? null : undefined,
-      },
-    },
-  };
-}
-
-export function displayInspectionType(type: string | undefined): Action {
-  return {
-    type: RouteLocation.Station_InspectionMonitor,
-    meta: { query: { type } },
-  };
-}
-
-export function displayWash(): Action {
-  return {
-    type: RouteLocation.Station_WashMonitor,
-  };
-}
-
-export function displayQueues(queues: ReadonlyArray<string>, freeMaterial: boolean): Action {
-  return {
-    type: RouteLocation.Station_Queues,
-    meta: {
-      query: {
-        queue: queues.length === 0 ? undefined : queues,
-        free: freeMaterial ? null : undefined,
-      },
-    },
-  };
-}
-
-export function displayPage(ty: RouteLocation, oldSt: State): Action {
-  switch (ty) {
+function routeToUrl(route: RouteState): string {
+  switch (route.route) {
     case RouteLocation.Station_LoadMonitor:
-      return displayLoadStation(oldSt.selected_load_id, oldSt.load_queues, oldSt.load_free_material);
-    case RouteLocation.ChooseMode:
-      return { type: NOT_FOUND };
-    case RouteLocation.Station_InspectionMonitor:
-      return displayInspectionType(oldSt.selected_insp_type);
+      if (route.free || route.queues.length > 0) {
+        const params = new URLSearchParams();
+        if (route.free) {
+          params.append("free", "t");
+        }
+        for (const q of route.queues) {
+          params.append("queue", q);
+        }
+        return `/station/loadunload/${route.loadNum}?${params.toString()}`;
+      } else {
+        return `/station/loadunload/${route.loadNum}`;
+      }
+
+    case RouteLocation.Station_InspectionMonitorWithType:
+      return `/station/inspection/${encodeURIComponent(route.inspType)}`;
+
     case RouteLocation.Station_Queues:
-      return displayQueues(oldSt.standalone_queues, oldSt.standalone_free_material);
+      if (route.free || route.queues.length > 0) {
+        const params = new URLSearchParams();
+        if (route.free) {
+          params.append("free", "t");
+        }
+        for (const q of route.queues) {
+          params.append("queue", q);
+        }
+        return `/station/queues?${params.toString()}`;
+      } else {
+        return `/station/queues`;
+      }
+
     default:
-      return { type: ty } as Action;
+      return route.route;
   }
 }
 
-export function reducer(s: State, a: Action): State {
-  if (s === undefined) {
-    return initial;
+const demoLocation = atom<string>({ key: "demo-location", default: RouteLocation.Operations_Dashboard });
+
+export function useDemoLocation(): [string, (s: string) => void] {
+  return useRecoilState(demoLocation);
+}
+
+export function useIsDemo(): boolean {
+  const router = useRouter();
+  return router.hook === useDemoLocation;
+}
+
+export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
+  const router = useRouter();
+  let [location, setLocation] = router.hook();
+
+  let queryString: string = "";
+  if (router.hook === useDemoLocation) {
+    const idx = location.indexOf("?");
+    if (idx >= 0) {
+      queryString = location.substring(idx + 1);
+      location = location.substring(0, idx);
+    }
+  } else {
+    queryString = window.location.search;
   }
-  switch (a.type) {
-    case RouteLocation.Station_LoadMonitor: {
-      const query = (a.meta || {}).query || {};
-      let loadqueues: ReadonlyArray<string> = [];
-      if (query.queue) {
-        if (typeof query.queue === "string") {
-          loadqueues = [query.queue];
-        } else {
-          loadqueues = query.queue;
+
+  const setRoute = useCallback((r) => setLocation(routeToUrl(r)), []);
+
+  const curRoute: RouteState = useMemo(() => {
+    for (const route of Object.values(RouteLocation)) {
+      const [matches, params] = router.matcher(route, location);
+      if (matches) {
+        switch (route) {
+          case RouteLocation.Station_LoadMonitor:
+            if (params && params.num !== undefined) {
+              const search = new URLSearchParams(queryString);
+              return {
+                route: RouteLocation.Station_LoadMonitor,
+                loadNum: parseInt(params.num, 10),
+                free: search.has("free"),
+                queues: search.getAll("queue"),
+              };
+            } else {
+              return {
+                route: RouteLocation.Station_LoadMonitor,
+                loadNum: 1,
+                free: false,
+                queues: [],
+              };
+            }
+
+          case RouteLocation.Station_InspectionMonitorWithType:
+            if (params?.type) {
+              return {
+                route: RouteLocation.Station_InspectionMonitorWithType,
+                inspType: params.type,
+              };
+            } else {
+              return { route: RouteLocation.Station_InspectionMonitor };
+            }
+
+          case RouteLocation.Station_Queues:
+            const search = new URLSearchParams(queryString);
+            return {
+              route: RouteLocation.Station_Queues,
+              free: search.has("free"),
+              queues: search.getAll("queue"),
+            };
+
+          default:
+            return { route: route };
         }
       }
-      return {
-        ...s,
-        current: RouteLocation.Station_LoadMonitor,
-        selected_load_id: typeof a.payload.num === "string" ? parseInt(a.payload.num, 10) : a.payload.num,
-        load_queues: loadqueues.slice(0, 3),
-        load_free_material: query.free === null ? true : false,
-      };
     }
-    case RouteLocation.Station_InspectionMonitor: {
-      const iquery = (a.meta || {}).query || {};
-      return {
-        ...s,
-        current: RouteLocation.Station_InspectionMonitor,
-        selected_insp_type: iquery.type,
-      };
-    }
-    case RouteLocation.Station_WashMonitor:
-      return {
-        ...s,
-        current: RouteLocation.Station_WashMonitor,
-      };
-    case RouteLocation.Station_Queues: {
-      const standalonequery = (a.meta || {}).query || {};
-      let queues: ReadonlyArray<string> = [];
-      if (standalonequery.queue) {
-        if (typeof standalonequery.queue === "string") {
-          queues = [standalonequery.queue];
-        } else {
-          queues = standalonequery.queue;
-        }
-      }
-      return {
-        ...s,
-        current: RouteLocation.Station_Queues,
-        standalone_queues: queues,
-        standalone_free_material: standalonequery.free === null ? true : false,
-      };
-    }
+    return { route: RouteLocation.ChooseMode };
+  }, [location, queryString]);
 
-    case RouteLocation.Operations_Dashboard:
-    case RouteLocation.Operations_AllMaterial:
-    case RouteLocation.Operations_LoadStation:
-    case RouteLocation.Operations_Machines:
-    case RouteLocation.Operations_CompletedParts:
-    case RouteLocation.Operations_Tools:
-    case RouteLocation.Operations_Programs:
-    case RouteLocation.Engineering:
-    case RouteLocation.Quality_Dashboard:
-    case RouteLocation.Quality_Serials:
-    case RouteLocation.Quality_Paths:
-    case RouteLocation.Quality_Quarantine:
-    case RouteLocation.Tools_Dashboard:
-    case RouteLocation.Tools_Programs:
-    case RouteLocation.Analysis_CostPerPiece:
-    case RouteLocation.Analysis_Efficiency:
-    case RouteLocation.Analysis_DataExport:
-    case RouteLocation.Backup_InitialOpen:
-    case RouteLocation.Backup_Efficiency:
-    case RouteLocation.Backup_PartLookup:
-      return {
-        ...s,
-        current: a.type,
-      };
-
-    case RouteLocation.ChooseMode:
-    case NOT_FOUND:
-      return { ...s, current: RouteLocation.ChooseMode };
-    default:
-      return s;
-  }
+  return [curRoute, setRoute];
 }

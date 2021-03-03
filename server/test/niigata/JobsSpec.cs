@@ -517,7 +517,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       ((IJobControl)_jobs).AddUnallocatedCastingToQueue(casting: "c1", qty: 2, queue: "q1", position: 0, serial: new[] { "aaa" }, operatorName: "theoper")
         .Should().BeEquivalentTo(new[] {
           QueuedMat(matId: 1, job: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0).Mat,
-          QueuedMat(matId: 2, job: null, part: "c1", proc: 0, path: 1, serial: null, queue: "q1", pos: 1).Mat,
+          QueuedMat(matId: 2, job: null, part: "c1", proc: 0, path: 1, serial: "", queue: "q1", pos: 1).Mat,
         }, options => options.ComparingByMembers<InProcessMaterial>());
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
       {
@@ -534,7 +534,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Serial = null,
       });
 
-      var mats = _logDB.GetMaterialInQueue("q1").ToList();
+      var mats = _logDB.GetMaterialInAllQueues().ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
          new QueuedMaterial()
@@ -547,7 +547,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.ClearReceivedCalls();
 
       ((IJobControl)_jobs).RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
-      mats = _logDB.GetMaterialInQueue("q1").ToList();
+      mats = _logDB.GetMaterialInAllQueues().ToList();
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
             { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC}
@@ -609,7 +609,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Paths = ImmutableDictionary<int, int>.Empty.Add(1, 2)
       }, options => options.ComparingByMembers<MaterialDetails>());
 
-      var mats = _logDB.GetMaterialInQueue("q1").ToList();
+      var mats = _logDB.GetMaterialInAllQueues().ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
@@ -621,14 +621,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       //remove it
       ((IJobControl)_jobs).RemoveMaterialFromAllQueues(new List<long> { 1 }, "myoper");
-      _logDB.GetMaterialInQueue("q1").Should().BeEmpty();
+      _logDB.GetMaterialInAllQueues().Should().BeEmpty();
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
       //add it back in
       ((IJobControl)_jobs).SetMaterialInQueue(1, "q1", 0, "theoper");
-      mats = _logDB.GetMaterialInQueue("q1").ToList();
+      mats = _logDB.GetMaterialInAllQueues().ToList();
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
@@ -637,7 +637,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
 
-      mats = _logDB.GetMaterialInQueue("q1").ToList();
+      mats = _logDB.GetMaterialInAllQueues().ToList();
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()

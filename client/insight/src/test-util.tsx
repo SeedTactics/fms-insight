@@ -55,7 +55,7 @@ export function mockComponent(name: string): (props: { [key: string]: object }) 
 }
 
 export async function createTestStore() {
-  const store = initStore({ useRouter: false });
+  const store = initStore();
   registerMockBackend();
   store.dispatch(events.loadLast30Days());
 

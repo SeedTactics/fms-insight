@@ -35,12 +35,11 @@ import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import Input from "@material-ui/core/Input";
 import FormControl from "@material-ui/core/FormControl";
-import { HashSet } from "prelude-ts";
 
-import * as routes from "../../data/routes";
-import { Store, connect } from "../../store/store";
+import { useSelector } from "../../store/store";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../data/current-status";
+import { RouteLocation, useCurrentRoute } from "../../data/routes";
 
 const toolbarStyle = {
   display: "flex",
@@ -61,14 +60,6 @@ const inHeaderStyle = {
 
 interface StationToolbarProps {
   readonly full: boolean;
-  readonly current_route: routes.State;
-  readonly insp_types: HashSet<string>;
-
-  readonly displayLoadStation: (num: number, queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
-  readonly displayInspection: (type: string | undefined) => void;
-  readonly displayWash: () => void;
-  readonly displayQueues: (queues: ReadonlyArray<string>, freeMaterial: boolean) => void;
-  readonly displayAllMaterial: () => void;
 }
 
 const freeMaterialSym = "@@insight_free_material@@";
@@ -83,64 +74,80 @@ enum StationMonitorType {
 }
 
 function StationToolbar(props: StationToolbarProps) {
+  const [route, setRoute] = useCurrentRoute();
+  const inspTypes = useSelector((st) => st.Events.last30.mat_summary.inspTypes);
   const queueNames = Object.keys(useRecoilValue(currentStatus).queues).sort();
 
   function setLoadNumber(valStr: string) {
     const val = parseFloat(valStr);
     if (!isNaN(val) && isFinite(val)) {
-      props.displayLoadStation(val, props.current_route.load_queues, props.current_route.load_free_material);
+      if (route.route === RouteLocation.Station_LoadMonitor) {
+        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, free: route.free, queues: route.queues });
+      } else {
+        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, free: false, queues: [] });
+      }
     }
   }
 
   function setInspType(type: string) {
-    props.displayInspection(type === allInspSym ? undefined : type);
+    if (type === allInspSym) {
+      setRoute({ route: RouteLocation.Station_InspectionMonitor });
+    } else {
+      setRoute({ route: RouteLocation.Station_InspectionMonitorWithType, inspType: type });
+    }
   }
 
   // the material-ui type bindings specify `e.target.value` to have type string, but
   // when multiple selects are enabled it is actually a type string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setLoadQueues(newQueuesAny: any) {
-    const newQueues = newQueuesAny as ReadonlyArray<string>;
+    let newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
-    props.displayLoadStation(
-      props.current_route.selected_load_id,
-      newQueues.filter((q) => q !== freeMaterialSym).slice(0, 3),
-      free
-    );
-  }
-
-  const loadqueues: string[] = [...props.current_route.load_queues];
-  if (props.current_route.load_free_material) {
-    loadqueues.push(freeMaterialSym);
+    newQueues = newQueues.filter((q) => q !== freeMaterialSym).slice(0, 3);
+    if (route.route === RouteLocation.Station_LoadMonitor) {
+      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: route.loadNum, free: free, queues: newQueues });
+    } else {
+      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, free: free, queues: newQueues });
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setStandaloneQueues(newQueuesAny: any) {
-    const newQueues = newQueuesAny as ReadonlyArray<string>;
+    let newQueues = newQueuesAny as ReadonlyArray<string>;
     const free = newQueues.includes(freeMaterialSym);
-    props.displayQueues(
-      newQueues.filter((q) => q !== freeMaterialSym),
-      free
-    );
-  }
-
-  const standalonequeues: string[] = [...props.current_route.standalone_queues];
-  if (props.current_route.standalone_free_material) {
-    standalonequeues.push(freeMaterialSym);
+    newQueues = newQueues.filter((q) => q !== freeMaterialSym);
+    setRoute({ route: RouteLocation.Station_Queues, free: free, queues: newQueues });
   }
 
   let curType = StationMonitorType.LoadUnload;
-  switch (props.current_route.current) {
-    case routes.RouteLocation.Station_LoadMonitor:
+  let loadNum = 1;
+  let curInspType: string | null = null;
+  let currentQueues: string[] = [];
+  switch (route.route) {
+    case RouteLocation.Station_LoadMonitor:
       curType = StationMonitorType.LoadUnload;
+      loadNum = route.loadNum;
+      currentQueues = [...route.queues];
+      if (route.free) {
+        currentQueues.push(freeMaterialSym);
+      }
       break;
-    case routes.RouteLocation.Station_InspectionMonitor:
+    case RouteLocation.Station_InspectionMonitor:
       curType = StationMonitorType.Inspection;
+      curInspType = "";
       break;
-    case routes.RouteLocation.Station_Queues:
+    case RouteLocation.Station_InspectionMonitorWithType:
+      curType = StationMonitorType.Inspection;
+      curInspType = route.inspType;
+      break;
+    case RouteLocation.Station_Queues:
       curType = StationMonitorType.Queues;
+      currentQueues = [...route.queues];
+      if (route.free) {
+        currentQueues.push(freeMaterialSym);
+      }
       break;
-    case routes.RouteLocation.Station_WashMonitor:
+    case RouteLocation.Station_WashMonitor:
       curType = StationMonitorType.Wash;
       break;
     default:
@@ -155,7 +162,7 @@ function StationToolbar(props: StationToolbarProps) {
           type="number"
           placeholder="Load Station Number"
           key="loadnumselect"
-          value={props.current_route.selected_load_id}
+          value={loadNum}
           onChange={(e) => setLoadNumber(e.target.value)}
           style={{ width: "3em", marginLeft: "1em" }}
         />
@@ -163,14 +170,14 @@ function StationToolbar(props: StationToolbarProps) {
       {curType === StationMonitorType.Inspection ? (
         <Select
           key="inspselect"
-          value={props.current_route.selected_insp_type || allInspSym}
+          value={curInspType || allInspSym}
           onChange={(e) => setInspType(e.target.value as string)}
           style={{ marginLeft: "1em" }}
         >
           <MenuItem key={allInspSym} value={allInspSym}>
             <em>All</em>
           </MenuItem>
-          {props.insp_types.toArray({ sortOn: (x) => x }).map((ty) => (
+          {inspTypes.toArray({ sortOn: (x) => x }).map((ty) => (
             <MenuItem key={ty} value={ty}>
               {ty}
             </MenuItem>
@@ -179,7 +186,7 @@ function StationToolbar(props: StationToolbarProps) {
       ) : undefined}
       {curType === StationMonitorType.LoadUnload ? (
         <FormControl style={{ marginLeft: "1em" }}>
-          {loadqueues.length === 0 ? (
+          {currentQueues.length === 0 ? (
             <label
               style={{
                 position: "absolute",
@@ -198,7 +205,7 @@ function StationToolbar(props: StationToolbarProps) {
             data-testid="station-monitor-queue-select"
             key="queueselect"
             displayEmpty
-            value={loadqueues}
+            value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ minWidth: "10em", marginTop: "0" }}
             onChange={(e) => setLoadQueues(e.target.value)}
@@ -216,7 +223,7 @@ function StationToolbar(props: StationToolbarProps) {
       ) : undefined}
       {curType === StationMonitorType.Queues ? (
         <FormControl style={{ marginLeft: "1em", minWidth: "10em" }}>
-          {standalonequeues.length === 0 ? (
+          {currentQueues.length === 0 ? (
             <label
               style={{
                 position: "absolute",
@@ -235,7 +242,7 @@ function StationToolbar(props: StationToolbarProps) {
             data-testid="station-monitor-queue-select"
             key="queueselect"
             displayEmpty
-            value={standalonequeues}
+            value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ marginTop: "0" }}
             onChange={(e) => setStandaloneQueues(e.target.value)}
@@ -255,16 +262,4 @@ function StationToolbar(props: StationToolbarProps) {
   );
 }
 
-export default connect(
-  (st: Store) => ({
-    current_route: st.Route,
-    insp_types: st.Events.last30.mat_summary.inspTypes,
-  }),
-  {
-    displayLoadStation: routes.displayLoadStation,
-    displayInspection: routes.displayInspectionType,
-    displayWash: routes.displayWash,
-    displayQueues: routes.displayQueues,
-    displayAllMaterial: () => ({ type: routes.RouteLocation.Operations_AllMaterial }),
-  }
-)(StationToolbar);
+export default StationToolbar;

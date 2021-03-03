@@ -34,7 +34,11 @@
         "FMS__AutomaticSerials": "true",
         "FMS__StartingSerial": "abcd",
         "FMS__QuarantineQueue": "QuarantineQ",
-        "SERVER__EnableDebugLog": "true"
+        "SERVER__EnableDebugLog": "true",
+        "SERVER__RequireExistingMaterialWhenAddingToQueue": "false",
+        "SERVER__RequireSerialWhenAddingMaterialToQueue": "false",
+        "SERVER__AddRawMaterialAsUnassigned": "true",
+        "SERVER__RequireOperatorNamePromptWhenAddingMaterial": "true"
       }
     },
     {

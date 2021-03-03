@@ -1077,7 +1077,7 @@ namespace MachineWatchTest
 
     protected void CheckMatInQueue(string queue, IEnumerable<TestMaterial> mats)
     {
-      jobLog.GetMaterialInQueue(queue).Should().BeEquivalentTo(mats.Select((m, idx) =>
+      jobLog.GetMaterialInAllQueues().Where(m => m.Queue == queue).Should().BeEquivalentTo(mats.Select((m, idx) =>
         new QueuedMaterial()
         {
           MaterialID = m.MaterialID,
@@ -1710,7 +1710,7 @@ namespace MachineWatchTest
       MovePallet(t, offset: 34, pal: 4, load: 1, elapMin: 34 - 16);
 
       //queue now has 9 elements
-      jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
+      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEquivalentTo(
         Enumerable.Range(1, 9).Select((i, idx) =>
           new QueuedMaterial()
           {
@@ -1732,7 +1732,7 @@ namespace MachineWatchTest
       MovePallet(t, offset: 45, pal: 5, load: 2, elapMin: 0);
       ExpectRemoveFromQueue(proc1path1, offset: 45, queue: "thequeue", startingPos: 0, elapMin: 45 - 15);
 
-      jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
+      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEquivalentTo(
         (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
             new QueuedMaterial()
             {
@@ -1759,7 +1759,7 @@ namespace MachineWatchTest
       MovePallet(t, offset: 66, pal: 5, load: 1, elapMin: 66 - 45);
       ExpectRemoveFromQueue(proc1path1snd, offset: 66, queue: "thequeue", startingPos: 3, elapMin: 66 - 33);
 
-      jobLog.GetMaterialInQueue("thequeue").Should().BeEquivalentTo(
+      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEquivalentTo(
         (new[] { 4, 5, 6 }).Select((i, idx) =>
             new QueuedMaterial()
             {
@@ -1780,7 +1780,7 @@ namespace MachineWatchTest
       MovePallet(t, offset: 74, pal: 7, load: 2, elapMin: 0);
       ExpectRemoveFromQueue(proc1path2, offset: 74, queue: "thequeue", startingPos: 0, elapMin: 74 - 27);
 
-      jobLog.GetMaterialInQueue("thequeue").Should().BeEmpty();
+      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEmpty();
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
 
