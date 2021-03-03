@@ -492,23 +492,13 @@
             "x-position": 2
           },
           {
-            "name": "pos",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 3
-          },
-          {
             "name": "operName",
             "in": "query",
             "schema": {
               "type": "string",
               "nullable": true
             },
-            "x-position": 5
+            "x-position": 4
           }
         ],
         "requestBody": {
@@ -521,7 +511,7 @@
             }
           },
           "required": true,
-          "x-position": 4
+          "x-position": 3
         },
         "responses": {
           "200": {
@@ -565,16 +555,6 @@
             "x-position": 2
           },
           {
-            "name": "pos",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 3
-          },
-          {
             "name": "qty",
             "in": "query",
             "schema": {
@@ -582,7 +562,7 @@
               "format": "int32",
               "default": 1
             },
-            "x-position": 5
+            "x-position": 4
           },
           {
             "name": "operName",
@@ -591,7 +571,7 @@
               "type": "string",
               "nullable": true
             },
-            "x-position": 6
+            "x-position": 5
           }
         ],
         "requestBody": {
@@ -607,7 +587,7 @@
             }
           },
           "required": true,
-          "x-position": 4
+          "x-position": 3
         },
         "responses": {
           "200": {
@@ -650,7 +630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/JobPlan"
+                  "$ref": "#/components/schemas/HistoricJob"
                 }
               }
             }
@@ -1020,29 +1000,7 @@
           "jobs"
         ],
         "operationId": "jobs_BulkRemoveMaterialFromQueues",
-        "consumes": [
-          "application/json-patch+json",
-          "application/json",
-          "text/json",
-          "application/*+json"
-        ],
         "parameters": [
-          {
-            "name": "id",
-            "in": "query",
-            "style": "form",
-            "explode": true,
-            "required": true,
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "integer",
-                "format": "int64"
-              }
-            },
-            "x-position": 1
-          },
           {
             "name": "operName",
             "in": "query",
@@ -1053,6 +1011,22 @@
             "x-position": 2
           }
         ],
+        "requestBody": {
+          "x-name": "id",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2256,6 +2230,13 @@
             "type": "string",
             "format": "time-span"
           },
+          "details": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
           "tools": {
             "type": "object",
             "nullable": true,
@@ -2456,7 +2437,7 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/JobPlan"
+              "$ref": "#/components/schemas/Job"
             }
           },
           "StationUse": {
@@ -2498,9 +2479,334 @@
           }
         }
       },
-      "JobPlan": {
+      "Job": {
         "type": "object",
-        "additionalProperties": false
+        "additionalProperties": false,
+        "required": [
+          "Unique",
+          "RouteStartUTC",
+          "RouteEndUTC",
+          "Archived",
+          "PartName",
+          "ManuallyCreated",
+          "CyclesOnFirstProcess",
+          "ProcsAndPaths"
+        ],
+        "properties": {
+          "Unique": {
+            "type": "string"
+          },
+          "RouteStartUTC": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "RouteEndUTC": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "Archived": {
+            "type": "boolean"
+          },
+          "PartName": {
+            "type": "string"
+          },
+          "Comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "Bookings": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "ManuallyCreated": {
+            "type": "boolean"
+          },
+          "HoldEntireJob": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HoldPattern"
+              }
+            ]
+          },
+          "CyclesOnFirstProcess": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "ProcsAndPaths": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcessInfo"
+            }
+          }
+        }
+      },
+      "HoldPattern": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "UserHold",
+          "ReasonForUserHold",
+          "HoldUnholdPattern",
+          "HoldUnholdPatternStartUTC",
+          "HoldUnholdPatternRepeats"
+        ],
+        "properties": {
+          "UserHold": {
+            "type": "boolean"
+          },
+          "ReasonForUserHold": {
+            "type": "string"
+          },
+          "HoldUnholdPattern": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "time-span"
+            }
+          },
+          "HoldUnholdPatternStartUTC": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "HoldUnholdPatternRepeats": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProcessInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "paths"
+        ],
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcPathInfo"
+            }
+          }
+        }
+      },
+      "ProcPathInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "PathGroup",
+          "Pallets",
+          "Load",
+          "Unload",
+          "Stops",
+          "SimulatedStartingUTC",
+          "SimulatedAverageFlowTime",
+          "PartsPerPallet"
+        ],
+        "properties": {
+          "PathGroup": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Pallets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "Fixture": {
+            "type": "string",
+            "nullable": true
+          },
+          "Face": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "Load": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "ExpectedLoadTime": {
+            "type": "string",
+            "format": "time-span"
+          },
+          "Unload": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "ExpectedUnloadTime": {
+            "type": "string",
+            "format": "time-span"
+          },
+          "Stops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MachiningStop"
+            }
+          },
+          "SimulatedProduction": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedProduction"
+            }
+          },
+          "SimulatedStartingUTC": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "SimulatedAverageFlowTime": {
+            "type": "string",
+            "format": "time-span"
+          },
+          "HoldMachining": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HoldPattern"
+              }
+            ]
+          },
+          "HoldLoadUnload": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HoldPattern"
+              }
+            ]
+          },
+          "PartsPerPallet": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "InputQueue": {
+            "type": "string",
+            "nullable": true
+          },
+          "OutputQueue": {
+            "type": "string",
+            "nullable": true
+          },
+          "Inspections": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/PathInspection"
+            }
+          },
+          "Casting": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "MachiningStop": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "StationGroup",
+          "StationNums",
+          "Tools",
+          "ExpectedCycleTime"
+        ],
+        "properties": {
+          "StationGroup": {
+            "type": "string"
+          },
+          "StationNums": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "Program": {
+            "type": "string",
+            "nullable": true
+          },
+          "ProgramRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "Tools": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "time-span"
+            }
+          },
+          "ExpectedCycleTime": {
+            "type": "string",
+            "format": "time-span"
+          }
+        }
+      },
+      "SimulatedProduction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "TimeUTC",
+          "Quantity"
+        ],
+        "properties": {
+          "TimeUTC": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "Quantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PathInspection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "InspectionType",
+          "Counter",
+          "MaxVal",
+          "RandomFreq",
+          "TimeInterval"
+        ],
+        "properties": {
+          "InspectionType": {
+            "type": "string"
+          },
+          "Counter": {
+            "type": "string"
+          },
+          "MaxVal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "RandomFreq": {
+            "type": "number",
+            "format": "double"
+          },
+          "TimeInterval": {
+            "type": "string",
+            "format": "time-span"
+          },
+          "ExpectedInspectionTime": {
+            "type": "string",
+            "format": "time-span",
+            "nullable": true
+          }
+        }
       },
       "SimulatedStationUtilization": {
         "type": "object",
@@ -2657,7 +2963,7 @@
             "type": "object",
             "nullable": true,
             "additionalProperties": {
-              "$ref": "#/components/schemas/InProcessJob"
+              "$ref": "#/components/schemas/ActiveJob"
             }
           },
           "Pallets": {
@@ -2690,16 +2996,105 @@
           }
         }
       },
-      "InProcessJob": {
+      "ActiveJob": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/JobPlan"
+            "$ref": "#/components/schemas/HistoricJob"
           },
           {
             "type": "object",
-            "additionalProperties": false
+            "additionalProperties": false,
+            "properties": {
+              "Completed": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32"
+                  }
+                }
+              },
+              "Precedence": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int64"
+                  }
+                }
+              },
+              "AssignedWorkorders": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
           }
         ]
+      },
+      "HistoricJob": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Job"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "CopiedToSystem"
+            ],
+            "properties": {
+              "ScheduleId": {
+                "type": "string",
+                "nullable": true
+              },
+              "CopiedToSystem": {
+                "type": "boolean"
+              },
+              "Decrements": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/DecrementQuantity"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DecrementQuantity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "DecrementId",
+          "Proc1Path",
+          "TimeUTC",
+          "Quantity"
+        ],
+        "properties": {
+          "DecrementId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "Proc1Path": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TimeUTC": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "Quantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       },
       "PalletStatus": {
         "type": "object",
@@ -3077,54 +3472,6 @@
           }
         }
       },
-      "HistoricJob": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/JobPlan"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "Decrements": {
-                "type": "array",
-                "nullable": true,
-                "items": {
-                  "$ref": "#/components/schemas/DecrementQuantity"
-                }
-              }
-            }
-          }
-        ]
-      },
-      "DecrementQuantity": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "DecrementId",
-          "Proc1Path",
-          "TimeUTC",
-          "Quantity"
-        ],
-        "properties": {
-          "DecrementId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "Proc1Path": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "TimeUTC": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "Quantity": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "PlannedSchedule": {
         "type": "object",
         "additionalProperties": false,
@@ -3142,7 +3489,7 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/JobPlan"
+              "$ref": "#/components/schemas/HistoricJob"
             }
           },
           "ExtraParts": {

@@ -567,12 +567,22 @@ namespace DebugMachineWatchApiServer
           typeof(BlackMaple.MachineWatchInterface.CurrentStatus),
           _jsonSettings
         );
-        curSt = curSt with { TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset) };
-
-        foreach (var uniq in curSt.Jobs.Keys)
+        curSt = curSt with
         {
-          //MockServerBackend.OffsetJob(curSt.Jobs[uniq], offset);
-        }
+          TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset),
+          Jobs = curSt.Jobs.Values
+            .Select(j =>
+              OffsetJob(j, offset).CloneToDerived<ActiveJob, Job>() with
+              {
+                ScheduleId = j.ScheduleId,
+                CopiedToSystem = j.CopiedToSystem,
+                Decrements = j.Decrements,
+                Completed = j.Completed,
+                Precedence = j.Precedence,
+                AssignedWorkorders = j.AssignedWorkorders,
+              }
+            ).ToImmutableDictionary(j => j.UniqueStr, j => j)
+        };
         Statuses.Add(name, curSt);
       }
 
@@ -585,7 +595,6 @@ namespace DebugMachineWatchApiServer
       {
         CurrentStatus = Statuses[statusFromEnv];
       }
-      throw new NotImplementedException(); // offset status job
     }
 
     public static Job OffsetJob(Job originalJob, TimeSpan offset)
