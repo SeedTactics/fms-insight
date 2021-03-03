@@ -581,7 +581,7 @@ namespace MachineWatchTest
         UserHold = h.UserHold,
         ReasonForUserHold = h.ReasonForUserHold,
         HoldUnholdPatternStartUTC = h.HoldUnholdPatternStartUTC,
-        HoldUnholdPattern = h.HoldUnholdPattern.ToArray(),
+        HoldUnholdPattern = h.HoldUnholdPattern.ToImmutableList(),
         HoldUnholdPatternRepeats = h.HoldUnholdPatternRepeats
       };
     }
@@ -595,7 +595,7 @@ namespace MachineWatchTest
         // ignoring obsolete job-level inspections
         // ignoring Priority, CreateMarkingData
         ManuallyCreated = job.ManuallyCreatedJob,
-        BookingIds = job.ScheduledBookingIds.ToArray(),
+        BookingIds = job.ScheduledBookingIds.ToImmutableList(),
         ScheduleId = job.ScheduleId,
         UniqueStr = job.UniqueStr,
         PartName = job.PartName,
@@ -622,10 +622,10 @@ namespace MachineWatchTest
                 {
                   TimeUTC = s.TimeUTC,
                   Quantity = s.Quantity
-                }).ToList(),
+                }).ToImmutableList(),
                 Stops = job.GetMachiningStop(proc, path).Select(stop => new MachiningStop()
                 {
-                  Stations = stop.Stations.ToArray(),
+                  Stations = stop.Stations.ToImmutableList(),
                   Program = stop.ProgramName,
                   ProgramRevision = stop.ProgramRevision,
                   Tools = stop.Tools.ToImmutableDictionary(k => k.Key, k => k.Value),
@@ -633,12 +633,12 @@ namespace MachineWatchTest
                   ExpectedCycleTime = stop.ExpectedCycleTime
                 }).ToList(),
                 Casting = proc == 1 ? job.GetCasting(path) : null,
-                Unload = job.UnloadStations(proc, path).ToList(),
+                Unload = job.UnloadStations(proc, path).ToImmutableList(),
                 ExpectedLoadTime = job.GetExpectedLoadTime(proc, path),
-                Load = job.LoadStations(proc, path).ToList(),
+                Load = job.LoadStations(proc, path).ToImmutableList(),
                 Face = job.PlannedFixture(proc, path).face,
                 Fixture = job.PlannedFixture(proc, path).fixture,
-                Pallets = job.PlannedPallets(proc, path).ToList(),
+                Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
                 PathGroup = job.GetPathGroup(proc, path),
                 Inspections =
                   job.PathInspections(proc, path).Select(i => new PathInspection()
@@ -650,7 +650,7 @@ namespace MachineWatchTest
                     TimeInterval = i.TimeInterval,
                     ExpectedInspectionTime = i.ExpectedInspectionTime
                   }
-                  ).ToList()
+                  ).ToImmutableList()
               }
             ).ToList()
           }

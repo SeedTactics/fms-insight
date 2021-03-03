@@ -611,7 +611,7 @@ namespace DebugMachineWatchApiServer
             SimulatedProduction = path.SimulatedProduction.Select(prod => prod with
             {
               TimeUTC = prod.TimeUTC.Add(offset)
-            }).ToArray()
+            }).ToImmutableList()
           }).ToArray()
         }).ToArray();
       });

@@ -459,9 +459,9 @@ namespace MazakMachineInterface
           removeStr = ConvertStatIntV2ToV1(Convert.ToInt32(removeStr));
         }
 
-        var loads = new List<int>();
-        var unloads = new List<int>();
-        var machines = new List<int>();
+        var loads = ImmutableList.CreateBuilder<int>();
+        var unloads = ImmutableList.CreateBuilder<int>();
+        var machines = ImmutableList.CreateBuilder<int>();
         foreach (char c in fixStr)
           if (c != '0')
             loads.Add(int.Parse(c.ToString()));
@@ -479,14 +479,14 @@ namespace MazakMachineInterface
         var routeStop = new MachiningStop()
         {
           StationGroup = machineGroupName.MachineGroupName,
-          Stations = machines,
+          Stations = machines.ToImmutable(),
           Program = partProcRow.MainProgram,
           ProgramRevision = null,
           ExpectedCycleTime = dbPath?.Stops?.FirstOrDefault()?.ExpectedCycleTime ?? TimeSpan.Zero
         };
 
         //Planned Pallets
-        var pals = new HashSet<string>();
+        var pals = ImmutableList.CreateBuilder<string>();
         foreach (var palRow in mazakData.Pallets)
         {
           if (palRow.PalletNumber > 0 && palRow.Fixture == partProcRow.Fixture)
@@ -498,12 +498,12 @@ namespace MazakMachineInterface
         job.Processes[partProcRow.ProcessNumber - 1][path - 1] = new ProcPathInfo()
         {
           PathGroup = dbPath?.PathGroup ?? path,
-          Pallets = pals.ToArray(),
+          Pallets = pals.ToImmutable(),
           Fixture = dbPath?.Fixture,
           Face = dbPath?.Face,
-          Load = loads,
+          Load = loads.ToImmutable(),
           ExpectedLoadTime = dbPath?.ExpectedLoadTime ?? TimeSpan.Zero,
-          Unload = unloads,
+          Unload = unloads.ToImmutable(),
           ExpectedUnloadTime = dbPath?.ExpectedUnloadTime ?? TimeSpan.Zero,
           Stops = new[] { routeStop },
           SimulatedProduction = dbPath?.SimulatedProduction,
@@ -1062,7 +1062,7 @@ namespace MazakMachineInterface
       return new string(ret);
     }
 
-    private static IReadOnlyList<T> EmptyToNull<T>(IReadOnlyList<T> x)
+    private static ImmutableList<T> EmptyToNull<T>(ImmutableList<T> x)
     {
       if (x == null || x.Count == 0)
         return null;

@@ -48,7 +48,7 @@ namespace BlackMaple.MachineFramework
     private record PathStopRow
     {
       public string StationGroup { get; init; } = "";
-      public List<int> Stations { get; } = new List<int>();
+      public ImmutableList<int>.Builder Stations { get; } = ImmutableList.CreateBuilder<int>();
       public string Program { get; init; }
       public long? ProgramRevision { get; init; }
       public ImmutableDictionary<string, TimeSpan>.Builder Tools { get; } = ImmutableDictionary.CreateBuilder<string, TimeSpan>();
@@ -59,7 +59,7 @@ namespace BlackMaple.MachineFramework
     {
       public bool UserHold { get; init; }
       public string ReasonForUserHold { get; init; } = "";
-      public List<TimeSpan> HoldUnholdPattern { get; } = new List<TimeSpan>();
+      public ImmutableList<TimeSpan>.Builder HoldUnholdPattern { get; } = ImmutableList.CreateBuilder<TimeSpan>();
       public DateTime HoldUnholdPatternStartUTC { get; init; }
       public bool HoldUnholdPatternRepeats { get; init; }
 
@@ -69,7 +69,7 @@ namespace BlackMaple.MachineFramework
         {
           UserHold = this.UserHold,
           ReasonForUserHold = this.ReasonForUserHold,
-          HoldUnholdPattern = this.HoldUnholdPattern,
+          HoldUnholdPattern = this.HoldUnholdPattern.ToImmutable(),
           HoldUnholdPatternRepeats = this.HoldUnholdPatternRepeats,
           HoldUnholdPatternStartUTC = this.HoldUnholdPatternStartUTC
         };
@@ -91,11 +91,11 @@ namespace BlackMaple.MachineFramework
       public string Fixture { get; init; }
       public int? Face { get; init; }
       public string Casting { get; init; }
-      public List<int> Loads { get; } = new List<int>();
-      public List<int> Unloads { get; } = new List<int>();
-      public List<PathInspection> Insps { get; } = new List<PathInspection>();
-      public List<string> Pals { get; } = new List<string>();
-      public List<SimulatedProduction> SimProd { get; } = new List<SimulatedProduction>();
+      public ImmutableList<int>.Builder Loads { get; } = ImmutableList.CreateBuilder<int>();
+      public ImmutableList<int>.Builder Unloads { get; } = ImmutableList.CreateBuilder<int>();
+      public ImmutableList<PathInspection>.Builder Insps { get; } = ImmutableList.CreateBuilder<PathInspection>();
+      public ImmutableList<string>.Builder Pals { get; } = ImmutableList.CreateBuilder<string>();
+      public ImmutableList<SimulatedProduction>.Builder SimProd { get; } = ImmutableList.CreateBuilder<SimulatedProduction>();
       public SortedList<int, PathStopRow> Stops { get; } = new SortedList<int, PathStopRow>();
       public HoldRow MachHold { get; set; } = null;
       public HoldRow LoadHold { get; set; } = null;
@@ -104,7 +104,7 @@ namespace BlackMaple.MachineFramework
     private record JobDetails
     {
       public IReadOnlyList<int> CyclesOnFirstProc { get; init; }
-      public IReadOnlyList<string> Bookings { get; init; }
+      public ImmutableList<string> Bookings { get; init; }
       public IReadOnlyList<ProcessInfo> Procs { get; init; }
       public HoldRow Hold { get; init; }
     }
@@ -129,7 +129,7 @@ namespace BlackMaple.MachineFramework
 
         //scheduled bookings
         cmd.CommandText = "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq";
-        var bookings = new List<string>();
+        var bookings = ImmutableList.CreateBuilder<string>();
         using (IDataReader reader = cmd.ExecuteReader())
         {
           while (reader.Read())
@@ -414,7 +414,7 @@ namespace BlackMaple.MachineFramework
         {
           Hold = jobHold,
           CyclesOnFirstProc = cyclesOnFirstProc.Values.ToArray(),
-          Bookings = bookings,
+          Bookings = bookings.ToImmutable(),
           Procs =
             pathDatRows.Values
             .GroupBy(p => p.Process)
@@ -426,23 +426,23 @@ namespace BlackMaple.MachineFramework
                 .Select(p => new ProcPathInfo()
                 {
                   PathGroup = p.PathGroup,
-                  Pallets = p.Pals,
+                  Pallets = p.Pals.ToImmutable(),
                   Fixture = p.Fixture,
                   Face = p.Face,
-                  Load = p.Loads,
+                  Load = p.Loads.ToImmutable(),
                   ExpectedLoadTime = p.LoadTime,
-                  Unload = p.Unloads,
+                  Unload = p.Unloads.ToImmutable(),
                   ExpectedUnloadTime = p.UnloadTime,
                   Stops = p.Stops.Values.Select(s => new MachiningStop()
                   {
                     StationGroup = s.StationGroup,
-                    Stations = s.Stations,
+                    Stations = s.Stations.ToImmutable(),
                     Program = s.Program,
                     ProgramRevision = s.ProgramRevision,
                     Tools = s.Tools.ToImmutable(),
                     ExpectedCycleTime = s.ExpectedCycleTime
                   }).ToArray(),
-                  SimulatedProduction = p.SimProd,
+                  SimulatedProduction = p.SimProd.ToImmutable(),
                   SimulatedStartingUTC = p.StartingUTC,
                   SimulatedAverageFlowTime = p.SimAverageFlowTime,
                   HoldMachining = p.MachHold?.ToHoldPattern(),
@@ -450,7 +450,7 @@ namespace BlackMaple.MachineFramework
                   PartsPerPallet = p.PartsPerPallet,
                   InputQueue = p.InputQueue,
                   OutputQueue = p.OutputQueue,
-                  Inspections = p.Insps.Count == 0 ? null : p.Insps,
+                  Inspections = p.Insps.Count == 0 ? null : p.Insps.ToImmutable(),
                   Casting = p.Casting
                 })
                 .ToArray()
@@ -1904,7 +1904,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<DecrementQuantity> LoadDecrementsForJob(string unique)
+    public ImmutableList<DecrementQuantity> LoadDecrementsForJob(string unique)
     {
       lock (_cfg)
       {
@@ -1912,14 +1912,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private List<DecrementQuantity> LoadDecrementsForJob(IDbTransaction trans, string unique)
+    private ImmutableList<DecrementQuantity> LoadDecrementsForJob(IDbTransaction trans, string unique)
     {
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
         cmd.CommandText = "SELECT DecrementId,Proc1Path,TimeUTC,Quantity FROM job_decrements WHERE JobUnique = $uniq";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-        var ret = new List<DecrementQuantity>();
+        var ret = ImmutableList.CreateBuilder<DecrementQuantity>();
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
@@ -1933,7 +1933,7 @@ namespace BlackMaple.MachineFramework
             };
             ret.Add(j);
           }
-          return ret;
+          return ret.ToImmutable();
         }
       }
     }

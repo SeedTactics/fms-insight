@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
 {
@@ -60,7 +61,7 @@ namespace BlackMaple.MachineFramework
     string ForeignIDForCounter(long counter);
     bool CycleExists(DateTime endUTC, string pal, MachineWatchInterface.LogType logTy, string locName, int locNum);
     List<MachineWatchInterface.WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders);
-    List<string> GetWorkordersForUnique(string jobUnique);
+    ImmutableList<string> GetWorkordersForUnique(string jobUnique);
 
     // --------------------------------------------------------------------------------
     // Adding Events
@@ -192,7 +193,7 @@ namespace BlackMaple.MachineFramework
     // Decrements
     // --------------------------------------------------------------------------------
     void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null, IEnumerable<RemovedBooking> removedBookings = null);
-    List<DecrementQuantity> LoadDecrementsForJob(string unique);
+    ImmutableList<DecrementQuantity> LoadDecrementsForJob(string unique);
     List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId);
     List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC);
 

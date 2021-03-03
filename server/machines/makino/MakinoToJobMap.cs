@@ -129,11 +129,11 @@ namespace Makino
 
         if (jobNum == 1)
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j => j.AdjustPath(proc, 1, p => p.Load = p.Load.Append(loc.Num).ToArray());
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j => j.AdjustPath(proc, 1, p => p.Load.Add(loc.Num));
         }
         else
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j => j.AdjustPath(proc, 1, p => p.Unload = p.Unload.Append(loc.Num).ToArray());
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j => j.AdjustPath(proc, 1, p => p.Unload.Add(loc.Num));
         }
       }
       else
@@ -144,12 +144,12 @@ namespace Makino
           {
             StationGroup = "MC",
             Program = _programs[jobID],
-            Stations = new[] { loc.Num }
+            Stations = ImmutableList.Create(loc.Num)
           });
         }
         else
         {
-          _stops[jobID] %= s => s.Stations = s.Stations.Append(loc.Num).ToArray();
+          _stops[jobID] %= s => s.Stations.Add(loc.Num);
         }
       }
     }
@@ -181,7 +181,7 @@ namespace Makino
 
       if (pals == null) return;
 
-      _byPartID[_procIDToPartID[processID]] %= j => j.AdjustPath(procNum, 1, p => p.Pallets = p.Pallets.Concat(pals.Select(pal => pal.ToString())).ToArray());
+      _byPartID[_procIDToPartID[processID]] %= j => j.AdjustPath(procNum, 1, p => p.Pallets.AddRange(pals.Select(pal => pal.ToString())));
     }
 
     public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)

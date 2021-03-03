@@ -117,7 +117,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         elapsed: TimeSpan.FromMinutes(10),
         active: TimeSpan.Zero
       );
-      var job1Decrements = new[] {
+      var job1Decrements = ImmutableList.Create(
         new DecrementQuantity()
         {
           DecrementId = 0,
@@ -125,7 +125,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
           Quantity = 30
         }
-      };
+      );
 
       // a second job with the same  route starting time and earlier simulated starting time
       var j2 = new JobPlan("u2", 1);

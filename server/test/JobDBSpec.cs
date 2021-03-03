@@ -101,7 +101,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = addAsCopied,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       };
 
       _jobDB.LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10)).Should().BeEquivalentTo(
@@ -175,7 +175,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId2,
         CopiedToSystem = true,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       };
 
       _jobDB.LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10)).Should().BeEquivalentTo(
@@ -242,7 +242,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
@@ -271,7 +271,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
@@ -354,7 +354,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = false,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       };
 
       _jobDB.LoadJobsNotCopiedToSystem(job1.RouteStartUTC.AddHours(-10), job1.RouteStartUTC.AddHours(-5))
@@ -389,7 +389,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
@@ -416,7 +416,7 @@ namespace MachineWatchTest
       _jobDB.LoadJobsNotCopiedToSystem(now, now).Should().BeEquivalentTo(
         new[] { job1.CloneToDerived<HistoricJob, Job>() with {
           CopiedToSystem = false,
-          Decrements = new DecrementQuantity[] {}
+        Decrements = ImmutableList<DecrementQuantity>.Empty
         }}
       );
 
@@ -469,19 +469,31 @@ namespace MachineWatchTest
         }
       };
 
-      var expected1Job1 = new[] {
-        new DecrementQuantity() {
-          DecrementId = 0, Proc1Path = 1, TimeUTC = time1, Quantity = 53
+      var expected1Job1 = ImmutableList.Create(
+        new DecrementQuantity()
+        {
+          DecrementId = 0,
+          Proc1Path = 1,
+          TimeUTC = time1,
+          Quantity = 53
         },
-        new DecrementQuantity() {
-          DecrementId = 0, Proc1Path = 2, TimeUTC = time1, Quantity = 77
+        new DecrementQuantity()
+        {
+          DecrementId = 0,
+          Proc1Path = 2,
+          TimeUTC = time1,
+          Quantity = 77
         }
-      };
-      var expected1Job2 = new[] {
-        new DecrementQuantity() {
-          DecrementId = 0, Proc1Path = 1, TimeUTC = time1, Quantity = 821
+      );
+      var expected1Job2 = ImmutableList.Create(
+        new DecrementQuantity()
+        {
+          DecrementId = 0,
+          Proc1Path = 1,
+          TimeUTC = time1,
+          Quantity = 821
         }
-      };
+      );
 
       _jobDB.LoadDecrementQuantitiesAfter(-1).Should().BeEquivalentTo(expected1JobAndDecr);
 
@@ -617,7 +629,7 @@ namespace MachineWatchTest
       _jobDB.LoadJob(job.UniqueStr).Should().BeEquivalentTo(job.CloneToDerived<HistoricJob, Job>() with
       {
         CopiedToSystem = true,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       });
 
       var now = DateTime.UtcNow;
@@ -645,20 +657,22 @@ namespace MachineWatchTest
       {
         Archived = true,
         CopiedToSystem = true,
-        Decrements = new[] {
-          new DecrementQuantity() {
+        Decrements = ImmutableList.Create(
+          new DecrementQuantity()
+          {
             DecrementId = 0,
             TimeUTC = now,
             Proc1Path = 1,
             Quantity = 44
           },
-          new DecrementQuantity() {
+          new DecrementQuantity()
+          {
             DecrementId = 0,
             TimeUTC = now,
             Proc1Path = 2,
             Quantity = 563
           }
-        }
+        )
       });
     }
 
@@ -764,7 +778,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       });
 
       _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(initialWorks);
@@ -1346,7 +1360,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = new DecrementQuantity[] { }
+        Decrements = ImmutableList<DecrementQuantity>.Empty
       });
 
       _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(initialWorks);
