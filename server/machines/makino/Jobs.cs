@@ -36,7 +36,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
-using Germinate;
 
 namespace Makino
 {
@@ -79,7 +78,7 @@ namespace Makino
       {
         newJ = newJ with
         {
-          Jobs = newJ.Jobs.Select(j => j.AdjustAllPaths((_, _, path) =>
+          Jobs = newJ.Jobs.Select(j => j.AdjustAllPaths(path =>
           {
             path.Stops.AdjustAll(stop => stop.StationGroup = "MC");
           })).ToImmutableList(),

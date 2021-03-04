@@ -36,7 +36,6 @@ using System.Linq;
 using System.Data;
 using System.Collections.Generic;
 using Microsoft.Data.Sqlite;
-using Germinate;
 using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
@@ -755,7 +754,7 @@ namespace BlackMaple.MachineFramework
             {
               WorkorderId = w
             };
-            ret.Add(emptySummary.Produce(summary =>
+            ret.Add(emptySummary % (summary =>
             {
               var partMap = new Dictionary<string, MachineWatchInterface.WorkorderPartSummary>();
 
@@ -2021,23 +2020,22 @@ namespace BlackMaple.MachineFramework
               updateMatsCmd.Parameters[1].Value = evt.Counter;
               updateMatsCmd.ExecuteNonQuery();
 
-              changedLogEntries.Add(evt with
+              changedLogEntries.Add(evt % ((evtDraft) =>
               {
-                Material =
-                evt.Material.Select(m =>
-                  m.MaterialID == oldMatId
-                    ? new MachineWatchInterface.LogMaterial(
-                        matID: newMatId,
-                        uniq: oldMatDetails.JobUnique,
-                        proc: oldMatProc,
-                        part: newMatDetails.PartName,
-                        numProc: oldMatDetails.NumProcesses,
-                        serial: newMatDetails.Serial ?? "",
-                        workorder: newMatDetails.Workorder ?? "",
-                        face: m.Face)
-                    : m
-                ).ToImmutableList()
-              });
+                for (int i = 0; i < evtDraft.Material.Count; i++)
+                {
+                  if (evtDraft.Material[i].MaterialID == oldMatId)
+                  {
+                    evtDraft.Material[i] %= draftMat =>
+                    {
+                      draftMat.MaterialID = newMatId;
+                      draftMat.PartName = newMatDetails.PartName;
+                      draftMat.Serial = newMatDetails.Serial ?? "";
+                      draftMat.Workorder = newMatDetails.Workorder ?? "";
+                    };
+                  }
+                }
+              }));
             }
           }
 

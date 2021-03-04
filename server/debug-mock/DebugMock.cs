@@ -603,7 +603,7 @@ namespace DebugMachineWatchApiServer
       {
         j.RouteStartUTC = j.RouteStartUTC.Add(offset);
         j.RouteEndUTC = j.RouteEndUTC.Add(offset);
-        j.AdjustAllPaths((_, _, path) =>
+        j.AdjustAllPaths(path =>
         {
           path.SimulatedStartingUTC += offset;
           path.SimulatedProduction.AdjustAll(prod => prod.TimeUTC += offset);
