@@ -155,7 +155,7 @@ namespace BlackMaple.MachineFramework
 
   }
 
-  [DataContract]
+  [DataContract, Draftable]
   public record SimulatedProduction
   {
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
@@ -166,7 +166,7 @@ namespace BlackMaple.MachineFramework
   public record ProcessInfo
   {
     [DataMember(Name = "paths", IsRequired = true)]
-    public IReadOnlyList<ProcPathInfo> Paths { get; init; } = new ProcPathInfo[] { };
+    public ImmutableList<ProcPathInfo> Paths { get; init; } = ImmutableList<ProcPathInfo>.Empty;
 
     public static ProcessInfo operator %(ProcessInfo v, Action<IProcessInfoDraft> f) => v.Produce(f);
   }
@@ -199,7 +199,7 @@ namespace BlackMaple.MachineFramework
     public TimeSpan ExpectedUnloadTime { get; init; }
 
     [DataMember(IsRequired = true)]
-    public IReadOnlyList<MachiningStop> Stops { get; init; } = new MachiningStop[] { };
+    public ImmutableList<MachiningStop> Stops { get; init; } = ImmutableList<MachiningStop>.Empty;
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedProduction>? SimulatedProduction { get; init; }
@@ -265,10 +265,10 @@ namespace BlackMaple.MachineFramework
     public HoldPattern? HoldJob { get; init; }
 
     [DataMember(Name = "CyclesOnFirstProcess", IsRequired = true)]
-    public IReadOnlyList<int> CyclesOnFirstProcess { get; init; } = new int[] { };
+    public ImmutableList<int> CyclesOnFirstProcess { get; init; } = ImmutableList<int>.Empty;
 
     [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
-    public IReadOnlyList<ProcessInfo> Processes { get; init; } = new ProcessInfo[] { };
+    public ImmutableList<ProcessInfo> Processes { get; init; } = ImmutableList<ProcessInfo>.Empty;
 
 #pragma warning disable CS0169
     // priority, CreateMarkingData, and Inspections field is no longer used but this is kept for backwards network compatibility
@@ -311,15 +311,15 @@ namespace BlackMaple.MachineFramework
   public record ActiveJob : HistoricJob
   {
     [DataMember(Name = "Completed", IsRequired = false)]
-    public IReadOnlyList<IReadOnlyList<int>>? Completed { get; init; }
+    public ImmutableList<ImmutableList<int>>? Completed { get; init; }
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
     [DataMember(Name = "Precedence", IsRequired = false)]
-    public IReadOnlyList<IReadOnlyList<long>>? Precedence { get; init; }
+    public ImmutableList<ImmutableList<long>>? Precedence { get; init; }
 
     [DataMember(Name = "AssignedWorkorders", IsRequired = false)]
-    public IReadOnlyList<string>? AssignedWorkorders { get; init; }
+    public ImmutableList<string>? AssignedWorkorders { get; init; }
 
     public static ActiveJob operator %(ActiveJob j, Action<IActiveJobDraft> f) => j.Produce(f);
   }
@@ -333,30 +333,85 @@ namespace BlackMaple.MachineFramework
 
     public static void AdjustPath(this IJobDraft job, int proc, int path, Action<IProcPathInfoDraft> f)
     {
-      job.Processes = job.Processes.Select((p, procIdx) =>
+      job.Processes[proc - 1] %= procDraft =>
       {
-        if (procIdx == proc - 1)
+        procDraft.Paths[path - 1] %= f;
+      };
+    }
+
+    public static Job AdjustAllPaths(this Job job, Action<int, int, IProcPathInfoDraft> f)
+    {
+      return job.Produce(d => AdjustAllPaths(d, f));
+    }
+
+    public static void AdjustAllPaths(this IJobDraft job, Action<int, int, IProcPathInfoDraft> f)
+    {
+      for (int proc = 0; proc < job.Processes.Count; proc++)
+      {
+        job.Processes[proc] %= draftProc =>
         {
-          return new ProcessInfo()
+          for (int path = 0; path < draftProc.Paths.Count; path++)
           {
-            Paths = p.Paths.Select((pathR, pathIdx) =>
-            {
-              if (pathIdx == path - 1)
-              {
-                return pathR % f;
-              }
-              else
-              {
-                return pathR;
-              }
-            }).ToArray()
-          };
-        }
-        else
-        {
-          return p;
-        }
-      }).ToArray();
+            draftProc.Paths[path] %= p => f(proc + 1, path + 1, p);
+          }
+        };
+      }
+    }
+
+    public static void AdjustAll(this ImmutableList<ProcessInfo>.Builder b, Action<IProcessInfoDraft> f)
+    {
+      for (int i = 0; i < b.Count; i++)
+      {
+        b[i] = b[i].Produce(f);
+      }
+    }
+
+    public static void AdjustAll(this ImmutableList<ProcessInfo>.Builder b, Action<IProcessInfoDraft, int> f)
+    {
+      for (int i = 0; i < b.Count; i++)
+      {
+        b[i] = b[i].Produce(p => f(p, i));
+      }
+    }
+
+    public static void AdjustAll(this ImmutableList<ProcPathInfo>.Builder b, Action<IProcPathInfoDraft> f)
+    {
+      for (int i = 0; i < b.Count; i++)
+      {
+        b[i] = b[i].Produce(f);
+      }
+    }
+
+    public static void AdjustAll(this ImmutableList<ProcPathInfo>.Builder b, Action<IProcPathInfoDraft, int> f)
+    {
+      for (int i = 0; i < b.Count; i++)
+      {
+        b[i] = b[i].Produce(p => f(p, i));
+      }
+    }
+
+    public static void AdjustAll(this ImmutableList<MachiningStop>.Builder b, Action<IMachiningStopDraft> f)
+    {
+      for (int i = 0; i < b.Count; i++)
+      {
+        b[i] = b[i].Produce(f);
+      }
+    }
+
+    public static void AdjustAll(this ImmutableList<MachiningStop>.Builder b, Action<IMachiningStopDraft, int> f)
+    {
+      for (int i = 0; i < b.Count; i++)
+      {
+        b[i] = b[i].Produce(p => f(p, i));
+      }
+    }
+
+    public static void AdjustAll(this ImmutableList<SimulatedProduction>.Builder b, Action<ISimulatedProductionDraft> f)
+    {
+      for (int i = 0; i < b.Count; i++)
+      {
+        b[i] = b[i].Produce(f);
+      }
     }
   }
 }

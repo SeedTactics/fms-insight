@@ -302,11 +302,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           ScheduleId = j.ScheduleId,
           CopiedToSystem = true,
-          CyclesOnFirstProcess = new[] { 70 - 30 },
-          Completed = new[] { new[] { 1 } },
-          Precedence = new[] { new[] { 3L } }, // has last precedence
+          CyclesOnFirstProcess = ImmutableList.Create(70 - 30),
+          Completed = ImmutableList.Create(ImmutableList.Create(1)),
+          Precedence = ImmutableList.Create(ImmutableList.Create(3L)), // has last precedence
           Decrements = job1Decrements,
-          AssignedWorkorders = new[] { "work1", "work2", "work4" }
+          AssignedWorkorders = ImmutableList.Create("work1", "work2", "work4")
         };
         st.Jobs.Add("u1", expectedJob);
 
@@ -314,9 +314,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           ScheduleId = j2.ScheduleId,
           CopiedToSystem = true,
-          CyclesOnFirstProcess = new[] { 0 },
-          Completed = new[] { new[] { 0 } },
-          Precedence = new[] { new[] { 2L } }, // has middle precedence
+          CyclesOnFirstProcess = ImmutableList.Create(0),
+          Completed = ImmutableList.Create(ImmutableList.Create(0)),
+          Precedence = ImmutableList.Create(ImmutableList.Create(2L)), // has middle precedence
           Decrements = null,
           AssignedWorkorders = null,
         };
@@ -326,9 +326,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           ScheduleId = j3.ScheduleId,
           CopiedToSystem = true,
-          CyclesOnFirstProcess = new[] { 0 },
-          Completed = new[] { new[] { 0 } },
-          Precedence = new[] { new[] { 1L } }, // has first precedence
+          CyclesOnFirstProcess = ImmutableList.Create(0),
+          Completed = ImmutableList.Create(ImmutableList.Create(0)),
+          Precedence = ImmutableList.Create(ImmutableList.Create(1L)), // has first precedence
           Decrements = null,
           AssignedWorkorders = null
         };

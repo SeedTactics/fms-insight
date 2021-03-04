@@ -603,17 +603,11 @@ namespace DebugMachineWatchApiServer
       {
         j.RouteStartUTC = j.RouteStartUTC.Add(offset);
         j.RouteEndUTC = j.RouteEndUTC.Add(offset);
-        j.Processes = j.Processes.Select(proc => new ProcessInfo()
+        j.AdjustAllPaths((_, _, path) =>
         {
-          Paths = proc.Paths.Select(path => path with
-          {
-            SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
-            SimulatedProduction = path.SimulatedProduction.Select(prod => prod with
-            {
-              TimeUTC = prod.TimeUTC.Add(offset)
-            }).ToImmutableList()
-          }).ToArray()
-        }).ToArray();
+          path.SimulatedStartingUTC += offset;
+          path.SimulatedProduction.AdjustAll(prod => prod.TimeUTC += offset);
+        });
       });
       // not converted: hold patterns
     }

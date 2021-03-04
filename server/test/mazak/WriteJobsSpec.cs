@@ -326,15 +326,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uniq1",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 15 }
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(15),
       };
       var inProcJob = new Job()
       {
         UniqueStr = "uniq2",
         PartName = "part2",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 15 }
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(15),
       };
       _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null, addAsCopiedToSystem: true);
 
@@ -378,15 +378,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uniq1",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 20 }
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(20),
       };
       var inProcJob = new Job()
       {
         UniqueStr = "uniq2",
         PartName = "part2",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 20 }
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(20),
       };
 
       _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null, addAsCopiedToSystem: true);

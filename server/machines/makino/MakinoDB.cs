@@ -676,12 +676,12 @@ namespace Makino
             newJob = newJob with
             {
               Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
-              CyclesOnFirstProcess = new[] { reader.GetInt32(4) },
-              Precedence = new[] { new long[] { reader.GetInt16(5) } },
+              CyclesOnFirstProcess = ImmutableList.Create(reader.GetInt32(4)),
+              Precedence = ImmutableList.Create(ImmutableList.Create<long>(reader.GetInt16(5))),
               Processes = newJob.Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
               {
-                Paths = proc.Paths.Select(path => path with { SimulatedStartingUTC = start }).ToArray()
-              }).ToArray()
+                Paths = proc.Paths.Select(path => path with { SimulatedStartingUTC = start }).ToImmutableList()
+              }).ToImmutableList()
             };
           });
 

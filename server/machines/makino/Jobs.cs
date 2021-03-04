@@ -35,20 +35,21 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 using Germinate;
 
 namespace Makino
 {
-  public class Jobs : BlackMaple.MachineFramework.IJobControl, BlackMaple.MachineFramework.IOldJobDecrement
+  public class Jobs : IJobControl, IOldJobDecrement
   {
     private MakinoDB _db;
-    private Func<BlackMaple.MachineFramework.IRepository> _openJobDB;
+    private Func<IRepository> _openJobDB;
     private Action<NewJobs> _onNewJobs;
     private Action _onJobCommentChange;
     private string _xmlPath;
     private bool _onlyOrders;
 
-    public Jobs(MakinoDB db, Func<BlackMaple.MachineFramework.IRepository> jdb, string xmlPath, bool onlyOrders, Action<NewJobs> onNewJob, Action onJobCommentChange)
+    public Jobs(MakinoDB db, Func<IRepository> jdb, string xmlPath, bool onlyOrders, Action<NewJobs> onNewJob, Action onJobCommentChange)
     {
       _db = db;
       _openJobDB = jdb;
@@ -66,7 +67,7 @@ namespace Makino
         return _db.LoadCurrentInfo();
     }
 
-    public List<string> CheckValidRoutes(IEnumerable<BlackMaple.MachineFramework.Job> newJobs)
+    public List<string> CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       return new List<string>();
     }
@@ -78,23 +79,10 @@ namespace Makino
       {
         newJ = newJ with
         {
-          Jobs = newJ.Jobs.Select(j =>
-            j with
-            {
-              Archived = true,
-              Processes = j.Processes.Select(proc =>
-                proc with
-                {
-                  Paths = proc.Paths.Select(path => path with
-                  {
-                    Stops = path.Stops.Select(stop => stop with
-                    {
-                      StationGroup = "MC"
-                    }).ToArray()
-                  }).ToArray()
-                }
-              ).ToArray()
-            }).ToImmutableList()
+          Jobs = newJ.Jobs.Select(j => j.AdjustAllPaths((_, _, path) =>
+          {
+            path.Stops.AdjustAll(stop => stop.StationGroup = "MC");
+          })).ToImmutableList(),
         };
         foreach (var j in newJ.Jobs)
         {
@@ -107,7 +95,7 @@ namespace Makino
       _onNewJobs(newJ);
     }
 
-    void BlackMaple.MachineFramework.IJobControl.SetJobComment(string jobUnique, string comment)
+    void IJobControl.SetJobComment(string jobUnique, string comment)
     {
       using (var jdb = _openJobDB())
       {
@@ -117,7 +105,7 @@ namespace Makino
     }
 
     #region Decrement
-    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
+    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
     {
       return new List<JobAndDecrementQuantity>();
     }

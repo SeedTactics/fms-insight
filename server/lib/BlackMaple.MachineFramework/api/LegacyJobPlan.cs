@@ -1306,7 +1306,7 @@ namespace BlackMaple.MachineWatchInterface
       dest.RouteEndingTimeUTC = source.RouteEndUTC;
       if (source.HoldJob != null) dest.HoldEntireJob = ToLegacyHold(source.HoldJob);
 
-      var firstProcCycles = source.CyclesOnFirstProcess.ToList();
+      var firstProcCycles = source.CyclesOnFirstProcess;
       for (int path = 1; path <= firstProcCycles.Count; path++)
       {
         dest.SetPlannedCyclesOnFirstProcess(path: path, numCycles: firstProcCycles[path - 1]);

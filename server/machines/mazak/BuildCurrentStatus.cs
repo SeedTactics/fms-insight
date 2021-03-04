@@ -49,10 +49,10 @@ namespace MazakMachineInterface
       public string UniqueStr { get; init; }
       public string PartName { get; init; }
       public HistoricJob DbJob { get; init; }
-      public int[] CyclesOnFirstProcess { get; init; }
-      public int[][] Completed { get; init; }
-      public ProcPathInfo[][] Processes { get; init; }
-      public long[][] Precedence { get; init; }
+      public ImmutableList<int>.Builder CyclesOnFirstProcess { get; init; }
+      public IReadOnlyList<ImmutableList<int>.Builder> Completed { get; init; }
+      public IReadOnlyList<ImmutableList<ProcPathInfo>.Builder> Processes { get; init; }
+      public IReadOnlyList<ImmutableList<long>.Builder> Precedence { get; init; }
       public bool UserHold { get; set; }
 
       public ProcPathInfo DbProcPath(int proc, int path)
@@ -120,15 +120,32 @@ namespace MazakMachineInterface
         CurrentJob job;
         if (!jobsByUniq.TryGetValue(jobUnique, out job))
         {
+          var cyclesOnProc1 = ImmutableList.CreateBuilder<int>();
+          cyclesOnProc1.AddRange(new int[maxProc1Path]);
           job = new CurrentJob()
           {
             UniqueStr = jobUnique,
             PartName = partName,
-            CyclesOnFirstProcess = new int[maxProc1Path],
+            CyclesOnFirstProcess = cyclesOnProc1,
             DbJob = jobDB.LoadJob(jobUnique),
-            Processes = Enumerable.Range(1, numProc).Select(_ => new ProcPathInfo[maxProc1Path]).ToArray(),
-            Completed = Enumerable.Range(1, numProc).Select(_ => new int[maxProc1Path]).ToArray(),
-            Precedence = Enumerable.Range(1, numProc).Select(_ => new long[maxProc1Path]).ToArray()
+            Processes = Enumerable.Range(1, numProc).Select(_ =>
+            {
+              var b = ImmutableList.CreateBuilder<ProcPathInfo>();
+              b.AddRange(Enumerable.Range(1, maxProc1Path).Select<int, ProcPathInfo>(_ => null));
+              return b;
+            }).ToList(),
+            Completed = Enumerable.Range(1, numProc).Select(_ =>
+            {
+              var b = ImmutableList.CreateBuilder<int>();
+              b.AddRange(Enumerable.Range(1, maxProc1Path).Select(_ => 0));
+              return b;
+            }).ToList(),
+            Precedence = Enumerable.Range(1, numProc).Select(_ =>
+            {
+              var b = ImmutableList.CreateBuilder<long>();
+              b.AddRange(Enumerable.Range(1, maxProc1Path).Select(_ => 0L));
+              return b;
+            }).ToList(),
           };
           jobsByUniq.Add(jobUnique, job);
         }
@@ -225,7 +242,7 @@ namespace MazakMachineInterface
                 action = new InProcessMaterialAction()
                 {
                   Type =
-                        palSub.PartProcessNumber == job.Processes.Length
+                        palSub.PartProcessNumber == job.Processes.Count
                             ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
                             : InProcessMaterialAction.ActionType.UnloadToInProcess,
                   UnloadIntoQueue = job.Processes[palSub.PartProcessNumber - 1][procToPath.PathForProc(palSub.PartProcessNumber) - 1].OutputQueue,
@@ -341,7 +358,7 @@ namespace MazakMachineInterface
           !jobsByUniq.ContainsKey(j.UniqueStr)
         ).Select(j => j.CloneToDerived<ActiveJob, Job>() with
         {
-          Completed = j.Processes.Select(p => new int[p.Paths.Count]).ToArray(),
+          Completed = j.Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count])).ToImmutableList(),
           Decrements = j.Decrements,
           ScheduleId = j.ScheduleId,
           CopiedToSystem = false,
@@ -364,13 +381,13 @@ namespace MazakMachineInterface
           BookingIds = job.DbJob?.BookingIds,
           ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
           HoldJob = job.UserHold ? new BlackMaple.MachineFramework.HoldPattern() { UserHold = true } : null,
-          CyclesOnFirstProcess = job.CyclesOnFirstProcess,
-          Processes = job.Processes.Select(paths => new ProcessInfo() { Paths = paths }).ToArray(),
+          CyclesOnFirstProcess = job.CyclesOnFirstProcess.ToImmutable(),
+          Processes = job.Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() }).ToImmutableList(),
           CopiedToSystem = true,
-          Completed = job.Completed,
+          Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
           Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
           AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
-          Precedence = job.Precedence
+          Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList()
         })
         .Concat(notCopied)
         .ToImmutableDictionary(j => j.UniqueStr),
@@ -505,7 +522,7 @@ namespace MazakMachineInterface
           ExpectedLoadTime = dbPath?.ExpectedLoadTime ?? TimeSpan.Zero,
           Unload = unloads.ToImmutable(),
           ExpectedUnloadTime = dbPath?.ExpectedUnloadTime ?? TimeSpan.Zero,
-          Stops = new[] { routeStop },
+          Stops = ImmutableList.Create(routeStop),
           SimulatedProduction = dbPath?.SimulatedProduction,
           SimulatedStartingUTC = dbPath?.SimulatedStartingUTC ?? DateTime.Today,
           SimulatedAverageFlowTime = dbPath?.SimulatedAverageFlowTime ?? TimeSpan.Zero,
@@ -520,7 +537,7 @@ namespace MazakMachineInterface
 
     private static void AddCompletedToJob(MazakScheduleRow schRow, CurrentJob job, MazakPart.IProcToPath procToPath)
     {
-      job.Completed[job.Processes.Length - 1][procToPath.PathForProc(job.Processes.Length) - 1] = schRow.CompleteQuantity;
+      job.Completed[job.Processes.Count - 1][procToPath.PathForProc(job.Processes.Count) - 1] = schRow.CompleteQuantity;
 
       //in-proc and material for each process
       var counts = new Dictionary<int, int>(); //key is process, value is in-proc + mat
@@ -530,7 +547,7 @@ namespace MazakMachineInterface
           schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity + schProcRow.ProcessMaterialQuantity;
       }
 
-      for (int proc = 1; proc < job.Processes.Length; proc++)
+      for (int proc = 1; proc < job.Processes.Count; proc++)
       {
         var cnt =
           counts
@@ -647,7 +664,7 @@ namespace MazakMachineInterface
           {
             action = new InProcessMaterialAction()
             {
-              Type = unload.Process < job.Processes.Length
+              Type = unload.Process < job.Processes.Count
                  ? InProcessMaterialAction.ActionType.UnloadToInProcess
                  : InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
               ElapsedLoadUnloadTime = elapsedLoadTime,
@@ -791,7 +808,7 @@ namespace MazakMachineInterface
     {
       int getPathGroup(int proc, int path)
       {
-        if (proc >= 1 && proc <= job.Processes.Length && path >= 1 && path <= job.Processes[proc - 1].Length)
+        if (proc >= 1 && proc <= job.Processes.Count && path >= 1 && path <= job.Processes[proc - 1].Count)
         {
           return job.Processes[proc - 1][path - 1].PathGroup;
         }
@@ -800,7 +817,7 @@ namespace MazakMachineInterface
           return 0;
         }
       }
-      return MazakQueues.QueuedMaterialForLoading(job.UniqueStr, job.Processes[proc - 1].Length, getPathGroup, materialToSearch, proc, path, log);
+      return MazakQueues.QueuedMaterialForLoading(job.UniqueStr, job.Processes[proc - 1].Count, getPathGroup, materialToSearch, proc, path, log);
 
     }
 

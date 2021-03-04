@@ -1101,8 +1101,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -1143,8 +1143,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -1202,8 +1202,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } }, new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }, new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -1349,8 +1349,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } }, new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }, new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -1405,8 +1405,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -1458,8 +1458,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -1892,8 +1892,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -1956,8 +1956,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -2007,8 +2007,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
@@ -2044,8 +2044,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } }, new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } },
-        CyclesOnFirstProcess = new[] { 0 },
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }, new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 

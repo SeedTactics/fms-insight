@@ -300,13 +300,13 @@ namespace MachineWatchTest
                   })
                   .Concat(
                     job1.Processes[0].Paths.Skip(1)
-                  ).ToArray()
+                  ).ToImmutableList()
               }
             }
             ).Concat(
               job1.Processes.Skip(1)
             )
-            .ToArray()
+            .ToImmutableList()
         }
       );
 
@@ -327,13 +327,13 @@ namespace MachineWatchTest
                   })
                   .Concat(
                     job1.Processes[0].Paths.Skip(2)
-                  ).ToArray()
+                  ).ToImmutableList()
               }
             }
             ).Concat(
               job1.Processes.Skip(1)
             )
-            .ToArray()
+            .ToImmutableList()
         }
       );
     }
@@ -682,29 +682,49 @@ namespace MachineWatchTest
       var schId = "SchId" + _fixture.Create<string>();
       var job1 =
         RandJob()
-        .AdjustPath(1, 1, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "aaa",
-            ProgramRevision = null
-          }
+        .AdjustPath(1, 1, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "aaa",
+              ProgramRevision = null
+            }
+          );
         })
-        .AdjustPath(1, 2, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "aaa",
-            ProgramRevision = 1
-          }
+        .AdjustPath(1, 2, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "aaa",
+              ProgramRevision = 1
+            }
+          );
         })
-        .AdjustPath(2, 1, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "bbb",
-            ProgramRevision = null
-          }
+        .AdjustPath(2, 1, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "bbb",
+              ProgramRevision = null
+            }
+          );
         })
-        .AdjustPath(2, 2, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "bbb",
-            ProgramRevision = 6
-          }
+        .AdjustPath(2, 2, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "bbb",
+              ProgramRevision = 6
+            }
+          );
         })
         ;
 
@@ -751,18 +771,20 @@ namespace MachineWatchTest
 
       // should lookup latest revision to 1 and 6
       job1 = job1
-        .AdjustPath(1, 1, d => d.Stops = new[] {
-          new MachiningStop() {
+        .AdjustPath(1, 1, d => d.Stops[0] =
+          new MachiningStop()
+          {
             Program = "aaa",
             ProgramRevision = 1
           }
-        })
-        .AdjustPath(2, 1, d => d.Stops = new[] {
-          new MachiningStop() {
+        )
+        .AdjustPath(2, 1, d => d.Stops[0] =
+          new MachiningStop()
+          {
             Program = "bbb",
             ProgramRevision = 6
           }
-        })
+        )
         ;
       initialWorks[0] %= w =>
       {
@@ -1200,35 +1222,60 @@ namespace MachineWatchTest
       var schId = "SchId" + _fixture.Create<string>();
       var job1 =
         RandJob()
-        .AdjustPath(1, 1, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "aaa",
-            ProgramRevision = -1
-          }
+        .AdjustPath(1, 1, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "aaa",
+              ProgramRevision = -1
+            }
+          );
         })
-        .AdjustPath(1, 2, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "aaa",
-            ProgramRevision = -2
-          }
+        .AdjustPath(1, 2, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "aaa",
+              ProgramRevision = -2
+            }
+          );
         })
-        .AdjustPath(2, 1, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "bbb",
-            ProgramRevision = -1
-          }
+        .AdjustPath(2, 1, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "bbb",
+              ProgramRevision = -1
+            }
+          );
         })
-        .AdjustPath(2, 2, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "bbb",
-            ProgramRevision = -2
-          }
+        .AdjustPath(2, 2, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "bbb",
+              ProgramRevision = -2
+            }
+          );
         })
-        .AdjustPath(2, 3, d => d.Stops = new[] {
-          new MachiningStop() {
-            Program = "ccc",
-            ProgramRevision = -2
-          }
+        .AdjustPath(2, 3, d =>
+        {
+          d.Stops.Clear();
+          d.Stops.Add(
+            new MachiningStop()
+            {
+              Program = "ccc",
+              ProgramRevision = -2
+            }
+          );
         })
         ;
 
@@ -1304,36 +1351,41 @@ namespace MachineWatchTest
       }, null, true);
 
       job1 = job1
-        .AdjustPath(1, 1, d => d.Stops = new[] {
-          new MachiningStop() {
+        .AdjustPath(1, 1, d => d.Stops[0] =
+          new MachiningStop()
+          {
             Program = "aaa",
             ProgramRevision = 1 // -1
           }
-        })
-        .AdjustPath(1, 2, d => d.Stops = new[] {
-          new MachiningStop() {
+        )
+        .AdjustPath(1, 2, d => d.Stops[0] =
+          new MachiningStop()
+          {
             Program = "aaa",
             ProgramRevision = 2 // -2
           }
-        })
-        .AdjustPath(2, 1, d => d.Stops = new[] {
-          new MachiningStop() {
+        )
+        .AdjustPath(2, 1, d => d.Stops[0] =
+          new MachiningStop()
+          {
             Program = "bbb",
             ProgramRevision = 6 // -1
           }
-        })
-        .AdjustPath(2, 2, d => d.Stops = new[] {
-          new MachiningStop() {
+        )
+        .AdjustPath(2, 2, d => d.Stops[0] =
+          new MachiningStop()
+          {
             Program = "bbb",
             ProgramRevision = 7 // -2
           }
-        })
-        .AdjustPath(2, 3, d => d.Stops = new[] {
-          new MachiningStop() {
+        )
+        .AdjustPath(2, 3, d => d.Stops[0] =
+          new MachiningStop()
+          {
             Program = "ccc",
             ProgramRevision = 5 // -2
           }
-        })
+        )
         ;
 
 
@@ -1486,8 +1538,8 @@ namespace MachineWatchTest
           proc.Paths.Select(path => path with
           {
             Casting = procIdx == 0 ? path.Casting : null
-          }).ToArray()
-        }).ToArray()
+          }).ToImmutableList()
+        }).ToImmutableList()
       };
     }
   }

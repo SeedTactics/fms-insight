@@ -38,6 +38,7 @@ using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
 using BlackMaple.MachineWatchInterface;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -65,14 +66,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j1 = new HistoricJob()
       {
         UniqueStr = "u1",
-        Processes = new[] {
-          new ProcessInfo() {
-            Paths = new[] { new ProcPathInfo(), new ProcPathInfo() }
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo(), new ProcPathInfo())
           },
-          new ProcessInfo() {
-            Paths = new[] { new ProcPathInfo() }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo())
           }
-        }
+        )
       };
       qtyRemaining[(uniq: "u1", proc1path: 1)] = 5;
       qtyRemaining[(uniq: "u1", proc1path: 2)] = 7;
@@ -80,11 +83,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j2 = new HistoricJob()
       {
         UniqueStr = "u2",
-        Processes = new[] {
-          new ProcessInfo() {
-            Paths = new[] { new ProcPathInfo() }
-          },
-        }
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
       qtyRemaining[(uniq: "u2", proc1path: 1)] = 0;
 

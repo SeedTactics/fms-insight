@@ -603,7 +603,7 @@ namespace MachineWatchTest
         Archived = job.Archived,
         RouteStartUTC = job.RouteStartingTimeUTC,
         RouteEndUTC = job.RouteEndingTimeUTC,
-        CyclesOnFirstProcess = Enumerable.Range(1, job.GetNumPaths(process: 1)).Select(job.GetPlannedCyclesOnFirstProcess).ToList(),
+        CyclesOnFirstProcess = Enumerable.Range(1, job.GetNumPaths(process: 1)).Select(job.GetPlannedCyclesOnFirstProcess).ToImmutableList(),
         Processes = Enumerable.Range(1, job.NumProcesses).Select(proc =>
           new ProcessInfo()
           {
@@ -631,7 +631,7 @@ namespace MachineWatchTest
                   Tools = stop.Tools.ToImmutableDictionary(k => k.Key, k => k.Value),
                   StationGroup = stop.StationGroup,
                   ExpectedCycleTime = stop.ExpectedCycleTime
-                }).ToList(),
+                }).ToImmutableList(),
                 Casting = proc == 1 ? job.GetCasting(path) : null,
                 Unload = job.UnloadStations(proc, path).ToImmutableList(),
                 ExpectedLoadTime = job.GetExpectedLoadTime(proc, path),
@@ -652,9 +652,9 @@ namespace MachineWatchTest
                   }
                   ).ToImmutableList()
               }
-            ).ToList()
+            ).ToImmutableList()
           }
-        ).ToList()
+        ).ToImmutableList()
       };
     }
 

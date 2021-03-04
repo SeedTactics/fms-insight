@@ -103,9 +103,9 @@ namespace BlackMaple.MachineFramework
 
     private record JobDetails
     {
-      public IReadOnlyList<int> CyclesOnFirstProc { get; init; }
+      public ImmutableList<int> CyclesOnFirstProc { get; init; }
       public ImmutableList<string> Bookings { get; init; }
-      public IReadOnlyList<ProcessInfo> Procs { get; init; }
+      public ImmutableList<ProcessInfo> Procs { get; init; }
       public HoldRow Hold { get; init; }
     }
 
@@ -413,7 +413,7 @@ namespace BlackMaple.MachineFramework
         return new JobDetails()
         {
           Hold = jobHold,
-          CyclesOnFirstProc = cyclesOnFirstProc.Values.ToArray(),
+          CyclesOnFirstProc = cyclesOnFirstProc.Values.ToImmutableList(),
           Bookings = bookings.ToImmutable(),
           Procs =
             pathDatRows.Values
@@ -441,7 +441,7 @@ namespace BlackMaple.MachineFramework
                     ProgramRevision = s.ProgramRevision,
                     Tools = s.Tools.ToImmutable(),
                     ExpectedCycleTime = s.ExpectedCycleTime
-                  }).ToArray(),
+                  }).ToImmutableList(),
                   SimulatedProduction = p.SimProd.ToImmutable(),
                   SimulatedStartingUTC = p.StartingUTC,
                   SimulatedAverageFlowTime = p.SimAverageFlowTime,
@@ -453,9 +453,9 @@ namespace BlackMaple.MachineFramework
                   Inspections = p.Insps.Count == 0 ? null : p.Insps.ToImmutable(),
                   Casting = p.Casting
                 })
-                .ToArray()
+                .ToImmutableList()
             })
-            .ToArray()
+            .ToImmutableList()
         };
       }
     }

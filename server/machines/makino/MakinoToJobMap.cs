@@ -171,7 +171,7 @@ namespace Makino
         }
 
         if (stops.Count > 0)
-          _byPartID[proc.Value] %= j => j.AdjustPath(procNum, 1, d => d.Stops = stops.Values.ToArray());
+          _byPartID[proc.Value] %= j => j.AdjustPath(procNum, 1, d => d.Stops.AddRange(stops.Values));
       }
     }
 
@@ -187,7 +187,7 @@ namespace Makino
     public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)
     {
       var job = _byPartID[partID];
-      var newJob = job.CloneToDerived<ActiveJob, Job>() with { UniqueStr = order, Completed = job.Processes.Select(_ => new int[] { 0 }).ToArray() };
+      var newJob = job.CloneToDerived<ActiveJob, Job>() with { UniqueStr = order, Completed = job.Processes.Select(_ => ImmutableList.Create(0)).ToImmutableList() };
       _byOrderID.Add(orderID, newJob);
       return newJob;
     }
@@ -199,9 +199,7 @@ namespace Makino
 
       _byOrderID[orderID] %= j =>
       {
-        var comp = j.Completed.Select(c => c.ToArray()).ToArray();
-        comp[procNum - 1][0] = completed;
-        j.Completed = comp;
+        j.Completed[procNum - 1] = ImmutableList.Create(completed);
       };
     }
 

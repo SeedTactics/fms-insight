@@ -113,8 +113,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = new[] { 50 },
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
       {
@@ -171,8 +171,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = new[] { 50 },
-        Processes = new[] { new ProcessInfo() { } }
+        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
       {
@@ -216,8 +216,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = new[] { 50 },
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
       {
@@ -304,8 +304,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = new[] { 50 },
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
       {
@@ -360,8 +360,8 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = new[] { 50 },
-        Processes = new[] { new ProcessInfo() { Paths = new[] { new ProcPathInfo() } } }
+        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
       {
