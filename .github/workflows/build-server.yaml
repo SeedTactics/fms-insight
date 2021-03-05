@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - release/*
 
 jobs:
   build:
@@ -14,22 +15,22 @@ jobs:
       # Setup
       # ----------------------------------------------------------
 
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
 
       - name: Install GitVersion
-        run: dotnet tool install -g GitVersion.Tool
+        uses: gittools/actions/gitversion/setup@v0.9.9
+        with:
+          versionSpec: "5.x"
+
       - name: Calculate Version
-        shell: pwsh
-        run: |
-          # GitVersion doesn't like detached heads
-          #https://github.com/actions/checkout/issues/6
-          git branch --track main remotes/origin/main
-          git checkout ($Env:GITHUB_REF.Substring(11))
-          $ver = (dotnet gitversion server) | ConvertFrom-Json
-          echo "SEMVER=$($ver.SemVer)" >> $Env:GITHUB_ENV
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.9
+        with:
+          targetPath: server
+          useConfigFile: true
 
       - uses: actions/cache@v2
         with:
@@ -64,27 +65,23 @@ jobs:
       - run: yarn --cwd client/insight run build
 
       - name: Build MachineFramework
-        shell: pwsh
-        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/lib/BlackMaple.MachineFramework
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
-        shell: pwsh
-        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/mazak
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/machines/mazak
       - name: Build Makino
-        shell: pwsh
-        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/makino
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/machines/makino
       - name: Build Niigata
-        shell: pwsh
-        run: dotnet pack -c Release --include-symbols /p:Version="$ENV:SEMVER" server/machines/niigata
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/machines/niigata
 
       # ----------------------------------------------------------
       # Publish
       # ----------------------------------------------------------
 
-      - name: Publish MachineFramework
-        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
-      - name: Publish Mazak
-        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\mazak\bin\Release\*.nupkg
-      - name: Publish Makino
-        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
-      - name: Publish Niigata
-        run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
+      #- name: Publish MachineFramework
+      #  run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\lib\BlackMaple.MachineFramework\bin\Release\*.nupkg
+      #- name: Publish Mazak
+      #  run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\mazak\bin\Release\*.nupkg
+      #- name: Publish Makino
+      #  run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
+      #- name: Publish Niigata
+      #  run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
