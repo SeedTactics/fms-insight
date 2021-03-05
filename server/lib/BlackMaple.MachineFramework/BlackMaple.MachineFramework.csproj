@@ -29,13 +29,9 @@
 
   <ItemGroup>
     <Content Include="..\..\..\client\insight\dist\**\*">
-      <PackagePath>contentFiles\any\any\wwwroot</PackagePath>
+      <PackagePath>contentFiles\any\net5.0\wwwroot</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
-    <ContentWithTargetPath Include="..\..\..\client\insight\dist\**\*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <TargetPath>wwwroot/%(RecursiveDir)%(FileName)%(Extension)</TargetPath>
-    </ContentWithTargetPath>
   </ItemGroup>
 
   <ItemGroup>
