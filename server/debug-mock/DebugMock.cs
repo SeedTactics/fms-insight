@@ -533,8 +533,10 @@ namespace DebugMachineWatchApiServer
       {
         var newJobsOffset = newJobs.Produce(newJobsDraft =>
         {
-          newJobsDraft.Jobs.Clear();
-          newJobsDraft.Jobs.AddRange(newJobsDraft.Jobs.Select(j => OffsetJob(j, offset)));
+          for (int i = 0; i < newJobs.Jobs.Count; i++)
+          {
+            newJobsDraft.Jobs[i] = OffsetJob(newJobsDraft.Jobs[i], offset);
+          }
 
           for (int i = 0; i < newJobs.StationUse.Count; i++)
           {
