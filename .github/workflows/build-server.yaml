@@ -66,13 +66,13 @@ jobs:
       - run: yarn --cwd client/insight run build
 
       - name: Build MachineFramework
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/lib/BlackMaple.MachineFramework
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/machines/mazak
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/machines/mazak
       - name: Build Makino
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/machines/makino
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/machines/makino
       - name: Build Niigata
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.output.semVer }}" server/machines/niigata
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/machines/niigata
 
       # ----------------------------------------------------------
       # Publish
