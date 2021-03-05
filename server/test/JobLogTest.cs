@@ -1634,7 +1634,7 @@ namespace MachineWatchTest
     }
 
     [Fact]
-    public void ToolSnapshotDiff()
+    public void ToolSnapshotDifference()
     {
       var start = new List<ToolPocketSnapshot>();
       var end = new List<ToolPocketSnapshot>();
@@ -1750,7 +1750,7 @@ namespace MachineWatchTest
       expectedLife["tool11"] = TimeSpan.FromSeconds(100 + 100);
       expectedChange.Add("tool11");
 
-      Repository.DiffSnapshots(start, end).Should().BeEquivalentTo(
+      ToolSnapshotDiff.Diff(start, end).Should().BeEquivalentTo(
         expectedUse.Select(x => new
         {
           Tool = x.Key,

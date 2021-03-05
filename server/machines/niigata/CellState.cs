@@ -1251,7 +1251,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 {"ProgramRevision", ss.Revision.Value.ToString()}
         },
         tools: toolsAtStart == null || toolsAtEnd == null ? null :
-          Repository.DiffSnapshots(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
+          ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
       );
     }
 

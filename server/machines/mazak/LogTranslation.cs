@@ -170,7 +170,7 @@ namespace MazakMachineInterface
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
-              tools: Repository.DiffSnapshots(toolsAtStart, toolsAtEnd),
+              tools: ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd),
               pockets: toolsAtEnd,
               foreignId: e.ForeignID);
             HandleMachiningCompleted(s, machineMats);

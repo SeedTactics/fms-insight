@@ -39,7 +39,7 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-  public partial class Repository : IDisposable, IRepository
+  internal partial class Repository : IDisposable, IRepository
   {
     private SqliteConnection _connection;
     private bool _closeConnectionOnDispose;
@@ -50,11 +50,6 @@ namespace BlackMaple.MachineFramework
       _connection = c;
       _closeConnectionOnDispose = closeOnDispose;
       _cfg = cfg;
-    }
-
-    public void Close()
-    {
-      _connection.Close();
     }
 
     public void Dispose()

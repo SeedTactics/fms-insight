@@ -41,7 +41,7 @@ using System.Collections.Immutable;
 namespace BlackMaple.MachineFramework
 {
   //database backend for the job db
-  public partial class Repository
+  internal partial class Repository
   {
     #region "Loading Jobs"
     private record PathStopRow
