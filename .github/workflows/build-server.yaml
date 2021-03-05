@@ -30,7 +30,6 @@ jobs:
         uses: gittools/actions/gitversion/execute@v0.9.9
         with:
           targetPath: server
-          useConfigFile: true
 
       - uses: actions/cache@v2
         with:
