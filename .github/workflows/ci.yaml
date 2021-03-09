@@ -25,7 +25,7 @@ jobs:
       - name: Server TestSuite
         run: |
           tzutil /s "Pacific Standard Time"
-          dotnet test server/test
+          dotnet test server/test --collect:"XPlat Code Coverage"
 
       - name: Upload Code Coverage
         uses: codecov/codecov-action@v1
