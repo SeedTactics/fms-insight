@@ -357,7 +357,7 @@ namespace MazakMachineInterface
         for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
         {
           var jobCasting = job.Processes[0].Paths[path - 1].Casting;
-          if (!string.IsNullOrEmpty(casting))
+          if (!string.IsNullOrEmpty(jobCasting))
           {
             casting = jobCasting;
             break;

@@ -35,6 +35,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -217,6 +218,7 @@ namespace BlackMaple.MachineFramework
     public DateTime LastUTC { get; init; }
   }
 
+  [Draftable]
   public record EventLogMaterial
   {
     public long MaterialID { get; init; }
@@ -271,6 +273,7 @@ namespace BlackMaple.MachineFramework
     public DateTime? AddTimeUTC { get; init; }
   }
 
+  [Draftable]
   public record NewDecrementQuantity
   {
     public string JobUnique { get; init; }
