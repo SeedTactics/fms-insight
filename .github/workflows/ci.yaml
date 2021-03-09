@@ -27,6 +27,12 @@ jobs:
           tzutil /s "Pacific Standard Time"
           dotnet test server/test
 
+      - name: Upload Code Coverage
+        uses: codecov/codecov-action@v1
+        with:
+          directory: server/test/TestResults
+          flags: server-unittests
+
       - name: API Build
         run: dotnet build client/csharp-api
 
