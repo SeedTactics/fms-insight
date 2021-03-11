@@ -1801,7 +1801,6 @@ namespace BlackMaple.FMSInsight.API
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/material?");
-            foreach (var item_ in id) { urlBuilder_.Append("id=").Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append("&"); }
             if (operName != null) 
             {
                 urlBuilder_.Append("operName=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
@@ -1813,6 +1812,9 @@ namespace BlackMaple.FMSInsight.API
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
+                    var content_ = new System.Net.Http.StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(id, _settings.Value));
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("DELETE");
     
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -4274,9 +4276,8 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan TotalToolUseAtEndOfCycle { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("ConfiguredToolLife", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public System.TimeSpan ConfiguredToolLife { get; set; }
+        [Newtonsoft.Json.JsonProperty("ConfiguredToolLife", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.TimeSpan? ConfiguredToolLife { get; set; }
     
         [Newtonsoft.Json.JsonProperty("ToolChangeOccurred", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? ToolChangeOccurred { get; set; }
@@ -5577,9 +5578,8 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.TimeSpan CurrentUse { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("TotalLifeTime", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public System.TimeSpan TotalLifeTime { get; set; }
+        [Newtonsoft.Json.JsonProperty("TotalLifeTime", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.TimeSpan? TotalLifeTime { get; set; }
     
         public string ToJson() 
         {

@@ -2210,8 +2210,7 @@
       "additionalProperties": false,
       "required": [
         "ToolUseDuringCycle",
-        "TotalToolUseAtEndOfCycle",
-        "ConfiguredToolLife"
+        "TotalToolUseAtEndOfCycle"
       ],
       "properties": {
         "ToolUseDuringCycle": {
@@ -3534,8 +3533,7 @@
         "MachineNum",
         "Pocket",
         "ToolName",
-        "CurrentUse",
-        "TotalLifeTime"
+        "CurrentUse"
       ],
       "properties": {
         "MachineGroupName": {

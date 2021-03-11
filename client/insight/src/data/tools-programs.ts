@@ -187,7 +187,7 @@ export async function calcToolReport(
         )
         .map((m) => {
           const currentUseMinutes = m.currentUse !== "" ? duration(m.currentUse).asMinutes() : 0;
-          const lifetimeMinutes = m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
+          const lifetimeMinutes = m.totalLifeTime && m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
           return {
             machineName: m.machineGroupName + " #" + m.machineNum,
             pocket: m.pocket,
