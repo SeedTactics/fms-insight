@@ -38,9 +38,6 @@ jobs:
       - name: API Build
         run: dotnet build client/csharp-api
 
-      - name: MachineWatchInterface Build
-        run: dotnet build server/lib/BlackMaple.MachineWatchInterface
-
       - name: Reverse proxy build
         run: dotnet build server/reverse-proxy
 
