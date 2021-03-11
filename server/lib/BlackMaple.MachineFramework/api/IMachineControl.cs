@@ -56,7 +56,7 @@ namespace BlackMaple.MachineWatchInterface
     public TimeSpan CurrentUse { get; set; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public TimeSpan TotalLifeTime { get; set; }
+    public TimeSpan? TotalLifeTime { get; set; }
   }
 
   [DataContract]

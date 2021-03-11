@@ -1869,7 +1869,7 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[1].Value = pair.Key;
           cmd.Parameters[2].Value = pair.Value.ToolUseDuringCycle.Ticks;
           cmd.Parameters[3].Value = pair.Value.TotalToolUseAtEndOfCycle.Ticks;
-          cmd.Parameters[4].Value = pair.Value.ConfiguredToolLife.Ticks;
+          cmd.Parameters[4].Value = (pair.Value.ConfiguredToolLife ?? TimeSpan.Zero).Ticks;
           cmd.Parameters[5].Value = pair.Value.ToolChangeOccurred.GetValueOrDefault(false);
           cmd.ExecuteNonQuery();
         }

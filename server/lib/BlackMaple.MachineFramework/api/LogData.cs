@@ -275,7 +275,7 @@ namespace BlackMaple.MachineWatchInterface
   {
     [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; set; }
     [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; set; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ConfiguredToolLife { get; set; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; set; }
   }
 

@@ -1123,10 +1123,10 @@ namespace BlackMaple.MachineWatchInterface
 #pragma warning disable CS0169
     // priority and CreateMarkingData field is no longer used but this is kept for backwards network compatibility
     [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = false), Obsolete]
-    private int _priority;
+    private int? _priority;
 
     [DataMember(Name = "CreateMarkingData", IsRequired = false, EmitDefaultValue = true), Obsolete]
-    private bool _createMarker;
+    private bool? _createMarker;
 #pragma warning restore CS0169
 
     [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
