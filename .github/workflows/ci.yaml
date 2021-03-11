@@ -12,12 +12,14 @@ on:
 jobs:
   server:
     runs-on: windows-latest
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
     steps:
       - uses: actions/checkout@v2
 
       - uses: actions/cache@v2
         with:
-          path: ~/.nuget/packages
+          path: ${{ github.workspace }}/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
@@ -36,8 +38,8 @@ jobs:
       - name: API Build
         run: dotnet build client/csharp-api
 
-      #- name: MachineWatchInterface Build
-      #  run: dotnet build server/lib/BlackMaple.MachineWatchInterface
+      - name: MachineWatchInterface Build
+        run: dotnet build server/lib/BlackMaple.MachineWatchInterface
 
       - name: Reverse proxy build
         run: dotnet build server/reverse-proxy
