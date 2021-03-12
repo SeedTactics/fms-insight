@@ -852,6 +852,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl ReplaceWorkorders(IEnumerable<PartWorkorder> workorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs)
+    {
+      _logDB.ReplaceWorkordersForSchedule(_logDB.LoadMostRecentSchedule().LatestScheduleId, workorders, programs);
+      return this;
+    }
+
     public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null)
     {
       var j = new JobPlan(unique, 1);

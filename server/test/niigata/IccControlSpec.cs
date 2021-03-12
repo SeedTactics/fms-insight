@@ -2139,7 +2139,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             qty: 5,
             priority: 5,
             partsPerPal: 1,
-            pals1: new[] { 1, 2 },
+            pals1: new[] { 1, 2, 3 },
             pals2: new[] { 4, 5 },
             load1: new[] { 3, 4 },
             unload1: new[] { 3, 4 },
@@ -2180,6 +2180,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         )
         .ExpectNoChanges()
         .MoveToMachineOutboundQueue(pal: 2, mach: 1)
+        .MoveToMachineOutboundQueue(pal: 3, mach: 2)
         .AddUnallocatedCasting(queue: "castingQ", rawMatName: rawMatName ?? "part1", mat: out var queuedMat1, workorder: "work1", numProc: 2)
         .AddUnallocatedCasting(queue: "castingQ", rawMatName: rawMatName ?? "part1", mat: out var queuedMat2, workorder: "work2", numProc: 2)
         .DecrJobRemainCnt("uniq1", path: 1)
@@ -2246,6 +2247,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           FakeIccDsl.RemoveFromQueue("castingQ", pos: 1, elapMin: 2, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1)))
         })
         .SetBeforeMC(pal: 1)
+        .MoveToBuffer(pal: 1, buff: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: mat1)
+        })
+        .AdvanceMinutes(2)
+
+        /// update work1 process 1 to have a new program, but should not be used because part is loaded already
+        .ReplaceWorkorders(
+          new[] {
+            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
+              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 10 }, // this is the only one that changes
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+            )},
+            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
+              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+            )}
+          },
+          new[] {
+            new MachineWatchInterface.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
+          }
+        )
+        .ExpectNoChanges()
+
         .MoveToMachine(pal: 1, mach: 6)
         .StartMachine(mach: 6, program: 2100)
         .UpdateExpectedMaterial(mat1, m =>
@@ -2259,6 +2284,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
         })
         .ExpectTransition(new[] {
+          FakeIccDsl.ExpectStockerEnd(pal: 1, stocker: 1, elapMin: 2, waitForMach: true, mats: mat1),
           FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog111", rev: 5, mat: mat1)
         })
         .AdvanceMinutes(4)
@@ -2319,7 +2345,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
           _dsl.LoadToFace(pal: 2, lul: 4, face: 1, unique: "uniq1", elapsedMin: 5, activeMins: 8, loadingMats: new[] {queuedMat2}, loadedMats: out var mat2, part: "part1"),
-          FakeIccDsl.RemoveFromQueue("castingQ", pos: 0, elapMin: 9, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2)))
+          FakeIccDsl.RemoveFromQueue("castingQ", pos: 0, elapMin: 11, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2)))
         })
         .SetBeforeMC(pal: 2)
         .MoveToMachine(pal: 2, mach: 5)
@@ -2347,6 +2373,70 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineEnd(pal: 2, mach: 5, program: "prog111", rev: 4, elapsedMin: 3, activeMin: 14, mats: mat2)
+        })
+
+        // new material on work1 uses updated program
+        .AddUnallocatedCasting(queue: "castingQ", rawMatName: rawMatName ?? "part1", mat: out var queuedMat5, workorder: "work1", numProc: 2)
+        .MoveToBuffer(pal: 3, buff: 3)
+        .DecrJobRemainCnt("uniq1", path: 1)
+        .UpdateExpectedMaterial(queuedMat5.MaterialID, m =>
+        {
+          m.JobUnique = "uniq1";
+          m.PartName = "part1";
+          m.SetAction(new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            LoadOntoPallet = "3",
+            LoadOntoFace = 1,
+            ProcessAfterLoad = 1,
+            PathAfterLoad = 1
+          });
+        })
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2102, name: "prog111", rev: 10, mcMin: 14),
+          FakeIccDsl.ExpectNewRoute(
+            pal: 3,
+            pri: 2,
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            progs: new[] { 2102 },
+            faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) },
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog111", Revision = 10}})}
+          ),
+        })
+        .MoveToLoad(pal: 3, lul: 4)
+        .UpdateExpectedMaterial(queuedMat5.MaterialID, m => m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero)
+        .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 3, lul: 4) })
+        .AdvanceMinutes(5)
+        .UpdateExpectedMaterial(queuedMat5.MaterialID, m => m.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(5))
+
+        // replace workorders again, just updating work1 process 1 program.  Everything else unchanged.
+        .ReplaceWorkorders(
+          new[] {
+            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
+              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 11 }, // this is the only one that changes
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+            )},
+            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
+              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+            )}
+          },
+          new[] {
+            new MachineWatchInterface.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 11 ct", Revision = 11}
+          }
+        )
+        .UpdateExpectedMaterial(queuedMat5.MaterialID, m =>
+        {
+          m.JobUnique = "";
+          m.PartName = rawMatName ?? "part1";
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+        })
+        .DecrJobRemainCnt("uniq1", path: 1, cnt: -1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2103, name: "prog111", rev: 11, mcMin: 14),
+          FakeIccDsl.ExpectNoWork(pal: 3, noWork: true),
+          FakeIccDsl.ExpectPalletCycle(pal: 3, mins: 0)
         })
 
         // now try process 1 -> 2

@@ -9,13 +9,13 @@
       },
       "Germinate": {
         "type": "Transitive",
-        "resolved": "0.7.0",
-        "contentHash": "yyOxoKVwh8EFAo9pyFTselHyn4gxOah9V5sggg66M24EYDVzisH1yC98fXItpQHF4oyLVxZo1Apzlsp+T5UHFA=="
+        "resolved": "0.8.0",
+        "contentHash": "lRhWK45p0tGh70XbbBW3Qih9ssERcl+VxWSUO1W5YQVo7i5gfQkwmRYUhJGDitcbYRfoDKqPAT4FWtv6I17Gbw=="
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "Transitive",
-        "resolved": "5.0.3",
-        "contentHash": "yygr4kXCFLD/bektky2San9fy0XYssG77yEEVCEyCcpljgfXdN+gJM0gE8ECocAtAIg1rOoWny+o0L0iULSIfg==",
+        "resolved": "5.0.4",
+        "contentHash": "gJ4v5Sh6AIzaz3okQ8pGuigTYfWAefaWfTobqU0YCKdsDMTUA1aAvcnVYqYUsb16vGcaVyWIBd4L8G9Ya5oU6w==",
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "6.7.1"
         }
@@ -110,8 +110,8 @@
       },
       "Microsoft.AspNetCore.JsonPatch": {
         "type": "Transitive",
-        "resolved": "5.0.3",
-        "contentHash": "trnJsR/teqqOgXFFFSn5YbL6ZCXca421Jv5hDRPuV2K+resek6u0+jf1aAwXZgikDmt2lylEKg6nkS3v5szhRQ==",
+        "resolved": "5.0.4",
+        "contentHash": "Nd/QZhdEX9tvuoz7BmeL6PWmimkpTjZ3MsUtmhP9xEjfGezthI4g3K/ggW/HO53Ow0LnjBx9hZKAcENVPzF2LA==",
         "dependencies": {
           "Microsoft.CSharp": "4.7.0",
           "Newtonsoft.Json": "12.0.2"
@@ -168,10 +168,10 @@
       },
       "Microsoft.AspNetCore.Mvc.NewtonsoftJson": {
         "type": "Transitive",
-        "resolved": "5.0.3",
-        "contentHash": "apCGk1uaiQRBf+FAz5tgje4N/VlpCgl1kyOCoi6rpzlgFym/WCH7omd2chOEKNqu7L9Tmo7tmUpLc1EyPyDJfg==",
+        "resolved": "5.0.4",
+        "contentHash": "vCknZ6lfq2/UrX4KGmqsM5aDlO5gV0S2YS6ZkhMfr+OG/9lyF2SBRM5skRCiSyTPdyH96Zliu5DU8DPstAAW7Q==",
         "dependencies": {
-          "Microsoft.AspNetCore.JsonPatch": "5.0.3",
+          "Microsoft.AspNetCore.JsonPatch": "5.0.4",
           "Newtonsoft.Json": "12.0.2",
           "Newtonsoft.Json.Bson": "1.0.2"
         }
@@ -1565,7 +1565,7 @@
         "type": "Project",
         "dependencies": {
           "CsvHelper": "22.1.2",
-          "Germinate": "0.7.0",
+          "Germinate": "0.8.0",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "5.0.0",
           "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "5.0.0",
           "Microsoft.Data.Sqlite": "5.0.3",
