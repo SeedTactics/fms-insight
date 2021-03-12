@@ -63,8 +63,6 @@ export const JobsBackend = {
     startUTC: Date,
     endUTC: Date
   ): Promise<Readonly<api.IHistoricData>> {
-    return { jobs: {}, stationUse: [] };
-    /*
     const ret: {
       jobs: { [uniq: string]: object };
       stationUse: Array<object>;
@@ -80,7 +78,6 @@ export const JobsBackend = {
       jobs,
       stationUse: ret.stationUse.map(api.SimulatedStationUtilization.fromJS),
     };
-    */
   },
   currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
     return Promise.resolve({

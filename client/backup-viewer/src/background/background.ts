@@ -39,7 +39,6 @@ import * as sqlite3 from "sqlite3";
 let dbP: Promise<Database> = Promise.reject("No opened file yet");
 
 ipcRenderer.on("open-file", (_: IpcRendererEvent, path: string) => {
-  console.log("open-file");
   dbP = (async function () {
     let db: Database;
     try {
@@ -344,11 +343,11 @@ async function loadProcsAndPaths(
       if (
         proc <= procsAndPaths.length &&
         path <= procsAndPaths[proc - 1].paths.length &&
-        route <= procsAndPaths[proc - 1].paths[path - 1].Stops.length
+        route < procsAndPaths[proc - 1].paths[path - 1].Stops.length
       ) {
-        procsAndPaths[proc - 1].paths[path - 1].Stops[
-          route - 1
-        ].StationNums.push(row.StatNum);
+        procsAndPaths[proc - 1].paths[path - 1].Stops[route].StationNums.push(
+          row.StatNum
+        );
       }
     }
   );
@@ -486,7 +485,7 @@ function convertSimStatUse(row: any): any {
     StationGroup: row.StationGroup,
     StationNum: row.StationNum,
     StartUTC: parseDateFromTicks(row.StartUTC),
-    SndUTC: parseDateFromTicks(row.EndUTC),
+    EndUTC: parseDateFromTicks(row.EndUTC),
     UtilizationTime: parseTimespan(row.UtilizationTime),
     PlannedDownTime: parseTimespan(row.PlanDownTime),
   };
