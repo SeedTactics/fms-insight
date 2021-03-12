@@ -8,13 +8,17 @@
   },
   "author": "John Lenz",
   "license": "BSD-3-Clause",
-  "main": "main.js",
+  "main": "src/main.js",
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
-    "build": "rimraf dist && tsc --build && parcel build --public-url ./ src/renderer.html && parcel build --target=electron --public-url ./ src/background.html",
-    "start": "yarn run build && electron .",
-    "dist": "yarn run build && electron-builder"
+    "build-background": "tsc --incremental --project src/background/tsconfig.json && cp src/background/background.html build/background",
+    "build-renderer": "parcel build --out-dir build/app --public-url ./ src/renderer/renderer.html",
+    "start": "yarn run build-background && electron .",
+    "dist": "rimraf build && rimraf dist && yarn run build-background && yarn run build-renderer && electron-builder"
   },
+  "browserslist": [
+    "electron >= 7.0"
+  ],
   "build": {
     "appId": "com.seedtactics.fms-insight.backup-viewer",
     "productName": "SeedTactic FMS Insight Backup Viewer",
@@ -24,9 +28,11 @@
     },
     "files": [
       "package.json",
-      "main.js",
-      "preload.js",
-      "dist/*"
+      "src/main.js",
+      "src/prelude.js",
+      "build/app/*",
+      "build/background/background.html",
+      "build/background/*.js"
     ],
     "publish": [
       "github"
@@ -35,16 +41,22 @@
   "dependencies": {
     "moment": "^2.29.1",
     "sqlite": "^4.0.19",
-    "sqlite3": "5.0.0"
+    "sqlite3": "5.0.2"
   },
   "devDependencies": {
-    "@types/node": "14.14.20",
-    "@types/sqlite3": "^3.1.4",
-    "electron": "11.1.1",
-    "electron-builder": "^22.9.1",
+    "@types/node": "14.14.34",
+    "@types/sqlite3": "^3.1.7",
+    "electron": "12.0.1",
+    "electron-builder": "^22.10.5",
     "node-forge": "^0.10.0",
     "parcel": "^1.11.0",
     "rimraf": "^3.0.0",
-    "typescript": "^4.1.3"
+    "typescript": "^4.2.3"
+  },
+  "resolutions": {
+    "@babel/preset-env": "7.13.8"
+  },
+  "comment": {
+    "babel-preset-resolution": "https://github.com/parcel-bundler/parcel/issues/5943"
   }
 }

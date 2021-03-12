@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "../../insight/src/data/api";
+import * as api from "../../../insight/src/data/api";
 import { IpcRenderer } from "electron";
 import { RendererToBackground } from "./ipc";
 
@@ -43,20 +43,44 @@ declare global {
 const ToBackground = new RendererToBackground(window.electronIpc);
 
 export const ServerBackend = {
-  fMSInformation() {
+  fMSInformation(): Promise<api.IFMSInfo> {
     return Promise.resolve({
       name: "FMS Insight Backup Viewer",
       version: window.bmsVersion,
       requireScanAtWash: false,
       requireWorkorderBeforeAllowWashComplete: false,
       additionalLogServers: [],
+      usingLabelPrinterForSerials: false,
     });
+  },
+  printLabel(): Promise<void> {
+    return Promise.resolve();
   },
 };
 
 export const JobsBackend = {
-  history(): Promise<Readonly<api.IHistoricData>> {
-    return Promise.resolve({ jobs: {}, stationUse: [] });
+  async history(
+    startUTC: Date,
+    endUTC: Date
+  ): Promise<Readonly<api.IHistoricData>> {
+    return { jobs: {}, stationUse: [] };
+    /*
+    const ret: {
+      jobs: { [uniq: string]: object };
+      stationUse: Array<object>;
+    } = await ToBackground.send("job-history", {
+      startUTC,
+      endUTC,
+    });
+    const jobs: { [uniq: string]: api.HistoricJob } = {};
+    for (const uniq of Object.keys(ret.jobs)) {
+      jobs[uniq] = api.HistoricJob.fromJS(ret.jobs[uniq]);
+    }
+    return {
+      jobs,
+      stationUse: ret.stationUse.map(api.SimulatedStationUtilization.fromJS),
+    };
+    */
   },
   currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
     return Promise.resolve({

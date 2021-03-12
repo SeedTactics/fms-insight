@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -30,31 +30,47 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
-import Button from "@material-ui/core/Button";
 
-import { connect } from "../store/store";
+import { IpcRenderer } from "electron";
 
-const InitialPage = React.memo(function BackupViewer(props: {
-  onRequestOpenFile?: () => void;
-  loading_error: Error | undefined;
-}) {
-  return (
-    <div style={{ textAlign: "center" }}>
-      <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>
-      <p style={{ marginTop: "2em", maxWidth: "50em", margin: "0 auto" }}>
-        FMS Insight creates a database in the configured data directory (defaults to{" "}
-        <code>c:\ProgramData\SeedTactics\FMSInsight</code>). The database should be periodically backed up and can then
-        be opened directly by this program to view the data.
-      </p>
-      {props.loading_error ? <p>{props.loading_error.message || props.loading_error}</p> : undefined}
-      <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={props.onRequestOpenFile}>
-        Open File
-      </Button>
-    </div>
-  );
-});
+// Request and Response should be the same as in renderer/ipc.ts
+type Request = {
+  name: string;
+  id: number;
+  payload: any;
+};
 
-export default connect((s) => ({
-  loading_error: s.Events.loading_error,
-}))(InitialPage);
+type Response = {
+  id: number;
+  response?: any;
+  error?: string;
+};
+
+export class BackgroundResponse {
+  public register<P, R>(name: string, handler: (payload: P) => Promise<R>) {
+    this.handlers[name] = handler;
+  }
+  public constructor(
+    ipc: IpcRenderer,
+    private handlers: { [key: string]: (x: any) => Promise<any> }
+  ) {
+    ipc.on("background-request", (_evt: any, req: Request) => {
+      const handler = this.handlers[req.name];
+      if (handler) {
+        Promise.resolve()
+          .then(() => handler(req.payload))
+          .then((r) => {
+            const resp: Response = { id: req.id, response: r };
+            ipc.send("background-response", resp);
+          })
+          .catch((e) => {
+            const resp: Response = { id: req.id, error: e.toString() };
+            ipc.send("background-response", resp);
+          });
+      } else {
+        const resp: Response = { id: req.id, error: "No handler registered" };
+        ipc.send("background-response", resp);
+      }
+    });
+  }
+}

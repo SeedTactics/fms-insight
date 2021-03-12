@@ -53,7 +53,7 @@ export class RendererToBackground {
     const req: Request = {
       name,
       payload,
-      id: this.lastUsedId
+      id: this.lastUsedId,
     };
     const ipc = this.ipc;
     return new Promise((resolve, reject) => {
@@ -72,33 +72,4 @@ export class RendererToBackground {
   }
 
   public constructor(private ipc: IpcRenderer) {}
-}
-
-export class BackgroundResponse {
-  public register<P, R>(name: string, handler: (payload: P) => Promise<R>) {
-    this.handlers[name] = handler;
-  }
-  public constructor(
-    ipc: IpcRenderer,
-    private handlers: { [key: string]: (x: any) => Promise<any> }
-  ) {
-    ipc.on("background-request", (_evt: any, req: Request) => {
-      const handler = this.handlers[req.name];
-      if (handler) {
-        Promise.resolve()
-          .then(() => handler(req.payload))
-          .then(r => {
-            const resp: Response = { id: req.id, response: r };
-            ipc.send("background-response", resp);
-          })
-          .catch(e => {
-            const resp: Response = { id: req.id, error: e.toString() };
-            ipc.send("background-response", resp);
-          });
-      } else {
-        const resp: Response = { id: req.id, error: "No handler registered" };
-        ipc.send("background-response", resp);
-      }
-    });
-  }
 }

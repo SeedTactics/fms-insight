@@ -31,21 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { initStore } from "../../insight/src/store/store";
-import {
-  registerBackend,
-  FmsServerBackend,
-} from "../../insight/src/data/backend";
-import { render } from "../../insight/src/renderer";
-import { loadLast30Days } from "../../insight/src/data/events";
-import { LogBackend, JobsBackend } from "./store-backend";
-import { AppProps } from "../../insight/src/components/App";
-import * as routes from "../../insight/src/data/routes";
+import { initStore } from "../../../insight/src/store/store";
+import { registerBackend } from "../../../insight/src/data/backend";
+import { render } from "../../../insight/src/renderer";
+import { loadLast30Days } from "../../../insight/src/data/events";
+import { LogBackend, JobsBackend, ServerBackend } from "./store-backend";
+import { AppProps } from "../../../insight/src/components/App";
+import * as routes from "../../../insight/src/data/routes";
 
 window.history.pushState(null, "", routes.RouteLocation.Backup_InitialOpen);
+registerBackend(LogBackend, JobsBackend, ServerBackend);
 
 const store = initStore();
-registerBackend(LogBackend, JobsBackend, FmsServerBackend);
 
 const props: AppProps = {
   demo: false,
