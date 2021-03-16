@@ -30,7 +30,7 @@
     "files": [
       "package.json",
       "src/main.js",
-      "src/prelude.js",
+      "src/preload.js",
       "build/app/*",
       "build/background/background.html",
       "build/background/*.js"
