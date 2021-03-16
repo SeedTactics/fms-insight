@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -31,8 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { IpcRenderer } from "electron";
-
 type Request = {
   name: string;
   id: number;
@@ -45,31 +43,48 @@ type Response = {
   error?: string;
 };
 
-export class RendererToBackground {
-  private lastUsedId: number = 0;
+const inFlight = new Map<number, (response: Response) => void>();
+let lastId = 0;
 
-  public send<P, R>(name: string, payload: P): Promise<R> {
-    this.lastUsedId += 1;
-    const req: Request = {
-      name,
-      payload,
-      id: this.lastUsedId,
-    };
-    const ipc = this.ipc;
-    return new Promise((resolve, reject) => {
-      ipc.once(
-        "background-response-" + req.id.toString(),
-        (_evt: any, r: Response) => {
-          if (r.response) {
-            resolve(r.response);
-          } else {
-            reject(r.error);
-          }
-        }
-      );
-      ipc.send("to-background", req);
+export function sendIpc<P, R>(name: string, payload: P): Promise<R> {
+  const messageId = lastId;
+  lastId += 1;
+  const req: Request = {
+    name,
+    payload,
+    id: messageId,
+  };
+  return new Promise((resolve, reject) => {
+    inFlight.set(messageId, (response) => {
+      inFlight.delete(messageId);
+      if (response.error) {
+        reject(response.error);
+      } else {
+        resolve(response.response);
+      }
     });
-  }
-
-  public constructor(private ipc: IpcRenderer) {}
+    window.postMessage(
+      {
+        direction: "message-from-render-to-background",
+        ipcMessage: req,
+      },
+      "*"
+    );
+  });
 }
+
+window.addEventListener("message", (event) => {
+  if (
+    event.source === window && // source == window means from preload
+    typeof event.data === "object" &&
+    event.data &&
+    event.data.direction === "message-response-from-background" &&
+    event.data.ipcMessage
+  ) {
+    const msg: Response = event.data.ipcMessage;
+    const handler = inFlight.get(msg.id);
+    if (handler) {
+      handler(msg);
+    }
+  }
+});

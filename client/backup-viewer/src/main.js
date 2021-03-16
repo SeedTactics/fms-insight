@@ -37,6 +37,7 @@ const {
   ipcMain,
   shell,
   dialog,
+  MessageChannelMain,
 } = require("electron");
 const path = require("path");
 
@@ -95,16 +96,12 @@ app.on("ready", () => {
     app.quit();
   });
 
-  ipcMain.on("to-background", (_, arg) => {
-    background.webContents.send("background-request", arg);
-  });
-  ipcMain.on("background-response", (_, arg) => {
-    mainWindow.webContents.send(
-      "background-response-" + arg.id.toString(),
-      arg
-    );
-  });
-  ipcMain.on("open-file", (_, arg) => {
+  const { port1, port2 } = new MessageChannelMain();
+
+  mainWindow.webContents.postMessage("communication-port", null, [port1]);
+  background.webContents.postMessage("communication-port", null, [port2]);
+
+  ipcMain.on("open-insight-file", () => {
     dialog
       .showOpenDialog(mainWindow, {
         title: "Open Backup Database File",
@@ -113,7 +110,7 @@ app.on("ready", () => {
       .then((paths) => {
         if (!paths.canceled && paths.filePaths.length > 0) {
           background.webContents.send("open-file", paths.filePaths[0]);
-          mainWindow.webContents.send("file-opened", paths.filePaths[0]);
+          mainWindow.webContents.send("insight-file-opened");
         }
       });
   });

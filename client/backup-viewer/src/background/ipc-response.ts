@@ -54,23 +54,27 @@ export class BackgroundResponse {
     ipc: IpcRenderer,
     private handlers: { [key: string]: (x: any) => Promise<any> }
   ) {
-    ipc.on("background-request", (_evt: any, req: Request) => {
-      const handler = this.handlers[req.name];
-      if (handler) {
-        Promise.resolve()
-          .then(() => handler(req.payload))
-          .then((r) => {
-            const resp: Response = { id: req.id, response: r };
-            ipc.send("background-response", resp);
-          })
-          .catch((e) => {
-            const resp: Response = { id: req.id, error: e.toString() };
-            ipc.send("background-response", resp);
-          });
-      } else {
-        const resp: Response = { id: req.id, error: "No handler registered" };
-        ipc.send("background-response", resp);
-      }
+    ipc.on("communication-port", (evt) => {
+      let port = evt.ports[0];
+      port.onmessage = (msg) => {
+        const req: Request = msg.data;
+        const handler = this.handlers[req.name];
+        if (handler) {
+          Promise.resolve()
+            .then(() => handler(req.payload))
+            .then((r) => {
+              const resp: Response = { id: req.id, response: r };
+              port.postMessage(resp);
+            })
+            .catch((e) => {
+              const resp: Response = { id: req.id, error: e.toString() };
+              port.postMessage(resp);
+            });
+        } else {
+          const resp: Response = { id: req.id, error: "No handler registered" };
+          port.postMessage(resp);
+        }
+      };
     });
   }
 }

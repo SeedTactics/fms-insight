@@ -31,16 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "../../../insight/src/data/api";
-import { IpcRenderer } from "electron";
-import { RendererToBackground } from "./ipc";
+import { sendIpc } from "./ipc";
 
 declare global {
   interface Window {
-    electronIpc: IpcRenderer;
     bmsVersion: string;
   }
 }
-const ToBackground = new RendererToBackground(window.electronIpc);
 
 export const ServerBackend = {
   fMSInformation(): Promise<api.IFMSInfo> {
@@ -66,7 +63,7 @@ export const JobsBackend = {
     const ret: {
       jobs: { [uniq: string]: object };
       stationUse: Array<object>;
-    } = await ToBackground.send("job-history", {
+    } = await sendIpc("job-history", {
       startUTC,
       endUTC,
     });
@@ -145,7 +142,7 @@ export const LogBackend = {
     startUTC: Date,
     endUTC: Date
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    const entries: ReadonlyArray<object> = await ToBackground.send("log-get", {
+    const entries: ReadonlyArray<object> = await sendIpc("log-get", {
       startUTC,
       endUTC,
     });
@@ -160,34 +157,25 @@ export const LogBackend = {
   async logForMaterial(
     materialID: number
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    const entries: ReadonlyArray<object> = await ToBackground.send(
-      "log-for-material",
-      {
-        materialID,
-      }
-    );
+    const entries: ReadonlyArray<object> = await sendIpc("log-for-material", {
+      materialID,
+    });
     return entries.map(api.LogEntry.fromJS);
   },
   async logForMaterials(
     materialIDs: ReadonlyArray<number>
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    const entries: ReadonlyArray<object> = await ToBackground.send(
-      "log-for-materials",
-      {
-        materialIDs,
-      }
-    );
+    const entries: ReadonlyArray<object> = await sendIpc("log-for-materials", {
+      materialIDs,
+    });
     return entries.map(api.LogEntry.fromJS);
   },
   async logForSerial(
     serial: string
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-    const entries: ReadonlyArray<object> = await ToBackground.send(
-      "log-for-serial",
-      {
-        serial,
-      }
-    );
+    const entries: ReadonlyArray<object> = await sendIpc("log-for-serial", {
+      serial,
+    });
     return entries.map(api.LogEntry.fromJS);
   },
   getWorkorders(): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {

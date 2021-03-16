@@ -47,13 +47,15 @@ const store = initStore();
 const props: AppProps = {
   demo: false,
   backupViewerOnRequestOpenFile: () => {
-    window.electronIpc.send("open-file");
+    window.postMessage("open-insight-file", "*");
   },
 };
 
-window.electronIpc.on("file-opened", () => {
-  window.history.pushState(null, "", routes.RouteLocation.Backup_Efficiency);
-  store.dispatch(loadLast30Days());
+window.addEventListener("message", (evt) => {
+  if (evt.source === window && evt.data === "insight-file-opened") {
+    window.history.pushState(null, "", routes.RouteLocation.Backup_Efficiency);
+    store.dispatch(loadLast30Days());
+  }
 });
 
 render(props, store, document.getElementById("root"));
