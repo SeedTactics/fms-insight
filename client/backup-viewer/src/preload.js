@@ -1,31 +1,17 @@
 let e = require("electron");
 window.bmsVersion = e.app ? e.app.getVersion() : "1.2.3";
 
-let port = null;
+const windowLoaded = new Promise((resolve) => {
+  window.onload = resolve;
+});
 
-e.ipcRenderer.on("communication-port", (evt) => {
-  port = evt.ports[0];
-
-  port.onmessage = (evt) => {
-    window.postMessage(
-      {
-        direction: "message-response-from-background",
-        ipcMessage: evt.data,
-      },
-      "*"
-    );
-  };
+e.ipcRenderer.once("communication-port", async (evt) => {
+  await windowLoaded;
+  window.postMessage("background-port", "*", evt.ports);
 });
 
 window.addEventListener("message", (event) => {
-  if (
-    event.data &&
-    typeof event.data === "object" &&
-    event.data.direction === "message-from-render-to-background" &&
-    event.data.ipcMessage
-  ) {
-    port.postMessage(event.data.ipcMessage);
-  } else if (event.data === "open-insight-file") {
+  if (event.data === "open-insight-file") {
     e.ipcRenderer.send("open-insight-file");
   }
 });

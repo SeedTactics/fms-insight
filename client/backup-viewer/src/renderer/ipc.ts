@@ -45,8 +45,24 @@ type Response = {
 
 const inFlight = new Map<number, (response: Response) => void>();
 let lastId = 0;
+let port: MessagePort | null = null;
+
+window.addEventListener("message", (evt) => {
+  if (evt.source === window && evt.data === "background-port") {
+    port = evt.ports[0];
+    port.onmessage = (msg) => {
+      const response: Response = msg.data;
+      const handler = inFlight.get(response.id);
+      if (handler) {
+        handler(response);
+      }
+    };
+  }
+});
 
 export function sendIpc<P, R>(name: string, payload: P): Promise<R> {
+  if (port === null) throw "No background port";
+
   const messageId = lastId;
   lastId += 1;
   const req: Request = {
@@ -63,28 +79,6 @@ export function sendIpc<P, R>(name: string, payload: P): Promise<R> {
         resolve(response.response);
       }
     });
-    window.postMessage(
-      {
-        direction: "message-from-render-to-background",
-        ipcMessage: req,
-      },
-      "*"
-    );
+    port?.postMessage(req);
   });
 }
-
-window.addEventListener("message", (event) => {
-  if (
-    event.source === window && // source == window means from preload
-    typeof event.data === "object" &&
-    event.data &&
-    event.data.direction === "message-response-from-background" &&
-    event.data.ipcMessage
-  ) {
-    const msg: Response = event.data.ipcMessage;
-    const handler = inFlight.get(msg.id);
-    if (handler) {
-      handler(msg);
-    }
-  }
-});

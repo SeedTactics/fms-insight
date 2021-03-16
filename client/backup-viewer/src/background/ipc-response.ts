@@ -54,7 +54,7 @@ export class BackgroundResponse {
     ipc: IpcRenderer,
     private handlers: { [key: string]: (x: any) => Promise<any> }
   ) {
-    ipc.on("communication-port", (evt) => {
+    ipc.once("communication-port", (evt) => {
       let port = evt.ports[0];
       port.onmessage = (msg) => {
         const req: Request = msg.data;

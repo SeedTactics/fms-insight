@@ -98,8 +98,12 @@ app.on("ready", () => {
 
   const { port1, port2 } = new MessageChannelMain();
 
-  mainWindow.webContents.postMessage("communication-port", null, [port1]);
-  background.webContents.postMessage("communication-port", null, [port2]);
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.webContents.postMessage("communication-port", null, [port1]);
+  });
+  background.webContents.on("did-finish-load", () => {
+    background.webContents.postMessage("communication-port", null, [port2]);
+  });
 
   ipcMain.on("open-insight-file", () => {
     dialog
