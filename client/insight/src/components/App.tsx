@@ -604,7 +604,7 @@ const App = React.memo(function App(props: AppProps) {
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_Efficiency:
-        page = <Efficiency allowSetType={true} />;
+        page = <Efficiency />;
         navigation = AnalysisTabs;
         showAlarms = false;
         break;
@@ -689,7 +689,7 @@ const App = React.memo(function App(props: AppProps) {
         break;
       case routes.RouteLocation.Backup_Efficiency:
         navigation = BackupTabs;
-        page = <Efficiency allowSetType={false} />;
+        page = <Efficiency />;
         showAlarms = false;
         break;
       case routes.RouteLocation.Backup_PartLookup:

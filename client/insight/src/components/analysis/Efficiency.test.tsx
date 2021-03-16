@@ -49,7 +49,7 @@ it("renders the efficiency page", async () => {
       <RecoilRoot>
         <div>
           <LoadingIcon />
-          <Efficiency allowSetType={true} />
+          <Efficiency />
         </div>
       </RecoilRoot>
     </store.Provider>
