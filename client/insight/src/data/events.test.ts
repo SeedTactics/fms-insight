@@ -39,6 +39,8 @@ import * as stationCycles from "./events.cycles";
 import * as simuse from "./events.simuse";
 import * as inspection from "./events.inspection";
 import * as buffering from "./events.buffering";
+import * as matsummary from "./events.matsummary";
+import * as schjobs from "./events.scheduledjobs";
 import { fakeCycle } from "./events.fake";
 import { ILogEntry } from "./api";
 
@@ -232,6 +234,8 @@ it("loads 30 days for analysis", () => {
         sim_use: simuse.initial,
         inspection: inspection.initial,
         buffering: buffering.initial,
+        mat_summary: matsummary.initial,
+        scheduled_jobs: schjobs.initial,
       },
     },
     {
