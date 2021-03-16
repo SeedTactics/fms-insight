@@ -100,6 +100,7 @@ import { WebsocketConnection } from "../store/websocket";
 import { currentStatus } from "../data/current-status";
 import { JobsBackend } from "../data/backend";
 import { BarcodeListener } from "../store/barcode";
+import { ScheduleHistory } from "./analysis/ScheduleHistory";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -184,6 +185,7 @@ function AnalysisTabs(p: HeaderNavProps) {
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
+      <Tab label="Schedules" value={routes.RouteLocation.Analysis_Schedules} />
       <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
     </Tabs>
   );
@@ -346,11 +348,12 @@ function BackupTabs(p: HeaderNavProps) {
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
-      value={p.routeState}
+      value={p.routeState.route}
       onChange={(e, v) => p.setRoute({ route: v })}
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
       <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
+      <Tab label="Schedules" value={routes.RouteLocation.Backup_Schedules} />
     </Tabs>
   );
 }
@@ -608,6 +611,11 @@ const App = React.memo(function App(props: AppProps) {
         navigation = AnalysisTabs;
         showAlarms = false;
         break;
+      case routes.RouteLocation.Analysis_Schedules:
+        page = <ScheduleHistory />;
+        navigation = AnalysisTabs;
+        showAlarms = false;
+        break;
       case routes.RouteLocation.Analysis_DataExport:
         page = <DataExport />;
         navigation = AnalysisTabs;
@@ -683,13 +691,18 @@ const App = React.memo(function App(props: AppProps) {
         break;
 
       case routes.RouteLocation.Backup_InitialOpen:
-        navigation = BackupTabs;
+        navigation = undefined;
         page = <BackupViewer onRequestOpenFile={props.backupViewerOnRequestOpenFile} />;
         showAlarms = false;
         break;
       case routes.RouteLocation.Backup_Efficiency:
         navigation = BackupTabs;
         page = <Efficiency />;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Backup_Schedules:
+        navigation = BackupTabs;
+        page = <ScheduleHistory />;
         showAlarms = false;
         break;
       case routes.RouteLocation.Backup_PartLookup:

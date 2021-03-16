@@ -62,10 +62,12 @@ import { PartCycleData } from "../../data/events.cycles";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../data/current-status";
 
-interface JobsTableProps {
+export interface JobsTableProps {
   readonly partCycles: Vector<PartCycleData>;
   readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
   readonly showMaterial: boolean;
+  readonly filterCurrentWeek: boolean;
+  readonly showInProcCnt: boolean;
 }
 
 const useTableStyles = makeStyles((theme) =>
@@ -101,12 +103,17 @@ const useTableStyles = makeStyles((theme) =>
 interface JobsRowProps {
   readonly job: ScheduledJobDisplay;
   readonly showMaterial: boolean;
+  readonly showInProcCnt: boolean;
   readonly setCurEditNoteJob: (j: ScheduledJobDisplay) => void;
 }
 
 function JobsRow(props: JobsRowProps) {
   const classes = useTableStyles();
   const [open, setOpen] = React.useState<boolean>(false);
+
+  let colCnt = 6;
+  if (props.showMaterial) colCnt += 1;
+  if (props.showInProcCnt) colCnt += 3;
 
   const job = props.job;
   return (
@@ -139,22 +146,28 @@ function JobsRow(props: JobsRowProps) {
             ) : undefined}
           </TableCell>
         ) : undefined}
-        <TableCell>
-          {job.historicJob.comment}
+        {props.showInProcCnt ? (
+          <TableCell>
+            {job.historicJob.comment}
 
-          <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => props.setCurEditNoteJob(job)}>
-              <EditIcon />
-            </IconButton>
-          </Tooltip>
-        </TableCell>
+            <Tooltip title="Edit">
+              <IconButton size="small" onClick={() => props.setCurEditNoteJob(job)}>
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+          </TableCell>
+        ) : undefined}
         <TableCell align="right">{job.scheduledQty}</TableCell>
         <TableCell align="right" className={job.decrementedQty > 0 ? classes.highlightedCell : undefined}>
           {job.decrementedQty}
         </TableCell>
         <TableCell align="right">{job.completedQty}</TableCell>
-        <TableCell align="right">{job.inProcessQty}</TableCell>
-        <TableCell align="right">{job.remainingQty}</TableCell>
+        {props.showInProcCnt ? (
+          <>
+            <TableCell align="right">{job.inProcessQty}</TableCell>
+            <TableCell align="right">{job.remainingQty}</TableCell>
+          </>
+        ) : undefined}
         <TableCell>
           <Tooltip title="Show Details">
             <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -164,9 +177,12 @@ function JobsRow(props: JobsRowProps) {
         </TableCell>
       </TableRow>
       <TableRow className={job.darkRow ? classes.darkRow : undefined}>
-        <TableCell className={classes.collapseCell} colSpan={props.showMaterial ? 10 : 9}>
+        <TableCell className={classes.collapseCell} colSpan={colCnt}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <JobDetails job={job.inProcJob ? job.inProcJob : job.historicJob} />
+            <JobDetails
+              job={job.inProcJob ? job.inProcJob : job.historicJob}
+              checkAnalysisMonth={!props.showInProcCnt}
+            />
           </Collapse>
         </TableCell>
       </TableRow>
@@ -174,16 +190,20 @@ function JobsRow(props: JobsRowProps) {
   );
 }
 
-function JobsTable(props: JobsTableProps) {
+export function JobsTable(props: JobsTableProps) {
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
   const currentSt = useRecoilValue(currentStatus);
 
   const jobs = React.useMemo(() => {
-    const today = startOfToday();
-    const start = addDays(today, -6);
-    const end = addDays(today, 1);
-    return buildScheduledJobs(start, end, props.partCycles, props.schJobs, currentSt);
-  }, [props.partCycles, props.schJobs, currentSt]);
+    if (props.filterCurrentWeek) {
+      const today = startOfToday();
+      const start = addDays(today, -6);
+      const end = addDays(today, 1);
+      return buildScheduledJobs(start, end, props.partCycles, props.schJobs, currentSt);
+    } else {
+      return buildScheduledJobs(null, null, props.partCycles, props.schJobs, currentSt);
+    }
+  }, [props.partCycles, props.schJobs, currentSt, props.filterCurrentWeek]);
 
   return (
     <Card raised>
@@ -211,18 +231,28 @@ function JobsTable(props: JobsTableProps) {
               <TableCell>Date</TableCell>
               <TableCell>Part</TableCell>
               {props.showMaterial ? <TableCell>Material</TableCell> : undefined}
-              <TableCell>Note</TableCell>
+              {props.showInProcCnt ? <TableCell>Note</TableCell> : undefined}
               <TableCell align="right">Scheduled</TableCell>
               <TableCell align="right">Removed</TableCell>
               <TableCell align="right">Completed</TableCell>
-              <TableCell align="right">In Process</TableCell>
-              <TableCell align="right">Remaining To Run</TableCell>
+              {props.showInProcCnt ? (
+                <>
+                  <TableCell align="right">In Process</TableCell>
+                  <TableCell align="right">Remaining To Run</TableCell>
+                </>
+              ) : undefined}
               <TableCell />
             </TableRow>
           </TableHead>
           <TableBody>
             {jobs.map((job, jobIdx) => (
-              <JobsRow key={jobIdx} job={job} showMaterial={props.showMaterial} setCurEditNoteJob={setCurEditNoteJob} />
+              <JobsRow
+                key={jobIdx}
+                job={job}
+                showMaterial={props.showMaterial}
+                setCurEditNoteJob={setCurEditNoteJob}
+                showInProcCnt={props.showInProcCnt}
+              />
             ))}
           </TableBody>
         </Table>
@@ -248,7 +278,7 @@ export function CompletedParts() {
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="scheduled-jobs">
-        <ConnectedJobsTable />
+        <ConnectedJobsTable showInProcCnt={true} filterCurrentWeek={true} />
       </div>
     </main>
   );

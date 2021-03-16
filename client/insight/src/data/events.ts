@@ -69,6 +69,8 @@ export interface AnalysisMonth {
   readonly sim_use: simuse.SimUseState;
   readonly inspection: inspection.InspectionState;
   readonly buffering: buffering.BufferingState;
+  readonly mat_summary: matsummary.MatSummaryState;
+  readonly scheduled_jobs: schJobs.ScheduledJobsState;
 }
 
 const emptyAnalysisMonth: AnalysisMonth = {
@@ -76,6 +78,8 @@ const emptyAnalysisMonth: AnalysisMonth = {
   sim_use: simuse.initial,
   inspection: inspection.initial,
   buffering: buffering.initial,
+  mat_summary: matsummary.initial,
+  scheduled_jobs: schJobs.initial,
 };
 
 export interface State {
@@ -284,7 +288,11 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
       s.cycles
     ),
     most_recent_10_events: last10Evts,
-    mat_summary: matsummary.process_events(now, evts, s.mat_summary),
+    mat_summary: matsummary.process_events(
+      { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
+      evts,
+      s.mat_summary
+    ),
     inspection: inspection.process_events(
       { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
       evts,
@@ -310,6 +318,8 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
     ),
     inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection),
     buffering: buffering.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.buffering),
+    mat_summary: matsummary.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.mat_summary),
+    scheduled_jobs: schJobs.process_events(evts, true, s.scheduled_jobs),
   });
 }
 
@@ -343,6 +353,7 @@ function processRecentJobs(now: Date, jobs: Readonly<api.IHistoricData>, s: Last
 function processSpecificMonthJobs(jobs: Readonly<api.IHistoricData>, s: AnalysisMonth): AnalysisMonth {
   return safeAssign(s, {
     sim_use: simuse.process_sim_use({ type: cycles.ExpireOldDataType.NoExpire }, jobs, s.sim_use),
+    scheduled_jobs: schJobs.process_scheduled_jobs({ type: cycles.ExpireOldDataType.NoExpire }, jobs, s.scheduled_jobs),
   });
 }
 

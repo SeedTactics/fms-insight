@@ -64,11 +64,13 @@ export enum RouteLocation {
 
   Analysis_Efficiency = "/analysis/efficiency",
   Analysis_CostPerPiece = "/analysis/cost",
+  Analysis_Schedules = "/analysis/schedules",
   Analysis_DataExport = "/analysis/data-export",
 
   Backup_InitialOpen = "/backup/open",
   Backup_Efficiency = "/backup/efficiency",
   Backup_PartLookup = "/backup/lookup",
+  Backup_Schedules = "/backup/schedules",
 }
 
 export type RouteState =
@@ -94,9 +96,11 @@ export type RouteState =
   | { route: RouteLocation.Tools_Programs }
   | { route: RouteLocation.Analysis_Efficiency }
   | { route: RouteLocation.Analysis_CostPerPiece }
+  | { route: RouteLocation.Analysis_Schedules }
   | { route: RouteLocation.Analysis_DataExport }
   | { route: RouteLocation.Backup_InitialOpen }
   | { route: RouteLocation.Backup_Efficiency }
+  | { route: RouteLocation.Backup_Schedules }
   | { route: RouteLocation.Backup_PartLookup };
 
 function routeToUrl(route: RouteState): string {

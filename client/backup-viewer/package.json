@@ -14,7 +14,7 @@
     "build-background": "tsc --incremental --project src/background/tsconfig.json && cp src/background/background.html build/background",
     "build-renderer": "parcel build --out-dir build/app --public-url ./ src/renderer/renderer.html",
     "build": "yarn run build-background && yarn run build-renderer",
-    "start": "yarn run build-background && electron .",
+    "start": "yarn run build && electron .",
     "dist": "rimraf build && rimraf package && yarn run build && electron-builder"
   },
   "browserslist": [

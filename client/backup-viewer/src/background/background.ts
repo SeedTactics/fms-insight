@@ -442,7 +442,7 @@ async function loadProcsAndPaths(
 async function loadJob(db: Database, row: any): Promise<any> {
   var uniq = { $uniq: row.UniqueStr };
   return {
-    UniqueStr: row.UniqueStr,
+    Unique: row.UniqueStr,
     PartName: row.Part,
     Comment: row.Comment,
     RouteStartUTC: parseDateFromTicks(row.StartUTC),

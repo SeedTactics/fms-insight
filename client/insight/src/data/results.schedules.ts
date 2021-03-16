@@ -53,18 +53,19 @@ export interface ScheduledJobDisplay {
 type WritableScheduledJob = { -readonly [K in keyof ScheduledJobDisplay]: ScheduledJobDisplay[K] };
 
 export function buildScheduledJobs(
-  start: Date,
-  end: Date,
+  start: Date | null,
+  end: Date | null,
   cycles: Iterable<PartCycleData>,
   schJobs: HashMap<string, Readonly<IHistoricJob>>,
   currentSt: Readonly<ICurrentStatus>
 ): ReadonlyArray<ScheduledJobDisplay> {
-  const filteredCycles = LazySeq.ofIterable(cycles).filter((e) => e.x >= start && e.x <= end);
+  const filteredCycles =
+    start != null && end != null ? LazySeq.ofIterable(cycles).filter((e) => e.x >= start && e.x <= end) : cycles;
 
   const result = new Map<string, WritableScheduledJob>();
 
   for (const [uniq, job] of schJobs) {
-    if (job.routeStartUTC >= start && job.routeStartUTC <= end) {
+    if (start == null || end == null || (job.routeStartUTC >= start && job.routeStartUTC <= end)) {
       const casting = LazySeq.ofIterable(job.procsAndPaths[0]?.paths ?? [])
         .mapOption((p) =>
           p.casting !== null && p.casting !== undefined && p.casting !== ""
