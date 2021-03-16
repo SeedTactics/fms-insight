@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -31,30 +31,36 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Button from "@material-ui/core/Button";
+import { AnalysisPeriod } from "../../data/events";
+import { connect } from "../../store/store";
+import { JobsTable } from "../operations/CompletedParts";
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 
-import { connect } from "../store/store";
+const ConnectedSchedules = connect((st) => ({
+  partCycles:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.part_cycles
+      : st.Events.selected_month.cycles.part_cycles,
+  schJobs:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.scheduled_jobs.jobs
+      : st.Events.selected_month.scheduled_jobs.jobs,
+  showMaterial:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.scheduled_jobs.someJobHasCasting
+      : st.Events.selected_month.scheduled_jobs.someJobHasCasting,
+}))(JobsTable);
 
-const InitialPage = React.memo(function BackupViewer(props: {
-  onRequestOpenFile?: () => void;
-  loading_error: Error | undefined;
-}) {
+export function ScheduleHistory() {
+  React.useEffect(() => {
+    document.title = "Scheduled Jobs - FMS Insight";
+  }, []);
   return (
-    <div style={{ textAlign: "center" }}>
-      <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>
-      <p style={{ marginTop: "2em", maxWidth: "50em", margin: "0 auto" }}>
-        FMS Insight creates a database in the configured data directory (defaults to{" "}
-        <code>c:\ProgramData\SeedTactics\FMSInsight</code>). The database should be periodically backed up and can then
-        be opened directly by this program to view the data.
-      </p>
-      {props.loading_error ? <p>{props.loading_error.message || props.loading_error}</p> : undefined}
-      <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={props.onRequestOpenFile}>
-        Open File
-      </Button>
-    </div>
+    <>
+      <AnalysisSelectToolbar />
+      <main style={{ padding: "24px" }}>
+        <ConnectedSchedules showInProcCnt={false} filterCurrentWeek={false} />
+      </main>
+    </>
   );
-});
-
-export default connect((s) => ({
-  loading_error: s.Events.loading_error,
-}))(InitialPage);
+}

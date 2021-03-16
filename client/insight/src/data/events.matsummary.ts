@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import { addDays } from "date-fns";
 import { HashMap, HashSet, Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
+import { ExpireOldData, ExpireOldDataType } from "./events.cycles";
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -80,18 +80,24 @@ export function inproc_mat_to_summary(mat: Readonly<api.IInProcessMaterial>): Ma
   };
 }
 
-export function process_events(now: Date, newEvts: ReadonlyArray<api.ILogEntry>, st: MatSummaryState): MatSummaryState {
-  const oneWeekAgo = addDays(now, -7);
+export function process_events(
+  expire: ExpireOldData,
+  newEvts: ReadonlyArray<api.ILogEntry>,
+  st: MatSummaryState
+): MatSummaryState {
+  let mats = st.matsById;
 
-  // check if no changes needed: no new events and nothing to filter out
-  const minEntry = LazySeq.ofIterable(st.matsById.valueIterable()).minBy(
-    (m1, m2) => m1.last_event.getTime() - m2.last_event.getTime()
-  );
-  if ((minEntry.isNone() || minEntry.get().last_event >= oneWeekAgo) && newEvts.length === 0) {
-    return st;
+  if (expire.type === ExpireOldDataType.ExpireEarlierThan) {
+    // check if no changes needed: no new events and nothing to filter out
+    const minEntry = LazySeq.ofIterable(mats.valueIterable()).minBy(
+      (m1, m2) => m1.last_event.getTime() - m2.last_event.getTime()
+    );
+    if ((minEntry.isNone() || minEntry.get().last_event >= expire.d) && newEvts.length === 0) {
+      return st;
+    }
+
+    mats = mats.filter((_, e) => e.last_event >= expire.d);
   }
-
-  let mats = st.matsById.filter((_, e) => e.last_event >= oneWeekAgo);
 
   const inspTypes = new Map<string, boolean>();
 

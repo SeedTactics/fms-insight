@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -30,31 +30,55 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
-import Button from "@material-ui/core/Button";
 
-import { connect } from "../store/store";
+type Request = {
+  name: string;
+  id: number;
+  payload: any;
+};
 
-const InitialPage = React.memo(function BackupViewer(props: {
-  onRequestOpenFile?: () => void;
-  loading_error: Error | undefined;
-}) {
-  return (
-    <div style={{ textAlign: "center" }}>
-      <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>
-      <p style={{ marginTop: "2em", maxWidth: "50em", margin: "0 auto" }}>
-        FMS Insight creates a database in the configured data directory (defaults to{" "}
-        <code>c:\ProgramData\SeedTactics\FMSInsight</code>). The database should be periodically backed up and can then
-        be opened directly by this program to view the data.
-      </p>
-      {props.loading_error ? <p>{props.loading_error.message || props.loading_error}</p> : undefined}
-      <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={props.onRequestOpenFile}>
-        Open File
-      </Button>
-    </div>
-  );
+type Response = {
+  id: number;
+  response?: any;
+  error?: string;
+};
+
+const inFlight = new Map<number, (response: Response) => void>();
+let lastId = 0;
+let port: MessagePort | null = null;
+
+window.addEventListener("message", (evt) => {
+  if (evt.source === window && evt.data === "background-port") {
+    port = evt.ports[0];
+    port.onmessage = (msg) => {
+      const response: Response = msg.data;
+      const handler = inFlight.get(response.id);
+      if (handler) {
+        handler(response);
+      }
+    };
+  }
 });
 
-export default connect((s) => ({
-  loading_error: s.Events.loading_error,
-}))(InitialPage);
+export function sendIpc<P, R>(name: string, payload: P): Promise<R> {
+  if (port === null) throw "No background port";
+
+  const messageId = lastId;
+  lastId += 1;
+  const req: Request = {
+    name,
+    payload,
+    id: messageId,
+  };
+  return new Promise((resolve, reject) => {
+    inFlight.set(messageId, (response) => {
+      inFlight.delete(messageId);
+      if (response.error) {
+        reject(response.error);
+      } else {
+        resolve(response.response);
+      }
+    });
+    port?.postMessage(req);
+  });
+}

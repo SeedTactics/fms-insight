@@ -2189,6 +2189,28 @@ namespace BlackMaple.MachineFramework
 
       return newLogEntries;
     }
+
+    public void AddToolsToLog(long counter,
+        IDictionary<string, MachineWatchInterface.ToolUse> tools = null,
+        IEnumerable<ToolPocketSnapshot> pockets = null
+    )
+    {
+      lock (_cfg)
+      {
+        using (var trans = _connection.BeginTransaction())
+        {
+          if (tools != null)
+          {
+            AddToolUse(counter, tools, trans);
+          }
+          if (pockets != null)
+          {
+            AddToolSnapshots(counter, pockets, trans);
+          }
+          trans.Commit();
+        }
+      }
+    }
     #endregion
 
     #region Material IDs

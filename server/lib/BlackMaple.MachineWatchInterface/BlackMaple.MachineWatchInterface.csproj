@@ -3,6 +3,7 @@
   <PropertyGroup>
     <AssemblyName>BlackMaple.MachineWatchInterface</AssemblyName>
     <PackageId>BlackMaple.MachineWatchInterface</PackageId>
+    <OutputType>Library</OutputType>
 
     <Title>SeedTactics Interface to MachineWatch and FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -18,8 +19,10 @@
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
 
-    <OutputType>Library</OutputType>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>

@@ -81,11 +81,6 @@ jobs:
           asset_name: FMS Insight Makino Install.msi
           asset_content_type: application/octet-stream
 
-      # https://github.com/electron-userland/electron-builder/issues/4176
-      - name: Temporarily fix electron-builder
-        run: sed -i 's/\^\[\\w/\^\[.\\w/g' client/backup-viewer/node_modules/builder-util/out/util.js
-        shell: bash
-
       - name: Build and Upload Backup Viewer
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

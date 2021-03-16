@@ -12,12 +12,14 @@ on:
 jobs:
   server:
     runs-on: windows-latest
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
     steps:
       - uses: actions/checkout@v2
 
       - uses: actions/cache@v2
         with:
-          path: ~/.nuget/packages
+          path: ${{ github.workspace }}/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
@@ -25,13 +27,16 @@ jobs:
       - name: Server TestSuite
         run: |
           tzutil /s "Pacific Standard Time"
-          dotnet test server/test
+          dotnet test server/test --collect:"XPlat Code Coverage"
+
+      - name: Upload Code Coverage
+        uses: codecov/codecov-action@v1
+        with:
+          directory: server/test/TestResults
+          flags: server-unittests
 
       - name: API Build
         run: dotnet build client/csharp-api
-
-      #- name: MachineWatchInterface Build
-      #  run: dotnet build server/lib/BlackMaple.MachineWatchInterface
 
       - name: Reverse proxy build
         run: dotnet build server/reverse-proxy

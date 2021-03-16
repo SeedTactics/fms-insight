@@ -12,7 +12,6 @@
     "moduleResolution": "node",
     "rootDir": "src",
     "downlevelIteration": true,
-    "composite": true,
     "allowSyntheticDefaultImports": true,
 
     "strict": true,

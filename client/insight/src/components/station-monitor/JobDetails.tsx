@@ -44,11 +44,12 @@ import { duration } from "moment";
 import { format } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
-import { connect } from "../../store/store";
+import { useSelector } from "../../store/store";
 import { materialToShowInDialog } from "../../data/material-details";
 import { HashMap, HashSet } from "prelude-ts";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { currentStatus } from "../../data/current-status";
+import { AnalysisPeriod } from "../../data/events";
 
 interface JobDetailsToDisplay extends Readonly<api.IJobPlan> {
   completed?: number[][];
@@ -235,22 +236,36 @@ function JobMaterial(props: JobMaterialProps) {
   );
 }
 
-const ConnectedJobMaterial = connect((st) => ({
-  matsFromEvents: st.Events.last30.mat_summary.matsById,
-  matIdsForJob: st.Events.last30.scheduled_jobs.matIdsForJob,
-}))(JobMaterial);
-
 export interface JobDetailsProps {
   readonly job: Readonly<JobDetailsToDisplay> | null;
+  readonly checkAnalysisMonth: boolean;
 }
 
 export function JobDetails(props: JobDetailsProps) {
+  const matsFromEvents = useSelector((s) =>
+    props.checkAnalysisMonth && s.Events.analysis_period === AnalysisPeriod.SpecificMonth
+      ? s.Events.selected_month.mat_summary.matsById
+      : s.Events.last30.mat_summary.matsById
+  );
+  const matIdsForJob = useSelector((s) =>
+    props.checkAnalysisMonth && s.Events.analysis_period === AnalysisPeriod.SpecificMonth
+      ? s.Events.selected_month.scheduled_jobs.matIdsForJob
+      : s.Events.last30.scheduled_jobs.matIdsForJob
+  );
+
+  console.log(props.job);
+
   return (
     <div style={{ display: "flex", justifyContent: "space-evenly" }}>
       {props.job !== null ? (
         <>
           <JobDisplay job={props.job} />
-          <ConnectedJobMaterial unique={props.job.unique} fullWidth={false} />
+          <JobMaterial
+            unique={props.job.unique}
+            fullWidth={false}
+            matsFromEvents={matsFromEvents}
+            matIdsForJob={matIdsForJob}
+          />
         </>
       ) : undefined}
     </div>

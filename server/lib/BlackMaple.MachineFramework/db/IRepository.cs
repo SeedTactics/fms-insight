@@ -104,6 +104,7 @@ namespace BlackMaple.MachineFramework
     MachineWatchInterface.LogEntry SignalMaterialForQuarantine(EventLogMaterial mat, string pallet, string queue, DateTime? timeUTC = null, string operatorName = null, string foreignId = null, string originalMessage = null);
     SwapMaterialResult SwapMaterialInCurrentPalletCycle(string pallet, long oldMatId, long newMatId, string operatorName, DateTime? timeUTC = null);
     IEnumerable<MachineWatchInterface.LogEntry> InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue, string operatorName, DateTime? timeUTC = null);
+    void AddToolsToLog(long counter, IDictionary<string, MachineWatchInterface.ToolUse> tools = null, IEnumerable<ToolPocketSnapshot> pockets = null);
 
 
     // --------------------------------------------------------------------------------

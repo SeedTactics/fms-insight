@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { IpcRenderer } from "electron";
 
+// Request and Response should be the same as in renderer/ipc.ts
 type Request = {
   name: string;
   id: number;
@@ -45,35 +46,6 @@ type Response = {
   error?: string;
 };
 
-export class RendererToBackground {
-  private lastUsedId: number = 0;
-
-  public send<P, R>(name: string, payload: P): Promise<R> {
-    this.lastUsedId += 1;
-    const req: Request = {
-      name,
-      payload,
-      id: this.lastUsedId
-    };
-    const ipc = this.ipc;
-    return new Promise((resolve, reject) => {
-      ipc.once(
-        "background-response-" + req.id.toString(),
-        (_evt: any, r: Response) => {
-          if (r.response) {
-            resolve(r.response);
-          } else {
-            reject(r.error);
-          }
-        }
-      );
-      ipc.send("to-background", req);
-    });
-  }
-
-  public constructor(private ipc: IpcRenderer) {}
-}
-
 export class BackgroundResponse {
   public register<P, R>(name: string, handler: (payload: P) => Promise<R>) {
     this.handlers[name] = handler;
@@ -82,23 +54,27 @@ export class BackgroundResponse {
     ipc: IpcRenderer,
     private handlers: { [key: string]: (x: any) => Promise<any> }
   ) {
-    ipc.on("background-request", (_evt: any, req: Request) => {
-      const handler = this.handlers[req.name];
-      if (handler) {
-        Promise.resolve()
-          .then(() => handler(req.payload))
-          .then(r => {
-            const resp: Response = { id: req.id, response: r };
-            ipc.send("background-response", resp);
-          })
-          .catch(e => {
-            const resp: Response = { id: req.id, error: e.toString() };
-            ipc.send("background-response", resp);
-          });
-      } else {
-        const resp: Response = { id: req.id, error: "No handler registered" };
-        ipc.send("background-response", resp);
-      }
+    ipc.once("communication-port", (evt) => {
+      let port = evt.ports[0];
+      port.onmessage = (msg) => {
+        const req: Request = msg.data;
+        const handler = this.handlers[req.name];
+        if (handler) {
+          Promise.resolve()
+            .then(() => handler(req.payload))
+            .then((r) => {
+              const resp: Response = { id: req.id, response: r };
+              port.postMessage(resp);
+            })
+            .catch((e) => {
+              const resp: Response = { id: req.id, error: e.toString() };
+              port.postMessage(resp);
+            });
+        } else {
+          const resp: Response = { id: req.id, error: "No handler registered" };
+          port.postMessage(resp);
+        }
+      };
     });
   }
 }

@@ -727,10 +727,6 @@ function BufferOccupancyChart() {
 // Oee Heatmap
 // --------------------------------------------------------------------------------
 
-interface HeatmapProps {
-  readonly allowSetType: boolean;
-}
-
 type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
 
 function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
@@ -755,7 +751,7 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
     });
 }
 
-function StationOeeHeatmap(props: HeatmapProps) {
+function StationOeeHeatmap() {
   const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
   const data = useSelector((s) =>
     s.Events.analysis_period === AnalysisPeriod.Last30Days ? s.Events.last30 : s.Events.selected_month
@@ -778,7 +774,7 @@ function StationOeeHeatmap(props: HeatmapProps) {
       icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
       cur_selected={selected}
       options={["Standard OEE", "Occupied", "Planned OEE"]}
-      setSelected={props.allowSetType ? setSelected : undefined}
+      setSelected={setSelected}
       points={points}
       onExport={() => copyOeeHeatmapToClipboard("Station", points)}
     />
@@ -788,10 +784,6 @@ function StationOeeHeatmap(props: HeatmapProps) {
 // --------------------------------------------------------------------------------
 // Completed Heatmap
 // --------------------------------------------------------------------------------
-
-interface CompletedHeatmapProps {
-  readonly allowSetType: boolean;
-}
 
 type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
@@ -843,7 +835,7 @@ function partsPlannedPoints(simUse: SimUseState) {
     });
 }
 
-function CompletedCountHeatmap(props: CompletedHeatmapProps) {
+function CompletedCountHeatmap() {
   const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
   const data = useSelector((s) =>
     s.Events.analysis_period === AnalysisPeriod.Last30Days ? s.Events.last30 : s.Events.selected_month
@@ -863,7 +855,7 @@ function CompletedCountHeatmap(props: CompletedHeatmapProps) {
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
       cur_selected={selected}
       options={["Completed", "Planned"]}
-      setSelected={props.allowSetType ? setSelected : undefined}
+      setSelected={setSelected}
       points={points}
       onExport={() => copyCompletedPartsHeatmapToClipboard(points)}
     />
@@ -894,7 +886,7 @@ const ConnectedInspection = connect((st) => ({
 // Efficiency
 // --------------------------------------------------------------------------------
 
-export default function Efficiency({ allowSetType }: { allowSetType: boolean }) {
+export default function Efficiency() {
   React.useEffect(() => {
     document.title = "Efficiency - FMS Insight";
   }, []);
@@ -915,10 +907,10 @@ export default function Efficiency({ allowSetType }: { allowSetType: boolean }) 
           <BufferOccupancyChart />
         </div>
         <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
-          <StationOeeHeatmap allowSetType={allowSetType} />
+          <StationOeeHeatmap />
         </div>
         <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
-          <CompletedCountHeatmap allowSetType={allowSetType} />
+          <CompletedCountHeatmap />
         </div>
         <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
           <ConnectedInspection />

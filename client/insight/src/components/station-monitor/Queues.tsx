@@ -226,7 +226,7 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
       <TableRow className={bgClass}>
         <TableCell className={classes.collapseCell} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <JobDetails job={j.job} />
+            <JobDetails job={j.job} checkAnalysisMonth={false} />
           </Collapse>
         </TableCell>
       </TableRow>

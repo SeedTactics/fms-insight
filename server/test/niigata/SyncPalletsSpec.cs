@@ -40,6 +40,7 @@ using FluentAssertions;
 using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using System.Collections.Immutable;
+using Germinate;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {

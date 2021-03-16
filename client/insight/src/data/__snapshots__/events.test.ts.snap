@@ -726,6 +726,75 @@ Object {
       ],
     },
   },
+  "mat_summary": Object {
+    "inspTypes": Array [
+      "Insp1",
+    ],
+    "matsById": Map {
+      "4419" => Object {
+        "completedInspections": Object {
+          "Insp1": 2018-01-31T09:58:05.000Z,
+        },
+        "completed_inspect_time": 2018-01-31T09:58:05.000Z,
+        "jobUnique": "uniqx",
+        "last_event": 2018-01-31T09:58:05.000Z,
+        "last_unload_time": 2018-01-31T09:46:05.000Z,
+        "materialID": 4419,
+        "partName": "partBBB",
+        "signaledInspections": Array [
+          "Insp1",
+        ],
+        "startedProcess1": true,
+      },
+      "13842" => Object {
+        "completedInspections": Object {
+          "Insp1": 2018-01-06T09:52:10.000Z,
+        },
+        "completed_inspect_time": 2018-01-06T09:52:10.000Z,
+        "jobUnique": "uniq7",
+        "last_event": 2018-01-06T09:52:10.000Z,
+        "last_unload_time": 2018-01-06T09:40:05.000Z,
+        "materialID": 13842,
+        "partName": "partCCC",
+        "signaledInspections": Array [
+          "Insp1",
+          "Insp1",
+        ],
+        "startedProcess1": true,
+      },
+      "87097" => Object {
+        "completedInspections": Object {
+          "Insp1": 2018-02-02T10:04:10.000Z,
+        },
+        "completed_inspect_time": 2018-02-02T10:04:10.000Z,
+        "jobUnique": "uniqd",
+        "last_event": 2018-02-02T10:04:10.000Z,
+        "last_unload_time": 2018-02-02T09:52:05.000Z,
+        "materialID": 87097,
+        "partName": "partAAA",
+        "signaledInspections": Array [
+          "Insp1",
+          "Insp1",
+        ],
+        "startedProcess1": true,
+      },
+    },
+  },
+  "scheduled_jobs": Object {
+    "jobs": Map {},
+    "matIdsForJob": Map {
+      "uniqd" => Array [
+        87097,
+      ],
+      "uniq7" => Array [
+        13842,
+      ],
+      "uniqx" => Array [
+        4419,
+      ],
+    },
+    "someJobHasCasting": false,
+  },
   "sim_use": Object {
     "castingNames": Array [],
     "production": Array [],
@@ -1482,6 +1551,23 @@ Object {
         "materialID": 90793,
         "partName": "part111",
         "signaledInspections": Array [
+          "Insp1",
+        ],
+        "startedProcess1": true,
+      },
+      "15510" => Object {
+        "completedInspections": Object {
+          "Insp1": 2018-01-31T09:58:10.000Z,
+        },
+        "completed_inspect_time": 2018-01-31T09:58:10.000Z,
+        "completed_machining": true,
+        "jobUnique": "uniqv",
+        "last_event": 2018-01-31T09:58:10.000Z,
+        "last_unload_time": 2018-01-31T09:46:05.000Z,
+        "materialID": 15510,
+        "partName": "part222",
+        "signaledInspections": Array [
+          "Insp1",
           "Insp1",
         ],
         "startedProcess1": true,
@@ -3568,6 +3654,22 @@ Object {
         "materialID": 88570,
         "partName": "part111",
         "signaledInspections": Array [
+          "Insp1",
+        ],
+        "startedProcess1": true,
+      },
+      "47261" => Object {
+        "completedInspections": Object {
+          "Insp1": 2018-01-31T09:58:10.000Z,
+        },
+        "completed_inspect_time": 2018-01-31T09:58:10.000Z,
+        "jobUnique": "uniqy",
+        "last_event": 2018-01-31T09:58:10.000Z,
+        "last_unload_time": 2018-01-31T09:46:05.000Z,
+        "materialID": 47261,
+        "partName": "part222",
+        "signaledInspections": Array [
+          "Insp1",
           "Insp1",
         ],
         "startedProcess1": true,

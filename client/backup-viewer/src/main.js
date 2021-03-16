@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -37,7 +37,9 @@ const {
   ipcMain,
   shell,
   dialog,
+  MessageChannelMain,
 } = require("electron");
+const path = require("path");
 
 app.on("web-contents-created", (_, contents) => {
   contents.on("will-navigate", (event, url) => {
@@ -46,11 +48,11 @@ app.on("web-contents-created", (_, contents) => {
     }
     event.preventDefault();
   });
-  contents.on("new-window", (event, url) => {
-    if (url.startsWith("https://fms-insight.seedtactics.com")) {
+  contents.setWindowOpenHandler((details) => {
+    if (details.url.startsWith("https://fms-insight.seedtactics.com")) {
       shell.openExternal(url);
     }
-    event.preventDefault();
+    return { action: "deny" };
   });
 });
 
@@ -59,10 +61,10 @@ app.on("ready", () => {
     show: false,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
   });
-  background.loadFile("dist/background.html");
-  //background.webContents.openDevTools();
+  background.loadFile("build/background/background.html");
 
   Menu.setApplicationMenu(null);
 
@@ -72,26 +74,38 @@ app.on("ready", () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
-      preload: __dirname + "/preload.js",
+      preload: path.join(app.getAppPath(), "src", "preload.js"),
     },
   });
   mainWindow.maximize();
-  mainWindow.loadFile("dist/renderer.html");
+
+  mainWindow.webContents.on("before-input-event", (e, i) => {
+    if (i.type === "keyDown" && i.key === "F12") {
+      mainWindow.webContents.openDevTools({ mode: "detach" });
+      background.webContents.openDevTools({ mode: "detach" });
+    }
+    if (i.type === "keyDown" && i.key === "F5") {
+      mainWindow.reload();
+      background.reload();
+    }
+  });
+
+  mainWindow.loadFile("build/app/renderer.html");
+
   mainWindow.on("closed", () => {
     app.quit();
   });
-  //mainWindow.webContents.openDevTools();
 
-  ipcMain.on("to-background", (_, arg) => {
-    background.webContents.send("background-request", arg);
+  const { port1, port2 } = new MessageChannelMain();
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.webContents.postMessage("communication-port", null, [port1]);
   });
-  ipcMain.on("background-response", (_, arg) => {
-    mainWindow.webContents.send(
-      "background-response-" + arg.id.toString(),
-      arg
-    );
+  background.webContents.on("did-finish-load", () => {
+    background.webContents.postMessage("communication-port", null, [port2]);
   });
-  ipcMain.on("open-file", (_, arg) => {
+
+  ipcMain.on("open-insight-file", () => {
     dialog
       .showOpenDialog(mainWindow, {
         title: "Open Backup Database File",
@@ -100,7 +114,7 @@ app.on("ready", () => {
       .then((paths) => {
         if (!paths.canceled && paths.filePaths.length > 0) {
           background.webContents.send("open-file", paths.filePaths[0]);
-          mainWindow.webContents.send("file-opened", paths.filePaths[0]);
+          mainWindow.webContents.send("insight-file-opened");
         }
       });
   });
