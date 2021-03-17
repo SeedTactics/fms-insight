@@ -423,39 +423,14 @@ namespace MachineWatchTest
           lulNum: 87,
           timeUTC: start.AddHours(6).AddMinutes(10)
       );
-      var expectedUnloadStartCycle =
+      unloadStartActualCycle.Should().BeEquivalentTo(
           new LogEntry(
               unloadStartActualCycle.Counter, new LogMaterial[] { mat15, mat19 }, "rrr",
               LogType.LoadUnloadCycle, "L/U", 87,
-              "UNLOAD", true, start.AddHours(6).AddMinutes(10), "UNLOAD", false);
-      unloadStartActualCycle.Should().BeEquivalentTo(expectedUnloadStartCycle,
+              "UNLOAD", true, start.AddHours(6).AddMinutes(10), "UNLOAD", false),
         options => options.ComparingByMembers<LogEntry>()
       );
-
-      _jobLog.AddToolsToLog(unloadStartActualCycle.Counter,
-        new Dictionary<string, ToolUse>() {
-          { "toolA", new ToolUse() { ToolUseDuringCycle = TimeSpan.FromMinutes(14) } }
-        },
-        new[] {
-            new ToolPocketSnapshot() {
-              PocketNumber = 15, Tool = "toolB", CurrentUse = TimeSpan.FromSeconds(17), ToolLife = TimeSpan.FromMinutes(24)
-            },
-        }
-      );
-      _jobLog.ToolPocketSnapshotForCycle(unloadStartActualCycle.Counter).Should().BeEquivalentTo(
-        new[] {
-            new ToolPocketSnapshot() {
-              PocketNumber = 15, Tool = "toolB", CurrentUse = TimeSpan.FromSeconds(17), ToolLife = TimeSpan.FromMinutes(24)
-            },
-        }
-      );
-
-      expectedUnloadStartCycle %= e =>
-      {
-        e.Tools["toolA"] = new ToolUse() { ToolUseDuringCycle = TimeSpan.FromMinutes(14) };
-      };
-
-      logs.Add(expectedUnloadStartCycle);
+      logs.Add(unloadStartActualCycle);
 
       var unloadEndActualCycle = _jobLog.RecordUnloadEnd(
           mats: new[] { mat2, mat19 }.Select(EventLogMaterial.FromLogMat),
