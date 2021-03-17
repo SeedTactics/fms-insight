@@ -41,7 +41,13 @@ namespace MazakMachineInterface
 {
   public interface ILogTranslation
   {
-    List<MaterialToSendToExternalQueue> HandleEvent(LogEntry e);
+    public record HandleEventResult
+    {
+      public IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> MatsToSendToExternal { get; init; }
+      public bool StoppedBecauseRecentMachineEnd { get; init; }
+    }
+
+    HandleEventResult HandleEvent(LogEntry e);
     bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null);
   }
 
@@ -83,10 +89,10 @@ namespace MazakMachineInterface
     }
 
     #region Events
-    public List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> HandleEvent(LogEntry e)
+    public ILogTranslation.HandleEventResult HandleEvent(LogEntry e)
     {
       var cycle = new List<MWI.LogEntry>();
-      var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
+      IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> sendToExternal = null;
       if (e.Pallet >= 1)
         cycle = _log.CurrentPalletLog(e.Pallet.ToString());
 
@@ -140,6 +146,18 @@ namespace MazakMachineInterface
           break;
 
         case LogCode.MachineCycleEnd:
+
+          // Tool snapshots take ~5 seconds from the end of the cycle until the updated tools are available in open database kit,
+          // so stop processing log entries if the machine cycle end occurred 15 seconds in the past.
+          var timeSinceEnd = DateTime.UtcNow.Subtract(e.TimeUTC);
+          if (TimeSpan.FromSeconds(-15) <= timeSinceEnd && timeSinceEnd <= TimeSpan.FromSeconds(15))
+          {
+            return new ILogTranslation.HandleEventResult()
+            {
+              MatsToSendToExternal = Enumerable.Empty<MaterialToSendToExternalQueue>(),
+              StoppedBecauseRecentMachineEnd = true
+            };
+          }
 
           var machStart = FindMachineStart(e, cycle, e.StationNumber);
           TimeSpan elapsed;
@@ -202,7 +220,7 @@ namespace MazakMachineInterface
 
           var mats = GetMaterialOnPallet(e, cycle);
           var queues = FindUnloadQueues(mats);
-          sendToExternal.AddRange(FindSendToExternalQueue(mats));
+          sendToExternal = FindSendToExternalQueue(mats);
 
           _log.RecordUnloadEnd(
             mats: mats.Select(m => m.Mat),
@@ -304,7 +322,11 @@ namespace MazakMachineInterface
 
       _onMazakLog(e);
 
-      return sendToExternal;
+      return new ILogTranslation.HandleEventResult()
+      {
+        MatsToSendToExternal = sendToExternal ?? Enumerable.Empty<MaterialToSendToExternalQueue>(),
+        StoppedBecauseRecentMachineEnd = false
+      };
     }
     #endregion
 

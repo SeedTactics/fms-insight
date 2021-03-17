@@ -108,10 +108,12 @@ namespace MachineWatchTest
       );
     }
 
-    protected List<MaterialToSendToExternalQueue> HandleEvent(MazakMachineInterface.LogEntry e)
+    protected IEnumerable<MaterialToSendToExternalQueue> HandleEvent(MazakMachineInterface.LogEntry e)
     {
       expectedMazakLogEntries.Add(e);
-      return log.HandleEvent(e);
+      var ret = log.HandleEvent(e);
+      ret.StoppedBecauseRecentMachineEnd.Should().BeFalse();
+      return ret.MatsToSendToExternal;
     }
 
     #region Mazak Data Setup
@@ -2124,6 +2126,32 @@ namespace MachineWatchTest
       StockerEnd(new[] { m1proc2 }, offset: 30, stocker: 3, waitForMachine: true, elapMin: 5);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Fact]
+    public void SkipsRecentMachineEnd()
+    {
+      var e = new MazakMachineInterface.LogEntry()
+      {
+        TimeUTC = DateTime.UtcNow.AddSeconds(-5),
+        Code = LogCode.MachineCycleEnd,
+        ForeignID = "",
+        StationNumber = 4,
+        Pallet = 3,
+        FullPartName = "apart",
+        JobPartName = "apart",
+        Process = 2,
+        FixedQuantity = 5,
+        Program = "aprogram",
+        TargetPosition = "",
+        FromPosition = "",
+      };
+
+      var ret = log.HandleEvent(e);
+      ret.StoppedBecauseRecentMachineEnd.Should().BeTrue();
+      ret.MatsToSendToExternal.Should().BeEmpty();
+      raisedByEvent.Should().BeEmpty();
+      jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow.AddHours(10)).Should().BeEmpty();
     }
   }
 

@@ -415,12 +415,13 @@ namespace MazakMachineInterface
 
     public void ThreadFunc()
     {
+      bool stoppedBecauseRecentMachineEnd = false;
       for (; ; )
       {
         try
         {
 
-          var sleepTime = TimeSpan.FromMinutes(1);
+          var sleepTime = stoppedBecauseRecentMachineEnd ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(1);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
 
           Thread.Sleep(TimeSpan.FromSeconds(1));
@@ -448,11 +449,18 @@ namespace MazakMachineInterface
             var trans = new LogTranslation(logDb, mazakData, _machGroupName, _settings,
               le => MazakLogEvent?.Invoke(le, logDb)
             );
+            stoppedBecauseRecentMachineEnd = false;
             foreach (var ev in logs)
             {
               try
               {
-                sendToExternal.AddRange(trans.HandleEvent(ev));
+                var result = trans.HandleEvent(ev);
+                if (result.StoppedBecauseRecentMachineEnd)
+                {
+                  stoppedBecauseRecentMachineEnd = true;
+                  break;
+                }
+                sendToExternal.AddRange(result.MatsToSendToExternal);
               }
               catch (Exception ex)
               {
@@ -462,7 +470,11 @@ namespace MazakMachineInterface
 
             DeleteLog(logDb.MaxForeignID());
 
-            var palStChanged = trans.CheckPalletStatusMatchesLogs();
+            bool palStChanged = false;
+            if (!stoppedBecauseRecentMachineEnd)
+            {
+              palStChanged = trans.CheckPalletStatusMatchesLogs();
+            }
 
             var queuesChanged = _queues.CheckQueues(logDb, mazakData);
 

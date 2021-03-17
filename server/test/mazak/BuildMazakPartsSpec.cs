@@ -1468,14 +1468,14 @@ namespace MachineWatchTest
           FixtureName = f,
           Comment = "Insight",
           Command = MazakWriteCommand.Add
-        });
+        }).ToList();
       var del = (delFix ?? Enumerable.Empty<string>())
         .Select(f => new MazakFixtureRow()
         {
           FixtureName = f,
           Comment = "Insight",
           Command = MazakWriteCommand.Delete
-        });
+        }).ToList();
 
       var actions = map.AddFixtureAndProgramDatabaseRows((p, r) => throw new Exception("Unexpected program lookup"), "C:\\NCProgs");
       actions.Fixtures.Should().BeEquivalentTo(add);

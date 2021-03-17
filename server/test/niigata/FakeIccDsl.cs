@@ -1858,7 +1858,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _assign.NewPalletChange(cellSt).Should().BeNull();
         }
 
-        var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>();
+        var evts = logMonitor.OccurredEvents.Select(e => e.Parameters[0]).Cast<LogEntry>().ToList();
 
         foreach (var expected in expectedChanges)
         {
