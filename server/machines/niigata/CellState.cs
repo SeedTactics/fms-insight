@@ -1902,24 +1902,6 @@ namespace BlackMaple.FMSInsight.Niigata
       return progsToDelete.Values.ToList();
     }
 
-    private static Func<A, B> Memoize<A, B>(Func<A, B> f)
-    {
-      var cache = new Dictionary<A, B>();
-      return a =>
-      {
-        if (cache.TryGetValue(a, out var b))
-        {
-          return b;
-        }
-        else
-        {
-          b = f(a);
-          cache.Add(a, b);
-          return b;
-        }
-      };
-    }
-
     private class JobCache
     {
       private Dictionary<string, (HistoricJob job, JobPlan legacyJob)> _jobs;

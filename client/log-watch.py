@@ -15,5 +15,8 @@ async def consume():
         print("")
         print("  -------------------------------------   ")
         print("")
+      elif "NewCurrentStatus" in j:
+        st = j["NewCurrentStatus"]
+        print("New status with %i jobs and %i material" % (len(st["Jobs"]), len(st["Material"])))
 
 asyncio.get_event_loop().run_until_complete(consume())
