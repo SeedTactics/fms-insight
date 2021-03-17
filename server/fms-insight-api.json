@@ -2354,7 +2354,8 @@
           },
           "ConfiguredToolLife": {
             "type": "string",
-            "format": "time-span"
+            "format": "time-span",
+            "nullable": true
           },
           "ToolChangeOccurred": {
             "type": "boolean",
@@ -3839,7 +3840,8 @@
           },
           "TotalLifeTime": {
             "type": "string",
-            "format": "time-span"
+            "format": "time-span",
+            "nullable": true
           }
         }
       },

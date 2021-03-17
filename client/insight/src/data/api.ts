@@ -2395,7 +2395,7 @@ export enum LogType {
 export class ToolUse implements IToolUse {
     toolUseDuringCycle!: string;
     totalToolUseAtEndOfCycle!: string;
-    configuredToolLife!: string;
+    configuredToolLife?: string | undefined;
     toolChangeOccurred?: boolean | undefined;
 
     constructor(data?: IToolUse) {
@@ -2436,7 +2436,7 @@ export class ToolUse implements IToolUse {
 export interface IToolUse {
     toolUseDuringCycle: string;
     totalToolUseAtEndOfCycle: string;
-    configuredToolLife: string;
+    configuredToolLife?: string | undefined;
     toolChangeOccurred?: boolean | undefined;
 }
 
@@ -4876,7 +4876,7 @@ export class ToolInMachine implements IToolInMachine {
     pocket!: number;
     toolName!: string;
     currentUse!: string;
-    totalLifeTime!: string;
+    totalLifeTime?: string | undefined;
 
     constructor(data?: IToolInMachine) {
         if (data) {
@@ -4923,7 +4923,7 @@ export interface IToolInMachine {
     pocket: number;
     toolName: string;
     currentUse: string;
-    totalLifeTime: string;
+    totalLifeTime?: string | undefined;
 }
 
 export class ProgramInCellController implements IProgramInCellController {

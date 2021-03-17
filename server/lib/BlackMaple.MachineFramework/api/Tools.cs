@@ -56,7 +56,7 @@ namespace BlackMaple.MachineWatchInterface
     public TimeSpan CurrentUse { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public TimeSpan TotalLifeTime { get; init; }
+    public TimeSpan? TotalLifeTime { get; init; }
   }
 
   [DataContract, Draftable]
@@ -64,7 +64,7 @@ namespace BlackMaple.MachineWatchInterface
   {
     [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; init; }
     [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ConfiguredToolLife { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; init; }
 
     public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f)
