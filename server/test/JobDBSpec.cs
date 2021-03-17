@@ -53,20 +53,6 @@ namespace MachineWatchTest
     {
       _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
       _jobDB = _repoCfg.OpenConnection();
-      FluentAssertions.AssertionOptions.AssertEquivalencyUsing(options =>
-        options
-          .ComparingByMembers<HistoricData>()
-          .ComparingByMembers<Job>()
-          .ComparingByMembers<HistoricJob>()
-          .ComparingByMembers<HoldPattern>()
-          .ComparingByMembers<ProcessInfo>()
-          .ComparingByMembers<ProcPathInfo>()
-          .ComparingByMembers<MachiningStop>()
-          .ComparingByMembers<PlannedSchedule>()
-          .ComparingByMembers<PartWorkorder>()
-          .ComparingByMembers<WorkorderProgram>()
-      );
-
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
     }
