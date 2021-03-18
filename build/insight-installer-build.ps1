@@ -13,14 +13,14 @@ If (!(Test-Path tmp)) {
   New-Item -ItemType Directory -Force -Path tmp
 }
 
-dotnet publish -c Release -f net461 /p:Version="$version" server/machines/$name/$name.csproj
+dotnet publish -r win-x64 -c Release /p:Version="$version" server/machines/$name/$name.csproj
 
 $heat = "C:\Program Files (x86)\WiX Toolset v3.11\bin\heat.exe"
 $candle = "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe"
 $light = "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe"
 
 # Heat config
-$publishdir = "server/machines/$name/bin/Release/net461/publish"
+$publishdir = "server/machines/$name/bin/Release/net5.0/win-x64/publish"
 $ENV:InsightPublishDir = $publishdir
 $ENV:InsightProductId = (New-Guid).Guid
 $ENV:InsightVersion = $version
