@@ -675,7 +675,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const currentSt = useRecoilValue(currentStatus);
   const operator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
-  const printOnAdd = (fmsInfo.usingLabelPrinterForSerials ?? false) && (fmsInfo.useClientPrinterForLabels ?? false);
+  const printOnAdd = fmsInfo.usingLabelPrinterForSerials && fmsInfo.useClientPrinterForLabels;
   const [addNewCasting] = useAddNewCastingToQueue();
 
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);

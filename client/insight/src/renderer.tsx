@@ -53,7 +53,6 @@ enableMapSet();
 import App, { AppProps } from "./components/App";
 import { Store } from "./store/typed-redux";
 import { useDemoLocation } from "./data/routes";
-import useLocation from "./store/use-location";
 
 export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null) {
   const theme = createMuiTheme({
@@ -66,7 +65,7 @@ export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElem
   ReactDOM.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router hook={props.demo ? useDemoLocation : useLocation}>
+      <Router hook={props.demo ? useDemoLocation : undefined}>
         <RecoilRoot>
           <store.Provider>
             {/* <React.StrictMode> */}

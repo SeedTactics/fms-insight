@@ -2,8 +2,8 @@
 **/bin/Release/
 **/obj/
 node_modules/
-client/insight/.build/
-client/insight/.cache/
+client/insight/.parcel-dev/
+client/insight/.parcel-cache/
 client/insight/demo/
 client/insight/dist/
 client/insight/tsconfig.tsbuildinfo

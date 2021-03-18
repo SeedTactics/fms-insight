@@ -79,7 +79,7 @@ import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
-import logo from "../seedtactics-logo.svg";
+import logo from "url:../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
 import { SerialScannerButton } from "./QRScan";
 import { ManualScanButton } from "./ManualScan";
