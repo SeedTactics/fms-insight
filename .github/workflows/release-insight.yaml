@@ -27,7 +27,7 @@ jobs:
           tzutil /s "Pacific Standard Time"
           dotnet test server/test
 
-      - run: yarn --cwd client/insight install --frozen-lockfile
+      - run: yarn --cwd client/insight install --frozen-lockfile --network-timeout 1000000
       - run: yarn --cwd client/insight test
       - run: yarn --cwd client/insight run build
 
