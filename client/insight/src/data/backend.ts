@@ -167,6 +167,28 @@ export function setOtherLogBackends(servers: ReadonlyArray<string>) {
   OtherLogBackends = servers.map((s) => new api.LogClient(s));
 }
 
+export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI) {
+  LogBackend = log;
+  JobsBackend = job;
+  FmsServerBackend = fms;
+}
+
+export function setUserToken(u: User) {
+  const token = u.access_token || u.id_token;
+  function fetch(url: RequestInfo, init?: RequestInit) {
+    return window.fetch(
+      url,
+      init
+        ? { ...init, headers: { ...init.headers, Authorization: "Bearer " + token } }
+        : { headers: { Authorization: "Bearer " + token } }
+    );
+  }
+  FmsServerBackend = new api.FmsClient(BackendUrl, { fetch });
+  JobsBackend = new api.JobsClient(BackendUrl, { fetch });
+  LogBackend = new api.LogClient(BackendUrl, { fetch });
+  OtherLogBackends = otherLogServers.map((s) => new api.LogClient(s, { fetch }));
+}
+
 export function instructionUrl(
   partName: string,
   type: string,
@@ -185,22 +207,6 @@ export function instructionUrl(
     (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "") +
     (pallet ? "&pallet=" + encodeURIComponent(pallet) : "")
   );
-}
-
-export function setUserToken(u: User) {
-  const token = u.access_token || u.id_token;
-  function fetch(url: RequestInfo, init?: RequestInit) {
-    return window.fetch(
-      url,
-      init
-        ? { ...init, headers: { ...init.headers, Authorization: "Bearer " + token } }
-        : { headers: { Authorization: "Bearer " + token } }
-    );
-  }
-  FmsServerBackend = new api.FmsClient(BackendUrl, { fetch });
-  JobsBackend = new api.JobsClient(BackendUrl, { fetch });
-  LogBackend = new api.LogClient(BackendUrl, { fetch });
-  OtherLogBackends = otherLogServers.map((s) => new api.LogClient(s, { fetch }));
 }
 
 export interface MockData {
@@ -587,10 +593,4 @@ export function registerMockBackend() {
     (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
   });
   initMockBackend(mockDataPromise);
-}
-
-export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI) {
-  LogBackend = log;
-  JobsBackend = job;
-  FmsServerBackend = fms;
 }

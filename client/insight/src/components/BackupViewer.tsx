@@ -34,11 +34,9 @@ import * as React from "react";
 import Button from "@material-ui/core/Button";
 
 import { connect } from "../store/store";
+import { requestOpenBackupFile } from "../data/backend-messages";
 
-const InitialPage = React.memo(function BackupViewer(props: {
-  onRequestOpenFile?: () => void;
-  loading_error: Error | undefined;
-}) {
+function BackupViewer(props: { loading_error: Error | undefined }) {
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>
@@ -48,13 +46,13 @@ const InitialPage = React.memo(function BackupViewer(props: {
         be opened directly by this program to view the data.
       </p>
       {props.loading_error ? <p>{props.loading_error.message || props.loading_error}</p> : undefined}
-      <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={props.onRequestOpenFile}>
+      <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={requestOpenBackupFile}>
         Open File
       </Button>
     </div>
   );
-});
+}
 
 export default connect((s) => ({
   loading_error: s.Events.loading_error,
-}))(InitialPage);
+}))(BackupViewer);

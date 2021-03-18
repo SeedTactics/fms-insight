@@ -34,13 +34,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { initStore } from "./store/store";
 import * as websocket from "./store/websocket";
 import { render } from "./renderer";
+import { RouteLocation } from "./data/routes";
+import { registerBackupViewerBackend } from "./data/backend-messages";
 
 const store = initStore();
 
-websocket.configureWebsocket(
-  (a) => store.dispatch(a),
-  () => store.getState().Events
-);
+if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
+  registerBackupViewerBackend();
+} else {
+  websocket.configureWebsocket(
+    (a) => store.dispatch(a),
+    () => store.getState().Events
+  );
+}
 
 render({ demo: false }, store, document.getElementById("root"));
 
