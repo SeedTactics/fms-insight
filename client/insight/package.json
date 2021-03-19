@@ -81,29 +81,19 @@
   },
   "jest": {
     "testURL": "http://localhost",
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json"
-    ],
+    "preset": "ts-jest",
     "modulePathIgnorePatterns": [
-      "<rootDir>/.build/",
-      "<rootDir>/.cache/"
+      "<rootDir>/.parcel-dev/",
+      "<rootDir>/.parcel-cache/"
     ],
     "moduleNameMapper": {
-      ".*\\.css$": "<rootDir>/file-mock.js",
-      ".*webrtc-adapter.*": "<rootDir>/file-mock.js"
+      "\\.css$": "<rootDir>/file-mock.js",
+      "^url:./events-json.txt": "./events-json.txt"
     },
     "transform": {
       "^.+\\.tsx?$": "ts-jest",
-      ".*\\.svg$": "<rootDir>/file-mock.js",
-      ".*events-json.txt$": "<rootDir>/file-mock.js"
+      "events-json\\.txt$": "<rootDir>/file-mock.js"
     },
-    "preset": "ts-jest",
-    "testMatch": null,
     "snapshotSerializers": [
       "<rootDir>/prelude-ts-snapshots.js"
     ]

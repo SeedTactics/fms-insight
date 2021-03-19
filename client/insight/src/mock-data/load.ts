@@ -38,6 +38,7 @@ import toolUse from "./tool-use.json";
 import newJobs from "./newjobs.json";
 import tools from "./tools.json";
 import programs from "./programs.json";
+import statusJson from "./status-mock.json";
 import evtJson from "url:./events-json.txt";
 
 function offsetJob(j: api.JobPlan, offsetSeconds: number) {
@@ -54,7 +55,6 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
 }
 
 async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   let evtsSeq: LazySeq<api.ILogEntry>;
   if (evtJson.startsWith("[")) {
     // jest loads the contents as a string
@@ -109,8 +109,7 @@ export interface MockData {
 }
 
 export function loadMockData(offsetSeconds: number): MockData {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const status = api.CurrentStatus.fromJS(require("./status-mock.json"));
+  const status = api.CurrentStatus.fromJS(statusJson);
   status.timeOfCurrentStatusUTC = addSeconds(status.timeOfCurrentStatusUTC, offsetSeconds);
   for (const j of Object.values(status.jobs)) {
     offsetJob(j, offsetSeconds);
