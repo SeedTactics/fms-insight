@@ -19,7 +19,9 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
-  "exclude": ["node_modules", ".build", ".cache", "dist", "demo"]
+  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist", "demo"]
 }

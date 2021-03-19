@@ -34,6 +34,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "../data/api";
 import { addSeconds } from "date-fns";
 import { LazySeq } from "../data/lazyseq";
+import toolUse from "./tool-use.json";
+import newJobs from "./newjobs.json";
+import tools from "./tools.json";
+import programs from "./programs.json";
+import statusJson from "./status-mock.json";
+import evtJson from "url:./events-json.txt";
 
 function offsetJob(j: api.JobPlan, offsetSeconds: number) {
   j.routeStartUTC = addSeconds(j.routeStartUTC, offsetSeconds);
@@ -49,8 +55,6 @@ function offsetJob(j: api.JobPlan, offsetSeconds: number) {
 }
 
 async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogEntry>[]> {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const evtJson: string = require("./events-json.txt");
   let evtsSeq: LazySeq<api.ILogEntry>;
   if (evtJson.startsWith("[")) {
     // jest loads the contents as a string
@@ -62,11 +66,9 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
     evtsSeq = LazySeq.ofIterable(rawEvts);
   }
 
-  const toolUse = require("./tool-use.json");
-
   return evtsSeq
     .map((evt: api.ILogEntry) => {
-      const tools = toolUse[evt.counter];
+      const tools = (toolUse as any)[evt.counter.toString()];
       const e = api.LogEntry.fromJS(tools ? { ...evt, tools } : evt);
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
@@ -94,8 +96,6 @@ async function loadEventsJson(offsetSeconds: number): Promise<Readonly<api.ILogE
 }
 
 function loadNewJobs(): ReadonlyArray<api.NewJobs> {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const newJobs = require("./newjobs.json");
   return newJobs.map(api.NewJobs.fromJS);
 }
 
@@ -109,8 +109,7 @@ export interface MockData {
 }
 
 export function loadMockData(offsetSeconds: number): MockData {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const status = api.CurrentStatus.fromJS(require("./status-mock.json"));
+  const status = api.CurrentStatus.fromJS(statusJson);
   status.timeOfCurrentStatusUTC = addSeconds(status.timeOfCurrentStatusUTC, offsetSeconds);
   for (const j of Object.values(status.jobs)) {
     offsetJob(j, offsetSeconds);
@@ -154,7 +153,7 @@ export function loadMockData(offsetSeconds: number): MockData {
     jobs: historic,
     workorders: new Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>(),
     events: loadEventsJson(offsetSeconds),
-    tools: require("./tools.json").map(api.ToolInMachine.fromJS),
-    programs: require("./programs.json").map(api.ProgramInCellController.fromJS),
+    tools: tools.map(api.ToolInMachine.fromJS),
+    programs: programs.map(api.ProgramInCellController.fromJS),
   };
 }

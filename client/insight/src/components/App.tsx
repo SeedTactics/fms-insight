@@ -79,7 +79,7 @@ import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
-import logo from "../seedtactics-logo.svg";
+import logo from "url:../seedtactics-logo.svg";
 import BackupViewer from "./BackupViewer";
 import { SerialScannerButton } from "./QRScan";
 import { ManualScanButton } from "./ManualScan";
@@ -551,7 +551,6 @@ function LoadDemoData() {
 
 export interface AppProps {
   demo: boolean;
-  backupViewerOnRequestOpenFile?: () => void;
 }
 
 const App = React.memo(function App(props: AppProps) {
@@ -692,7 +691,7 @@ const App = React.memo(function App(props: AppProps) {
 
       case routes.RouteLocation.Backup_InitialOpen:
         navigation = undefined;
-        page = <BackupViewer onRequestOpenFile={props.backupViewerOnRequestOpenFile} />;
+        page = <BackupViewer />;
         showAlarms = false;
         break;
       case routes.RouteLocation.Backup_Efficiency:

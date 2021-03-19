@@ -43,7 +43,7 @@ import {
   InProcessMaterialAction,
   ActionType,
 } from "./api";
-import * as faker from "faker";
+import faker from "faker";
 import { duration } from "moment";
 import { addSeconds, addMinutes } from "date-fns";
 

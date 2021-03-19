@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "../../build/background",
+    "tsBuildInfoFile": "../../.tsbuildinfo",
 
     "module": "commonjs",
     "target": "es2018",

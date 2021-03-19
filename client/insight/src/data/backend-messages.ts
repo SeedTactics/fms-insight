@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -30,20 +30,93 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "../../../insight/src/data/api";
-import { sendIpc } from "./ipc";
 
-declare global {
-  interface Window {
-    bmsVersion: string;
+import * as api from "../../../insight/src/data/api";
+import { loadLast30Days } from "./events";
+import { RouteLocation } from "./routes";
+import { reduxStore } from "../store/store";
+import { registerBackend } from "./backend";
+
+type Request = {
+  name: string;
+  id: number;
+  payload: any;
+};
+
+type Response = {
+  id: number;
+  response?: any;
+  error?: string;
+};
+
+const inFlight = new Map<number, (response: Response) => void>();
+let lastId = 0;
+let port: MessagePort | null = null;
+let msgHandlerRegsitered = false;
+
+function onWindowMessage(evt: MessageEvent<unknown>) {
+  if (evt.source === window && evt.data === "insight-file-opened") {
+    port = evt.ports[0];
+    port.onmessage = (msg) => {
+      const response: Response = msg.data;
+      const handler = inFlight.get(response.id);
+      if (handler) {
+        handler(response);
+      }
+    };
+    window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
+    reduxStore?.dispatch(loadLast30Days() as any);
+    window.removeEventListener("message", onWindowMessage);
   }
 }
 
-export const ServerBackend = {
+export function requestOpenBackupFile() {
+  if (msgHandlerRegsitered === false) {
+    window.addEventListener("message", onWindowMessage);
+    msgHandlerRegsitered = true;
+  }
+
+  window.postMessage("open-insight-file", "*");
+}
+
+export function registerBackupViewerBackend() {
+  registerBackend(LogBackend, JobsBackend, ServerBackend);
+}
+
+function sendIpc<P, R>(name: string, payload: P): Promise<R> {
+  if (port === null) throw "No background port";
+
+  const messageId = lastId;
+  lastId += 1;
+  const req: Request = {
+    name,
+    payload,
+    id: messageId,
+  };
+  return new Promise((resolve, reject) => {
+    inFlight.set(messageId, (response) => {
+      inFlight.delete(messageId);
+      if (response.error) {
+        reject(response.error);
+      } else {
+        resolve(response.response);
+      }
+    });
+    port?.postMessage(req);
+  });
+}
+
+declare global {
+  interface Window {
+    bmsVersion: string | undefined;
+  }
+}
+
+const ServerBackend = {
   fMSInformation(): Promise<api.IFMSInfo> {
     return Promise.resolve({
       name: "FMS Insight Backup Viewer",
-      version: window.bmsVersion,
+      version: window.bmsVersion ?? "",
       requireScanAtWash: false,
       requireWorkorderBeforeAllowWashComplete: false,
       additionalLogServers: [],
@@ -55,11 +128,8 @@ export const ServerBackend = {
   },
 };
 
-export const JobsBackend = {
-  async history(
-    startUTC: Date,
-    endUTC: Date
-  ): Promise<Readonly<api.IHistoricData>> {
+const JobsBackend = {
+  async history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>> {
     const ret: {
       jobs: { [uniq: string]: object };
       stationUse: Array<object>;
@@ -86,9 +156,7 @@ export const JobsBackend = {
       timeOfCurrentStatusUTC: new Date(),
     });
   },
-  mostRecentUnfilledWorkordersForPart(): Promise<
-    ReadonlyArray<Readonly<api.IPartWorkorder>>
-  > {
+  mostRecentUnfilledWorkordersForPart(): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
     return Promise.resolve([]);
   },
   setJobComment(): Promise<void> {
@@ -108,21 +176,15 @@ export const JobsBackend = {
     // do nothing
     return Promise.resolve();
   },
-  addUnprocessedMaterialToQueue(): Promise<
-    Readonly<api.IInProcessMaterial> | undefined
-  > {
+  addUnprocessedMaterialToQueue(): Promise<Readonly<api.IInProcessMaterial> | undefined> {
     // do nothing
     return Promise.resolve(undefined);
   },
-  addUnallocatedCastingToQueue(): Promise<
-    ReadonlyArray<Readonly<api.IInProcessMaterial>>
-  > {
+  addUnallocatedCastingToQueue(): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>> {
     // do nothing
     return Promise.resolve([]);
   },
-  addUnallocatedCastingToQueueByPart(): Promise<
-    Readonly<api.IInProcessMaterial> | undefined
-  > {
+  addUnallocatedCastingToQueueByPart(): Promise<Readonly<api.IInProcessMaterial> | undefined> {
     // do nothing
     return Promise.resolve(undefined);
   },
@@ -137,11 +199,8 @@ export const JobsBackend = {
   },
 };
 
-export const LogBackend = {
-  async get(
-    startUTC: Date,
-    endUTC: Date
-  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+const LogBackend = {
+  async get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
     const entries: ReadonlyArray<object> = await sendIpc("log-get", {
       startUTC,
       endUTC,
@@ -149,30 +208,22 @@ export const LogBackend = {
     return entries.map(api.LogEntry.fromJS);
   },
 
-  recent(
-    _lastSeenCounter: number
-  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+  recent(_lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
     return Promise.reject("not implemented");
   },
-  async logForMaterial(
-    materialID: number
-  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+  async logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
     const entries: ReadonlyArray<object> = await sendIpc("log-for-material", {
       materialID,
     });
     return entries.map(api.LogEntry.fromJS);
   },
-  async logForMaterials(
-    materialIDs: ReadonlyArray<number>
-  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+  async logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
     const entries: ReadonlyArray<object> = await sendIpc("log-for-materials", {
       materialIDs,
     });
     return entries.map(api.LogEntry.fromJS);
   },
-  async logForSerial(
-    serial: string
-  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
+  async logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
     const entries: ReadonlyArray<object> = await sendIpc("log-for-serial", {
       serial,
     });

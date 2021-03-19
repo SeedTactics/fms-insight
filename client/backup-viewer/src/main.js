@@ -38,6 +38,7 @@ const {
   shell,
   dialog,
   MessageChannelMain,
+  session,
 } = require("electron");
 const path = require("path");
 
@@ -56,7 +57,13 @@ app.on("web-contents-created", (_, contents) => {
   });
 });
 
+const insightHost = "file://insight/";
+
 app.on("ready", () => {
+  Menu.setApplicationMenu(null);
+
+  const { port1, port2 } = new MessageChannelMain();
+
   const background = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -66,7 +73,26 @@ app.on("ready", () => {
   });
   background.loadFile("build/background/background.html");
 
-  Menu.setApplicationMenu(null);
+  background.webContents.on("did-finish-load", () => {
+    background.webContents.postMessage("communication-port", null, [port2]);
+  });
+
+  const ses = session.fromPartition("insight-main-window");
+  ses.protocol.interceptFileProtocol("file", (request, callback) => {
+    if (request.url === insightHost + "backup/open") {
+      callback({
+        path: path.join(app.getAppPath(), "build", "insight", "index.html"),
+      });
+    } else if (request.url.startsWith(insightHost)) {
+      const url = request.url.substr(insightHost.length);
+      callback({
+        path: path.join(app.getAppPath(), "build", "insight", url),
+      });
+    } else {
+      console.log("Invalid host for " + request.url);
+      callback({ error: -6 });
+    }
+  });
 
   const mainWindow = new BrowserWindow({
     height: 600,
@@ -74,6 +100,7 @@ app.on("ready", () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
+      session: ses,
       preload: path.join(app.getAppPath(), "src", "preload.js"),
     },
   });
@@ -90,19 +117,8 @@ app.on("ready", () => {
     }
   });
 
-  mainWindow.loadFile("build/app/renderer.html");
-
   mainWindow.on("closed", () => {
     app.quit();
-  });
-
-  const { port1, port2 } = new MessageChannelMain();
-
-  mainWindow.webContents.on("did-finish-load", () => {
-    mainWindow.webContents.postMessage("communication-port", null, [port1]);
-  });
-  background.webContents.on("did-finish-load", () => {
-    background.webContents.postMessage("communication-port", null, [port2]);
   });
 
   ipcMain.on("open-insight-file", () => {
@@ -114,8 +130,12 @@ app.on("ready", () => {
       .then((paths) => {
         if (!paths.canceled && paths.filePaths.length > 0) {
           background.webContents.send("open-file", paths.filePaths[0]);
-          mainWindow.webContents.send("insight-file-opened");
+          mainWindow.webContents.postMessage("insight-file-opened", null, [
+            port1,
+          ]);
         }
       });
   });
+
+  mainWindow.loadURL(insightHost + "backup/open");
 });
