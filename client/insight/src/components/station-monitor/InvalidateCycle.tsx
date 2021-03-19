@@ -36,7 +36,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import { Vector } from "prelude-ts";
 import * as React from "react";
-import { IInProcessMaterial, ILogEntry, LocType } from "../../data/api";
+import { ICurrentStatus, IInProcessJob, IInProcessMaterial, ILogEntry, LocType } from "../../data/api";
 import { JobsBackend } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -142,7 +142,7 @@ export type SwapMaterialState = SwapMaterial | null;
 
 export interface SwapMaterialDialogContentProps {
   readonly curMat: Readonly<IInProcessMaterial> | null;
-  readonly current_material: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  readonly status: Readonly<ICurrentStatus>;
   readonly st: SwapMaterialState;
   readonly setState: (s: SwapMaterialState) => void;
 }
@@ -151,18 +151,42 @@ function isNullOrEmpty(s: string | null | undefined): boolean {
   return s === undefined || s === null || s == "";
 }
 
+function matCanSwap(
+  curMat: Readonly<IInProcessMaterial>,
+  job: Readonly<IInProcessJob> | undefined
+): (m: Readonly<IInProcessMaterial>) => boolean {
+  return (newMat) => {
+    if (isNullOrEmpty(newMat.serial)) return false;
+    if (newMat.location.type === LocType.OnPallet) return false;
+    if (newMat.process !== curMat.process - 1) return false;
+    if (isNullOrEmpty(newMat.jobUnique)) {
+      // if part name is wrong, check casting
+      if (isNullOrEmpty(newMat.partName)) return false;
+      if (newMat.partName !== curMat.partName) {
+        if (!job) return false;
+        if (
+          !LazySeq.ofIterable(job.procsAndPaths)
+            .flatMap((p) => p.paths)
+            .anyMatch((p) => p.casting === newMat.partName)
+        ) {
+          return false;
+        }
+      }
+    } else {
+      // check path
+      if (newMat.jobUnique !== curMat.jobUnique) return false;
+      if (newMat.path !== curMat.path) return false;
+    }
+    return true;
+  };
+}
+
 export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps): JSX.Element {
   const curMat = props.curMat;
   if (curMat === null || props.st === null) return <div />;
+  const curMatJob = props.status.jobs[curMat.jobUnique];
 
-  const availMats = props.current_material.filter(
-    (m) =>
-      m.location.type !== LocType.OnPallet &&
-      m.process === curMat.process - 1 &&
-      ((m.jobUnique === curMat.jobUnique && m.path === curMat.path) ||
-        (isNullOrEmpty(m.jobUnique) && m.partName === curMat.partName)) &&
-      m.serial !== ""
-  );
+  const availMats = props.status.material.filter(matCanSwap(curMat, curMatJob));
   if (availMats.length === 0) {
     return (
       <p style={{ margin: "2em" }}>

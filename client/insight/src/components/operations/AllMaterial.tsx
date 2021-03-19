@@ -213,13 +213,13 @@ interface AllMatDialogProps {
 function AllMatDialog(props: AllMatDialogProps) {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState>(null);
-  const currentMaterial = useRecoilValue(currentSt.currentStatus).material;
+  const status = useRecoilValue(currentSt.currentStatus);
 
   const displayMat = useRecoilValue(matDetails.materialDetail);
   const setMatToDisplay = useSetRecoilState(matDetails.materialToShowInDialog);
   const [removeFromQueue] = matDetails.useRemoveFromQueue();
   const curMat =
-    displayMat !== null ? currentMaterial.find((m) => m.materialID === displayMat.materialID) ?? null : null;
+    displayMat !== null ? status.material.find((m) => m.materialID === displayMat.materialID) ?? null : null;
 
   function close() {
     setMatToDisplay(null);
@@ -235,12 +235,7 @@ function AllMatDialog(props: AllMatDialogProps) {
       highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
-          <SwapMaterialDialogContent
-            st={swapSt}
-            setState={setSwapSt}
-            curMat={curMat}
-            current_material={currentMaterial}
-          />
+          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} curMat={curMat} status={status} />
           {displayMat && curMat && curMat.location.type === LocType.InQueue ? (
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} events={displayMat.events} />
           ) : undefined}
