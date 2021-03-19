@@ -24,6 +24,7 @@ namespace MachineWatchTest
           .ComparingByMembers<PlannedSchedule>()
           .ComparingByMembers<PartWorkorder>()
           .ComparingByMembers<WorkorderProgram>()
+          .ComparingByMembers<MaterialDetails>()
       );
     }
   }

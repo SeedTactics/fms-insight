@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Runtime.Serialization;
 using Germinate;
@@ -41,7 +43,7 @@ namespace BlackMaple.MachineWatchInterface
   public record ToolInMachine
   {
     [DataMember(IsRequired = true)]
-    public string MachineGroupName { get; init; }
+    public string MachineGroupName { get; init; } = "";
 
     [DataMember(IsRequired = true)]
     public int MachineNum { get; init; }
@@ -50,7 +52,7 @@ namespace BlackMaple.MachineWatchInterface
     public int Pocket { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string ToolName { get; init; }
+    public string ToolName { get; init; } = "";
 
     [DataMember(IsRequired = true)]
     public TimeSpan CurrentUse { get; init; }

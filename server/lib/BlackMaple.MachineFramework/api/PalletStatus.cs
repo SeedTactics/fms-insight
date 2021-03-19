@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Runtime.Serialization;
 using System.Collections.Immutable;
@@ -56,7 +58,7 @@ namespace BlackMaple.MachineWatchInterface
     public PalletLocationEnum Location { get; init; }
 
     [DataMember(Name = "group", IsRequired = true)]
-    public string StationGroup { get; init; }
+    public string StationGroup { get; init; } = "";
 
     [DataMember(Name = "num", IsRequired = true)]
     public int Num { get; init; }
@@ -74,19 +76,19 @@ namespace BlackMaple.MachineWatchInterface
   [DataContract, Draftable]
   public record PalletStatus
   {
-    [DataMember(IsRequired = true)] public string Pallet { get; init; }
-    [DataMember(IsRequired = true)] public string FixtureOnPallet { get; init; }
+    [DataMember(IsRequired = true)] public string Pallet { get; init; } = "";
+    [DataMember(IsRequired = true)] public string FixtureOnPallet { get; init; } = "";
     [DataMember(IsRequired = true)] public bool OnHold { get; init; }
-    [DataMember(IsRequired = true)] public PalletLocation CurrentPalletLocation { get; init; }
+    [DataMember(IsRequired = true)] public PalletLocation CurrentPalletLocation { get; init; } = new PalletLocation(PalletLocationEnum.Buffer, "Buff", 0);
 
     // If the pallet is at a load station and a new fixture should be loaded, this is filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string NewFixture { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? NewFixture { get; init; }
 
     // num faces on new fixture, or current fixture if no change
     [DataMember(IsRequired = true)] public int NumFaces { get; init; }
 
     //If CurrentPalletLocation is Cart, the following two fields will be filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public PalletLocation TargetLocation { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public PalletLocation? TargetLocation { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public decimal? PercentMoveCompleted { get; init; }
 
     public static PalletStatus operator %(PalletStatus s, Action<IPalletStatusDraft> f) => s.Produce(f);

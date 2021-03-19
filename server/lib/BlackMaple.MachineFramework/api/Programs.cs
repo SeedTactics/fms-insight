@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Runtime.Serialization;
 
@@ -40,40 +42,40 @@ namespace BlackMaple.MachineWatchInterface
   public record ProgramInCellController
   {
     [DataMember(IsRequired = true)]
-    public string CellControllerProgramName { get; init; }
+    public string CellControllerProgramName { get; init; } = "";
 
     [DataMember(IsRequired = true)]
-    public string ProgramName { get; init; }
+    public string ProgramName { get; init; } = "";
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public long? Revision { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string Comment { get; init; }
+    public string? Comment { get; init; }
   }
 
   [DataContract]
   public record ProgramRevision
   {
     [DataMember(IsRequired = true)]
-    public string ProgramName { get; init; }
+    public string ProgramName { get; init; } = "";
 
     [DataMember(IsRequired = true)]
     public long Revision { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string Comment { get; init; }
+    public string? Comment { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string CellControllerProgramName { get; init; }
+    public string? CellControllerProgramName { get; init; }
   }
 
   [DataContract]
   public record ProgramEntry
   {
-    [DataMember(IsRequired = true)] public string ProgramName { get; init; }
-    [DataMember(IsRequired = true)] public string Comment { get; init; }
-    [DataMember(IsRequired = true)] public string ProgramContent { get; init; }
+    [DataMember(IsRequired = true)] public string ProgramName { get; init; } = "";
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Comment { get; init; }
+    [DataMember(IsRequired = true)] public string ProgramContent { get; init; } = "";
 
     // * A positive revision number will either add it to the DB with this revision if the revision does
     //   not yet exist, or verify the ProgramContent matches the ProgramContent from the DB if the revision

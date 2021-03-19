@@ -30,6 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#nullable enable
 
 using System;
 using System.Collections.Immutable;
@@ -42,8 +43,8 @@ namespace BlackMaple.MachineWatchInterface
   [DataContract, Draftable]
   public record SimulatedStationUtilization
   {
-    [DataMember(IsRequired = true)] public string ScheduleId { get; init; }
-    [DataMember(IsRequired = true)] public string StationGroup { get; init; }
+    [DataMember(IsRequired = true)] public string ScheduleId { get; init; } = "";
+    [DataMember(IsRequired = true)] public string StationGroup { get; init; } = "";
     [DataMember(IsRequired = true)] public int StationNum { get; init; }
     [DataMember(IsRequired = true)] public DateTime StartUTC { get; init; }
     [DataMember(IsRequired = true)] public DateTime EndUTC { get; init; }
@@ -58,25 +59,25 @@ namespace BlackMaple.MachineWatchInterface
   public record NewJobs
   {
     [DataMember(IsRequired = true)]
-    public string ScheduleId { get; init; }
+    public string ScheduleId { get; init; } = "";
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<MachineFramework.Job> Jobs { get; init; }
+    public ImmutableList<MachineFramework.Job> Jobs { get; init; } = ImmutableList<MachineFramework.Job>.Empty;
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<SimulatedStationUtilization> StationUse { get; init; }
+    public ImmutableList<SimulatedStationUtilization>? StationUse { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<string, int> ExtraParts { get; init; }
+    public ImmutableDictionary<string, int>? ExtraParts { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<PartWorkorder> CurrentUnfilledWorkorders { get; init; }
+    public ImmutableList<PartWorkorder>? CurrentUnfilledWorkorders { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<ProgramEntry> Programs { get; init; }
+    public ImmutableList<ProgramEntry>? Programs { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public byte[] DebugMessage { get; init; }
+    public byte[]? DebugMessage { get; init; }
 
     [DataMember(IsRequired = false)]
     public bool ArchiveCompletedJobs { get; init; } = true;

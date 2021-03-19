@@ -2378,7 +2378,10 @@ namespace BlackMaple.MachineFramework
               paths[proc] = path;
             }
           }
-          ret = ret with { Paths = paths.ToImmutable() };
+          if (paths.Count > 0)
+          {
+            ret = ret with { Paths = paths.ToImmutable() };
+          }
         }
 
         return ret;
@@ -2429,7 +2432,10 @@ namespace BlackMaple.MachineFramework
                     paths[proc] = path;
                   }
                 }
-                mat = mat with { Paths = paths.ToImmutable() };
+                if (paths.Count > 0)
+                {
+                  mat = mat with { Paths = paths.ToImmutable() };
+                }
                 ret.Add(mat);
               }
             }
@@ -2487,7 +2493,10 @@ namespace BlackMaple.MachineFramework
               }
             }
 
-            mat = mat with { Paths = paths.ToImmutable() };
+            if (paths.Count > 0)
+            {
+              mat = mat with { Paths = paths.ToImmutable() };
+            }
             ret.Add(mat);
           }
         }
@@ -2538,7 +2547,10 @@ namespace BlackMaple.MachineFramework
               }
             }
 
-            mat = mat with { Paths = paths.ToImmutable() };
+            if (paths.Count > 0)
+            {
+              mat = mat with { Paths = paths.ToImmutable() };
+            }
             ret.Add(mat);
           }
         }

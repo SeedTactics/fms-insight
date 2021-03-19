@@ -109,7 +109,6 @@ namespace MachineWatchTest
         JobUnique = "U3",
         PartName = "P3",
         NumProcesses = 566,
-        Paths = ImmutableDictionary<int, int>.Empty
       });
 
       long m4 = _jobLog.AllocateMaterialIDForCasting("P4");
@@ -151,9 +150,8 @@ namespace MachineWatchTest
           PartName = "P3",
           NumProcesses = 566,
           Workorder = "work1",
-          Paths = ImmutableDictionary<int, int>.Empty
         }
-      }, options => options.ComparingByMembers<MaterialDetails>());
+      });
 
       _jobLog.GetWorkordersForUnique("U1").Should().BeEquivalentTo(new[] { "work1" });
       _jobLog.GetWorkordersForUnique("unused").Should().BeEmpty();
@@ -881,7 +879,6 @@ namespace MachineWatchTest
           PartName = "part1",
           NumProcesses = 2,
           Serial = "serial1",
-          Paths = ImmutableDictionary<int, int>.Empty
         }
       });
       _jobLog.GetMaterialDetailsForSerial("waoheufweiuf").Should().BeEmpty();
@@ -1625,7 +1622,6 @@ namespace MachineWatchTest
         JobUnique = null,
         PartName = "newcasting",
         NumProcesses = 6312,
-        Paths = ImmutableDictionary<int, int>.Empty
       });
 
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(1);
@@ -1929,7 +1925,7 @@ namespace MachineWatchTest
         NumProcesses = 2,
         Workorder = null,
         Serial = "bbbb",
-        Paths = newMatUnassigned ? ImmutableDictionary<int, int>.Empty : ImmutableDictionary<int, int>.Empty.Add(1, 5)
+        Paths = newMatUnassigned ? null : ImmutableDictionary<int, int>.Empty.Add(1, 5)
       }, options => options.ComparingByMembers<MaterialDetails>());
 
       _jobLog.GetMaterialDetails(newMatId).Should().BeEquivalentTo(new MaterialDetails()
