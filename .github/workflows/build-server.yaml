@@ -65,11 +65,11 @@ jobs:
           directory: server/test/TestResults
           flags: server-unittests
 
-      - run: yarn --cwd client/insight install --frozen-lockfile
+      - run: yarn --cwd client/insight install --frozen-lockfile --network-timeout 1000000
       - run: yarn --cwd client/insight test
       - run: yarn --cwd client/insight run build
 
-      - run: yarn --cwd client/backup-viewer install --frozen-lockfile
+      - run: yarn --cwd client/backup-viewer install --frozen-lockfile --network-timeout 1000000
       - run: yarn --cwd client/backup-viewer run build
 
       - name: Build MachineFramework
