@@ -71,6 +71,9 @@ jobs:
       - run: yarn --cwd client/insight test
       - run: yarn --cwd client/insight run build
 
+      - run: yarn --cwd client/backup-viewer install --frozen-lockfile
+      - run: yarn --cwd client/backup-viewer run build
+
       - name: Build MachineFramework
         run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak

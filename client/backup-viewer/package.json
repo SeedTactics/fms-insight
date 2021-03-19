@@ -15,7 +15,7 @@
     "build-insight": "rimraf build/insight && mkdir -p build/insight && cp ../insight/dist/* build/insight",
     "build": "yarn run build-background && yarn run build-insight",
     "start": "yarn run build && electron .",
-    "dist": "rimraf build && rimraf package && yarn run build && electron-builder"
+    "dist": "rimraf build .tsbuildinfo && rimraf package && yarn run build && electron-builder"
   },
   "browserslist": [
     "electron >= 7.0"
@@ -31,9 +31,7 @@
       "package.json",
       "src/main.js",
       "src/preload.js",
-      "build/insight/*",
-      "build/background/background.html",
-      "build/background/*.js"
+      "build/**"
     ],
     "publish": [
       "github"

@@ -6,8 +6,7 @@ client/insight/.parcel-dev/
 client/insight/.parcel-cache/
 client/insight/demo/
 client/insight/dist/
-client/insight/tsconfig.tsbuildinfo
-client/backup-viewer/.cache/
+client/backup-viewer/.tsbuildinfo
 client/backup-viewer/build/
 client/backup-viewer/package/
 

@@ -22,5 +22,5 @@
     "noUnusedLocals": true,
     "resolveJsonModule": true
   },
-  "exclude": ["node_modules", ".build", ".cache", "dist", "demo"]
+  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist", "demo"]
 }
