@@ -8,13 +8,16 @@
     "./src/demo.ts"
   ],
   "browserslist": [
-    "defaults"
+    "last 2 years",
+    "> 1%",
+    "not dead",
+    "edge 18"
   ],
   "scripts": {
     "start": "parcel serve --dist-dir .parcel-dev/app src/index.html",
     "start-demo": "parcel serve --dist-dir .parcel-dev/demo src/demo.html",
-    "build": "tsc --noEmit --composite false && parcel build src/index.html && cp service-worker.js dist",
-    "build-demo": "tsc --noEmit --composite false && parcel build --dist-dir demo --public-url /demo/ src/demo.html",
+    "build": "tsc --noEmit --composite false && parcel build --no-scope-hoist src/index.html && cp service-worker.js dist",
+    "build-demo": "tsc --noEmit --composite false && parcel build --no-scope-hoist --dist-dir demo --public-url /demo/ src/demo.html",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
     "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api.json /output:src/data/api.ts"
