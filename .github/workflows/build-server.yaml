@@ -70,7 +70,7 @@ jobs:
       - run: yarn --cwd client/insight run build
 
       - run: yarn --cwd client/backup-viewer install --frozen-lockfile --network-timeout 1000000
-      - run: yarn --cwd client/backup-viewer run build
+      - run: yarn --cwd client/backup-viewer run build-background
 
       - name: Build MachineFramework
         run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/lib/BlackMaple.MachineFramework
