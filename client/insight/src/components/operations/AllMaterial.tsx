@@ -248,13 +248,13 @@ function AllMatDialog(props: AllMatDialogProps) {
               Remove From System
             </Button>
           ) : undefined}
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={undefined} />
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={null} />
           {curMat && curMat.location.type === LocType.InQueue ? (
             <InvalidateCycleDialogButtons
               st={invalidateSt}
               setState={setInvalidateSt}
               curMat={curMat}
-              operator={undefined}
+              operator={null}
               close={close}
             />
           ) : undefined}
@@ -298,13 +298,11 @@ export function AllMaterial(props: AllMaterialProps) {
       const mat = st.material.find((m) => m.materialID === materialId);
       if (mat) {
         setTempBinsDuringUpdate(moveMaterialInBin(allBins, mat, queue, queuePosition));
-        JobsBackend.setMaterialInQueue(
-          materialId,
-          new QueuePosition({ queue, position: queuePosition }),
-          undefined
-        ).catch(() => {
-          setTempBinsDuringUpdate(null);
-        });
+        JobsBackend.setMaterialInQueue(materialId, null, new QueuePosition({ queue, position: queuePosition })).catch(
+          () => {
+            setTempBinsDuringUpdate(null);
+          }
+        );
       }
     } else if (result.type === DragType.Queue) {
       setMatBinOrder(

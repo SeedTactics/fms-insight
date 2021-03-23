@@ -127,7 +127,7 @@ const useTableStyles = makeStyles((theme) =>
 
 const highlightedComments = [/\bhold\b/, /\bmissing\b/, /\bwait\b/, /\bwaiting\b/, /\bnone\b/];
 
-function highlightRow(j: Readonly<api.IInProcessJob>): boolean {
+function highlightRow(j: Readonly<api.IActiveJob>): boolean {
   const comment = j.comment;
   if (!comment || comment === "") return false;
   return LazySeq.ofIterable(highlightedComments).anyMatch((r) => r.test(comment));
@@ -135,7 +135,7 @@ function highlightRow(j: Readonly<api.IInProcessJob>): boolean {
 
 export interface RawMaterialJobRowProps {
   readonly job: JobRawMaterialData;
-  readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
+  readonly editNote: (job: Readonly<api.IActiveJob>) => void;
   readonly editQty: (job: JobRawMaterialData) => void;
 }
 
@@ -236,7 +236,7 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
 
 interface RawMaterialJobTableProps {
   readonly queue: string;
-  readonly editNote: (job: Readonly<api.IInProcessJob>) => void;
+  readonly editNote: (job: Readonly<api.IActiveJob>) => void;
   readonly editQty: (job: JobRawMaterialData) => void;
 }
 
@@ -491,11 +491,11 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
       if (!isNaN(removeCnt)) {
         setLoading(true);
         JobsBackend.bulkRemoveMaterialFromQueues(
+          props.operator,
           LazySeq.ofIterable(props.material || [])
             .take(removeCnt)
             .map((m) => m.materialID)
-            .toArray(),
-          props.operator || undefined
+            .toArray()
         ).finally(close);
       }
     } else {
@@ -685,7 +685,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
     rawMaterialQueues,
   ]);
 
-  const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IInProcessJob> | null>(null);
+  const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IActiveJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
   const [editQtyForJob, setEditQtyForJob] = React.useState<JobRawMaterialData | null>(null);
   const closeEditJobQtyDialog = React.useCallback(() => setEditQtyForJob(null), []);

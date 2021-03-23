@@ -51,13 +51,8 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import { currentStatus } from "../../data/current-status";
 import { AnalysisPeriod } from "../../data/events";
 
-interface JobDetailsToDisplay extends Readonly<api.IJobPlan> {
-  completed?: number[][];
-  assignedWorkorders?: string[];
-}
-
 interface JobDisplayProps {
-  readonly job: Readonly<JobDetailsToDisplay>;
+  readonly job: Readonly<api.IActiveJob>;
 }
 
 function displayDate(d: Date) {
@@ -237,7 +232,7 @@ function JobMaterial(props: JobMaterialProps) {
 }
 
 export interface JobDetailsProps {
-  readonly job: Readonly<JobDetailsToDisplay> | null;
+  readonly job: Readonly<api.IActiveJob> | null;
   readonly checkAnalysisMonth: boolean;
 }
 

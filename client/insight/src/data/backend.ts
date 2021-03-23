@@ -42,47 +42,36 @@ export interface JobAPI {
   setJobComment(unique: string, comment: string): Promise<void>;
 
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
-  bulkRemoveMaterialFromQueues(
-    materialIds: ReadonlyArray<number> | null,
-    operatorName: string | undefined
-  ): Promise<void>;
-  setMaterialInQueue(materialId: number, queue: api.QueuePosition, operatorName: string | undefined): Promise<void>;
+  bulkRemoveMaterialFromQueues(operatorName: string | null, materialIds: ReadonlyArray<number> | null): Promise<void>;
+  setMaterialInQueue(materialId: number, operatorName: string | null, queue: api.QueuePosition): Promise<void>;
   addUnprocessedMaterialToQueue(
     jobUnique: string,
     lastCompletedProcess: number,
     pathGroup: number,
     queue: string,
     pos: number,
-    serial: string,
-    operatorName: string | undefined
+    operatorName: string | null,
+    serial: string
   ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
 
   addUnallocatedCastingToQueue(
     castingName: string,
     queue: string,
-    pos: number,
-    serials: string[],
     qty: number,
-    operatrorName: string | undefined
+    operatrorName: string | null,
+    serials: string[]
   ): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>>;
-  addUnallocatedCastingToQueueByPart(
-    partName: string,
-    queue: string,
-    pos: number,
-    serial: string,
-    operatorName: string | undefined
-  ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
-  signalMaterialForQuarantine(materialId: number, queue: string, operName: string | undefined): Promise<void>;
+  signalMaterialForQuarantine(materialId: number, operName: string | null, queue: string): Promise<void>;
   swapMaterialOnPallet(
     materialId: number,
-    mat: Readonly<api.IMatToPutOnPallet>,
-    operName: string | undefined
+    operName: string | null,
+    mat: Readonly<api.IMatToPutOnPallet>
   ): Promise<void>;
   invalidatePalletCycle(
     materialId: number,
-    process: number,
-    putMatInQueue: string | undefined,
-    operName: string | undefined
+    putMatInQueue: string | null,
+    operName: string | null,
+    process: number
   ): Promise<void>;
 }
 
@@ -107,8 +96,8 @@ export interface LogAPI {
   setInspectionDecision(
     materialID: number,
     inspType: string,
-    inspect: boolean,
     process: number,
+    inspect: boolean,
     jobUnique?: string,
     partName?: string
   ): Promise<Readonly<api.ILogEntry>>;
@@ -120,23 +109,16 @@ export interface LogAPI {
   recordWashCompleted(insp: api.NewWash, jobUnique?: string, partName?: string): Promise<Readonly<api.ILogEntry>>;
   setWorkorder(
     materialID: number,
+    process: number,
     workorder: string,
-    process: number,
-    jobUnique?: string,
-    partName?: string
-  ): Promise<Readonly<api.ILogEntry>>;
-  setSerial(
-    materialID: number,
-    serial: string,
-    process: number,
     jobUnique?: string,
     partName?: string
   ): Promise<Readonly<api.ILogEntry>>;
   recordOperatorNotes(
     materialID: number,
-    notes: string,
     process: number,
-    operatorName: string | undefined
+    operatorName: string | null,
+    notes: string
   ): Promise<Readonly<api.ILogEntry>>;
 }
 
@@ -253,49 +235,21 @@ function initMockBackend(data: Promise<MockData>) {
       // do nothing
       return Promise.resolve();
     },
-    bulkRemoveMaterialFromQueues(
-      _materialIds: ReadonlyArray<number> | null,
-      _operName: string | undefined
-    ): Promise<void> {
+    bulkRemoveMaterialFromQueues(): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
-    setMaterialInQueue(_materialId: number, _queue: api.QueuePosition, _operName: string | undefined): Promise<void> {
+    setMaterialInQueue(): Promise<void> {
       // do nothing
       return Promise.resolve();
     },
-    addUnprocessedMaterialToQueue(
-      _jobUnique: string,
-      _lastCompletedProcess: number,
-      _pathGroup: number,
-      _queue: string,
-      _pos: number,
-      _serial: string,
-      _operName: string | undefined
-    ): Promise<Readonly<api.IInProcessMaterial> | undefined> {
+    addUnprocessedMaterialToQueue(): Promise<Readonly<api.IInProcessMaterial> | undefined> {
       // do nothing
       return Promise.resolve(undefined);
     },
-    addUnallocatedCastingToQueue(
-      _casting: string,
-      _queue: string,
-      _pos: number,
-      _serials: string[],
-      _qty: number,
-      _operName: string | undefined
-    ): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>> {
+    addUnallocatedCastingToQueue(): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>> {
       // do nothing
       return Promise.resolve([]);
-    },
-    addUnallocatedCastingToQueueByPart(
-      _partName: string,
-      _queue: string,
-      _pos: number,
-      _serial: string,
-      _operName: string | undefined
-    ): Promise<Readonly<api.IInProcessMaterial> | undefined> {
-      // do nothing
-      return Promise.resolve(undefined);
     },
     signalMaterialForQuarantine(): Promise<void> {
       return Promise.resolve();
@@ -357,8 +311,8 @@ function initMockBackend(data: Promise<MockData>) {
     setInspectionDecision(
       materialID: number,
       inspType: string,
-      inspect: boolean,
       process: number,
+      inspect: boolean,
       jobUnique?: string,
       partName?: string
     ): Promise<Readonly<api.ILogEntry>> {
@@ -417,7 +371,7 @@ function initMockBackend(data: Promise<MockData>) {
         loc: "InspectionComplete",
         locnum: insp.inspectionLocationNum,
         result: insp.success.toString(),
-        program: insp.inspectionType,
+        program: insp.inspectionType ?? "",
         elapsed: insp.elapsed,
         active: insp.active,
         details: insp.extraData,
@@ -462,8 +416,8 @@ function initMockBackend(data: Promise<MockData>) {
     },
     setWorkorder(
       materialID: number,
-      workorder: string,
       process: number,
+      workorder: string,
       jobUnique?: string,
       partName?: string
     ): Promise<Readonly<api.ILogEntry>> {
@@ -496,43 +450,7 @@ function initMockBackend(data: Promise<MockData>) {
         })
       );
     },
-    setSerial(
-      materialID: number,
-      serial: string,
-      process: number,
-      jobUnique?: string,
-      partName?: string
-    ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: process,
-        numproc: 1,
-        face: "1",
-      });
-      const evt: api.ILogEntry = {
-        counter: 0,
-        material: [mat],
-        pal: "",
-        type: api.LogType.PartMark,
-        startofcycle: false,
-        endUTC: new Date(),
-        loc: "Mark",
-        locnum: 1,
-        result: serial,
-        program: "",
-        elapsed: "00:00:00",
-        active: "00:00:00",
-      };
-      return data.then((d) =>
-        d.events.then((evts) => {
-          evts.push(evt);
-          return evt;
-        })
-      );
-    },
-    recordOperatorNotes(materialID: number, notes: string, process: number, operatorName: string | undefined) {
+    recordOperatorNotes(materialID: number, process: number, operatorName: string | null, notes: string) {
       const mat = new api.LogMaterial({
         id: materialID,
         uniq: "",

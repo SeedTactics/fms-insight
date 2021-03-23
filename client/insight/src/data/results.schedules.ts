@@ -34,13 +34,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { HashMap, Option } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { PartCycleData } from "./events.cycles";
-import { ICurrentStatus, IHistoricJob, IInProcessJob } from "./api";
+import { ICurrentStatus, IHistoricJob, IActiveJob } from "./api";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
 export interface ScheduledJobDisplay {
   readonly historicJob: Readonly<IHistoricJob>;
-  readonly inProcJob: Readonly<IInProcessJob> | null;
+  readonly inProcJob: Readonly<IActiveJob> | null;
   readonly casting: string;
   readonly scheduledQty: number;
   readonly decrementedQty: number;

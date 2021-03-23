@@ -41,7 +41,7 @@ import programs from "./programs.json";
 import statusJson from "./status-mock.json";
 import evtJson from "url:./events-json.txt";
 
-function offsetJob(j: api.JobPlan, offsetSeconds: number) {
+function offsetJob(j: api.Job, offsetSeconds: number) {
   j.routeStartUTC = addSeconds(j.routeStartUTC, offsetSeconds);
   j.routeEndUTC = addSeconds(j.routeEndUTC, offsetSeconds);
   for (const proc of j.procsAndPaths) {
@@ -127,11 +127,11 @@ export function loadMockData(offsetSeconds: number): MockData {
   }
 
   const allNewJobs = loadNewJobs();
-  const historicJobs: { [key: string]: api.JobPlan } = {};
+  const historicJobs: { [key: string]: api.HistoricJob } = {};
   for (const newJ of allNewJobs) {
     for (const j of newJ.jobs) {
       offsetJob(j, offsetSeconds);
-      historicJobs[j.unique] = j;
+      historicJobs[j.unique] = new api.HistoricJob({ ...j, copiedToSystem: false, scheduleId: newJ.scheduleId });
     }
     for (const s of newJ.stationUse || []) {
       s.startUTC = addSeconds(s.startUTC, offsetSeconds);

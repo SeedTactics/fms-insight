@@ -124,7 +124,7 @@ export function process_sim_use(
     plannedDownTime: duration(simUse.plannedDownTime).asMinutes(),
   }));
 
-  const newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function* ([_, jParam]: [string, api.JobPlan]) {
+  const newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function* ([_, jParam]: [string, api.IJob]) {
     const j = jParam;
     for (let proc = 0; proc < j.procsAndPaths.length; proc++) {
       const procInfo = j.procsAndPaths[proc];

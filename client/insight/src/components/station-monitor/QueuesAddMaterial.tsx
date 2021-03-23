@@ -391,7 +391,7 @@ interface AddNewMaterialProps {
 }
 
 interface AddNewJobProcessState {
-  readonly job: Readonly<api.IInProcessJob>;
+  readonly job: Readonly<api.IActiveJob>;
   readonly last_proc: number;
   readonly path_group: number;
 }
@@ -727,7 +727,6 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
         casting: selectedCasting,
         quantity: qty,
         queue: queue,
-        queuePosition: -1,
         operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
       });
     }
@@ -742,7 +741,6 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
           casting: selectedCasting,
           quantity: qty,
           queue: queue,
-          queuePosition: -1,
           operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
           onNewMaterial: (mats) => {
             setMaterialToPrint(mats);

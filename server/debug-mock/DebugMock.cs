@@ -331,6 +331,7 @@ namespace DebugMachineWatchApiServer
 
     public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null)
     {
+      Serilog.Log.Information("SignalMatForQuarantine {matId} {queue} {oper}", materialId, queue, operatorName);
       var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
       if (mat == null) throw new BadRequestException("Material does not exist");
 

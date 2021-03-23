@@ -36,7 +36,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import TextField from "@material-ui/core/TextField";
 import { Vector } from "prelude-ts";
 import * as React from "react";
-import { ICurrentStatus, IInProcessJob, IInProcessMaterial, ILogEntry, LocType } from "../../data/api";
+import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../data/api";
 import { JobsBackend } from "../../data/backend";
 import { LazySeq } from "../../data/lazyseq";
 
@@ -95,7 +95,7 @@ export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps
 export interface InvalidateCycleDialogButtonsProps {
   readonly curMat: Readonly<IInProcessMaterial> | null;
   readonly st: InvalidateCycleState;
-  readonly operator: string | undefined;
+  readonly operator: string | null;
   readonly setState: (s: InvalidateCycleState) => void;
   readonly close: () => void;
 }
@@ -104,12 +104,9 @@ export function InvalidateCycleDialogButtons(props: InvalidateCycleDialogButtons
   function invalidateCycle() {
     if (props.curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(
-        props.curMat.materialID,
-        props.st.process,
-        undefined,
-        props.operator
-      ).finally(() => props.close());
+      JobsBackend.invalidatePalletCycle(props.curMat.materialID, null, props.operator, props.st.process).finally(() =>
+        props.close()
+      );
     }
   }
 
@@ -153,7 +150,7 @@ function isNullOrEmpty(s: string | null | undefined): boolean {
 
 function matCanSwap(
   curMat: Readonly<IInProcessMaterial>,
-  job: Readonly<IInProcessJob> | undefined
+  job: Readonly<IActiveJob> | undefined
 ): (m: Readonly<IInProcessMaterial>) => boolean {
   return (newMat) => {
     if (isNullOrEmpty(newMat.serial)) return false;
@@ -232,7 +229,7 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
 export interface SwapMaterialButtonsProps {
   readonly curMat: Readonly<IInProcessMaterial> | null;
   readonly st: SwapMaterialState;
-  readonly operator: string | undefined;
+  readonly operator: string | null;
   readonly setState: (s: SwapMaterialState) => void;
   readonly close: () => void;
 }
@@ -241,14 +238,10 @@ export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
   function swapMats() {
     if (props.curMat && props.st && props.st.selectedMatToSwap && props.curMat.location.type === LocType.OnPallet) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
-      JobsBackend.swapMaterialOnPallet(
-        props.curMat.materialID,
-        {
-          pallet: props.curMat.location.pallet ?? "",
-          materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
-        },
-        props.operator
-      ).finally(() => props.close());
+      JobsBackend.swapMaterialOnPallet(props.curMat.materialID, props.operator, {
+        pallet: props.curMat.location.pallet ?? "",
+        materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
+      }).finally(() => props.close());
     }
   }
 

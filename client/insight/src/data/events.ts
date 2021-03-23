@@ -207,7 +207,7 @@ export function receiveNewEvents(events: ReadonlyArray<Readonly<api.ILogEntry>>)
 export function receiveNewJobs(newJobs: Readonly<api.INewJobs>): ABF {
   const jobs: { [key: string]: api.HistoricJob } = {};
   newJobs.jobs.forEach((j) => {
-    jobs[j.unique] = j;
+    jobs[j.unique] = new api.HistoricJob({ ...j, copiedToSystem: true, scheduleId: newJobs.scheduleId });
   });
   return {
     type: ActionType.ReceiveNewJobs,
