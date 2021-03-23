@@ -1907,11 +1907,34 @@ namespace BlackMaple.MachineFramework
             throw new ConflictRequestException("Unable to find new material");
           }
           var newMatIsUnassigned = string.IsNullOrEmpty(newMatDetails.JobUnique);
-          if (newMatIsUnassigned == false && oldMatDetails.JobUnique != newMatDetails.JobUnique)
+          if (newMatIsUnassigned)
           {
-            throw new ConflictRequestException("Overriding material on pallet must use material from the same job");
+            if (oldMatProc != 1)
+            {
+              throw new ConflictRequestException("Swaps of non-process-1 must use material from the same job");
+            }
+            if (newMatDetails.PartName != oldMatDetails.PartName)
+            {
+              using (var checkCastingCmd = _connection.CreateCommand())
+              {
+                checkCastingCmd.Transaction = trans;
+                checkCastingCmd.CommandText = "SELECT COUNT(*) FROM pathdata WHERE UniqueStr = $uniq AND Process = 1 AND Casting = $casting";
+                checkCastingCmd.Parameters.Add("uniq", SqliteType.Text).Value = oldMatDetails.JobUnique;
+                checkCastingCmd.Parameters.Add("casting", SqliteType.Text).Value = newMatDetails.PartName;
+                if (Convert.ToInt64(checkCastingCmd.ExecuteScalar()) == 0)
+                {
+                  throw new ConflictRequestException("Material swap of unassigned material does not match part name or raw material name");
+                }
+              }
+            }
           }
-          // TODO: Check if raw material matches
+          else
+          {
+            if (oldMatDetails.JobUnique != newMatDetails.JobUnique)
+            {
+              throw new ConflictRequestException("Overriding material on pallet must use material from the same job");
+            }
+          }
 
           // perform the swap
           updateMatsCmd.CommandText = "UPDATE stations_mat SET MaterialID = $newmat WHERE Counter = $cntr AND MaterialID = $oldmat";
@@ -1935,7 +1958,6 @@ namespace BlackMaple.MachineFramework
                     evtDraft.Material[i] %= draftMat =>
                     {
                       draftMat.MaterialID = newMatId;
-                      draftMat.PartName = newMatDetails.PartName;
                       draftMat.Serial = newMatDetails.Serial ?? "";
                       draftMat.Workorder = newMatDetails.Workorder ?? "";
                     };
@@ -1952,17 +1974,19 @@ namespace BlackMaple.MachineFramework
             {
               setJobCmd.Transaction = trans;
               setJobCmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
-              var uParam = setJobCmd.Parameters.Add("uniq", SqliteType.Text);
-              setJobCmd.Parameters.Add("part", SqliteType.Text).Value = oldMatDetails.PartName;
+              var uniqParam = setJobCmd.Parameters.Add("uniq", SqliteType.Text);
+              var nameParam = setJobCmd.Parameters.Add("part", SqliteType.Text);
               setJobCmd.Parameters.Add("numproc", SqliteType.Integer).Value = oldMatDetails.NumProcesses;
-              var matParam = setJobCmd.Parameters.Add("mat", SqliteType.Integer);
+              var matIdParam = setJobCmd.Parameters.Add("mat", SqliteType.Integer);
 
-              uParam.Value = oldMatDetails.JobUnique;
-              matParam.Value = newMatId;
+              matIdParam.Value = newMatId;
+              uniqParam.Value = oldMatDetails.JobUnique;
+              nameParam.Value = oldMatDetails.PartName;
               setJobCmd.ExecuteNonQuery();
 
-              uParam.Value = DBNull.Value;
-              matParam.Value = oldMatId;
+              matIdParam.Value = oldMatId;
+              uniqParam.Value = DBNull.Value;
+              nameParam.Value = newMatDetails.PartName; // could restore oldMatId back to a casting name
               setJobCmd.ExecuteNonQuery();
             }
           }
@@ -2354,7 +2378,10 @@ namespace BlackMaple.MachineFramework
               paths[proc] = path;
             }
           }
-          ret = ret with { Paths = paths.ToImmutable() };
+          if (paths.Count > 0)
+          {
+            ret = ret with { Paths = paths.ToImmutable() };
+          }
         }
 
         return ret;
@@ -2405,7 +2432,10 @@ namespace BlackMaple.MachineFramework
                     paths[proc] = path;
                   }
                 }
-                mat = mat with { Paths = paths.ToImmutable() };
+                if (paths.Count > 0)
+                {
+                  mat = mat with { Paths = paths.ToImmutable() };
+                }
                 ret.Add(mat);
               }
             }
@@ -2463,7 +2493,10 @@ namespace BlackMaple.MachineFramework
               }
             }
 
-            mat = mat with { Paths = paths.ToImmutable() };
+            if (paths.Count > 0)
+            {
+              mat = mat with { Paths = paths.ToImmutable() };
+            }
             ret.Add(mat);
           }
         }
@@ -2514,7 +2547,10 @@ namespace BlackMaple.MachineFramework
               }
             }
 
-            mat = mat with { Paths = paths.ToImmutable() };
+            if (paths.Count > 0)
+            {
+              mat = mat with { Paths = paths.ToImmutable() };
+            }
             ret.Add(mat);
           }
         }

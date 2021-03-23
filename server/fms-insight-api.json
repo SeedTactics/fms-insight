@@ -2187,7 +2187,6 @@
           },
           "material": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/LogMaterial"
             }
@@ -2203,24 +2202,20 @@
             "format": "date-time"
           },
           "loc": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "locnum": {
             "type": "integer",
             "format": "int32"
           },
           "pal": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "program": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "result": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "elapsed": {
             "type": "string",
@@ -2263,12 +2258,10 @@
             "format": "int64"
           },
           "uniq": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "part": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "proc": {
             "type": "integer",
@@ -2279,8 +2272,7 @@
             "format": "int32"
           },
           "face": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "serial": {
             "type": "string",
@@ -2384,8 +2376,7 @@
             "format": "int32"
           },
           "Pallet": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "LoadStation": {
             "type": "integer",
@@ -2393,7 +2384,6 @@
           },
           "Stops": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Stop"
             }
@@ -2413,8 +2403,7 @@
         ],
         "properties": {
           "StationName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "StationNum": {
             "type": "integer",
@@ -2431,12 +2420,10 @@
         ],
         "properties": {
           "ScheduleId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Jobs": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Job"
             }
@@ -2474,9 +2461,6 @@
             "type": "string",
             "format": "byte",
             "nullable": true
-          },
-          "ArchiveCompletedJobs": {
-            "type": "boolean"
           }
         }
       },
@@ -2489,7 +2473,6 @@
           "RouteEndUTC",
           "Archived",
           "PartName",
-          "ManuallyCreated",
           "CyclesOnFirstProcess",
           "ProcsAndPaths"
         ],
@@ -2603,7 +2586,9 @@
           "PathGroup",
           "Pallets",
           "Load",
+          "ExpectedLoadTime",
           "Unload",
+          "ExpectedUnloadTime",
           "Stops",
           "SimulatedStartingUTC",
           "SimulatedAverageFlowTime",
@@ -2719,7 +2704,6 @@
         "required": [
           "StationGroup",
           "StationNums",
-          "Tools",
           "ExpectedCycleTime"
         ],
         "properties": {
@@ -2744,6 +2728,7 @@
           },
           "Tools": {
             "type": "object",
+            "nullable": true,
             "additionalProperties": {
               "type": "string",
               "format": "time-span"
@@ -2823,12 +2808,10 @@
         ],
         "properties": {
           "ScheduleId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "StationGroup": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "StationNum": {
             "type": "integer",
@@ -2864,12 +2847,10 @@
         ],
         "properties": {
           "WorkorderId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Part": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Quantity": {
             "type": "integer",
@@ -2895,6 +2876,10 @@
       "WorkorderProgram": {
         "type": "object",
         "additionalProperties": false,
+        "required": [
+          "ProcessNumber",
+          "ProgramName"
+        ],
         "properties": {
           "ProcessNumber": {
             "type": "integer",
@@ -2906,8 +2891,7 @@
             "nullable": true
           },
           "ProgramName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Revision": {
             "type": "integer",
@@ -2921,22 +2905,19 @@
         "additionalProperties": false,
         "required": [
           "ProgramName",
-          "Comment",
           "ProgramContent",
           "Revision"
         ],
         "properties": {
           "ProgramName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Comment": {
             "type": "string",
             "nullable": true
           },
           "ProgramContent": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Revision": {
             "type": "integer",
@@ -2962,35 +2943,30 @@
           },
           "Jobs": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {
               "$ref": "#/components/schemas/ActiveJob"
             }
           },
           "Pallets": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {
               "$ref": "#/components/schemas/PalletStatus"
             }
           },
           "Material": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/InProcessMaterial"
             }
           },
           "Alarms": {
             "type": "array",
-            "nullable": true,
             "items": {
               "type": "string"
             }
           },
           "Queues": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {
               "$ref": "#/components/schemas/QueueSize"
             }
@@ -3109,23 +3085,16 @@
         ],
         "properties": {
           "Pallet": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "FixtureOnPallet": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "OnHold": {
             "type": "boolean"
           },
           "CurrentPalletLocation": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PalletLocation"
-              }
-            ]
+            "$ref": "#/components/schemas/PalletLocation"
           },
           "NewFixture": {
             "type": "string",
@@ -3163,8 +3132,7 @@
             "$ref": "#/components/schemas/PalletLocationEnum"
           },
           "group": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "num": {
             "type": "integer",
@@ -3209,12 +3177,10 @@
             "format": "int64"
           },
           "JobUnique": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "PartName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Process": {
             "type": "integer",
@@ -3234,7 +3200,6 @@
           },
           "SignaledInspections": {
             "type": "array",
-            "nullable": true,
             "items": {
               "type": "string"
             }
@@ -3245,20 +3210,10 @@
             "nullable": true
           },
           "Location": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/InProcessMaterialLocation"
-              }
-            ]
+            "$ref": "#/components/schemas/InProcessMaterialLocation"
           },
           "Action": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/InProcessMaterialAction"
-              }
-            ]
+            "$ref": "#/components/schemas/InProcessMaterialAction"
           }
         }
       },
@@ -3408,7 +3363,6 @@
           },
           "EditedEvents": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/LogEntry"
             }
@@ -3459,14 +3413,12 @@
         "properties": {
           "Jobs": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {
               "$ref": "#/components/schemas/HistoricJob"
             }
           },
           "StationUse": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/SimulatedStationUtilization"
             }
@@ -3483,19 +3435,16 @@
         ],
         "properties": {
           "LatestScheduleId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Jobs": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/HistoricJob"
             }
           },
           "ExtraParts": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {
               "type": "integer",
               "format": "int32"
@@ -3586,8 +3535,7 @@
             "format": "int64"
           },
           "JobUnique": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Proc1Path": {
             "type": "integer",
@@ -3598,8 +3546,7 @@
             "format": "date-time"
           },
           "Part": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Quantity": {
             "type": "integer",
@@ -3611,7 +3558,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "MaterialID"
+          "MaterialID",
+          "PartName"
         ],
         "properties": {
           "MaterialID": {
@@ -3623,8 +3571,7 @@
             "nullable": true
           },
           "PartName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "NumProcesses": {
             "type": "integer",
@@ -3658,19 +3605,16 @@
         ],
         "properties": {
           "id": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "parts": {
             "type": "array",
-            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/WorkorderPartSummary"
             }
           },
           "serials": {
             "type": "array",
-            "nullable": true,
             "items": {
               "type": "string"
             }
@@ -3693,8 +3637,7 @@
         ],
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "completed-qty": {
             "type": "integer",
@@ -3702,7 +3645,6 @@
           },
           "elapsed-station-time": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {
               "type": "string",
               "format": "time-span"
@@ -3710,7 +3652,6 @@
           },
           "active-stat-time": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {
               "type": "string",
               "format": "time-span"
@@ -3819,8 +3760,7 @@
         ],
         "properties": {
           "MachineGroupName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "MachineNum": {
             "type": "integer",
@@ -3831,8 +3771,7 @@
             "format": "int32"
           },
           "ToolName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "CurrentUse": {
             "type": "string",
@@ -3854,12 +3793,10 @@
         ],
         "properties": {
           "CellControllerProgramName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "ProgramName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Revision": {
             "type": "integer",
@@ -3881,8 +3818,7 @@
         ],
         "properties": {
           "ProgramName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Revision": {
             "type": "integer",

@@ -103,7 +103,7 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "StationNums", IsRequired = true)]
     public ImmutableList<int> Stations { get; init; } = ImmutableList<int>.Empty;
 
-    [DataMember(Name = "Program")]
+    [DataMember(Name = "Program", IsRequired = false)]
     public string? Program { get; init; }
 
     // During Download:
@@ -118,11 +118,11 @@ namespace BlackMaple.MachineFramework
     //   * A null revision means the program already exists in the cell controller and the DB is not managing programs.
     //   * A positive revision means the program exists in the job DB with this specific revision.
     //   * Negative revisions are never returned (they get translated as part of the download)
-    [DataMember(Name = "ProgramRevision")]
+    [DataMember(Name = "ProgramRevision", IsRequired = false, EmitDefaultValue = false)]
     public long? ProgramRevision { get; init; }
 
-    [DataMember(Name = "Tools", IsRequired = true)]
-    public ImmutableDictionary<string, TimeSpan> Tools { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty; //key is tool, value is expected cutting time
+    [DataMember(Name = "Tools", IsRequired = false, EmitDefaultValue = true)]
+    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty; //key is tool, value is expected cutting time
 
     [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
     public TimeSpan ExpectedCycleTime { get; init; }
@@ -189,13 +189,13 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)]
     public ImmutableList<int> Load { get; init; } = ImmutableList<int>.Empty;
 
-    [DataMember(IsRequired = false)]
+    [DataMember(IsRequired = true)]
     public TimeSpan ExpectedLoadTime { get; init; }
 
     [DataMember(IsRequired = true)]
     public ImmutableList<int> Unload { get; init; } = ImmutableList<int>.Empty;
 
-    [DataMember(IsRequired = false)]
+    [DataMember(IsRequired = true)]
     public TimeSpan ExpectedUnloadTime { get; init; }
 
     [DataMember(IsRequired = true)]
@@ -258,7 +258,7 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "Bookings", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? BookingIds { get; init; }
 
-    [DataMember(Name = "ManuallyCreated", IsRequired = true)]
+    [DataMember(Name = "ManuallyCreated", IsRequired = false)]
     public bool ManuallyCreated { get; init; }
 
     [DataMember(Name = "HoldEntireJob", IsRequired = false, EmitDefaultValue = false)]
@@ -310,15 +310,15 @@ namespace BlackMaple.MachineFramework
   [DataContract, Draftable]
   public record ActiveJob : HistoricJob
   {
-    [DataMember(Name = "Completed", IsRequired = false)]
+    [DataMember(Name = "Completed", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ImmutableList<int>>? Completed { get; init; }
 
     // a number reflecting the order in which the cell controller will consider the processes and paths for activation.
     // lower numbers come first, while -1 means no-data.
-    [DataMember(Name = "Precedence", IsRequired = false)]
+    [DataMember(Name = "Precedence", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ImmutableList<long>>? Precedence { get; init; }
 
-    [DataMember(Name = "AssignedWorkorders", IsRequired = false)]
+    [DataMember(Name = "AssignedWorkorders", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? AssignedWorkorders { get; init; }
 
     public static ActiveJob operator %(ActiveJob j, Action<IActiveJobDraft> f) => j.Produce(f);

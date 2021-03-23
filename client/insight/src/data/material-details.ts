@@ -326,8 +326,8 @@ export function useForceInspection(): [(data: ForceInspectionData) => void, bool
     LogBackend.setInspectionDecision(
       data.mat.materialID,
       data.inspType,
-      data.inspect,
       1,
+      data.inspect,
       data.mat.jobUnique,
       data.mat.partName
     )
@@ -405,20 +405,7 @@ export function useAssignWorkorder(): [(mat: MaterialDetail, workorder: string) 
   const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
   const callback = useCallback((mat: MaterialDetail, workorder: string) => {
     setUpdating(true);
-    LogBackend.setWorkorder(mat.materialID, workorder, 1, mat.jobUnique, mat.partName)
-      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
-      .finally(() => setUpdating(false));
-  }, []);
-
-  return [callback, updating];
-}
-
-export function useAssignSerial(): [(mat: MaterialDetail, serial: string) => void, boolean] {
-  const [updating, setUpdating] = useState<boolean>(false);
-  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
-  const callback = useCallback((mat: MaterialDetail, serial: string) => {
-    setUpdating(true);
-    LogBackend.setSerial(mat.materialID, serial, 1, mat.jobUnique, mat.partName)
+    LogBackend.setWorkorder(mat.materialID, 1, workorder, mat.jobUnique, mat.partName)
       .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
       .finally(() => setUpdating(false));
   }, []);
@@ -438,7 +425,7 @@ export function useAddNote(): [(data: AddNoteData) => void, boolean] {
   const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
   const callback = useCallback((data: AddNoteData) => {
     setUpdating(true);
-    LogBackend.recordOperatorNotes(data.matId, data.notes, data.process, data.operator ?? undefined)
+    LogBackend.recordOperatorNotes(data.matId, data.process, data.operator, data.notes)
       .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
       .finally(() => setUpdating(false));
   }, []);
@@ -479,7 +466,7 @@ export function useSignalForQuarantine(): [(matId: number, queue: string, operat
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((matId: number, queue: string, operator: string | null) => {
     setUpdating(true);
-    JobsBackend.signalMaterialForQuarantine(matId, queue, operator ?? undefined).finally(() => setUpdating(false));
+    JobsBackend.signalMaterialForQuarantine(matId, operator, queue).finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -498,11 +485,11 @@ export function useAddExistingMaterialToQueue(): [(d: AddExistingMaterialToQueue
     setUpdating(true);
     JobsBackend.setMaterialInQueue(
       d.materialId,
+      d.operator,
       new QueuePosition({
         queue: d.queue,
         position: d.queuePosition,
-      }),
-      d.operator ?? undefined
+      })
     ).finally(() => setUpdating(false));
   }, []);
 
@@ -532,8 +519,8 @@ export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => v
       d.pathGroup,
       d.queue,
       d.queuePosition,
-      d.serial || "",
-      d.operator || undefined
+      d.operator,
+      d.serial || ""
     )
       .then((m) => {
         if (d.onNewMaterial && m) {
@@ -552,7 +539,6 @@ export interface AddNewCastingToQueueData {
   readonly casting: string;
   readonly quantity: number;
   readonly queue: string;
-  readonly queuePosition: number;
   readonly serials?: ReadonlyArray<string>;
   readonly operator: string | null;
   readonly onNewMaterial?: (mats: ReadonlyArray<Readonly<IInProcessMaterial>>) => void;
@@ -564,14 +550,7 @@ export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => voi
   const callback = useCallback((d: AddNewCastingToQueueData) => {
     setUpdating(true);
 
-    JobsBackend.addUnallocatedCastingToQueue(
-      d.casting,
-      d.queue,
-      d.queuePosition,
-      [...(d.serials || [])],
-      d.quantity,
-      d.operator || undefined
-    )
+    JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.quantity, d.operator, [...(d.serials || [])])
       .then((ms) => {
         if (d.onNewMaterial) d.onNewMaterial(ms);
       }, d.onError)

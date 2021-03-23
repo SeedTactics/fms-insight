@@ -101,7 +101,7 @@ function OutlierCycles(props: OutlierCycleProps) {
         }
         subheader={
           (props.showLabor ? "Load/Unload" : "Machine") +
-          " cycles from the past 3 days statistically outside expected range"
+          " cycles from the past 5 days statistically outside expected range"
         }
       />
       <CardContent>
@@ -123,7 +123,7 @@ const outlierLaborPointsSelector = createSelector(
   (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
   (_: Store, _l: boolean, today: Date) => today,
   (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
-    return outlierLoadCycles(cycles, addDays(today, -2), addDays(today, 1), estimated);
+    return outlierLoadCycles(cycles, addDays(today, -5), addDays(today, 1), estimated);
   }
 );
 
@@ -132,20 +132,20 @@ const outlierMachinePointsSelector = createSelector(
   (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
   (_: Store, _l: boolean, today: Date) => today,
   (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
-    return outlierMachineCycles(cycles, addDays(today, -2), addDays(today, 1), estimated);
+    return outlierMachineCycles(cycles, addDays(today, -5), addDays(today, 1), estimated);
   }
 );
 
 const ConnectedOutlierLabor = connect((st) => ({
   showLabor: true,
   points: outlierLaborPointsSelector(st, true, startOfToday()),
-  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+  default_date_range: [addDays(startOfToday(), -5), addDays(startOfToday(), 1)],
 }))(OutlierCycles);
 
 const ConnectedOutlierMachines = connect((st) => ({
   showLabor: false,
   points: outlierMachinePointsSelector(st, false, startOfToday()),
-  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+  default_date_range: [addDays(startOfToday(), -5), addDays(startOfToday(), 1)],
 }))(OutlierCycles);
 
 // -----------------------------------------------------------------------------------

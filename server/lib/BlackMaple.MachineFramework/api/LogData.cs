@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -46,10 +48,10 @@ namespace BlackMaple.MachineWatchInterface
     public long MaterialID { get; init; }
 
     [DataMember(Name = "uniq", IsRequired = true)]
-    public string JobUniqueStr { get; init; }
+    public string JobUniqueStr { get; init; } = "";
 
     [DataMember(Name = "part", IsRequired = true)]
-    public string PartName { get; init; }
+    public string PartName { get; init; } = "";
 
     [DataMember(Name = "proc", IsRequired = true)]
     public int Process { get; init; }
@@ -58,13 +60,13 @@ namespace BlackMaple.MachineWatchInterface
     public int NumProcesses { get; init; }
 
     [DataMember(Name = "face", IsRequired = true)]
-    public string Face { get; init; }
+    public string Face { get; init; } = "";
 
     [DataMember(Name = "serial", IsRequired = false, EmitDefaultValue = false)]
-    public string Serial { get; init; }
+    public string? Serial { get; init; }
 
     [DataMember(Name = "workorder", IsRequired = false, EmitDefaultValue = false)]
-    public string Workorder { get; init; }
+    public string? Workorder { get; init; }
 
     public LogMaterial() { }
 
@@ -126,19 +128,19 @@ namespace BlackMaple.MachineWatchInterface
     public DateTime EndTimeUTC { get; init; }
 
     [DataMember(Name = "loc", IsRequired = true)]
-    public string LocationName { get; init; }
+    public string LocationName { get; init; } = "";
 
     [DataMember(Name = "locnum", IsRequired = true)]
     public int LocationNum { get; init; }
 
     [DataMember(Name = "pal", IsRequired = true)]
-    public string Pallet { get; init; }
+    public string Pallet { get; init; } = "";
 
     [DataMember(Name = "program", IsRequired = true)]
-    public string Program { get; init; }
+    public string Program { get; init; } = "";
 
     [DataMember(Name = "result", IsRequired = true)]
-    public string Result { get; init; }
+    public string Result { get; init; } = "";
 
     // End of route is kept only for backwards compatbility.
     // Instead, the user who is processing the data should determine what event
@@ -153,10 +155,10 @@ namespace BlackMaple.MachineWatchInterface
     public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
 
     [DataMember(Name = "details", IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<string, string> ProgramDetails { get; init; } = ImmutableDictionary<string, string>.Empty;
+    public ImmutableDictionary<string, string>? ProgramDetails { get; init; } = ImmutableDictionary<string, string>.Empty;
 
     [DataMember(Name = "tools", IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<string, ToolUse> Tools { get; init; } = ImmutableDictionary<string, ToolUse>.Empty;
+    public ImmutableDictionary<string, ToolUse>? Tools { get; init; } = ImmutableDictionary<string, ToolUse>.Empty;
 
     public LogEntry() { }
 
@@ -228,13 +230,13 @@ namespace BlackMaple.MachineWatchInterface
     [DataContract]
     public record Stop
     {
-      [DataMember(IsRequired = true)] public string StationName { get; init; }
+      [DataMember(IsRequired = true)] public string StationName { get; init; } = "";
       [DataMember(IsRequired = true)] public int StationNum { get; init; }
     }
 
     [DataMember(IsRequired = true)] public long MaterialID { get; init; }
     [DataMember(IsRequired = true)] public int Process { get; init; }
-    [DataMember(IsRequired = true)] public string Pallet { get; init; }
+    [DataMember(IsRequired = true)] public string Pallet { get; init; } = "";
     [DataMember(IsRequired = true)] public int LoadStation { get; init; }
     [DataMember(IsRequired = true)] public ImmutableList<Stop> Stops { get; init; } = ImmutableList<Stop>.Empty;
     [DataMember(IsRequired = true)] public int UnloadStation { get; init; }
@@ -253,6 +255,6 @@ namespace BlackMaple.MachineWatchInterface
     public long NewMaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public IEnumerable<LogEntry> EditedEvents { get; init; }
+    public IEnumerable<LogEntry> EditedEvents { get; init; } = new LogEntry[] { };
   }
 }

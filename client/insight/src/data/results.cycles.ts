@@ -405,6 +405,34 @@ export function copyCyclesToClipboard(
   copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian));
 }
 
+export function buildPalletCycleTable(
+  points: HashMap<string, ReadonlyArray<{ readonly x: Date; readonly y: number }>>
+) {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Pallet</th><th>Date</th><th>Elapsed (min)</th>";
+  table += "</tr></thead>\n<tbody>\n";
+
+  const pals = points.keySet().toArray({ sortOn: (x) => x });
+
+  for (const pal of pals) {
+    for (const cycle of points.get(pal).getOrElse([])) {
+      table += "<tr>";
+      table += "<td>" + pal + "</td>";
+      table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
+      table += "<td>" + cycle.y.toFixed(1) + "</td>";
+      table += "</tr>\n";
+    }
+  }
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyPalletCyclesToClipboard(
+  points: HashMap<string, ReadonlyArray<{ readonly x: Date; readonly y: number }>>
+) {
+  copy(buildPalletCycleTable(points));
+}
+
 function stat_name(e: Readonly<api.ILogEntry>): string {
   switch (e.type) {
     case api.LogType.LoadUnloadCycle:

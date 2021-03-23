@@ -288,14 +288,14 @@ namespace DebugMachineWatchApiServer
             int pos = m.Location.QueuePosition ?? 0;
 
             if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-            && m.Location.CurrentQueue == toMove.Location.CurrentQueue
-            && m.Location.QueuePosition > toMove.Location.QueuePosition)
+                && m.Location.CurrentQueue == toMove.Location.CurrentQueue
+                && pos > toMove.Location.QueuePosition)
             {
               pos -= 1;
             }
             if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
                 && m.Location.CurrentQueue == queue
-                && m.Location.QueuePosition >= position)
+                && pos >= position)
             {
               pos += 1;
             }
@@ -331,6 +331,7 @@ namespace DebugMachineWatchApiServer
 
     public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null)
     {
+      Serilog.Log.Information("SignalMatForQuarantine {matId} {queue} {oper}", materialId, queue, operatorName);
       var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
       if (mat == null) throw new BadRequestException("Material does not exist");
 

@@ -35,14 +35,14 @@ import { jobsToPoints } from "./job-bullet";
 import * as api from "./api";
 
 it("converts events to points", () => {
-  const dummyHold: api.IJobHoldPattern = {
+  const dummyHold: api.IHoldPattern = {
     userHold: false,
     reasonForUserHold: "",
     holdUnholdPattern: [],
     holdUnholdPatternStartUTC: new Date(),
     holdUnholdPatternRepeats: false,
   };
-  const jobs: api.IInProcessJob[] = [
+  const jobs: api.IActiveJob[] = [
     {
       routeStartUTC: new Date(),
       routeEndUTC: new Date(),
@@ -51,7 +51,7 @@ it("converts events to points", () => {
       partName: "part1",
       unique: "uniq1",
       manuallyCreated: false,
-      holdEntireJob: new api.JobHoldPattern(dummyHold),
+      holdEntireJob: new api.HoldPattern(dummyHold),
       cyclesOnFirstProcess: [40, 42],
       completed: [[20, 21], [22]],
       procsAndPaths: [
@@ -63,7 +63,7 @@ it("converts events to points", () => {
               load: [1],
               unload: [2],
               stops: [
-                new api.JobMachiningStop({
+                new api.MachiningStop({
                   stationNums: [1],
                   program: "progabc",
                   tools: {},
@@ -75,8 +75,8 @@ it("converts events to points", () => {
               expectedUnloadTime: "00:04:00",
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
-              holdMachining: new api.JobHoldPattern(dummyHold),
-              holdLoadUnload: new api.JobHoldPattern(dummyHold),
+              holdMachining: new api.HoldPattern(dummyHold),
+              holdLoadUnload: new api.HoldPattern(dummyHold),
               partsPerPallet: 1,
             }),
             new api.ProcPathInfo({
@@ -85,7 +85,7 @@ it("converts events to points", () => {
               load: [1],
               unload: [2],
               stops: [
-                new api.JobMachiningStop({
+                new api.MachiningStop({
                   stationNums: [1],
                   program: "progabc",
                   tools: {},
@@ -97,8 +97,8 @@ it("converts events to points", () => {
               expectedUnloadTime: "00:04:00",
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
-              holdMachining: new api.JobHoldPattern(dummyHold),
-              holdLoadUnload: new api.JobHoldPattern(dummyHold),
+              holdMachining: new api.HoldPattern(dummyHold),
+              holdLoadUnload: new api.HoldPattern(dummyHold),
               partsPerPallet: 1,
             }),
           ],
@@ -109,7 +109,7 @@ it("converts events to points", () => {
               pathGroup: 1,
               pallets: ["pal1"],
               stops: [
-                new api.JobMachiningStop({
+                new api.MachiningStop({
                   stationNums: [1],
                   program: "progabc",
                   tools: {},
@@ -123,8 +123,8 @@ it("converts events to points", () => {
               unload: [2],
               simulatedStartingUTC: new Date(),
               simulatedAverageFlowTime: "",
-              holdMachining: new api.JobHoldPattern(dummyHold),
-              holdLoadUnload: new api.JobHoldPattern(dummyHold),
+              holdMachining: new api.HoldPattern(dummyHold),
+              holdLoadUnload: new api.HoldPattern(dummyHold),
               partsPerPallet: 1,
             }),
           ],

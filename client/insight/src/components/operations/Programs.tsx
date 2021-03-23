@@ -446,7 +446,7 @@ function ProgramContentCode() {
   const ct = useRecoilValue(programContent);
   const [highlighted, setHighlighted] = React.useState<string | null>(null);
 
-  const worker = React.useMemo(() => new Worker("./ProgramHighlight.ts"), []);
+  const worker = React.useMemo(() => new Worker(new URL("./ProgramHighlight.ts", import.meta.url)), []);
 
   React.useEffect(() => {
     let set = (h: string) => setHighlighted(h);

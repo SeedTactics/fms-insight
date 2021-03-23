@@ -109,7 +109,6 @@ namespace MachineWatchTest
         JobUnique = "U3",
         PartName = "P3",
         NumProcesses = 566,
-        Paths = ImmutableDictionary<int, int>.Empty
       });
 
       long m4 = _jobLog.AllocateMaterialIDForCasting("P4");
@@ -151,9 +150,8 @@ namespace MachineWatchTest
           PartName = "P3",
           NumProcesses = 566,
           Workorder = "work1",
-          Paths = ImmutableDictionary<int, int>.Empty
         }
-      }, options => options.ComparingByMembers<MaterialDetails>());
+      });
 
       _jobLog.GetWorkordersForUnique("U1").Should().BeEquivalentTo(new[] { "work1" });
       _jobLog.GetWorkordersForUnique("unused").Should().BeEmpty();
@@ -881,7 +879,6 @@ namespace MachineWatchTest
           PartName = "part1",
           NumProcesses = 2,
           Serial = "serial1",
-          Paths = ImmutableDictionary<int, int>.Empty
         }
       });
       _jobLog.GetMaterialDetailsForSerial("waoheufweiuf").Should().BeEmpty();
@@ -1625,7 +1622,6 @@ namespace MachineWatchTest
         JobUnique = null,
         PartName = "newcasting",
         NumProcesses = 6312,
-        Paths = ImmutableDictionary<int, int>.Empty
       });
 
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(1);
@@ -1761,11 +1757,13 @@ namespace MachineWatchTest
     }
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void OverrideMatOnPal(bool firstPalletCycle, bool newMatUnassigned)
+    [InlineData(true, true, null)]
+    [InlineData(true, true, "thecasting")]
+    [InlineData(false, true, null)]
+    [InlineData(false, true, "thecasting")]
+    [InlineData(true, false, null)]
+    [InlineData(false, false, null)]
+    public void OverrideMatOnPal(bool firstPalletCycle, bool newMatUnassigned, string rawMatName)
     {
       var now = DateTime.UtcNow.AddHours(-5);
 
@@ -1809,7 +1807,26 @@ namespace MachineWatchTest
       long newMatId;
       if (newMatUnassigned)
       {
-        newMatId = _jobLog.AllocateMaterialIDForCasting("part1");
+        if (!string.IsNullOrEmpty(rawMatName))
+        {
+          _jobLog.AddJobs(new NewJobs()
+          {
+            Jobs = ImmutableList.Create(new Job()
+            {
+              UniqueStr = "uniq1",
+              PartName = "part1",
+              CyclesOnFirstProcess = ImmutableList.Create(10),
+              Processes = ImmutableList.Create(new ProcessInfo()
+              {
+                Paths = ImmutableList.Create(new ProcPathInfo()
+                {
+                  Casting = rawMatName
+                })
+              })
+            })
+          }, null, true);
+        }
+        newMatId = _jobLog.AllocateMaterialIDForCasting(rawMatName ?? "part1");
       }
       else
       {
@@ -1904,11 +1921,11 @@ namespace MachineWatchTest
       {
         MaterialID = initiallyLoadedMatProc0.MaterialID,
         JobUnique = newMatUnassigned ? null : "uniq1",
-        PartName = "part1",
+        PartName = newMatUnassigned ? (rawMatName ?? "part1") : "part1",
         NumProcesses = 2,
         Workorder = null,
         Serial = "bbbb",
-        Paths = newMatUnassigned ? ImmutableDictionary<int, int>.Empty : ImmutableDictionary<int, int>.Empty.Add(1, 5)
+        Paths = newMatUnassigned ? null : ImmutableDictionary<int, int>.Empty.Add(1, 5)
       }, options => options.ComparingByMembers<MaterialDetails>());
 
       _jobLog.GetMaterialDetails(newMatId).Should().BeEquivalentTo(new MaterialDetails()
@@ -1926,7 +1943,7 @@ namespace MachineWatchTest
       // Check Logs
       // ------------------------------------------------------
 
-      var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: newMatUnassigned ? "" : "uniq1", part: "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
+      var initiallyLoadedLogMatProc0 = new LogMaterial(matID: initiallyLoadedMatProc0.MaterialID, uniq: newMatUnassigned ? "" : "uniq1", part: rawMatName ?? "part1", proc: 0, numProc: 2, serial: "bbbb", workorder: "", face: "");
       var newLogMatProc0 = new LogMaterial(matID: newMatProc1.MaterialID, uniq: "uniq1", part: "part1", proc: 0, numProc: 2, serial: "cccc", workorder: "", face: "");
 
       var expectedSwapMsg = new LogEntry(
@@ -2041,6 +2058,23 @@ namespace MachineWatchTest
     {
       var now = DateTime.UtcNow.AddHours(-5);
 
+      _jobLog.AddJobs(new NewJobs()
+      {
+        Jobs = ImmutableList.Create(new Job()
+        {
+          UniqueStr = "uniq1",
+          PartName = "part1",
+          CyclesOnFirstProcess = ImmutableList.Create(10),
+          Processes = ImmutableList.Create(new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              Casting = "thecasting"
+            })
+          })
+        })
+      }, null, true);
+
       var firstMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
       var firstMatProc0 = new EventLogMaterial() { MaterialID = firstMatId, Process = 0, Face = "" };
       var firstMat = new EventLogMaterial() { MaterialID = firstMatId, Process = 1, Face = "1" };
@@ -2076,6 +2110,14 @@ namespace MachineWatchTest
         newMatId: differentUniqMatId,
         operatorName: null
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
+
+      var otherCastingMatId = _jobLog.AllocateMaterialIDForCasting("othercasting");
+      _jobLog.Invoking(j => j.SwapMaterialInCurrentPalletCycle(
+        pallet: "5",
+        oldMatId: firstMatId,
+        newMatId: otherCastingMatId,
+        operatorName: null
+      )).Should().Throw<ConflictRequestException>().WithMessage("Material swap of unassigned material does not match part name or raw material name");
     }
 
     [Fact]

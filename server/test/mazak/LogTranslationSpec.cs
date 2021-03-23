@@ -1879,7 +1879,6 @@ namespace MachineWatchTest
         NumProcesses = mat3.NumProcess,
         Workorder = null,
         Serial = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0'),
-        Paths = ImmutableDictionary<int, int>.Empty,
       });
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));

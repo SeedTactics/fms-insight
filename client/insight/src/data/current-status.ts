@@ -32,15 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { HashMap } from "prelude-ts";
 import { JobsBackend } from "./backend";
-import {
-  InProcessMaterial,
-  ICurrentStatus,
-  IInProcessMaterial,
-  ILogEntry,
-  LogType,
-  LocType,
-  InProcessJob,
-} from "./api";
+import { InProcessMaterial, ICurrentStatus, IInProcessMaterial, ILogEntry, LogType, LocType, ActiveJob } from "./api";
 import { atom, DefaultValue, selectorFamily } from "recoil";
 
 export const currentStatus = atom<Readonly<ICurrentStatus>>({
@@ -64,7 +56,7 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
     set(currentStatus, (st) => {
       const oldJob = st.jobs[uniq];
       if (oldJob) {
-        var newJob = new InProcessJob(oldJob);
+        var newJob = new ActiveJob(oldJob);
         newJob.comment = newComment;
         return { ...st, jobs: { ...st.jobs, [uniq]: newJob } };
       } else {

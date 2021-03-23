@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Runtime.Serialization;
 using System.Collections.Immutable;
@@ -76,28 +78,28 @@ namespace BlackMaple.MachineWatchInterface
   public record JobAndDecrementQuantity
   {
     [DataMember(IsRequired = true)] public long DecrementId { get; init; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; init; }
+    [DataMember(IsRequired = true)] public string JobUnique { get; init; } = "";
     [DataMember(IsRequired = true)] public int Proc1Path { get; init; }
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
-    [DataMember(IsRequired = true)] public string Part { get; init; }
+    [DataMember(IsRequired = true)] public string Part { get; init; } = "";
     [DataMember(IsRequired = true)] public int Quantity { get; init; }
   }
 
   [DataContract]
   public record HistoricData
   {
-    [DataMember(IsRequired = true)] public ImmutableDictionary<string, MachineFramework.HistoricJob> Jobs { get; init; }
-    [DataMember(IsRequired = true)] public ImmutableList<SimulatedStationUtilization> StationUse { get; init; }
+    [DataMember(IsRequired = true)] public ImmutableDictionary<string, MachineFramework.HistoricJob> Jobs { get; init; } = ImmutableDictionary<string, MachineFramework.HistoricJob>.Empty;
+    [DataMember(IsRequired = true)] public ImmutableList<SimulatedStationUtilization> StationUse { get; init; } = ImmutableList<SimulatedStationUtilization>.Empty;
   }
 
   [DataContract]
   public record PlannedSchedule
   {
-    [DataMember(IsRequired = true)] public string LatestScheduleId { get; init; }
-    [DataMember(IsRequired = true)] public ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; }
-    [DataMember(IsRequired = true)] public ImmutableDictionary<string, int> ExtraParts { get; init; }
+    [DataMember(IsRequired = true)] public string LatestScheduleId { get; init; } = "";
+    [DataMember(IsRequired = true)] public ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; } = ImmutableList<MachineFramework.HistoricJob>.Empty;
+    [DataMember(IsRequired = true)] public ImmutableDictionary<string, int> ExtraParts { get; init; } = ImmutableDictionary<string, int>.Empty;
 
     [DataMember(IsRequired = false)]
-    public ImmutableList<PartWorkorder> CurrentUnfilledWorkorders { get; init; }
+    public ImmutableList<PartWorkorder>? CurrentUnfilledWorkorders { get; init; }
   }
 }

@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Runtime.Serialization;
 using System.Linq;
@@ -44,7 +46,7 @@ namespace BlackMaple.MachineWatchInterface
   public record WorkorderPartSummary
   {
     [DataMember(Name = "name", IsRequired = true)]
-    public string Part { get; init; }
+    public string Part { get; init; } = "";
 
     [DataMember(Name = "completed-qty", IsRequired = true)]
     public int PartsCompleted { get; init; }
@@ -63,7 +65,7 @@ namespace BlackMaple.MachineWatchInterface
   public record WorkorderSummary
   {
     [DataMember(Name = "id", IsRequired = true)]
-    public string WorkorderId { get; init; }
+    public string WorkorderId { get; init; } = "";
 
     [DataMember(Name = "parts", IsRequired = true)]
     public ImmutableList<WorkorderPartSummary> Parts { get; init; } = ImmutableList<WorkorderPartSummary>.Empty;
@@ -82,17 +84,17 @@ namespace BlackMaple.MachineWatchInterface
   public record WorkorderProgram
   {
     /// <summary>Identifies the process on the part that this program is for.</summary>
-    [DataMember]
+    [DataMember(IsRequired = true)]
     public int ProcessNumber { get; init; }
 
     /// <summary>Identifies which machine stop on the part that this program is for (only needed if a process has multiple
     /// machining stops before unload).  The stop numbers are zero-indexed.</summary>
-    [DataMember]
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? StopIndex { get; init; }
 
     /// <summary>The program name, used to find the program contents.</summary>
-    [DataMember]
-    public string ProgramName { get; init; }
+    [DataMember(IsRequired = true)]
+    public string ProgramName { get; init; } = "";
 
     ///<summary>The program revision to run.  Can be negative during download, is treated identically to how the revision
     ///in JobMachiningStop works.</summary>
@@ -106,15 +108,15 @@ namespace BlackMaple.MachineWatchInterface
   [DataContract, Draftable]
   public record PartWorkorder
   {
-    [DataMember(IsRequired = true)] public string WorkorderId { get; init; }
-    [DataMember(IsRequired = true)] public string Part { get; init; }
+    [DataMember(IsRequired = true)] public string WorkorderId { get; init; } = "";
+    [DataMember(IsRequired = true)] public string Part { get; init; } = "";
     [DataMember(IsRequired = true)] public int Quantity { get; init; }
     [DataMember(IsRequired = true)] public DateTime DueDate { get; init; }
     [DataMember(IsRequired = true)] public int Priority { get; init; }
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<WorkorderProgram> Programs { get; init; } = ImmutableList<WorkorderProgram>.Empty;
+    public ImmutableList<WorkorderProgram>? Programs { get; init; } = ImmutableList<WorkorderProgram>.Empty;
 
     public static PartWorkorder operator %(PartWorkorder w, Action<IPartWorkorderDraft> f)
        => w.Produce(f);

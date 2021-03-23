@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -58,19 +60,19 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)] public ActionType Type { get; init; }
 
     // If Type = Loading
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string LoadOntoPallet { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? LoadOntoPallet { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? LoadOntoFace { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? ProcessAfterLoad { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? PathAfterLoad { get; init; }
 
     //If Type = UnloadToInProcess
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string UnloadIntoQueue { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? UnloadIntoQueue { get; init; }
 
     //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedLoadUnloadTime { get; init; }
 
     // If Type = Machining
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Program { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? Program { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedMachiningTime { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ExpectedRemainingMachiningTime { get; init; }
   }
@@ -91,11 +93,11 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = true)] public LocType Type { get; init; }
 
     //If Type == OnPallet
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Pallet { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? Pallet { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? Face { get; init; }
 
     //If Type == InQueue
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string CurrentQueue { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? CurrentQueue { get; init; }
 
     //If Type == InQueue or Type == Free
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? QueuePosition { get; init; }
@@ -107,12 +109,12 @@ namespace BlackMaple.MachineWatchInterface
   {
     // Information about the material
     [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; init; }
-    [DataMember(IsRequired = true)] public string PartName { get; init; }
+    [DataMember(IsRequired = true)] public string JobUnique { get; init; } = "";
+    [DataMember(IsRequired = true)] public string PartName { get; init; } = "";
     [DataMember(IsRequired = true)] public int Process { get; init; }  // When in a queue, the process is the last completed process
     [DataMember(IsRequired = true)] public int Path { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string Serial { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string WorkorderId { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? Serial { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? WorkorderId { get; init; }
     [DataMember(IsRequired = true)] public ImmutableList<string> SignaledInspections { get; init; } = ImmutableList<string>.Empty;
 
     // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
@@ -120,10 +122,10 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false)] public int? LastCompletedMachiningRouteStopIndex { get; init; }
 
     // Where is the material?
-    [DataMember(IsRequired = true)] public InProcessMaterialLocation Location { get; init; }
+    [DataMember(IsRequired = true)] public InProcessMaterialLocation Location { get; init; } = new InProcessMaterialLocation();
 
     // What is currently happening to the material?
-    [DataMember(IsRequired = true)] public InProcessMaterialAction Action { get; init; }
+    [DataMember(IsRequired = true)] public InProcessMaterialAction Action { get; init; } = new InProcessMaterialAction();
 
     public static InProcessMaterial operator %(InProcessMaterial m, Action<IInProcessMaterialDraft> f) => m.Produce(f);
   }
@@ -132,12 +134,13 @@ namespace BlackMaple.MachineWatchInterface
   public record MaterialDetails
   {
     [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember] public string JobUnique { get; init; }
-    [DataMember] public string PartName { get; init; }
-    [DataMember] public int NumProcesses { get; init; }
-    [DataMember] public string Workorder { get; init; }
-    [DataMember] public string Serial { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? JobUnique { get; init; }
+    [DataMember(IsRequired = true)] public string PartName { get; init; } = "";
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public int NumProcesses { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Workorder { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Serial { get; init; }
+
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<int, int> Paths { get; init; } = ImmutableDictionary<int, int>.Empty; // key is process, value is path
+    public ImmutableDictionary<int, int>? Paths { get; init; } // key is process, value is path
   }
 }

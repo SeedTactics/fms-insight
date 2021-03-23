@@ -213,13 +213,13 @@ interface AllMatDialogProps {
 function AllMatDialog(props: AllMatDialogProps) {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState>(null);
-  const currentMaterial = useRecoilValue(currentSt.currentStatus).material;
+  const status = useRecoilValue(currentSt.currentStatus);
 
   const displayMat = useRecoilValue(matDetails.materialDetail);
   const setMatToDisplay = useSetRecoilState(matDetails.materialToShowInDialog);
   const [removeFromQueue] = matDetails.useRemoveFromQueue();
   const curMat =
-    displayMat !== null ? currentMaterial.find((m) => m.materialID === displayMat.materialID) ?? null : null;
+    displayMat !== null ? status.material.find((m) => m.materialID === displayMat.materialID) ?? null : null;
 
   function close() {
     setMatToDisplay(null);
@@ -235,12 +235,7 @@ function AllMatDialog(props: AllMatDialogProps) {
       highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
-          <SwapMaterialDialogContent
-            st={swapSt}
-            setState={setSwapSt}
-            curMat={curMat}
-            current_material={currentMaterial}
-          />
+          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} curMat={curMat} status={status} />
           {displayMat && curMat && curMat.location.type === LocType.InQueue ? (
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} events={displayMat.events} />
           ) : undefined}
@@ -253,13 +248,13 @@ function AllMatDialog(props: AllMatDialogProps) {
               Remove From System
             </Button>
           ) : undefined}
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={undefined} />
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={null} />
           {curMat && curMat.location.type === LocType.InQueue ? (
             <InvalidateCycleDialogButtons
               st={invalidateSt}
               setState={setInvalidateSt}
               curMat={curMat}
-              operator={undefined}
+              operator={null}
               close={close}
             />
           ) : undefined}
@@ -303,13 +298,11 @@ export function AllMaterial(props: AllMaterialProps) {
       const mat = st.material.find((m) => m.materialID === materialId);
       if (mat) {
         setTempBinsDuringUpdate(moveMaterialInBin(allBins, mat, queue, queuePosition));
-        JobsBackend.setMaterialInQueue(
-          materialId,
-          new QueuePosition({ queue, position: queuePosition }),
-          undefined
-        ).catch(() => {
-          setTempBinsDuringUpdate(null);
-        });
+        JobsBackend.setMaterialInQueue(materialId, null, new QueuePosition({ queue, position: queuePosition })).catch(
+          () => {
+            setTempBinsDuringUpdate(null);
+          }
+        );
       }
     } else if (result.type === DragType.Queue) {
       setMatBinOrder(

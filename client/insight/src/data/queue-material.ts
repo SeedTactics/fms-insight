@@ -38,7 +38,7 @@ import { LogBackend } from "./backend";
 import { differenceInSeconds } from "date-fns";
 
 export interface JobAndGroups {
-  readonly job: Readonly<api.IInProcessJob>;
+  readonly job: Readonly<api.IActiveJob>;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
     readonly pathGroup: number;
@@ -59,7 +59,7 @@ interface RawMatDetails {
   readonly queues: HashSet<string>;
 }
 
-function rawMatDetails(job: Readonly<api.IInProcessJob>, pathIdx: number): RawMatDetails {
+function rawMatDetails(job: Readonly<api.IActiveJob>, pathIdx: number): RawMatDetails {
   const queue = job.procsAndPaths[0].paths[pathIdx].inputQueue;
   return {
     planned: job.cyclesOnFirstProcess[pathIdx] || 0,
@@ -79,7 +79,7 @@ interface PathDetails {
   readonly queues: HashSet<string>;
 }
 
-function pathDetails(job: Readonly<api.IInProcessJob>, procIdx: number, pathIdx: number): PathDetails {
+function pathDetails(job: Readonly<api.IActiveJob>, procIdx: number, pathIdx: number): PathDetails {
   const queue = job.procsAndPaths[0].paths[pathIdx].outputQueue;
   return {
     path: describePath(job.procsAndPaths[procIdx].paths[pathIdx]),
@@ -91,7 +91,7 @@ function joinDetails(details: ReadonlyArray<PathDetails>): string {
   return LazySeq.ofIterable(details).foldLeft("", (x, details) => (x === "" ? details.path : x + " | " + details.path));
 }
 
-export function extractJobGroups(job: Readonly<api.IInProcessJob>): JobAndGroups {
+export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
   const rawMatGroups = new Map<number, RawMatDetails[]>();
   const machinedProcs: {
     readonly lastProc: number;
@@ -148,7 +148,7 @@ export function extractJobGroups(job: Readonly<api.IInProcessJob>): JobAndGroups
 }
 
 export interface JobRawMaterialData {
-  readonly job: Readonly<api.IInProcessJob>;
+  readonly job: Readonly<api.IActiveJob>;
   readonly proc1Path: number;
   readonly path: Readonly<api.IProcPathInfo>;
   readonly pathDetails: null | string;
@@ -186,7 +186,7 @@ function isMatAssigned(unique: string, proc1path: number, m: Readonly<api.IInPro
 export function extractJobRawMaterial(
   queue: string,
   jobs: {
-    [key: string]: Readonly<api.IInProcessJob>;
+    [key: string]: Readonly<api.IActiveJob>;
   },
   mats: Iterable<Readonly<api.IInProcessMaterial>>
 ): ReadonlyArray<JobRawMaterialData> {

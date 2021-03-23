@@ -44,7 +44,7 @@ export interface DataPoint {
   readonly workorders: string;
 }
 
-function displayJob(job: api.IInProcessJob, proc: number): DataPoint {
+function displayJob(job: api.IActiveJob, proc: number): DataPoint {
   const totalPlan = job.cyclesOnFirstProcess.reduce((a, b) => a + b, 0);
   const completed = job.completed ? job.completed[proc].reduce((a, b) => a + b, 0) : 0;
 
@@ -82,7 +82,7 @@ function vectorRange(start: number, count: number): Vector<number> {
   );
 }
 
-export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IInProcessJob>>): DataPoints {
+export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IActiveJob>>): DataPoints {
   const points = Vector.ofIterable(jobs)
     .sortOn(
       (j) => j.routeStartUTC.getTime(),
