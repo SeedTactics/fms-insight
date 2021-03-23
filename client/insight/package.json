@@ -54,8 +54,8 @@
     "wouter": "^2.7.4"
   },
   "devDependencies": {
-    "@parcel/packager-raw-url": "2.0.0-nightly.1849",
-    "@parcel/transformer-webmanifest": "2.0.0-nightly.2186",
+    "@parcel/packager-raw-url": "2.0.0-beta.2",
+    "@parcel/transformer-webmanifest": "2.0.0-beta.2",
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.5",
     "@types/faker": "^5.1.7",
@@ -74,7 +74,7 @@
     "faker": "^5.4.0",
     "jest": "^26.6.3",
     "nswag": "^13.10.8",
-    "parcel": "2.0.0-nightly.630",
+    "parcel": "2.0.0-beta.2",
     "prettier": "^2.2.1",
     "ts-jest": "^26.5.4",
     "typescript": "^4.2.3"
