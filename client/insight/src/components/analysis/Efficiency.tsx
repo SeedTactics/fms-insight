@@ -71,6 +71,7 @@ import {
   LoadCycleData,
   loadOccupancyCycles,
   FilterAnyLoadKey,
+  copyPalletCyclesToClipboard,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../data/lazyseq";
@@ -635,6 +636,14 @@ function PalletCycleChart(props: PalletCycleChartProps) {
             <BasketIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Pallet Cycles</div>
             <div style={{ flexGrow: 1 }} />
+            <Tooltip title="Copy to Clipboard">
+              <IconButton
+                onClick={() => copyPalletCyclesToClipboard(props.points)}
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              >
+                <ImportExport />
+              </IconButton>
+            </Tooltip>
             <Select
               name={"Pallet-Cycles-cycle-chart-select"}
               autoWidth
