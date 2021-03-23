@@ -89,7 +89,7 @@ namespace BlackMaple.MachineWatchInterface
 
     /// <summary>Identifies which machine stop on the part that this program is for (only needed if a process has multiple
     /// machining stops before unload).  The stop numbers are zero-indexed.</summary>
-    [DataMember(IsRequired = false)]
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? StopIndex { get; init; }
 
     /// <summary>The program name, used to find the program contents.</summary>

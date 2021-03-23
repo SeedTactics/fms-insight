@@ -79,9 +79,6 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public byte[]? DebugMessage { get; init; }
 
-    [DataMember(IsRequired = false)]
-    public bool ArchiveCompletedJobs { get; init; } = true;
-
     public static NewJobs operator %(NewJobs j, Action<INewJobsDraft> f)
        => j.Produce(f);
   }

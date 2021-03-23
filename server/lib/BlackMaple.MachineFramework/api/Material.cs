@@ -134,11 +134,11 @@ namespace BlackMaple.MachineWatchInterface
   public record MaterialDetails
   {
     [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember] public string? JobUnique { get; init; }
-    [DataMember] public string PartName { get; init; } = "";
-    [DataMember] public int NumProcesses { get; init; }
-    [DataMember] public string? Workorder { get; init; }
-    [DataMember] public string? Serial { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? JobUnique { get; init; }
+    [DataMember(IsRequired = true)] public string PartName { get; init; } = "";
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public int NumProcesses { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Workorder { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Serial { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<int, int>? Paths { get; init; } // key is process, value is path

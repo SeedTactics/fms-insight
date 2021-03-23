@@ -2461,9 +2461,6 @@
             "type": "string",
             "format": "byte",
             "nullable": true
-          },
-          "ArchiveCompletedJobs": {
-            "type": "boolean"
           }
         }
       },
@@ -2476,7 +2473,6 @@
           "RouteEndUTC",
           "Archived",
           "PartName",
-          "ManuallyCreated",
           "CyclesOnFirstProcess",
           "ProcsAndPaths"
         ],
@@ -2590,7 +2586,9 @@
           "PathGroup",
           "Pallets",
           "Load",
+          "ExpectedLoadTime",
           "Unload",
+          "ExpectedUnloadTime",
           "Stops",
           "SimulatedStartingUTC",
           "SimulatedAverageFlowTime",
@@ -2706,7 +2704,6 @@
         "required": [
           "StationGroup",
           "StationNums",
-          "Tools",
           "ExpectedCycleTime"
         ],
         "properties": {
@@ -2731,6 +2728,7 @@
           },
           "Tools": {
             "type": "object",
+            "nullable": true,
             "additionalProperties": {
               "type": "string",
               "format": "time-span"
@@ -3560,7 +3558,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "MaterialID"
+          "MaterialID",
+          "PartName"
         ],
         "properties": {
           "MaterialID": {
