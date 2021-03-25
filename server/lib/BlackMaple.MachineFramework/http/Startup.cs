@@ -191,6 +191,14 @@ namespace BlackMaple.MachineFramework
         app.UseHttpsRedirection();
       }
 
+      app.Use(async (context, next) =>
+      {
+        context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'");
+        context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
+        context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
+        await next();
+      });
+
       app.UseWebSockets();
 
       app.UseOpenApi(settings => settings.PostProcess = (doc, req) =>
