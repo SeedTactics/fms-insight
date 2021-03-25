@@ -99,7 +99,7 @@ app.on("ready", () => {
     width: 800,
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: false,
+      contextIsolation: true,
       session: ses,
       preload: path.join(app.getAppPath(), "src", "preload.js"),
     },

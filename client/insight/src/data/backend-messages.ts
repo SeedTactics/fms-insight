@@ -106,17 +106,11 @@ function sendIpc<P, R>(name: string, payload: P): Promise<R> {
   });
 }
 
-declare global {
-  interface Window {
-    bmsVersion: string | undefined;
-  }
-}
-
 const ServerBackend = {
   fMSInformation(): Promise<api.IFMSInfo> {
     return Promise.resolve({
       name: "FMS Insight Backup Viewer",
-      version: window.bmsVersion ?? "",
+      version: "",
       requireScanAtWash: false,
       requireWorkorderBeforeAllowWashComplete: false,
       additionalLogServers: [],
