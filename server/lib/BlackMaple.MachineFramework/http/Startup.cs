@@ -204,7 +204,11 @@ namespace BlackMaple.MachineFramework
 
       app.UseEndpoints(endpoints =>
       {
-        endpoints.MapControllers();
+        var ctrlBuilder = endpoints.MapControllers();
+        if (serverSt.UseAuthentication)
+        {
+          ctrlBuilder.RequireAuthorization();
+        }
 
         endpoints.Map("/api/v1/events", async context =>
         {
