@@ -49,7 +49,6 @@ type Response = {
 };
 
 ipcRenderer.once("communication-port", (evt) => {
-  console.log("got comm port");
   let port = evt.ports[0];
   port.onmessage = (msg) => {
     const req: Request = msg.data;

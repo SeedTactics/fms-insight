@@ -38,6 +38,7 @@ const {
   shell,
   dialog,
   MessageChannelMain,
+  protocol,
   session,
 } = require("electron");
 const path = require("path");
@@ -57,7 +58,11 @@ app.on("web-contents-created", (_, contents) => {
   });
 });
 
-const insightHost = "file://insight/";
+const insightHost = "backup://insight/";
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: "backup", privileges: { standard: true } },
+]);
 
 app.on("ready", () => {
   Menu.setApplicationMenu(null);
@@ -78,7 +83,7 @@ app.on("ready", () => {
   });
 
   const ses = session.fromPartition("insight-main-window");
-  ses.protocol.interceptFileProtocol("file", (request, callback) => {
+  ses.protocol.registerFileProtocol("backup", (request, callback) => {
     if (request.url === insightHost + "backup/open") {
       callback({
         path: path.join(app.getAppPath(), "build", "insight", "index.html"),
@@ -91,6 +96,20 @@ app.on("ready", () => {
     } else {
       console.log("Invalid host for " + request.url);
       callback({ error: -6 });
+    }
+  });
+  ses.webRequest.onHeadersReceived((details, callback) => {
+    if (details.url.startsWith("devtools")) {
+      callback({});
+    } else {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; form-action 'self'",
+          ],
+        },
+      });
     }
   });
 
