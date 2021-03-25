@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "../../build/background",
+    "incremental": true,
     "tsBuildInfoFile": "../../.tsbuildinfo",
 
     "module": "commonjs",
