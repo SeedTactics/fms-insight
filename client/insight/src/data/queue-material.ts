@@ -231,7 +231,7 @@ export function extractJobRawMaterial(
         })
     )
     .sortOn((x) => {
-      const prec = x.job.precedence?.[0]?.[x.proc1Path];
+      const prec = x.job.precedence?.[0]?.[x.proc1Path - 1];
       if (!prec || prec < 0) return Number.MAX_SAFE_INTEGER;
       return prec;
     })
