@@ -26,7 +26,6 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
 
     <IsPackable>true</IsPackable>
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 

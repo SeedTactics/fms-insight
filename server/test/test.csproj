@@ -5,7 +5,6 @@
     <AssemblyName>BlackMaple.MachineFramework.Tests</AssemblyName>
     <TargetFramework>net5.0</TargetFramework>
 
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
