@@ -123,7 +123,7 @@ const outlierLaborPointsSelector = createSelector(
   (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
   (_: Store, _l: boolean, today: Date) => today,
   (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
-    return outlierLoadCycles(cycles, addDays(today, -5), addDays(today, 1), estimated);
+    return outlierLoadCycles(cycles, addDays(today, -4), addDays(today, 1), estimated);
   }
 );
 
@@ -132,20 +132,20 @@ const outlierMachinePointsSelector = createSelector(
   (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
   (_: Store, _l: boolean, today: Date) => today,
   (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
-    return outlierMachineCycles(cycles, addDays(today, -5), addDays(today, 1), estimated);
+    return outlierMachineCycles(cycles, addDays(today, -4), addDays(today, 1), estimated);
   }
 );
 
 const ConnectedOutlierLabor = connect((st) => ({
   showLabor: true,
   points: outlierLaborPointsSelector(st, true, startOfToday()),
-  default_date_range: [addDays(startOfToday(), -5), addDays(startOfToday(), 1)],
+  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(OutlierCycles);
 
 const ConnectedOutlierMachines = connect((st) => ({
   showLabor: false,
   points: outlierMachinePointsSelector(st, false, startOfToday()),
-  default_date_range: [addDays(startOfToday(), -5), addDays(startOfToday(), 1)],
+  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(OutlierCycles);
 
 // -----------------------------------------------------------------------------------
@@ -292,19 +292,19 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
     const today = startOfToday();
     if (curOperation) {
       return filterStationCycles(cycles, {
-        zoom: { start: addDays(today, -2), end: addDays(today, 1) },
+        zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         pallet: selectedPallet,
         operation: curOperation,
       });
     } else if (props.showLabor && showGraph) {
       return loadOccupancyCycles(cycles, {
-        zoom: { start: addDays(today, -2), end: addDays(today, 1) },
+        zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         partAndProc: selectedPart,
         pallet: selectedPallet,
       });
     } else {
       return filterStationCycles(cycles, {
-        zoom: { start: addDays(today, -2), end: addDays(today, 1) },
+        zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         partAndProc: selectedPart,
         pallet: selectedPallet,
         station: props.showLabor ? FilterAnyLoadKey : FilterAnyMachineKey,
@@ -459,12 +459,12 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
 
 const ConnectedLaborCycleChart = connect((st) => ({
   showLabor: true,
-  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(PartStationCycleChart);
 
 const ConnectedMachineCycleChart = connect((st) => ({
   showLabor: false,
-  default_date_range: [addDays(startOfToday(), -2), addDays(startOfToday(), 1)],
+  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(PartStationCycleChart);
 
 // -----------------------------------------------------------------------------------
