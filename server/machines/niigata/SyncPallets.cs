@@ -184,7 +184,16 @@ namespace BlackMaple.FMSInsight.Niigata
             NiigataAction action = null;
             do
             {
-              Log.Debug("Syncronizing Pallets, total GC memory {mem}", GC.GetTotalMemory(false));
+              ThreadPool.GetAvailableThreads(out var workerThreads, out var ioThreads);
+              ThreadPool.GetMaxThreads(out var maxWorkerThreads, out var maxIoThreads);
+              Log.Debug(
+                "Syncronizing Pallets, total GC memory {mem}, worker threads {workerThreads}/{maxWorkerThreads}, IO threads {ioThreads}/{maxIoThreads}",
+                GC.GetTotalMemory(false),
+                workerThreads,
+                maxWorkerThreads,
+                ioThreads,
+                maxIoThreads
+              );
 
               _newCurStatus.Reset();
               status = _icc.LoadNiigataStatus();
