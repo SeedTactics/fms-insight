@@ -292,6 +292,7 @@ namespace MazakMachineInterface
     public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; init; }
     public IEnumerable<MazakPalletPositionRow> PalletPositions { get; init; }
     public IEnumerable<MazakAlarmRow> Alarms { get; init; }
+    public IEnumerable<MazakPartRow> Parts { get; init; }
 
     public void FindSchedule(string mazakPartName, int proc, out string unique, out int path, out int numProc)
     {
@@ -326,7 +327,6 @@ namespace MazakMachineInterface
 
   public record MazakAllData : MazakCurrentStatus
   {
-    public IEnumerable<MazakPartRow> Parts { get; init; }
     public IEnumerable<MazakPalletRow> Pallets { get; init; }
     public IEnumerable<MazakProgramRow> MainPrograms { get; init; }
     public IEnumerable<MazakFixtureRow> Fixtures { get; init; }
