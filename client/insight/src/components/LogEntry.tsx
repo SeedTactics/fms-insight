@@ -147,18 +147,21 @@ function logType(entry: api.ILogEntry): string {
 }
 
 function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
-  let mat = "";
-  mats.forEach((m) => {
-    if (mat.length > 0) {
-      mat += ", ";
-    }
-    if (m.numproc > 1) {
-      mat += m.part + "-" + m.proc.toString();
+  if (mats.length > 1) {
+    if (mats[0].numproc == 1) {
+      return `${mats[0].part} x${mats.length}`;
     } else {
-      mat += m.part;
+      return `${mats[0].part}-${mats[0].proc} x${mats.length}`;
     }
-  });
-  return mat;
+  } else if (mats.length == 1) {
+    if (mats[0].numproc == 1) {
+      return `${mats[0].part}`;
+    } else {
+      return `${mats[0].part}-${mats[0].proc}`;
+    }
+  } else {
+    return "";
+  }
 }
 
 function displayQueueMat(mats: ReadonlyArray<api.ILogMaterial>) {

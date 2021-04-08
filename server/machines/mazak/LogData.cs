@@ -434,7 +434,17 @@ namespace MazakMachineInterface
           }
           bool recheckingQueues = ret == 2;
 
-          Log.Debug("Waking up log thread for {reason}: total GC memory {mem}", ret, GC.GetTotalMemory(false));
+          ThreadPool.GetAvailableThreads(out var workerThreads, out var ioThreads);
+          ThreadPool.GetMaxThreads(out var maxWorkerThreads, out var maxIoThreads);
+          Log.Debug(
+            "Waking up log thread for {reason}: total GC memory {mem}, worker threads {workerThreads}/{maxWorkerThreads}, IO threads {ioThreads}/{maxIoThreads}",
+            ret,
+            GC.GetTotalMemory(false),
+            workerThreads,
+            maxWorkerThreads,
+            ioThreads,
+            maxIoThreads
+          );
 
           var mazakData = _readDB.LoadStatusAndTools();
 

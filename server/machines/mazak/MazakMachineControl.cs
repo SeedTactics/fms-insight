@@ -58,13 +58,25 @@ namespace MazakMachineInterface
       {
         return programs.Select(p =>
         {
-          var prog = jobDb.ProgramFromCellControllerProgram(p.MainProgram);
+          ProgramRevision prog = null;
+          if (MazakProcess.TryParseMainProgramComment(p.Comment, out var progFromComent, out var revFromComment))
+          {
+            prog = jobDb.LoadProgram(progFromComent, revFromComment);
+            if (prog == null)
+            {
+              prog = new ProgramRevision()
+              {
+                ProgramName = progFromComent,
+                Revision = revFromComment,
+              };
+            }
+          }
           return new ProgramInCellController()
           {
-            CellControllerProgramName = p.MainProgram,
             ProgramName = prog?.ProgramName ?? p.MainProgram,
+            CellControllerProgramName = p.MainProgram,
             Revision = prog?.Revision,
-            Comment = p.Comment
+            Comment = prog?.Comment ?? p.Comment
           };
         }).ToList();
       }

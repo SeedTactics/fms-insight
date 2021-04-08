@@ -767,7 +767,6 @@ namespace MazakMachineInterface
     private string _partProcSelect;
     private string _scheduleSelect;
     private string _scheduleProcSelect;
-    private string _partProcFixQty;
     private string _palSubStatusSelect;
     private string _palPositionSelect;
     private string _mainProgSelect;
@@ -933,10 +932,6 @@ namespace MazakMachineInterface
           FROM ScheduleProcess";
       }
 
-      // normally would use a join to determine FixQuantity as part of the schedule proc row,
-      // but the mazak readdb has no indexes and no keys, so everything is a table scan.
-      _partProcFixQty = "SELECT PartName, ProcessNumber, FixQuantity FROM PartProcess";
-
       _palSubStatusSelect = "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
       _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
       _mainProgSelect = "SELECT MainProgram, Comment FROM MainProgram";
@@ -985,6 +980,31 @@ namespace MazakMachineInterface
       public int FixQuantity { get; set; }
     }
 
+    private IEnumerable<MazakPartRow> LoadParts(IDbConnection conn, IDbTransaction trans, out IEnumerable<PartProcessFixQty> fixQtys)
+    {
+      var parts = conn.Query<MazakPartRow>(_partSelect, transaction: trans);
+      var partsByName = parts.ToDictionary(p => p.PartName, p => p);
+      var procs = conn.Query<MazakPartProcessRow>(_partProcSelect, transaction: trans);
+      var fixQty = new List<PartProcessFixQty>();
+      fixQtys = fixQty;
+      foreach (var proc in procs)
+      {
+        if (partsByName.ContainsKey(proc.PartName))
+        {
+          var part = partsByName[proc.PartName];
+          part.Processes.Add(proc);
+        }
+        fixQty.Add(new PartProcessFixQty()
+        {
+          PartName = proc.PartName,
+          ProcessNumber = proc.ProcessNumber,
+          FixQuantity = proc.FixQuantity
+        });
+      }
+
+      return parts;
+    }
+
     private IEnumerable<MazakScheduleRow> LoadSchedules(IDbConnection conn, IDbTransaction trans, IEnumerable<PartProcessFixQty> fixQtys)
     {
       var schs = conn.Query<MazakScheduleRow>(_scheduleSelect, transaction: trans);
@@ -1018,14 +1038,15 @@ namespace MazakMachineInterface
       {
         using (var trans = conn.BeginTransaction())
         {
-          var partFixQty = conn.Query<PartProcessFixQty>(_partProcFixQty, transaction: trans);
+          var parts = LoadParts(conn, trans, out var fixQty);
           var ret = new MazakCurrentStatusAndTools()
           {
-            Schedules = LoadSchedules(conn, trans, partFixQty),
+            Schedules = LoadSchedules(conn, trans, fixQty),
             LoadActions = _loadOper.CurrentLoadActions(),
             PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
             PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
             Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
+            Parts = parts,
             Tools =
               MazakType == MazakDbType.MazakSmooth
                 ? conn.Query<ToolPocketRow>(_toolSelect, transaction: trans)
@@ -1039,24 +1060,7 @@ namespace MazakMachineInterface
 
     private MazakAllData LoadAllData(IDbConnection conn, IDbTransaction trans)
     {
-      var parts = conn.Query<MazakPartRow>(_partSelect, transaction: trans);
-      var partsByName = parts.ToDictionary(p => p.PartName, p => p);
-      var procs = conn.Query<MazakPartProcessRow>(_partProcSelect, transaction: trans);
-      var fixQty = new List<PartProcessFixQty>();
-      foreach (var proc in procs)
-      {
-        if (partsByName.ContainsKey(proc.PartName))
-        {
-          var part = partsByName[proc.PartName];
-          part.Processes.Add(proc);
-        }
-        fixQty.Add(new PartProcessFixQty()
-        {
-          PartName = proc.PartName,
-          ProcessNumber = proc.ProcessNumber,
-          FixQuantity = proc.FixQuantity
-        });
-      }
+      var parts = LoadParts(conn, trans, out var fixQty);
 
       return new MazakAllData()
       {

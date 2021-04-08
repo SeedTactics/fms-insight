@@ -60,6 +60,7 @@ namespace MachineWatchTest
     private List<MazakScheduleRow> _schedules;
     private List<MazakPalletSubStatusRow> _palletSubStatus;
     private List<MazakPalletPositionRow> _palletPositions;
+    private List<MazakPartRow> _mazakPartRows;
 
     protected LogTestBase()
     {
@@ -78,6 +79,7 @@ namespace MachineWatchTest
       _schedules = new List<MazakScheduleRow>();
       _palletSubStatus = new List<MazakPalletSubStatusRow>();
       _palletPositions = new List<MazakPalletPositionRow>();
+      _mazakPartRows = new List<MazakPartRow>();
       mazakDataTools = new List<ToolPocketRow>();
       mazakData = new MazakCurrentStatusAndTools()
       {
@@ -85,7 +87,8 @@ namespace MachineWatchTest
         LoadActions = Enumerable.Empty<LoadAction>(),
         Tools = mazakDataTools,
         PalletPositions = _palletPositions,
-        PalletSubStatuses = _palletSubStatus
+        PalletSubStatuses = _palletSubStatus,
+        Parts = _mazakPartRows
       };
 
       machGroupName = Substitute.For<IMachineGroupName>();
@@ -134,6 +137,23 @@ namespace MachineWatchTest
       }
       _schedules.Add(sch);
       return sch.Id;
+    }
+
+    protected void AddTestPartPrograms(string part, IReadOnlyList<string> programs)
+    {
+      var partRow = new MazakPartRow()
+      {
+        PartName = part
+      };
+      for (int i = 0; i < programs.Count; i++)
+      {
+        partRow.Processes.Add(new MazakPartProcessRow()
+        {
+          ProcessNumber = i + 1,
+          MainProgram = programs[i]
+        });
+      }
+      _mazakPartRows.Add(partRow);
     }
 
     protected void SetPallet(int pal, bool atLoadStation)
@@ -305,11 +325,11 @@ namespace MachineWatchTest
       }, null, mat.EventStartTime.AddMinutes(offset)));
     }
 
-    protected void MachStart(TestMaterial mat, int offset, int mach)
+    protected void MachStart(TestMaterial mat, int offset, int mach, string mazakProg = null, string logProg = null, long? progRev = null)
     {
-      MachStart(new[] { mat }, offset, mach);
+      MachStart(new[] { mat }, offset, mach, mazakProg, logProg, progRev);
     }
-    protected void MachStart(IEnumerable<TestMaterial> mats, int offset, int mach)
+    protected void MachStart(IEnumerable<TestMaterial> mats, int offset, int mach, string mazakProg = null, string logProg = null, long? progRev = null)
     {
       string prog = "program-" + mats.First().MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry()
@@ -323,14 +343,14 @@ namespace MachineWatchTest
         JobPartName = mats.First().JobPartName,
         Process = mats.First().Process,
         FixedQuantity = mats.Count(),
-        Program = prog,
+        Program = mazakProg ?? prog,
         TargetPosition = "",
         FromPosition = "",
       };
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      var expectedLog = new BlackMaple.MachineWatchInterface.LogEntry(
           cntr: -1,
           mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
             matID: mat.MaterialID,
@@ -346,19 +366,24 @@ namespace MachineWatchTest
           ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
           locName: "machinespec",
           locNum: e2.StationNumber,
-          prog: prog,
+          prog: logProg ?? prog,
           start: true,
           endTime: e2.TimeUTC,
           result: "",
           endOfRoute: false
-      ));
+      );
+      if (progRev.HasValue)
+      {
+        expectedLog %= e => e.ProgramDetails["ProgramRevision"] = progRev.Value.ToString();
+      }
+      expected.Add(expectedLog);
     }
 
-    protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null)
+    protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null, string mazakProg = null, string logProg = null, long? progRev = null)
     {
-      MachEnd(new[] { mat }, offset, mach, elapMin, activeMin, tools);
+      MachEnd(new[] { mat }, offset, mach, elapMin, activeMin, tools, mazakProg, logProg, progRev);
     }
-    protected void MachEnd(IEnumerable<TestMaterial> mats, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null)
+    protected void MachEnd(IEnumerable<TestMaterial> mats, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null, string mazakProg = null, string logProg = null, long? progRev = null)
     {
       string prog = "program-" + mats.First().MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry()
@@ -372,7 +397,7 @@ namespace MachineWatchTest
         JobPartName = mats.First().JobPartName,
         Process = mats.First().Process,
         FixedQuantity = mats.Count(),
-        Program = prog,
+        Program = mazakProg ?? prog,
         TargetPosition = "",
         FromPosition = "",
       };
@@ -395,7 +420,7 @@ namespace MachineWatchTest
         ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
         locName: "machinespec",
         locNum: e2.StationNumber,
-        prog: prog,
+        prog: logProg ?? prog,
         start: false,
         endTime: e2.TimeUTC,
         result: "",
@@ -412,6 +437,10 @@ namespace MachineWatchTest
             e.Tools[t.Key] = t.Value;
           }
         };
+      }
+      if (progRev.HasValue)
+      {
+        newEntry %= e => e.ProgramDetails["ProgramRevision"] = progRev.Value.ToString();
       }
       expected.Add(newEntry);
     }
@@ -1584,6 +1613,77 @@ namespace MachineWatchTest
       UnloadStart(proc2, offset: 60, load: 2);
       UnloadEnd(proc2, offset: 61, load: 2, elapMin: 1);
 
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Fact]
+    public void TranslatesProgramsFromJob()
+    {
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = ImmutableList.Create(new ProcessInfo()
+        {
+          Paths = ImmutableList.Create(new ProcPathInfo()
+          {
+            Stops = ImmutableList.Create(new MachiningStop()
+            {
+              Program = "the-log-prog",
+              ProgramRevision = 15
+            })
+          })
+        }),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+
+      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
+
+      LoadStart(p, offset: 0, load: 5);
+      LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
+      MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
+
+      MachStart(p, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
+      MachEnd(p, offset: 20, mach: 2, elapMin: 16, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Fact]
+    public void TranslatesProgramsFromMazakDb()
+    {
+      var j = new Job()
+      {
+        UniqueStr = "unique",
+        PartName = "part1",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) }
+        ),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
+      };
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+
+      var t = DateTime.UtcNow.AddHours(-5);
+
+      AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
+
+      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 2, matID: 1);
+
+      AddTestPartPrograms(part: p.MazakPartName, new[] { "the-log-prog", "the-log-prog-proc2" });
+
+      LoadStart(p, offset: 0, load: 5);
+      LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
+      MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
+
+      MachStart(p, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog");
+      MachEnd(p, offset: 20, mach: 2, elapMin: 16, mazakProg: "the-mazak-prog", logProg: "the-log-prog");
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }

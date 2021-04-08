@@ -123,27 +123,35 @@ namespace MazakMachineInterface
           break;
 
         case LogCode.MachineCycleStart:
-
-          // There should never be any pending loads since the pallet movement event should have fired.
-          // Just in case, we check for pending loads here
-          cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
-          IEnumerable<ToolPocketSnapshot> pockets = null;
-          if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
           {
-            pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
+
+            // There should never be any pending loads since the pallet movement event should have fired.
+            // Just in case, we check for pending loads here
+            cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
+            IEnumerable<ToolPocketSnapshot> pockets = null;
+            if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
+            {
+              pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
+            }
+
+            var machineMats = GetMaterialOnPallet(e, cycle);
+            LookupProgram(machineMats, e, out var progName, out var progRev);
+            _log.RecordMachineStart(
+              mats: machineMats.Select(m => m.Mat),
+              pallet: e.Pallet.ToString(),
+              statName: _machGroupName.MachineGroupName,
+              statNum: e.StationNumber,
+              program: progName,
+              timeUTC: e.TimeUTC,
+              pockets: pockets,
+              foreignId: e.ForeignID,
+              extraData: !progRev.HasValue ? null : new Dictionary<string, string> {
+                {"ProgramRevision", progRev.Value.ToString()}
+              }
+            );
+
+            break;
           }
-
-          _log.RecordMachineStart(
-            mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
-            pallet: e.Pallet.ToString(),
-            statName: _machGroupName.MachineGroupName,
-            statNum: e.StationNumber,
-            program: e.Program,
-            timeUTC: e.TimeUTC,
-            pockets: pockets,
-            foreignId: e.ForeignID);
-
-          break;
 
         case LogCode.MachineCycleEnd:
 
@@ -178,19 +186,24 @@ namespace MazakMachineInterface
           if (elapsed > TimeSpan.FromSeconds(30))
           {
             var machineMats = GetMaterialOnPallet(e, cycle);
+            LookupProgram(machineMats, e, out var progName, out var progRev);
             var s = _log.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet.ToString(),
               statName: _machGroupName.MachineGroupName,
               statNum: e.StationNumber,
-              program: e.Program,
+              program: progName,
               timeUTC: e.TimeUTC,
               result: "",
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
               tools: ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd),
               pockets: toolsAtEnd,
-              foreignId: e.ForeignID);
+              foreignId: e.ForeignID,
+              extraData: !progRev.HasValue ? null : new Dictionary<string, string> {
+                  {"ProgramRevision", progRev.Value.ToString()}
+              }
+            );
             HandleMachiningCompleted(s, machineMats);
           }
           else
@@ -842,6 +855,68 @@ namespace MazakMachineInterface
         .Select(t => t.Ticks)
         .Sum();
       return TimeSpan.FromTicks(ticks);
+    }
+
+    private void LookupProgram(IReadOnlyList<LogMaterialAndPath> mats, LogEntry e, out string progName, out long? rev)
+    {
+      if (LookupProgramFromJob(mats, out progName, out rev))
+      {
+        // ok, just return
+        return;
+      }
+      else if (LookupProgramFromMazakDb(e, out progName, out rev))
+      {
+        // ok, just return
+        return;
+      }
+      else
+      {
+        progName = e.Program;
+        rev = null;
+        return;
+      }
+    }
+
+    private bool LookupProgramFromJob(IReadOnlyList<LogMaterialAndPath> mats, out string progName, out long? rev)
+    {
+      progName = null;
+      rev = null;
+
+      if (mats.Count == 0) return false; ;
+
+      var firstMat = mats.FirstOrDefault();
+      if (string.IsNullOrEmpty(firstMat.Unique) || firstMat.Mat == null) return false;
+
+      var job = GetJob(firstMat.Unique);
+      if (job == null) return false;
+
+      var stop = job.GetMachiningStop(firstMat.Mat.Process, 1).FirstOrDefault();
+      if (stop == null) return false;
+
+      if (string.IsNullOrEmpty(stop.ProgramName)) return false;
+
+      progName = stop.ProgramName;
+      rev = stop.ProgramRevision;
+
+      return true;
+    }
+
+    private bool LookupProgramFromMazakDb(LogEntry entry, out string progName, out long? rev)
+    {
+      progName = null;
+      rev = null;
+
+      var part = _mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == entry.FullPartName);
+      if (part == null) return false;
+
+      var proc = part.Processes?.FirstOrDefault(p => p.ProcessNumber == entry.Process);
+      if (proc == null) return false;
+
+      if (string.IsNullOrEmpty(proc.MainProgram)) return false;
+
+      progName = proc.MainProgram;
+      rev = null;
+      return true;
     }
     #endregion
 
