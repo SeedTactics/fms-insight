@@ -179,7 +179,7 @@ function JobMaterial(props: JobMaterialProps) {
     (m1, _m2) => m1
   );
 
-  const anyWorkorder = LazySeq.ofIterable(currentMaterial).anyMatch(
+  const anyWorkorder = LazySeq.ofIterable(mats).anyMatch(
     (m) => m.workorderId !== undefined && m.workorderId !== "" && m.workorderId !== m.serial
   );
 
