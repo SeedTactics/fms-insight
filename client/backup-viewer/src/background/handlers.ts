@@ -123,9 +123,9 @@ async function convertRowToLog(db: Database, row: any): Promise<any> {
     (_err: any, row: any) => {
       if (row) {
         tools[row.Tool] = {
-          toolUseDuringCycle: parseTimespan(row.UseInCycle),
-          totalToolUseAtEndOfCycle: parseTimespan(row.UseAtEndOfCycle),
-          configuredToolLife: parseTimespan(row.ToolLife),
+          ToolUseDuringCycle: parseTimespan(row.UseInCycle),
+          TotalToolUseAtEndOfCycle: parseTimespan(row.UseAtEndOfCycle),
+          ConfiguredToolLife: parseTimespan(row.ToolLife),
         };
       }
     }
