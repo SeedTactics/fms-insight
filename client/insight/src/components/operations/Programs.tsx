@@ -140,9 +140,7 @@ function ProgramRow(props: ProgramRowProps) {
           )}
         </TableCell>
         <TableCell>{programFilename(props.program.programName)}</TableCell>
-        {props.showCellCtrlCol ? (
-          <TableCell>{programFilename(props.program.cellControllerProgramName)}</TableCell>
-        ) : undefined}
+        {props.showCellCtrlCol ? <TableCell>{props.program.cellControllerProgramName}</TableCell> : undefined}
         <TableCell>
           {props.program.partName !== null ? (
             <div className={classes.partNameContainer}>
@@ -243,7 +241,7 @@ function ProgramSummaryTable() {
         c = programFilename(a.programName).localeCompare(programFilename(b.programName));
         break;
       case "CellProgName":
-        c = programFilename(a.cellControllerProgramName).localeCompare(programFilename(b.cellControllerProgramName));
+        c = a.cellControllerProgramName.localeCompare(b.cellControllerProgramName);
         break;
       case "Comment":
         if (a.comment === null && b.comment === null) {
@@ -560,7 +558,7 @@ function ProgramRevisionTable(props: ProgramRevisionTableProps) {
               <TableRow key={rev.revision}>
                 <TableCell>{rev.revision}</TableCell>
                 <TableCell>{rev.comment ?? ""}</TableCell>
-                <TableCell>{programFilename(rev.cellControllerProgramName ?? "")}</TableCell>
+                <TableCell>{rev.cellControllerProgramName ?? ""}</TableCell>
                 <TableCell>
                   <Tooltip title="Load Program Content">
                     <IconButton
