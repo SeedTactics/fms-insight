@@ -51,6 +51,7 @@ import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
 import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../data/material-details";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 enum ColumnId {
   Date,
@@ -66,84 +67,94 @@ enum ColumnId {
   MedianDeviation,
 }
 
-const columns: ReadonlyArray<Column<ColumnId, PartCycleData>> = [
-  {
-    id: ColumnId.Date,
-    numeric: false,
-    label: "Date",
-    getDisplay: (c) => c.x.toLocaleString(),
-    getForSort: (c) => c.x.getTime(),
-  },
-  { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: (c) => c.part + "-" + c.process.toString() },
-  {
-    id: ColumnId.Station,
-    numeric: false,
-    label: "Station",
-    getDisplay: (c) => c.stationGroup + " " + c.stationNumber.toString(),
-  },
-  {
-    id: ColumnId.Pallet,
-    numeric: false,
-    label: "Pallet",
-    getDisplay: (c) => c.pallet,
-  },
-  {
-    id: ColumnId.Serial,
-    numeric: false,
-    label: "Serial",
-    getDisplay: (c) =>
-      c.material
-        .filter((m) => m.serial)
-        .map((m) => m.serial)
-        .join(", "),
-  },
-  {
-    id: ColumnId.Workorder,
-    numeric: false,
-    label: "Workorder",
-    getDisplay: (c) =>
-      c.material
-        .filter((m) => m.workorder)
-        .map((m) => m.workorder)
-        .join(", "),
-  },
-  {
-    id: ColumnId.Inspection,
-    numeric: false,
-    label: "Inspection",
-    getDisplay: format_cycle_inspection,
-    getForSort: (c) => {
-      return c.signaledInspections.toArray({ sortOn: (x) => x }).join(",");
+function buildColumns(
+  matIds: HashMap<number, MaterialSummaryAndCompletedData>
+): ReadonlyArray<Column<ColumnId, PartCycleData>> {
+  return [
+    {
+      id: ColumnId.Date,
+      numeric: false,
+      label: "Date",
+      getDisplay: (c) => c.x.toLocaleString(),
+      getForSort: (c) => c.x.getTime(),
     },
-  },
-  {
-    id: ColumnId.ElapsedMin,
-    numeric: true,
-    label: "Elapsed Min",
-    getDisplay: (c) => c.y.toFixed(1),
-  },
-  {
-    id: ColumnId.ActiveMin,
-    numeric: true,
-    label: "Target Min",
-    getDisplay: (c) => c.activeMinutes.toFixed(1),
-  },
-  {
-    id: ColumnId.MedianElapsed,
-    numeric: true,
-    label: "Median Elapsed Min",
-    getDisplay: (c) => c.medianCycleMinutes.toFixed(1),
-  },
-  {
-    id: ColumnId.MedianDeviation,
-    numeric: true,
-    label: "Median Deviation",
-    getDisplay: (c) => c.MAD_aboveMinutes.toFixed(1),
-  },
-];
+    { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: (c) => c.part + "-" + c.process.toString() },
+    {
+      id: ColumnId.Station,
+      numeric: false,
+      label: "Station",
+      getDisplay: (c) => c.stationGroup + " " + c.stationNumber.toString(),
+    },
+    {
+      id: ColumnId.Pallet,
+      numeric: false,
+      label: "Pallet",
+      getDisplay: (c) => c.pallet,
+    },
+    {
+      id: ColumnId.Serial,
+      numeric: false,
+      label: "Serial",
+      getDisplay: (c) =>
+        c.material
+          .filter((m) => m.serial)
+          .map((m) => m.serial)
+          .join(", "),
+    },
+    {
+      id: ColumnId.Workorder,
+      numeric: false,
+      label: "Workorder",
+      getDisplay: (c) =>
+        c.material
+          .filter((m) => m.workorder)
+          .map((m) => m.workorder)
+          .join(", "),
+    },
+    {
+      id: ColumnId.Inspection,
+      numeric: false,
+      label: "Inspection",
+      getDisplay: (c) => format_cycle_inspection(c, matIds),
+      getForSort: (c) => {
+        return LazySeq.ofIterable(c.material)
+          .mapOption((m) => matIds.get(m.id))
+          .flatMap((m) => m.signaledInspections)
+          .toSet((x) => x)
+          .toArray({ sortOn: (x) => x })
+          .join(",");
+      },
+    },
+    {
+      id: ColumnId.ElapsedMin,
+      numeric: true,
+      label: "Elapsed Min",
+      getDisplay: (c) => c.y.toFixed(1),
+    },
+    {
+      id: ColumnId.ActiveMin,
+      numeric: true,
+      label: "Target Min",
+      getDisplay: (c) => c.activeMinutes.toFixed(1),
+    },
+    {
+      id: ColumnId.MedianElapsed,
+      numeric: true,
+      label: "Median Elapsed Min",
+      getDisplay: (c) => c.medianCycleMinutes.toFixed(1),
+    },
+    {
+      id: ColumnId.MedianDeviation,
+      numeric: true,
+      label: "Median Deviation",
+      getDisplay: (c) => c.MAD_aboveMinutes.toFixed(1),
+    },
+  ];
+}
 
 interface StationDataTableProps {
   readonly points: HashMap<string, ReadonlyArray<PartCycleData>>;
+  readonly matsById: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
@@ -154,6 +165,7 @@ interface StationDataTableProps {
 
 function extractData(
   points: HashMap<string, ReadonlyArray<PartCycleData>>,
+  columns: ReadonlyArray<Column<ColumnId, PartCycleData>>,
   currentZoom: { start: Date; end: Date } | undefined,
   orderBy: ColumnId,
   order: "asc" | "desc"
@@ -238,7 +250,8 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
     };
   }
 
-  const allData = extractData(props.points, props.current_date_zoom, orderBy, order);
+  const columns = buildColumns(props.matsById);
+  const allData = extractData(props.points, columns, props.current_date_zoom, orderBy, order);
   const totalDataLength = allData.length;
   const pageData: ReadonlyArray<PartCycleData> = allData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
   const filteredColumns = columns.filter((c) => {

@@ -36,7 +36,7 @@ import CardHeader from "@material-ui/core/CardHeader";
 import CardContent from "@material-ui/core/CardContent";
 import BugIcon from "@material-ui/icons/BugReport";
 import { createSelector } from "reselect";
-import { Vector } from "prelude-ts";
+import { HashMap, Vector } from "prelude-ts";
 import { addDays, startOfToday } from "date-fns";
 import Tooltip from "@material-ui/core/Tooltip";
 import WorkIcon from "@material-ui/icons/Work";
@@ -69,6 +69,7 @@ import { OEEProps, OEEChart, OEETable } from "./OEEChart";
 import { copyOeeToClipboard, buildOeeSeries, OEEBarSeries } from "../../data/results.oee";
 import { LazySeq } from "../../data/lazyseq";
 import { useSetRecoilState } from "recoil";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -77,6 +78,7 @@ import { useSetRecoilState } from "recoil";
 interface OutlierCycleProps {
   readonly showLabor: boolean;
   readonly points: FilteredStationCycles;
+  readonly matsById: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly default_date_range: Date[];
 }
 
@@ -92,7 +94,7 @@ function OutlierCycles(props: OutlierCycleProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyCyclesToClipboard(props.points, undefined)}
+                onClick={() => copyCyclesToClipboard(props.points, props.matsById, undefined)}
               >
                 <ImportExport />
               </IconButton>
@@ -107,6 +109,7 @@ function OutlierCycles(props: OutlierCycleProps) {
       <CardContent>
         <StationDataTable
           points={props.points.data}
+          matsById={props.matsById}
           default_date_range={props.default_date_range}
           current_date_zoom={{ start: props.default_date_range[0], end: props.default_date_range[1] }}
           set_date_zoom_range={undefined}
@@ -139,12 +142,14 @@ const outlierMachinePointsSelector = createSelector(
 const ConnectedOutlierLabor = connect((st) => ({
   showLabor: true,
   points: outlierLaborPointsSelector(st, true, startOfToday()),
+  matsById: st.Events.last30.mat_summary.matsById,
   default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(OutlierCycles);
 
 const ConnectedOutlierMachines = connect((st) => ({
   showLabor: false,
   points: outlierMachinePointsSelector(st, false, startOfToday()),
+  matsById: st.Events.last30.mat_summary.matsById,
   default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(OutlierCycles);
 
@@ -288,6 +293,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   const curOperation = selectedPart ? operationNames.get(selectedOperation ?? 0).getOrNull() : null;
 
   const cycles = useSelector((st) => st.Events.last30.cycles.part_cycles);
+  const matsById = useSelector((st) => st.Events.last30.mat_summary.matsById);
   const points = React.useMemo(() => {
     const today = startOfToday();
     if (curOperation) {
@@ -332,7 +338,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, undefined, props.showLabor)}
+                  onClick={() => copyCyclesToClipboard(points, matsById, undefined, props.showLabor)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -444,6 +450,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         ) : (
           <StationDataTable
             points={points.data}
+            matsById={matsById}
             default_date_range={props.default_date_range}
             current_date_zoom={undefined}
             set_date_zoom_range={undefined}

@@ -36,6 +36,7 @@ import { startOfDay } from "date-fns";
 import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { PartCycleData } from "./events.cycles";
+import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
@@ -64,16 +65,48 @@ export interface PartsCompletedSummary {
   readonly activeMachineMins: number;
 }
 
-export function binCyclesByDayAndPart(cycles: Iterable<PartCycleData>): HashMap<DayAndPart, PartsCompletedSummary> {
-  return LazySeq.ofIterable(cycles)
-    .map((point) => ({
-      day: startOfDay(point.x),
-      part: point.part + "-" + point.process.toString(),
-      value: {
-        count: point.completed ? point.material.length : 0,
-        activeMachineMins: point.completed ? point.activeTotalMachineMinutesForSingleMat * point.material.length : 0,
-      },
-    }))
+class MatIdAndProcess {
+  public constructor(public readonly matId: number, public readonly proc: number) {}
+  equals(other: MatIdAndProcess): boolean {
+    return this.matId === other.matId && this.proc === other.proc;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.matId, this.proc);
+  }
+  toString(): string {
+    return this.matId + "-" + this.proc.toString();
+  }
+}
+
+export function binCyclesByDayAndPart(
+  cycles: Iterable<PartCycleData>,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>
+): HashMap<DayAndPart, PartsCompletedSummary> {
+  const activeTimeByMatId = LazySeq.ofIterable(cycles)
+    .filter((cycle) => !cycle.isLabor && cycle.activeMinutes > 0 && cycle.material.length > 0)
+    .flatMap((cycle) =>
+      cycle.material.map((mat) => ({
+        matId: mat.id,
+        proc: mat.proc,
+        active: cycle.activeMinutes / cycle.material.length,
+      }))
+    )
+    .toMap(
+      (p) => [new MatIdAndProcess(p.matId, p.proc), p.active],
+      (a1, a2) => a1 + a2
+    );
+
+  return LazySeq.ofIterable(matsById)
+    .flatMap(([matId, details]) =>
+      LazySeq.ofObject(details.unloaded_processes ?? {}).map(([proc, unloadTime]) => ({
+        day: startOfDay(unloadTime),
+        part: details.partName + "-" + proc.toString(),
+        value: {
+          count: 1,
+          activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))).getOrElse(0),
+        },
+      }))
+    )
     .toMap(
       (p) => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
       (v1, v2) => ({

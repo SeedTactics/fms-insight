@@ -57,7 +57,7 @@ it("bins actual cycles by day", () => {
     },
   });
 
-  let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles);
+  let byDayAndPart = binCyclesByDayAndPart(st.last30.cycles.part_cycles, st.last30.mat_summary.matsById);
 
   const points = LazySeq.ofIterable(byDayAndPart)
     .map(([dayAndPart, val]) => ({

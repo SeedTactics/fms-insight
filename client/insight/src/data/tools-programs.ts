@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ActionType, ICurrentStatus } from "./api";
 import { LazySeq } from "./lazyseq";
-import { Vector, HashMap } from "prelude-ts";
+import { Vector, HashMap, HashSet } from "prelude-ts";
 import { duration } from "moment";
 import { atom, selector } from "recoil";
 import {
@@ -43,7 +43,6 @@ import {
   PartAndStationOperation,
   StationOperation,
   EstimatedCycleTimes,
-  ActiveCycleTime,
   stat_name_and_num,
 } from "./events.cycles";
 import { reduxStore } from "../store/store";
@@ -303,17 +302,15 @@ export interface ProgramReport {
 export async function calcProgramReport(
   usage: ToolUsage,
   cycleTimes: EstimatedCycleTimes,
-  activeTimes: ActiveCycleTime
+  partOperations: HashSet<PartAndStationOperation>
 ): Promise<ProgramReport> {
   const tools = averageToolUse(usage, true);
 
-  const progToPart = LazySeq.ofIterable(activeTimes)
-    .flatMap(([partAndProc, ops]) =>
-      LazySeq.ofIterable(ops.keySet()).map((op) => ({
-        program: op.operation,
-        part: new PartAndStationOperation(partAndProc.part, partAndProc.proc, op.statGroup, op.operation),
-      }))
-    )
+  const progToPart = LazySeq.ofIterable(partOperations)
+    .map((op) => ({
+      program: op.operation,
+      part: op,
+    }))
     .toMap(
       (x) => [x.program, x.part],
       (_, x) => x
@@ -356,7 +353,7 @@ export const currentProgramReport = selector<ProgramReport | null>({
     return calcProgramReport(
       reduxStore.getState().Events.last30.cycles.tool_usage,
       reduxStore.getState().Events.last30.cycles.estimatedCycleTimes,
-      reduxStore.getState().Events.last30.cycles.active_cycle_times
+      reduxStore.getState().Events.last30.cycles.part_and_operation_names
     );
   },
 });

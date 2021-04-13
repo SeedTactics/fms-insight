@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -47,11 +47,12 @@ export interface MaterialSummary {
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
-  readonly completed_machining?: boolean;
+  readonly unloaded_processes?: { [process: number]: Date };
   readonly last_unload_time?: Date;
+  readonly completed_last_proc_machining?: boolean;
   readonly completed_inspect_time?: Date;
   readonly wash_completed?: Date;
-  readonly completedInspections?: { [key: string]: Date };
+  readonly completedInspections?: { [key: string]: { time: Date; success: boolean } };
 }
 
 interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
@@ -117,6 +118,7 @@ export function process_events(
           partName: logMat.part,
           last_event: e.endUTC,
           startedProcess1: false,
+          unloaded_processes: {},
           signaledInspections: [],
           completedInspections: {},
         };
@@ -156,11 +158,12 @@ export function process_events(
           break;
 
         case api.LogType.InspectionResult:
+          const success = e.result.toLowerCase() == "true" || e.result === "1";
           mat = {
             ...mat,
             completedInspections: {
               ...mat.completedInspections,
-              [e.program]: e.endUTC,
+              [e.program]: { time: e.endUTC, success },
             },
             completed_inspect_time: e.endUTC,
           };
@@ -169,11 +172,15 @@ export function process_events(
 
         case api.LogType.LoadUnloadCycle:
           if (e.result === "UNLOAD") {
+            mat = {
+              ...mat,
+              unloaded_processes: { ...mat.unloaded_processes, [logMat.proc]: e.endUTC },
+            };
             if (logMat.proc === logMat.numproc) {
               mat = {
                 ...mat,
                 last_unload_time: e.endUTC,
-                completed_machining: true,
+                completed_last_proc_machining: true,
               };
             } else {
               mat = {
@@ -224,12 +231,17 @@ export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: M
       partName: oldMat.partName,
       last_event: oldMat.last_event,
       startedProcess1: true,
+      unloaded_processes: {},
       signaledInspections: [],
       completedInspections: {},
     };
   } else {
     newMat = newMatFromState;
   }
+
+  const oldMatUnloads = oldMat.unloaded_processes;
+  oldMat = { ...oldMat, unloaded_processes: newMat.unloaded_processes };
+  newMat = { ...newMat, unloaded_processes: oldMatUnloads };
 
   for (const evt of swap.editedEvents) {
     const newMatFromEvt = evt.material.find((m) => m.id === swap.newMaterialID);

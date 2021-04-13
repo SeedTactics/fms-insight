@@ -49,7 +49,7 @@ import { PartCycleData } from "../../data/events.cycles";
 import BuildIcon from "@material-ui/icons/Build";
 import CallSplit from "@material-ui/icons/CallSplit";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
-import { HashSet, Vector } from "prelude-ts";
+import { HashMap, HashSet, Vector } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import * as localForage from "localforage";
 import CircularProgress from "@material-ui/core/CircularProgress";
@@ -66,6 +66,7 @@ import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import { PartIdenticon } from "../station-monitor/Material";
 import Typography from "@material-ui/core/Typography";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
@@ -465,6 +466,7 @@ function CostInputCard(props: { children: React.ReactNode }) {
 interface CostPerPieceProps {
   readonly statGroups: HashSet<string>;
   readonly cycles: Vector<PartCycleData>;
+  readonly matIds: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly month: Date | null;
 }
 
@@ -515,7 +517,14 @@ function CostPerPiecePage(props: CostPerPieceProps) {
     } else {
       totalLaborCost = last30LaborCost ?? 0;
     }
-    return compute_monthly_cost(machineCostPerYear, automationCostPerYear, totalLaborCost, props.cycles, props.month);
+    return compute_monthly_cost(
+      machineCostPerYear,
+      automationCostPerYear,
+      totalLaborCost,
+      props.cycles,
+      props.matIds,
+      props.month
+    );
   }, [
     machineCostPerYear,
     automationCostPerYear,
@@ -571,6 +580,10 @@ const ConnectedCostPerPiecePage = connect((s) => ({
     s.Events.analysis_period === AnalysisPeriod.Last30Days
       ? s.Events.last30.cycles.part_cycles
       : s.Events.selected_month.cycles.part_cycles,
+  matIds:
+    s.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? s.Events.last30.mat_summary.matsById
+      : s.Events.selected_month.mat_summary.matsById,
   month: s.Events.analysis_period === AnalysisPeriod.Last30Days ? null : s.Events.analysis_period_month,
 }))(CostPerPiecePage);
 

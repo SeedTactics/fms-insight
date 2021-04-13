@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { HashMap, Option } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
-import { PartCycleData } from "./events.cycles";
+import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 import { ICurrentStatus, IHistoricJob, IActiveJob } from "./api";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
@@ -55,12 +55,27 @@ type WritableScheduledJob = { -readonly [K in keyof ScheduledJobDisplay]: Schedu
 export function buildScheduledJobs(
   start: Date | null,
   end: Date | null,
-  cycles: Iterable<PartCycleData>,
+  matIds: HashMap<number, MaterialSummaryAndCompletedData>,
   schJobs: HashMap<string, Readonly<IHistoricJob>>,
   currentSt: Readonly<ICurrentStatus>
 ): ReadonlyArray<ScheduledJobDisplay> {
-  const filteredCycles =
-    start != null && end != null ? LazySeq.ofIterable(cycles).filter((e) => e.x >= start && e.x <= end) : cycles;
+  const completedMats = LazySeq.ofIterable(matIds)
+    .flatMap(([matId, summary]) =>
+      LazySeq.ofObject(summary.unloaded_processes ?? {})
+        .filter(([_, unloadTime]) => start == null || end == null || (unloadTime >= start && unloadTime <= end))
+        .map(([proc, _]) => ({
+          matId: matId,
+          proc: parseInt(proc),
+          uniq: summary.jobUnique,
+        }))
+    )
+    .groupBy((m) => m.uniq)
+    .mapValues((mats) =>
+      LazySeq.ofIterable(mats).toMap(
+        (m) => [m.proc, 1],
+        (c1, c2) => c1 + c2
+      )
+    );
 
   const result = new Map<string, WritableScheduledJob>();
 
@@ -82,24 +97,11 @@ export function buildScheduledJobs(
         casting: casting ?? "",
         scheduledQty: LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((c) => c),
         decrementedQty: LazySeq.ofIterable(job.decrements || []).sumOn((d) => d.quantity),
-        completedQty: 0,
+        completedQty: completedMats.get(uniq).getOrNull()?.get(job.procsAndPaths.length).getOrNull() ?? 0,
         inProcessQty: 0,
         darkRow: false,
         remainingQty: 0,
       });
-    }
-  }
-
-  for (const cycle of filteredCycles) {
-    if (cycle.completed) {
-      for (const mat of cycle.material) {
-        if (mat.uniq && mat.proc === mat.numproc) {
-          const job = result.get(mat.uniq);
-          if (job) {
-            job.completedQty += 1;
-          }
-        }
-      }
     }
   }
 

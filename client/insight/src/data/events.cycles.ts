@@ -55,13 +55,9 @@ export interface PartCycleData extends CycleData {
   readonly pallet: string;
   readonly activeMinutes: number; // active time in minutes
   readonly medianCycleMinutes: number;
-  readonly activeTotalMachineMinutesForSingleMat: number; // active time for all machines in entire route
   readonly MAD_aboveMinutes: number;
   readonly isLabor: boolean;
   readonly material: ReadonlyArray<Readonly<api.ILogMaterial>>;
-  readonly completed: boolean; // did this cycle result in a completed part
-  readonly signaledInspections: HashSet<string>;
-  readonly completedInspections: HashMap<string, boolean>; // boolean is if successful or failed
   readonly operator: string;
 }
 
@@ -142,10 +138,6 @@ export class StationOperation {
 }
 
 export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCycleTime>;
-export type ActiveCycleTime = HashMap<
-  PartAndProcess,
-  HashMap<StationOperation, { readonly activeMinsForSingleMat: number }>
->;
 
 export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
@@ -162,25 +154,25 @@ export interface CycleState {
   readonly by_pallet: HashMap<string, ReadonlyArray<PalletCycleData>>;
 
   readonly part_and_proc_names: HashSet<PartAndProcess>;
+  readonly part_and_operation_names: HashSet<PartAndStationOperation>;
   readonly machine_groups: HashSet<string>;
   readonly machine_names: HashSet<string>;
   readonly loadstation_names: HashSet<string>;
   readonly pallet_names: HashSet<string>;
   readonly estimatedCycleTimes: EstimatedCycleTimes;
-  readonly active_cycle_times: ActiveCycleTime;
   readonly tool_usage: ToolUsage;
 }
 
 export const initial: CycleState = {
   part_cycles: Vector.empty(),
   part_and_proc_names: HashSet.empty(),
+  part_and_operation_names: HashSet.empty(),
   by_pallet: HashMap.empty(),
   machine_groups: HashSet.empty(),
   machine_names: HashSet.empty(),
   loadstation_names: HashSet.empty(),
   pallet_names: HashSet.empty(),
   estimatedCycleTimes: HashMap.empty(),
-  active_cycle_times: HashMap.empty(),
   tool_usage: HashMap.empty(),
 };
 
@@ -405,106 +397,13 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): E
   return machines.mergeWith(loads, (s1, _) => s1);
 }
 
-function activeMinutes(
-  cycle: Readonly<api.ILogEntry>,
-  stats: Option<StatisticalCycleTime>,
-  activeTimes: ActiveCycleTime
-): [number, ActiveCycleTime] {
+function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>): number {
   const aMins = duration(cycle.active).asMinutes();
   if (cycle.active === "" || aMins <= 0 || cycle.material.length === 0) {
-    return [stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length, activeTimes];
+    return stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length;
   } else {
-    const activeMinsForSingleMat = aMins / cycle.material.length;
-    const partKey = PartAndProcess.ofLogCycle(cycle);
-    const oldActive = activeTimes.get(partKey);
-    const statKey = StationOperation.ofLogCycle(cycle);
-    if (oldActive.isSome()) {
-      const oldOp = oldActive.get().get(statKey);
-      if (oldOp.isSome()) {
-        if (activeMinsForSingleMat !== oldOp.get().activeMinsForSingleMat) {
-          // adjust to new time
-          activeTimes = activeTimes.put(partKey, oldActive.get().put(statKey, { activeMinsForSingleMat }));
-        } else {
-          // no adjustment, cMins equals current value
-        }
-      } else {
-        // add operation
-        activeTimes = activeTimes.put(partKey, oldActive.get().put(statKey, { activeMinsForSingleMat }));
-      }
-    } else {
-      activeTimes = activeTimes.put(partKey, HashMap.of([statKey, { activeMinsForSingleMat }]));
-    }
-    return [aMins, activeTimes];
+    return aMins;
   }
-}
-
-function activeTotalMachineMinutesForSingleMat(
-  part: string,
-  process: number,
-  machineGroups: HashSet<string>,
-  activeTimes: ActiveCycleTime,
-  estimated: EstimatedCycleTimes
-): number {
-  const active = activeTimes.get(new PartAndProcess(part, process));
-  if (active.isSome()) {
-    return LazySeq.ofIterable(active.get()).sumOn(([k, time]) =>
-      machineGroups.contains(k.statGroup) ? time.activeMinsForSingleMat : 0
-    );
-  } else {
-    // fall back to using estimated times
-    return LazySeq.ofIterable(estimated).sumOn(([k, times]) =>
-      k.part === part && k.proc === process && machineGroups.contains(k.statGroup)
-        ? times.expectedCycleMinutesForSingleMat
-        : 0
-    );
-  }
-}
-
-interface InspectionData {
-  readonly signaled: { [materialId: number]: HashSet<string> };
-  readonly result: { [materialId: number]: HashMap<string, boolean> };
-}
-
-function newInspectionData(newEvts: ReadonlyArray<Readonly<api.ILogEntry>>): InspectionData {
-  const signaled: { [materialId: number]: HashSet<string> } = {};
-  const result: { [materialId: number]: HashMap<string, boolean> } = {};
-  for (const evt of newEvts) {
-    switch (evt.type) {
-      case api.LogType.Inspection: {
-        const inspName = (evt.details || {}).InspectionType;
-        const inspected = evt.result.toLowerCase() === "true" || evt.result === "1";
-        if (inspected && inspName) {
-          for (const m of evt.material) {
-            signaled[m.id] = (signaled[m.id] || HashSet.empty()).add(inspName);
-          }
-        }
-        break;
-      }
-
-      case api.LogType.InspectionForce: {
-        const forceInspName = evt.program;
-        const forced = evt.result.toLowerCase() === "true" || evt.result === "1";
-        if (forceInspName && forced) {
-          for (const m of evt.material) {
-            signaled[m.id] = (signaled[m.id] || HashSet.empty()).add(forceInspName);
-          }
-        }
-        break;
-      }
-
-      case api.LogType.InspectionResult: {
-        const resultInspName = evt.program;
-        const succeeded = evt.result.toLowerCase() !== "false";
-        if (resultInspName) {
-          for (const m of evt.material) {
-            result[m.id] = (result[m.id] || HashMap.empty()).put(resultInspName, succeeded);
-          }
-        }
-        break;
-      }
-    }
-  }
-  return { signaled, result };
 }
 
 function process_tools(cycle: Readonly<api.ILogEntry>, toolUsage: ToolUsage): ToolUsage {
@@ -545,7 +444,6 @@ export function process_events(
   } else {
     estimatedCycleTimes = st.estimatedCycleTimes;
   }
-  let activeCycleTimes = st.active_cycle_times;
   let toolUsage = st.tool_usage;
 
   const invalidateOldCyclesOnEvent = expire.type === ExpireOldDataType.ExpireEarlierThan;
@@ -576,6 +474,7 @@ export function process_events(
   }
 
   let partNames = st.part_and_proc_names;
+  let operationNames = st.part_and_operation_names;
   let machNames = st.machine_names;
   let machineGroups = st.machine_groups;
   let lulNames = st.loadstation_names;
@@ -585,6 +484,12 @@ export function process_events(
       const p = new PartAndProcess(m.part, m.proc);
       if (!partNames.contains(p)) {
         partNames = partNames.add(p);
+      }
+    }
+    if (e.material.length > 0) {
+      const op = PartAndStationOperation.ofLogCycle(e);
+      if (!operationNames.contains(op)) {
+        operationNames = operationNames.add(op);
       }
     }
     if (e.pal !== "") {
@@ -618,8 +523,6 @@ export function process_events(
         cycle.material.length > 0
           ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
           : Option.none<StatisticalCycleTime>();
-      let activeMins;
-      [activeMins, activeCycleTimes] = activeMinutes(cycle, stats, activeCycleTimes);
       const elapsed = duration(cycle.elapsed).asMinutes();
       if (stats.isSome() && !isOutlier(stats.get(), elapsed)) {
         toolUsage = process_tools(cycle, toolUsage);
@@ -628,17 +531,9 @@ export function process_events(
         x: cycle.endUTC,
         y: elapsed,
         cntr: cycle.counter,
-        activeMinutes: activeMins,
+        activeMinutes: activeMinutes(cycle, stats),
         medianCycleMinutes: stats.map((s) => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
         MAD_aboveMinutes: stats.map((s) => s.MAD_aboveMinutes).getOrElse(0),
-        activeTotalMachineMinutesForSingleMat: activeTotalMachineMinutesForSingleMat(
-          part,
-          proc,
-          machineGroups,
-          activeCycleTimes,
-          estimatedCycleTimes
-        ),
-        completed: cycle.type === api.LogType.LoadUnloadCycle && cycle.result === "UNLOAD",
         part: part,
         process: proc,
         pallet: cycle.pal,
@@ -647,12 +542,11 @@ export function process_events(
         stationGroup: cycle.loc,
         stationNumber: cycle.locnum,
         operation: cycle.type === api.LogType.LoadUnloadCycle ? cycle.result : cycle.program,
-        signaledInspections: HashSet.empty<string>(),
-        completedInspections: HashMap.empty<string, boolean>(),
         operator: cycle.details ? cycle.details.operator || "" : "",
       };
     })
     .filter((c) => c.stationGroup !== "");
+  allPartCycles = allPartCycles.appendAll(newCycles);
 
   const newPalCycles = LazySeq.ofIterable(newEvts)
     .filter((c) => !c.startofcycle && c.type === api.LogType.PalletCycle && c.pal !== "")
@@ -669,8 +563,7 @@ export function process_events(
     );
   pals = pals.mergeWith(newPalCycles, (oldCs, newCs) => oldCs.concat(newCs));
 
-  // merge inspections and clear invalidated cycles
-  const inspResult = newInspectionData(newEvts);
+  // clear invalidated cycles
   const invalidatedCycles = invalidateOldCyclesOnEvent
     ? LazySeq.ofIterable(newEvts)
         .filter((e) => e.type === api.LogType.InvalidateCycle)
@@ -685,33 +578,25 @@ export function process_events(
         .toSet((x) => x)
     : HashSet.empty<number>();
 
-  allPartCycles = allPartCycles.appendAll(newCycles).map((x) => {
-    for (const mat of x.material) {
-      const signaled = inspResult.signaled[mat.id];
-      if (signaled) {
-        x = { ...x, signaledInspections: x.signaledInspections.addAll(signaled) };
+  if (invalidatedCycles.length() > 0) {
+    allPartCycles = allPartCycles.map((x) => {
+      if (invalidatedCycles.contains(x.cntr)) {
+        x = { ...x, activeMinutes: 0 };
       }
-      const result = inspResult.result[mat.id];
-      if (result) {
-        x = { ...x, completedInspections: x.completedInspections.mergeWith(result, (_a, b) => b) };
-      }
-    }
-    if (invalidatedCycles.contains(x.cntr)) {
-      x = { ...x, activeMinutes: 0 };
-    }
-    return x;
-  });
+      return x;
+    });
+  }
 
   const newSt: CycleState = {
     ...st,
     part_cycles: allPartCycles,
     part_and_proc_names: partNames,
+    part_and_operation_names: operationNames,
     by_pallet: pals,
     machine_groups: machineGroups,
     machine_names: machNames,
     loadstation_names: lulNames,
     pallet_names: palNames,
-    active_cycle_times: activeCycleTimes,
     tool_usage: toolUsage,
   };
 

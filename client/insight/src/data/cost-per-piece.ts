@@ -33,8 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { PartCycleData } from "./events.cycles";
 import { getDaysInMonth } from "date-fns";
-import { Vector, HasEquals } from "prelude-ts";
+import { Vector, HasEquals, HashMap } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
+import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
@@ -62,11 +63,16 @@ export interface CostData {
   readonly parts: ReadonlyArray<PartCost>;
 }
 
+function isUnloadCycle(c: PartCycleData): boolean {
+  return c.isLabor && c.operation === "UNLOAD";
+}
+
 export function compute_monthly_cost(
   machineCostPerYear: MachineCostPerYear,
   automationCostPerYear: number | null,
   totalLaborCostForPeriod: number,
   cycles: Vector<PartCycleData>,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   month: Date | null
 ): CostData {
   const days = month ? getDaysInMonth(month) : 30;
@@ -76,7 +82,7 @@ export function compute_monthly_cost(
   const stationCount = new Map<string, Set<number>>();
 
   for (const c of cycles) {
-    if (c.completed) {
+    if (isUnloadCycle(c)) {
       totalPalletCycles += 1;
     }
     totalStatUseMinutes.set(c.stationGroup, c.activeMinutes + (totalStatUseMinutes.get(c.stationGroup) ?? 0));
@@ -105,9 +111,15 @@ export function compute_monthly_cost(
         {
           part: partName,
           parts_completed: LazySeq.ofIterable(forPart)
-            .filter((c) => c.completed)
             .flatMap((c) => c.material)
-            .filter((m) => m.proc === m.numproc)
+            .filter(
+              (m) =>
+                m.proc === m.numproc &&
+                matsById
+                  .get(m.id)
+                  .mapNullable((s) => s.unloaded_processes?.[m.proc])
+                  .isSome()
+            )
             .length(),
           machine: LazySeq.ofIterable(forPart)
             .filter((c) => !c.isLabor)
@@ -137,7 +149,9 @@ export function compute_monthly_cost(
                 percent: x.percent + minutes / total,
               };
             }),
-          automation_pct: automationCostPerYear ? forPart.sumOn((v) => (v.completed ? 1 : 0)) / totalPalletCycles : 0,
+          automation_pct: automationCostPerYear
+            ? forPart.sumOn((v) => (isUnloadCycle(v) ? 1 : 0)) / totalPalletCycles
+            : 0,
         },
       ])
       .valueIterable()
