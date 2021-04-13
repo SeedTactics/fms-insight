@@ -57,14 +57,14 @@ import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import { JobDetails } from "../station-monitor/JobDetails";
 import Collapse from "@material-ui/core/Collapse";
 import clsx from "clsx";
-import { HashMap, Vector } from "prelude-ts";
-import { PartCycleData } from "../../data/events.cycles";
+import { HashMap } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../data/current-status";
+import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 export interface JobsTableProps {
-  readonly partCycles: Vector<PartCycleData>;
   readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
+  readonly matIds: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly showMaterial: boolean;
   readonly filterCurrentWeek: boolean;
   readonly showInProcCnt: boolean;
@@ -199,11 +199,11 @@ export function JobsTable(props: JobsTableProps) {
       const today = startOfToday();
       const start = addDays(today, -6);
       const end = addDays(today, 1);
-      return buildScheduledJobs(start, end, props.partCycles, props.schJobs, currentSt);
+      return buildScheduledJobs(start, end, props.matIds, props.schJobs, currentSt);
     } else {
-      return buildScheduledJobs(null, null, props.partCycles, props.schJobs, currentSt);
+      return buildScheduledJobs(null, null, props.matIds, props.schJobs, currentSt);
     }
-  }, [props.partCycles, props.schJobs, currentSt, props.filterCurrentWeek]);
+  }, [props.matIds, props.schJobs, currentSt, props.filterCurrentWeek]);
 
   return (
     <Card raised>
@@ -266,7 +266,7 @@ export function JobsTable(props: JobsTableProps) {
 }
 
 const ConnectedJobsTable = connect((st) => ({
-  partCycles: st.Events.last30.cycles.part_cycles,
+  matIds: st.Events.last30.mat_summary.matsById,
   schJobs: st.Events.last30.scheduled_jobs.jobs,
   showMaterial: st.Events.last30.scheduled_jobs.someJobHasCasting,
 }))(JobsTable);

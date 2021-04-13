@@ -146,7 +146,7 @@ function MaterialStatus(props: MaterialStatusProps) {
     return <span>On pallet {props.inProcMat.location.pallet ?? ""}</span>;
   } else if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.InQueue) {
     return <span>In queue {props.inProcMat.location.currentQueue ?? ""}</span>;
-  } else if (props.matSummary?.completed_machining) {
+  } else if (props.matSummary?.completed_last_proc_machining) {
     return <span>Completed</span>;
   } else if (props.matSummary !== null && props.matSummary.startedProcess1 === false) {
     return <span>Not yet started</span>;

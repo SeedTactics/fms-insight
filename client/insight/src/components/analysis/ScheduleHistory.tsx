@@ -37,10 +37,10 @@ import { JobsTable } from "../operations/CompletedParts";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 
 const ConnectedSchedules = connect((st) => ({
-  partCycles:
+  matIds:
     st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.part_cycles
-      : st.Events.selected_month.cycles.part_cycles,
+      ? st.Events.last30.mat_summary.matsById
+      : st.Events.selected_month.mat_summary.matsById,
   schJobs:
     st.Events.analysis_period === AnalysisPeriod.Last30Days
       ? st.Events.last30.scheduled_jobs.jobs

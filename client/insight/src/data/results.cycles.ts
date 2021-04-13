@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashMap, Vector, Option } from "prelude-ts";
+import { HashMap, Vector, Option, HashSet } from "prelude-ts";
 import {
   PartCycleData,
   stat_name_and_num,
@@ -47,6 +47,7 @@ import { LazySeq } from "./lazyseq";
 import * as api from "./api";
 import { format, differenceInSeconds } from "date-fns";
 import { duration } from "moment";
+import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const copy = require("copy-to-clipboard");
 
@@ -329,14 +330,32 @@ export function plannedOperationSeries(
 // Clipboard
 // --------------------------------------------------------------------------------
 
-export function format_cycle_inspection(c: PartCycleData): string {
+export function format_cycle_inspection(
+  c: PartCycleData,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>
+): string {
   const ret = [];
-  const names = c.signaledInspections.addAll(c.completedInspections.keySet());
-  for (const name of names.toArray({ sortOn: (x) => x })) {
-    const completed = c.completedInspections.get(name);
-    if (completed.isSome()) {
-      const success = completed.get();
-      ret.push(name + "[" + (success ? "success" : "failed") + "]");
+  let signaled = HashSet.empty<string>();
+  let completed = HashSet.empty<string>();
+  let success = HashSet.empty<string>();
+
+  for (const mat of c.material) {
+    const summary = matsById.get(mat.id).getOrNull();
+    if (summary) {
+      signaled = signaled.addAll(summary.signaledInspections);
+      for (const [compInsp, details] of LazySeq.ofObject(summary.completedInspections ?? {})) {
+        signaled = signaled.add(compInsp);
+        completed = completed.add(compInsp);
+        if (details.success) {
+          success = success.add(compInsp);
+        }
+      }
+    }
+  }
+
+  for (const name of signaled.toArray({ sortOn: (x) => x })) {
+    if (completed.contains(name)) {
+      ret.push(name + "[" + (success.contains(name) ? "success" : "failed") + "]");
     } else {
       ret.push(name);
     }
@@ -346,6 +365,7 @@ export function format_cycle_inspection(c: PartCycleData): string {
 
 export function buildCycleTable(
   cycles: FilteredStationCycles,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   startD: Date | undefined,
   endD: Date | undefined,
   hideMedian?: boolean
@@ -384,7 +404,7 @@ export function buildCycleTable(
         .map((m) => m.workorder)
         .join(",") +
       "</td>";
-    table += "<td>" + format_cycle_inspection(cycle) + "</td>";
+    table += "<td>" + format_cycle_inspection(cycle, matsById) + "</td>";
     table += "<td>" + cycle.y.toFixed(1) + "</td>";
     table += "<td>" + cycle.activeMinutes.toFixed(1) + "</td>";
     if (!hideMedian) {
@@ -399,10 +419,11 @@ export function buildCycleTable(
 
 export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   zoom: { start: Date; end: Date } | undefined,
   hideMedian?: boolean
 ): void {
-  copy(buildCycleTable(cycles, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian));
+  copy(buildCycleTable(cycles, matsById, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian));
 }
 
 export function buildPalletCycleTable(

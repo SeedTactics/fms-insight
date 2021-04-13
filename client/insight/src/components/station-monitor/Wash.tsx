@@ -190,7 +190,10 @@ const extractRecentCompleted = createSelector(
   (mats: HashMap<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
     const cutoff = addHours(new Date(), -36);
     const recent = LazySeq.ofIterable(mats.valueIterable())
-      .filter((e) => e.completed_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff)
+      .filter(
+        (e) =>
+          e.completed_last_proc_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff
+      )
       .toArray();
     // sort decending
     recent.sort((e1, e2) =>

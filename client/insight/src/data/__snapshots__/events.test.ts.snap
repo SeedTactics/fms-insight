@@ -6,77 +6,6 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
-    "active_cycle_times": Map {
-      "PartAndProcess {
-      \\"part\\": \\"partAAA\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progi\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 30,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"partBBB\\",
-      \\"proc\\": 2,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progi\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 24,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"partCCC\\",
-      \\"proc\\": 3,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progk\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 18,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-    },
     "by_pallet": Map {
       "palss" => Array [
         Object {
@@ -216,6 +145,146 @@ Object {
       "palss",
       "paltt",
     ],
+    "part_and_operation_names": Array [
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progi",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "partAAA",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "partBBB",
+        "proc": 2,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "partBBB",
+        "proc": 2,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "partBBB",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "partBBB",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "partBBB",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progi",
+        "part": "partBBB",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "partBBB",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progk",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "partCCC",
+        "proc": 3,
+        "statGroup": "MC",
+      },
+    ],
     "part_and_proc_names": Array [
       PartAndProcess {
         "part": "partAAA",
@@ -234,12 +303,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -259,9 +323,6 @@ Object {
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-06T09:09:05.000Z,
@@ -270,12 +331,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 18,
-        "activeTotalMachineMinutesForSingleMat": 18,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -295,9 +351,6 @@ Object {
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-06T09:30:05.000Z,
@@ -306,12 +359,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 18,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -331,9 +379,6 @@ Object {
         "pallet": "paltt",
         "part": "partCCC",
         "process": 3,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-06T09:40:05.000Z,
@@ -342,12 +387,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -367,9 +407,6 @@ Object {
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-31T09:09:05.000Z,
@@ -378,12 +415,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -403,9 +435,6 @@ Object {
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-31T09:36:05.000Z,
@@ -414,12 +443,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -439,9 +463,6 @@ Object {
         "pallet": "paltt",
         "part": "partBBB",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-31T09:46:05.000Z,
@@ -450,12 +471,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -475,9 +491,6 @@ Object {
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-02-02T09:09:05.000Z,
@@ -486,12 +499,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -511,9 +519,6 @@ Object {
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-02-02T09:42:05.000Z,
@@ -522,12 +527,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -547,9 +547,6 @@ Object {
         "pallet": "palss",
         "part": "partAAA",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-02-02T09:52:05.000Z,
@@ -733,7 +730,10 @@ Object {
     "matsById": Map {
       "4419" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-31T09:58:05.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-31T09:58:05.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-31T09:58:05.000Z,
         "jobUnique": "uniqx",
@@ -745,10 +745,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "2": 2018-01-31T09:46:05.000Z,
+        },
       },
       "13842" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-06T09:52:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-06T09:52:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-06T09:52:10.000Z,
         "jobUnique": "uniq7",
@@ -761,10 +767,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "3": 2018-01-06T09:40:05.000Z,
+        },
       },
       "87097" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-02-02T10:04:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "jobUnique": "uniqd",
@@ -777,6 +789,9 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-02-02T09:52:05.000Z,
+        },
       },
     },
   },
@@ -810,83 +825,6 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
-    "active_cycle_times": Map {
-      "PartAndProcess {
-      \\"part\\": \\"part111\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"progw\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 12,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progz\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 30,
-        },
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progm\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 24,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 2,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progi\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 18,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-    },
     "by_pallet": Map {
       "palaa" => Array [],
       "palbb" => Array [
@@ -1028,6 +966,152 @@ Object {
       "palbb",
       "palcc",
     ],
+    "part_and_operation_names": Array [
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progw",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "progz",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progm",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progi",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+    ],
     "part_and_proc_names": Array [
       PartAndProcess {
         "part": "part111",
@@ -1046,12 +1130,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -1071,9 +1150,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-31T09:09:05.000Z,
@@ -1082,12 +1158,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -1107,9 +1178,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-31T09:36:05.000Z,
@@ -1118,12 +1186,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -1143,9 +1206,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-31T09:46:05.000Z,
@@ -1154,12 +1214,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -1179,9 +1234,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-02-02T09:09:05.000Z,
@@ -1190,12 +1242,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -1215,9 +1262,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-02-02T09:42:05.000Z,
@@ -1226,12 +1270,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -1251,9 +1290,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-02-02T09:52:05.000Z,
@@ -1262,12 +1298,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -1287,9 +1318,6 @@ Object {
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-02-08T09:09:05.000Z,
@@ -1298,12 +1326,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0,
         "activeMinutes": 12,
-        "activeTotalMachineMinutesForSingleMat": 42,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -1323,9 +1346,6 @@ Object {
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-02-08T09:24:05.000Z,
@@ -1334,12 +1354,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 42,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -1359,9 +1374,6 @@ Object {
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-02-08T09:34:05.000Z,
@@ -1542,7 +1554,10 @@ Object {
     "matsById": Map {
       "90793" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-02-08T09:46:05.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-02-08T09:46:05.000Z,
+          },
         },
         "completed_inspect_time": 2018-02-08T09:46:05.000Z,
         "jobUnique": "uniqk",
@@ -1554,13 +1569,19 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-02-08T09:34:05.000Z,
+        },
       },
       "15510" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-31T09:58:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-31T09:58:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-31T09:58:10.000Z,
-        "completed_machining": true,
+        "completed_last_proc_machining": true,
         "jobUnique": "uniqv",
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
@@ -1571,10 +1592,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-01-31T09:46:05.000Z,
+        },
       },
       "70329" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-02-02T10:04:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "jobUnique": "uniqi",
@@ -1587,6 +1614,9 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-02-02T09:52:05.000Z,
+        },
       },
     },
   },
@@ -1865,77 +1895,6 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
-    "active_cycle_times": Map {
-      "PartAndProcess {
-      \\"part\\": \\"part111\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"progz\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 30,
-        },
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progm\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 24,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 2,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progi\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 18,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-    },
     "by_pallet": Map {
       "palaa" => Array [
         Object {
@@ -2075,6 +2034,146 @@ Object {
       "palaa",
       "palbb",
     ],
+    "part_and_operation_names": Array [
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progz",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progm",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progi",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+    ],
     "part_and_proc_names": Array [
       PartAndProcess {
         "part": "part111",
@@ -2093,12 +2192,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -2118,9 +2212,6 @@ Object {
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-06T09:09:05.000Z,
@@ -2129,12 +2220,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 18,
-        "activeTotalMachineMinutesForSingleMat": 18,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -2154,9 +2240,6 @@ Object {
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-06T09:30:05.000Z,
@@ -2165,12 +2248,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 18,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -2190,9 +2268,6 @@ Object {
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-06T09:40:05.000Z,
@@ -2201,12 +2276,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -2226,9 +2296,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-31T09:09:05.000Z,
@@ -2237,12 +2304,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -2262,9 +2324,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-31T09:36:05.000Z,
@@ -2273,12 +2332,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -2298,9 +2352,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-31T09:46:05.000Z,
@@ -2309,12 +2360,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -2334,9 +2380,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-02-02T09:09:05.000Z,
@@ -2345,12 +2388,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -2370,9 +2408,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-02-02T09:42:05.000Z,
@@ -2381,12 +2416,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -2406,9 +2436,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-02-02T09:52:05.000Z,
@@ -2589,10 +2616,13 @@ Object {
     "matsById": Map {
       "15510" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-31T09:58:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-31T09:58:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-31T09:58:10.000Z,
-        "completed_machining": true,
+        "completed_last_proc_machining": true,
         "jobUnique": "uniqv",
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
@@ -2603,10 +2633,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-01-31T09:46:05.000Z,
+        },
       },
       "70329" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-02-02T10:04:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "jobUnique": "uniqi",
@@ -2619,13 +2655,19 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-02-02T09:52:05.000Z,
+        },
       },
       "90079" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-06T09:52:05.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-06T09:52:05.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-06T09:52:05.000Z,
-        "completed_machining": true,
+        "completed_last_proc_machining": true,
         "jobUnique": "uniqt",
         "last_event": 2018-01-06T09:52:05.000Z,
         "last_unload_time": 2018-01-06T09:40:05.000Z,
@@ -2635,6 +2677,9 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "2": 2018-01-06T09:40:05.000Z,
+        },
       },
     },
   },
@@ -2913,83 +2958,6 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
-    "active_cycle_times": Map {
-      "PartAndProcess {
-      \\"part\\": \\"part111\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"prog5\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 12,
-        },
-        "StationOperation {
-        \\"operation\\": \\"prog6\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 30,
-        },
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progn\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 24,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 2,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progj\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 18,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-    },
     "by_pallet": Map {
       "palaa" => Array [],
       "palbb" => Array [
@@ -3131,6 +3099,152 @@ Object {
       "palbb",
       "palcc",
     ],
+    "part_and_operation_names": Array [
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "prog5",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "prog6",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progn",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progj",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+    ],
     "part_and_proc_names": Array [
       PartAndProcess {
         "part": "part111",
@@ -3149,12 +3263,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -3174,9 +3283,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-31T09:09:05.000Z,
@@ -3185,12 +3291,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -3210,9 +3311,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-31T09:36:05.000Z,
@@ -3221,12 +3319,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -3246,9 +3339,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-31T09:46:05.000Z,
@@ -3257,12 +3347,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -3282,9 +3367,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-02-02T09:09:05.000Z,
@@ -3293,12 +3375,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -3318,9 +3395,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-02-02T09:42:05.000Z,
@@ -3329,12 +3403,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -3354,9 +3423,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-02-02T09:52:05.000Z,
@@ -3365,12 +3431,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -3390,9 +3451,6 @@ Object {
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-02-08T09:09:05.000Z,
@@ -3401,12 +3459,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0,
         "activeMinutes": 12,
-        "activeTotalMachineMinutesForSingleMat": 42,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -3426,9 +3479,6 @@ Object {
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-02-08T09:24:05.000Z,
@@ -3437,12 +3487,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 42,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -3462,9 +3507,6 @@ Object {
         "pallet": "palcc",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-02-08T09:34:05.000Z,
@@ -3645,7 +3687,10 @@ Object {
     "matsById": Map {
       "88570" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-02-08T09:46:05.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-02-08T09:46:05.000Z,
+          },
         },
         "completed_inspect_time": 2018-02-08T09:46:05.000Z,
         "jobUnique": "uniqg",
@@ -3657,10 +3702,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-02-08T09:34:05.000Z,
+        },
       },
       "47261" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-31T09:58:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-31T09:58:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-31T09:58:10.000Z,
         "jobUnique": "uniqy",
@@ -3673,10 +3724,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-01-31T09:46:05.000Z,
+        },
       },
       "11231" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-02-02T10:04:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "jobUnique": "uniqk",
@@ -3689,6 +3746,9 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-02-02T09:52:05.000Z,
+        },
       },
     },
   },
@@ -3967,77 +4027,6 @@ Object {
     "entries": Array [],
   },
   "cycles": Object {
-    "active_cycle_times": Map {
-      "PartAndProcess {
-      \\"part\\": \\"part111\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"prog6\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 30,
-        },
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 1,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progn\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 24,
-        },
-      },
-      "PartAndProcess {
-      \\"part\\": \\"part222\\",
-      \\"proc\\": 2,
-    }" => Map {
-        "StationOperation {
-        \\"operation\\": \\"UNLOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 3,
-        },
-        "StationOperation {
-        \\"operation\\": \\"progj\\",
-        \\"statGroup\\": \\"MC\\",
-      }" => Object {
-          "activeMinsForSingleMat": 18,
-        },
-        "StationOperation {
-        \\"operation\\": \\"LOAD\\",
-        \\"statGroup\\": \\"L/U\\",
-      }" => Object {
-          "activeMinsForSingleMat": 6,
-        },
-      },
-    },
     "by_pallet": Map {
       "palaa" => Array [
         Object {
@@ -4177,6 +4166,146 @@ Object {
       "palaa",
       "palbb",
     ],
+    "part_and_operation_names": Array [
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "prog6",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part111",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progn",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 1,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "theprogramshouldbeignored",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "Inspection",
+      },
+      PartAndStationOperation {
+        "operation": "Insp1",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "InspectionComplete",
+      },
+      PartAndStationOperation {
+        "operation": "LOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "UNLOAD",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "L/U",
+      },
+      PartAndStationOperation {
+        "operation": "progj",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+      PartAndStationOperation {
+        "operation": "",
+        "part": "part222",
+        "proc": 2,
+        "statGroup": "MC",
+      },
+    ],
     "part_and_proc_names": Array [
       PartAndProcess {
         "part": "part111",
@@ -4195,12 +4324,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -4220,9 +4344,6 @@ Object {
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-06T09:09:05.000Z,
@@ -4231,12 +4352,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 18,
-        "activeTotalMachineMinutesForSingleMat": 18,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -4256,9 +4372,6 @@ Object {
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-06T09:30:05.000Z,
@@ -4267,12 +4380,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 18,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -4292,9 +4400,6 @@ Object {
         "pallet": "palaa",
         "part": "part222",
         "process": 2,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-06T09:40:05.000Z,
@@ -4303,12 +4408,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -4328,9 +4428,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-01-31T09:09:05.000Z,
@@ -4339,12 +4436,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 24,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -4364,9 +4456,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-01-31T09:36:05.000Z,
@@ -4375,12 +4464,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 24,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -4400,9 +4484,6 @@ Object {
         "pallet": "palbb",
         "part": "part222",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-01-31T09:46:05.000Z,
@@ -4411,12 +4492,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 6,
-        "activeTotalMachineMinutesForSingleMat": 0,
         "cntr": 1,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -4436,9 +4512,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 1,
         "x": 2018-02-02T09:09:05.000Z,
@@ -4447,12 +4520,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 30,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 3,
-        "completed": false,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": false,
         "material": Array [
           Object {
@@ -4472,9 +4540,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "MC",
         "stationNumber": 1,
         "x": 2018-02-02T09:42:05.000Z,
@@ -4483,12 +4548,7 @@ Object {
       Object {
         "MAD_aboveMinutes": 0.25,
         "activeMinutes": 3,
-        "activeTotalMachineMinutesForSingleMat": 30,
         "cntr": 5,
-        "completed": true,
-        "completedInspections": Map {
-          "Insp1" => true,
-        },
         "isLabor": true,
         "material": Array [
           Object {
@@ -4508,9 +4568,6 @@ Object {
         "pallet": "palbb",
         "part": "part111",
         "process": 1,
-        "signaledInspections": Array [
-          "Insp1",
-        ],
         "stationGroup": "L/U",
         "stationNumber": 2,
         "x": 2018-02-02T09:52:05.000Z,
@@ -4691,10 +4748,13 @@ Object {
     "matsById": Map {
       "68845" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-06T09:52:05.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-06T09:52:05.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-06T09:52:05.000Z,
-        "completed_machining": true,
+        "completed_last_proc_machining": true,
         "jobUnique": "uniqv",
         "last_event": 2018-01-06T09:52:05.000Z,
         "last_unload_time": 2018-01-06T09:40:05.000Z,
@@ -4704,10 +4764,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "2": 2018-01-06T09:40:05.000Z,
+        },
       },
       "47261" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-01-31T09:58:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-01-31T09:58:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-01-31T09:58:10.000Z,
         "jobUnique": "uniqy",
@@ -4720,10 +4786,16 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-01-31T09:46:05.000Z,
+        },
       },
       "11231" => Object {
         "completedInspections": Object {
-          "Insp1": 2018-02-02T10:04:10.000Z,
+          "Insp1": Object {
+            "success": true,
+            "time": 2018-02-02T10:04:10.000Z,
+          },
         },
         "completed_inspect_time": 2018-02-02T10:04:10.000Z,
         "jobUnique": "uniqk",
@@ -4736,6 +4808,9 @@ Object {
           "Insp1",
         ],
         "startedProcess1": true,
+        "unloaded_processes": Object {
+          "1": 2018-02-02T09:52:05.000Z,
+        },
       },
     },
   },

@@ -187,7 +187,7 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
     completedMsg = (
       <small>
         <span>Inspection completed </span>
-        <TimeAgo date={completed[props.focusInspectionType]} />
+        <TimeAgo date={completed[props.focusInspectionType].time} />
       </small>
     );
   } else if (props.focusInspectionType && props.mat.last_unload_time) {
