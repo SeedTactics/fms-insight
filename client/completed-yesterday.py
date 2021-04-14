@@ -57,7 +57,10 @@ for event in events:
     completed = len(event["material"])
 
     # Load time in UTC
-    evtTime = datetime.strptime(event["endUTC"][:-2], "%Y-%m-%dT%H:%M:%S.%f").astimezone(tz=timezone.utc)
+    if "." in event["endUTC"]:
+      evtTime = datetime.strptime(event["endUTC"], "%Y-%m-%dT%H:%M:%S.%fZ").astimezone(tz=timezone.utc)
+    else:
+      evtTime = datetime.strptime(event["endUTC"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz=timezone.utc)
     # Convert to local
     evtTime = evtTime.astimezone(tz=None)
 

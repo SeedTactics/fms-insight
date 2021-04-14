@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -80,10 +80,15 @@ class MatIdAndProcess {
 
 export function binCyclesByDayAndPart(
   cycles: Iterable<PartCycleData>,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
+  start: Date,
+  end: Date
 ): HashMap<DayAndPart, PartsCompletedSummary> {
   const activeTimeByMatId = LazySeq.ofIterable(cycles)
-    .filter((cycle) => !cycle.isLabor && cycle.activeMinutes > 0 && cycle.material.length > 0)
+    .filter(
+      (cycle) =>
+        cycle.x >= start && cycle.x <= end && !cycle.isLabor && cycle.activeMinutes > 0 && cycle.material.length > 0
+    )
     .flatMap((cycle) =>
       cycle.material.map((mat) => ({
         matId: mat.id,
@@ -98,14 +103,16 @@ export function binCyclesByDayAndPart(
 
   return LazySeq.ofIterable(matsById)
     .flatMap(([matId, details]) =>
-      LazySeq.ofObject(details.unloaded_processes ?? {}).map(([proc, unloadTime]) => ({
-        day: startOfDay(unloadTime),
-        part: details.partName + "-" + proc.toString(),
-        value: {
-          count: 1,
-          activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))).getOrElse(0),
-        },
-      }))
+      LazySeq.ofObject(details.unloaded_processes ?? {})
+        .filter(([_, unloadTime]) => unloadTime >= start && unloadTime <= end)
+        .map(([proc, unloadTime]) => ({
+          day: startOfDay(unloadTime),
+          part: details.partName + "-" + proc.toString(),
+          value: {
+            count: 1,
+            activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))).getOrElse(0),
+          },
+        }))
     )
     .toMap(
       (p) => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],

@@ -156,7 +156,7 @@ function procNewEvents(evtsToAction: (now: Date, newEvts: ReadonlyArray<ILogEntr
   // empty list should keep lists unchanged and the same object
   const newSt = events.reducer(st, {
     type: events.ActionType.LoadRecentLogEntries,
-    now: sixDays,
+    now: now,
     pledge: {
       status: PledgeStatus.Completed,
       result: [],

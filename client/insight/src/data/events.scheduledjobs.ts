@@ -31,19 +31,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import { HashMap, HashSet } from "prelude-ts";
+import { HashMap } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { ExpireOldData, ExpireOldDataType } from "./events.cycles";
 
 export interface ScheduledJobsState {
   readonly jobs: HashMap<string, Readonly<api.IHistoricJob>>;
-  readonly matIdsForJob: HashMap<string, HashSet<number>>;
   readonly someJobHasCasting: boolean;
 }
 
 export const initial: ScheduledJobsState = {
   jobs: HashMap.empty(),
-  matIdsForJob: HashMap.empty(),
   someJobHasCasting: false,
 };
 
@@ -53,7 +51,6 @@ export function process_scheduled_jobs(
   st: ScheduledJobsState
 ): ScheduledJobsState {
   let jobs = st.jobs;
-  let matIds = st.matIdsForJob;
   let someJobHasCasting = st.someJobHasCasting;
 
   switch (expire.type) {
@@ -68,12 +65,6 @@ export function process_scheduled_jobs(
         return st;
       }
 
-      // filter old events
-      for (const [uniq, j] of jobs) {
-        if (j.routeStartUTC < expire.d) {
-          matIds = matIds.remove(uniq);
-        }
-      }
       jobs = jobs.filter((_, j) => j.routeStartUTC >= expire.d);
 
       break;
@@ -97,43 +88,7 @@ export function process_scheduled_jobs(
     }
   }
 
-  return { jobs, matIdsForJob: matIds, someJobHasCasting };
-}
-
-export function process_events(
-  evts: Iterable<Readonly<api.ILogEntry>>,
-  initial_load: boolean,
-  st: ScheduledJobsState
-): ScheduledJobsState {
-  let matIdsForJob = st.matIdsForJob;
-
-  for (const evt of evts) {
-    for (const mat of evt.material) {
-      const uniq = mat.uniq;
-      if (uniq !== null && uniq !== undefined && uniq !== "") {
-        if (initial_load || st.jobs.containsKey(uniq)) {
-          let matIds = matIdsForJob.get(uniq).getOrNull();
-          if (!matIds) {
-            matIds = HashSet.empty<number>();
-          }
-          if (!matIds.contains(mat.id)) {
-            matIds = matIds.add(mat.id);
-            matIdsForJob = matIdsForJob.put(uniq, matIds);
-          }
-        }
-      }
-    }
-  }
-
-  if (matIdsForJob === st.matIdsForJob) {
-    return st;
-  } else {
-    return {
-      jobs: st.jobs,
-      matIdsForJob,
-      someJobHasCasting: st.someJobHasCasting,
-    };
-  }
+  return { jobs, someJobHasCasting };
 }
 
 export function set_job_comment(st: ScheduledJobsState, uniq: string, comment: string | null): ScheduledJobsState {
@@ -141,7 +96,6 @@ export function set_job_comment(st: ScheduledJobsState, uniq: string, comment: s
   if (old.isSome()) {
     return {
       jobs: st.jobs.put(uniq, { ...old.get(), comment: comment ?? undefined }),
-      matIdsForJob: st.matIdsForJob,
       someJobHasCasting: st.someJobHasCasting,
     };
   } else {

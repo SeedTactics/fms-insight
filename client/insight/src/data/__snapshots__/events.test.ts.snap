@@ -727,6 +727,17 @@ Object {
     "inspTypes": Array [
       "Insp1",
     ],
+    "matIdsForJob": Map {
+      "uniqd" => Array [
+        87097,
+      ],
+      "uniq7" => Array [
+        13842,
+      ],
+      "uniqx" => Array [
+        4419,
+      ],
+    },
     "matsById": Map {
       "4419" => Object {
         "completedInspections": Object {
@@ -797,17 +808,6 @@ Object {
   },
   "scheduled_jobs": Object {
     "jobs": Map {},
-    "matIdsForJob": Map {
-      "uniqd" => Array [
-        87097,
-      ],
-      "uniq7" => Array [
-        13842,
-      ],
-      "uniqx" => Array [
-        4419,
-      ],
-    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -1551,6 +1551,17 @@ Object {
     "inspTypes": Array [
       "Insp1",
     ],
+    "matIdsForJob": Map {
+      "uniqi" => Array [
+        70329,
+      ],
+      "uniqk" => Array [
+        90793,
+      ],
+      "uniqv" => Array [
+        15510,
+      ],
+    },
     "matsById": Map {
       "90793" => Object {
         "completedInspections": Object {
@@ -1867,17 +1878,6 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
-    "matIdsForJob": Map {
-      "uniqi" => Array [
-        70329,
-      ],
-      "uniqt" => Array [
-        90079,
-      ],
-      "uniqv" => Array [
-        15510,
-      ],
-    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -1886,6 +1886,7 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-09T09:04:05.000Z,
 }
 `;
 
@@ -2613,6 +2614,17 @@ Object {
     "inspTypes": Array [
       "Insp1",
     ],
+    "matIdsForJob": Map {
+      "uniqi" => Array [
+        70329,
+      ],
+      "uniqt" => Array [
+        90079,
+      ],
+      "uniqv" => Array [
+        15510,
+      ],
+    },
     "matsById": Map {
       "15510" => Object {
         "completedInspections": Object {
@@ -2930,17 +2942,6 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
-    "matIdsForJob": Map {
-      "uniqi" => Array [
-        70329,
-      ],
-      "uniqt" => Array [
-        90079,
-      ],
-      "uniqv" => Array [
-        15510,
-      ],
-    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -2949,6 +2950,7 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-03T09:04:05.000Z,
 }
 `;
 
@@ -3684,6 +3686,17 @@ Object {
     "inspTypes": Array [
       "Insp1",
     ],
+    "matIdsForJob": Map {
+      "uniqg" => Array [
+        88570,
+      ],
+      "uniqk" => Array [
+        11231,
+      ],
+      "uniqy" => Array [
+        47261,
+      ],
+    },
     "matsById": Map {
       "88570" => Object {
         "completedInspections": Object {
@@ -3999,17 +4012,6 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
-    "matIdsForJob": Map {
-      "uniqk" => Array [
-        11231,
-      ],
-      "uniqv" => Array [
-        68845,
-      ],
-      "uniqy" => Array [
-        47261,
-      ],
-    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -4018,6 +4020,7 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-09T09:04:05.000Z,
 }
 `;
 
@@ -4745,6 +4748,17 @@ Object {
     "inspTypes": Array [
       "Insp1",
     ],
+    "matIdsForJob": Map {
+      "uniqk" => Array [
+        11231,
+      ],
+      "uniqv" => Array [
+        68845,
+      ],
+      "uniqy" => Array [
+        47261,
+      ],
+    },
     "matsById": Map {
       "68845" => Object {
         "completedInspections": Object {
@@ -5061,17 +5075,6 @@ Object {
   ],
   "scheduled_jobs": Object {
     "jobs": Map {},
-    "matIdsForJob": Map {
-      "uniqk" => Array [
-        11231,
-      ],
-      "uniqv" => Array [
-        68845,
-      ],
-      "uniqy" => Array [
-        47261,
-      ],
-    },
     "someJobHasCasting": false,
   },
   "sim_use": Object {
@@ -5080,5 +5083,6 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-03T09:04:05.000Z,
 }
 `;

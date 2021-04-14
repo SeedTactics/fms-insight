@@ -244,11 +244,9 @@ export function JobDetails(props: JobDetailsProps) {
   );
   const matIdsForJob = useSelector((s) =>
     props.checkAnalysisMonth && s.Events.analysis_period === AnalysisPeriod.SpecificMonth
-      ? s.Events.selected_month.scheduled_jobs.matIdsForJob
-      : s.Events.last30.scheduled_jobs.matIdsForJob
+      ? s.Events.selected_month.mat_summary.matIdsForJob
+      : s.Events.last30.mat_summary.matIdsForJob
   );
-
-  console.log(props.job);
 
   return (
     <div style={{ display: "flex", justifyContent: "space-evenly" }}>

@@ -53,21 +53,19 @@ export interface ScheduledJobDisplay {
 type WritableScheduledJob = { -readonly [K in keyof ScheduledJobDisplay]: ScheduledJobDisplay[K] };
 
 export function buildScheduledJobs(
-  start: Date | null,
-  end: Date | null,
+  start: Date,
+  end: Date,
   matIds: HashMap<number, MaterialSummaryAndCompletedData>,
   schJobs: HashMap<string, Readonly<IHistoricJob>>,
   currentSt: Readonly<ICurrentStatus>
 ): ReadonlyArray<ScheduledJobDisplay> {
   const completedMats = LazySeq.ofIterable(matIds)
     .flatMap(([matId, summary]) =>
-      LazySeq.ofObject(summary.unloaded_processes ?? {})
-        .filter(([_, unloadTime]) => start == null || end == null || (unloadTime >= start && unloadTime <= end))
-        .map(([proc, _]) => ({
-          matId: matId,
-          proc: parseInt(proc),
-          uniq: summary.jobUnique,
-        }))
+      LazySeq.ofObject(summary.unloaded_processes ?? {}).map(([proc, _]) => ({
+        matId: matId,
+        proc: parseInt(proc),
+        uniq: summary.jobUnique,
+      }))
     )
     .groupBy((m) => m.uniq)
     .mapValues((mats) =>
@@ -80,7 +78,7 @@ export function buildScheduledJobs(
   const result = new Map<string, WritableScheduledJob>();
 
   for (const [uniq, job] of schJobs) {
-    if (start == null || end == null || (job.routeStartUTC >= start && job.routeStartUTC <= end)) {
+    if (job.routeStartUTC >= start && job.routeStartUTC <= end) {
       const casting = LazySeq.ofIterable(job.procsAndPaths[0]?.paths ?? [])
         .mapOption((p) =>
           p.casting !== null && p.casting !== undefined && p.casting !== ""

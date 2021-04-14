@@ -30,6 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+import { addDays, addMonths } from "date-fns";
 import * as React from "react";
 import { AnalysisPeriod } from "../../data/events";
 import { connect } from "../../store/store";
@@ -49,6 +50,14 @@ const ConnectedSchedules = connect((st) => ({
     st.Events.analysis_period === AnalysisPeriod.Last30Days
       ? st.Events.last30.scheduled_jobs.someJobHasCasting
       : st.Events.selected_month.scheduled_jobs.someJobHasCasting,
+  start:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.thirty_days_ago
+      : st.Events.analysis_period_month,
+  end:
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? addDays(st.Events.last30.thirty_days_ago, 31)
+      : addMonths(st.Events.analysis_period_month, 1),
 }))(JobsTable);
 
 export function ScheduleHistory() {
@@ -59,7 +68,7 @@ export function ScheduleHistory() {
     <>
       <AnalysisSelectToolbar />
       <main style={{ padding: "24px" }}>
-        <ConnectedSchedules showInProcCnt={false} filterCurrentWeek={false} />
+        <ConnectedSchedules showInProcCnt={false} />
       </main>
     </>
   );

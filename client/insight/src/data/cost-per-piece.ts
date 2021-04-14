@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { PartCycleData } from "./events.cycles";
-import { getDaysInMonth } from "date-fns";
+import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { Vector, HasEquals, HashMap } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
@@ -67,21 +67,28 @@ function isUnloadCycle(c: PartCycleData): boolean {
   return c.isLabor && c.operation === "UNLOAD";
 }
 
+function isMonthType(type: { month: Date } | { thirtyDaysAgo: Date }): type is { month: Date } {
+  return type.hasOwnProperty("month");
+}
+
 export function compute_monthly_cost(
   machineCostPerYear: MachineCostPerYear,
   automationCostPerYear: number | null,
   totalLaborCostForPeriod: number,
   cycles: Vector<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
-  month: Date | null
+  type: { month: Date } | { thirtyDaysAgo: Date }
 ): CostData {
-  const days = month ? getDaysInMonth(month) : 30;
+  const days = isMonthType(type) ? getDaysInMonth(type.month) : 30;
+  const start = isMonthType(type) ? type.month : type.thirtyDaysAgo;
+  const end = isMonthType(type) ? addMonths(type.month, 1) : addDays(type.thirtyDaysAgo, 31);
 
   let totalPalletCycles = 0;
   const totalStatUseMinutes = new Map<string, number>();
   const stationCount = new Map<string, Set<number>>();
 
   for (const c of cycles) {
+    if (c.x < start || c.x > end) continue;
     if (isUnloadCycle(c)) {
       totalPalletCycles += 1;
     }
@@ -105,6 +112,7 @@ export function compute_monthly_cost(
 
   const parts = Array.from(
     cycles
+      .filter((c) => c.x >= start && c.x <= end)
       .groupBy((c) => c.part)
       .map((partName, forPart) => [
         partName as string & HasEquals,
@@ -118,7 +126,8 @@ export function compute_monthly_cost(
                 matsById
                   .get(m.id)
                   .mapNullable((s) => s.unloaded_processes?.[m.proc])
-                  .isSome()
+                  .map((t) => t >= start && t <= end)
+                  .getOrElse(false)
             )
             .length(),
           machine: LazySeq.ofIterable(forPart)

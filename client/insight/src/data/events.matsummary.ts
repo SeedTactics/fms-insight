@@ -61,11 +61,13 @@ interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
 
 export interface MatSummaryState {
   readonly matsById: HashMap<number, MaterialSummaryFromEvents>;
+  readonly matIdsForJob: HashMap<string, HashSet<number>>;
   readonly inspTypes: HashSet<string>;
 }
 
 export const initial: MatSummaryState = {
   matsById: HashMap.empty(),
+  matIdsForJob: HashMap.empty(),
   inspTypes: HashSet.empty(),
 };
 
@@ -87,6 +89,7 @@ export function process_events(
   st: MatSummaryState
 ): MatSummaryState {
   let mats = st.matsById;
+  let jobs = st.matIdsForJob;
 
   if (expire.type === ExpireOldDataType.ExpireEarlierThan) {
     // check if no changes needed: no new events and nothing to filter out
@@ -95,6 +98,19 @@ export function process_events(
     );
     if ((minEntry.isNone() || minEntry.get().last_event >= expire.d) && newEvts.length === 0) {
       return st;
+    }
+
+    var matsToRemove = LazySeq.ofIterable(mats.valueIterable())
+      .filter((e) => e.last_event < expire.d)
+      .map((e) => e.materialID)
+      .toRSet((x) => x);
+
+    if (matsToRemove.size > 0) {
+      jobs = HashMap.ofIterable(
+        LazySeq.ofIterable(jobs)
+          .map(([uniq, ids]) => [uniq, ids.removeAll(matsToRemove)] as [string, HashSet<number>])
+          .filter(([_, ids]) => !ids.isEmpty())
+      );
     }
 
     mats = mats.filter((_, e) => e.last_event >= expire.d);
@@ -107,6 +123,17 @@ export function process_events(
       return;
     }
     for (const logMat of e.material) {
+      if (logMat.uniq && logMat.uniq !== "") {
+        const forJob = jobs.get(logMat.uniq).getOrNull();
+        if (forJob === null) {
+          jobs = jobs.put(logMat.uniq, HashSet.of(logMat.id));
+        } else {
+          if (!forJob.contains(logMat.id)) {
+            jobs = jobs.put(logMat.uniq, forJob.add(logMat.id));
+          }
+        }
+      }
+
       const oldMat = mats.get(logMat.id);
       let mat: MaterialSummaryFromEvents;
       if (oldMat.isSome()) {
@@ -213,10 +240,11 @@ export function process_events(
     inspTypesSet = inspTypesSet.addAll(newInspTypes);
   }
 
-  return { ...st, matsById: mats, inspTypes: inspTypesSet };
+  return { ...st, matsById: mats, matIdsForJob: jobs, inspTypes: inspTypesSet };
 }
 
 export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: MatSummaryState): MatSummaryState {
+  let jobs = st.matIdsForJob;
   let oldMatFromState = st.matsById.get(swap.oldMaterialID).getOrNull();
   let newMatFromState = st.matsById.get(swap.newMaterialID).getOrNull();
 
@@ -237,6 +265,16 @@ export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: M
     };
   } else {
     newMat = newMatFromState;
+  }
+
+  if (oldMat.jobUnique && oldMat.jobUnique !== "" && (!newMat.jobUnique || newMat.jobUnique === "")) {
+    // Swap newMat from raw material
+    const forJob = jobs.get(oldMat.jobUnique).getOrNull();
+    if (forJob !== null) {
+      jobs = jobs.put(oldMat.jobUnique, forJob.remove(oldMat.materialID).add(newMat.materialID));
+    }
+    newMat = { ...newMat, jobUnique: oldMat.jobUnique };
+    oldMat = { ...oldMat, jobUnique: "" };
   }
 
   const oldMatUnloads = oldMat.unloaded_processes;
@@ -283,6 +321,7 @@ export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: M
 
   return {
     matsById: st.matsById.put(oldMat.materialID, oldMat).put(newMat.materialID, newMat),
+    matIdsForJob: jobs,
     inspTypes: st.inspTypes,
   };
 }

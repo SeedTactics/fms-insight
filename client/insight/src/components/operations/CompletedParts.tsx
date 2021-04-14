@@ -66,8 +66,9 @@ export interface JobsTableProps {
   readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
   readonly matIds: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly showMaterial: boolean;
-  readonly filterCurrentWeek: boolean;
   readonly showInProcCnt: boolean;
+  readonly start: Date;
+  readonly end: Date;
 }
 
 const useTableStyles = makeStyles((theme) =>
@@ -195,15 +196,8 @@ export function JobsTable(props: JobsTableProps) {
   const currentSt = useRecoilValue(currentStatus);
 
   const jobs = React.useMemo(() => {
-    if (props.filterCurrentWeek) {
-      const today = startOfToday();
-      const start = addDays(today, -6);
-      const end = addDays(today, 1);
-      return buildScheduledJobs(start, end, props.matIds, props.schJobs, currentSt);
-    } else {
-      return buildScheduledJobs(null, null, props.matIds, props.schJobs, currentSt);
-    }
-  }, [props.matIds, props.schJobs, currentSt, props.filterCurrentWeek]);
+    return buildScheduledJobs(props.start, props.end, props.matIds, props.schJobs, currentSt);
+  }, [props.matIds, props.schJobs, currentSt, props.start, props.end]);
 
   return (
     <Card raised>
@@ -269,6 +263,8 @@ const ConnectedJobsTable = connect((st) => ({
   matIds: st.Events.last30.mat_summary.matsById,
   schJobs: st.Events.last30.scheduled_jobs.jobs,
   showMaterial: st.Events.last30.scheduled_jobs.someJobHasCasting,
+  start: addDays(startOfToday(), -6),
+  end: addDays(startOfToday(), 1),
 }))(JobsTable);
 
 export function CompletedParts() {
@@ -278,7 +274,7 @@ export function CompletedParts() {
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="scheduled-jobs">
-        <ConnectedJobsTable showInProcCnt={true} filterCurrentWeek={true} />
+        <ConnectedJobsTable showInProcCnt={true} />
       </div>
     </main>
   );
