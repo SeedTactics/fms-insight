@@ -50,6 +50,7 @@ export enum AnalysisPeriod {
 }
 
 export interface Last30Days {
+  readonly thirty_days_ago: Date;
   readonly latest_log_counter: number | undefined;
   readonly most_recent_10_events: Vector<Readonly<api.ILogEntry>>;
 
@@ -105,6 +106,7 @@ export const initial: State = {
   loading_analysis_month_jobs: false,
 
   last30: {
+    thirty_days_ago: addDays(new Date(), -30),
     latest_log_counter: undefined,
     latest_scheduleId: undefined,
     most_recent_10_events: Vector.empty(),
@@ -280,6 +282,7 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
     last10Evts = last10Evts.appendAll(lastNew10).reverse().take(10).reverse();
   }
   return safeAssign(s, {
+    thirty_days_ago: evts.length === 0 ? s.thirty_days_ago : thirtyDaysAgo,
     latest_log_counter: lastCounter,
     cycles: cycles.process_events(
       { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import WorkIcon from "@material-ui/icons/Work";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
-import { addMonths, addDays, startOfToday } from "date-fns";
+import { addMonths, addDays, startOfToday, startOfDay } from "date-fns";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
 import { HashMap, Vector } from "prelude-ts";
@@ -811,8 +811,13 @@ function StationOeeHeatmap() {
 
 type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
-function partsCompletedPoints(cycles: CycleState, matsById: HashMap<number, MaterialSummaryAndCompletedData>) {
-  const pts = binCyclesByDayAndPart(cycles.part_cycles, matsById);
+function partsCompletedPoints(
+  cycles: CycleState,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
+  start: Date,
+  end: Date
+) {
+  const pts = binCyclesByDayAndPart(cycles.part_cycles, matsById, start, end);
   return LazySeq.ofIterable(pts)
     .map(([dayAndPart, val]) => {
       return {
@@ -862,15 +867,25 @@ function partsPlannedPoints(simUse: SimUseState) {
 function CompletedCountHeatmap() {
   const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
   const data = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days ? s.Events.last30 : s.Events.selected_month
+    s.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? {
+          evts: s.Events.last30,
+          start: startOfDay(s.Events.last30.thirty_days_ago),
+          end: addDays(startOfDay(s.Events.last30.thirty_days_ago), 31),
+        }
+      : {
+          evts: s.Events.selected_month,
+          start: s.Events.analysis_period_month,
+          end: addMonths(s.Events.analysis_period_month, 1),
+        }
   );
   const points = React.useMemo(() => {
     if (selected === "Completed") {
-      return partsCompletedPoints(data.cycles, data.mat_summary.matsById);
+      return partsCompletedPoints(data.evts.cycles, data.evts.mat_summary.matsById, data.start, data.end);
     } else {
-      return partsPlannedPoints(data.sim_use);
+      return partsPlannedPoints(data.evts.sim_use);
     }
-  }, [selected, data]);
+  }, [selected, data.evts, data.start, data.end]);
   return (
     <SelectableHeatChart
       card_label="Part Production"

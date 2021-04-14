@@ -1886,6 +1886,7 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-09T09:04:05.000Z,
 }
 `;
 
@@ -2949,6 +2950,7 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-03T09:04:05.000Z,
 }
 `;
 
@@ -4018,6 +4020,7 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-09T09:04:05.000Z,
 }
 `;
 
@@ -5080,5 +5083,6 @@ Object {
     "rawMaterialQueues": Array [],
     "station_use": Array [],
   },
+  "thirty_days_ago": 2018-01-03T09:04:05.000Z,
 }
 `;

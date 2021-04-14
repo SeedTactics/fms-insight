@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { connect } from "../../store/store";
+import { connect, useSelector } from "../../store/store";
 import { AnalysisPeriod } from "../../data/events";
 import Card from "@material-ui/core/Card";
 import CardHeader from "@material-ui/core/CardHeader";
@@ -476,6 +476,7 @@ function CostPerPiecePage(props: CostPerPieceProps) {
   const [last30LaborCost, setLast30LaborCost] = React.useState<number | null>(null);
   const [curMonthLaborCost, setCurMonthLaborCost] = React.useState<number | null | "LOADING">(null);
   const [automationCostPerYear, setAutomationCostPerYear] = React.useState<number | null>(null);
+  const thirtyDaysAgo = useSelector((s) => s.Events.last30.thirty_days_ago);
 
   React.useEffect(() => {
     (async () => {
@@ -523,7 +524,7 @@ function CostPerPiecePage(props: CostPerPieceProps) {
       totalLaborCost,
       props.cycles,
       props.matIds,
-      props.month
+      props.month ? { month: props.month } : { thirtyDaysAgo }
     );
   }, [
     machineCostPerYear,
