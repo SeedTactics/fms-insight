@@ -307,7 +307,6 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
       evts,
       s.buffering
     ),
-    scheduled_jobs: schJobs.process_events(evts, initialLoad, s.scheduled_jobs),
   });
 }
 
@@ -322,7 +321,6 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
     inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection),
     buffering: buffering.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.buffering),
     mat_summary: matsummary.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.mat_summary),
-    scheduled_jobs: schJobs.process_events(evts, true, s.scheduled_jobs),
   });
 }
 
