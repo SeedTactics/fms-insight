@@ -60,6 +60,12 @@ const plannedOeeColor = "#03DAC5";
 
 export function OEEChart(props: OEEProps) {
   const [hoveredSeries, setHoveredSeries] = React.useState<{ station: string; day: string } | undefined>(undefined);
+
+  const [chartHeight, setChartHeight] = React.useState(300);
+  React.useEffect(() => {
+    setChartHeight(window.innerHeight / 2 - 200);
+  }, []);
+
   return (
     <Grid container>
       {props.points.map((series, idx) => (
@@ -67,7 +73,7 @@ export function OEEChart(props: OEEProps) {
           <div>
             <FlexibleWidthXYPlot
               xType="ordinal"
-              height={(typeof window === "undefined" ? 450 : window.innerHeight / 2) - 200}
+              height={chartHeight}
               animation
               yDomain={[0, 24]}
               onMouseLeave={() => setHoveredSeries(undefined)}

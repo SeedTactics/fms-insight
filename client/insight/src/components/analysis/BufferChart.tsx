@@ -84,12 +84,17 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
     [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours]
   );
 
+  const [chartHeight, setChartHeight] = React.useState(500);
+  React.useEffect(() => {
+    setChartHeight(window.innerHeight - 200);
+  }, []);
+
   const emptySeries = series.findIndex((s) => !disabledBuffers.contains(s.label)) < 0;
 
   return (
     <div>
       <FlexibleWidthXYPlot
-        height={(typeof window === "undefined" ? 700 : window.innerHeight) - 200}
+        height={chartHeight}
         animation
         xType="time"
         margin={{ bottom: 50 }}
