@@ -62,21 +62,6 @@ import { currentOperator } from "../../data/operators";
 import { instructionUrl } from "../../data/backend";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 
-/*
-function getPosition(el: Element) {
-  const box = el.getBoundingClientRect();
-  const doc = document.documentElement;
-  const body = document.body;
-  var clientTop  = doc.clientTop  || body.clientTop  || 0;
-  var clientLeft = doc.clientLeft || body.clientLeft || 0;
-  var scrollTop  = window.pageYOffset || doc.scrollTop;
-  var scrollLeft = window.pageXOffset || doc.scrollLeft;
-  return {
-    top: box.top  + scrollTop  - clientTop,
-    left: box.left + scrollLeft - clientLeft
-  };
-}*/
-
 export class PartIdenticon extends React.PureComponent<{
   part: string;
   size?: number;

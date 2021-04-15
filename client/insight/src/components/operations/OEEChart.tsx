@@ -67,7 +67,7 @@ export function OEEChart(props: OEEProps) {
           <div>
             <FlexibleWidthXYPlot
               xType="ordinal"
-              height={window.innerHeight / 2 - 200}
+              height={(typeof window === "undefined" ? 450 : window.innerHeight / 2) - 200}
               animation
               yDomain={[0, 24]}
               onMouseLeave={() => setHoveredSeries(undefined)}
