@@ -1,8 +1,12 @@
 {
-  "name": "insight",
+  "name": "@seedtactics/insight-client",
   "version": "0.1.0",
   "license": "BSD-3-Clause",
   "private": true,
+  "main": "./src/index.ts",
+  "targets": {
+    "main": false
+  },
   "sideEffects": [
     "./src/index.ts",
     "./src/demo.ts"
@@ -89,14 +93,6 @@
       "<rootDir>/.parcel-dev/",
       "<rootDir>/.parcel-cache/"
     ],
-    "moduleNameMapper": {
-      "\\.css$": "<rootDir>/file-mock.js",
-      "^url:./events-json.txt": "./events-json.txt"
-    },
-    "transform": {
-      "^.+\\.tsx?$": "ts-jest",
-      "events-json\\.txt$": "<rootDir>/file-mock.js"
-    },
     "snapshotSerializers": [
       "<rootDir>/prelude-ts-snapshots.js"
     ]

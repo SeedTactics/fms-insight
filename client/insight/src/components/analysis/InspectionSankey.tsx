@@ -110,8 +110,8 @@ class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagra
           ...l,
           opacity: this.state.activeLink && this.state.activeLink.index === idx ? 0.6 : 0.3,
         }))}
-        width={window.innerWidth - 300}
-        height={window.innerHeight - 200}
+        width={(typeof window === "undefined" ? 700 : window.innerWidth) - 300}
+        height={(typeof window === "undefined" ? 700 : window.innerHeight) - 200}
         onLinkMouseOver={(link: D3Link) => this.setState({ activeLink: link })}
         onLinkMouseOut={() => this.setState({ activeLink: undefined })}
       >

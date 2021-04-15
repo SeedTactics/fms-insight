@@ -35,13 +35,15 @@ import { initStore } from "./store/store";
 import * as websocket from "./store/websocket";
 import { render } from "./renderer";
 import { RouteLocation } from "./data/routes";
-import { registerBackupViewerBackend } from "./data/backend-messages";
+import { registerBackupViewerBackend } from "./data/backend-backupviewer";
+import { registerNetworkBackend } from "./data/backend";
 
 const store = initStore();
 
 if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
   registerBackupViewerBackend();
 } else {
+  registerNetworkBackend();
   websocket.configureWebsocket(
     (a) => store.dispatch(a),
     () => store.getState().Events

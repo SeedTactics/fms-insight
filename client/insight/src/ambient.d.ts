@@ -5,7 +5,7 @@ declare module "*.svg" {
   export default empty;
 }
 
-declare module "url:./events-json.txt" {
+declare module "url:./demo-data/events.json" {
   const empty = "";
   export default empty;
 }

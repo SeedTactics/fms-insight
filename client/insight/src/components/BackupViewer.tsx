@@ -34,7 +34,7 @@ import * as React from "react";
 import Button from "@material-ui/core/Button";
 
 import { connect } from "../store/store";
-import { requestOpenBackupFile } from "../data/backend-messages";
+import { requestOpenBackupFile } from "../data/backend-backupviewer";
 
 function BackupViewer(props: { loading_error: Error | undefined }) {
   return (

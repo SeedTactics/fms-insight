@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -31,20 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { loadMockData } from "../mock-data/load";
-import { inspectionDataToSankey } from "./inspection-sankey";
-import * as inspEvts from "./events.inspection";
+import newJobs from "./newjobs.json";
+import tools from "./tools.json";
+import programs from "./programs.json";
+import statusJson from "./status-mock.json";
+import toolUse from "./tool-use.json";
 
-it("creates inspection sankey", async () => {
-  const data = loadMockData(30 * 24 * 60 * 60);
-  const evts = await data.events;
-  const cycleState = inspEvts.process_events(
-    { type: inspEvts.ExpireOldDataType.NoExpire },
-    evts,
-    undefined,
-    inspEvts.initial
-  );
-  expect(
-    inspectionDataToSankey(cycleState.by_part.get(new inspEvts.PartAndInspType("aaa", "CMM")).getOrElse([]))
-  ).toMatchSnapshot("part aaa CMM sankey");
-});
+export const demoData = {
+  curSt: statusJson,
+  jobs: newJobs,
+  tools: tools,
+  programs: programs,
+  toolUse: toolUse,
+};

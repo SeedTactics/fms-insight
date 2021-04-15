@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "../../../insight/src/data/api";
+import * as api from "./api";
 import { loadLast30Days } from "./events";
 import { RouteLocation } from "./routes";
 import { reduxStore } from "../store/store";
@@ -80,7 +80,7 @@ export function requestOpenBackupFile() {
 }
 
 export function registerBackupViewerBackend() {
-  registerBackend(LogBackend, JobsBackend, ServerBackend);
+  registerBackend(LogBackend, JobsBackend, ServerBackend, MachineBackend);
 }
 
 function sendIpc<P, R>(name: string, payload: P): Promise<R> {
@@ -246,6 +246,24 @@ const LogBackend = {
     return Promise.reject("Not implemented");
   },
   recordOperatorNotes(): Promise<Readonly<api.ILogEntry>> {
+    return Promise.reject("Not implemented");
+  },
+};
+
+const MachineBackend = {
+  getToolsInMachines(): Promise<ReadonlyArray<Readonly<api.IToolInMachine>>> {
+    return Promise.reject("Not implemented");
+  },
+  getProgramsInCellController(): Promise<ReadonlyArray<Readonly<api.IProgramInCellController>>> {
+    return Promise.reject("Not implemented");
+  },
+  getProgramRevisionContent(): Promise<string> {
+    return Promise.reject("Not implemented");
+  },
+  getLatestProgramRevisionContent(): Promise<string> {
+    return Promise.reject("Not implemented");
+  },
+  getProgramRevisionsInDescendingOrderOfRevision(): Promise<ReadonlyArray<Readonly<api.IProgramRevision>>> {
     return Promise.reject("Not implemented");
   },
 };

@@ -432,7 +432,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
       return (
         <div className={this.state.brushing ? this.props.classes.noSeriesPointerEvts : undefined}>
           <FlexibleWidthXYPlot
-            height={window.innerHeight - 200}
+            height={(typeof window === "undefined" ? 700 : window.innerHeight) - 200}
             animation
             xType="time"
             margin={{ bottom: 50 }}

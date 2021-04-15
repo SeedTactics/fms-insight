@@ -32,11 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { loadMockData } from "./mock-data/load";
+import { demoData } from "./demo-data";
 import { initStore } from "./store/store";
 import { differenceInSeconds } from "date-fns";
-import { registerMockBackend } from "./data/backend";
+import { registerDemoBackend } from "./data/backend-demo";
 import * as events from "./data/events";
+import evtsJson from "./demo-data/events.json";
 
 export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
   return function MockedComponent(props) {
@@ -55,21 +56,14 @@ export function mockComponent(name: string): (props: { [key: string]: object }) 
 }
 
 export async function createTestStore() {
-  const store = initStore();
-  registerMockBackend();
-  store.dispatch(events.loadLast30Days());
-
   // offset is such that all events fall within July no matter the timezone, so
   // selecting July 2018 as the month loads the same set of data
   const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
   const offsetSeconds = differenceInSeconds(new Date(Date.UTC(2018, 6, 2, 4, 10, 0)), jan18);
 
-  const mockD = loadMockData(offsetSeconds);
-
-  await mockD.events;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(mockD);
+  const store = initStore();
+  registerDemoBackend(offsetSeconds, Promise.resolve(demoData), { type: "JSON", evtsJson: evtsJson as any });
+  store.dispatch(events.loadLast30Days());
 
   return store;
 }

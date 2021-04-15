@@ -89,7 +89,7 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
   return (
     <div>
       <FlexibleWidthXYPlot
-        height={window.innerHeight - 200}
+        height={(typeof window === "undefined" ? 700 : window.innerHeight) - 200}
         animation
         xType="time"
         margin={{ bottom: 50 }}
