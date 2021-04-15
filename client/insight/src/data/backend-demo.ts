@@ -36,11 +36,9 @@ import * as api from "./api";
 import { registerBackend } from "./backend";
 import { LazySeq } from "./lazyseq";
 
-export type DemoEvents =
-  | { type: "JSON"; evtsJson: ReadonlyArray<api.ILogEntry> }
-  | { type: "URL"; urlToEventsJson: string };
+export type DemoEvents = ReadonlyArray<object /* ILogEntry json */>;
 
-export interface DemoDataFromDisk {
+export interface DemoData {
   readonly curSt: object /* current status json */;
   readonly jobs: ReadonlyArray<object /* new jobs json */>;
   readonly tools: ReadonlyArray<object /* tool in machine json */>;
@@ -69,7 +67,7 @@ function offsetJob(j: api.Job, offsetSeconds: number) {
   }
 }
 
-function transformTime(offsetSeconds: number, demo: DemoDataFromDisk): TransformedDemoData {
+function transformTime(offsetSeconds: number, demo: DemoData): TransformedDemoData {
   const status = api.CurrentStatus.fromJS(demo.curSt);
   status.timeOfCurrentStatusUTC = addSeconds(status.timeOfCurrentStatusUTC, offsetSeconds);
   for (const j of Object.values(status.jobs)) {
@@ -120,26 +118,15 @@ function transformTime(offsetSeconds: number, demo: DemoDataFromDisk): Transform
 
 async function loadEventsJson(
   offsetSeconds: number,
-  demoData: Promise<DemoDataFromDisk>,
-  evts: DemoEvents
+  demoData: Promise<DemoData>,
+  evts: Promise<DemoEvents>
 ): Promise<Readonly<api.ILogEntry>[]> {
-  let evtsSeq: LazySeq<api.ILogEntry>;
-  if (evts.type === "JSON") {
-    // jest loads the contents as a string
-    evtsSeq = LazySeq.ofIterable(evts.evtsJson);
-  } else {
-    // parcel provides the url to the file
-    const req = await fetch(evts.urlToEventsJson);
-    const rawEvts = await req.json();
-    evtsSeq = LazySeq.ofIterable(rawEvts);
-  }
-
   const toolUse = (await demoData).toolUse;
 
-  return evtsSeq
-    .map((evt: api.ILogEntry) => {
-      const tools = toolUse[evt.counter.toString()];
-      const e = api.LogEntry.fromJS(tools ? { ...evt, tools } : evt);
+  return LazySeq.ofIterable(await evts)
+    .map((evtJson) => {
+      const tools = toolUse[(evtJson as any).counter.toString()];
+      const e = api.LogEntry.fromJS(tools ? { ...evtJson, tools } : evtJson);
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
     })
@@ -165,7 +152,7 @@ async function loadEventsJson(
     .toArray();
 }
 
-export function registerDemoBackend(offsetSeconds: number, demoData: Promise<DemoDataFromDisk>, demoEvts: DemoEvents) {
+export function registerDemoBackend(offsetSeconds: number, demoData: Promise<DemoData>, demoEvts: Promise<DemoEvents>) {
   const data = demoData.then((d) => transformTime(offsetSeconds, d));
   const events = loadEventsJson(offsetSeconds, demoData, demoEvts);
 

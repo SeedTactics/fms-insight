@@ -5,11 +5,6 @@ declare module "*.svg" {
   export default empty;
 }
 
-declare module "url:./demo-data/events.json" {
-  const empty = "";
-  export default empty;
-}
-
 declare module "react-qr-reader" {
   import * as React from "react";
 
