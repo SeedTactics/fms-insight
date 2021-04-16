@@ -925,6 +925,34 @@ const ConnectedInspection = connect((st) => ({
 // Efficiency
 // --------------------------------------------------------------------------------
 
+export function EfficiencyCards() {
+  return (
+    <>
+      <div data-testid="part-cycle-chart">
+        <PartMachineCycleChart />
+      </div>
+      <div data-testid="part-load-cycle-chart" style={{ marginTop: "3em" }}>
+        <PartLoadStationCycleChart />
+      </div>
+      <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
+        <ConnectedPalletCycleChart />
+      </div>
+      <div data-testid="buffer-chart" style={{ marginTop: "3em" }}>
+        <BufferOccupancyChart />
+      </div>
+      <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
+        <StationOeeHeatmap />
+      </div>
+      <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
+        <CompletedCountHeatmap />
+      </div>
+      <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
+        <ConnectedInspection />
+      </div>
+    </>
+  );
+}
+
 export default function Efficiency() {
   React.useEffect(() => {
     document.title = "Efficiency - FMS Insight";
@@ -933,27 +961,7 @@ export default function Efficiency() {
     <>
       <AnalysisSelectToolbar />
       <main style={{ padding: "24px" }}>
-        <div data-testid="part-cycle-chart">
-          <PartMachineCycleChart />
-        </div>
-        <div data-testid="part-load-cycle-chart" style={{ marginTop: "3em" }}>
-          <PartLoadStationCycleChart />
-        </div>
-        <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
-          <ConnectedPalletCycleChart />
-        </div>
-        <div data-testid="buffer-chart" style={{ marginTop: "3em" }}>
-          <BufferOccupancyChart />
-        </div>
-        <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
-          <StationOeeHeatmap />
-        </div>
-        <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
-          <CompletedCountHeatmap />
-        </div>
-        <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
-          <ConnectedInspection />
-        </div>
+        <EfficiencyCards />
       </main>
     </>
   );
