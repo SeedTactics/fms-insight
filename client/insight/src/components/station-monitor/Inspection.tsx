@@ -169,15 +169,7 @@ interface InspectionProps {
   readonly focusInspectionType: string | null;
 }
 
-function Inspection(props: InspectionProps) {
-  React.useEffect(() => {
-    let title = "Inspection - FMS Insight";
-    if (props.focusInspectionType != null && props.focusInspectionType !== "") {
-      title = "Inspection " + props.focusInspectionType + " - FMS Insight";
-    }
-    document.title = title;
-  }, [props.focusInspectionType]);
-
+export function Inspection(props: InspectionProps) {
   const matsById = useSelector((st: Store) => st.Events.last30.mat_summary.matsById);
   const recent_inspections = React.useMemo(() => extractRecentInspections(matsById, props.focusInspectionType), [
     matsById,
@@ -185,7 +177,7 @@ function Inspection(props: InspectionProps) {
   ]);
 
   return (
-    <main data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
+    <div data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
@@ -203,7 +195,7 @@ function Inspection(props: InspectionProps) {
         </Grid>
       </Grid>
       <InspDialog focusInspectionType={props.focusInspectionType} />
-    </main>
+    </div>
   );
 }
 
@@ -272,4 +264,18 @@ function extractRecentInspections(
   };
 }
 
-export default Inspection;
+export default function InspectionPage(props: InspectionProps) {
+  React.useEffect(() => {
+    let title = "Inspection - FMS Insight";
+    if (props.focusInspectionType != null && props.focusInspectionType !== "") {
+      title = "Inspection " + props.focusInspectionType + " - FMS Insight";
+    }
+    document.title = title;
+  }, [props.focusInspectionType]);
+
+  return (
+    <main>
+      <Inspection {...props} />
+    </main>
+  );
+}

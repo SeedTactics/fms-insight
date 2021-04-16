@@ -68,6 +68,7 @@ import Fab from "@material-ui/core/Fab";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, reorder_queued_mat } from "../../data/current-status";
+import { useIsDemo } from "../../data/routes";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -564,7 +565,7 @@ interface LoadStationDisplayProps extends LoadStationProps {
   readonly fillViewPort: boolean;
 }
 
-const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
+export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
   const operator = useRecoilValue(currentOperator);
   const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
   const data = React.useMemo(
@@ -572,6 +573,7 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
     [currentSt, props.loadNum, props.showFree, props.queues]
   );
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
+  const isDemo = useIsDemo();
 
   const queues = data.queues
     .toVector()
@@ -606,9 +608,11 @@ const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & Wit
             data={data}
             dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
           />
-          <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
-            <MultiInstructionButton loadData={data} operator={operator} />
-          </div>
+          {isDemo ? undefined : (
+            <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
+              <MultiInstructionButton loadData={data} operator={operator} />
+            </div>
+          )}
         </div>
         {col1.length() === 0 ? undefined : (
           <div className={props.classes.queueCol}>

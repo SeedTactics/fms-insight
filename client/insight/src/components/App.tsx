@@ -66,7 +66,7 @@ import CheckIcon from "@material-ui/icons/CheckCircle";
 import PersonIcon from "@material-ui/icons/Person";
 import ProgramIcon from "@material-ui/icons/Receipt";
 import ToolIcon from "@material-ui/icons/Dns";
-import { useRecoilCallback, useRecoilValue, useRecoilValueLoadable } from "recoil";
+import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 
 import OperationDashboard from "./operations/Dashboard";
 import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview";
@@ -98,9 +98,9 @@ import { ToolReportPage } from "./operations/ToolReport";
 import { ProgramReportPage } from "./operations/Programs";
 import { WebsocketConnection } from "../store/websocket";
 import { currentStatus } from "../data/current-status";
-import { JobsBackend } from "../data/backend";
 import { BarcodeListener } from "../store/barcode";
 import { ScheduleHistory } from "./analysis/ScheduleHistory";
+import { LoadDemoData } from "./DemoData";
 
 const tabsStyle = {
   alignSelf: "flex-end" as "flex-end",
@@ -536,17 +536,6 @@ function Header(p: HeaderProps) {
       </Hidden>
     </>
   );
-}
-
-function LoadDemoData() {
-  const load = useRecoilCallback(({ set }) => () => {
-    JobsBackend.currentStatus().then((st) => set(currentStatus, st));
-  });
-  React.useEffect(() => {
-    load();
-  }, []);
-
-  return null;
 }
 
 export interface AppProps {
