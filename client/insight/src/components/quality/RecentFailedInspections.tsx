@@ -172,7 +172,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   );
 }
 
-function RecentFailedInspections(props: RecentFailedInspectionsProps) {
+function RecentFailedInspectionsTable(props: RecentFailedInspectionsProps) {
   return (
     <Card raised>
       <CardHeader
@@ -209,14 +209,14 @@ const failedReducer = createSelector(
   }
 );
 
-const ConnectedFailedInspections = connect(
+export const RecentFailedInspections = connect(
   (st) => ({
     failed: failedReducer(st.Events.last30.inspection, startOfToday()),
   }),
   {
     openDetails: () => ({ type: RouteLocation.Quality_Serials }),
   }
-)(RecentFailedInspections);
+)(RecentFailedInspectionsTable);
 
 export function QualityDashboard() {
   React.useEffect(() => {
@@ -225,7 +225,7 @@ export function QualityDashboard() {
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="recent-failed">
-        <ConnectedFailedInspections />
+        <RecentFailedInspections />
       </div>
     </main>
   );

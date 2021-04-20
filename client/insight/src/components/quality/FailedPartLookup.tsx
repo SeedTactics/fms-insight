@@ -119,7 +119,7 @@ function PathLookup(props: PathLookupProps) {
   );
 }
 
-function PartLookupStepper() {
+export function PartLookupStepper() {
   const [origStep, setStep] = React.useState(0);
   const mat = useRecoilValue(matDetails.materialDetail);
   const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);

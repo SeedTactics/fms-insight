@@ -478,12 +478,9 @@ const ConnectedMachineCycleChart = connect((st) => ({
 // Main
 // -----------------------------------------------------------------------------------
 
-export function OperationLoadUnload() {
-  React.useEffect(() => {
-    document.title = "Load/Unload Management - FMS Insight";
-  }, []);
+export function LoadUnloadRecentOverview() {
   return (
-    <main style={{ padding: "24px" }}>
+    <>
       <div data-testid="outlier-cycles">
         <ConnectedOutlierLabor />
       </div>
@@ -493,16 +490,24 @@ export function OperationLoadUnload() {
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
         <ConnectedLaborCycleChart />
       </div>
+    </>
+  );
+}
+
+export function OperationLoadUnload() {
+  React.useEffect(() => {
+    document.title = "Load/Unload Management - FMS Insight";
+  }, []);
+  return (
+    <main style={{ padding: "24px" }}>
+      <LoadUnloadRecentOverview />
     </main>
   );
 }
 
-export function OperationMachines() {
-  React.useEffect(() => {
-    document.title = "Machine Management - FMS Insight";
-  }, []);
+export function MachinesRecentOverview() {
   return (
-    <main style={{ padding: "24px" }}>
+    <>
       <div data-testid="outlier-cycles">
         <ConnectedOutlierMachines />
       </div>
@@ -512,6 +517,17 @@ export function OperationMachines() {
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
         <ConnectedMachineCycleChart />
       </div>
+    </>
+  );
+}
+
+export function OperationMachines() {
+  React.useEffect(() => {
+    document.title = "Machine Management - FMS Insight";
+  }, []);
+  return (
+    <main style={{ padding: "24px" }}>
+      <MachinesRecentOverview />
     </main>
   );
 }

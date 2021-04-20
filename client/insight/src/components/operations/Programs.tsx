@@ -225,7 +225,7 @@ type SortColumn =
   | "DeviationAbove"
   | "DeviationBelow";
 
-function ProgramSummaryTable() {
+export function ProgramSummaryTable() {
   const report = useRecoilValue(currentProgramReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
@@ -474,7 +474,7 @@ function ProgramContentCode() {
   );
 }
 
-function ProgramContentDialog() {
+export function ProgramContentDialog() {
   const [program, setProgramToShowContent] = useRecoilState(programToShowContent);
   const history = useRecoilValue(programToShowHistory);
 
@@ -588,7 +588,7 @@ interface LastPage {
   readonly hasMore: boolean;
 }
 
-function ProgramHistoryDialog() {
+export function ProgramHistoryDialog() {
   const [program, setProgram] = useRecoilState(programToShowHistory);
   const [programForContent, setProgramForContent] = useRecoilState(programToShowContent);
 
@@ -717,12 +717,6 @@ function ProgNavHeader() {
   const report = useRecoilValueLoadable(currentProgramReport);
   const demo = useIsDemo();
   const loading = report.state === "loading";
-
-  React.useEffect(() => {
-    if (demo && reloadTime === null) {
-      setReloadTime(new Date());
-    }
-  }, []);
 
   if (demo) {
     return <div />;
