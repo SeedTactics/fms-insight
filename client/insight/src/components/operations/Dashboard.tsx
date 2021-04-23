@@ -72,7 +72,7 @@ function FillViewportDashboard() {
   );
 }
 
-function ScrollableDashboard() {
+export function ScrollableDashboard() {
   return (
     <main style={{ padding: "8px" }}>
       <Grid container spacing={2}>

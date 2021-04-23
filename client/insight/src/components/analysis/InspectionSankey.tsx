@@ -79,10 +79,12 @@ interface D3Link {
 
 interface InspectionSankeyDiagramState {
   readonly activeLink?: D3Link;
+  readonly chartHeight: number;
+  readonly chartWidth: number;
 }
 
 class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagramProps, InspectionSankeyDiagramState> {
-  state: InspectionSankeyDiagramState = {};
+  state: InspectionSankeyDiagramState = { chartHeight: 500, chartWidth: 600 };
 
   renderHint() {
     const { activeLink } = this.state;
@@ -101,6 +103,13 @@ class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagra
     return <Hint x={x} y={y} value={hintValue} />;
   }
 
+  componentDidMount() {
+    this.setState({
+      chartHeight: window.innerHeight - 200,
+      chartWidth: window.innerWidth - 300,
+    });
+  }
+
   render() {
     // d3-sankey mutates nodes and links array, so create copy
     return (
@@ -110,8 +119,8 @@ class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagra
           ...l,
           opacity: this.state.activeLink && this.state.activeLink.index === idx ? 0.6 : 0.3,
         }))}
-        width={window.innerWidth - 300}
-        height={window.innerHeight - 200}
+        width={this.state.chartWidth}
+        height={this.state.chartHeight}
         onLinkMouseOver={(link: D3Link) => this.setState({ activeLink: link })}
         onLinkMouseOut={() => this.setState({ activeLink: undefined })}
       >

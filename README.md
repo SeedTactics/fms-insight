@@ -2,6 +2,9 @@
 
 [Project Website](https://fms-insight.seedtactics.com)
 
+[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/) [![Swagger](https://img.shields.io/swagger/valid/2.0/https/raw.githubusercontent.com/SeedTactics/fms-insight/main/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json)
+[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework/)
+
 FMS Insight is a client and server which runs on an flexible machining system (FMS)
 cell controller which provides:
 
@@ -11,74 +14,25 @@ cell controller which provides:
 - An HTML client which displays a dashboard, station monitor, and data analysis
   based on the log of events, planned jobs, and current cell status.
 
-### Server
+## Getting Started
 
-The server is written in C# and uses ASP.NET Core to expose a HTTP-based JSON
-and REST-like API. The server uses two local SQLite databases to store the
-log and job data which for historical reasons use a custom ORM instead of
-Entity Framework or Dapper (the code has been developed for over 10 years).
-The [server/lib/BlackMaple.MachineFramework](server/lib/BlackMaple.MachineFramework)
-directory contains the common server code, which includes data definitions,
-database code, and ASP.NET Core controllers.
-
-For each machine manufacturer (currently Mazak, Makino, and Cincron),
-there is an executable project which is what is installed by the user.
-This per-manufacturer project references the common code in `BlackMaple.MachineFramework`
-to provide the data storage and HTTP api. The per-manufacturer project
-also implements the custom interop for logging and jobs. The code lives
-in [server/machines](server/machines/).
-
-The server focuses on providing an immutable log of events and planned jobs.
-This provides a great base to drive decisions and analysis of the cell. The design
-is based on the [Event Sourcing
-Pattern](https://martinfowler.com/eaaDev/EventSourcing.html). All changes to
-the cell are captured as a stream of events, and analysis and monitoring of
-the cell proceeds by analyzing the log. FMS Insight tries to minimize the
-stateful data and operations that it supports, instead focusing as much as
-possible to provide a stable immutable API for cell controllers.
-
-### Swagger
-
-[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/) [![Swagger](https://img.shields.io/swagger/valid/2.0/https/raw.githubusercontent.com/SeedTactics/fms-insight/main/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json)
-
-The server generates a Swagger file and serves SwaggerUI using [NSwag](https://github.com/RSuter/NSwag).
-The latest swagger file can be obtained by running the server and then accessing `http://localhost:5000/swagger/v1/swagger.json` or
-[browsed online](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json).
-The swagger file is then used to generate two
-clients: one in typescript for use in the HTTP client and one in C#. The C# client is published on
-nuget as [BlackMaple.FMSInsight.API](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/).
-
-### HTML Client
-
-The client is written using React, Redux, Typescript, and MaterialUI. The
-client is compiled using parcel and the resulting
-HTML and Javascript is included in the server builds. The code lives in
-[client/insight](client/insight/).
-
-I use VSCode as an editor and there are VSCode tasks for launching parcel in
-development/watch mode and a debug configuration for launching Chrome. There
-is also a mock server which I use while developing the client. The mock
-server lives in
-[server/debug-mock](server/debug-mock/).
-There is a VSCode task for launching the debug mock server.
-
-# Custom Plugins
-
-FMS Insight supports customized plugins. Actually, FMS Insight itself is a library so the "plugin"
-is an executable project which sets up any customization and then calls into the FMS Insight library.
-
-[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework/)
-
-#### Project Structure
+Each cell is different and in our experience requires a small amount of custom logic,
+so FMS Insight does not provide a standard build. Instead, FMS Insight is designed as a library
+which you import into your own C# executable project.
 
 To create a plugin, start a new executable C# project and
 reference the [BlackMaple.MachineFramework](https://www.nuget.org/packages/BlackMaple.MachineFramework/) nuget package
-and then one of [BlackMaple.FMSInsight.Mazak](https://www.nuget.org/packages/BlackMaple.FMSInsight.Mazak/) or
-[BlackMaple.FMSInsight.Makino](https://www.nuget.org/packages/BlackMaple.FMSInsight.Makino/).
+and then one of [BlackMaple.FMSInsight.Mazak](https://www.nuget.org/packages/BlackMaple.FMSInsight.Mazak/),
+[BlackMaple.FMSInsight.Makino](https://www.nuget.org/packages/BlackMaple.FMSInsight.Makino/), or
+[BlackMaple.FMSInsight.Niigata](https://www.nuget.org/packages/BlackMaple.FMSInsight.Niigata/).
 
-#### Project Code
+```
+# dotnet new console
+# dotnet add package BlackMaple.MachineFramework
+# dotnet add package BlackMaple.FMSInsight.Mazak
+```
 
-Create a file `Main.cs` with code such as the following
+Next, edit `Program.cs` to contain:
 
 ```
 using System;
@@ -92,7 +46,6 @@ namespace MyCompanyName.Insight
       BlackMaple.MachineFramework.Program.Run(true, (cfg, st) =>
       {
         var Mazak = new MazakMachineInterface.MazakBackend(cfg, st);
-        // Attach to events in Mazak here
         return new BlackMaple.MachineFramework.FMSImplementation()
         {
           Name = "MyCompanyNameInsight",
@@ -105,12 +58,57 @@ namespace MyCompanyName.Insight
 }
 ```
 
-The `FMSImplementation` data structure is defined in [BackendInterfaces.cs](server/lib/BlackMaple.MachineFramework/BackendInterfaces.cs). It contains properties and settings that can be overridden to add customized
-behavior to FMS Insight. Also, the `MazakBackend` contains events that can be registered to respond to various events.
+The above code is enough to run FMS Insight without any customization. To add customized behavior,
+the `FMSImplementation` data structure contains properties and settings that can be overridden (see the definition in
+[BackendInterfaces.cs](server/lib/BlackMaple.MachineFramework/backend/BackendInterfaces.cs)). Also, the `MazakBackend`
+class contains events that can be registered to respond to various events. For example, to implement customized part
+marking, a class can be implemented which attaches to the events in the `IMazakLogReader` interface. When a Mazak
+Rotary Table Swap event occurs, the code can output a EIA program to perform the mark and also record the generated
+serial in the FMS Insight Log.
 
-For example, to implement customized part marking, a class can be implemented which attaches to the events in the `IMazakLogReader` interface.
-When a Mazak Rotary Table Swap event occurs, the code can output a EIA program to perform the mark and also record the generated serial
-in the FMS Insight Log.
+## Server
+
+The server is written in C# and uses ASP.NET Core to expose a HTTP-based JSON
+and REST-like API. The server uses a local SQLite database to store the
+log and job data which for historical reasons use a custom ORM instead of
+Entity Framework or Dapper (the code has been developed for over 10 years).
+The [server/lib/BlackMaple.MachineFramework](server/lib/BlackMaple.MachineFramework)
+directory contains the common server code, which includes data definitions,
+database code, and ASP.NET Core controllers.
+
+For each machine manufacturer (currently Mazak, Makino, and Niigata),
+there is a per-manufacturer project. The code lives in [server/machines](server/machines/).
+
+The server focuses on providing an immutable log of events and planned jobs.
+This provides a great base to drive decisions and analysis of the cell. The design
+is based on the [Event Sourcing
+Pattern](https://martinfowler.com/eaaDev/EventSourcing.html). All changes to
+the cell are captured as a stream of events, and analysis and monitoring of
+the cell proceeds by analyzing the log. FMS Insight tries to minimize the
+stateful data and operations that it supports, instead focusing as much as
+possible to provide a stable immutable API for cell controllers.
+
+## Swagger
+
+The server generates a Swagger file and serves SwaggerUI using [NSwag](https://github.com/RSuter/NSwag).
+The latest swagger file can be obtained by running the server and then accessing `http://localhost:5000/swagger/v1/swagger.json` or
+[browsed online](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json).
+The swagger file is then used to generate two
+clients: one in typescript for use in the HTTP client and one in C#. The C# client is published on
+nuget as [BlackMaple.FMSInsight.API](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/).
+
+## HTML Client
+
+The client is written using React, Recoil, Typescript, and MaterialUI. The
+client is compiled using parcel and the resulting
+HTML and Javascript is included in the server builds. The code lives in
+[client/insight](client/insight/).
+
+I use VSCode as an editor and there are VSCode tasks for launching parcel in
+development/watch mode and a debug configuration for launching Chrome. There
+is also a mock server which I use while developing the client. The mock
+server lives in [server/debug-mock](server/debug-mock/).
+There is a VSCode task for launching the debug mock server.
 
 # Data and API
 

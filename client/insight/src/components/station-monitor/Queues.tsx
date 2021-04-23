@@ -671,10 +671,7 @@ interface QueueProps {
   readonly showFree: boolean;
 }
 
-const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
-  React.useEffect(() => {
-    document.title = "Material Queues - FMS Insight";
-  }, []);
+export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
   const operator = useRecoilValue(currentOperator);
   const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
   const rawMaterialQueues = useSelector((st) => st.Events.last30.sim_use.rawMaterialQueues);
@@ -696,7 +693,7 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
   return (
-    <main data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
+    <div data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
       {data.map((region, idx) => (
         <div style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined} key={idx}>
           <SortableWhiteboardRegion
@@ -764,8 +761,18 @@ const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof qu
       <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />
-    </main>
+    </div>
   );
 });
 
-export default Queues;
+export default function QueuesPage(props: QueueProps) {
+  React.useEffect(() => {
+    document.title = "Material Queues - FMS Insight";
+  }, []);
+
+  return (
+    <main>
+      <Queues {...props} />
+    </main>
+  );
+}

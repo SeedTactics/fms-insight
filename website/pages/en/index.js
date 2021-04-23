@@ -112,10 +112,6 @@ class HomeSplash extends React.Component {
         <div className="inner">
           <ProjectTitle />
           <PromoSection>
-            {/* <Button href="#try">Try It Out</Button> */}
-            <Button href={docUrl("getting-started.html", language)}>
-              Get Started
-            </Button>
             <Button href="/demo/demo.html">View Demo</Button>
             <Button href="https://www.seedtactics.com/contact">
               Contact Sales

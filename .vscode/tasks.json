@@ -15,7 +15,7 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "debug-mock:build",
+      "label": "build:debug-mock",
       "command": "dotnet build server/debug-mock/debugmock.csproj",
       "group": "build",
       "type": "shell",
@@ -35,7 +35,7 @@
       "problemMatcher": []
     },
     {
-      "label": "mazak:build",
+      "label": "build:mazak",
       "command": "dotnet build server/machines/mazak/mazak.csproj",
       "group": "build",
       "type": "shell",
@@ -45,7 +45,7 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "niigata:build",
+      "label": "build:niigata",
       "command": "dotnet build server/machines/niigata/niigata.csproj",
       "group": "build",
       "type": "shell",

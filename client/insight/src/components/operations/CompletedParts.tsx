@@ -259,7 +259,7 @@ export function JobsTable(props: JobsTableProps) {
   );
 }
 
-const ConnectedJobsTable = connect((st) => ({
+export const RecentSchedules = connect((st) => ({
   matIds: st.Events.last30.mat_summary.matsById,
   schJobs: st.Events.last30.scheduled_jobs.jobs,
   showMaterial: st.Events.last30.scheduled_jobs.someJobHasCasting,
@@ -274,7 +274,7 @@ export function CompletedParts() {
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="scheduled-jobs">
-        <ConnectedJobsTable showInProcCnt={true} />
+        <RecentSchedules showInProcCnt={true} />
       </div>
     </main>
   );

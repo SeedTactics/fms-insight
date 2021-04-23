@@ -152,6 +152,7 @@ interface CycleChartState {
   readonly current_y_zoom_range: YZoomRange | null;
   readonly brushing: boolean;
   readonly zoom_dialog_open: boolean;
+  readonly chart_height: number;
 }
 
 function memoize<A, R>(f: (x: A) => R): (x: A) => R {
@@ -292,6 +293,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
       current_y_zoom_range: null,
       brushing: false,
       zoom_dialog_open: false,
+      chart_height: 500,
     } as CycleChartState;
 
     // memoize on the series name, since the function from CycleChartPoint => void is
@@ -368,6 +370,12 @@ export const CycleChart = withStyles(cycleChartStyles)(
         current_y_zoom_range: { y_low: this.state.current_y_zoom_range?.y_low ?? 0, y_high: val },
       });
 
+    componentDidMount() {
+      this.setState({
+        chart_height: window.innerHeight - 200,
+      });
+    }
+
     render() {
       const seriesNames = this.props.points.keySet().toArray({ sortOn: (x) => x });
       const dateRange = this.props.default_date_range;
@@ -432,7 +440,7 @@ export const CycleChart = withStyles(cycleChartStyles)(
       return (
         <div className={this.state.brushing ? this.props.classes.noSeriesPointerEvts : undefined}>
           <FlexibleWidthXYPlot
-            height={window.innerHeight - 200}
+            height={this.state.chart_height}
             animation
             xType="time"
             margin={{ bottom: 50 }}

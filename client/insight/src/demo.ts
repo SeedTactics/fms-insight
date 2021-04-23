@@ -32,12 +32,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { initStore } from "./store/store";
-import { registerMockBackend } from "./data/backend";
 import * as events from "./data/events";
 import { render } from "./renderer";
+import { registerDemoBackend } from "./data/backend-demo";
+import { addDays, differenceInSeconds } from "date-fns";
+
+const demoDataModule = import("./demo-data");
+const eventJsonModule = import("./demo-data/events");
+
+const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
+const offsetSeconds = differenceInSeconds(addDays(new Date(), -28), jan18);
 
 const store = initStore();
-registerMockBackend();
+registerDemoBackend(
+  offsetSeconds,
+  demoDataModule.then((d) => d.demoData),
+  eventJsonModule.then((e) => e.events)
+);
 store.dispatch(events.loadLast30Days());
 
 render({ demo: true }, store, document.getElementById("root"));

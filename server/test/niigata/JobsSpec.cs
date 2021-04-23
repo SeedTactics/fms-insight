@@ -67,7 +67,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _onNewJobs = Substitute.For<Action<NewJobs>>();
       _onEditMatInLog = Substitute.For<Action<EditMaterialInLogEvents>>();
-      _jobs = new NiigataJobs(_repoCfg, settings, _syncMock, null, false, false, true, _onNewJobs, _onEditMatInLog);
+      _jobs = new NiigataJobs(_repoCfg, settings, _syncMock, null, true, _onNewJobs, _onEditMatInLog, null);
     }
 
     void IDisposable.Dispose()

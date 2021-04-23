@@ -572,7 +572,7 @@ function CostPerPiecePage(props: CostPerPieceProps) {
   );
 }
 
-const ConnectedCostPerPiecePage = connect((s) => ({
+export const ConnectedCostPerPiecePage = connect((s) => ({
   statGroups:
     s.Events.analysis_period === AnalysisPeriod.Last30Days
       ? s.Events.last30.cycles.machine_groups

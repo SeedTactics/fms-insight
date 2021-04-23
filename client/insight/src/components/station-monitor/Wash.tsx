@@ -35,14 +35,11 @@ import * as React from "react";
 import { addHours } from "date-fns";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
-import { createSelector } from "reselect";
 
-import { Store, connect } from "../../store/store";
+import { useSelector } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material";
 import { SelectWorkorderDialog } from "./SelectWorkorder";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import Tooltip from "@material-ui/core/Tooltip";
-import { HashMap } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { fmsInformation } from "../../data/server-settings";
@@ -149,20 +146,28 @@ const WashDialog = React.memo(function WashDialog() {
   );
 });
 
-interface WashProps {
-  readonly recent_completed: ReadonlyArray<MaterialSummaryAndCompletedData>;
-}
+export function Wash() {
+  const matsById = useSelector((st) => st.Events.last30.mat_summary.matsById);
+  const recentCompleted = React.useMemo(() => {
+    const cutoff = addHours(new Date(), -36);
+    const recent = LazySeq.ofIterable(matsById.valueIterable())
+      .filter(
+        (e) =>
+          e.completed_last_proc_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff
+      )
+      .toArray();
+    // sort decending
+    recent.sort((e1, e2) =>
+      e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
+    );
+    return recent;
+  }, [matsById]);
 
-function Wash(props: WashProps) {
-  React.useEffect(() => {
-    document.title = "Wash - FMS Insight";
-  }, []);
-
-  const unwashed = LazySeq.ofIterable(props.recent_completed).filter((m) => m.wash_completed === undefined);
-  const washed = LazySeq.ofIterable(props.recent_completed).filter((m) => m.wash_completed !== undefined);
+  const unwashed = LazySeq.ofIterable(recentCompleted).filter((m) => m.wash_completed === undefined);
+  const washed = LazySeq.ofIterable(recentCompleted).filter((m) => m.wash_completed !== undefined);
 
   return (
-    <main data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
+    <div data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
@@ -181,28 +186,18 @@ function Wash(props: WashProps) {
       </Grid>
       <SelectWorkorderDialog />
       <WashDialog />
-    </main>
+    </div>
   );
 }
 
-const extractRecentCompleted = createSelector(
-  (st: Store) => st.Events.last30.mat_summary.matsById,
-  (mats: HashMap<number, MaterialSummaryAndCompletedData>): ReadonlyArray<MaterialSummaryAndCompletedData> => {
-    const cutoff = addHours(new Date(), -36);
-    const recent = LazySeq.ofIterable(mats.valueIterable())
-      .filter(
-        (e) =>
-          e.completed_last_proc_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff
-      )
-      .toArray();
-    // sort decending
-    recent.sort((e1, e2) =>
-      e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
-    );
-    return recent;
-  }
-);
+export default function WashPage() {
+  React.useEffect(() => {
+    document.title = "Wash - FMS Insight";
+  }, []);
 
-export default connect((st: Store) => ({
-  recent_completed: extractRecentCompleted(st),
-}))(Wash);
+  return (
+    <main>
+      <Wash />
+    </main>
+  );
+}

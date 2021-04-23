@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "./api";
 import { User } from "oidc-client";
-import { LazySeq } from "./lazyseq";
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
@@ -137,22 +136,30 @@ export interface MachineAPI {
 export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
 export const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
 
-export let FmsServerBackend: FmsAPI = new api.FmsClient(BackendUrl);
-export let JobsBackend: JobAPI = new api.JobsClient(BackendUrl);
-export let LogBackend: LogAPI = new api.LogClient(BackendUrl);
-export let MachineBackend: MachineAPI = new api.MachinesClient(BackendUrl);
+export let FmsServerBackend: FmsAPI;
+export let JobsBackend: JobAPI;
+export let LogBackend: LogAPI;
+export let MachineBackend: MachineAPI;
 let otherLogServers: ReadonlyArray<string> = [];
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
+
+export function registerNetworkBackend() {
+  LogBackend = new api.LogClient(BackendUrl);
+  MachineBackend = new api.MachinesClient(BackendUrl);
+  JobsBackend = new api.JobsClient(BackendUrl);
+  FmsServerBackend = new api.FmsClient(BackendUrl);
+}
 
 export function setOtherLogBackends(servers: ReadonlyArray<string>) {
   otherLogServers = servers;
   OtherLogBackends = servers.map((s) => new api.LogClient(s));
 }
 
-export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI) {
+export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI, machine: MachineAPI) {
   LogBackend = log;
   JobsBackend = job;
   FmsServerBackend = fms;
+  MachineBackend = machine;
 }
 
 export function setUserToken(u: User) {
@@ -189,326 +196,4 @@ export function instructionUrl(
     (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "") +
     (pallet ? "&pallet=" + encodeURIComponent(pallet) : "")
   );
-}
-
-export interface MockData {
-  readonly curSt: Readonly<api.ICurrentStatus>;
-  readonly jobs: Readonly<api.IHistoricData>;
-  readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
-  readonly events: Promise<Readonly<api.ILogEntry>[]>;
-  readonly tools?: ReadonlyArray<Readonly<api.IToolInMachine>>;
-  readonly programs?: ReadonlyArray<Readonly<api.IProgramInCellController>>;
-}
-
-function initMockBackend(data: Promise<MockData>) {
-  FmsServerBackend = {
-    fMSInformation() {
-      return Promise.resolve({
-        name: "mock",
-        version: "1.0.0",
-        requireScanAtWash: false,
-        requireWorkorderBeforeAllowWashComplete: false,
-        additionalLogServers: [],
-        usingLabelPrinterForSerials: false,
-      });
-    },
-    printLabel() {
-      return Promise.resolve();
-    },
-  };
-
-  JobsBackend = {
-    history(_startUTC: Date, _endUTC: Date): Promise<Readonly<api.IHistoricData>> {
-      return data.then((d) => d.jobs);
-    },
-    currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
-      return data.then((d) => d.curSt);
-    },
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
-      return data.then((d) => d.workorders.get(part) || []);
-    },
-    setJobComment(_uniq: string, _comment: string): Promise<void> {
-      // do nothing
-      return Promise.resolve();
-    },
-    removeMaterialFromAllQueues(_materialId: number, _operName: string | undefined): Promise<void> {
-      // do nothing
-      return Promise.resolve();
-    },
-    bulkRemoveMaterialFromQueues(): Promise<void> {
-      // do nothing
-      return Promise.resolve();
-    },
-    setMaterialInQueue(): Promise<void> {
-      // do nothing
-      return Promise.resolve();
-    },
-    addUnprocessedMaterialToQueue(): Promise<Readonly<api.IInProcessMaterial> | undefined> {
-      // do nothing
-      return Promise.resolve(undefined);
-    },
-    addUnallocatedCastingToQueue(): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>> {
-      // do nothing
-      return Promise.resolve([]);
-    },
-    signalMaterialForQuarantine(): Promise<void> {
-      return Promise.resolve();
-    },
-    swapMaterialOnPallet(): Promise<void> {
-      return Promise.resolve();
-    },
-    invalidatePalletCycle(): Promise<void> {
-      return Promise.resolve();
-    },
-  };
-
-  const serialsToMatId = data.then((d) =>
-    d.events.then((evts) =>
-      LazySeq.ofIterable(evts)
-        .filter((e) => e.type === api.LogType.PartMark)
-        .flatMap((e) => e.material.map((m) => [e.result, m.id] as [string, number]))
-        .toMap(
-          (x) => x,
-          (id1, id2) => id2
-        )
-    )
-  );
-
-  LogBackend = {
-    get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then((d) => d.events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC)));
-    },
-    recent(_lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      // no recent events, everything is static
-      return Promise.resolve([]);
-    },
-    logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then((d) =>
-        d.events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => m.id === materialID)))
-      );
-    },
-    logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      const matIds = new Set(materialIDs);
-      return data.then((d) =>
-        d.events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => matIds.has(m.id))))
-      );
-    },
-    logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return serialsToMatId.then((s) => {
-        const mId = s.get(serial);
-        if (mId.isSome()) {
-          return this.logForMaterial(mId.get());
-        } else {
-          return Promise.resolve([]);
-        }
-      });
-    },
-    getWorkorders(_ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
-      // no workorder summaries
-      return Promise.resolve([]);
-    },
-
-    setInspectionDecision(
-      materialID: number,
-      inspType: string,
-      process: number,
-      inspect: boolean,
-      jobUnique?: string,
-      partName?: string
-    ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: process,
-        numproc: 1,
-        face: "1",
-      });
-      const evt = {
-        counter: 0,
-        material: [mat],
-        pal: "",
-        type: api.LogType.Inspection,
-        startofcycle: false,
-        endUTC: new Date(),
-        loc: "Inspection",
-        locnum: 1,
-        result: inspect.toString(),
-        program: "",
-        elapsed: "00:00:00",
-        active: "00:00:00",
-        details: {
-          InspectionType: inspType,
-        },
-      };
-      return data.then((d) =>
-        d.events.then((evts) => {
-          evts.push(evt);
-          return evt;
-        })
-      );
-    },
-    recordInspectionCompleted(
-      insp: api.NewInspectionCompleted,
-      jobUnique?: string,
-      partName?: string
-    ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: insp.materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: insp.process,
-        numproc: 1,
-        face: "1",
-      });
-      const evt: api.ILogEntry = {
-        counter: 0,
-        material: [mat],
-        pal: "",
-        type: api.LogType.InspectionResult,
-        startofcycle: false,
-        endUTC: new Date(),
-        loc: "InspectionComplete",
-        locnum: insp.inspectionLocationNum,
-        result: insp.success.toString(),
-        program: insp.inspectionType ?? "",
-        elapsed: insp.elapsed,
-        active: insp.active,
-        details: insp.extraData,
-      };
-      return data.then((d) =>
-        d.events.then((evts) => {
-          evts.push(evt);
-          return evt;
-        })
-      );
-    },
-    recordWashCompleted(wash: api.NewWash, jobUnique?: string, partName?: string): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: wash.materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: wash.process,
-        numproc: 1,
-        face: "1",
-      });
-      const evt: api.ILogEntry = {
-        counter: 0,
-        material: [mat],
-        pal: "",
-        type: api.LogType.Wash,
-        startofcycle: false,
-        endUTC: new Date(),
-        loc: "Wash",
-        locnum: wash.washLocationNum,
-        result: "",
-        program: "",
-        elapsed: wash.elapsed,
-        active: wash.active,
-        details: wash.extraData,
-      };
-      return data.then((d) =>
-        d.events.then((evts) => {
-          evts.push(evt);
-          return evt;
-        })
-      );
-    },
-    setWorkorder(
-      materialID: number,
-      process: number,
-      workorder: string,
-      jobUnique?: string,
-      partName?: string
-    ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: process,
-        numproc: 1,
-        face: "1",
-      });
-      const evt: api.ILogEntry = {
-        counter: 0,
-        material: [mat],
-        pal: "",
-        type: api.LogType.OrderAssignment,
-        startofcycle: false,
-        endUTC: new Date(),
-        loc: "OrderAssignment",
-        locnum: 1,
-        result: workorder,
-        program: "",
-        elapsed: "00:00:00",
-        active: "00:00:00",
-      };
-      return data.then((d) =>
-        d.events.then((evts) => {
-          evts.push(evt);
-          return evt;
-        })
-      );
-    },
-    recordOperatorNotes(materialID: number, process: number, operatorName: string | null, notes: string) {
-      const mat = new api.LogMaterial({
-        id: materialID,
-        uniq: "",
-        part: "",
-        proc: process,
-        numproc: 1,
-        face: "",
-      });
-      const evt: api.ILogEntry = {
-        counter: 0,
-        material: [mat],
-        pal: "",
-        type: api.LogType.GeneralMessage,
-        startofcycle: false,
-        endUTC: new Date(),
-        loc: "Message",
-        locnum: 1,
-        result: "Operator Notes",
-        program: "OperatorNotes",
-        elapsed: "00:00:00",
-        active: "00:00:00",
-        details: {
-          operator: operatorName || "",
-          note: notes,
-        },
-      };
-      return data.then((d) =>
-        d.events.then((evts) => {
-          evts.push(evt);
-          return evt;
-        })
-      );
-    },
-  };
-
-  MachineBackend = {
-    getToolsInMachines() {
-      return data.then((d) => d.tools ?? []);
-    },
-    getProgramsInCellController() {
-      return data.then((d) => d.programs ?? []);
-    },
-    getProgramRevisionContent(program: string) {
-      return Promise.resolve("GCODE for " + program + " would be here");
-    },
-    getLatestProgramRevisionContent(program: string) {
-      return Promise.resolve("GCODE for " + program + " would be here");
-    },
-    getProgramRevisionsInDescendingOrderOfRevision() {
-      return Promise.resolve([]);
-    },
-  };
-}
-
-export function registerMockBackend() {
-  const mockDataPromise = new Promise<MockData>(function (resolve: (d: MockData) => void) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA = resolve;
-  });
-  initMockBackend(mockDataPromise);
 }

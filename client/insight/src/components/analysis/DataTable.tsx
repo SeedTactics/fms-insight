@@ -53,8 +53,6 @@ import MenuItem from "@material-ui/core/MenuItem";
 import Button from "@material-ui/core/Button";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import moment from "moment";
-import "react-dates/lib/css/_datepicker.css";
-import "./data-table.css";
 import "react-dates/initialize";
 import { DateRangePicker } from "react-dates";
 

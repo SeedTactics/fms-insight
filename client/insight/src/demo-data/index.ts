@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -31,11 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { differenceInSeconds, addDays } from "date-fns";
-import { loadMockData } from "./load";
+import newJobs from "./newjobs.json";
+import tools from "./tools.json";
+import programs from "./programs.json";
+import statusJson from "./status-mock.json";
+import toolUse from "./tool-use.json";
 
-const jan18 = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-const offsetSeconds = differenceInSeconds(addDays(new Date(), -28), jan18);
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).FMS_INSIGHT_RESOLVE_MOCK_DATA(loadMockData(offsetSeconds));
+export const demoData = {
+  curSt: statusJson,
+  jobs: newJobs,
+  tools: tools,
+  programs: programs,
+  toolUse: toolUse,
+};

@@ -23,7 +23,7 @@
       "cwd": "${workspaceRoot}/server/machines/mazak/bin/Debug/net5.0",
       "stopAtEntry": false,
       "console": "internalConsole",
-      "preLaunchTask": "mazak:build",
+      "preLaunchTask": "build:mazak",
       "env": {
         "Mazak__SQL ConnectionString": "Server=localhost;User Id=mazakpmc;Password=Fms-978",
         "Mazak__Log CSV Path": "../../../log",
@@ -50,7 +50,7 @@
       "cwd": "${workspaceRoot}/server/machines/niigata/bin/Debug/net5.0",
       "stopAtEntry": false,
       "console": "internalConsole",
-      "preLaunchTask": "niigata:build",
+      "preLaunchTask": "build:niigata",
       "env": {
         "Niigata__Connection String": "Host=localhost;Username=niigata;Password=${input:password}",
         "Niigata__Program Directory": "../../../programs",
@@ -70,7 +70,7 @@
       "cwd": "${workspaceRoot}/server/debug-mock/bin/Debug/net5.0",
       "stopAtEntry": false,
       "console": "internalConsole",
-      "preLaunchTask": "debug-mock:build"
+      "preLaunchTask": "build:debug-mock"
     },
     {
       "name": "FMS Insight",

@@ -222,7 +222,7 @@ type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemai
 
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
-function ToolSummaryTable() {
+export function ToolSummaryTable() {
   const [machineFilter, setMachineFilter] = useRecoilState(toolReportMachineFilter);
   const tools = useRecoilValue(currentToolReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
@@ -398,12 +398,6 @@ function ToolNavHeader() {
   const report = useRecoilValueLoadable(currentToolReport);
   const demo = useIsDemo();
   const loading = report.state === "loading";
-
-  React.useEffect(() => {
-    if (demo && reloadTime === null) {
-      setReloadTime(new Date());
-    }
-  }, []);
 
   if (demo) {
     return <div />;
