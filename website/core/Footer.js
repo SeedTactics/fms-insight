@@ -61,17 +61,14 @@ class Footer extends React.Component {
           <div>
             <h5>Docs</h5>
             <a href={this.docUrl("overview.html")}>Overview</a>
-            <a href={this.docUrl("getting-started.html")}>Getting Started</a>
             <a href={this.docUrl("client-launch.html")}>Client</a>
+            <a href={this.docUrl("server-config.html")}>Server</a>
             <a href="/demo/demo.html">Demo</a>
           </div>
           <div>
             <h5>More</h5>
             <a href="https://github.com/SeedTactics/fms-insight">GitHub</a>
             <a href="https://www.seedtactics.com">SeedTactics</a>
-            <a href={this.docUrl("getting-started.html#downloads")}>
-              Downloads
-            </a>
           </div>
         </section>
 
