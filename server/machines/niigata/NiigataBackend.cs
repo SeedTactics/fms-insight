@@ -68,7 +68,8 @@ namespace BlackMaple.FMSInsight.Niigata
       FMSSettings cfg,
       bool startSyncThread,
       Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
-      IDecrementJobs decrementJobs = null
+      IDecrementJobs decrementJobs = null,
+      Func<NewJobs, CellState, IRepository, IEnumerable<string>> additionalJobChecks = null
     )
     {
       try
@@ -149,11 +150,10 @@ namespace BlackMaple.FMSInsight.Niigata
                                       st: cfg,
                                       sy: _sync,
                                       statNames: StationNames,
-                                      requireRawMatQ: config.GetValue<bool>("Require Raw Material Queue", false),
-                                      requireInProcQ: config.GetValue<bool>("Require In-Process Queues", false),
                                       requireProgsInJobs: config.GetValue<bool>("Require Programs In Jobs", true),
                                       onNewJobs: j => OnNewJobs?.Invoke(j),
-                                      onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o));
+                                      onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o),
+                                      additionalJobChecks: additionalJobChecks);
         if (startSyncThread)
         {
           StartSyncThread();

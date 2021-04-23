@@ -48,20 +48,20 @@ namespace BlackMaple.FMSInsight.Niigata
     private readonly NiigataStationNames _statNames;
     private Action<NewJobs> _onNewJobs;
     private Action<EditMaterialInLogEvents> _onEditMatInLog;
-    private bool _requireRawMatQueue;
-    private bool _requireInProcessQueues;
     private bool _requireProgramsInJobs;
+    private Func<NewJobs, CellState, IRepository, IEnumerable<string>> _additionalJobChecks;
 
     public NiigataJobs(RepositoryConfig j, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
-                       bool requireRawMatQ, bool requireInProcQ, bool requireProgsInJobs, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog)
+                       bool requireProgsInJobs, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog,
+                       Func<NewJobs, CellState, IRepository, IEnumerable<string>> additionalJobChecks
+                       )
     {
       _onNewJobs = onNewJobs;
       _jobDbCfg = j;
       _sync = sy;
       _settings = st;
       _statNames = statNames;
-      _requireRawMatQueue = requireRawMatQ;
-      _requireInProcessQueues = requireInProcQ;
+      _additionalJobChecks = additionalJobChecks;
       _requireProgramsInJobs = requireProgsInJobs;
       _onEditMatInLog = onEditMatInLog;
     }
@@ -134,18 +134,6 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add(" Part " + j.PartName + " has an output queue " + pathData.OutputQueue + " which is not configured as a queue in FMS Insight.");
             }
-            if (_requireRawMatQueue && proc == 1 && string.IsNullOrEmpty(pathData.InputQueue))
-            {
-              errors.Add("Input queue is required on process 1 for part " + j.PartName);
-            }
-            if (_requireInProcessQueues && proc > 1 && string.IsNullOrEmpty(pathData.InputQueue))
-            {
-              errors.Add("Input queue required for part " + j.PartName + ", process " + proc.ToString());
-            }
-            if (_requireInProcessQueues && proc < j.Processes.Count && string.IsNullOrEmpty(pathData.OutputQueue))
-            {
-              errors.Add("Output queue required for part " + j.PartName + ", process " + proc.ToString());
-            }
 
             foreach (var stop in pathData.Stops)
             {
@@ -184,6 +172,11 @@ namespace BlackMaple.FMSInsight.Niigata
             CheckProgram(prog.ProgramName, prog.Revision, jobs.Programs, cellState, jobDB, "Workorder " + w.WorkorderId, errors);
           }
         }
+      }
+
+      if (_additionalJobChecks != null)
+      {
+        errors.AddRange(_additionalJobChecks(jobs, cellState, jobDB));
       }
       return errors;
     }
