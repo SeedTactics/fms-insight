@@ -187,23 +187,4 @@ namespace BlackMaple.FMSInsight.Niigata
       return LogDBConfig.OpenConnection();
     }
   }
-
-  public static class NiigataProgram
-  {
-    public static void Main()
-    {
-#if DEBUG
-      var useService = false;
-#else
-      var useService = true;
-#endif
-      Program.Run(useService, (cfg, fmsSt) =>
-        new FMSImplementation()
-        {
-          Backend = new NiigataBackend(cfg.GetSection("Niigata"), fmsSt, startSyncThread: true),
-          Name = "Niigata",
-          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-        });
-    }
-  }
 }

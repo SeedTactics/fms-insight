@@ -327,23 +327,4 @@ namespace MazakMachineInterface
       throw new NotImplementedException();
     }
   }
-
-  public static class MazakProgram
-  {
-    public static void Main()
-    {
-#if DEBUG
-      var useService = false;
-#else
-      var useService = true;
-#endif
-      Program.Run(useService, (cfg, st) =>
-        new FMSImplementation()
-        {
-          Backend = new MazakBackend(cfg, st),
-          Name = "Mazak",
-          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-        });
-    }
-  }
 }

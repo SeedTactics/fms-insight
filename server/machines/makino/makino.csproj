@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>BlackMaple.FMSInsight.Makino</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Makino</PackageId>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net5.0</TargetFramework>
 
     <Title>SeedTactics FMS Insight Makino Backend</Title>
