@@ -223,50 +223,57 @@ namespace BlackMaple.FMSInsight.ReverseProxy
       //HTTP proxy
       app.Run(async context =>
       {
-        var uriB = new UriBuilder()
+        using (var requestBodyMemory = new System.IO.MemoryStream())
         {
-          Scheme = "http",
-          Host = ProxyConfig.InsightHost,
-          Port = ProxyConfig.InsightPort,
-          Path = context.Request.Path,
-          Query = context.Request.QueryString.ToUriComponent()
-        };
-        var msg = new HttpRequestMessage();
-        msg.RequestUri = uriB.Uri;
-        msg.Method = new HttpMethod(context.Request.Method);
-        if (HttpMethods.IsPut(context.Request.Method) || HttpMethods.IsPost(context.Request.Method))
-        {
-          msg.Content = new StreamContent(context.Request.Body);
-        }
-        HashSet<string> connHeader = new HashSet<string>();
-        if (context.Request.Headers.TryGetValue("Connection", out var vals))
-        {
-          connHeader = new HashSet<string>(vals.SelectMany(s => s.Split(",")).Select(s => s.Trim().ToLower()));
-        }
-        foreach (var h in context.Request.Headers)
-        {
-          if (!connHeader.Contains(h.Key.ToLower()) && !IgnoreRequestHeaders.Contains(h.Key.ToLower()))
+          var uriB = new UriBuilder()
           {
-            var ok = msg.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray());
-            if (!ok)
+            Scheme = "http",
+            Host = ProxyConfig.InsightHost,
+            Port = ProxyConfig.InsightPort,
+            Path = context.Request.Path,
+            Query = context.Request.QueryString.ToUriComponent()
+          };
+          var msg = new HttpRequestMessage();
+          msg.RequestUri = uriB.Uri;
+          msg.Method = new HttpMethod(context.Request.Method);
+
+          if (HttpMethods.IsPut(context.Request.Method) || HttpMethods.IsPost(context.Request.Method))
+          {
+            await context.Request.Body.CopyToAsync(requestBodyMemory);
+            requestBodyMemory.Seek(0, System.IO.SeekOrigin.Begin);
+            msg.Content = new StreamContent(requestBodyMemory);
+          }
+
+          HashSet<string> connHeader = new HashSet<string>();
+          if (context.Request.Headers.TryGetValue("Connection", out var vals))
+          {
+            connHeader = new HashSet<string>(vals.SelectMany(s => s.Split(",")).Select(s => s.Trim().ToLower()));
+          }
+          foreach (var h in context.Request.Headers)
+          {
+            if (!connHeader.Contains(h.Key.ToLower()) && !IgnoreRequestHeaders.Contains(h.Key.ToLower()))
             {
-              ok = msg.Content?.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray()) ?? false;
+              var ok = msg.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray());
+              if (!ok)
+              {
+                ok = msg.Content?.Headers.TryAddWithoutValidation(h.Key, h.Value.ToArray()) ?? false;
+              }
             }
           }
-        }
-        msg.Headers.Host = msg.RequestUri.Host;
-        var client = httpFactory.CreateClient("proxy");
-        using (var resp = await client.SendAsync(msg, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted))
-        {
-          context.Response.StatusCode = (int)resp.StatusCode;
-          foreach (var h in resp.Headers.Concat(resp.Content.Headers))
+          msg.Headers.Host = msg.RequestUri.Host;
+          var client = httpFactory.CreateClient("proxy");
+          using (var resp = await client.SendAsync(msg, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted))
           {
-            if (!IgnoreResponseHeaders.Contains(h.Key.ToLower()))
+            context.Response.StatusCode = (int)resp.StatusCode;
+            foreach (var h in resp.Headers.Concat(resp.Content.Headers))
             {
-              context.Response.Headers[h.Key] = h.Value.ToArray();
+              if (!IgnoreResponseHeaders.Contains(h.Key.ToLower()))
+              {
+                context.Response.Headers[h.Key] = h.Value.ToArray();
+              }
             }
+            await resp.Content.CopyToAsync(context.Response.Body);
           }
-          await resp.Content.CopyToAsync(context.Response.Body);
         }
       });
     }
