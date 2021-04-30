@@ -862,7 +862,7 @@ namespace MazakMachineInterface
 
     private void LookupProgram(IReadOnlyList<LogMaterialAndPath> mats, LogEntry e, out string progName, out long? rev)
     {
-      if (LookupProgramFromJob(mats, out progName, out rev))
+      if (LookupProgramFromJob(mats, e, out progName, out rev))
       {
         // ok, just return
         return;
@@ -880,7 +880,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private bool LookupProgramFromJob(IReadOnlyList<LogMaterialAndPath> mats, out string progName, out long? rev)
+    private bool LookupProgramFromJob(IReadOnlyList<LogMaterialAndPath> mats, LogEntry e, out string progName, out long? rev)
     {
       progName = null;
       rev = null;
@@ -893,15 +893,28 @@ namespace MazakMachineInterface
       var job = GetJob(firstMat.Unique);
       if (job == null) return false;
 
-      var stop = job.GetMachiningStop(firstMat.Mat.Process, 1).FirstOrDefault();
-      if (stop == null) return false;
+      // try and find path
+      int path = 1;
 
-      if (string.IsNullOrEmpty(stop.ProgramName)) return false;
+      var part = _mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == e.FullPartName);
+      if (part != null && MazakPart.IsSailPart(part.PartName, part.Comment))
+      {
+        MazakPart.ParseComment(part.Comment, out string uniq, out var procToPath, out bool manual);
+        if (uniq == firstMat.Unique)
+        {
+          path = procToPath.PathForProc(firstMat.Mat.Process);
+        }
+      }
 
-      progName = stop.ProgramName;
-      rev = stop.ProgramRevision;
+      var stop = job.GetMachiningStop(firstMat.Mat.Process, path).FirstOrDefault();
+      if (stop != null && !string.IsNullOrEmpty(stop.ProgramName))
+      {
+        progName = stop.ProgramName;
+        rev = stop.ProgramRevision;
+        return true;
+      }
 
-      return true;
+      return false;
     }
 
     private bool LookupProgramFromMazakDb(LogEntry entry, out string progName, out long? rev)
