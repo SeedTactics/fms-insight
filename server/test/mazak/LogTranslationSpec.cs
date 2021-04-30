@@ -95,7 +95,8 @@ namespace MachineWatchTest
       machGroupName.MachineGroupName.Returns("machinespec");
 
       log = new LogTranslation(jobLog, mazakData, machGroupName, settings,
-        e => raisedByEvent.Add(e)
+        e => raisedByEvent.Add(e),
+        mazakConfig: null
       );
     }
 
@@ -107,7 +108,8 @@ namespace MachineWatchTest
     protected void ResetLogTranslation()
     {
       log = new LogTranslation(jobLog, mazakData, machGroupName, settings,
-        e => raisedByEvent.Add(e)
+        e => raisedByEvent.Add(e),
+        mazakConfig: null
       );
     }
 

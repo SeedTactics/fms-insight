@@ -101,6 +101,7 @@ namespace MazakMachineInterface
 	{
     private const string DateTimeFormat = "yyyyMMddHHmmss";
 
+    private MazakConfig _mazakConfig;
     private BlackMaple.MachineFramework.JobDB.Config _jobDBCfg;
     private BlackMaple.MachineFramework.EventLogDB.Config _logCfg;
     private MazakQueues _queues;
@@ -125,7 +126,8 @@ namespace MazakMachineInterface
                        MazakQueues queues,
                        IHoldManagement hold,
                        BlackMaple.MachineFramework.FMSSettings settings,
-                       Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged
+                       Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged,
+                       MazakConfig mazakConfig
                       )
     {
       _logCfg = logCfg;
@@ -133,6 +135,7 @@ namespace MazakMachineInterface
       _jobDBCfg = jobDBCfg;
       _hold = hold;
       _readDB = readDB;
+      _mazakConfig = mazakConfig;
       _queues = queues;
       _sendToExternal = send;
       _machGroupName = machGroupName;
@@ -167,7 +170,8 @@ namespace MazakMachineInterface
           using (var jobDB = _jobDBCfg.OpenConnection()) {
             logs = LoadLog(logDB.MaxForeignID());
             var trans = new LogTranslation(jobDB, logDB, mazakData, _machGroupName, FMSSettings,
-              le => MazakLogEvent?.Invoke(le, jobDB, logDB)
+              le => MazakLogEvent?.Invoke(le, jobDB, logDB),
+              mazakConfig: _mazakConfig
             );
             foreach (var ev in logs)
             {
@@ -343,6 +347,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataWeb>();
 
+    private MazakConfig _mazakConfig;
     private BlackMaple.MachineFramework.RepositoryConfig _logDbCfg;
     private IReadDataAccess _readDB;
     private IMachineGroupName _machGroupName;
@@ -369,7 +374,8 @@ namespace MazakMachineInterface
                       MazakQueues queues,
                       IHoldManagement hold,
                       BlackMaple.MachineFramework.FMSSettings settings,
-                      Action<BlackMaple.MachineFramework.IRepository> currentStatusChanged)
+                      Action<BlackMaple.MachineFramework.IRepository> currentStatusChanged,
+                      MazakConfig mazakConfig)
     {
       _path = path;
       _logDbCfg = logCfg;
@@ -378,6 +384,7 @@ namespace MazakMachineInterface
       _hold = hold;
       _settings = settings;
       _machGroupName = machineGroupName;
+      _mazakConfig = mazakConfig;
       _currentStatusChanged = currentStatusChanged;
       _sendToExternal = sendToExternal;
       _shutdown = new AutoResetEvent(false);
@@ -457,7 +464,8 @@ namespace MazakMachineInterface
           {
             logs = LoadLog(logDb.MaxForeignID());
             var trans = new LogTranslation(logDb, mazakData, _machGroupName, _settings,
-              le => MazakLogEvent?.Invoke(le, logDb)
+              le => MazakLogEvent?.Invoke(le, logDb),
+              mazakConfig: _mazakConfig
             );
             stoppedBecauseRecentMachineEnd = false;
             foreach (var ev in logs)

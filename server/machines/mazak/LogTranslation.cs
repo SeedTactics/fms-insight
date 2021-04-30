@@ -53,6 +53,7 @@ namespace MazakMachineInterface
 
   public class LogTranslation : ILogTranslation
   {
+    private MazakConfig _mazakConfig;
     private BlackMaple.MachineFramework.IRepository _log;
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private IMachineGroupName _machGroupName;
@@ -66,10 +67,12 @@ namespace MazakMachineInterface
                           MazakCurrentStatusAndTools mazakSch,
                           IMachineGroupName machineGroupName,
                           BlackMaple.MachineFramework.FMSSettings settings,
-                          Action<LogEntry> onMazakLogMessage)
+                          Action<LogEntry> onMazakLogMessage,
+                          MazakConfig mazakConfig)
     {
       _log = logDB;
       _machGroupName = machineGroupName;
+      _mazakConfig = mazakConfig;
       _mazakSchedules = mazakSch;
       _settings = settings;
       _onMazakLog = onMazakLogMessage;
@@ -949,17 +952,25 @@ namespace MazakMachineInterface
     #endregion
 
     #region Tools
-    private static IEnumerable<ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
+    private IEnumerable<ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
     {
       if (tools == null) return null;
       return tools
         .Where(t => t.MachineNumber == machine && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
-        .Select(t => new ToolPocketSnapshot()
+        .Select(t =>
         {
-          PocketNumber = t.PocketNumber.Value,
-          Tool = t.GroupNo,
-          CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
-          ToolLife = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
+          var toolName = t.GroupNo;
+          if (_mazakConfig != null && _mazakConfig.ExtractToolName != null)
+          {
+            toolName = _mazakConfig.ExtractToolName(t);
+          }
+          return new ToolPocketSnapshot()
+          {
+            Tool = toolName,
+            PocketNumber = t.PocketNumber.Value,
+            CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
+            ToolLife = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
+          };
         })
         .ToList();
     }

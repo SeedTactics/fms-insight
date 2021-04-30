@@ -229,13 +229,15 @@ namespace MazakMachineInterface
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(logPath, logDbConfig, writeJobs, sendToExternal, _readDB, queues, hold, st,
-          currentStatusChanged: RaiseCurrentStatusChanged
+          currentStatusChanged: RaiseCurrentStatusChanged,
+          mazakConfig: mazakCfg
         );
       else
       {
 #if USE_OLEDB
 				logDataLoader = new LogDataVerE(logDbConfig, jobDBConfig, sendToExternal, writeJobs, _readDB, queues, hold, st,
-          currentStatusChanged: RaiseCurrentStatusChanged
+          currentStatusChanged: RaiseCurrentStatusChanged,
+          mazakConfig: mazakCfg
         );
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
