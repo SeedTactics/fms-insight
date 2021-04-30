@@ -37,6 +37,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -166,6 +167,10 @@ namespace BlackMaple.MachineFramework
             .UseConfiguration(cfg)
             .SuppressStatusMessages(suppressStatusMessages: true)
             .UseSerilog()
+            .ConfigureServices(s =>
+            {
+              s.Configure<KestrelServerOptions>(cfg.GetSection("Kestrel"));
+            })
             .UseKestrel(options =>
             {
               var address = IPAddress.IPv6Any;
@@ -180,6 +185,29 @@ namespace BlackMaple.MachineFramework
               {
                 options.Listen(address, serverSt.Port);
               }
+
+              // support for MinDataRate
+              // https://github.com/dotnet/aspnetcore/issues/4765
+              var minReqRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinRequestBodyDataRate");
+              if (minReqRate.Value == "")
+              {
+                options.Limits.MinRequestBodyDataRate = null;
+              }
+              if (minReqRate.GetSection("BytesPerSecond").Exists() && minReqRate.GetSection("GracePeriod").Exists())
+              {
+                options.Limits.MinRequestBodyDataRate = new MinDataRate(minReqRate.GetValue<double>("BytesPerSecond"), minReqRate.GetValue<TimeSpan>("GracePeriod"));
+              }
+              var minRespRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinResponseDataRate");
+              if (minRespRate.Value == "")
+              {
+                options.Limits.MinResponseDataRate = null;
+              }
+              if (minRespRate.GetSection("BytesPerSecond").Exists() && minRespRate.GetSection("GracePeriod").Exists())
+              {
+                options.Limits.MinResponseDataRate = new MinDataRate(minRespRate.GetValue<double>("BytesPerSecond"), minRespRate.GetValue<TimeSpan>("GracePeriod"));
+              }
+
+              Serilog.Log.Debug("Kestrel Limits {@kestrel}", options.Limits);
             })
             .UseStartup<Startup>();
           })

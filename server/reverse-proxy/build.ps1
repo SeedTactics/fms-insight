@@ -11,7 +11,7 @@ New-Item -ItemType Directory -Force -Path build
 
 dotnet publish -r win10-x64 --self-contained -c Release /p:Version=$version /p:PublishSingleFile=true
 
-Copy-Item bin/Release/netcoreapp3.1/win10-x64/publish/reverse-proxy.exe build/reverse-proxy.exe
+Copy-Item bin/Release/net5.0/win10-x64/publish/reverse-proxy.exe build/reverse-proxy.exe
 
 $candle = "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe"
 $light = "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe"
@@ -21,6 +21,6 @@ $ENV:ProxyVersion = $version
 
 & $candle reverse-proxy.wsx -o build/reverse-proxy.wixobj -ext WixUtilExtension
 & $light build/reverse-proxy.wixobj -ext WixUtilExtension `
-  -o "build/FMS Insight Reverse Proxy Install.msi"
+  -o "build/FMS Insight Reverse Proxy Install $version.msi"
 
 Pop-Location

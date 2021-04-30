@@ -49,6 +49,8 @@ namespace DebugMachineWatchApiServer
 {
   public static class DebugMockProgram
   {
+    public static string InsightBackupDbFile = null;
+
     public static void Main()
     {
       System.Environment.SetEnvironmentVariable("FMS__InstructionFilePath",
@@ -106,19 +108,6 @@ namespace DebugMachineWatchApiServer
 
     public MockServerBackend()
     {
-      string path = null; // dataDir
-
-      string dbFile(string f) => System.IO.Path.Combine(path, f + ".db");
-
-      if (path != null)
-      {
-        if (System.IO.File.Exists(dbFile("log"))) System.IO.File.Delete(dbFile("log"));
-        LogDB = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), dbFile("log"), dbFile("insp"), dbFile("job")).OpenConnection();
-      }
-      else
-      {
-        LogDB = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
-      }
 
       _jsonSettings = new JsonSerializerSettings();
       _jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
@@ -126,20 +115,30 @@ namespace DebugMachineWatchApiServer
       _jsonSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
       _jsonSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
 
-      var sampleDataPath = System.IO.Path.Combine(
-          System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-          "../../../sample-data/"
-      );
+      if (DebugMockProgram.InsightBackupDbFile != null)
+      {
+        LogDB = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), DebugMockProgram.InsightBackupDbFile).OpenConnection();
+        LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
+      }
+      else
+      {
+        LogDB = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
 
-      // sample data starts at Jan 1, 2018.  Need to offset to current month
-      var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-      var offset = DateTime.UtcNow.AddDays(-28).Subtract(jan1_18);
+        // sample data starts at Jan 1, 2018.  Need to offset to current month
+        var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var offset = DateTime.UtcNow.AddDays(-28).Subtract(jan1_18);
 
-      LoadEvents(sampleDataPath, offset);
-      LoadJobs(sampleDataPath, offset);
-      LoadStatus(sampleDataPath, offset);
-      LoadTools(sampleDataPath);
-      LoadPrograms(sampleDataPath);
+        var sampleDataPath = System.IO.Path.Combine(
+            System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+            "../../../sample-data/"
+        );
+
+        LoadEvents(sampleDataPath, offset);
+        LoadJobs(sampleDataPath, offset);
+        LoadStatus(sampleDataPath, offset);
+        LoadTools(sampleDataPath);
+        LoadPrograms(sampleDataPath);
+      }
     }
 
     public void Dispose()
@@ -631,6 +630,35 @@ namespace DebugMachineWatchApiServer
         programJson,
         _jsonSettings
       );
+    }
+
+    public void LoadStatusFromLog(string logPath)
+    {
+      var file = System.IO.Directory.GetFiles(logPath, "*.txt").OrderByDescending(x => x).First();
+      string lastAddSch = null;
+      foreach (var line in System.IO.File.ReadLines(file))
+      {
+        if (line.Contains("@mt\":\"Adding new schedules for {@jobs}, mazak data is {@mazakData}\""))
+        {
+          lastAddSch = line;
+        }
+      }
+
+      Programs = Newtonsoft.Json.Linq.JObject.Parse(lastAddSch)
+        ["mazakData"]["MainPrograms"].Select(prog => new MockProgram()
+        {
+          ProgramName = (string)prog["MainProgram"],
+          CellControllerProgramName = (string)prog["MainProgram"],
+          Comment = (string)prog["Comment"]
+        })
+        .ToList();
+
+      Tools = new List<ToolInMachine>();
+
+      CurrentStatus = new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow
+      };
     }
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)

@@ -169,23 +169,5 @@ namespace Makino
 
     public bool SupportsQuarantineAtLoadStation { get; } = false;
   }
-  public static class MakinoProgram
-  {
-    public static void Main()
-    {
-#if DEBUG
-      var useService = false;
-#else
-      var useService = true;
-#endif
-      Program.Run(useService, (cfg, st) =>
-        new FMSImplementation()
-        {
-          Backend = new MakinoBackend(cfg, st),
-          Name = "Makino",
-          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-        });
-    }
-  }
 }
 

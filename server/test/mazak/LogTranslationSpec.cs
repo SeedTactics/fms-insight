@@ -95,7 +95,8 @@ namespace MachineWatchTest
       machGroupName.MachineGroupName.Returns("machinespec");
 
       log = new LogTranslation(jobLog, mazakData, machGroupName, settings,
-        e => raisedByEvent.Add(e)
+        e => raisedByEvent.Add(e),
+        mazakConfig: null
       );
     }
 
@@ -107,7 +108,8 @@ namespace MachineWatchTest
     protected void ResetLogTranslation()
     {
       log = new LogTranslation(jobLog, mazakData, machGroupName, settings,
-        e => raisedByEvent.Add(e)
+        e => raisedByEvent.Add(e),
+        mazakConfig: null
       );
     }
 
@@ -139,11 +141,13 @@ namespace MachineWatchTest
       return sch.Id;
     }
 
-    protected void AddTestPartPrograms(string part, IReadOnlyList<string> programs)
+    protected void AddTestPartPrograms(int schId, bool insightPart, IReadOnlyList<string> programs)
     {
+      var sch = _schedules.First(s => s.Id == schId);
       var partRow = new MazakPartRow()
       {
-        PartName = part
+        PartName = sch.PartName,
+        Comment = insightPart ? sch.Comment : null
       };
       for (int i = 0; i < programs.Count; i++)
       {
@@ -1626,31 +1630,53 @@ namespace MachineWatchTest
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo()
         {
-          Paths = ImmutableList.Create(new ProcPathInfo()
-          {
-            Stops = ImmutableList.Create(new MachiningStop()
+          Paths = ImmutableList.Create(
+            new ProcPathInfo()
             {
-              Program = "the-log-prog",
-              ProgramRevision = 15
-            })
-          })
+              Stops = ImmutableList.Create(new MachiningStop()
+              {
+                Program = "the-log-prog",
+                ProgramRevision = 15
+              })
+            },
+            new ProcPathInfo()
+            {
+              Stops = ImmutableList.Create(new MachiningStop()
+              {
+                Program = "other-log-prog",
+                ProgramRevision = 12
+              })
+            }
+          )
         }),
-        CyclesOnFirstProcess = ImmutableList.Create(0),
+        CyclesOnFirstProcess = ImmutableList.Create(0, 0),
       };
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      var schIdPath1 = AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      var schIdPath2 = AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 2);
+      AddTestPartPrograms(schIdPath1, insightPart: true, new[] { "is-ignored" });
+      AddTestPartPrograms(schIdPath2, insightPart: true, new[] { "is-ignored2" });
 
-      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
+      var path1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, path: 1, face: "1", numProc: 1, matID: 1);
 
-      LoadStart(p, offset: 0, load: 5);
-      LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
+      LoadStart(path1, offset: 0, load: 5);
+      LoadEnd(path1, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
       MovePallet(t, offset: 3, load: 1, pal: 3, elapMin: 0);
 
-      MachStart(p, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
-      MachEnd(p, offset: 20, mach: 2, elapMin: 16, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
+      MachStart(path1, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
+      MachEnd(path1, offset: 20, mach: 2, elapMin: 16, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
+
+      var path2 = BuildMaterial(t, pal: 4, unique: "unique", part: "part1", proc: 1, path: 2, face: "1", numProc: 1, matID: 2);
+
+      LoadStart(path2, offset: 100, load: 5);
+      LoadEnd(path2, offset: 102, load: 5, cycleOffset: 103, elapMin: 2);
+      MovePallet(t, offset: 103, load: 1, pal: 4, elapMin: 0);
+
+      MachStart(path2, offset: 104, mach: 2, mazakProg: "the-mazak-prog2", logProg: "other-log-prog", progRev: 12);
+      MachEnd(path2, offset: 120, mach: 2, elapMin: 16, mazakProg: "the-mazak-prog2", logProg: "other-log-prog", progRev: 12);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
@@ -1672,11 +1698,10 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
+      var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
+      AddTestPartPrograms(schId, insightPart: false, new[] { "the-log-prog", "the-log-prog-proc2" });
 
       var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 2, matID: 1);
-
-      AddTestPartPrograms(part: p.MazakPartName, new[] { "the-log-prog", "the-log-prog-proc2" });
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);

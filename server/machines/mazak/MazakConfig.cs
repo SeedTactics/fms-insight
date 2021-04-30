@@ -40,5 +40,6 @@ namespace MazakMachineInterface
   {
     public Func<BlackMaple.MachineFramework.IRepository, CurrentStatus, CurrentStatus> AdjustCurrentStatus { get; set; }
     public Func<NewJobs, NewJobs> NewJobTransform { get; set; }
+    public Func<ToolPocketRow, string> ExtractToolName { get; set; }
   }
 }

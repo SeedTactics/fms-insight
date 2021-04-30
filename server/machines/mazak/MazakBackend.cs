@@ -229,13 +229,15 @@ namespace MazakMachineInterface
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(logPath, logDbConfig, writeJobs, sendToExternal, _readDB, queues, hold, st,
-          currentStatusChanged: RaiseCurrentStatusChanged
+          currentStatusChanged: RaiseCurrentStatusChanged,
+          mazakConfig: mazakCfg
         );
       else
       {
 #if USE_OLEDB
 				logDataLoader = new LogDataVerE(logDbConfig, jobDBConfig, sendToExternal, writeJobs, _readDB, queues, hold, st,
-          currentStatusChanged: RaiseCurrentStatusChanged
+          currentStatusChanged: RaiseCurrentStatusChanged,
+          mazakConfig: mazakCfg
         );
 #else
         throw new Exception("Mazak Web and VerE are not supported on .NET core");
@@ -323,25 +325,6 @@ namespace MazakMachineInterface
     public string CustomizeInstructionPath(string part, string type)
     {
       throw new NotImplementedException();
-    }
-  }
-
-  public static class MazakProgram
-  {
-    public static void Main()
-    {
-#if DEBUG
-      var useService = false;
-#else
-      var useService = true;
-#endif
-      Program.Run(useService, (cfg, st) =>
-        new FMSImplementation()
-        {
-          Backend = new MazakBackend(cfg, st),
-          Name = "Mazak",
-          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-        });
     }
   }
 }

@@ -54,6 +54,7 @@ import {
   programToShowContent,
   programContent,
   programToShowHistory,
+  programFilter,
 } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
@@ -78,6 +79,8 @@ import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import { Vector } from "prelude-ts";
 import { IProgramRevision } from "../../data/api";
 import { MachineBackend } from "../../data/backend";
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -225,17 +228,18 @@ type SortColumn =
   | "DeviationAbove"
   | "DeviationBelow";
 
-export function ProgramSummaryTable() {
+export function ProgramSummaryTable(): JSX.Element {
   const report = useRecoilValue(currentProgramReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const [filter, setFilter] = useRecoilState(programFilter);
 
   if (report === null) {
     return <div />;
   }
 
   const rows = report.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
-    let c: number = 0;
+    let c = 0;
     switch (sortCol) {
       case "ProgramName":
         c = programFilename(a.programName).localeCompare(programFilename(b.programName));
@@ -337,6 +341,19 @@ export function ProgramSummaryTable() {
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <ProgramIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
+            <div style={{ flexGrow: 1 }} />
+            <Select
+              autoWidth
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as "AllPrograms" | "ActivePrograms")}
+            >
+              <MenuItem key="AllPrograms" value="AllPrograms">
+                All Programs
+              </MenuItem>
+              <MenuItem key="ActivePrograms" value="ActivePrograms">
+                Active Programs
+              </MenuItem>
+            </Select>
           </div>
         }
       />
@@ -474,7 +491,7 @@ function ProgramContentCode() {
   );
 }
 
-export function ProgramContentDialog() {
+export function ProgramContentDialog(): JSX.Element {
   const [program, setProgramToShowContent] = useRecoilState(programToShowContent);
   const history = useRecoilValue(programToShowHistory);
 
@@ -588,7 +605,7 @@ interface LastPage {
   readonly hasMore: boolean;
 }
 
-export function ProgramHistoryDialog() {
+export function ProgramHistoryDialog(): JSX.Element {
   const [program, setProgram] = useRecoilState(programToShowHistory);
   const [programForContent, setProgramForContent] = useRecoilState(programToShowContent);
 
@@ -765,7 +782,7 @@ function ProgNavHeader() {
   }
 }
 
-export function ProgramReportPage() {
+export function ProgramReportPage(): JSX.Element {
   React.useEffect(() => {
     document.title = "Programs - FMS Insight";
   }, []);

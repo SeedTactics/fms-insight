@@ -48,7 +48,7 @@ import {
 import { reduxStore } from "../store/store";
 import { MachineBackend } from "./backend";
 import { currentStatus } from "./current-status";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
 const copy = require("copy-to-clipboard");
 
 function averageToolUse(
@@ -188,7 +188,7 @@ export async function calcToolReport(
           const currentUseMinutes = m.currentUse !== "" ? duration(m.currentUse).asMinutes() : 0;
           const lifetimeMinutes = m.totalLifeTime && m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
           return {
-            machineName: m.machineGroupName + " #" + m.machineNum,
+            machineName: m.machineGroupName + " #" + m.machineNum.toString(),
             pocket: m.pocket,
             currentUseMinutes,
             lifetimeMinutes,
@@ -278,6 +278,7 @@ export function buildToolReportHTML(tools: Vector<ToolReport>, singleMachine: bo
 }
 
 export function copyToolReportToClipboard(tools: Vector<ToolReport>, singleMachine: boolean): void {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   copy(buildToolReportHTML(tools, singleMachine));
 }
 
@@ -302,7 +303,8 @@ export interface ProgramReport {
 export async function calcProgramReport(
   usage: ToolUsage,
   cycleTimes: EstimatedCycleTimes,
-  partOperations: HashSet<PartAndStationOperation>
+  partOperations: HashSet<PartAndStationOperation>,
+  progsToShow: ReadonlySet<string> | null
 ): Promise<ProgramReport> {
   const tools = averageToolUse(usage, true);
 
@@ -316,7 +318,13 @@ export async function calcProgramReport(
       (_, x) => x
     );
 
-  const programs = LazySeq.ofIterable(await MachineBackend.getProgramsInCellController())
+  let allPrograms = LazySeq.ofIterable(await MachineBackend.getProgramsInCellController());
+
+  if (progsToShow != null) {
+    allPrograms = allPrograms.filter((p) => progsToShow.has(p.programName));
+  }
+
+  const programs = allPrograms
     .map((prog) => {
       const part = progToPart.get(prog.programName).getOrNull();
       return {
@@ -345,15 +353,36 @@ export const programReportRefreshTime = atom<Date | null>({
   default: null,
 });
 
+export const programFilter = atom<"AllPrograms" | "ActivePrograms">({
+  key: "program-report-filter",
+  default: "AllPrograms",
+});
+
 export const currentProgramReport = selector<ProgramReport | null>({
   key: "cell-controller-programs",
   get: ({ get }) => {
     const time = get(programReportRefreshTime);
     if (time === null || reduxStore === null) return Promise.resolve(null);
+
+    const filter = get(programFilter);
+    let progsToShow: ReadonlySet<string> | null = null;
+    if (filter === "ActivePrograms") {
+      const status = get(currentStatus);
+      progsToShow = new Set(
+        LazySeq.ofObject(status.jobs)
+          .flatMap(([, job]) => job.procsAndPaths)
+          .flatMap((p) => p.paths)
+          .flatMap((p) => p.stops)
+          .filter((s) => s.program !== null && s.program !== undefined && s.program !== "")
+          .map((s) => s.program ?? "")
+      );
+    }
+
     return calcProgramReport(
       reduxStore.getState().Events.last30.cycles.tool_usage,
       reduxStore.getState().Events.last30.cycles.estimatedCycleTimes,
-      reduxStore.getState().Events.last30.cycles.part_and_operation_names
+      reduxStore.getState().Events.last30.cycles.part_and_operation_names,
+      progsToShow
     );
   },
 });
