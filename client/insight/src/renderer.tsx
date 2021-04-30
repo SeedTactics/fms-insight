@@ -56,7 +56,7 @@ import App, { AppProps } from "./components/App";
 import { Store } from "./store/typed-redux";
 import { useDemoLocation } from "./data/routes";
 
-export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null) {
+export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null): void {
   const theme = createMuiTheme({
     palette: {
       primary: green,

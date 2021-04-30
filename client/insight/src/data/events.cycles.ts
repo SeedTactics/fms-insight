@@ -616,7 +616,7 @@ export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: C
     (e, _) => e
   );
 
-  let partCycles = st.part_cycles.map((cycle) => {
+  const partCycles = st.part_cycles.map((cycle) => {
     const changed = changedByCntr.get(cycle.cntr).getOrNull();
     if (changed) {
       return { ...cycle, material: changed.material };
