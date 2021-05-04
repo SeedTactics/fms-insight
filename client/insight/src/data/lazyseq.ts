@@ -408,7 +408,7 @@ export class LazySeq<T> {
     return Array.from(this.iter);
   }
 
-  toMap<K, S>(f: (x: T) => [K & WithEquality, S], merge: (v1: S, v2: S) => S): HashMap<K, S> {
+  toMap<K, S>(f: (x: T) => readonly [K & WithEquality, S], merge: (v1: S, v2: S) => S): HashMap<K, S> {
     let m = HashMap.empty<K, S>();
     for (const x of this.iter) {
       const [k, s] = f(x);

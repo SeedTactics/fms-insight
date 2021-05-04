@@ -37,8 +37,7 @@ import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { PartCycleData } from "./events.cycles";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const copy = require("copy-to-clipboard");
+import copy from "copy-to-clipboard";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -74,7 +73,7 @@ class MatIdAndProcess {
     return fieldsHashCode(this.matId, this.proc);
   }
   toString(): string {
-    return this.matId + "-" + this.proc.toString();
+    return this.matId.toString() + "-" + this.proc.toString();
   }
 }
 

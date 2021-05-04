@@ -47,6 +47,7 @@ export interface MaterialSummary {
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
+  readonly numProcesses: number;
   readonly unloaded_processes?: { [process: number]: Date };
   readonly last_unload_time?: Date;
   readonly completed_last_proc_machining?: boolean;
@@ -100,7 +101,7 @@ export function process_events(
       return st;
     }
 
-    var matsToRemove = LazySeq.ofIterable(mats.valueIterable())
+    const matsToRemove = LazySeq.ofIterable(mats.valueIterable())
       .filter((e) => e.last_event < expire.d)
       .map((e) => e.materialID)
       .toRSet((x) => x);
@@ -145,6 +146,7 @@ export function process_events(
           partName: logMat.part,
           last_event: e.endUTC,
           startedProcess1: false,
+          numProcesses: logMat.numproc,
           unloaded_processes: {},
           signaledInspections: [],
           completedInspections: {},
@@ -184,7 +186,7 @@ export function process_events(
           }
           break;
 
-        case api.LogType.InspectionResult:
+        case api.LogType.InspectionResult: {
           const success = e.result.toLowerCase() == "true" || e.result === "1";
           mat = {
             ...mat,
@@ -196,6 +198,7 @@ export function process_events(
           };
           inspTypes.set(e.program, true);
           break;
+        }
 
         case api.LogType.LoadUnloadCycle:
           if (e.result === "UNLOAD") {
@@ -245,8 +248,8 @@ export function process_events(
 
 export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: MatSummaryState): MatSummaryState {
   let jobs = st.matIdsForJob;
-  let oldMatFromState = st.matsById.get(swap.oldMaterialID).getOrNull();
-  let newMatFromState = st.matsById.get(swap.newMaterialID).getOrNull();
+  const oldMatFromState = st.matsById.get(swap.oldMaterialID).getOrNull();
+  const newMatFromState = st.matsById.get(swap.newMaterialID).getOrNull();
 
   if (oldMatFromState === null) return st;
   let oldMat = oldMatFromState;
@@ -258,6 +261,7 @@ export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: M
       jobUnique: oldMat.jobUnique,
       partName: oldMat.partName,
       last_event: oldMat.last_event,
+      numProcesses: oldMat.numProcesses,
       startedProcess1: true,
       unloaded_processes: {},
       signaledInspections: [],
@@ -293,7 +297,7 @@ export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: M
 
     switch (evt.type) {
       case api.LogType.Inspection:
-      case api.LogType.InspectionForce:
+      case api.LogType.InspectionForce: {
         const inspType = evt.program;
         let inspect: boolean;
         if (evt.result.toLowerCase() === "true" || evt.result === "1") {
@@ -316,6 +320,7 @@ export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: M
               .toArray(),
           };
         }
+      }
     }
   }
 

@@ -36,8 +36,7 @@ import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { Vector, HasEquals, HashMap } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const copy = require("copy-to-clipboard");
+import copy from "copy-to-clipboard";
 
 export interface PartCost {
   readonly part: string;
@@ -68,7 +67,7 @@ function isUnloadCycle(c: PartCycleData): boolean {
 }
 
 function isMonthType(type: { month: Date } | { thirtyDaysAgo: Date }): type is { month: Date } {
-  return type.hasOwnProperty("month");
+  return Object.prototype.hasOwnProperty.call(type, "month");
 }
 
 export function compute_monthly_cost(
@@ -110,6 +109,16 @@ export function compute_monthly_cost(
     (x, y) => x + y
   );
 
+  const completed = LazySeq.ofIterable(matsById)
+    .filter(([, details]) => {
+      const unload = details.unloaded_processes?.[details.numProcesses];
+      return !!unload && unload >= start && unload <= end;
+    })
+    .toMap(
+      ([, details]) => [details.partName, 1],
+      (v1, v2) => v1 + v2
+    );
+
   const parts = Array.from(
     cycles
       .filter((c) => c.x >= start && c.x <= end)
@@ -118,18 +127,7 @@ export function compute_monthly_cost(
         partName as string & HasEquals,
         {
           part: partName,
-          parts_completed: LazySeq.ofIterable(forPart)
-            .flatMap((c) => c.material)
-            .filter(
-              (m) =>
-                m.proc === m.numproc &&
-                matsById
-                  .get(m.id)
-                  .mapNullable((s) => s.unloaded_processes?.[m.proc])
-                  .map((t) => t >= start && t <= end)
-                  .getOrElse(false)
-            )
-            .length(),
+          parts_completed: completed.get(partName).getOrElse(0),
           machine: LazySeq.ofIterable(forPart)
             .filter((c) => !c.isLabor)
             .toMap(
@@ -182,7 +180,7 @@ export function compute_monthly_cost(
   };
 }
 
-export function buildCostPerPieceTable(costs: CostData) {
+export function buildCostPerPieceTable(costs: CostData): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";
   table += "<th>Completed Quantity</th>";
@@ -200,13 +198,13 @@ export function buildCostPerPieceTable(costs: CostData) {
   for (const c of rows) {
     table += "<tr><td>" + c.part + "</td>";
     table += "<td>" + c.parts_completed.toString() + "</td>";
-    table += "<td>" + (c.parts_completed > 0 ? format.format(c.machine.cost / c.parts_completed) : 0) + "</td>";
-    table += "<td>" + (c.parts_completed > 0 ? format.format(c.labor.cost / c.parts_completed) : 0) + "</td>";
+    table += "<td>" + (c.parts_completed > 0 ? format.format(c.machine.cost / c.parts_completed) : "0") + "</td>";
+    table += "<td>" + (c.parts_completed > 0 ? format.format(c.labor.cost / c.parts_completed) : "0") + "</td>";
     table +=
       "<td>" +
       (c.parts_completed > 0
         ? format.format((c.automation_pct * costs.automationCostForPeriod) / c.parts_completed)
-        : 0) +
+        : "0") +
       "</td>";
     table +=
       "<td>" +
@@ -229,7 +227,7 @@ export function copyCostPerPieceToClipboard(costs: CostData): void {
   copy(buildCostPerPieceTable(costs));
 }
 
-export function buildCostBreakdownTable(costs: CostData) {
+export function buildCostBreakdownTable(costs: CostData): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";
   table += "<th>Completed Quantity</th>";
