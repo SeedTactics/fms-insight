@@ -751,6 +751,7 @@ Object {
         "last_event": 2018-01-31T09:58:05.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
         "materialID": 4419,
+        "numProcesses": 1,
         "partName": "partBBB",
         "signaledInspections": Array [
           "Insp1",
@@ -772,6 +773,7 @@ Object {
         "last_event": 2018-01-06T09:52:10.000Z,
         "last_unload_time": 2018-01-06T09:40:05.000Z,
         "materialID": 13842,
+        "numProcesses": 2,
         "partName": "partCCC",
         "signaledInspections": Array [
           "Insp1",
@@ -794,6 +796,7 @@ Object {
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 87097,
+        "numProcesses": 3,
         "partName": "partAAA",
         "signaledInspections": Array [
           "Insp1",
@@ -1575,6 +1578,7 @@ Object {
         "last_event": 2018-02-08T09:46:05.000Z,
         "last_unload_time": 2018-02-08T09:34:05.000Z,
         "materialID": 90793,
+        "numProcesses": 3,
         "partName": "part111",
         "signaledInspections": Array [
           "Insp1",
@@ -1597,6 +1601,7 @@ Object {
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
         "materialID": 15510,
+        "numProcesses": 1,
         "partName": "part222",
         "signaledInspections": Array [
           "Insp1",
@@ -1619,6 +1624,7 @@ Object {
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 70329,
+        "numProcesses": 4,
         "partName": "part111",
         "signaledInspections": Array [
           "Insp1",
@@ -2639,6 +2645,7 @@ Object {
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
         "materialID": 15510,
+        "numProcesses": 1,
         "partName": "part222",
         "signaledInspections": Array [
           "Insp1",
@@ -2661,6 +2668,7 @@ Object {
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 70329,
+        "numProcesses": 4,
         "partName": "part111",
         "signaledInspections": Array [
           "Insp1",
@@ -2684,6 +2692,7 @@ Object {
         "last_event": 2018-01-06T09:52:05.000Z,
         "last_unload_time": 2018-01-06T09:40:05.000Z,
         "materialID": 90079,
+        "numProcesses": 2,
         "partName": "part222",
         "signaledInspections": Array [
           "Insp1",
@@ -3710,6 +3719,7 @@ Object {
         "last_event": 2018-02-08T09:46:05.000Z,
         "last_unload_time": 2018-02-08T09:34:05.000Z,
         "materialID": 88570,
+        "numProcesses": 2,
         "partName": "part111",
         "signaledInspections": Array [
           "Insp1",
@@ -3731,6 +3741,7 @@ Object {
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
         "materialID": 47261,
+        "numProcesses": 4,
         "partName": "part222",
         "signaledInspections": Array [
           "Insp1",
@@ -3753,6 +3764,7 @@ Object {
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 11231,
+        "numProcesses": 3,
         "partName": "part111",
         "signaledInspections": Array [
           "Insp1",
@@ -4773,6 +4785,7 @@ Object {
         "last_event": 2018-01-06T09:52:05.000Z,
         "last_unload_time": 2018-01-06T09:40:05.000Z,
         "materialID": 68845,
+        "numProcesses": 2,
         "partName": "part222",
         "signaledInspections": Array [
           "Insp1",
@@ -4794,6 +4807,7 @@ Object {
         "last_event": 2018-01-31T09:58:10.000Z,
         "last_unload_time": 2018-01-31T09:46:05.000Z,
         "materialID": 47261,
+        "numProcesses": 4,
         "partName": "part222",
         "signaledInspections": Array [
           "Insp1",
@@ -4816,6 +4830,7 @@ Object {
         "last_event": 2018-02-02T10:04:10.000Z,
         "last_unload_time": 2018-02-02T09:52:05.000Z,
         "materialID": 11231,
+        "numProcesses": 3,
         "partName": "part111",
         "signaledInspections": Array [
           "Insp1",
