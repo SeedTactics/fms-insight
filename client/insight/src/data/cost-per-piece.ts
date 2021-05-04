@@ -111,6 +111,7 @@ export function compute_monthly_cost(
 
   const completed = LazySeq.ofIterable(matsById)
     .filter(([, details]) => {
+      if (details.numProcesses === undefined) return false;
       const unload = details.unloaded_processes?.[details.numProcesses];
       return !!unload && unload >= start && unload <= end;
     })

@@ -47,7 +47,7 @@ export interface MaterialSummary {
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
-  readonly numProcesses: number;
+  readonly numProcesses?: number;
   readonly unloaded_processes?: { [process: number]: Date };
   readonly last_unload_time?: Date;
   readonly completed_last_proc_machining?: boolean;

@@ -169,7 +169,7 @@ interface InspectionProps {
   readonly focusInspectionType: string | null;
 }
 
-export function Inspection(props: InspectionProps) {
+export function Inspection(props: InspectionProps): JSX.Element {
   const matsById = useSelector((st: Store) => st.Events.last30.mat_summary.matsById);
   const recent_inspections = React.useMemo(() => extractRecentInspections(matsById, props.focusInspectionType), [
     matsById,
@@ -264,7 +264,7 @@ function extractRecentInspections(
   };
 }
 
-export default function InspectionPage(props: InspectionProps) {
+export default function InspectionPage(props: InspectionProps): JSX.Element {
   React.useEffect(() => {
     let title = "Inspection - FMS Insight";
     if (props.focusInspectionType != null && props.focusInspectionType !== "") {
