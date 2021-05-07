@@ -450,7 +450,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Jobs = ImmutableList.Create<Job>(newJob1.ToHistoricJob(), newJob2.ToHistoricJob())
       };
 
-      ((IJobControl)_jobs).AddJobs(newJobs, null);
+      ((IJobControl)_jobs).AddJobs(newJobs, null, false);
 
       _logDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(new[] { toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr });
       _logDB.LoadJob("old").Archived.Should().BeTrue();

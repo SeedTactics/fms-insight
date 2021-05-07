@@ -203,7 +203,7 @@ namespace MazakMachineInterface
       return logMessages;
     }
 
-    void BlackMaple.MachineFramework.IJobControl.AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
+    void BlackMaple.MachineFramework.IJobControl.AddJobs(NewJobs newJ, string expectedPreviousScheduleId, bool waitForCopyToCell)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
