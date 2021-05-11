@@ -449,7 +449,7 @@
             "in": "query",
             "schema": {
               "type": "boolean",
-              "default": false
+              "default": true
             },
             "x-position": 3
           }
