@@ -46,6 +46,7 @@ namespace BlackMaple.MachineFramework
   {
     public string Name { get; set; }
     public string Version { get; set; }
+    public Func<DateTime> LicenseExpires { get; set; } = null;
     public IFMSBackend Backend { get; set; }
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
     public CustomizeInstructionPath InstructionPath { get; set; } = null;

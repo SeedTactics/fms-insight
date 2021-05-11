@@ -213,10 +213,11 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
+    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell)
     {
       using (var jdb = _jobDbCfg.OpenConnection())
       {
+        Log.Debug("Adding new jobs {@jobs}", jobs);
         var errors = CheckJobs(jdb, jobs);
         if (errors.Any())
         {
@@ -234,10 +235,16 @@ namespace BlackMaple.FMSInsight.Niigata
           }
         }
 
+        Log.Debug("Adding jobs to database");
+
         jdb.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       }
 
+      Log.Debug("Sending new jobs on websocket");
+
       _onNewJobs(jobs);
+
+      Log.Debug("Signaling new jobs available for routes");
 
       _sync.JobsOrQueuesChanged();
     }

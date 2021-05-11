@@ -185,7 +185,7 @@ namespace DebugMachineWatchApiServer
       return new List<string>();
     }
 
-    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
+    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell)
     {
       LogDB.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       OnNewJobs?.Invoke(jobs);

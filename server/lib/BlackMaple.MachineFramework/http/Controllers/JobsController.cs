@@ -124,9 +124,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("add")]
     [ProducesResponseType(typeof(void), 200)]
-    public void Add([FromBody] NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId)
+    public void Add([FromBody] NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId, [FromQuery] bool waitForCopyToCell = true)
     {
-      _backend.JobControl.AddJobs(newJobs, expectedPreviousScheduleId);
+      _backend.JobControl.AddJobs(newJobs, expectedPreviousScheduleId, waitForCopyToCell);
     }
 
     [HttpPost("part/{partName}/casting")]

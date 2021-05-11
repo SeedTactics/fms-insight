@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 /* Copyright (c) 2020, John Lenz
 
 All rights reserved.
@@ -101,9 +102,10 @@ import { currentStatus } from "../data/current-status";
 import { BarcodeListener } from "../store/barcode";
 import { ScheduleHistory } from "./analysis/ScheduleHistory";
 import { LoadDemoData } from "./DemoData";
+import { differenceInDays, startOfToday } from "date-fns";
 
 const tabsStyle = {
-  alignSelf: "flex-end" as "flex-end",
+  alignSelf: "flex-end" as const,
   flexGrow: 1,
 };
 
@@ -123,7 +125,7 @@ function OperationsTabs(p: HeaderNavProps) {
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v })}
+      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
     >
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
@@ -145,7 +147,7 @@ function QualityTabs(p: HeaderNavProps) {
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v })}
+      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
     >
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
@@ -164,7 +166,7 @@ function ToolsTabs(p: HeaderNavProps) {
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v })}
+      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
     >
       <Tab label="Tools" value={routes.RouteLocation.Tools_Dashboard} />
       <Tab label="Programs" value={routes.RouteLocation.Tools_Programs} />
@@ -181,7 +183,7 @@ function AnalysisTabs(p: HeaderNavProps) {
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v })}
+      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
@@ -349,7 +351,7 @@ function BackupTabs(p: HeaderNavProps) {
       variant={p.full ? "fullWidth" : "standard"}
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v })}
+      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
       <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
@@ -406,6 +408,19 @@ function helpUrl(r: routes.RouteState): string {
     case routes.RouteLocation.ChooseMode:
     default:
       return "https://fms-insight.seedtactics.com/docs/client-launch.html";
+  }
+}
+
+function ShowLicense({ d }: { d: Date }) {
+  const today = startOfToday();
+  const diff = differenceInDays(d, today);
+
+  if (diff > 7) {
+    return null;
+  } else if (diff >= 0) {
+    return <Typography variant="subtitle1">License expires on {d.toDateString()}</Typography>;
+  } else {
+    return <Typography variant="h6">License expired on {d.toDateString()}</Typography>;
   }
 }
 
@@ -483,6 +498,7 @@ function Header(p: HeaderProps) {
             <Typography variant="h6" style={{ marginRight: "2em" }}>
               Insight
             </Typography>
+            {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
             {p.children ? (
               p.children({ full: false, setRoute: p.setRoute, demo: p.demo, routeState: p.routeState })
             ) : (
@@ -509,6 +525,7 @@ function Header(p: HeaderProps) {
               <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
             </Tooltip>
             <Typography variant="h6">Insight</Typography>
+            {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
             <div style={{ flexGrow: 1 }} />
             <LoadingIcon />
             {p.showSearch ? <SearchButtons /> : undefined}

@@ -67,6 +67,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DateTime? LicenseExpires { get; init; }
   }
 
   [ApiController]
@@ -107,7 +110,8 @@ namespace BlackMaple.MachineFramework.Controllers
         AddRawMaterialAsUnassigned = _cfg.AddRawMaterialAsUnassigned,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
-        AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation
+        AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
+        LicenseExpires = _impl.LicenseExpires?.Invoke(),
       };
     }
 

@@ -72,7 +72,7 @@ namespace Makino
       return new List<string>();
     }
 
-    public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
+    public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId, bool waitForCopyToCell)
     {
       var newJobs = new List<JobPlan>();
       using (var jdb = _openJobDB())

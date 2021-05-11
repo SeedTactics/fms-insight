@@ -49,7 +49,7 @@ namespace BlackMaple.MachineFramework
     List<string> CheckValidRoutes(IEnumerable<Job> newJobs);
 
     ///Adds new jobs into the cell controller
-    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
+    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell);
     void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs);
 
     void SetJobComment(string jobUnique, string comment);

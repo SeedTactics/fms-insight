@@ -443,6 +443,15 @@
               "nullable": true
             },
             "x-position": 2
+          },
+          {
+            "name": "waitForCopyToCell",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "x-position": 3
           }
         ],
         "requestBody": {
@@ -2121,6 +2130,11 @@
           },
           "AllowEditJobPlanQuantityFromQueuesPage": {
             "type": "string",
+            "nullable": true
+          },
+          "LicenseExpires": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           }
         }
