@@ -60,6 +60,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
   public class WebsocketManager
   {
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<WebsocketManager>();
 
     private class ServerClosingException : Exception { }
 
@@ -109,6 +110,8 @@ namespace BlackMaple.MachineFramework.Controllers
 
     private WebsocketDict _sockets = new WebsocketDict();
     private Newtonsoft.Json.JsonSerializerSettings _serSettings;
+    private System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
+    private Thread _thread;
 
     public WebsocketManager(IFMSBackend backend)
     {
@@ -116,12 +119,17 @@ namespace BlackMaple.MachineFramework.Controllers
       _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _serSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
 
+      _messages = new System.Collections.Concurrent.BlockingCollection<ServerEvent>(100);
+      _thread = new System.Threading.Thread(SendThread);
+      _thread.IsBackground = true;
+      _thread.Start();
+
       if (backend != null)
       {
         backend.NewLogEntry += (e, foreignId) =>
           Send(new ServerEvent() { LogEntry = e });
         backend.OnNewJobs += (jobs) =>
-          Send(new ServerEvent() { NewJobs = jobs });
+          Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
         backend.OnNewCurrentStatus += (status) =>
           Send(new ServerEvent() { NewCurrentStatus = status });
         backend.OnEditMaterialInLog += (o) =>
@@ -131,15 +139,37 @@ namespace BlackMaple.MachineFramework.Controllers
 
     private void Send(ServerEvent val)
     {
-      var data = Newtonsoft.Json.JsonConvert.SerializeObject(val, Newtonsoft.Json.Formatting.None, _serSettings);
-      var encoded = System.Text.Encoding.UTF8.GetBytes(data);
-      var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
-
-      var sockets = _sockets.AllSockets();
-      foreach (var ws in sockets)
+      if (!_messages.TryAdd(val, TimeSpan.FromSeconds(1)))
       {
-        if (ws.CloseStatus.HasValue) continue;
-        ws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        Log.Error("Unable to add server event {@val} to outgoing websocket messages", val);
+      }
+    }
+
+    private void SendThread()
+    {
+      while (!_messages.IsCompleted)
+      {
+        ServerEvent msg;
+        try
+        {
+          msg = _messages.Take();
+        }
+        catch (InvalidOperationException)
+        {
+          // The InvalidOperationException is thrown when the BlockingCollection is completed, so just exit
+          return;
+        }
+
+        var data = Newtonsoft.Json.JsonConvert.SerializeObject(msg, Newtonsoft.Json.Formatting.None, _serSettings);
+        var encoded = System.Text.Encoding.UTF8.GetBytes(data);
+        var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
+
+        var sockets = _sockets.AllSockets();
+        foreach (var ws in sockets)
+        {
+          if (ws.CloseStatus.HasValue) continue;
+          ws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
       }
     }
 
@@ -183,6 +213,8 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       var tasks = new List<Task>();
       var sockets = _sockets.Clear();
+
+      _messages.CompleteAdding();
 
       foreach (var ws in sockets)
       {
