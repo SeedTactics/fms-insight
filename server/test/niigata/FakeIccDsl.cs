@@ -1002,7 +1002,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, string rawMatName = null, string castingQ = null)
+    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, int[] reclamp1 = null, int reclamp1Mins = 1, string rawMatName = null, string castingQ = null)
     {
       var j = new JobPlan(unique, 2);
       j.PartName = part;
@@ -1048,6 +1048,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(2, 1, s);
+
+      if (reclamp1 != null && reclamp1.Any())
+      {
+        s = new JobMachiningStop("TestReclamp");
+        s.ExpectedCycleTime = TimeSpan.FromMinutes(reclamp1Mins);
+        foreach (var m in reclamp1)
+        {
+          s.Stations.Add(m);
+        }
+        j.AddMachiningStop(1, 1, s);
+      }
+
+
       foreach (var p in pals1)
       {
         j.AddProcessOnPallet(1, 1, p.ToString());
@@ -1306,9 +1319,27 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, int pri,
                                                 IEnumerable<(int face, string unique, int proc, int path)> faces,
                                                 int[] unloads = null,
-                                                IEnumerable<(int face, ProgramsForProcess[] progs)> progOverride = null
+                                                IEnumerable<(int face, ProgramsForProcess[] progs)> progOverride = null,
+                                                int[] reclamp = null
                                                )
     {
+      var routes = new List<RouteStep> {
+        new LoadStep() {
+          LoadStations = luls.ToList()
+        },
+        new MachiningStep() {
+          Machines = machs.ToList(),
+          ProgramNumsToRun = progs.ToList()
+        },
+        new UnloadStep() {
+          UnloadStations = (unloads ?? luls).ToList(),
+          CompletedPartCount = 1
+        }
+      };
+      if (reclamp != null)
+      {
+        routes.Insert(2, new ReclampStep() { Reclamp = reclamp.ToList() });
+      }
       return new ExpectNewRouteChange()
       {
         ExpectedMaster = new PalletMaster()
@@ -1321,19 +1352,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Skip = false,
           ForLongToolMaintenance = false,
           PerformProgramDownload = true,
-          Routes = new List<RouteStep> {
-            new LoadStep() {
-              LoadStations = luls.ToList()
-            },
-            new MachiningStep() {
-              Machines = machs.ToList(),
-              ProgramNumsToRun = progs.ToList()
-            },
-            new UnloadStep() {
-              UnloadStations = (unloads ?? luls).ToList(),
-              CompletedPartCount = 1
-            }
-          },
+          Routes = routes,
         },
         Faces = faces.Select(f =>
         {

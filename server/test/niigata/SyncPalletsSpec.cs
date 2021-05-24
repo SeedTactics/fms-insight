@@ -747,7 +747,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     }
 
-    [Fact]
+    [Fact(Skip = "Holding at machine not yet supported by Niigata")]
     public void SizedQueue()
     {
       InitSim(new NiigataStationNames()
