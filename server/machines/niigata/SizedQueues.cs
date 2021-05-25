@@ -79,7 +79,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // ensure everything that could be held is marked as hold
       foreach (var pal in palletsToCheckForHold.Where(IsExecutingFinalStep))
       {
-        if (pal.Status.Master.Skip == false)
+        if (pal.Status.Master.Skip == false && SetHoldAllowed(pal.Status))
         {
           return SetPalletHold(pal, true);
         }
@@ -89,7 +89,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var queueRemaining = CalculateQueueRemainingPositions(cellState, palletsToCheckForHold);
       foreach (var pal in palletsToCheckForHold.Where(IsPalletReadyToUnload))
       {
-        if (pal.Status.Master.Skip && IsAvailableSpaceForPallet(cellState, pal, queueRemaining))
+        if (pal.Status.Master.Skip && IsAvailableSpaceForPallet(cellState, pal, queueRemaining) && SetHoldAllowed(pal.Status))
         {
           return SetPalletHold(pal, false);
         }
@@ -257,6 +257,14 @@ namespace BlackMaple.FMSInsight.Niigata
 
         return false;
       });
+    }
+
+    private bool SetHoldAllowed(PalletStatus pal)
+    {
+      // currently only allowed to hold at load station or stocker
+      if (pal.CurStation.Location.Location == PalletLocationEnum.Buffer) return true;
+      if (pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload) return true;
+      return false;
     }
 
     private NiigataAction SetPalletHold(PalletAndMaterial pal, bool hold)
