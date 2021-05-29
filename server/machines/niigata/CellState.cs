@@ -72,7 +72,6 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     public NiigataStatus Status { get; set; }
     public IReadOnlyList<HistoricJob> UnarchivedJobs { get; set; }
-    public IReadOnlyList<JobPlan> UnarchivedLegacyJobs { get; set; }
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterialAndJob> QueuedMaterial { get; set; }
@@ -149,7 +148,6 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         Status = status,
         UnarchivedJobs = jobCache.AllJobs.Select(j => j.job with { Archived = false }).ToArray(),
-        UnarchivedLegacyJobs = jobCache.AllJobs.Select(j => { j.legacyJob.Archived = false; return j.legacyJob; }).ToArray(),
         PalletStateUpdated = palletStateUpdated,
         Pallets = pals,
         QueuedMaterial = queuedMats,
