@@ -858,10 +858,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null)
+    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null, bool manual = false)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
+      j.ManuallyCreatedJob = manual;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)

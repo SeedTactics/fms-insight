@@ -185,7 +185,8 @@ namespace BlackMaple.FMSInsight.Niigata
         )
         .Where(j => loadStation == null || j.Job.LoadStations(j.Process, j.Path).Contains(loadStation.Value))
         .Where(j => j.Job.PlannedPallets(j.Process, j.Path).Contains(pallet.ToString()))
-        .OrderBy(j => j.Job.RouteStartingTimeUTC)
+        .OrderBy(j => j.Job.ManuallyCreatedJob ? 0 : 1)
+        .ThenBy(j => j.Job.RouteStartingTimeUTC)
         .ThenBy(j => j.Job.GetSimulatedStartingTimeUTC(j.Process, j.Path))
         .ToList()
         ;
