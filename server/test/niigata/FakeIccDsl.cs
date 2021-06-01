@@ -858,10 +858,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null)
+    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null, bool manual = false)
     {
       var j = new JobPlan(unique, 1);
       j.PartName = part;
+      j.ManuallyCreatedJob = manual;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
       foreach (var i in luls)
@@ -1167,10 +1168,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var cellSt = _createLog.BuildCellState(_logDB, _status);
         cellSt.PalletStateUpdated.Should().BeFalse();
 
-        var unarchJobs = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
-        cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(unarchJobs,
-          options => options.CheckJsonEquals<JobPlan, JobPlan>()
-        );
+        var unarchJobs = _logDB.LoadUnarchivedJobs().ToList();
+        cellSt.UnarchivedJobs.Should().BeEquivalentTo(unarchJobs);
         CheckCellStMatchesExpected(cellSt);
         _assign.NewPalletChange(cellSt).Should().BeNull();
         logMonitor.Should().NotRaise("NewLogEntry");
@@ -1696,12 +1695,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status);
 
-        var sch = _logDB.LoadUnarchivedJobs().Select(j => j.ToLegacyJob()).ToList();
+        var sch = _logDB.LoadUnarchivedJobs().ToList();
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-        cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(
-          sch,
-          options => options.CheckJsonEquals<JobPlan, JobPlan>()
-        );
+        cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
 
         var expectedLogs = new List<LogEntry>();
 
@@ -1722,9 +1718,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           // reload cell state
           cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-          cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(sch,
-            options => options.CheckJsonEquals<JobPlan, JobPlan>()
-          );
+          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
         }
 
         var expectedDelRoute = (ExpectRouteDeleteChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteDeleteChange);
@@ -1868,9 +1862,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           // reload cell state
           cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.PalletStateUpdated.Should().Be(true);
-          cellSt.UnarchivedLegacyJobs.Should().BeEquivalentTo(sch,
-            options => options.CheckJsonEquals<JobPlan, JobPlan>()
-          );
+          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
         }
         else
         {

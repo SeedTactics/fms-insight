@@ -4758,5 +4758,71 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         ;
     }
+
+    [Fact]
+    public void ManualJobPriority()
+    {
+      _dsl
+        .AddJobs(new[] {
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq1",
+            part: "part1",
+
+            // higher priority but non-manual so will run second.
+            manual: false,
+            priority: 100,
+
+            qty: 3,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 5, 6 },
+            prog: "123",
+            progRev: null,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          ),
+          FakeIccDsl.CreateOneProcOnePathJob(
+            unique: "uniq2",
+            part: "part1",
+
+            // has lower priority but manual is true so should run first
+            manual: true,
+            priority: 50,
+
+            qty: 3,
+            partsPerPal: 1,
+            pals: new[] { 1 },
+            luls: new[] { 3, 4 },
+            machs: new[] { 2, 3 },
+            prog: "345",
+            progRev: null,
+            loadMins: 8,
+            unloadMins: 9,
+            machMins: 14,
+            fixture: "fix1",
+            face: 1
+          ),
+        })
+        .SetExpectedLoadCastings(new[] {
+          (uniq: "uniq2", part: "part1", pal: 1, path: 1, face: 1),
+         })
+        .DecrJobRemainCnt("uniq2", path: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectNewRoute(
+            pal: 1,
+            pri: 1,
+            luls: new[] { 3, 4 },
+            machs: new[] { 2, 3 },
+            progs: new[] { 345 },
+            faces: new[] { (face: 1, unique: "uniq2", proc: 1, path: 1) }
+        )})
+      ;
+
+    }
+
   }
 }

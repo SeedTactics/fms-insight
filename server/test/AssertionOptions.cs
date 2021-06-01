@@ -25,6 +25,8 @@ namespace MachineWatchTest
           .ComparingByMembers<PartWorkorder>()
           .ComparingByMembers<WorkorderProgram>()
           .ComparingByMembers<MaterialDetails>()
+          .ComparingByMembers<BlackMaple.FMSInsight.Niigata.ProgramsForProcess>()
+          .ComparingByMembers<BlackMaple.FMSInsight.Niigata.AssignedJobAndPathForFace>()
       );
     }
   }

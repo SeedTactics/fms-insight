@@ -366,7 +366,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Pallets = new List<PalletAndMaterial> { pal1, pal2 },
         QueuedMaterial = new List<InProcessMaterialAndJob> { queuedMat },
         UnarchivedJobs = new List<HistoricJob> { j.ToHistoricJob() with { Decrements = job1Decrements }, j2.ToHistoricJob(), j3.ToHistoricJob() },
-        UnarchivedLegacyJobs = new List<JobPlan> { j, j2, j3 }
       });
 
       ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt,
