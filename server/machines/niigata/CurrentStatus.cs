@@ -97,7 +97,7 @@ namespace BlackMaple.FMSInsight.Niigata
             else
             {
               return proc.Paths.Select(path =>
-                proc1precs?.FirstOrDefault(x => j.Processes[0].Paths[x.Proc1Path - 1].PathGroup == path.PathGroup)?.Prec ?? 0L
+                proc1precs?.FirstOrDefault()?.Prec ?? 0L
               ).ToArray();
             }
           }).ToArray();

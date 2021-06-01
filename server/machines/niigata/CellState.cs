@@ -452,7 +452,6 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (mat.JobUnique == face.Job.UniqueStr
               && mat.Process + 1 == face.Process
-              && face.Job.GetPathGroup(mat.Process, mat.Path) == face.Job.GetPathGroup(face.Process, face.Path)
               && !currentlyLoading.Contains(mat.MaterialID)
             )
             {
@@ -1646,24 +1645,9 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else
       {
-        // check unique, process, and path group match
+        // check unique and process match
         if (mat.Unique != face.Job.UniqueStr) return false;
         if (mat.NextProcess != face.Process) return false;
-
-        // now path group
-        if (mat.Paths != null && mat.Paths.Count > 0)
-        {
-          var path = mat.Paths.Aggregate((max, v) => max.Key > v.Key ? max : v);
-          var group = face.Job.GetPathGroup(process: Math.Max(1, path.Key), path: path.Value);
-          if (group != face.Job.GetPathGroup(face.Process, face.Path))
-          {
-            return false;
-          }
-        }
-        else
-        {
-          Log.Warning("Material {matId} has no path groups! {@mat}", mat);
-        }
 
         // finally, check workorders
         var matWorkProgs = WorkorderProgramsForPart(face.Job.PartName, mat.Workorders);

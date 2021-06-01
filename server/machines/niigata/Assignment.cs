@@ -312,7 +312,6 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (mat.Mat.JobUnique == path.Job.UniqueStr
             && mat.Mat.Process + 1 == path.Process
-            && mat.Job.GetPathGroup(mat.Mat.Process, mat.Mat.Path) == path.PathInfo.PathGroup
             && !currentlyLoading.Contains(mat.Mat.MaterialID)
           )
           {

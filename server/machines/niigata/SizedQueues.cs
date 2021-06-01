@@ -242,12 +242,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
         // search for an available pallet to pickup this material
         int nextProc = mat.Mat.Process + 1;
-        int group = mat.Job.GetPathGroup(mat.Mat.Process, mat.Mat.Path);
         for (int path = 1; path <= mat.Job.GetNumPaths(nextProc); path++)
         {
           if (
-              mat.Job.GetPathGroup(nextProc, path) == group
-           && mat.Job.GetInputQueue(nextProc, path) == queue
+              mat.Job.GetInputQueue(nextProc, path) == queue
            && mat.Job.PlannedPallets(nextProc, path).Any(p => availPallets.Contains(p))
           )
           {

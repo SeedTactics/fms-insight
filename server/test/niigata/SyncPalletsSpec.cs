@@ -412,7 +412,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       JobPlan j,
       int proc,
       int path,
-      int group,
       int[] pals,
       string fixture,
       int face,
@@ -430,7 +429,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int? reclampMins = null
     )
     {
-      j.SetPathGroup(proc, path, group);
       foreach (var pal in pals)
       {
         j.AddProcessOnPallet(proc, path, pal.ToString());
@@ -490,7 +488,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 1,
@@ -533,7 +530,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 1,
@@ -549,7 +545,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 3, 4 },
         fixture: "fix2",
         face: 1,
@@ -567,7 +562,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 2,
-        group: 1,
         pals: new[] { 5, 6 },
         fixture: "fix1",
         face: 1,
@@ -583,7 +577,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 2,
-        group: 1,
         pals: new[] { 7, 8 },
         fixture: "fix2",
         face: 1,
@@ -621,8 +614,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             queue: "transQ",
             pals:
               path.Key
-                ? new[] { new[] { 1, 2 }, new[] { 3, 4 } }
-                : new[] { new[] { 5, 6 }, new[] { 7, 8 } }
+                ? new[] { new[] { 1, 2 }, new[] { 3, 4, 7, 8 } }
+                : new[] { new[] { 5, 6 }, new[] { 3, 4, 7, 8 } }
           );
         }
       }
@@ -647,7 +640,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 1,
@@ -663,7 +655,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 2,
@@ -681,7 +672,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 2,
-        group: 1,
         pals: new[] { 3, 4 },
         fixture: "fix1",
         face: 1,
@@ -697,7 +687,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 2,
-        group: 1,
         pals: new[] { 3, 4 },
         fixture: "fix1",
         face: 2,
@@ -764,7 +753,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2, 3, 4 },
         fixture: "fix1",
         face: 1,
@@ -782,7 +770,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 5, 6 },
         fixture: "fix2",
         face: 1,
@@ -828,7 +815,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2, 3, 4 },
         fixture: "fix1",
         face: 1,
@@ -848,7 +834,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 5, 6 },
         fixture: "fix2",
         face: 1,

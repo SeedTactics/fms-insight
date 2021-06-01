@@ -588,14 +588,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
       job.PartName = "p1";
-      job.SetPathGroup(1, 1, 50);
-      job.SetPathGroup(1, 2, 60);
       _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       //add an allocated material
       ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
         .Should().BeEquivalentTo(
-          QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 2, serial: "aaa", queue: "q1", pos: 0).Mat,
+          QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 1, serial: "aaa", queue: "q1", pos: 0).Mat,
           options => options.ComparingByMembers<InProcessMaterial>()
         );
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
@@ -605,7 +603,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NumProcesses = 2,
         Serial = "aaa",
         JobUnique = "uuu1",
-        Paths = ImmutableDictionary<int, int>.Empty.Add(1, 2)
       }, options => options.ComparingByMembers<MaterialDetails>());
 
       var mats = _logDB.GetMaterialInAllQueues().ToList();
@@ -665,8 +662,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
       job.PartName = "p1";
-      job.SetPathGroup(1, 1, 50);
-      job.SetPathGroup(1, 2, 60);
       _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
@@ -708,8 +703,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
       job.PartName = "p1";
-      job.SetPathGroup(1, 1, 50);
-      job.SetPathGroup(1, 2, 60);
       _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
