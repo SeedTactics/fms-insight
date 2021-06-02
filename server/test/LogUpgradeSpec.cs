@@ -639,6 +639,9 @@ namespace MachineWatchTest
                 Face = job.PlannedFixture(proc, path).face,
                 Fixture = job.PlannedFixture(proc, path).fixture,
                 Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
+#pragma warning disable CS0612 // obsolete PathGroup
+                PathGroup = job.GetPathGroup(proc, path),
+#pragma warning restore CS0612
                 Inspections =
                   job.PathInspections(proc, path).Select(i => new PathInspection()
                   {

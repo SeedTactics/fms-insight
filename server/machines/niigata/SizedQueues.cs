@@ -70,9 +70,9 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(pal =>
           pal.Material.Count > 0
           &&
-          pal.Material.Any(m => m.Mat.Process >= 1 && sizedQueues.Contains(m.Job.GetOutputQueue(m.Mat.Process, m.Mat.Path)))
+          pal.Material.Any(m => m.Mat.Process >= 1 && sizedQueues.Contains(m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].OutputQueue))
         )
-        .OrderBy(pal => pal.Material.Min(m => m.Mat.Process >= 1 ? m.Job.GetSimulatedStartingTimeUTC(m.Mat.Process, m.Mat.Path) : DateTime.MaxValue))
+        .OrderBy(pal => pal.Material.Min(m => m.Mat.Process >= 1 ? m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].SimulatedStartingUTC : DateTime.MaxValue))
         .ToList();
 
 
@@ -109,7 +109,7 @@ namespace BlackMaple.FMSInsight.Niigata
           case MachiningStep machStep:
             return
               pal.Material.All(m =>
-                   m.Mat.LastCompletedMachiningRouteStopIndex == m.Job.GetMachiningStop(m.Mat.Process, m.Mat.Path).Count() - 1
+                   m.Mat.LastCompletedMachiningRouteStopIndex == m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].Stops.Count() - 1
                 || m.Mat.Action.Type == InProcessMaterialAction.ActionType.Machining
               );
 
@@ -176,7 +176,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (mat.Mat.Process >= 1)
             {
-              var queue = mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path);
+              var queue = mat.Job.Processes[mat.Mat.Process - 1].Paths[mat.Mat.Path - 1].OutputQueue;
               if (!string.IsNullOrEmpty(queue) && remain.ContainsKey(queue))
               {
                 remain[queue] -= 1;
@@ -207,7 +207,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private bool IsAvailableSpaceForPallet(CellState cellState, PalletAndMaterial pallet, IReadOnlyDictionary<string, int> remainingQueuePos)
     {
-      foreach (var matGroup in pallet.Material.GroupBy(mat => mat.Mat.Process >= 1 ? mat.Job.GetOutputQueue(mat.Mat.Process, mat.Mat.Path) : null))
+      foreach (var matGroup in pallet.Material.GroupBy(mat => mat.Mat.Process >= 1 ? mat.Job.Processes[mat.Mat.Process - 1].Paths[mat.Mat.Path - 1].OutputQueue : null))
       {
         if (matGroup.Key != null && remainingQueuePos.TryGetValue(matGroup.Key, out var remain))
         {
@@ -237,16 +237,17 @@ namespace BlackMaple.FMSInsight.Niigata
 
       return mats.All(mat =>
       {
-        if (mat.Mat.Process == mat.Job.NumProcesses) return true;
+        if (mat.Mat.Process == mat.Job.Processes.Count) return true;
         if (mat.Mat.Process < 1) return true;
 
         // search for an available pallet to pickup this material
         int nextProc = mat.Mat.Process + 1;
-        for (int path = 1; path <= mat.Job.GetNumPaths(nextProc); path++)
+        var nextJobProcInfo = mat.Job.Processes[nextProc - 1];
+        foreach (var pathInfo in nextJobProcInfo.Paths)
         {
           if (
-              mat.Job.GetInputQueue(nextProc, path) == queue
-           && mat.Job.PlannedPallets(nextProc, path).Any(p => availPallets.Contains(p))
+              pathInfo.InputQueue == queue
+           && pathInfo.Pallets.Any(p => availPallets.Contains(p))
           )
           {
             return true;

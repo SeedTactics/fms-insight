@@ -1113,20 +1113,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
         current.CurrentOrLoadingFaces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
         {
-          var job = _logDB.LoadJob(face.unique)?.ToLegacyJob();
+          var job = _logDB.LoadJob(face.unique);
           return new PalletFace()
           {
             Job = job,
             Process = face.proc,
             Path = face.path,
             Face = face.face,
+            PathInfo = job.Processes[face.proc - 1].Paths[face.path - 1],
             FaceIsMissingMaterial = false,
-            Programs = face.progs ?? job.GetMachiningStop(face.proc, face.path).Select((stop, stopIdx) => new ProgramsForProcess()
+            Programs = face.progs?.ToImmutableList() ?? job.Processes[face.proc - 1].Paths[face.path - 1].Stops.Select((stop, stopIdx) => new ProgramsForProcess()
             {
               StopIndex = stopIdx,
-              ProgramName = stop.ProgramName,
+              ProgramName = stop.Program,
               Revision = stop.ProgramRevision
-            })
+            }).ToImmutableList()
           };
         }
         ));

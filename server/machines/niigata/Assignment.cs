@@ -227,7 +227,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return true;
     }
 
-    private static bool CanMaterialLoadOntoPath(InProcessMaterialAndJob mat, JobPath path, IEnumerable<ProgramsForProcess> programs)
+    private static bool CanMaterialLoadOntoPath(InProcessMaterialAndJob mat, JobPath path, ImmutableList<ProgramsForProcess> programs)
     {
       var m = mat.Mat;
       return CreateCellState.FilterMaterialAvailableToLoadOntoFace(new CreateCellState.QueuedMaterialWithDetails()
@@ -244,7 +244,8 @@ namespace BlackMaple.FMSInsight.Niigata
       },
       new PalletFace()
       {
-        Job = path.Job.ToLegacyJob(),
+        Job = path.Job,
+        PathInfo = path.PathInfo,
         Process = path.Process,
         Path = path.Path,
         Face = 1,
