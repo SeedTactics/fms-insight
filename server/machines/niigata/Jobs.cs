@@ -135,6 +135,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add(" Part " + j.PartName + " has an output queue " + pathData.OutputQueue + " which is not configured as a queue in FMS Insight.");
             }
+#pragma warning disable CS0612 // warning for obsolete PathGroup
             if (pathGroup.HasValue)
             {
               if (pathData.PathGroup != pathGroup.Value)
@@ -146,6 +147,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               pathGroup = pathData.PathGroup;
             }
+#pragma warning restore CS0612
 
             foreach (var stop in pathData.Stops)
             {

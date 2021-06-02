@@ -2537,6 +2537,10 @@
               "format": "int32"
             }
           },
+          "FlexCyclesOnFirstProcessBetweenAllPaths": {
+            "type": "boolean",
+            "nullable": true
+          },
           "ProcsAndPaths": {
             "type": "array",
             "items": {
@@ -2597,7 +2601,6 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "PathGroup",
           "Pallets",
           "Load",
           "ExpectedLoadTime",
@@ -2609,10 +2612,6 @@
           "PartsPerPallet"
         ],
         "properties": {
-          "PathGroup": {
-            "type": "integer",
-            "format": "int32"
-          },
           "Pallets": {
             "type": "array",
             "items": {

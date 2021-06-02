@@ -412,6 +412,7 @@ namespace MazakMachineInterface
         int procToCheck = Math.Max(1, process);
         if (procToCheck > job.Processes.Count) throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
 
+#pragma warning disable CS0612 // obsolete PathGroup
         int? path = null;
         for (var p = 1; p <= job.Processes[procToCheck - 1].Paths.Count; p++)
         {
@@ -422,6 +423,7 @@ namespace MazakMachineInterface
           }
         }
         if (!path.HasValue) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find path group " + pathGroup.ToString() + " for job " + jobUnique + " and process " + process.ToString());
+#pragma warning restore CS0612
 
         matId = logDb.AllocateMaterialID(jobUnique, job.PartName, job.Processes.Count);
         if (!string.IsNullOrEmpty(serial))

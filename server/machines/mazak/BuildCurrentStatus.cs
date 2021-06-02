@@ -514,7 +514,9 @@ namespace MazakMachineInterface
 
         job.Processes[partProcRow.ProcessNumber - 1][path - 1] = new ProcPathInfo()
         {
+#pragma warning disable CS0612 // obsolete PathGroup
           PathGroup = dbPath?.PathGroup ?? path,
+#pragma warning restore CS0612
           Pallets = pals.ToImmutable(),
           Fixture = dbPath?.Fixture,
           Face = dbPath?.Face,
@@ -810,7 +812,9 @@ namespace MazakMachineInterface
       {
         if (proc >= 1 && proc <= job.Processes.Count && path >= 1 && path <= job.Processes[proc - 1].Count)
         {
+#pragma warning disable CS0612 // obsolete PathGroup
           return job.Processes[proc - 1][path - 1].PathGroup;
+#pragma warning restore CS0612
         }
         else
         {

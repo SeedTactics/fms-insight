@@ -639,7 +639,6 @@ namespace MachineWatchTest
                 Face = job.PlannedFixture(proc, path).face,
                 Fixture = job.PlannedFixture(proc, path).fixture,
                 Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
-                PathGroup = job.GetPathGroup(proc, path),
                 Inspections =
                   job.PathInspections(proc, path).Select(i => new PathInspection()
                   {

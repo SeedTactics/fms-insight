@@ -424,7 +424,9 @@ namespace BlackMaple.MachineFramework
                 .OrderBy(p => p.Path)
                 .Select(p => new ProcPathInfo()
                 {
+#pragma warning disable CS0612 // obsolete PathGroup
                   PathGroup = p.PathGroup,
+#pragma warning restore CS0612
                   Pallets = p.Pals.ToImmutable(),
                   Fixture = p.Fixture,
                   Face = p.Face,
@@ -1153,7 +1155,9 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters[2].Value = j;
             cmd.Parameters[3].Value = path.SimulatedStartingUTC.Ticks;
             cmd.Parameters[4].Value = path.PartsPerPallet;
+#pragma warning disable CS0612 // obsolete PathGroup
             cmd.Parameters[5].Value = path.PathGroup;
+#pragma warning restore CS0612
             cmd.Parameters[6].Value = path.SimulatedAverageFlowTime.Ticks;
             var iq = path.InputQueue;
             if (string.IsNullOrEmpty(iq))
@@ -1373,20 +1377,6 @@ namespace BlackMaple.MachineFramework
             }
           }
         }
-#pragma warning disable CS1633, CS0612
-        foreach (var insp in job.OldJobInspections ?? Enumerable.Empty<MachineWatchInterface.JobInspectionData>())
-        {
-          cmd.Parameters[1].Value = insp.InspectSingleProcess > 0 ? Math.Min(insp.InspectSingleProcess, job.Processes.Count) : job.Processes.Count;
-          cmd.Parameters[2].Value = -1; // Path = -1 is loaded above for all paths
-          cmd.Parameters[3].Value = insp.InspectionType;
-          cmd.Parameters[4].Value = insp.Counter;
-          cmd.Parameters[5].Value = insp.MaxVal > 0 ? (object)insp.MaxVal : DBNull.Value;
-          cmd.Parameters[6].Value = insp.TimeInterval.Ticks > 0 ? (object)insp.TimeInterval.Ticks : DBNull.Value;
-          cmd.Parameters[7].Value = insp.RandomFreq > 0 ? (object)insp.RandomFreq : DBNull.Value;
-          cmd.Parameters[8].Value = DBNull.Value;
-          cmd.ExecuteNonQuery();
-        }
-#pragma warning restore CS1633, CS0612
       }
 
       InsertHold(job.UniqueStr, -1, -1, false, job.HoldJob, trans);
