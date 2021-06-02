@@ -243,10 +243,10 @@ namespace DebugMachineWatchApiServer
       return ret;
     }
 
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial, string operatorName = null)
     {
-      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {pathGroup} {queue} {position} {serial} {oper}",
-        jobUnique, lastCompletedProcess, pathGroup, queue, position, serial, operatorName);
+      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial} {oper}",
+        jobUnique, lastCompletedProcess, queue, position, serial, operatorName);
 
       var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
       var m = new InProcessMaterial()
@@ -255,7 +255,7 @@ namespace DebugMachineWatchApiServer
         JobUnique = jobUnique,
         PartName = part,
         Process = lastCompletedProcess,
-        Path = pathGroup,
+        Path = 1,
         Serial = serial,
         Location = new InProcessMaterialLocation()
         {

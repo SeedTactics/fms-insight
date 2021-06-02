@@ -624,7 +624,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) }, null, addAsCopiedToSystem: true);
 
       //add an allocated material
-      ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
+      ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
         .Should().BeEquivalentTo(
           QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 1, serial: "aaa", queue: "q1", pos: 0).Mat,
           options => options.ComparingByMembers<InProcessMaterial>()

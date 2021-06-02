@@ -83,7 +83,6 @@ namespace BlackMaple.MachineFramework
     InProcessMaterial AddUnprocessedMaterialToQueue(
       string jobUnique,
       int lastCompletedProcess,
-      int pathGroup,
       string queue,
       int position,
       string serial,

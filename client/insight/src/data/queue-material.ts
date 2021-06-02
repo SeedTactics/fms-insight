@@ -41,16 +41,15 @@ export interface JobAndGroups {
   readonly job: Readonly<api.IActiveJob>;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
-    readonly pathGroup: number;
     readonly details?: string;
     readonly queues: HashSet<string>;
   }>;
 }
 
 function describePath(path: Readonly<api.IProcPathInfo>): string {
-  return `${
-    path.pallets.length > 1 ? "Pallets " + path.pallets.join(",") : "Pallet " + path.pallets[0]
-  }; ${path.stops.map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
+  return `${path.pallets.length > 1 ? "Pallets " + path.pallets.join(",") : "Pallet " + path.pallets[0]}; ${path.stops
+    .map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(","))
+    .join("->")}`;
 }
 
 interface RawMatDetails {
@@ -92,53 +91,28 @@ function joinDetails(details: ReadonlyArray<PathDetails>): string {
 }
 
 export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
-  const rawMatGroups = new Map<number, RawMatDetails[]>();
   const machinedProcs: {
     readonly lastProc: number;
-    readonly pathGroup: number;
     readonly details?: string;
     readonly queues: HashSet<string>;
   }[] = [];
 
-  for (let pathIdx = 0; pathIdx < job.procsAndPaths[0].paths.length; pathIdx++) {
-    const path = job.procsAndPaths[0].paths[pathIdx];
-    const group = rawMatGroups.get(path.pathGroup);
-    if (group) {
-      group.push(rawMatDetails(job, pathIdx));
-    } else {
-      rawMatGroups.set(path.pathGroup, [rawMatDetails(job, pathIdx)]);
-    }
-  }
+  // Raw material
+  const rawMatPaths = job.procsAndPaths[0].paths.map((_, pathIdx) => rawMatDetails(job, pathIdx));
+  machinedProcs.push({
+    lastProc: 0,
+    details: joinRawMatDetails(rawMatPaths),
+    queues: LazySeq.ofIterable(rawMatPaths).foldLeft(HashSet.empty(), (s, path) => s.addAll(path.queues)),
+  });
 
-  for (const [group, paths] of rawMatGroups.entries()) {
+  // paths besides the final path
+  for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
+    const paths = job.procsAndPaths[procIdx].paths.map((_, pathIdx) => pathDetails(job, procIdx, pathIdx));
     machinedProcs.push({
-      lastProc: 0,
-      pathGroup: group,
-      details: joinRawMatDetails(paths),
+      lastProc: procIdx + 1,
+      details: joinDetails(paths),
       queues: LazySeq.ofIterable(paths).foldLeft(HashSet.empty(), (s, path) => s.addAll(path.queues)),
     });
-  }
-
-  for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
-    const groups = new Map<number, PathDetails[]>();
-    for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
-      const pathGroup = job.procsAndPaths[procIdx].paths[pathIdx].pathGroup;
-      const group = groups.get(pathGroup);
-      if (group) {
-        group.push(pathDetails(job, procIdx, pathIdx));
-      } else {
-        groups.set(pathGroup, [pathDetails(job, procIdx, pathIdx)]);
-      }
-    }
-
-    for (const [group, paths] of groups.entries()) {
-      machinedProcs.push({
-        lastProc: procIdx + 1,
-        pathGroup: group,
-        details: joinDetails(paths),
-        queues: LazySeq.ofIterable(paths).foldLeft(HashSet.empty(), (s, path) => s.addAll(path.queues)),
-      });
-    }
   }
 
   return {
@@ -270,7 +244,7 @@ export function selectQueueData(
   curSt: Readonly<api.ICurrentStatus>,
   initialRawMatQueues: HashSet<string>
 ): ReadonlyArray<QueueData> {
-  let queues: QueueData[] = [];
+  const queues: QueueData[] = [];
 
   let rawMatQueues = initialRawMatQueues;
   for (const [, j] of LazySeq.ofObject(curSt.jobs)) {
@@ -305,8 +279,8 @@ export function selectQueueData(
     const isRawMat = rawMatQueues.contains(queueName);
 
     if (isRawMat) {
-      let material: Readonly<api.IInProcessMaterial>[] = [];
-      let matByPartThenUniq = new Map<string, Map<string | null, Readonly<api.IInProcessMaterial>[]>>();
+      const material: Readonly<api.IInProcessMaterial>[] = [];
+      const matByPartThenUniq = new Map<string, Map<string | null, Readonly<api.IInProcessMaterial>[]>>();
 
       for (const m of curSt.material) {
         if (m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName) {
@@ -320,7 +294,7 @@ export function selectQueueData(
             }
 
             const uniq = m.jobUnique || null;
-            let matsForJob = matsForPart.get(uniq);
+            const matsForJob = matsForPart.get(uniq);
             if (matsForJob) {
               matsForJob.push(m);
             } else {
@@ -330,7 +304,7 @@ export function selectQueueData(
         }
       }
 
-      let matGroups: QueueRawMaterialGroup[] = [];
+      const matGroups: QueueRawMaterialGroup[] = [];
       for (const [partName, matsForPart] of matByPartThenUniq) {
         for (const [uniq, mats] of matsForPart) {
           matGroups.push({

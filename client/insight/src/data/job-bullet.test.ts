@@ -58,7 +58,6 @@ it("converts events to points", () => {
         new api.ProcessInfo({
           paths: [
             new api.ProcPathInfo({
-              pathGroup: 1,
               pallets: ["pal1"],
               load: [1],
               unload: [2],
@@ -80,7 +79,6 @@ it("converts events to points", () => {
               partsPerPallet: 1,
             }),
             new api.ProcPathInfo({
-              pathGroup: 1,
               pallets: ["pal2"],
               load: [1],
               unload: [2],
@@ -106,7 +104,6 @@ it("converts events to points", () => {
         new api.ProcessInfo({
           paths: [
             new api.ProcPathInfo({
-              pathGroup: 1,
               pallets: ["pal1"],
               stops: [
                 new api.MachiningStop({

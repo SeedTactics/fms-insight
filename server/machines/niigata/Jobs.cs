@@ -436,7 +436,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    InProcessMaterial IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
+    InProcessMaterial IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {

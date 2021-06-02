@@ -1372,20 +1372,17 @@ namespace BlackMaple.FMSInsight.API
         }
     
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string operName, string serial)
+        public System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, string queue, int pos, string operName, string serial)
         {
-            return AddUnprocessedMaterialToQueueAsync(jobUnique, lastCompletedProcess, pathGroup, queue, pos, operName, serial, System.Threading.CancellationToken.None);
+            return AddUnprocessedMaterialToQueueAsync(jobUnique, lastCompletedProcess, queue, pos, operName, serial, System.Threading.CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, int pathGroup, string queue, int pos, string operName, string serial, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, string queue, int pos, string operName, string serial, System.Threading.CancellationToken cancellationToken)
         {
             if (lastCompletedProcess == null)
                 throw new System.ArgumentNullException("lastCompletedProcess");
-    
-            if (pathGroup == null)
-                throw new System.ArgumentNullException("pathGroup");
     
             if (pos == null)
                 throw new System.ArgumentNullException("pos");
@@ -1397,7 +1394,6 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/job/{jobUnique}/unprocessed-material?");
             urlBuilder_.Replace("{jobUnique}", System.Uri.EscapeDataString(ConvertToString(jobUnique, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append(System.Uri.EscapeDataString("lastCompletedProcess") + "=").Append(System.Uri.EscapeDataString(ConvertToString(lastCompletedProcess, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("pathGroup") + "=").Append(System.Uri.EscapeDataString(ConvertToString(pathGroup, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append(System.Uri.EscapeDataString("queue") + "=").Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
             urlBuilder_.Append(System.Uri.EscapeDataString("pos") + "=").Append(System.Uri.EscapeDataString(ConvertToString(pos, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             if (operName != null)

@@ -649,7 +649,7 @@ export class JobsClient {
         return Promise.resolve<HistoricJob>(<any>null);
     }
 
-    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, pathGroup: number, queue: string | null, pos: number, operName: string | null | undefined, serial: string): Promise<InProcessMaterial> {
+    addUnprocessedMaterialToQueue(jobUnique: string | null, lastCompletedProcess: number, queue: string | null, pos: number, operName: string | null | undefined, serial: string): Promise<InProcessMaterial> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -658,10 +658,6 @@ export class JobsClient {
             throw new Error("The parameter 'lastCompletedProcess' must be defined and cannot be null.");
         else
             url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&";
-        if (pathGroup === undefined || pathGroup === null)
-            throw new Error("The parameter 'pathGroup' must be defined and cannot be null.");
-        else
-            url_ += "pathGroup=" + encodeURIComponent("" + pathGroup) + "&";
         if (queue === undefined)
             throw new Error("The parameter 'queue' must be defined.");
         else if(queue !== null)

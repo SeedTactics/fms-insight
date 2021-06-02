@@ -143,7 +143,7 @@ namespace Makino
       return new List<InProcessMaterial>();
     }
 
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName = null)
     {
       //do nothing
       return null;

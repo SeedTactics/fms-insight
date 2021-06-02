@@ -159,15 +159,14 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] int pathGroup, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial, [FromQuery] string operName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial, [FromQuery] string operName = null)
     {
       if (string.IsNullOrEmpty(jobUnique))
         throw new BadRequestException("Job unique must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
       if (lastCompletedProcess < 0) lastCompletedProcess = 0;
-      if (pathGroup < 0) pathGroup = 0;
-      return _backend.JobControl.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, pathGroup, queue, pos, serial, operName);
+      return _backend.JobControl.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial, operName);
     }
 
     [HttpPut("job/{jobUnique}/comment")]
