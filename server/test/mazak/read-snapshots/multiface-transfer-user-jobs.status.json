@@ -1,5 +1,5 @@
 {
-  "TimeOfCurrentStatusUTC": "2021-02-24T20:20:23.827164Z",
+  "TimeOfCurrentStatusUTC": "2021-06-02T19:30:44.2968601Z",
   "Jobs": {},
   "Pallets": {
     "4": {
@@ -13,14 +13,14 @@
       },
       "NumFaces": 1
     },
-    "2": {
-      "Pallet": "2",
+    "3": {
+      "Pallet": "3",
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "Buffer",
-        "group": "Buffer",
-        "num": 2
+        "loc": "Machine",
+        "group": "MC",
+        "num": 3
       },
       "NumFaces": 1
     },
@@ -35,14 +35,14 @@
       },
       "NumFaces": 1
     },
-    "3": {
-      "Pallet": "3",
+    "2": {
+      "Pallet": "2",
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "Machine",
-        "group": "MC",
-        "num": 3
+        "loc": "Buffer",
+        "group": "Buffer",
+        "num": 2
       },
       "NumFaces": 1
     }
@@ -109,8 +109,8 @@
   "Alarms": [],
   "Queues": {
     "queueCCC": {},
+    "castings": {},
     "queueBBB": {},
-    "queueAAA": {},
-    "castings": {}
+    "queueAAA": {}
   }
 }
