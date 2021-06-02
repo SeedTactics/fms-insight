@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {
@@ -50,7 +49,7 @@ namespace BlackMaple.MachineFramework
 
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell);
-    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs);
+    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs);
 
     void SetJobComment(string jobUnique, string comment);
 
@@ -134,7 +133,7 @@ namespace BlackMaple.MachineFramework
   public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
   public delegate void NewCurrentStatus(CurrentStatus status);
   public delegate void NewJobsDelegate(NewJobs j);
-  public delegate void EditMaterialInLogDelegate(MachineWatchInterface.EditMaterialInLogEvents o);
+  public delegate void EditMaterialInLogDelegate(EditMaterialInLogEvents o);
 
   public interface IFMSBackend : IDisposable
   {

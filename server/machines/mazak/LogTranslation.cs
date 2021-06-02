@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Linq;
 using BlackMaple.MachineWatchInterface;
-using MWI = BlackMaple.MachineWatchInterface;
 using System.Collections.Generic;
+using MWI = BlackMaple.MachineFramework;
 using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
@@ -937,7 +937,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Inspections
-    private void HandleMachiningCompleted(BlackMaple.MachineWatchInterface.LogEntry cycle, IEnumerable<LogMaterialAndPath> mats)
+    private void HandleMachiningCompleted(MWI.LogEntry cycle, IEnumerable<LogMaterialAndPath> mats)
     {
       foreach (LogMaterialAndPath mat in mats)
       {

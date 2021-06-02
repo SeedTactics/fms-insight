@@ -35,7 +35,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Immutable;
 
 namespace MazakMachineInterface
@@ -614,7 +613,7 @@ namespace MazakMachineInterface
       return null;
     }
 
-    private static void AddRemainingLoadsAndUnloads(IRepository log, List<LoadAction> currentActions, string palletName, PalletLocation palLoc, TimeSpan? elapsedLoadTime, IList<InProcessMaterial> material, IReadOnlyDictionary<string, CurrentJob> jobsByUniq, List<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
+    private static void AddRemainingLoadsAndUnloads(IRepository log, List<LoadAction> currentActions, string palletName, PalletLocation palLoc, TimeSpan? elapsedLoadTime, IList<InProcessMaterial> material, IReadOnlyDictionary<string, CurrentJob> jobsByUniq, List<BlackMaple.MachineFramework.LogEntry> oldCycles, IReadOnlyDictionary<string, int> partNameToNumProc)
     {
       var queuedMats = new Dictionary<(string uniq, int proc, int path), List<QueuedMaterial>>();
       //process remaining loads/unloads (already processed ones have been removed from currentLoads)
@@ -826,7 +825,7 @@ namespace MazakMachineInterface
     }
 
     private static IEnumerable<long> FindMatIDsFromOldCycles(
-      IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, bool hasPendingLoads, CurrentJob job, int proc, int path, IRepository log
+      IEnumerable<BlackMaple.MachineFramework.LogEntry> oldCycles, bool hasPendingLoads, CurrentJob job, int proc, int path, IRepository log
     )
     {
 
@@ -880,9 +879,9 @@ namespace MazakMachineInterface
       }
     }
 
-    private static BlackMaple.MachineWatchInterface.LogEntry FindMachineStartFromOldCycles(IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, long matId)
+    private static BlackMaple.MachineFramework.LogEntry FindMachineStartFromOldCycles(IEnumerable<BlackMaple.MachineFramework.LogEntry> oldCycles, long matId)
     {
-      BlackMaple.MachineWatchInterface.LogEntry start = null;
+      BlackMaple.MachineFramework.LogEntry start = null;
 
       foreach (var s in oldCycles.Where(e => e.Material.Any(m => m.MaterialID == matId)))
       {
@@ -902,9 +901,9 @@ namespace MazakMachineInterface
       return start;
     }
 
-    private static BlackMaple.MachineWatchInterface.LogEntry FindLoadStartFromOldCycles(IEnumerable<BlackMaple.MachineWatchInterface.LogEntry> oldCycles, long? matId = null)
+    private static BlackMaple.MachineFramework.LogEntry FindLoadStartFromOldCycles(IEnumerable<BlackMaple.MachineFramework.LogEntry> oldCycles, long? matId = null)
     {
-      BlackMaple.MachineWatchInterface.LogEntry start = null;
+      BlackMaple.MachineFramework.LogEntry start = null;
 
       var cyclesToSearch =
         matId != null

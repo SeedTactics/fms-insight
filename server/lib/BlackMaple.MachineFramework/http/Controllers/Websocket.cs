@@ -36,7 +36,6 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BlackMaple.MachineWatchInterface;
 using System.Net.WebSockets;
 using System.Runtime.Serialization;
 

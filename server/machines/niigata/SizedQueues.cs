@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -42,8 +42,8 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<SizedQueues>();
 
-    private readonly IReadOnlyDictionary<string, MachineWatchInterface.QueueSize> _queueSizes;
-    public SizedQueues(IReadOnlyDictionary<string, MachineWatchInterface.QueueSize> queues)
+    private readonly IReadOnlyDictionary<string, MachineFramework.QueueSize> _queueSizes;
+    public SizedQueues(IReadOnlyDictionary<string, MachineFramework.QueueSize> queues)
     {
       if (queues != null && queues.Values.Any(q => q.MaxSizeBeforeStopUnloading.HasValue && q.MaxSizeBeforeStopUnloading.Value > 0))
       {

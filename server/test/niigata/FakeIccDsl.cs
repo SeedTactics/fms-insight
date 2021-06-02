@@ -36,7 +36,6 @@ using System.Linq;
 using System.Collections.Generic;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Immutable;
 using Germinate;
 
@@ -68,9 +67,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62,
         QuarantineQueue = "Quarantine"
       };
-      _settings.Queues.Add("thequeue", new MachineWatchInterface.QueueSize());
-      _settings.Queues.Add("qqq", new MachineWatchInterface.QueueSize());
-      _settings.Queues.Add("Quarantine", new MachineWatchInterface.QueueSize());
+      _settings.Queues.Add("thequeue", new MachineFramework.QueueSize());
+      _settings.Queues.Add("qqq", new MachineFramework.QueueSize());
+      _settings.Queues.Add("Quarantine", new MachineFramework.QueueSize());
 
       _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_settings);
       _logDB = _logDBCfg.OpenConnection();
@@ -798,7 +797,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedJobRemainCount[(uniq: unique, proc1path: path)] = cnt;
       return this;
     }
-    public FakeIccDsl AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<PartWorkorder> workorders = null)
+    public FakeIccDsl AddJobs(IEnumerable<MachineWatchInterface.JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<PartWorkorder> workorders = null)
     {
       if (progs == null)
         progs = Enumerable.Empty<(string prog, long rev)>();
@@ -808,7 +807,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Jobs = jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(),
         Programs =
             progs.Select(p =>
-            new MachineWatchInterface.ProgramEntry()
+            new MachineFramework.ProgramEntry()
             {
               ProgramName = p.prog,
               Revision = p.rev,
@@ -852,15 +851,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl ReplaceWorkorders(IEnumerable<PartWorkorder> workorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs)
+    public FakeIccDsl ReplaceWorkorders(IEnumerable<PartWorkorder> workorders, IEnumerable<MachineFramework.ProgramEntry> programs)
     {
       _logDB.ReplaceWorkordersForSchedule(_logDB.LoadMostRecentSchedule().LatestScheduleId, workorders, programs);
       return this;
     }
 
-    public static JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null, bool manual = false)
+    public static MachineWatchInterface.JobPlan CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null, bool manual = false)
     {
-      var j = new JobPlan(unique, 1);
+      var j = new MachineWatchInterface.JobPlan(unique, 1);
       j.PartName = part;
       j.ManuallyCreatedJob = manual;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
@@ -873,7 +872,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedLoadTime(1, 1, TimeSpan.FromMinutes(loadMins));
       j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
       j.SetPartsPerPallet(1, 1, partsPerPal);
-      var s = new JobMachiningStop("TestMC");
+      var s = new MachineWatchInterface.JobMachiningStop("TestMC");
       s.ProgramName = prog;
       s.ProgramRevision = progRev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
@@ -898,9 +897,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int[] reclamp, int loadMins, int machMins1, int machMins2, int reclampMins, int unloadMins, string fixture, int face, string queue = null)
+    public static MachineWatchInterface.JobPlan CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int[] reclamp, int loadMins, int machMins1, int machMins2, int reclampMins, int unloadMins, string fixture, int face, string queue = null)
     {
-      var j = new JobPlan(unique, 1);
+      var j = new MachineWatchInterface.JobPlan(unique, 1);
       j.PartName = part;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
@@ -913,7 +912,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(1, 1, TimeSpan.FromMinutes(unloadMins));
       j.SetPartsPerPallet(1, 1, partsPerPal);
 
-      var s = new JobMachiningStop("TestMC");
+      var s = new MachineWatchInterface.JobMachiningStop("TestMC");
       s.ProgramName = prog1;
       s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
@@ -923,7 +922,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
       j.AddMachiningStop(1, 1, s);
 
-      s = new JobMachiningStop("TestMC");
+      s = new MachineWatchInterface.JobMachiningStop("TestMC");
       s.ProgramName = prog2;
       s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
@@ -935,7 +934,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       if (reclamp.Any())
       {
-        s = new JobMachiningStop("TestReclamp");
+        s = new MachineWatchInterface.JobMachiningStop("TestReclamp");
         s.ExpectedCycleTime = TimeSpan.FromMinutes(reclampMins);
         foreach (var m in reclamp)
         {
@@ -956,9 +955,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
+    public static MachineWatchInterface.JobPlan CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
     {
-      var j = new JobPlan(unique, 2);
+      var j = new MachineWatchInterface.JobPlan(unique, 2);
       j.PartName = part;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
@@ -975,7 +974,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(2, 1, TimeSpan.FromMinutes(unloadMins2));
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
-      var s = new JobMachiningStop("TestMC");
+      var s = new MachineWatchInterface.JobMachiningStop("TestMC");
       s.ProgramName = prog1;
       s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
@@ -984,7 +983,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(1, 1, s);
-      s = new JobMachiningStop("TestMC");
+      s = new MachineWatchInterface.JobMachiningStop("TestMC");
       s.ProgramName = prog2;
       s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
@@ -1003,9 +1002,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return j;
     }
 
-    public static JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, int[] reclamp1 = null, int reclamp1Mins = 1, string rawMatName = null, string castingQ = null)
+    public static MachineWatchInterface.JobPlan CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, int[] reclamp1 = null, int reclamp1Mins = 1, string rawMatName = null, string castingQ = null)
     {
-      var j = new JobPlan(unique, 2);
+      var j = new MachineWatchInterface.JobPlan(unique, 2);
       j.PartName = part;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: qty);
@@ -1031,7 +1030,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.SetExpectedUnloadTime(2, 1, TimeSpan.FromMinutes(unloadMins2));
       j.SetPartsPerPallet(1, 1, partsPerPal);
       j.SetPartsPerPallet(2, 1, partsPerPal);
-      var s = new JobMachiningStop("TestMC");
+      var s = new MachineWatchInterface.JobMachiningStop("TestMC");
       s.ProgramName = prog1;
       s.ProgramRevision = prog1Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins1);
@@ -1040,7 +1039,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         s.Stations.Add(100 + m);
       }
       j.AddMachiningStop(1, 1, s);
-      s = new JobMachiningStop("TestMC");
+      s = new MachineWatchInterface.JobMachiningStop("TestMC");
       s.ProgramName = prog2;
       s.ProgramRevision = prog2Rev;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins2);
@@ -1052,7 +1051,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       if (reclamp1 != null && reclamp1.Any())
       {
-        s = new JobMachiningStop("TestReclamp");
+        s = new MachineWatchInterface.JobMachiningStop("TestReclamp");
         s.ExpectedCycleTime = TimeSpan.FromMinutes(reclamp1Mins);
         foreach (var m in reclamp1)
         {
@@ -2276,7 +2275,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
   public static class FakeIccDslJobHelpers
   {
-    public static JobPlan AddInsp(this JobPlan job, int proc, int path, string inspTy, string cntr, int max)
+    public static MachineWatchInterface.JobPlan AddInsp(this MachineWatchInterface.JobPlan job, int proc, int path, string inspTy, string cntr, int max)
     {
       job.PathInspections(proc, path).Add(new PathInspection() { InspectionType = inspTy, Counter = cntr, MaxVal = max });
       return job;

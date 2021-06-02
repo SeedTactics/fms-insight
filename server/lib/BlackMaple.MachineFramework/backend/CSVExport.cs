@@ -35,7 +35,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using BlackMaple.MachineWatchInterface;
 
 namespace BlackMaple.MachineFramework
 {

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
@@ -175,7 +175,7 @@ namespace MazakMachineInterface
           //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
           var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-            jobs: jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false, scheduleId: null)).ToArray(),
+            jobs: jobs.Select(j => BlackMaple.MachineWatchInterface.LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false, scheduleId: null)).ToArray(),
             downloadUID: 1,
             mazakData: mazakData,
             savedParts: new HashSet<string>(),

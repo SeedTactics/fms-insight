@@ -361,7 +361,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         st.Material.Add(pal1.Material[0].Mat);
         st.Material.Add(pal2.Material[0].Mat);
         st.Material.Add(queuedMat.Mat);
-        st.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
+        st.Pallets.Add("1", new MachineFramework.PalletStatus()
         {
           Pallet = "1",
           FixtureOnPallet = "",
@@ -369,7 +369,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
           NumFaces = 1
         });
-        st.Pallets.Add("2", new MachineWatchInterface.PalletStatus()
+        st.Pallets.Add("2", new MachineFramework.PalletStatus()
         {
           Pallet = "2",
           FixtureOnPallet = "",

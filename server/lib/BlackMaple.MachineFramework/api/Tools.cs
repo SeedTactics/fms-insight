@@ -37,7 +37,7 @@ using System;
 using System.Runtime.Serialization;
 using Germinate;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
   [DataContract]
   public record ToolInMachine

@@ -34,7 +34,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
@@ -195,7 +194,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return errors;
     }
 
-    private void CheckProgram(string programName, long? rev, IEnumerable<MachineWatchInterface.ProgramEntry> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
+    private void CheckProgram(string programName, long? rev, IEnumerable<MachineFramework.ProgramEntry> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
     {
       if (rev.HasValue && rev.Value > 0)
       {
@@ -320,7 +319,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineFramework.ProgramEntry> programs)
     {
       var cellState = _sync.CurrentCellState();
       if (cellState == null) return;

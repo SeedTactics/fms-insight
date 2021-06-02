@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
@@ -70,7 +69,7 @@ namespace MazakMachineInterface
     public event NewJobsDelegate OnNewJobs;
     public event NewLogEntryDelegate NewLogEntry;
     public event NewCurrentStatus OnNewCurrentStatus;
-    private void RaiseNewLogEntry(BlackMaple.MachineWatchInterface.LogEntry e, string foreignId, IRepository db) =>
+    private void RaiseNewLogEntry(BlackMaple.MachineFramework.LogEntry e, string foreignId, IRepository db) =>
       NewLogEntry?.Invoke(e, foreignId);
 
     public event EditMaterialInLogDelegate OnEditMaterialInLog;

@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
@@ -450,7 +449,7 @@ namespace DebugMachineWatchApiServer
     private void LoadEvents(string sampleDataPath, TimeSpan offset)
     {
       var files = System.IO.Directory.GetFiles(sampleDataPath, "events-*.json");
-      var evts = new List<BlackMaple.MachineWatchInterface.LogEntry>();
+      var evts = new List<LogEntry>();
       foreach (var f in files)
       {
         using (var file = System.IO.File.OpenRead(f))
@@ -459,9 +458,9 @@ namespace DebugMachineWatchApiServer
           while (reader.Peek() >= 0)
           {
             var evtJson = reader.ReadLine();
-            var e = (BlackMaple.MachineWatchInterface.LogEntry)JsonConvert.DeserializeObject(
+            var e = (LogEntry)JsonConvert.DeserializeObject(
               evtJson,
-              typeof(BlackMaple.MachineWatchInterface.LogEntry),
+              typeof(LogEntry),
               _jsonSettings
             );
             evts.Add(e);
@@ -523,9 +522,9 @@ namespace DebugMachineWatchApiServer
     {
       var newJobsJson = System.IO.File.ReadAllText(
         System.IO.Path.Combine(sampleDataPath, "newjobs.json"));
-      var allNewJobs = (List<BlackMaple.MachineWatchInterface.NewJobs>)JsonConvert.DeserializeObject(
+      var allNewJobs = (List<NewJobs>)JsonConvert.DeserializeObject(
         newJobsJson,
-        typeof(List<BlackMaple.MachineWatchInterface.NewJobs>),
+        typeof(List<NewJobs>),
         _jsonSettings
       );
 
@@ -564,9 +563,9 @@ namespace DebugMachineWatchApiServer
         var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("status-", "");
 
         var statusJson = System.IO.File.ReadAllText(f);
-        var curSt = (BlackMaple.MachineWatchInterface.CurrentStatus)JsonConvert.DeserializeObject(
+        var curSt = (CurrentStatus)JsonConvert.DeserializeObject(
           statusJson,
-          typeof(BlackMaple.MachineWatchInterface.CurrentStatus),
+          typeof(CurrentStatus),
           _jsonSettings
         );
         curSt = curSt with

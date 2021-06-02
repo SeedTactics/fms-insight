@@ -50,7 +50,7 @@ namespace MachineWatchTest
     protected RepositoryConfig _repoCfg;
     protected IRepository jobLog;
     protected LogTranslation log;
-    protected List<BlackMaple.MachineWatchInterface.LogEntry> expected = new List<BlackMaple.MachineWatchInterface.LogEntry>();
+    protected List<BlackMaple.MachineFramework.LogEntry> expected = new List<BlackMaple.MachineFramework.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> raisedByEvent = new List<MazakMachineInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> expectedMazakLogEntries = new List<MazakMachineInterface.LogEntry>();
     private IMachineGroupName machGroupName;
@@ -354,9 +354,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      var expectedLog = new BlackMaple.MachineWatchInterface.LogEntry(
+      var expectedLog = new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -367,7 +367,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
+          ty: LogType.MachineCycle,
           locName: "machinespec",
           locNum: e2.StationNumber,
           prog: logProg ?? prog,
@@ -408,9 +408,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      var newEntry = new BlackMaple.MachineWatchInterface.LogEntry(
+      var newEntry = new BlackMaple.MachineFramework.LogEntry(
         cntr: -1,
-        mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+        mat: mats.Select(mat => new LogMaterial(
           matID: mat.MaterialID,
           uniq: mat.Unique,
           proc: mat.Process,
@@ -421,7 +421,7 @@ namespace MachineWatchTest
           workorder: ""
         )),
         pal: mats.First().Pallet.ToString(),
-        ty: BlackMaple.MachineWatchInterface.LogType.MachineCycle,
+        ty: LogType.MachineCycle,
         locName: "machinespec",
         locNum: e2.StationNumber,
         prog: logProg ?? prog,
@@ -451,9 +451,9 @@ namespace MachineWatchTest
 
     protected void ExpectInspection(TestMaterial mat, string inspTy, string counter, bool result, IEnumerable<MaterialProcessActualPath> path)
     {
-      var e = new BlackMaple.MachineWatchInterface.LogEntry(
+      var e = new BlackMaple.MachineFramework.LogEntry(
         cntr: -1,
-        mat: new[] {new BlackMaple.MachineWatchInterface.LogMaterial(
+        mat: new[] {new LogMaterial(
           matID: mat.MaterialID,
           uniq: mat.Unique,
           proc: mat.Process,
@@ -464,7 +464,7 @@ namespace MachineWatchTest
           workorder: ""
         )},
         pal: "",
-        ty: BlackMaple.MachineWatchInterface.LogType.Inspection,
+        ty: LogType.Inspection,
         locName: "Inspect",
         locNum: 1,
         prog: counter,
@@ -505,9 +505,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: new[] {new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: new[] {new LogMaterial(
             matID: -1,
             uniq: "",
             proc: mats.First().Process,
@@ -518,7 +518,7 @@ namespace MachineWatchTest
             workorder: ""
           )},
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
+          ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
           prog: "LOAD",
@@ -553,9 +553,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -566,7 +566,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
+          ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
           prog: "LOAD",
@@ -581,9 +581,9 @@ namespace MachineWatchTest
       foreach (var mat in mats)
       {
         if (mat.Process > 1 || expectMark == false) continue;
-        expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+        expected.Add(new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: new[] {new BlackMaple.MachineWatchInterface.LogMaterial(
+            mat: new[] {new LogMaterial(
               matID: mat.MaterialID,
               uniq: mat.Unique,
               proc: mat.Process,
@@ -594,7 +594,7 @@ namespace MachineWatchTest
               workorder: ""
             )},
             pal: "",
-            ty: BlackMaple.MachineWatchInterface.LogType.PartMark,
+            ty: LogType.PartMark,
             locName: "Mark",
             locNum: 1,
             prog: "MARK",
@@ -630,9 +630,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -643,7 +643,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
+          ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
           prog: "UNLOAD",
@@ -680,9 +680,9 @@ namespace MachineWatchTest
 
       sendToExternal.AddRange(HandleEvent(e2));
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -693,7 +693,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
+          ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
           prog: "UNLOAD",
@@ -728,11 +728,11 @@ namespace MachineWatchTest
       HandleEvent(e);
 
       if (addExpected)
-        expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+        expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: new BlackMaple.MachineWatchInterface.LogMaterial[] { },
+          mat: new LogMaterial[] { },
           pal: pal.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.PalletCycle,
+          ty: LogType.PalletCycle,
           locName: "Pallet Cycle",
           locNum: 1,
           prog: "",
@@ -763,9 +763,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -776,7 +776,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.PalletInStocker,
+          ty: LogType.PalletInStocker,
           locName: "Stocker",
           locNum: stocker,
           prog: "Arrive",
@@ -805,9 +805,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -818,7 +818,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.PalletInStocker,
+          ty: LogType.PalletInStocker,
           locName: "Stocker",
           locNum: stocker,
           prog: "Depart",
@@ -849,9 +849,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -862,7 +862,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
           locNum: mc,
           prog: "Arrive",
@@ -890,9 +890,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -903,7 +903,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
           locNum: mc,
           prog: "Depart",
@@ -933,9 +933,9 @@ namespace MachineWatchTest
 
       HandleEvent(e2);
 
-      expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+      expected.Add(new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(mat => new BlackMaple.MachineWatchInterface.LogMaterial(
+          mat: mats.Select(mat => new LogMaterial(
             matID: mat.MaterialID,
             uniq: mat.Unique,
             proc: mat.Process,
@@ -946,7 +946,7 @@ namespace MachineWatchTest
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
-          ty: BlackMaple.MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
           locNum: mc,
           prog: "Depart",
@@ -988,9 +988,9 @@ namespace MachineWatchTest
     {
       foreach (var mat in mats)
       {
-        expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+        expected.Add(new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: new[] { new BlackMaple.MachineWatchInterface.LogMaterial(
+            mat: new[] { new LogMaterial(
               matID: mat.MaterialID,
               uniq: mat.Unique,
               proc: mat.Process,
@@ -1001,7 +1001,7 @@ namespace MachineWatchTest
               workorder: ""
             )},
             pal: "",
-            ty: BlackMaple.MachineWatchInterface.LogType.AddToQueue,
+            ty: LogType.AddToQueue,
             locName: queue,
             locNum: startPos,
             prog: reason ?? "Unloaded",
@@ -1021,9 +1021,9 @@ namespace MachineWatchTest
     protected void ExpectRemoveFromQueue(IEnumerable<TestMaterial> mats, int offset, string queue, int startingPos, int elapMin)
     {
       foreach (var mat in mats)
-        expected.Add(new BlackMaple.MachineWatchInterface.LogEntry(
+        expected.Add(new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: new[] { new BlackMaple.MachineWatchInterface.LogMaterial(
+            mat: new[] { new LogMaterial(
               matID: mat.MaterialID,
               uniq: mat.Unique,
               proc: mat.Process,
@@ -1034,7 +1034,7 @@ namespace MachineWatchTest
               workorder: ""
             )},
             pal: "",
-            ty: BlackMaple.MachineWatchInterface.LogType.RemoveFromQueue,
+            ty: LogType.RemoveFromQueue,
             locName: queue,
             locNum: startingPos,
             prog: "",
@@ -1101,7 +1101,7 @@ namespace MachineWatchTest
 
       log.Should().BeEquivalentTo(expected, options =>
         options
-        .ComparingByMembers<BlackMaple.MachineWatchInterface.LogEntry>()
+        .ComparingByMembers<BlackMaple.MachineFramework.LogEntry>()
         .Excluding(e => e.Counter)
         .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1000))
           .WhenTypeIs<DateTime>()

@@ -34,7 +34,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
@@ -138,10 +137,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // pallets
-      var palletsByName = ImmutableDictionary.CreateBuilder<string, MachineWatchInterface.PalletStatus>();
+      var palletsByName = ImmutableDictionary.CreateBuilder<string, MachineFramework.PalletStatus>();
       foreach (var pal in status.Pallets)
       {
-        palletsByName.Add(pal.Status.Master.PalletNum.ToString(), new MachineWatchInterface.PalletStatus()
+        palletsByName.Add(pal.Status.Master.PalletNum.ToString(), new MachineFramework.PalletStatus()
         {
           Pallet = pal.Status.Master.PalletNum.ToString(),
           FixtureOnPallet = "",
