@@ -44,6 +44,13 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public class DecrementNotYetStartedJobs : IDecrementJobs
   {
+    private Func<Job, bool> _jobCanBeDecremented;
+
+    public DecrementNotYetStartedJobs(Func<Job, bool> jobCanBeDecremented = null)
+    {
+      _jobCanBeDecremented = jobCanBeDecremented;
+    }
+
     private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrementNotYetStartedJobs>();
 
     public bool DecrementJobs(IRepository jobDB, CellState cellSt)
@@ -51,26 +58,44 @@ namespace BlackMaple.FMSInsight.Niigata
       var decrs = new List<NewDecrementQuantity>();
       foreach (var j in cellSt.UnarchivedJobs)
       {
-        if (j.ManuallyCreated || jobDB.LoadDecrementsForJob(j.UniqueStr).Count > 0) continue;
+        if (j.ManuallyCreated || j.Decrements?.Count > 0) continue;
+
+        if (_jobCanBeDecremented != null && !_jobCanBeDecremented(j)) continue;
+
+        int remainQty = 0;
+        for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
+        {
+          if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty))
+          {
+            // note qty could be negative if job.FlexCyclesOnFirstProcessBetweenAllPaths is true
+            remainQty += qty;
+          }
+        }
 
         for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
         {
           if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
           {
-            decrs.Add(new NewDecrementQuantity()
+            // don't want to decrement entire qty because another path could have had negative JobQtyRemaining
+            int qtyToDecrement = Math.Min(qty, remainQty);
+            if (qtyToDecrement > 0)
             {
-              JobUnique = j.UniqueStr,
-              Proc1Path = path,
-              Part = j.PartName,
-              Quantity = qty
-            });
+              remainQty -= qtyToDecrement;
+              decrs.Add(new NewDecrementQuantity()
+              {
+                JobUnique = j.UniqueStr,
+                Proc1Path = path,
+                Part = j.PartName,
+                Quantity = qtyToDecrement
+              });
+            }
           }
         }
       }
 
       if (decrs.Count > 0)
       {
-        jobDB.AddNewDecrement(decrs);
+        jobDB.AddNewDecrement(decrs, nowUTC: cellSt?.Status?.TimeOfStatusUTC);
         return true;
       }
       else

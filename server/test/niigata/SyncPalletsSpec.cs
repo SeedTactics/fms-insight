@@ -209,9 +209,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private void AddJobs(IEnumerable<MachineWatchInterface.JobPlan> jobs, IEnumerable<(string prog, long rev)> progs)
     {
+      AddJobs(jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(), progs);
+    }
+
+    private void AddJobs(ImmutableList<Job> jobs, IEnumerable<(string prog, long rev)> progs)
+    {
       AddJobs(new NewJobs()
       {
-        Jobs = jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(),
+        Jobs = jobs,
         Programs =
             progs.Select(p =>
             new MachineFramework.ProgramEntry()
@@ -1068,6 +1073,87 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           AddTimeUTC = addTime
         }
       });
+    }
+
+    [Fact]
+    public void FlexQtyBetweenPaths()
+    {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      });
+
+      var j = new Job()
+      {
+        UniqueStr = "uniq1",
+        PartName = "part1",
+        CyclesOnFirstProcess = ImmutableList.Create(10, 0), // put all cycles on first path
+        FlexCyclesOnFirstProcessBetweenAllPaths = true,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              // two paths on separte pallets to separate load stations
+              new ProcPathInfo()
+              {
+                Pallets = ImmutableList.Create("1"),
+                Fixture = "fix1",
+                PartsPerPallet = 1,
+                Face = 1,
+                Load = ImmutableList.Create(2),
+                ExpectedLoadTime = TimeSpan.FromMinutes(10),
+                Unload = ImmutableList.Create(2),
+                ExpectedUnloadTime = TimeSpan.FromMinutes(10),
+                Stops = ImmutableList.Create(new MachiningStop()
+                {
+                  StationGroup = "MC",
+                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
+                  Program = "prog111",
+                  ProgramRevision = 5,
+                  ExpectedCycleTime = TimeSpan.FromMinutes(20)
+                }),
+              },
+              // path 2 is a little shorter
+              new ProcPathInfo()
+              {
+                Pallets = ImmutableList.Create("2"),
+                Fixture = "fix1",
+                PartsPerPallet = 1,
+                Face = 1,
+                Load = ImmutableList.Create(1),
+                ExpectedLoadTime = TimeSpan.FromMinutes(8),
+                Unload = ImmutableList.Create(1),
+                ExpectedUnloadTime = TimeSpan.FromMinutes(8),
+                Stops = ImmutableList.Create(new MachiningStop()
+                {
+                  StationGroup = "MC",
+                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
+                  Program = "prog111",
+                  ProgramRevision = 5,
+                  ExpectedCycleTime = TimeSpan.FromMinutes(15)
+                }),
+              }
+            )
+          }
+        )
+      };
+
+      AddJobs(ImmutableList.Create(j), new[] { (prog: "prog111", rev: 5L) });
+
+      var logs = Run();
+
+      var matIds = logs.SelectMany(e => e.Material).Select(m => m.MaterialID).ToHashSet();
+      matIds.Count.Should().Be(10);
+
+      var byPal =
+        matIds
+          .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
+          .ToLookup(mat => mat.logs.Skip(1).First().Pallet);
+
+      byPal.Count.Should().Be(2);
+      byPal["1"].Count().Should().Be(5);
+      byPal["2"].Count().Should().Be(5);
     }
   }
 }
