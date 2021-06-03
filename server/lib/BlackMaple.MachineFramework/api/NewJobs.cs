@@ -37,7 +37,7 @@ using System.Collections.Immutable;
 using System.Runtime.Serialization;
 using Germinate;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
 
   [DataContract, Draftable]

@@ -36,7 +36,6 @@ using System.IO;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using BlackMaple.MachineWatchInterface;
 using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineFramework.Controllers

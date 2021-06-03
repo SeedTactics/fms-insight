@@ -33,14 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Xml;
 using System.Collections.Generic;
-using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 using System.IO;
 
 namespace Makino
 {
   public class OrderXML
   {
-    public static void WriteOrderXML(string filename, IEnumerable<JobPlan> jobs, bool onlyOrders)
+    public static void WriteOrderXML(string filename, IEnumerable<Job> jobs, bool onlyOrders)
     {
       string tempFile = Path.GetTempFileName();
       try
@@ -78,16 +78,16 @@ namespace Makino
 
     private struct JobAndProc
     {
-      public JobPlan job;
+      public Job job;
       public int proc;
-      public JobAndProc(JobPlan j, int p)
+      public JobAndProc(Job j, int p)
       {
         job = j;
         proc = p;
       }
     }
 
-    private static void WriteFile(string filename, IEnumerable<JobPlan> jobs, bool onlyOrders)
+    private static void WriteFile(string filename, IEnumerable<Job> jobs, bool onlyOrders)
     {
       using (var xml = new XmlTextWriter(filename, System.Text.Encoding.UTF8))
       {
@@ -105,9 +105,9 @@ namespace Makino
           var allFixtures = new Dictionary<string, List<JobAndProc>>();
           foreach (var j in jobs)
           {
-            for (var proc = 1; proc <= j.NumProcesses; proc++)
+            for (var proc = 1; proc <= j.Processes.Count; proc++)
             {
-              foreach (var pal in j.PlannedPallets(proc, 1))
+              foreach (var pal in j.Processes[proc - 1].Paths[0].Pallets)
               {
                 string fixName;
                 int palNum;
@@ -156,7 +156,7 @@ namespace Makino
       }
     }
 
-    private static void WritePart(XmlTextWriter xml, JobPlan j)
+    private static void WritePart(XmlTextWriter xml, Job j)
     {
       xml.WriteStartElement("Part");
       xml.WriteAttributeString("action", "ADD");
@@ -167,8 +167,9 @@ namespace Makino
 
       xml.WriteStartElement("Processes");
 
-      for (int proc = 1; proc <= j.NumProcesses; proc++)
+      for (int proc = 1; proc <= j.Processes.Count; proc++)
       {
+        var pathInfo = j.Processes[proc - 1].Paths[0];
         xml.WriteStartElement("Process");
         xml.WriteAttributeString("number", proc.ToString());
 
@@ -178,8 +179,8 @@ namespace Makino
         xml.WriteStartElement("Operations");
         xml.WriteStartElement("Operation");
         xml.WriteAttributeString("number", "1");
-        xml.WriteAttributeString("clampQuantity", j.PartsPerPallet(proc, 1).ToString());
-        xml.WriteAttributeString("unclampMultiplier", j.PartsPerPallet(proc, 1).ToString());
+        xml.WriteAttributeString("clampQuantity", pathInfo.PartsPerPallet.ToString());
+        xml.WriteAttributeString("unclampMultiplier", pathInfo.PartsPerPallet.ToString());
         xml.WriteEndElement(); //Operation
         xml.WriteEndElement(); //Operations
 
@@ -188,18 +189,18 @@ namespace Makino
         xml.WriteStartElement("Job");
         xml.WriteAttributeString("number", "1");
         xml.WriteAttributeString("type", "WSS");
-        xml.WriteElementString("FeasibleDevice", Join(",", j.LoadStations(proc, 1)));
+        xml.WriteElementString("FeasibleDevice", Join(",", pathInfo.Load));
         xml.WriteEndElement(); //Job
 
         int jobNum = 2;
 
-        foreach (var stop in j.GetMachiningStop(proc, 1))
+        foreach (var stop in pathInfo.Stops)
         {
           xml.WriteStartElement("Job");
           xml.WriteAttributeString("number", jobNum.ToString());
           xml.WriteAttributeString("type", "MCW");
           xml.WriteElementString("FeasibleDevice", Join(",", stop.Stations));
-          xml.WriteElementString("NCProgram", stop.ProgramName);
+          xml.WriteElementString("NCProgram", stop.Program);
           xml.WriteEndElement(); //Job
 
           jobNum += 1;
@@ -208,7 +209,7 @@ namespace Makino
         xml.WriteStartElement("Job");
         xml.WriteAttributeString("number", jobNum.ToString());
         xml.WriteAttributeString("type", "WSS");
-        xml.WriteElementString("FeasibleDevice", Join(",", j.UnloadStations(proc, 1)));
+        xml.WriteElementString("FeasibleDevice", Join(",", pathInfo.Unload));
         xml.WriteEndElement(); //Job
 
         xml.WriteEndElement(); //Jobs
@@ -241,7 +242,7 @@ namespace Makino
       xml.WriteEndElement(); //CommonFixture
     }
 
-    private static void WriteOrder(XmlTextWriter xml, JobPlan j, bool onlyOrders)
+    private static void WriteOrder(XmlTextWriter xml, Job j, bool onlyOrders)
     {
       string partName = onlyOrders ? j.PartName : j.UniqueStr;
 
@@ -252,19 +253,19 @@ namespace Makino
       xml.WriteElementString("Comment", j.PartName);
       xml.WriteElementString("PartName", partName);
       xml.WriteElementString("Revision", "SAIL");
-      xml.WriteElementString("Quantity", j.GetPlannedCyclesOnFirstProcess(1).ToString());
+      xml.WriteElementString("Quantity", j.CyclesOnFirstProcess[0].ToString());
       xml.WriteElementString("Priority", "10");
       xml.WriteElementString("Status", "0");
 
       xml.WriteEndElement(); // Order
     }
 
-    private static void WriteOrderQty(XmlTextWriter xml, JobPlan j)
+    private static void WriteOrderQty(XmlTextWriter xml, Job j)
     {
       xml.WriteStartElement("OrderQuantity");
       xml.WriteAttributeString("orderName", j.UniqueStr);
 
-      int qty = j.GetPlannedCyclesOnFirstProcess(1);
+      int qty = j.CyclesOnFirstProcess[0];
       //qty /= j.PartsPerPallet(1, 1);
 
       xml.WriteElementString("ProcessNumber", "1");

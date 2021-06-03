@@ -34,7 +34,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
@@ -98,6 +97,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       foreach (var j in jobs.Jobs)
       {
+        int? pathGroup = null;
         for (var proc = 1; proc <= j.Processes.Count; proc++)
         {
           for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
@@ -134,6 +134,19 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add(" Part " + j.PartName + " has an output queue " + pathData.OutputQueue + " which is not configured as a queue in FMS Insight.");
             }
+#pragma warning disable CS0612 // warning for obsolete PathGroup
+            if (pathGroup.HasValue)
+            {
+              if (pathData.PathGroup != pathGroup.Value)
+              {
+                errors.Add(" Part " + j.UniqueStr + " uses obsolete path groups");
+              }
+            }
+            else
+            {
+              pathGroup = pathData.PathGroup;
+            }
+#pragma warning restore CS0612
 
             foreach (var stop in pathData.Stops)
             {
@@ -181,7 +194,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return errors;
     }
 
-    private void CheckProgram(string programName, long? rev, IEnumerable<MachineWatchInterface.ProgramEntry> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
+    private void CheckProgram(string programName, long? rev, IEnumerable<MachineFramework.ProgramEntry> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
     {
       if (rev.HasValue && rev.Value > 0)
       {
@@ -253,13 +266,16 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (st == null) return false;
 
+      int remainQty = 0;
       for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
       {
-        if (st.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: path), out var qty) && qty > 0)
+        if (st.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: path), out var qty))
         {
-          return false;
+          // note qty could be negative if job.FlexCyclesOnFirstProcessBetweenAllPaths is true
+          remainQty += qty;
         }
       }
+      if (remainQty > 0) return false;
 
       var matInProc =
         st.Pallets
@@ -306,7 +322,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineFramework.ProgramEntry> programs)
     {
       var cellState = _sync.CurrentCellState();
       if (cellState == null) return;
@@ -422,7 +438,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    InProcessMaterial IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
+    InProcessMaterial IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName)
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -442,17 +458,6 @@ namespace BlackMaple.FMSInsight.Niigata
 
       int procToCheck = Math.Max(1, process);
       if (procToCheck > job.Processes.Count) throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
-
-      int? path = null;
-      for (var p = 1; p <= job.Processes[procToCheck - 1].Paths.Count; p++)
-      {
-        if (job.Processes[procToCheck - 1].Paths[p - 1].PathGroup == pathGroup)
-        {
-          path = p;
-          break;
-        }
-      }
-      if (!path.HasValue) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find path group " + pathGroup.ToString() + " for job " + jobUnique + " and process " + process.ToString());
 
       long matId;
       IEnumerable<LogEntry> logEvt;
@@ -477,7 +482,6 @@ namespace BlackMaple.FMSInsight.Niigata
           position: position,
           operatorName: operatorName,
           reason: "SetByOperator");
-        ldb.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
       }
 
       _sync.JobsOrQueuesChanged();
@@ -488,7 +492,7 @@ namespace BlackMaple.FMSInsight.Niigata
         JobUnique = jobUnique,
         PartName = job.PartName,
         Process = process,
-        Path = path.Value,
+        Path = 1,
         Serial = serial,
         Location = new InProcessMaterialLocation()
         {

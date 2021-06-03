@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Linq;
 using Xunit;
-using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -2266,7 +2266,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             )}
           },
           new[] {
-            new MachineWatchInterface.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
+            new MachineFramework.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
           }
         )
         .ExpectNoChanges()
@@ -2423,7 +2423,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             )}
           },
           new[] {
-            new MachineWatchInterface.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 11 ct", Revision = 11}
+            new MachineFramework.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 11 ct", Revision = 11}
           }
         )
         .UpdateExpectedMaterial(queuedMat5.MaterialID, m =>

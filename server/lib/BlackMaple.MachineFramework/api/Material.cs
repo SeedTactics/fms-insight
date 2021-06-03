@@ -39,7 +39,7 @@ using System.Runtime.Serialization;
 using System.Collections.Immutable;
 using Germinate;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
   ///Stores what is currently happening to a piece of material.
   [DataContract, Draftable]

@@ -65,8 +65,8 @@ namespace BlackMaple.MachineFramework
 
   public class RepositoryConfig
   {
-    public event Action<MachineWatchInterface.LogEntry, string, IRepository> NewLogEntry;
-    internal void OnNewLogEntry(MachineWatchInterface.LogEntry e, string foreignId, IRepository db) => NewLogEntry?.Invoke(e, foreignId, db);
+    public event Action<LogEntry, string, IRepository> NewLogEntry;
+    internal void OnNewLogEntry(LogEntry e, string foreignId, IRepository db) => NewLogEntry?.Invoke(e, foreignId, db);
 
     public FMSSettings Settings { get; }
 

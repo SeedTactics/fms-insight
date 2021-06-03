@@ -98,13 +98,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
 
       //job with 1 completed part
-      var j = new JobPlan("u1", 1);
-      j.PartName = "p1";
-      j.SetPlannedCyclesOnFirstProcess(1, 70);
-      j.AddProcessOnPallet(1, 1, "pal1");
-      j.RouteStartingTimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc);
-      j.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 20, 0, 0, DateTimeKind.Utc));
-      j.ScheduleId = "sch1";
+      var j = new Job()
+      {
+        UniqueStr = "u1",
+        PartName = "p1",
+        CyclesOnFirstProcess = ImmutableList.Create(70),
+        RouteStartUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
+        Processes = ImmutableList.Create(new ProcessInfo()
+        {
+          Paths = ImmutableList.Create(new ProcPathInfo()
+          {
+            Pallets = ImmutableList.Create("pal1"),
+            SimulatedStartingUTC = new DateTime(2020, 04, 19, 20, 0, 0, DateTimeKind.Utc),
+          })
+        })
+      };
       _logDB.RecordUnloadEnd(
         mats: new[] { new EventLogMaterial() {
           MaterialID = mat1,
@@ -128,17 +136,36 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       );
 
       // a second job with the same  route starting time and earlier simulated starting time
-      var j2 = new JobPlan("u2", 1);
-      j2.PartName = "p1";
-      j2.RouteStartingTimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc);
-      j2.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 17, 0, 0, DateTimeKind.Utc));
+      var j2 = new Job()
+      {
+        UniqueStr = "u2",
+        PartName = "p1",
+        RouteStartUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
+        Processes = ImmutableList.Create(new ProcessInfo()
+        {
+          Paths = ImmutableList.Create(new ProcPathInfo()
+          {
+            SimulatedStartingUTC = new DateTime(2020, 04, 19, 17, 0, 0, DateTimeKind.Utc),
+          })
+        })
+      };
 
       // a third job with earlier route starting time but later simulated starting time
-      var j3 = new JobPlan("u3", 1);
-      j3.PartName = "p1";
-      j3.RouteStartingTimeUTC = new DateTime(2020, 04, 19, 10, 18, 0, DateTimeKind.Utc);
-      j3.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 04, 19, 22, 0, 0, DateTimeKind.Utc));
-
+      var j3 = new Job()
+      {
+        UniqueStr = "u3",
+        PartName = "p1",
+        RouteStartUTC = new DateTime(2020, 04, 19, 10, 18, 0, DateTimeKind.Utc),
+        CyclesOnFirstProcess = ImmutableList.Create(0),
+        Processes = ImmutableList.Create(new ProcessInfo()
+        {
+          Paths = ImmutableList.Create(new ProcPathInfo()
+          {
+            SimulatedStartingUTC = new DateTime(2020, 04, 19, 22, 0, 0, DateTimeKind.Utc),
+          })
+        })
+      };
 
       // two pallets with some material
       var pal1 = new PalletAndMaterial()
@@ -298,9 +325,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var expectedSt = (new CurrentStatus()).Produce(st =>
       {
         st.TimeOfCurrentStatusUTC = status.TimeOfStatusUTC;
-        var expectedJob = j.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
+        var expectedJob = j.CloneToDerived<ActiveJob, Job>() with
         {
-          ScheduleId = j.ScheduleId,
           CopiedToSystem = true,
           CyclesOnFirstProcess = ImmutableList.Create(70 - 30),
           Completed = ImmutableList.Create(ImmutableList.Create(1)),
@@ -310,9 +336,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         };
         st.Jobs.Add("u1", expectedJob);
 
-        var expectedJob2 = j2.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
+        var expectedJob2 = j2.CloneToDerived<ActiveJob, Job>() with
         {
-          ScheduleId = j2.ScheduleId,
           CopiedToSystem = true,
           CyclesOnFirstProcess = ImmutableList.Create(0),
           Completed = ImmutableList.Create(ImmutableList.Create(0)),
@@ -322,9 +347,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         };
         st.Jobs.Add("u2", expectedJob2);
 
-        var expectedJob3 = j3.ToHistoricJob().CloneToDerived<ActiveJob, Job>() with
+        var expectedJob3 = j3.CloneToDerived<ActiveJob, Job>() with
         {
-          ScheduleId = j3.ScheduleId,
           CopiedToSystem = true,
           CyclesOnFirstProcess = ImmutableList.Create(0),
           Completed = ImmutableList.Create(ImmutableList.Create(0)),
@@ -337,7 +361,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         st.Material.Add(pal1.Material[0].Mat);
         st.Material.Add(pal2.Material[0].Mat);
         st.Material.Add(queuedMat.Mat);
-        st.Pallets.Add("1", new MachineWatchInterface.PalletStatus()
+        st.Pallets.Add("1", new MachineFramework.PalletStatus()
         {
           Pallet = "1",
           FixtureOnPallet = "",
@@ -345,7 +369,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
           NumFaces = 1
         });
-        st.Pallets.Add("2", new MachineWatchInterface.PalletStatus()
+        st.Pallets.Add("2", new MachineFramework.PalletStatus()
         {
           Pallet = "2",
           FixtureOnPallet = "",
@@ -365,19 +389,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Status = status,
         Pallets = new List<PalletAndMaterial> { pal1, pal2 },
         QueuedMaterial = new List<InProcessMaterialAndJob> { queuedMat },
-        UnarchivedJobs = new List<HistoricJob> { j.ToHistoricJob() with { Decrements = job1Decrements }, j2.ToHistoricJob(), j3.ToHistoricJob() },
+        UnarchivedJobs = new List<HistoricJob> { j.CloneToDerived<HistoricJob, Job>() with { Decrements = job1Decrements }, j2.CloneToDerived<HistoricJob, Job>(), j3.CloneToDerived<HistoricJob, Job>() },
       });
 
       ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt,
-        options => options
-          .ComparingByMembers<CurrentStatus>()
-          .ComparingByMembers<ActiveJob>()
-          .ComparingByMembers<ProcessInfo>()
-          .ComparingByMembers<ProcPathInfo>()
-          .ComparingByMembers<MachiningStop>()
-          .ComparingByMembers<InProcessMaterial>()
-          .ComparingByMembers<PalletStatus>()
-      );
+         options => options
+           .ComparingByMembers<CurrentStatus>()
+           .ComparingByMembers<ActiveJob>()
+           .ComparingByMembers<ProcessInfo>()
+           .ComparingByMembers<ProcPathInfo>()
+           .ComparingByMembers<MachiningStop>()
+           .ComparingByMembers<InProcessMaterial>()
+           .ComparingByMembers<PalletStatus>()
+
+       );
     }
 
     [Fact]
@@ -586,16 +611,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [InlineData(1)]
     public void UnprocessedMaterial(int lastCompletedProcess)
     {
-      var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
-      job.PartName = "p1";
-      job.SetPathGroup(1, 1, 50);
-      job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
+      var job = new Job()
+      {
+        UniqueStr = "uuu1",
+        PartName = "p1",
+        CyclesOnFirstProcess = ImmutableList.Create(0),
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+        )
+      };
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) }, null, addAsCopiedToSystem: true);
 
       //add an allocated material
-      ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, pathGroup: 60, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
+      ((IJobControl)_jobs).AddUnprocessedMaterialToQueue("uuu1", lastCompletedProcess: lastCompletedProcess, queue: "q1", position: 0, serial: "aaa", operatorName: "theoper")
         .Should().BeEquivalentTo(
-          QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 2, serial: "aaa", queue: "q1", pos: 0).Mat,
+          QueuedMat(matId: 1, job: job, part: "p1", proc: lastCompletedProcess, path: 1, serial: "aaa", queue: "q1", pos: 0).Mat,
           options => options.ComparingByMembers<InProcessMaterial>()
         );
       _logDB.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
@@ -605,7 +636,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NumProcesses = 2,
         Serial = "aaa",
         JobUnique = "uuu1",
-        Paths = ImmutableDictionary<int, int>.Empty.Add(1, 2)
       }, options => options.ComparingByMembers<MaterialDetails>());
 
       var mats = _logDB.GetMaterialInAllQueues().ToList();
@@ -665,8 +695,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
       job.PartName = "p1";
-      job.SetPathGroup(1, 1, 50);
-      job.SetPathGroup(1, 2, 60);
       _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
@@ -706,11 +734,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void QuarantinesMatInQueue()
     {
-      var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
-      job.PartName = "p1";
-      job.SetPathGroup(1, 1, 50);
-      job.SetPathGroup(1, 2, 60);
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
+      var job = new Job()
+      {
+        UniqueStr = "uuu1",
+        PartName = "p1",
+        CyclesOnFirstProcess = ImmutableList.Create(5),
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+        )
+      };
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) }, null, addAsCopiedToSystem: true);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
       _logDB.RecordSerialForMaterialID(materialID: 1, proc: 1, serial: "aaa");
@@ -850,7 +884,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return e;
     }
 
-    private InProcessMaterialAndJob QueuedMat(long matId, JobPlan job, string part, int proc, int path, string serial, string queue, int pos)
+    private InProcessMaterialAndJob QueuedMat(long matId, Job job, string part, int proc, int path, string serial, string queue, int pos)
     {
       return new InProcessMaterialAndJob()
       {

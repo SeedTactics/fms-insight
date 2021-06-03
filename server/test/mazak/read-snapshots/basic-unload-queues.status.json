@@ -1,9 +1,7 @@
 {
-  "TimeOfCurrentStatusUTC": "2021-02-24T20:20:23.936969Z",
+  "TimeOfCurrentStatusUTC": "2021-06-02T19:30:44.4107664Z",
   "Jobs": {
     "bbb-schId1234": {
-      "CreateMarkingData": false,
-      "CopiedToSystem": true,
       "Completed": [
         [
           0
@@ -12,7 +10,6 @@
           0
         ]
       ],
-      "Decrements": null,
       "Precedence": [
         [
           1
@@ -21,14 +18,15 @@
           1
         ]
       ],
-      "AssignedWorkorders": null,
+      "ScheduleId": "schId1234",
+      "CopiedToSystem": true,
+      "Decrements": null,
       "Unique": "bbb-schId1234",
       "RouteStartUTC": "2018-07-18T21:51:36.112578Z",
       "RouteEndUTC": "2018-07-19T21:51:36.112589Z",
       "Archived": false,
       "PartName": "bbb",
       "Comment": "",
-      "ScheduleId": "schId1234",
       "Bookings": [],
       "ManuallyCreated": false,
       "CyclesOnFirstProcess": [
@@ -38,7 +36,6 @@
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "2"
               ],
@@ -64,7 +61,6 @@
                     4
                   ],
                   "Program": "1001",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
@@ -155,14 +151,14 @@
               "SimulatedAverageFlowTime": "PT28M0.8S",
               "PartsPerPallet": 1,
               "InputQueue": "castings",
-              "OutputQueue": "queueBBB"
+              "OutputQueue": "queueBBB",
+              "PathGroup": 0
             }
           ]
         },
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "2"
               ],
@@ -188,7 +184,6 @@
                     4
                   ],
                   "Program": "1002",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT30M"
                 }
@@ -278,15 +273,14 @@
               "SimulatedStartingUTC": "2018-07-18T22:58:52.112578Z",
               "SimulatedAverageFlowTime": "PT54M25.7S",
               "PartsPerPallet": 1,
-              "InputQueue": "queueBBB"
+              "InputQueue": "queueBBB",
+              "PathGroup": 0
             }
           ]
         }
       ]
     },
     "aaa-schId1234": {
-      "CreateMarkingData": false,
-      "CopiedToSystem": true,
       "Completed": [
         [
           0
@@ -295,7 +289,6 @@
           0
         ]
       ],
-      "Decrements": null,
       "Precedence": [
         [
           2
@@ -304,14 +297,15 @@
           2
         ]
       ],
-      "AssignedWorkorders": null,
+      "ScheduleId": "schId1234",
+      "CopiedToSystem": true,
+      "Decrements": null,
       "Unique": "aaa-schId1234",
       "RouteStartUTC": "2018-07-18T21:51:36.112578Z",
       "RouteEndUTC": "2018-07-19T21:51:36.112589Z",
       "Archived": false,
       "PartName": "aaa",
       "Comment": "",
-      "ScheduleId": "schId1234",
       "Bookings": [],
       "ManuallyCreated": false,
       "CyclesOnFirstProcess": [
@@ -321,7 +315,6 @@
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1"
               ],
@@ -347,7 +340,6 @@
                     4
                   ],
                   "Program": "1001",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT12M12S"
                 }
@@ -402,14 +394,14 @@
               "SimulatedAverageFlowTime": "PT35M32.3636363S",
               "PartsPerPallet": 1,
               "InputQueue": "castings",
-              "OutputQueue": "queueAAA"
+              "OutputQueue": "queueAAA",
+              "PathGroup": 0
             }
           ]
         },
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1"
               ],
@@ -435,7 +427,6 @@
                     4
                   ],
                   "Program": "1002",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT1H10M18S"
                 }
@@ -489,15 +480,14 @@
               "SimulatedStartingUTC": "2018-07-18T23:48:38.112578Z",
               "SimulatedAverageFlowTime": "PT1H35M20.9090909S",
               "PartsPerPallet": 1,
-              "InputQueue": "queueAAA"
+              "InputQueue": "queueAAA",
+              "PathGroup": 0
             }
           ]
         }
       ]
     },
     "ccc-schId1234": {
-      "CreateMarkingData": false,
-      "CopiedToSystem": true,
       "Completed": [
         [
           2
@@ -506,7 +496,6 @@
           0
         ]
       ],
-      "Decrements": null,
       "Precedence": [
         [
           3
@@ -515,14 +504,15 @@
           3
         ]
       ],
-      "AssignedWorkorders": null,
+      "ScheduleId": "schId1234",
+      "CopiedToSystem": true,
+      "Decrements": null,
       "Unique": "ccc-schId1234",
       "RouteStartUTC": "2018-07-18T21:51:36.112578Z",
       "RouteEndUTC": "2018-07-19T21:51:36.112589Z",
       "Archived": false,
       "PartName": "ccc",
       "Comment": "",
-      "ScheduleId": "schId1234",
       "Bookings": [],
       "ManuallyCreated": false,
       "CyclesOnFirstProcess": [
@@ -532,7 +522,6 @@
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "5"
               ],
@@ -558,7 +547,6 @@
                     4
                   ],
                   "Program": "1003",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
@@ -644,14 +632,14 @@
               "SimulatedStartingUTC": "2018-07-18T22:39:48.112578Z",
               "SimulatedAverageFlowTime": "PT41M58.0526315S",
               "PartsPerPallet": 2,
-              "OutputQueue": "queueCCC"
+              "OutputQueue": "queueCCC",
+              "PathGroup": 0
             }
           ]
         },
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "6"
               ],
@@ -677,7 +665,6 @@
                     4
                   ],
                   "Program": "1004",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT45M30S"
                 }
@@ -763,7 +750,8 @@
               "SimulatedStartingUTC": "2018-07-19T00:00:42.112578Z",
               "SimulatedAverageFlowTime": "PT43M54.1578947S",
               "PartsPerPallet": 2,
-              "InputQueue": "queueCCC"
+              "InputQueue": "queueCCC",
+              "PathGroup": 0
             }
           ]
         }
@@ -779,17 +767,6 @@
         "loc": "LoadUnload",
         "group": "L/U",
         "num": 1
-      },
-      "NumFaces": 1
-    },
-    "2": {
-      "Pallet": "2",
-      "FixtureOnPallet": "F:0:fixtureBB:1",
-      "OnHold": false,
-      "CurrentPalletLocation": {
-        "loc": "Buffer",
-        "group": "Buffer",
-        "num": 2
       },
       "NumFaces": 1
     },
@@ -814,6 +791,17 @@
         "num": 1
       },
       "NumFaces": 2
+    },
+    "2": {
+      "Pallet": "2",
+      "FixtureOnPallet": "F:0:fixtureBB:1",
+      "OnHold": false,
+      "CurrentPalletLocation": {
+        "loc": "Buffer",
+        "group": "Buffer",
+        "num": 2
+      },
+      "NumFaces": 1
     }
   },
   "Material": [
@@ -959,8 +947,8 @@
   "Alarms": [],
   "Queues": {
     "queueCCC": {},
+    "castings": {},
     "queueBBB": {},
-    "queueAAA": {},
-    "castings": {}
+    "queueAAA": {}
   }
 }

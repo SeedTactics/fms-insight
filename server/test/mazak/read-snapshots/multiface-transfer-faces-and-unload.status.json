@@ -1,9 +1,7 @@
 {
-  "TimeOfCurrentStatusUTC": "2021-02-24T20:20:23.9794896Z",
+  "TimeOfCurrentStatusUTC": "2021-06-02T19:30:44.4523056Z",
   "Jobs": {
     "bbb-schId1234": {
-      "CreateMarkingData": false,
-      "CopiedToSystem": true,
       "Completed": [
         [
           0
@@ -12,7 +10,6 @@
           0
         ]
       ],
-      "Decrements": null,
       "Precedence": [
         [
           2
@@ -21,14 +18,15 @@
           2
         ]
       ],
-      "AssignedWorkorders": null,
+      "ScheduleId": "schId1234",
+      "CopiedToSystem": true,
+      "Decrements": null,
       "Unique": "bbb-schId1234",
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
       "PartName": "bbb",
       "Comment": "",
-      "ScheduleId": "schId1234",
       "Bookings": [
         "book1",
         "book2"
@@ -41,7 +39,6 @@
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1",
                 "2",
@@ -70,7 +67,6 @@
                     4
                   ],
                   "Program": "1001",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
@@ -239,14 +235,14 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T02:16:13.89949Z",
               "SimulatedAverageFlowTime": "PT1H7M5.5S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PathGroup": 0
             }
           ]
         },
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1",
                 "2",
@@ -275,7 +271,6 @@
                     4
                   ],
                   "Program": "1002",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT20M"
                 }
@@ -444,15 +439,14 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T03:03:49.89949Z",
               "SimulatedAverageFlowTime": "PT1H5M23.8S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PathGroup": 0
             }
           ]
         }
       ]
     },
     "aaa-schId1234": {
-      "CreateMarkingData": false,
-      "CopiedToSystem": true,
       "Completed": [
         [
           4
@@ -461,7 +455,6 @@
           0
         ]
       ],
-      "Decrements": null,
       "Precedence": [
         [
           1
@@ -470,14 +463,15 @@
           1
         ]
       ],
-      "AssignedWorkorders": null,
+      "ScheduleId": "schId1234",
+      "CopiedToSystem": true,
+      "Decrements": null,
       "Unique": "aaa-schId1234",
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
       "PartName": "aaa",
       "Comment": "",
-      "ScheduleId": "schId1234",
       "Bookings": [
         "book1",
         "book2"
@@ -490,7 +484,6 @@
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1",
                 "2",
@@ -519,7 +512,6 @@
                     4
                   ],
                   "Program": "1001",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT12M12S"
                 }
@@ -648,14 +640,14 @@
               ],
               "SimulatedStartingUTC": "2018-07-21T20:16:09.89949Z",
               "SimulatedAverageFlowTime": "PT1H3M58S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PathGroup": 0
             }
           ]
         },
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1",
                 "2",
@@ -684,7 +676,6 @@
                     4
                   ],
                   "Program": "1002",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT9M18S"
                 }
@@ -813,15 +804,14 @@
               ],
               "SimulatedStartingUTC": "2018-07-21T21:00:31.89949Z",
               "SimulatedAverageFlowTime": "PT1H7M40.5333333S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PathGroup": 0
             }
           ]
         }
       ]
     },
     "ccc-schId1234": {
-      "CreateMarkingData": false,
-      "CopiedToSystem": true,
       "Completed": [
         [
           0
@@ -830,7 +820,6 @@
           0
         ]
       ],
-      "Decrements": null,
       "Precedence": [
         [
           3
@@ -839,14 +828,15 @@
           3
         ]
       ],
-      "AssignedWorkorders": null,
+      "ScheduleId": "schId1234",
+      "CopiedToSystem": true,
+      "Decrements": null,
       "Unique": "ccc-schId1234",
       "RouteStartUTC": "2018-07-21T19:39:49.89949Z",
       "RouteEndUTC": "2018-07-22T19:39:49.899505Z",
       "Archived": false,
       "PartName": "ccc",
       "Comment": "",
-      "ScheduleId": "schId1234",
       "Bookings": [
         "book1",
         "book2"
@@ -859,7 +849,6 @@
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1",
                 "2",
@@ -888,7 +877,6 @@
                     4
                   ],
                   "Program": "1003",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT40M"
                 }
@@ -985,14 +973,14 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T10:55:25.89949Z",
               "SimulatedAverageFlowTime": "PT1H31M29.6363636S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PathGroup": 0
             }
           ]
         },
         {
           "paths": [
             {
-              "PathGroup": 0,
               "Pallets": [
                 "1",
                 "2",
@@ -1021,7 +1009,6 @@
                     4
                   ],
                   "Program": "1004",
-                  "ProgramRevision": null,
                   "Tools": {},
                   "ExpectedCycleTime": "PT15M30S"
                 }
@@ -1118,7 +1105,8 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T12:13:47.89949Z",
               "SimulatedAverageFlowTime": "PT1H26M7.8181818S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PathGroup": 0
             }
           ]
         }
@@ -1137,14 +1125,14 @@
       },
       "NumFaces": 2
     },
-    "2": {
-      "Pallet": "2",
+    "3": {
+      "Pallet": "3",
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "Buffer",
-        "group": "Buffer",
-        "num": 2
+        "loc": "Machine",
+        "group": "MC",
+        "num": 3
       },
       "NumFaces": 2
     },
@@ -1159,14 +1147,14 @@
       },
       "NumFaces": 2
     },
-    "3": {
-      "Pallet": "3",
+    "2": {
+      "Pallet": "2",
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
-        "loc": "Machine",
-        "group": "MC",
-        "num": 3
+        "loc": "Buffer",
+        "group": "Buffer",
+        "num": 2
       },
       "NumFaces": 2
     }
@@ -1335,8 +1323,8 @@
   "Alarms": [],
   "Queues": {
     "queueCCC": {},
+    "castings": {},
     "queueBBB": {},
-    "queueAAA": {},
-    "castings": {}
+    "queueAAA": {}
   }
 }

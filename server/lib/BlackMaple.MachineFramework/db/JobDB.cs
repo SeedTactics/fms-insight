@@ -424,7 +424,9 @@ namespace BlackMaple.MachineFramework
                 .OrderBy(p => p.Path)
                 .Select(p => new ProcPathInfo()
                 {
+#pragma warning disable CS0612 // obsolete PathGroup
                   PathGroup = p.PathGroup,
+#pragma warning restore CS0612
                   Pallets = p.Pals.ToImmutable(),
                   Fixture = p.Fixture,
                   Face = p.Face,
@@ -480,6 +482,7 @@ namespace BlackMaple.MachineFramework
             CopiedToSystem = reader.IsDBNull(7) ? false : reader.GetBoolean(7),
             ScheduleId = reader.IsDBNull(8) ? null : reader.GetString(8),
             ManuallyCreated = !reader.IsDBNull(9) && reader.GetBoolean(9),
+            FlexCyclesOnFirstProcessBetweenAllPaths = reader.IsDBNull(10) ? null : reader.GetBoolean(10),
             CyclesOnFirstProcess = details.CyclesOnFirstProc,
             Processes = details.Procs,
             BookingIds = details.Bookings,
@@ -512,7 +515,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<MachineWatchInterface.PartWorkorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
+    private ImmutableList<PartWorkorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
     {
       using (var cmd = _connection.CreateCommand())
       using (var prgCmd = _connection.CreateCommand())
@@ -520,7 +523,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
         ((IDbCommand)prgCmd).Transaction = trans;
 
-        var ret = new Dictionary<(string work, string part), (MachineWatchInterface.PartWorkorder work, ImmutableList<MachineWatchInterface.WorkorderProgram>.Builder progs)>();
+        var ret = new Dictionary<(string work, string part), (PartWorkorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
         cmd.CommandText = "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision " +
           " FROM unfilled_workorders w " +
           " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -534,22 +537,22 @@ namespace BlackMaple.MachineFramework
             var part = reader.GetString(1);
             if (!ret.ContainsKey((work: workId, part: part)))
             {
-              var workorder = new MachineWatchInterface.PartWorkorder()
+              var workorder = new PartWorkorder()
               {
                 WorkorderId = workId,
                 Part = part,
                 Quantity = reader.GetInt32(2),
                 DueDate = new DateTime(reader.GetInt64(3)),
                 Priority = reader.GetInt32(4),
-                Programs = ImmutableList<MachineWatchInterface.WorkorderProgram>.Empty
+                Programs = ImmutableList<WorkorderProgram>.Empty
               };
-              ret.Add((work: workId, part: part), (work: workorder, progs: ImmutableList.CreateBuilder<MachineWatchInterface.WorkorderProgram>()));
+              ret.Add((work: workId, part: part), (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
             }
 
             if (reader.IsDBNull(5)) continue;
 
             // add the program
-            ret[(work: workId, part: part)].progs.Add(new MachineWatchInterface.WorkorderProgram()
+            ret[(work: workId, part: part)].progs.Add(new WorkorderProgram()
             {
               ProcessNumber = reader.GetInt32(5),
               StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
@@ -583,16 +586,16 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<MachineWatchInterface.SimulatedStationUtilization> LoadSimulatedStationUse(
+    private ImmutableList<SimulatedStationUtilization> LoadSimulatedStationUse(
         IDbCommand cmd, IDbTransaction trans)
     {
-      var ret = ImmutableList.CreateBuilder<MachineWatchInterface.SimulatedStationUtilization>();
+      var ret = ImmutableList.CreateBuilder<SimulatedStationUtilization>();
 
       using (var reader = cmd.ExecuteReader())
       {
         while (reader.Read())
         {
-          var sim = new MachineWatchInterface.SimulatedStationUtilization()
+          var sim = new SimulatedStationUtilization()
           {
             ScheduleId = reader.GetString(0),
             StationGroup = reader.GetString(1),
@@ -609,12 +612,12 @@ namespace BlackMaple.MachineFramework
       return ret.ToImmutable();
     }
 
-    private MachineWatchInterface.HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd)
+    private HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd)
     {
       lock (_cfg)
       {
         var jobs = ImmutableDictionary<string, HistoricJob>.Empty;
-        var statUse = ImmutableList<MachineWatchInterface.SimulatedStationUtilization>.Empty;
+        var statUse = ImmutableList<SimulatedStationUtilization>.Empty;
 
         var trans = _connection.BeginTransaction();
         try
@@ -633,7 +636,7 @@ namespace BlackMaple.MachineFramework
           throw;
         }
 
-        return new MachineWatchInterface.HistoricData()
+        return new HistoricData()
         {
           Jobs = jobs,
           StationUse = statUse
@@ -649,7 +652,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual FROM jobs WHERE Archived = 0";
+        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths FROM jobs WHERE Archived = 0";
         using (var trans = _connection.BeginTransaction())
         {
           cmd.Transaction = trans;
@@ -660,7 +663,7 @@ namespace BlackMaple.MachineFramework
 
     public IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
     {
-      var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
+      var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths" +
                   " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
       if (!includeDecremented)
       {
@@ -679,12 +682,12 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public BlackMaple.MachineWatchInterface.HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
+    public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
     {
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
+        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths " +
             " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
         jobCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         jobCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
@@ -698,12 +701,12 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public BlackMaple.MachineWatchInterface.HistoricData LoadJobsAfterScheduleId(string schId)
+    public HistoricData LoadJobsAfterScheduleId(string schId)
     {
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
+        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths " +
             " FROM jobs WHERE ScheduleId > $sid";
         jobCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
 
@@ -715,7 +718,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IReadOnlyList<MachineWatchInterface.PartWorkorder> MostRecentWorkorders()
+    public IReadOnlyList<PartWorkorder> MostRecentWorkorders()
     {
       lock (_cfg)
       {
@@ -727,7 +730,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
+    public List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
     {
       lock (_cfg)
       {
@@ -738,7 +741,7 @@ namespace BlackMaple.MachineFramework
 
           var sid = LatestScheduleId(trans);
 
-          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, ImmutableList<MachineWatchInterface.WorkorderProgram>.Builder progs)>();
+          var ret = new Dictionary<string, (PartWorkorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
           cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -753,7 +756,7 @@ namespace BlackMaple.MachineFramework
               var workId = reader.GetString(0);
               if (!ret.ContainsKey(workId))
               {
-                var workorder = new MachineWatchInterface.PartWorkorder()
+                var workorder = new PartWorkorder()
                 {
                   WorkorderId = workId,
                   Part = part,
@@ -761,13 +764,13 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<MachineWatchInterface.WorkorderProgram>()));
+                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[workId].progs.Add(new MachineWatchInterface.WorkorderProgram()
+              ret[workId].progs.Add(new WorkorderProgram()
               {
                 ProcessNumber = reader.GetInt32(4),
                 StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
@@ -783,13 +786,13 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.PartWorkorder> WorkordersById(string workorderId)
+    public List<PartWorkorder> WorkordersById(string workorderId)
     {
       lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
-          var ret = new Dictionary<string, (MachineWatchInterface.PartWorkorder work, ImmutableList<MachineWatchInterface.WorkorderProgram>.Builder progs)>();
+          var ret = new Dictionary<string, (PartWorkorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
           cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -806,7 +809,7 @@ namespace BlackMaple.MachineFramework
 
               if (!ret.ContainsKey(part))
               {
-                var workorder = new MachineWatchInterface.PartWorkorder()
+                var workorder = new PartWorkorder()
                 {
                   WorkorderId = workorderId,
                   Part = part,
@@ -814,13 +817,13 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<MachineWatchInterface.WorkorderProgram>()));
+                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[part].progs.Add(new MachineWatchInterface.WorkorderProgram()
+              ret[part].progs.Add(new WorkorderProgram()
               {
                 ProcessNumber = reader.GetInt32(4),
                 StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
@@ -835,11 +838,11 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public BlackMaple.MachineWatchInterface.PlannedSchedule LoadMostRecentSchedule()
+    public PlannedSchedule LoadMostRecentSchedule()
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
+        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths" +
                   " FROM jobs WHERE ScheduleId = $sid";
 
         lock (_cfg)
@@ -849,7 +852,7 @@ namespace BlackMaple.MachineFramework
             var latestSchId = LatestScheduleId(trans);
             cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
             cmd.Transaction = trans;
-            return new MachineWatchInterface.PlannedSchedule()
+            return new PlannedSchedule()
             {
               LatestScheduleId = latestSchId,
               Jobs = LoadJobsHelper(cmd, trans),
@@ -870,7 +873,7 @@ namespace BlackMaple.MachineFramework
 
           HistoricJob job = null;
 
-          cmd.CommandText = "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual FROM jobs WHERE UniqueStr = $uniq";
+          cmd.CommandText = "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths FROM jobs WHERE UniqueStr = $uniq";
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
 
           var trans = _connection.BeginTransaction();
@@ -896,6 +899,7 @@ namespace BlackMaple.MachineFramework
                   CopiedToSystem = reader.IsDBNull(6) ? false : reader.GetBoolean(6),
                   ScheduleId = reader.IsDBNull(7) ? null : reader.GetString(7),
                   ManuallyCreated = !reader.IsDBNull(8) && reader.GetBoolean(8),
+                  FlexCyclesOnFirstProcessBetweenAllPaths = reader.IsDBNull(9) ? null : reader.GetBoolean(9),
                   CyclesOnFirstProcess = details.CyclesOnFirstProc,
                   Processes = details.Procs,
                   BookingIds = details.Bookings,
@@ -940,7 +944,7 @@ namespace BlackMaple.MachineFramework
 
     #region "Adding and deleting"
 
-    public void AddJobs(BlackMaple.MachineWatchInterface.NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem)
+    public void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem)
     {
       lock (_cfg)
       {
@@ -1004,7 +1008,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void AddPrograms(IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime startingUtc)
+    public void AddPrograms(IEnumerable<ProgramEntry> programs, DateTime startingUtc)
     {
       lock (_cfg)
       {
@@ -1029,8 +1033,8 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual) " +
-            "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual)";
+          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths) " +
+            "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual,$flex)";
 
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("part", SqliteType.Text).Value = job.PartName;
@@ -1048,6 +1052,8 @@ namespace BlackMaple.MachineFramework
         else
           cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
         cmd.Parameters.Add("manual", SqliteType.Integer).Value = job.ManuallyCreated;
+        cmd.Parameters.Add("flex", SqliteType.Integer).Value =
+          job.FlexCyclesOnFirstProcessBetweenAllPaths.HasValue ? job.FlexCyclesOnFirstProcessBetweenAllPaths.Value : DBNull.Value;
 
         cmd.ExecuteNonQuery();
 
@@ -1153,7 +1159,9 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters[2].Value = j;
             cmd.Parameters[3].Value = path.SimulatedStartingUTC.Ticks;
             cmd.Parameters[4].Value = path.PartsPerPallet;
+#pragma warning disable CS0612 // obsolete PathGroup
             cmd.Parameters[5].Value = path.PathGroup;
+#pragma warning restore CS0612
             cmd.Parameters[6].Value = path.SimulatedAverageFlowTime.Ticks;
             var iq = path.InputQueue;
             if (string.IsNullOrEmpty(iq))
@@ -1373,20 +1381,6 @@ namespace BlackMaple.MachineFramework
             }
           }
         }
-#pragma warning disable CS1633, CS0612
-        foreach (var insp in job.OldJobInspections ?? Enumerable.Empty<MachineWatchInterface.JobInspectionData>())
-        {
-          cmd.Parameters[1].Value = insp.InspectSingleProcess > 0 ? Math.Min(insp.InspectSingleProcess, job.Processes.Count) : job.Processes.Count;
-          cmd.Parameters[2].Value = -1; // Path = -1 is loaded above for all paths
-          cmd.Parameters[3].Value = insp.InspectionType;
-          cmd.Parameters[4].Value = insp.Counter;
-          cmd.Parameters[5].Value = insp.MaxVal > 0 ? (object)insp.MaxVal : DBNull.Value;
-          cmd.Parameters[6].Value = insp.TimeInterval.Ticks > 0 ? (object)insp.TimeInterval.Ticks : DBNull.Value;
-          cmd.Parameters[7].Value = insp.RandomFreq > 0 ? (object)insp.RandomFreq : DBNull.Value;
-          cmd.Parameters[8].Value = DBNull.Value;
-          cmd.ExecuteNonQuery();
-        }
-#pragma warning restore CS1633, CS0612
       }
 
       InsertHold(job.UniqueStr, -1, -1, false, job.HoldJob, trans);
@@ -1402,7 +1396,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddSimulatedStations(IDbTransaction trans, IEnumerable<MachineWatchInterface.SimulatedStationUtilization> simStats)
+    private void AddSimulatedStations(IDbTransaction trans, IEnumerable<SimulatedStationUtilization> simStats)
     {
       if (simStats == null) return;
 
@@ -1455,7 +1449,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddUnfilledWorkorders(IDbTransaction trans, string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> workorders, Dictionary<(string prog, long rev), long> negativeRevisionMap)
+    private void AddUnfilledWorkorders(IDbTransaction trans, string scheduleId, IEnumerable<PartWorkorder> workorders, Dictionary<(string prog, long rev), long> negativeRevisionMap)
     {
       using (var cmd = _connection.CreateCommand())
       using (var prgCmd = _connection.CreateCommand())
@@ -1756,7 +1750,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<MachineWatchInterface.PartWorkorder> newWorkorders, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime? nowUtc = null)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs, DateTime? nowUtc = null)
     {
       lock (_cfg)
       {
@@ -1937,7 +1931,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId)
+    public List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId)
     {
       lock (_cfg)
       {
@@ -1950,7 +1944,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC)
+    public List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC)
     {
       lock (_cfg)
       {
@@ -1963,14 +1957,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private List<MachineWatchInterface.JobAndDecrementQuantity> LoadDecrementQuantitiesHelper(IDbCommand cmd)
+    private List<JobAndDecrementQuantity> LoadDecrementQuantitiesHelper(IDbCommand cmd)
     {
-      var ret = new List<MachineWatchInterface.JobAndDecrementQuantity>();
+      var ret = new List<JobAndDecrementQuantity>();
       using (var reader = cmd.ExecuteReader())
       {
         while (reader.Read())
         {
-          ret.Add(new MachineWatchInterface.JobAndDecrementQuantity()
+          ret.Add(new JobAndDecrementQuantity()
           {
             DecrementId = reader.GetInt64(0),
             JobUnique = reader.GetString(1),
@@ -1986,7 +1980,7 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Programs
-    private Dictionary<(string prog, long rev), long> AddPrograms(IDbTransaction transaction, IEnumerable<MachineWatchInterface.ProgramEntry> programs, DateTime nowUtc)
+    private Dictionary<(string prog, long rev), long> AddPrograms(IDbTransaction transaction, IEnumerable<ProgramEntry> programs, DateTime nowUtc)
     {
       if (programs == null || !programs.Any()) return new Dictionary<(string prog, long rev), long>();
 
@@ -2121,14 +2115,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public MachineWatchInterface.ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
+    public ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          MachineWatchInterface.ProgramRevision prog = null;
+          ProgramRevision prog = null;
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
@@ -2138,7 +2132,7 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                prog = new MachineWatchInterface.ProgramRevision
+                prog = new ProgramRevision
                 {
                   ProgramName = reader.GetString(0),
                   Revision = reader.GetInt64(1),
@@ -2160,14 +2154,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public MachineWatchInterface.ProgramRevision LoadProgram(string program, long revision)
+    public ProgramRevision LoadProgram(string program, long revision)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          MachineWatchInterface.ProgramRevision prog = null;
+          ProgramRevision prog = null;
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
@@ -2178,7 +2172,7 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                prog = new MachineWatchInterface.ProgramRevision
+                prog = new ProgramRevision
                 {
                   ProgramName = program,
                   Revision = revision,
@@ -2200,7 +2194,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(string program, int count, long? startRevision)
+    public List<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(string program, int count, long? startRevision)
     {
       count = Math.Min(count, 100);
       lock (_cfg)
@@ -2231,10 +2225,10 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            var ret = new List<MachineWatchInterface.ProgramRevision>();
+            var ret = new List<ProgramRevision>();
             while (reader.Read())
             {
-              ret.Add(new MachineWatchInterface.ProgramRevision
+              ret.Add(new ProgramRevision
               {
                 ProgramName = program,
                 Revision = reader.GetInt64(0),
@@ -2248,14 +2242,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public MachineWatchInterface.ProgramRevision LoadMostRecentProgram(string program)
+    public ProgramRevision LoadMostRecentProgram(string program)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          MachineWatchInterface.ProgramRevision prog = null;
+          ProgramRevision prog = null;
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
@@ -2265,7 +2259,7 @@ namespace BlackMaple.MachineFramework
             {
               while (reader.Read())
               {
-                prog = new MachineWatchInterface.ProgramRevision
+                prog = new ProgramRevision
                 {
                   ProgramName = program,
                   Revision = reader.GetInt64(0),
@@ -2324,7 +2318,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.ProgramRevision> LoadProgramsInCellController()
+    public List<ProgramRevision> LoadProgramsInCellController()
     {
       lock (_cfg)
       {
@@ -2337,10 +2331,10 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            var ret = new List<MachineWatchInterface.ProgramRevision>();
+            var ret = new List<ProgramRevision>();
             while (reader.Read())
             {
-              ret.Add(new MachineWatchInterface.ProgramRevision
+              ret.Add(new ProgramRevision
               {
                 ProgramName = reader.GetString(0),
                 Revision = reader.GetInt64(1),

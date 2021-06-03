@@ -1361,7 +1361,9 @@ namespace BlackMaple.MachineWatchInterface
           if (p.Load != null) foreach (var s in p.Load) dest.AddLoadStation(proc, path, s);
           if (!string.IsNullOrEmpty(p.Fixture)) dest.SetFixtureFace(proc, path, p.Fixture, p.Face ?? 1);
           if (p.Pallets != null) foreach (var pal in p.Pallets) dest.AddProcessOnPallet(proc, path, pal);
+#pragma warning disable CS0612 // obsolete PathGroup
           dest.SetPathGroup(proc, path, p.PathGroup);
+#pragma warning restore CS0612
           dest.PathInspections(proc, path); // always create the inspections to be non-null
           if (p.Inspections != null)
           {

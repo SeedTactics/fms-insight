@@ -175,9 +175,6 @@ namespace BlackMaple.MachineFramework
   public record ProcPathInfo
   {
     [DataMember(IsRequired = true)]
-    public int PathGroup { get; init; }
-
-    [DataMember(IsRequired = true)]
     public ImmutableList<string> Pallets { get; init; } = ImmutableList<string>.Empty;
 
     [DataMember(IsRequired = false)]
@@ -231,6 +228,10 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Casting { get; init; }
 
+    [DataMember(IsRequired = false, EmitDefaultValue = true), Obsolete]
+    public int PathGroup { get; init; }
+
+
     public static ProcPathInfo operator %(ProcPathInfo v, Action<IProcPathInfoDraft> f) => v.Produce(f);
   }
 
@@ -267,20 +268,11 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "CyclesOnFirstProcess", IsRequired = true)]
     public ImmutableList<int> CyclesOnFirstProcess { get; init; } = ImmutableList<int>.Empty;
 
+    [DataMember(Name = "FlexCyclesOnFirstProcessBetweenAllPaths", IsRequired = false, EmitDefaultValue = false)]
+    public bool? FlexCyclesOnFirstProcessBetweenAllPaths { get; init; }
+
     [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
     public ImmutableList<ProcessInfo> Processes { get; init; } = ImmutableList<ProcessInfo>.Empty;
-
-#pragma warning disable CS0169
-    // priority, CreateMarkingData, and Inspections field is no longer used but this is kept for backwards network compatibility
-    [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = false), Obsolete]
-    private int _priority;
-
-    [DataMember(Name = "CreateMarkingData", IsRequired = false, EmitDefaultValue = true), Obsolete]
-    private bool _createMarker;
-
-    [DataMember(Name = "Inspections", IsRequired = false, EmitDefaultValue = false), Obsolete]
-    internal System.Collections.Generic.IEnumerable<MachineWatchInterface.JobInspectionData>? OldJobInspections;
-#pragma warning restore CS0169
 
     public static Job operator %(Job j, Action<IJobDraft> f) => j.Produce(f);
   }

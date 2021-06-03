@@ -214,7 +214,7 @@ function AddSerialFound(props: AddSerialFoundProps) {
   const [addMat, addingMat] = matDetails.useAddExistingMaterialToQueue();
 
   let queue: string | null;
-  let queueDests = props.queueNames.filter((q) => q !== props.current_quarantine_queue);
+  const queueDests = props.queueNames.filter((q) => q !== props.current_quarantine_queue);
   let promptForQueue = false;
   if (queueDests.length === 1) {
     queue = queueDests[0];
@@ -362,14 +362,12 @@ function SelectJob(props: SelectJobProps) {
                     className={classes.nested}
                     disabled={props.queue !== undefined && !p.queues.contains(props.queue)}
                     selected={
-                      props.selected_job?.job.unique === j.job.unique &&
-                      props.selected_job?.last_proc === p.lastProc &&
-                      props.selected_job?.path_group === p.pathGroup
+                      props.selected_job?.job.unique === j.job.unique && props.selected_job?.last_proc === p.lastProc
                     }
-                    onClick={() => props.onSelectJob({ job: j.job, last_proc: p.lastProc, path_group: p.pathGroup })}
+                    onClick={() => props.onSelectJob({ job: j.job, last_proc: p.lastProc })}
                   >
                     <ListItemText
-                      primary={p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc}
+                      primary={p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc.toString()}
                       secondary={p.details}
                     />
                   </ListItem>
@@ -393,7 +391,6 @@ interface AddNewMaterialProps {
 interface AddNewJobProcessState {
   readonly job: Readonly<api.IActiveJob>;
   readonly last_proc: number;
-  readonly path_group: number;
 }
 
 function AddNewMaterialBody(props: AddNewMaterialProps) {
@@ -413,7 +410,6 @@ function AddNewMaterialBody(props: AddNewMaterialProps) {
       addAssigned({
         jobUnique: selected_job.job.unique,
         lastCompletedProcess: selected_job.last_proc,
-        pathGroup: selected_job.path_group,
         queue: queue,
         queuePosition: -1,
         serial: props.not_found_serial,
@@ -681,9 +677,8 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
   const [qty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(
-    null
-  );
+  const [materialToPrint, setMaterialToPrint] =
+    React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(null);
   const printRef = React.useRef(null);
   const [adding, setAdding] = React.useState<boolean>(false);
   const castingNames = useSelector((s) => s.Events.last30.sim_use.castingNames);

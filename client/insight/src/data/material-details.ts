@@ -499,7 +499,6 @@ export function useAddExistingMaterialToQueue(): [(d: AddExistingMaterialToQueue
 export interface AddNewMaterialToQueueData {
   readonly jobUnique: string;
   readonly lastCompletedProcess: number;
-  readonly pathGroup: number;
   readonly queue: string;
   readonly queuePosition: number;
   readonly serial?: string;
@@ -516,7 +515,6 @@ export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => v
     JobsBackend.addUnprocessedMaterialToQueue(
       d.jobUnique,
       d.lastCompletedProcess,
-      d.pathGroup,
       d.queue,
       d.queuePosition,
       d.operator,

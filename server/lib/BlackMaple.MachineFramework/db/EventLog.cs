@@ -43,7 +43,7 @@ namespace BlackMaple.MachineFramework
   internal partial class Repository
   {
     #region Loading
-    private List<MachineWatchInterface.LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
+    private List<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
     {
       using (var matCmd = _connection.CreateCommand())
       using (var detailCmd = _connection.CreateCommand())
@@ -68,7 +68,7 @@ namespace BlackMaple.MachineFramework
         toolCmd.CommandText = "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tools WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        var lst = new List<MachineWatchInterface.LogEntry>();
+        var lst = new List<LogEntry>();
 
         while (reader.Read())
         {
@@ -93,34 +93,34 @@ namespace BlackMaple.MachineFramework
           if (!reader.IsDBNull(11))
             locName = reader.GetString(11);
 
-          MachineWatchInterface.LogType ty;
-          if (Enum.IsDefined(typeof(MachineWatchInterface.LogType), logType))
+          LogType ty;
+          if (Enum.IsDefined(typeof(LogType), logType))
           {
-            ty = (MachineWatchInterface.LogType)logType;
+            ty = (LogType)logType;
             if (locName == null)
             {
               //For compatibility with old logs
               switch (ty)
               {
-                case MachineWatchInterface.LogType.GeneralMessage:
+                case LogType.GeneralMessage:
                   locName = "General";
                   break;
-                case MachineWatchInterface.LogType.Inspection:
+                case LogType.Inspection:
                   locName = "Inspect";
                   break;
-                case MachineWatchInterface.LogType.LoadUnloadCycle:
+                case LogType.LoadUnloadCycle:
                   locName = "Load";
                   break;
-                case MachineWatchInterface.LogType.MachineCycle:
+                case LogType.MachineCycle:
                   locName = "MC";
                   break;
-                case MachineWatchInterface.LogType.OrderAssignment:
+                case LogType.OrderAssignment:
                   locName = "Order";
                   break;
-                case MachineWatchInterface.LogType.PartMark:
+                case LogType.PartMark:
                   locName = "Mark";
                   break;
-                case MachineWatchInterface.LogType.PalletCycle:
+                case LogType.PalletCycle:
                   locName = "Pallet Cycle";
                   break;
               }
@@ -128,7 +128,7 @@ namespace BlackMaple.MachineFramework
           }
           else
           {
-            ty = MachineWatchInterface.LogType.GeneralMessage;
+            ty = LogType.GeneralMessage;
             switch (logType)
             {
               case 3: locName = "Machine"; break;
@@ -140,7 +140,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          var matLst = ImmutableList.CreateBuilder<MachineWatchInterface.LogMaterial>();
+          var matLst = ImmutableList.CreateBuilder<LogMaterial>();
           matCmd.Parameters[0].Value = ctr;
           using (var matReader = matCmd.ExecuteReader())
           {
@@ -164,7 +164,7 @@ namespace BlackMaple.MachineFramework
                 serial = matReader.GetString(6);
               if (!matReader.IsDBNull(7))
                 workorder = matReader.GetString(7);
-              matLst.Add(new MachineWatchInterface.LogMaterial(
+              matLst.Add(new LogMaterial(
                 matID: matReader.GetInt64(0),
                 uniq: uniq,
                 proc: matReader.GetInt32(2),
@@ -187,12 +187,12 @@ namespace BlackMaple.MachineFramework
           }
 
           toolCmd.Parameters[0].Value = ctr;
-          var tools = ImmutableDictionary.CreateBuilder<string, MachineWatchInterface.ToolUse>();
+          var tools = ImmutableDictionary.CreateBuilder<string, ToolUse>();
           using (var toolReader = toolCmd.ExecuteReader())
           {
             while (toolReader.Read())
             {
-              tools[toolReader.GetString(0)] = new MachineWatchInterface.ToolUse()
+              tools[toolReader.GetString(0)] = new ToolUse()
               {
                 ToolUseDuringCycle = TimeSpan.FromTicks(toolReader.GetInt64(1)),
                 TotalToolUseAtEndOfCycle = TimeSpan.FromTicks(toolReader.GetInt64(2)),
@@ -202,7 +202,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          lst.Add(new MachineWatchInterface.LogEntry()
+          lst.Add(new LogEntry()
           {
             Counter = ctr,
             Material = matLst.ToImmutable(),
@@ -227,7 +227,7 @@ namespace BlackMaple.MachineFramework
       } // close usings
     }
 
-    public List<MachineWatchInterface.LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
+    public List<LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
     {
       lock (_cfg)
       {
@@ -247,7 +247,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.LogEntry> GetLog(long counter)
+    public List<LogEntry> GetLog(long counter)
     {
       lock (_cfg)
       {
@@ -265,7 +265,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.LogEntry> StationLogByForeignID(string foreignID)
+    public List<LogEntry> StationLogByForeignID(string foreignID)
     {
       lock (_cfg)
       {
@@ -312,9 +312,9 @@ namespace BlackMaple.MachineFramework
       return "";
     }
 
-    public List<MachineWatchInterface.LogEntry> GetLogForMaterial(long materialID)
+    public List<LogEntry> GetLogForMaterial(long materialID)
     {
-      if (materialID < 0) return new List<MachineWatchInterface.LogEntry>();
+      if (materialID < 0) return new List<LogEntry>();
       lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
@@ -331,11 +331,11 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs)
+    public List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs)
     {
       lock (_cfg)
       {
-        var ret = new List<MachineWatchInterface.LogEntry>();
+        var ret = new List<LogEntry>();
         using (var cmd = _connection.CreateCommand())
         using (var trans = _connection.BeginTransaction())
         {
@@ -358,7 +358,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.LogEntry> GetLogForSerial(string serial)
+    public List<LogEntry> GetLogForSerial(string serial)
     {
       lock (_cfg)
       {
@@ -376,7 +376,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.LogEntry> GetLogForJobUnique(string jobUnique)
+    public List<LogEntry> GetLogForJobUnique(string jobUnique)
     {
       lock (_cfg)
       {
@@ -394,7 +394,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.LogEntry> GetLogForWorkorder(string workorder)
+    public List<LogEntry> GetLogForWorkorder(string workorder)
     {
       lock (_cfg)
       {
@@ -406,7 +406,7 @@ namespace BlackMaple.MachineFramework
               "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) " +
               " ORDER BY Counter ASC";
           cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
-          cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.FinalizeWorkorder;
+          cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
 
           using (var reader = cmd.ExecuteReader())
           {
@@ -416,7 +416,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
+    public List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
     {
       var searchCompleted = @"
                 SELECT Counter FROM stations_mat
@@ -447,7 +447,7 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
               " FROM stations WHERE Counter IN (" + searchCompleted + ") ORDER BY Counter ASC";
           cmd.Parameters.Add("loadty", SqliteType.Integer)
-              .Value = (int)MachineWatchInterface.LogType.LoadUnloadCycle;
+              .Value = (int)LogType.LoadUnloadCycle;
           cmd.Parameters.Add("endUTC", SqliteType.Integer).Value = endUTC.Ticks;
           cmd.Parameters.Add("startUTC", SqliteType.Integer).Value = startUTC.Ticks;
 
@@ -479,7 +479,7 @@ namespace BlackMaple.MachineFramework
     }
 
     //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
-    public List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet)
+    public List<LogEntry> CurrentPalletLog(string pallet)
     {
       lock (_cfg)
       {
@@ -492,14 +492,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private List<MachineWatchInterface.LogEntry> CurrentPalletLog(string pallet, SqliteTransaction trans)
+    private List<LogEntry> CurrentPalletLog(string pallet, SqliteTransaction trans)
     {
       string ignoreInvalidCondition =
         "   NOT EXISTS (" +
         "    SELECT 1 FROM program_details d " +
         "      WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
         "   ) AND " +
-        "   StationLoc != (" + ((int)MachineWatchInterface.LogType.SwapMaterialOnPallet).ToString() + ")";
+        "   StationLoc != (" + ((int)LogType.SwapMaterialOnPallet).ToString() + ")";
 
       using (var cmd = _connection.CreateCommand())
       {
@@ -645,7 +645,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public bool CycleExists(DateTime endUTC, string pal, MachineWatchInterface.LogType logTy, string locName, int locNum)
+    public bool CycleExists(DateTime endUTC, string pal, LogType logTy, string locName, int locNum)
     {
       lock (_cfg)
       {
@@ -668,7 +668,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders)
+    public List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders)
     {
       var countQry = @"
 				SELECT matdetails.PartName, COUNT(stations_mat.MaterialID) FROM stations, stations_mat, matdetails
@@ -729,13 +729,13 @@ namespace BlackMaple.MachineFramework
         countCmd.CommandText = countQry;
         countCmd.Parameters.Add("workid", SqliteType.Text);
         countCmd.Parameters.Add("loadty", SqliteType.Integer)
-            .Value = (int)MachineWatchInterface.LogType.LoadUnloadCycle;
+            .Value = (int)LogType.LoadUnloadCycle;
         serialCmd.CommandText = serialQry;
         serialCmd.Parameters.Add("workid", SqliteType.Text);
         finalizedCmd.CommandText = finalizedQry;
         finalizedCmd.Parameters.Add("workid", SqliteType.Text);
         finalizedCmd.Parameters.Add("workloc", SqliteType.Integer)
-            .Value = (int)MachineWatchInterface.LogType.FinalizeWorkorder;
+            .Value = (int)LogType.FinalizeWorkorder;
         timeCmd.CommandText = timeQry;
         timeCmd.Parameters.Add("workid", SqliteType.Text);
 
@@ -747,23 +747,23 @@ namespace BlackMaple.MachineFramework
           finalizedCmd.Transaction = trans;
           timeCmd.Transaction = trans;
 
-          var ret = new List<MachineWatchInterface.WorkorderSummary>();
+          var ret = new List<WorkorderSummary>();
           foreach (var w in workorders)
           {
-            var emptySummary = new MachineWatchInterface.WorkorderSummary()
+            var emptySummary = new WorkorderSummary()
             {
               WorkorderId = w
             };
             ret.Add(emptySummary % (summary =>
             {
-              var partMap = new Dictionary<string, MachineWatchInterface.WorkorderPartSummary>();
+              var partMap = new Dictionary<string, WorkorderPartSummary>();
 
               countCmd.Parameters[0].Value = w;
               using (var reader = countCmd.ExecuteReader())
               {
                 while (reader.Read())
                 {
-                  var wPart = new MachineWatchInterface.WorkorderPartSummary
+                  var wPart = new WorkorderPartSummary
                   {
                     Part = reader.GetString(0),
                     PartsCompleted = reader.GetInt32(1)
@@ -855,7 +855,7 @@ namespace BlackMaple.MachineFramework
     private record NewEventLogEntry
     {
       public IEnumerable<EventLogMaterial> Material { get; init; }
-      public MachineWatchInterface.LogType LogType { get; init; }
+      public LogType LogType { get; init; }
       public bool StartOfCycle { get; init; }
       public DateTime EndTimeUTC { get; init; }
       public string LocationName { get; init; }
@@ -868,19 +868,19 @@ namespace BlackMaple.MachineFramework
       public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
       private Dictionary<string, string> _details = new Dictionary<string, string>();
       public IDictionary<string, string> ProgramDetails { get { return _details; } }
-      private Dictionary<string, MachineWatchInterface.ToolUse> _tools = new Dictionary<string, MachineWatchInterface.ToolUse>();
-      public IDictionary<string, MachineWatchInterface.ToolUse> Tools => _tools;
+      private Dictionary<string, ToolUse> _tools = new Dictionary<string, ToolUse>();
+      public IDictionary<string, ToolUse> Tools => _tools;
       public IEnumerable<ToolPocketSnapshot> ToolPockets { get; init; }
 
-      internal MachineWatchInterface.LogEntry ToLogEntry(long newCntr, Func<long, MachineWatchInterface.MaterialDetails> getDetails)
+      internal LogEntry ToLogEntry(long newCntr, Func<long, MaterialDetails> getDetails)
       {
-        return new MachineWatchInterface.LogEntry()
+        return new LogEntry()
         {
           Counter = newCntr,
           Material = this.Material.Select(m =>
             {
               var details = getDetails(m.MaterialID);
-              return new MachineWatchInterface.LogMaterial(
+              return new LogMaterial(
                   matID: m.MaterialID,
                   proc: m.Process,
                   face: m.Face,
@@ -907,7 +907,7 @@ namespace BlackMaple.MachineFramework
         };
       }
 
-      internal static NewEventLogEntry FromLogEntry(MachineWatchInterface.LogEntry e)
+      internal static NewEventLogEntry FromLogEntry(LogEntry e)
       {
         var ret = new NewEventLogEntry()
         {
@@ -930,7 +930,7 @@ namespace BlackMaple.MachineFramework
         }
         foreach (var t in e.Tools)
         {
-          ret.Tools[t.Key] = new MachineWatchInterface.ToolUse()
+          ret.Tools[t.Key] = new ToolUse()
           {
             ToolUseDuringCycle = t.Value.ToolUseDuringCycle,
             TotalToolUseAtEndOfCycle = t.Value.TotalToolUseAtEndOfCycle,
@@ -941,7 +941,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private MachineWatchInterface.LogEntry AddLogEntry(IDbTransaction trans, NewEventLogEntry log, string foreignID, string origMessage)
+    private LogEntry AddLogEntry(IDbTransaction trans, NewEventLogEntry log, string foreignID, string origMessage)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -1034,7 +1034,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddToolUse(long counter, IDictionary<string, MachineWatchInterface.ToolUse> tools, IDbTransaction trans)
+    private void AddToolUse(long counter, IDictionary<string, ToolUse> tools, IDbTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -1086,9 +1086,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private MachineWatchInterface.LogEntry AddEntryInTransaction(Func<IDbTransaction, MachineWatchInterface.LogEntry> f, string foreignId = "")
+    private LogEntry AddEntryInTransaction(Func<IDbTransaction, LogEntry> f, string foreignId = "")
     {
-      MachineWatchInterface.LogEntry log;
+      LogEntry log;
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
@@ -1107,9 +1107,9 @@ namespace BlackMaple.MachineFramework
       return log;
     }
 
-    private IEnumerable<MachineWatchInterface.LogEntry> AddEntryInTransaction(Func<IDbTransaction, IReadOnlyList<MachineWatchInterface.LogEntry>> f, string foreignId = "")
+    private IEnumerable<LogEntry> AddEntryInTransaction(Func<IDbTransaction, IReadOnlyList<LogEntry>> f, string foreignId = "")
     {
-      IEnumerable<MachineWatchInterface.LogEntry> logs;
+      IEnumerable<LogEntry> logs;
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
@@ -1128,7 +1128,7 @@ namespace BlackMaple.MachineFramework
       return logs;
     }
 
-    internal MachineWatchInterface.LogEntry AddLogEntryFromUnitTest(MachineWatchInterface.LogEntry log, string foreignId = null, string origMessage = null)
+    internal LogEntry AddLogEntryFromUnitTest(LogEntry log, string foreignId = null, string origMessage = null)
     {
       return AddEntryInTransaction(trans =>
           AddLogEntry(trans, NewEventLogEntry.FromLogEntry(log), foreignId, origMessage)
@@ -1136,7 +1136,7 @@ namespace BlackMaple.MachineFramework
     }
 
 
-    public MachineWatchInterface.LogEntry RecordLoadStart(
+    public LogEntry RecordLoadStart(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         int lulNum,
@@ -1149,7 +1149,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LogType = LogType.LoadUnloadCycle,
         LocationName = "L/U",
         LocationNum = lulNum,
         Program = "LOAD",
@@ -1161,7 +1161,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> RecordLoadEnd(
+    public IEnumerable<LogEntry> RecordLoadEnd(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         int lulNum,
@@ -1176,7 +1176,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LogType = LogType.LoadUnloadCycle,
         LocationName = "L/U",
         LocationNum = lulNum,
         Program = "LOAD",
@@ -1189,7 +1189,7 @@ namespace BlackMaple.MachineFramework
       };
       return AddEntryInTransaction(trans =>
       {
-        var logs = new List<MachineWatchInterface.LogEntry>();
+        var logs = new List<LogEntry>();
         foreach (var mat in mats)
         {
           var prevProcMat = new EventLogMaterial() { MaterialID = mat.MaterialID, Process = mat.Process - 1, Face = "" };
@@ -1200,7 +1200,7 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    public MachineWatchInterface.LogEntry RecordUnloadStart(
+    public LogEntry RecordUnloadStart(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         int lulNum,
@@ -1213,7 +1213,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LogType = LogType.LoadUnloadCycle,
         LocationName = "L/U",
         LocationNum = lulNum,
         Program = "UNLOAD",
@@ -1225,7 +1225,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> RecordUnloadEnd(
+    public IEnumerable<LogEntry> RecordUnloadEnd(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         int lulNum,
@@ -1241,7 +1241,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LogType = LogType.LoadUnloadCycle,
         LocationName = "L/U",
         LocationNum = lulNum,
         Program = "UNLOAD",
@@ -1254,7 +1254,7 @@ namespace BlackMaple.MachineFramework
       };
       return AddEntryInTransaction(trans =>
       {
-        var msgs = new List<MachineWatchInterface.LogEntry>();
+        var msgs = new List<LogEntry>();
         if (unloadIntoQueues != null)
         {
           foreach (var mat in mats)
@@ -1270,7 +1270,7 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    public MachineWatchInterface.LogEntry RecordManualWorkAtLULStart(
+    public LogEntry RecordManualWorkAtLULStart(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         int lulNum,
@@ -1288,7 +1288,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LogType = LogType.LoadUnloadCycle,
         LocationName = "L/U",
         LocationNum = lulNum,
         Program = operationName,
@@ -1300,7 +1300,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public MachineWatchInterface.LogEntry RecordManualWorkAtLULEnd(
+    public LogEntry RecordManualWorkAtLULEnd(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         int lulNum,
@@ -1320,7 +1320,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.LoadUnloadCycle,
+        LogType = LogType.LoadUnloadCycle,
         LocationName = "L/U",
         LocationNum = lulNum,
         Program = operationName,
@@ -1334,7 +1334,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public MachineWatchInterface.LogEntry RecordMachineStart(
+    public LogEntry RecordMachineStart(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         string statName,
@@ -1351,7 +1351,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.MachineCycle,
+        LogType = LogType.MachineCycle,
         LocationName = statName,
         LocationNum = statNum,
         Program = program,
@@ -1369,7 +1369,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public MachineWatchInterface.LogEntry RecordMachineEnd(
+    public LogEntry RecordMachineEnd(
         IEnumerable<EventLogMaterial> mats,
         string pallet,
         string statName,
@@ -1380,7 +1380,7 @@ namespace BlackMaple.MachineFramework
         TimeSpan elapsed,
         TimeSpan active,
         IDictionary<string, string> extraData = null,
-        IDictionary<string, MachineWatchInterface.ToolUse> tools = null,
+        IDictionary<string, ToolUse> tools = null,
         IEnumerable<ToolPocketSnapshot> pockets = null,
         string foreignId = null,
         string originalMessage = null
@@ -1390,7 +1390,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mats,
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.MachineCycle,
+        LogType = LogType.MachineCycle,
         LocationName = statName,
         LocationNum = statNum,
         Program = program,
@@ -1415,7 +1415,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public MachineWatchInterface.LogEntry RecordPalletArriveRotaryInbound(
+    public LogEntry RecordPalletArriveRotaryInbound(
       IEnumerable<EventLogMaterial> mats,
       string pallet,
       string statName,
@@ -1431,7 +1431,7 @@ namespace BlackMaple.MachineFramework
         {
           Material = mats,
           Pallet = pallet,
-          LogType = MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          LogType = LogType.PalletOnRotaryInbound,
           LocationName = statName,
           LocationNum = statNum,
           Program = "Arrive",
@@ -1445,7 +1445,7 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public MachineWatchInterface.LogEntry RecordPalletDepartRotaryInbound(
+    public LogEntry RecordPalletDepartRotaryInbound(
       IEnumerable<EventLogMaterial> mats,
       string pallet,
       string statName,
@@ -1463,7 +1463,7 @@ namespace BlackMaple.MachineFramework
         {
           Material = mats,
           Pallet = pallet,
-          LogType = MachineWatchInterface.LogType.PalletOnRotaryInbound,
+          LogType = LogType.PalletOnRotaryInbound,
           LocationName = statName,
           LocationNum = statNum,
           Program = "Depart",
@@ -1478,7 +1478,7 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public MachineWatchInterface.LogEntry RecordPalletArriveStocker(
+    public LogEntry RecordPalletArriveStocker(
       IEnumerable<EventLogMaterial> mats,
       string pallet,
       int stockerNum,
@@ -1494,7 +1494,7 @@ namespace BlackMaple.MachineFramework
         {
           Material = mats,
           Pallet = pallet,
-          LogType = MachineWatchInterface.LogType.PalletInStocker,
+          LogType = LogType.PalletInStocker,
           LocationName = "Stocker",
           LocationNum = stockerNum,
           Program = "Arrive",
@@ -1508,7 +1508,7 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public MachineWatchInterface.LogEntry RecordPalletDepartStocker(
+    public LogEntry RecordPalletDepartStocker(
       IEnumerable<EventLogMaterial> mats,
       string pallet,
       int stockerNum,
@@ -1525,7 +1525,7 @@ namespace BlackMaple.MachineFramework
         {
           Material = mats,
           Pallet = pallet,
-          LogType = MachineWatchInterface.LogType.PalletInStocker,
+          LogType = LogType.PalletInStocker,
           LocationName = "Stocker",
           LocationNum = stockerNum,
           Program = "Depart",
@@ -1540,24 +1540,24 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public MachineWatchInterface.LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial)
+    public LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial)
     {
       var mat = new EventLogMaterial() { MaterialID = materialID, Process = proc, Face = "" };
       return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial)
+    public LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial)
     {
       return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial, DateTime endTimeUTC)
+    public LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial, DateTime endTimeUTC)
     {
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.PartMark,
+        LogType = LogType.PartMark,
         LocationName = "Mark",
         LocationNum = 1,
         Program = "MARK",
@@ -1574,24 +1574,24 @@ namespace BlackMaple.MachineFramework
     }
 
     // For backwards compatibility
-    public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(long materialID, int proc, string workorder)
+    public LogEntry RecordWorkorderForMaterialID(long materialID, int proc, string workorder)
     {
       var mat = new EventLogMaterial() { MaterialID = materialID, Process = proc, Face = "" };
       return RecordWorkorderForMaterialID(mat, workorder, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder)
+    public LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder)
     {
       return RecordWorkorderForMaterialID(mat, workorder, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder, DateTime recordUtc)
+    public LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder, DateTime recordUtc)
     {
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.OrderAssignment,
+        LogType = LogType.OrderAssignment,
         LocationName = "Order",
         LocationNum = 1,
         Program = "",
@@ -1607,7 +1607,7 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+    public LogEntry RecordInspectionCompleted(
         long materialID,
         int process,
         int inspectionLocNum,
@@ -1621,7 +1621,7 @@ namespace BlackMaple.MachineFramework
       return RecordInspectionCompleted(mat, inspectionLocNum, inspectionType, success, extraData, elapsed, active, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+    public LogEntry RecordInspectionCompleted(
         EventLogMaterial mat,
         int inspectionLocNum,
         string inspectionType,
@@ -1633,7 +1633,7 @@ namespace BlackMaple.MachineFramework
       return RecordInspectionCompleted(mat, inspectionLocNum, inspectionType, success, extraData, elapsed, active, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordInspectionCompleted(
+    public LogEntry RecordInspectionCompleted(
         EventLogMaterial mat,
         int inspectionLocNum,
         string inspectionType,
@@ -1647,7 +1647,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.InspectionResult,
+        LogType = LogType.InspectionResult,
         LocationName = "Inspection",
         LocationNum = inspectionLocNum,
         Program = inspectionType,
@@ -1663,7 +1663,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
-    public MachineWatchInterface.LogEntry RecordWashCompleted(
+    public LogEntry RecordWashCompleted(
         long materialID,
         int process,
         int washLocNum,
@@ -1676,7 +1676,7 @@ namespace BlackMaple.MachineFramework
       return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordWashCompleted(
+    public LogEntry RecordWashCompleted(
         EventLogMaterial mat,
         int washLocNum,
         IDictionary<string, string> extraData,
@@ -1687,7 +1687,7 @@ namespace BlackMaple.MachineFramework
       return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry RecordWashCompleted(
+    public LogEntry RecordWashCompleted(
         EventLogMaterial mat,
         int washLocNum,
         IDictionary<string, string> extraData,
@@ -1699,7 +1699,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.Wash,
+        LogType = LogType.Wash,
         LocationName = "Wash",
         LocationNum = washLocNum,
         Program = "",
@@ -1714,18 +1714,18 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
-    public MachineWatchInterface.LogEntry RecordFinalizedWorkorder(string workorder)
+    public LogEntry RecordFinalizedWorkorder(string workorder)
     {
       return RecordFinalizedWorkorder(workorder, DateTime.UtcNow);
 
     }
-    public MachineWatchInterface.LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC)
+    public LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC)
     {
       var log = new NewEventLogEntry()
       {
         Material = new EventLogMaterial[] { },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.FinalizeWorkorder,
+        LogType = LogType.FinalizeWorkorder,
         LocationName = "FinalizeWorkorder",
         LocationNum = 1,
         Program = "",
@@ -1737,7 +1737,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
+    public IEnumerable<LogEntry> RecordAddMaterialToQueue(
         EventLogMaterial mat, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
@@ -1745,7 +1745,7 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> RecordAddMaterialToQueue(
+    public IEnumerable<LogEntry> RecordAddMaterialToQueue(
         long matID, int process, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
@@ -1754,7 +1754,7 @@ namespace BlackMaple.MachineFramework
     }
 
 
-    public IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(
+    public IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(
         EventLogMaterial mat, string operatorName = null, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
@@ -1762,7 +1762,7 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> RecordRemoveMaterialFromAllQueues(
+    public IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(
         long matID, int process, string operatorName = null, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
@@ -1770,13 +1770,13 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> BulkRemoveMaterialFromAllQueues(
+    public IEnumerable<LogEntry> BulkRemoveMaterialFromAllQueues(
       IEnumerable<long> matIds, string operatorName = null, DateTime? timeUTC = null
     )
     {
       return AddEntryInTransaction(trans =>
       {
-        var evts = new List<MachineWatchInterface.LogEntry>();
+        var evts = new List<LogEntry>();
         foreach (var matId in matIds)
         {
           var nextProc = NextProcessForQueuedMaterial(trans, matId);
@@ -1787,7 +1787,7 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    public MachineWatchInterface.LogEntry SignalMaterialForQuarantine(
+    public LogEntry SignalMaterialForQuarantine(
       EventLogMaterial mat,
       string pallet,
       string queue,
@@ -1802,7 +1802,7 @@ namespace BlackMaple.MachineFramework
         {
           Material = new[] { mat },
           Pallet = pallet,
-          LogType = MachineWatchInterface.LogType.SignalQuarantine,
+          LogType = LogType.SignalQuarantine,
           LocationName = queue,
           LocationNum = -1,
           Program = "QuarantineAfterUnload",
@@ -1819,7 +1819,7 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public MachineWatchInterface.LogEntry RecordGeneralMessage(
+    public LogEntry RecordGeneralMessage(
         EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null,
         string originalMessage = null,
         IDictionary<string, string> extraData = null
@@ -1829,7 +1829,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = mat != null ? new[] { mat } : new EventLogMaterial[] { },
         Pallet = pallet,
-        LogType = MachineWatchInterface.LogType.GeneralMessage,
+        LogType = LogType.GeneralMessage,
         LocationName = "Message",
         LocationNum = 1,
         Program = program,
@@ -1845,11 +1845,11 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public MachineWatchInterface.LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName)
+    public LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName)
     {
       return RecordOperatorNotes(materialId, process, notes, operatorName, null);
     }
-    public MachineWatchInterface.LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName, DateTime? timeUtc)
+    public LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName, DateTime? timeUtc)
     {
       var extra = new Dictionary<string, string>();
       extra["note"] = notes;
@@ -1874,8 +1874,8 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     )
     {
-      var newLogEntries = new List<MachineWatchInterface.LogEntry>();
-      var changedLogEntries = new List<MachineWatchInterface.LogEntry>();
+      var newLogEntries = new List<LogEntry>();
+      var changedLogEntries = new List<LogEntry>();
 
       lock (_cfg)
       {
@@ -1886,7 +1886,7 @@ namespace BlackMaple.MachineFramework
 
           // get old material details
           var oldMatDetails = GetMaterialDetails(oldMatId, trans);
-          if (oldMatDetails == null || oldMatDetails.Paths.Count == 0)
+          if (oldMatDetails == null)
           {
             throw new ConflictRequestException("Unable to find material");
           }
@@ -2001,7 +2001,7 @@ namespace BlackMaple.MachineFramework
               new EventLogMaterial() { MaterialID = newMatId, Process = oldMatProc, Face = "" },
              },
             Pallet = pallet,
-            LogType = MachineWatchInterface.LogType.SwapMaterialOnPallet,
+            LogType = LogType.SwapMaterialOnPallet,
             LocationName = "SwapMatOnPallet",
             LocationNum = 1,
             Program = "SwapMatOnPallet",
@@ -2018,7 +2018,7 @@ namespace BlackMaple.MachineFramework
 
           var oldMatPutInQueue =
             removeQueueEvts
-            .Where(e => e.LogType == MachineWatchInterface.LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
+            .Where(e => e.LogType == LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
             .Select(e => e.LocationName)
             .FirstOrDefault()
             ?? _cfg.Settings.QuarantineQueue;
@@ -2037,7 +2037,7 @@ namespace BlackMaple.MachineFramework
           }
 
           //update paths
-          if (oldMatDetails.Paths.TryGetValue(oldMatProc, out var oldPath))
+          if (oldMatDetails.Paths != null && oldMatDetails.Paths.TryGetValue(oldMatProc, out var oldPath))
           {
             using (var newPathCmd = _connection.CreateCommand())
             {
@@ -2076,13 +2076,13 @@ namespace BlackMaple.MachineFramework
     }
 
     private static readonly string LogTypesToCheckForNextProcess = string.Join(",", new int[] {
-        (int)MachineWatchInterface.LogType.AddToQueue,
-        (int)MachineWatchInterface.LogType.RemoveFromQueue,
-        (int)MachineWatchInterface.LogType.LoadUnloadCycle,
-        (int)MachineWatchInterface.LogType.MachineCycle
+        (int)LogType.AddToQueue,
+        (int)LogType.RemoveFromQueue,
+        (int)LogType.LoadUnloadCycle,
+        (int)LogType.MachineCycle
       });
 
-    public IEnumerable<MachineWatchInterface.LogEntry> InvalidatePalletCycle(
+    public IEnumerable<LogEntry> InvalidatePalletCycle(
       long matId,
       int process,
       string oldMatPutInQueue,
@@ -2090,7 +2090,7 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     )
     {
-      var newLogEntries = new List<MachineWatchInterface.LogEntry>();
+      var newLogEntries = new List<LogEntry>();
 
       lock (_cfg)
       {
@@ -2161,7 +2161,7 @@ namespace BlackMaple.MachineFramework
           {
             Material = allMatIds.Select(m => new EventLogMaterial() { MaterialID = m, Process = process, Face = "" }),
             Pallet = "",
-            LogType = MachineWatchInterface.LogType.InvalidateCycle,
+            LogType = LogType.InvalidateCycle,
             LocationName = "InvalidateCycle",
             LocationNum = 1,
             Program = "InvalidateCycle",
@@ -2321,7 +2321,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public MachineWatchInterface.MaterialDetails GetMaterialDetails(long matID)
+    public MaterialDetails GetMaterialDetails(long matID)
     {
       lock (_cfg)
       {
@@ -2340,7 +2340,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private MachineWatchInterface.MaterialDetails GetMaterialDetails(long matID, IDbTransaction trans)
+    private MaterialDetails GetMaterialDetails(long matID, IDbTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -2348,12 +2348,12 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT UniqueStr, PartName, NumProcesses, Workorder, Serial FROM matdetails WHERE MaterialID = $mat";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
-        MachineWatchInterface.MaterialDetails ret = null;
+        MaterialDetails ret = null;
         using (var reader = cmd.ExecuteReader())
         {
           if (reader.Read())
           {
-            ret = new MachineWatchInterface.MaterialDetails()
+            ret = new MaterialDetails()
             {
               MaterialID = matID,
               JobUnique = (!reader.IsDBNull(0)) ? reader.GetString(0) : null,
@@ -2388,7 +2388,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IReadOnlyList<MachineWatchInterface.MaterialDetails> GetMaterialDetailsForSerial(string serial)
+    public IReadOnlyList<MaterialDetails> GetMaterialDetailsForSerial(string serial)
     {
       lock (_cfg)
       {
@@ -2406,12 +2406,12 @@ namespace BlackMaple.MachineFramework
             cmd2.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
             cmd2.Parameters.Add("mat", SqliteType.Integer);
 
-            var ret = new List<MachineWatchInterface.MaterialDetails>();
+            var ret = new List<MaterialDetails>();
             using (var reader = cmd.ExecuteReader())
             {
               while (reader.Read())
               {
-                var mat = new MachineWatchInterface.MaterialDetails()
+                var mat = new MaterialDetails()
                 {
                   MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
                   JobUnique = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
@@ -2452,7 +2452,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.MaterialDetails> GetMaterialForWorkorder(string workorder)
+    public List<MaterialDetails> GetMaterialForWorkorder(string workorder)
     {
       using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
@@ -2466,12 +2466,12 @@ namespace BlackMaple.MachineFramework
         pathCmd.Transaction = trans;
         var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
 
-        var ret = new List<MachineWatchInterface.MaterialDetails>();
+        var ret = new List<MaterialDetails>();
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            var mat = new MachineWatchInterface.MaterialDetails()
+            var mat = new MaterialDetails()
             {
               MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
               JobUnique = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
@@ -2506,7 +2506,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<MachineWatchInterface.MaterialDetails> GetMaterialForJobUnique(string jobUnique)
+    public List<MaterialDetails> GetMaterialForJobUnique(string jobUnique)
     {
       using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
@@ -2520,12 +2520,12 @@ namespace BlackMaple.MachineFramework
         pathCmd.Transaction = trans;
         var param = pathCmd.Parameters.Add("mat", SqliteType.Integer);
 
-        var ret = new List<MachineWatchInterface.MaterialDetails>();
+        var ret = new List<MaterialDetails>();
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            var mat = new MachineWatchInterface.MaterialDetails()
+            var mat = new MaterialDetails()
             {
               MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
               JobUnique = jobUnique,
@@ -2594,7 +2594,7 @@ namespace BlackMaple.MachineFramework
 
     #region Queues
 
-    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC, string reason)
+    private IReadOnlyList<LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC, string reason)
     {
       var mat = new EventLogMaterial()
       {
@@ -2606,9 +2606,9 @@ namespace BlackMaple.MachineFramework
       return AddToQueue(trans, mat, queue, position, operatorName, timeUTC, reason);
     }
 
-    private IReadOnlyList<MachineWatchInterface.LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC, string reason)
+    private IReadOnlyList<LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC, string reason)
     {
-      var ret = new List<MachineWatchInterface.LogEntry>();
+      var ret = new List<LogEntry>();
 
       ret.AddRange(RemoveFromAllQueues(trans, mat, operatorName, timeUTC));
 
@@ -2656,7 +2656,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.AddToQueue,
+        LogType = LogType.AddToQueue,
         LocationName = queue,
         LocationNum = resultingPosition,
         Program = reason ?? "",
@@ -2675,7 +2675,7 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    private IReadOnlyList<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, int process, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, int process, string operatorName, DateTime timeUTC)
     {
       var mat = new EventLogMaterial()
       {
@@ -2687,7 +2687,7 @@ namespace BlackMaple.MachineFramework
       return RemoveFromAllQueues(trans, mat, operatorName, timeUTC);
     }
 
-    private IReadOnlyList<MachineWatchInterface.LogEntry> RemoveFromAllQueues(IDbTransaction trans, EventLogMaterial mat, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<LogEntry> RemoveFromAllQueues(IDbTransaction trans, EventLogMaterial mat, string operatorName, DateTime timeUTC)
     {
       using (var findCmd = _connection.CreateCommand())
       using (var updatePosCmd = _connection.CreateCommand())
@@ -2708,7 +2708,7 @@ namespace BlackMaple.MachineFramework
         deleteCmd.CommandText = "DELETE FROM queues WHERE MaterialID = $mid";
         deleteCmd.Parameters.Add("mid", SqliteType.Integer).Value = mat.MaterialID;
 
-        var logs = new List<MachineWatchInterface.LogEntry>();
+        var logs = new List<LogEntry>();
 
         using (var reader = findCmd.ExecuteReader())
         {
@@ -2722,7 +2722,7 @@ namespace BlackMaple.MachineFramework
             {
               Material = new[] { mat },
               Pallet = "",
-              LogType = MachineWatchInterface.LogType.RemoveFromQueue,
+              LogType = LogType.RemoveFromQueue,
               LocationName = queue,
               LocationNum = pos,
               Program = "",
@@ -2753,7 +2753,7 @@ namespace BlackMaple.MachineFramework
 
     public BulkAddCastingResult BulkAddNewCastingsInQueue(string casting, int qty, string queue, IList<string> serials, string operatorName, string reason = null, DateTime? timeUTC = null)
     {
-      var ret = new List<MachineWatchInterface.LogEntry>();
+      var ret = new List<LogEntry>();
       var matIds = new HashSet<long>();
       var addTimeUTC = timeUTC ?? DateTime.UtcNow;
 
@@ -2805,7 +2805,7 @@ namespace BlackMaple.MachineFramework
               {
                 Material = new[] { new EventLogMaterial() { MaterialID = matID, Process = 0, Face = "" } },
                 Pallet = "",
-                LogType = MachineWatchInterface.LogType.PartMark,
+                LogType = LogType.PartMark,
                 LocationName = "Mark",
                 LocationNum = 1,
                 Program = "MARK",
@@ -2825,7 +2825,7 @@ namespace BlackMaple.MachineFramework
             {
               Material = new[] { new EventLogMaterial() { MaterialID = matID, Process = 0, Face = "" } },
               Pallet = "",
-              LogType = MachineWatchInterface.LogType.AddToQueue,
+              LogType = LogType.AddToQueue,
               LocationName = queue,
               LocationNum = maxExistingPos + i + 1,
               Program = reason ?? "",
@@ -3297,7 +3297,7 @@ namespace BlackMaple.MachineFramework
       {
         var trans = _connection.BeginTransaction();
 
-        var newEvts = new List<BlackMaple.MachineWatchInterface.LogEntry>();
+        var newEvts = new List<LogEntry>();
         try
         {
 
@@ -3318,7 +3318,7 @@ namespace BlackMaple.MachineFramework
               {
                 Material = new EventLogMaterial[] { },
                 Pallet = pal,
-                LogType = BlackMaple.MachineWatchInterface.LogType.PalletCycle,
+                LogType = LogType.PalletCycle,
                 LocationName = "Pallet Cycle",
                 LocationNum = 1,
                 Program = "",
@@ -3400,7 +3400,7 @@ namespace BlackMaple.MachineFramework
                         {
                           Material = mat[key],
                           Pallet = "",
-                          LogType = MachineWatchInterface.LogType.PartMark,
+                          LogType = LogType.PartMark,
                           LocationName = "Mark",
                           LocationNum = 1,
                           Program = "MARK",
@@ -3441,7 +3441,7 @@ namespace BlackMaple.MachineFramework
                           {
                             Material = new[] { m },
                             Pallet = "",
-                            LogType = MachineWatchInterface.LogType.PartMark,
+                            LogType = LogType.PartMark,
                             LocationName = "Mark",
                             LocationNum = 1,
                             Program = "MARK",
@@ -3457,7 +3457,7 @@ namespace BlackMaple.MachineFramework
                     {
                       Material = mat[key],
                       Pallet = pal,
-                      LogType = BlackMaple.MachineWatchInterface.LogType.LoadUnloadCycle,
+                      LogType = LogType.LoadUnloadCycle,
                       LocationName = "L/U",
                       LocationNum = reader.GetInt32(1),
                       Program = "LOAD",
@@ -3620,10 +3620,10 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Inspection Translation
-    private Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
+    private Dictionary<int, MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
     {
-      var byProc = new Dictionary<int, MachineWatchInterface.MaterialProcessActualPath>();
-      void adjustPath(int proc, Action<MachineWatchInterface.IMaterialProcessActualPathDraft> f)
+      var byProc = new Dictionary<int, MaterialProcessActualPath>();
+      void adjustPath(int proc, Action<IMaterialProcessActualPathDraft> f)
       {
         if (byProc.ContainsKey(proc))
         {
@@ -3631,7 +3631,7 @@ namespace BlackMaple.MachineFramework
         }
         else
         {
-          var m = new MachineWatchInterface.MaterialProcessActualPath()
+          var m = new MaterialProcessActualPath()
           {
             MaterialID = matID,
             Process = proc,
@@ -3654,8 +3654,8 @@ namespace BlackMaple.MachineFramework
             "    AND (StationLoc = $ty1 OR StationLoc = $ty2) " +
             " ORDER BY stations.Counter ASC";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
-        cmd.Parameters.Add("ty1", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.LoadUnloadCycle;
-        cmd.Parameters.Add("ty2", SqliteType.Integer).Value = (int)MachineWatchInterface.LogType.MachineCycle;
+        cmd.Parameters.Add("ty1", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+        cmd.Parameters.Add("ty2", SqliteType.Integer).Value = (int)LogType.MachineCycle;
 
         using (var reader = cmd.ExecuteReader())
         {
@@ -3664,7 +3664,7 @@ namespace BlackMaple.MachineFramework
             //for each log entry, we search for a matching route stop in the job
             //if we find one, we replace the counter in the program
             string pal = reader.GetString(0);
-            var logTy = (MachineWatchInterface.LogType)reader.GetInt32(1);
+            var logTy = (LogType)reader.GetInt32(1);
             string statName = reader.GetString(2);
             int statNum = reader.GetInt32(3);
             int process = reader.GetInt32(4);
@@ -3676,15 +3676,15 @@ namespace BlackMaple.MachineFramework
 
               switch (logTy)
               {
-                case MachineWatchInterface.LogType.LoadUnloadCycle:
+                case LogType.LoadUnloadCycle:
                   if (mat.LoadStation == -1)
                     mat.LoadStation = statNum;
                   else
                     mat.UnloadStation = statNum;
                   break;
 
-                case MachineWatchInterface.LogType.MachineCycle:
-                  mat.Stops.Add(new MachineWatchInterface.MaterialProcessActualPath.Stop()
+                case LogType.MachineCycle:
+                  mat.Stops.Add(new MaterialProcessActualPath.Stop()
                   {
                     StationName = statName,
                     StationNum = statNum
@@ -3699,7 +3699,7 @@ namespace BlackMaple.MachineFramework
       return byProc;
     }
 
-    private string TranslateInspectionCounter(long matID, Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> actualPath, string counter)
+    private string TranslateInspectionCounter(long matID, Dictionary<int, MaterialProcessActualPath> actualPath, string counter)
     {
       foreach (var p in actualPath.Values)
       {
@@ -3763,8 +3763,8 @@ namespace BlackMaple.MachineFramework
             "    AND (StationLoc = $loc1 OR StationLoc = $loc2) " +
             " ORDER BY Counter ASC";
         cmd.Parameters.Add("$mat", SqliteType.Integer).Value = matID;
-        cmd.Parameters.Add("$loc1", SqliteType.Integer).Value = MachineWatchInterface.LogType.InspectionForce;
-        cmd.Parameters.Add("$loc2", SqliteType.Integer).Value = MachineWatchInterface.LogType.Inspection;
+        cmd.Parameters.Add("$loc1", SqliteType.Integer).Value = LogType.InspectionForce;
+        cmd.Parameters.Add("$loc2", SqliteType.Integer).Value = LogType.Inspection;
 
         ((IDbCommand)detailCmd).Transaction = trans;
         detailCmd.CommandText = "SELECT Value FROM program_details WHERE Counter = $cntr AND Key = 'InspectionType'";
@@ -3775,14 +3775,14 @@ namespace BlackMaple.MachineFramework
           while (reader.Read())
           {
             var cntr = reader.GetInt64(0);
-            var logTy = (MachineWatchInterface.LogType)reader.GetInt32(1);
+            var logTy = (LogType)reader.GetInt32(1);
             var prog = reader.GetString(2);
             var timeUtc = new DateTime(reader.GetInt64(3), DateTimeKind.Utc);
             var result = reader.GetString(4);
             var inspect = false;
             bool.TryParse(result, out inspect);
 
-            if (logTy == MachineWatchInterface.LogType.Inspection)
+            if (logTy == LogType.Inspection)
             {
               detailCmd.Parameters[0].Value = cntr;
               var inspVal = detailCmd.ExecuteScalar();
@@ -3828,7 +3828,7 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    public IEnumerable<MachineWatchInterface.LogEntry> MakeInspectionDecisions(
+    public IEnumerable<LogEntry> MakeInspectionDecisions(
         long matID,
         int process,
         IEnumerable<PathInspection> inspections,
@@ -3839,7 +3839,7 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    private List<MachineWatchInterface.LogEntry> MakeInspectionDecisions(
+    private List<LogEntry> MakeInspectionDecisions(
         IDbTransaction trans,
         long matID,
         int process,
@@ -3847,7 +3847,7 @@ namespace BlackMaple.MachineFramework
         DateTime? mutcNow)
     {
       var utcNow = mutcNow ?? DateTime.UtcNow;
-      var logEntries = new List<MachineWatchInterface.LogEntry>();
+      var logEntries = new List<LogEntry>();
 
       var actualPath = LookupActualPath(trans, matID);
 
@@ -3938,9 +3938,9 @@ namespace BlackMaple.MachineFramework
       return logEntries;
     }
 
-    private MachineWatchInterface.LogEntry StoreInspectionDecision(
+    private LogEntry StoreInspectionDecision(
         IDbTransaction trans,
-        long matID, int proc, Dictionary<int, MachineWatchInterface.MaterialProcessActualPath> actualPath,
+        long matID, int proc, Dictionary<int, MaterialProcessActualPath> actualPath,
         string inspType, string counter, DateTime utcNow, bool inspect)
     {
       var mat =
@@ -3951,7 +3951,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.Inspection,
+        LogType = LogType.Inspection,
         LocationName = "Inspect",
         LocationNum = 1,
         Program = counter,
@@ -3970,24 +3970,24 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Force and Next Piece Inspection
-    public MachineWatchInterface.LogEntry ForceInspection(long matID, string inspType)
+    public LogEntry ForceInspection(long matID, string inspType)
     {
       var mat = new EventLogMaterial() { MaterialID = matID, Process = 1, Face = "" };
       return ForceInspection(mat, inspType, inspect: true, utcNow: DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect)
+    public LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect)
     {
       var mat = new EventLogMaterial() { MaterialID = materialID, Process = process, Face = "" };
       return ForceInspection(mat, inspType, inspect, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry ForceInspection(EventLogMaterial mat, string inspType, bool inspect)
+    public LogEntry ForceInspection(EventLogMaterial mat, string inspType, bool inspect)
     {
       return ForceInspection(mat, inspType, inspect, DateTime.UtcNow);
     }
 
-    public MachineWatchInterface.LogEntry ForceInspection(
+    public LogEntry ForceInspection(
         EventLogMaterial mat, string inspType, bool inspect, DateTime utcNow)
     {
       return AddEntryInTransaction(trans =>
@@ -3995,7 +3995,7 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    private MachineWatchInterface.LogEntry RecordForceInspection(
+    private LogEntry RecordForceInspection(
         IDbTransaction trans,
         EventLogMaterial mat, string inspType, bool inspect, DateTime utcNow)
     {
@@ -4003,7 +4003,7 @@ namespace BlackMaple.MachineFramework
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = MachineWatchInterface.LogType.InspectionForce,
+        LogType = LogType.InspectionForce,
         LocationName = "Inspect",
         LocationNum = 1,
         Program = inspType,
@@ -4015,7 +4015,7 @@ namespace BlackMaple.MachineFramework
       return AddLogEntry(trans, log, null, null);
     }
 
-    public void NextPieceInspection(MachineWatchInterface.PalletLocation palLoc, string inspType)
+    public void NextPieceInspection(PalletLocation palLoc, string inspType)
     {
       lock (_cfg)
       {
@@ -4033,9 +4033,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void CheckMaterialForNextPeiceInspection(MachineWatchInterface.PalletLocation palLoc, long matID)
+    public void CheckMaterialForNextPeiceInspection(PalletLocation palLoc, long matID)
     {
-      var logs = new List<MachineWatchInterface.LogEntry>();
+      var logs = new List<LogEntry>();
 
       lock (_cfg)
       {

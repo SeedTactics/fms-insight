@@ -39,7 +39,7 @@ using System.Runtime.Serialization;
 using Germinate;
 using System.Collections.Immutable;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
   [DataContract, Draftable]
   public record LogMaterial

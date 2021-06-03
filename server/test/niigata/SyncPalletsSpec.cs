@@ -37,7 +37,6 @@ using System.Collections.Generic;
 using Xunit;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using System.Collections.Immutable;
 using Germinate;
@@ -155,7 +154,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return logs;
     }
 
-    private void WriteLogs(IEnumerable<MachineWatchInterface.LogEntry> es)
+    private void WriteLogs(IEnumerable<MachineFramework.LogEntry> es)
     {
       var output = new System.Text.StringBuilder();
       foreach (var e in es)
@@ -163,7 +162,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Action writeMat = () => output.AppendJoin(',', e.Material.Select(m => m.PartName + "-" + m.Process.ToString() + "[" + m.MaterialID.ToString() + "]"));
         switch (e.LogType)
         {
-          case MachineWatchInterface.LogType.LoadUnloadCycle:
+          case LogType.LoadUnloadCycle:
             if (e.StartOfCycle)
             {
               output.AppendFormat("{0}-Start on {1} at L/U{2} for ", e.Result, e.Pallet, e.LocationNum);
@@ -178,7 +177,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
             break;
 
-          case MachineWatchInterface.LogType.MachineCycle:
+          case LogType.MachineCycle:
             if (e.StartOfCycle)
             {
               output.AppendFormat("Machine-Start on {0} at MC{1} of {2} for ", e.Pallet, e.LocationNum, e.Program);
@@ -193,13 +192,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
             break;
 
-          case MachineWatchInterface.LogType.PartMark:
+          case LogType.PartMark:
             output.AppendFormat("Assign {0} to ", e.Result);
             writeMat();
             output.AppendLine();
             break;
 
-          case MachineWatchInterface.LogType.PalletCycle:
+          case LogType.PalletCycle:
             output.AppendFormat("Pallet cycle for {0}", e.Pallet);
             output.AppendLine();
             break;
@@ -208,14 +207,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _output.WriteLine(output.ToString());
     }
 
-    private void AddJobs(IEnumerable<JobPlan> jobs, IEnumerable<(string prog, long rev)> progs)
+    private void AddJobs(IEnumerable<MachineWatchInterface.JobPlan> jobs, IEnumerable<(string prog, long rev)> progs)
+    {
+      AddJobs(jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(), progs);
+    }
+
+    private void AddJobs(ImmutableList<Job> jobs, IEnumerable<(string prog, long rev)> progs)
     {
       AddJobs(new NewJobs()
       {
-        Jobs = jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(),
+        Jobs = jobs,
         Programs =
             progs.Select(p =>
-            new MachineWatchInterface.ProgramEntry()
+            new MachineFramework.ProgramEntry()
             {
               ProgramName = p.prog,
               Revision = p.rev,
@@ -409,10 +413,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     private void SetPath(
-      JobPlan j,
+      MachineWatchInterface.JobPlan j,
       int proc,
       int path,
-      int group,
       int[] pals,
       string fixture,
       int face,
@@ -430,7 +433,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int? reclampMins = null
     )
     {
-      j.SetPathGroup(proc, path, group);
       foreach (var pal in pals)
       {
         j.AddProcessOnPallet(proc, path, pal.ToString());
@@ -442,7 +444,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
       j.SetExpectedLoadTime(proc, path, TimeSpan.FromMinutes(loadMins));
 
-      var s = new JobMachiningStop("MC");
+      var s = new MachineWatchInterface.JobMachiningStop("MC");
       s.ProgramName = program;
       s.ProgramRevision = null;
       s.ExpectedCycleTime = TimeSpan.FromMinutes(machMins);
@@ -454,7 +456,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       if (reclamp != null && reclampMins.HasValue)
       {
-        s = new JobMachiningStop("TestReclamp");
+        s = new MachineWatchInterface.JobMachiningStop("TestReclamp");
         s.ExpectedCycleTime = TimeSpan.FromMinutes(reclampMins.Value);
         foreach (var r in reclamp)
         {
@@ -484,13 +486,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
       });
 
-      var j = new JobPlan("uniq1", 1);
+      var j = new MachineWatchInterface.JobPlan("uniq1", 1);
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 1,
@@ -524,7 +525,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
       });
 
-      var j = new JobPlan("uniq1", 2, new[] { 2, 2 });
+      var j = new MachineWatchInterface.JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
       j.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 4);
@@ -533,7 +534,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 1,
@@ -549,7 +549,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 3, 4 },
         fixture: "fix2",
         face: 1,
@@ -567,7 +566,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 2,
-        group: 1,
         pals: new[] { 5, 6 },
         fixture: "fix1",
         face: 1,
@@ -583,7 +581,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 2,
-        group: 1,
         pals: new[] { 7, 8 },
         fixture: "fix2",
         face: 1,
@@ -621,8 +618,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             queue: "transQ",
             pals:
               path.Key
-                ? new[] { new[] { 1, 2 }, new[] { 3, 4 } }
-                : new[] { new[] { 5, 6 }, new[] { 7, 8 } }
+                ? new[] { new[] { 1, 2 }, new[] { 3, 4, 7, 8 } }
+                : new[] { new[] { 5, 6 }, new[] { 3, 4, 7, 8 } }
           );
         }
       }
@@ -638,7 +635,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
       });
 
-      var j = new JobPlan("uniq1", 2, new[] { 2, 2 });
+      var j = new MachineWatchInterface.JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
       j.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 6);
@@ -647,7 +644,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 1,
@@ -663,7 +659,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2 },
         fixture: "fix1",
         face: 2,
@@ -681,7 +676,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 2,
-        group: 1,
         pals: new[] { 3, 4 },
         fixture: "fix1",
         face: 1,
@@ -697,7 +691,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 2,
-        group: 1,
         pals: new[] { 3, 4 },
         fixture: "fix1",
         face: 2,
@@ -756,7 +749,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
       });
 
-      var j = new JobPlan("uniq1", 2);
+      var j = new MachineWatchInterface.JobPlan("uniq1", 2);
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
 
@@ -764,7 +757,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2, 3, 4 },
         fixture: "fix1",
         face: 1,
@@ -782,7 +774,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 5, 6 },
         fixture: "fix2",
         face: 1,
@@ -820,7 +811,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
       });
 
-      var j = new JobPlan("uniq1", 2);
+      var j = new MachineWatchInterface.JobPlan("uniq1", 2);
       j.PartName = "part1";
       j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 4);
 
@@ -828,7 +819,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 1,
         path: 1,
-        group: 0,
         pals: new[] { 1, 2, 3, 4 },
         fixture: "fix1",
         face: 1,
@@ -848,7 +838,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       SetPath(j,
         proc: 2,
         path: 1,
-        group: 0,
         pals: new[] { 5, 6 },
         fixture: "fix2",
         face: 1,
@@ -1010,11 +999,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         });
         j.Programs.AddRange(new[] {
-          new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
-          new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
-          new MachineWatchInterface.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
-          new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
-          new MachineWatchInterface.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
+          new MachineFramework.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
+          new MachineFramework.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
+          new MachineFramework.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
+          new MachineFramework.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
+          new MachineFramework.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
         });
       };
 
@@ -1084,6 +1073,87 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           AddTimeUTC = addTime
         }
       });
+    }
+
+    [Fact]
+    public void FlexQtyBetweenPaths()
+    {
+      InitSim(new NiigataStationNames()
+      {
+        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+      });
+
+      var j = new Job()
+      {
+        UniqueStr = "uniq1",
+        PartName = "part1",
+        CyclesOnFirstProcess = ImmutableList.Create(10, 0), // put all cycles on first path
+        FlexCyclesOnFirstProcessBetweenAllPaths = true,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              // two paths on separte pallets to separate load stations
+              new ProcPathInfo()
+              {
+                Pallets = ImmutableList.Create("1"),
+                Fixture = "fix1",
+                PartsPerPallet = 1,
+                Face = 1,
+                Load = ImmutableList.Create(2),
+                ExpectedLoadTime = TimeSpan.FromMinutes(10),
+                Unload = ImmutableList.Create(2),
+                ExpectedUnloadTime = TimeSpan.FromMinutes(10),
+                Stops = ImmutableList.Create(new MachiningStop()
+                {
+                  StationGroup = "MC",
+                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
+                  Program = "prog111",
+                  ProgramRevision = 5,
+                  ExpectedCycleTime = TimeSpan.FromMinutes(20)
+                }),
+              },
+              // path 2 is a little shorter
+              new ProcPathInfo()
+              {
+                Pallets = ImmutableList.Create("2"),
+                Fixture = "fix1",
+                PartsPerPallet = 1,
+                Face = 1,
+                Load = ImmutableList.Create(1),
+                ExpectedLoadTime = TimeSpan.FromMinutes(8),
+                Unload = ImmutableList.Create(1),
+                ExpectedUnloadTime = TimeSpan.FromMinutes(8),
+                Stops = ImmutableList.Create(new MachiningStop()
+                {
+                  StationGroup = "MC",
+                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
+                  Program = "prog111",
+                  ProgramRevision = 5,
+                  ExpectedCycleTime = TimeSpan.FromMinutes(15)
+                }),
+              }
+            )
+          }
+        )
+      };
+
+      AddJobs(ImmutableList.Create(j), new[] { (prog: "prog111", rev: 5L) });
+
+      var logs = Run();
+
+      var matIds = logs.SelectMany(e => e.Material).Select(m => m.MaterialID).ToHashSet();
+      matIds.Count.Should().Be(10);
+
+      var byPal =
+        matIds
+          .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
+          .ToLookup(mat => mat.logs.Skip(1).First().Pallet);
+
+      byPal.Count.Should().Be(2);
+      byPal["1"].Count().Should().Be(5);
+      byPal["2"].Count().Should().Be(5);
     }
   }
 }

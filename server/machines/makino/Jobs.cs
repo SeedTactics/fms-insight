@@ -34,7 +34,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using Germinate;
 
@@ -74,7 +73,7 @@ namespace Makino
 
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId, bool waitForCopyToCell)
     {
-      var newJobs = new List<JobPlan>();
+      var newJobs = new List<Job>();
       using (var jdb = _openJobDB())
       {
         newJ = newJ with
@@ -86,7 +85,7 @@ namespace Makino
         };
         foreach (var j in newJ.Jobs)
         {
-          newJobs.Add(LegacyJobConversions.ToLegacyJob(j, copiedToSystem: true, scheduleId: newJ.ScheduleId));
+          newJobs.Add(j);
         }
 
         jdb.AddJobs(newJ, expectedPreviousScheduleId, addAsCopiedToSystem: true);
@@ -143,7 +142,7 @@ namespace Makino
       return new List<InProcessMaterial>();
     }
 
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName = null)
     {
       //do nothing
       return null;

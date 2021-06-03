@@ -35,7 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -167,7 +167,14 @@ namespace BlackMaple.FMSInsight.Niigata
       public MachineFramework.ProcPathInfo PathInfo { get; init; }
       public int Process { get; init; }
       public int Path { get; init; }
-      public int JobQtyRemainingOnProc1 { get; init; }
+
+
+      // RemainingProc1ToRun is only set to true on Process = 1 paths for which we have not yet
+      // started all the planned quantity from the job.  The reason the path is not just filtered
+      // out is in the case that there is an input raw material queue, we still want the chance to
+      // run material assigned to the job.  But in this case, unassigned material will not be
+      // assigned to the job, effectively preventing any new material from running.
+      public bool RemainingProc1ToRun { get; init; }
     }
 
     private record JobPathAndPrograms : JobPath
@@ -187,17 +194,17 @@ namespace BlackMaple.FMSInsight.Niigata
           PathInfo = path,
           Process = j.procNum,
           Path = pathIdx + 1,
-          JobQtyRemainingOnProc1 =
-            j.procNum > 1
-              ? 0
-              : cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.job.UniqueStr, proc1path: pathIdx + 1), out var qty) ? qty : 0
+          RemainingProc1ToRun =
+            j.procNum == 1
+            ? PathHasRemainingProc1ToRun(cellSt, j.job, proc1path: pathIdx + 1)
+            : false
         }))
         .Where(j =>
           j.Process > 1
           ||
           !string.IsNullOrEmpty(j.PathInfo.InputQueue)
           ||
-          j.JobQtyRemainingOnProc1 > 0
+          j.RemainingProc1ToRun
         )
         .Where(j => loadStation == null || j.PathInfo.Load.Contains(loadStation.Value))
         .Where(j => j.PathInfo.Pallets.Contains(pallet.ToString()))
@@ -207,6 +214,34 @@ namespace BlackMaple.FMSInsight.Niigata
         .ThenBy(j => j.PathInfo.SimulatedStartingUTC)
         .ToImmutableList()
         ;
+    }
+
+    private bool PathHasRemainingProc1ToRun(CellState cellSt, Job job, int proc1path)
+    {
+      if (job.FlexCyclesOnFirstProcessBetweenAllPaths.GetValueOrDefault(false))
+      {
+        int remainQty = 0;
+        for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
+        {
+          if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: path), out var qty))
+          {
+            // note qty could be negative if cycles flexed
+            remainQty += qty;
+          }
+        }
+        // only a single pallet is assigned before the assignment logic is recalculated from scratch, so
+        // we can specify that all paths can run here even if there is only a remaining quantity of 1.
+        return remainQty > 0;
+      }
+      else
+      {
+        if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: proc1path), out var qty))
+        {
+          return qty > 0;
+        }
+      }
+
+      return false;
     }
 
     private bool PathAllowedOnPallet(IEnumerable<JobPath> alreadyLoading, JobPath potentialNewPath)
@@ -227,7 +262,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return true;
     }
 
-    private static bool CanMaterialLoadOntoPath(InProcessMaterialAndJob mat, JobPath path, IEnumerable<ProgramsForProcess> programs)
+    private static bool CanMaterialLoadOntoPath(InProcessMaterialAndJob mat, JobPath path, ImmutableList<ProgramsForProcess> programs)
     {
       var m = mat.Mat;
       return CreateCellState.FilterMaterialAvailableToLoadOntoFace(new CreateCellState.QueuedMaterialWithDetails()
@@ -244,7 +279,8 @@ namespace BlackMaple.FMSInsight.Niigata
       },
       new PalletFace()
       {
-        Job = path.Job.ToLegacyJob(),
+        Job = path.Job,
+        PathInfo = path.PathInfo,
         Process = path.Process,
         Path = path.Path,
         Face = 1,
@@ -312,7 +348,6 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (mat.Mat.JobUnique == path.Job.UniqueStr
             && mat.Mat.Process + 1 == path.Process
-            && mat.Job.GetPathGroup(mat.Mat.Process, mat.Mat.Path) == path.PathInfo.PathGroup
             && !currentlyLoading.Contains(mat.Mat.MaterialID)
           )
           {
@@ -343,8 +378,8 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (!CanMaterialLoadOntoPath(mat, path, programs)) continue;
 
-          // don't load from casting if quantity exceeded and material not yet assigned to the job
-          if (availMatIds.Count >= path.JobQtyRemainingOnProc1 && string.IsNullOrEmpty(mat.Mat.JobUnique)) continue;
+          // don't load from casting if no more parts are needed and material not yet assigned to the job
+          if (!path.RemainingProc1ToRun && string.IsNullOrEmpty(mat.Mat.JobUnique)) continue;
 
           if (programs == null)
           {

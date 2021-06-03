@@ -40,7 +40,7 @@ using Germinate;
 using System.Collections.Immutable;
 using System.Collections.Generic;
 
-namespace BlackMaple.MachineWatchInterface
+namespace BlackMaple.MachineFramework
 {
   [DataContract, Draftable]
   public record WorkorderPartSummary

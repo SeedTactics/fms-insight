@@ -46,7 +46,6 @@ export interface JobAPI {
   addUnprocessedMaterialToQueue(
     jobUnique: string,
     lastCompletedProcess: number,
-    pathGroup: number,
     queue: string,
     pos: number,
     operatorName: string | null,
@@ -143,26 +142,26 @@ export let MachineBackend: MachineAPI;
 let otherLogServers: ReadonlyArray<string> = [];
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
 
-export function registerNetworkBackend() {
+export function registerNetworkBackend(): void {
   LogBackend = new api.LogClient(BackendUrl);
   MachineBackend = new api.MachinesClient(BackendUrl);
   JobsBackend = new api.JobsClient(BackendUrl);
   FmsServerBackend = new api.FmsClient(BackendUrl);
 }
 
-export function setOtherLogBackends(servers: ReadonlyArray<string>) {
+export function setOtherLogBackends(servers: ReadonlyArray<string>): void {
   otherLogServers = servers;
   OtherLogBackends = servers.map((s) => new api.LogClient(s));
 }
 
-export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI, machine: MachineAPI) {
+export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI, machine: MachineAPI): void {
   LogBackend = log;
   JobsBackend = job;
   FmsServerBackend = fms;
   MachineBackend = machine;
 }
 
-export function setUserToken(u: User) {
+export function setUserToken(u: User): void {
   const token = u.access_token || u.id_token;
   function fetch(url: RequestInfo, init?: RequestInit) {
     return window.fetch(

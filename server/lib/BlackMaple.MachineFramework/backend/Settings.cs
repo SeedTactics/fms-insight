@@ -114,8 +114,8 @@ namespace BlackMaple.MachineFramework
     public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     public bool AllowChangeWorkorderAtLoadStation { get; set; }
 
-    public Dictionary<string, MachineWatchInterface.QueueSize> Queues { get; }
-      = new Dictionary<string, MachineWatchInterface.QueueSize>();
+    public Dictionary<string, QueueSize> Queues { get; }
+      = new Dictionary<string, QueueSize>();
 
     // key is queue name, value is IP address or DNS name of fms insight server with the queue
     public Dictionary<string, string> ExternalQueues { get; }
@@ -176,7 +176,7 @@ namespace BlackMaple.MachineFramework
         var key = q.Key.Substring(q.Key.IndexOf(':') + 1);
         if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
         {
-          Queues[key] = new MachineWatchInterface.QueueSize()
+          Queues[key] = new QueueSize()
           {
             MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
           };

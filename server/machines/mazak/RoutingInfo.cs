@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BlackMaple.MachineWatchInterface;
+using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
@@ -175,7 +175,7 @@ namespace MazakMachineInterface
           //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
           var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-            jobs: jobs.Select(j => LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false, scheduleId: null)).ToArray(),
+            jobs: jobs.Select(j => BlackMaple.MachineWatchInterface.LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false, scheduleId: null)).ToArray(),
             downloadUID: 1,
             mazakData: mazakData,
             savedParts: new HashSet<string>(),
@@ -392,14 +392,14 @@ namespace MazakMachineInterface
       return newSt.Material.Where(m => matIds.Contains(m.MaterialID)).ToList();
     }
 
-    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, int pathGroup, string queue, int position, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      Log.Debug("Adding unprocessed material for job {job} proc {proc} group {pathGroup} to queue {queue} in position {pos} with serial {serial}",
-        jobUnique, process, pathGroup, queue, position, serial
+      Log.Debug("Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
+        jobUnique, process, queue, position, serial
       );
 
       CurrentStatus st;
@@ -411,17 +411,6 @@ namespace MazakMachineInterface
 
         int procToCheck = Math.Max(1, process);
         if (procToCheck > job.Processes.Count) throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
-
-        int? path = null;
-        for (var p = 1; p <= job.Processes[procToCheck - 1].Paths.Count; p++)
-        {
-          if (job.Processes[procToCheck - 1].Paths[p - 1].PathGroup == pathGroup)
-          {
-            path = p;
-            break;
-          }
-        }
-        if (!path.HasValue) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find path group " + pathGroup.ToString() + " for job " + jobUnique + " and process " + process.ToString());
 
         matId = logDb.AllocateMaterialID(jobUnique, job.PartName, job.Processes.Count);
         if (!string.IsNullOrEmpty(serial))
@@ -444,7 +433,7 @@ namespace MazakMachineInterface
           position: position,
           operatorName: operatorName,
           reason: "SetByOperator");
-        logDb.RecordPathForProcess(matId, Math.Max(1, process), path.Value);
+        logDb.RecordPathForProcess(matId, Math.Max(1, process), 1);
 
         logReader.RecheckQueues(wait: true);
 
