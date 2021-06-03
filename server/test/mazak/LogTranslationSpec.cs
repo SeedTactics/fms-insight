@@ -294,7 +294,6 @@ namespace MachineWatchTest
               throw new Exception("Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString());
             }
             expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, FMSSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
-            jobLog.RecordPathForProcess(material.MaterialID, Math.Max(1, proc), material.Path);
             break;
           }
         case AllocateTy.Casting:
@@ -305,7 +304,6 @@ namespace MachineWatchTest
               throw new Exception("Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString());
             }
             expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, FMSSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
-            jobLog.RecordPathForProcess(material.MaterialID, Math.Max(1, proc), material.Path);
             break;
           }
       }

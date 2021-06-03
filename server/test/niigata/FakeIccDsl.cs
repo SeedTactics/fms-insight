@@ -530,7 +530,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         reason: "TestAddCasting",
         timeUTC: _status.TimeOfStatusUTC
       );
-      _logDB.RecordPathForProcess(matId, Math.Max(1, proc), path);
       _expectedMaterial[matId] = new InProcessMaterial()
       {
         MaterialID = matId,

@@ -1886,7 +1886,7 @@ namespace BlackMaple.MachineFramework
 
           // get old material details
           var oldMatDetails = GetMaterialDetails(oldMatId, trans);
-          if (oldMatDetails == null || oldMatDetails.Paths.Count == 0)
+          if (oldMatDetails == null)
           {
             throw new ConflictRequestException("Unable to find material");
           }
@@ -2037,7 +2037,7 @@ namespace BlackMaple.MachineFramework
           }
 
           //update paths
-          if (oldMatDetails.Paths.TryGetValue(oldMatProc, out var oldPath))
+          if (oldMatDetails.Paths != null && oldMatDetails.Paths.TryGetValue(oldMatProc, out var oldPath))
           {
             using (var newPathCmd = _connection.CreateCommand())
             {
