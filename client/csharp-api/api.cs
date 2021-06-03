@@ -4810,8 +4810,9 @@ namespace BlackMaple.FMSInsight.API
     
         [Newtonsoft.Json.JsonProperty("Casting", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Casting { get; set; }
-    
-    
+
+        [Newtonsoft.Json.JsonProperty("PathGroup", Required = Newtonsoft.Json.Required.Default, DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Include, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        private int PathGroup { get; set; }
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.4.3.0 (Newtonsoft.Json v11.0.0.0)")]
