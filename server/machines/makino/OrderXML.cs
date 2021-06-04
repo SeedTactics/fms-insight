@@ -253,7 +253,7 @@ namespace Makino
       xml.WriteElementString("Comment", j.PartName);
       xml.WriteElementString("PartName", partName);
       xml.WriteElementString("Revision", "SAIL");
-      xml.WriteElementString("Quantity", j.CyclesOnFirstProcess[0].ToString());
+      xml.WriteElementString("Quantity", j.Cycles.ToString());
       xml.WriteElementString("Priority", "10");
       xml.WriteElementString("Status", "0");
 
@@ -265,7 +265,7 @@ namespace Makino
       xml.WriteStartElement("OrderQuantity");
       xml.WriteAttributeString("orderName", j.UniqueStr);
 
-      int qty = j.CyclesOnFirstProcess[0];
+      int qty = j.Cycles;
       //qty /= j.PartsPerPallet(1, 1);
 
       xml.WriteElementString("ProcessNumber", "1");

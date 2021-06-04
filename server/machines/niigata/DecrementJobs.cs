@@ -62,34 +62,24 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (_jobCanBeDecremented != null && !_jobCanBeDecremented(j)) continue;
 
-        int remainQty = 0;
-        for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
+        int startedQty;
+        if (cellSt.CyclesStartedOnProc1.TryGetValue(j.UniqueStr, out var qty))
         {
-          if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty))
-          {
-            // note qty could be negative if job.FlexCyclesOnFirstProcessBetweenAllPaths is true
-            remainQty += qty;
-          }
+          startedQty = qty;
+        }
+        else
+        {
+          startedQty = 0;
         }
 
-        for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
+        if (j.Cycles > startedQty)
         {
-          if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var qty) && qty > 0)
+          decrs.Add(new NewDecrementQuantity()
           {
-            // don't want to decrement entire qty because another path could have had negative JobQtyRemaining
-            int qtyToDecrement = Math.Min(qty, remainQty);
-            if (qtyToDecrement > 0)
-            {
-              remainQty -= qtyToDecrement;
-              decrs.Add(new NewDecrementQuantity()
-              {
-                JobUnique = j.UniqueStr,
-                Proc1Path = path,
-                Part = j.PartName,
-                Quantity = qtyToDecrement
-              });
-            }
-          }
+            JobUnique = j.UniqueStr,
+            Part = j.PartName,
+            Quantity = j.Cycles - startedQty
+          });
         }
       }
 

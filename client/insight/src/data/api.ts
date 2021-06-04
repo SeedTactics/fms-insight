@@ -2711,8 +2711,7 @@ export class Job implements IJob {
     bookings?: string[] | undefined;
     manuallyCreated?: boolean;
     holdEntireJob?: HoldPattern | undefined;
-    cyclesOnFirstProcess!: number[];
-    flexCyclesOnFirstProcessBetweenAllPaths?: boolean | undefined;
+    cycles?: number;
     procsAndPaths!: ProcessInfo[];
 
     constructor(data?: IJob) {
@@ -2723,7 +2722,6 @@ export class Job implements IJob {
             }
         }
         if (!data) {
-            this.cyclesOnFirstProcess = [];
             this.procsAndPaths = [];
         }
     }
@@ -2743,12 +2741,7 @@ export class Job implements IJob {
             }
             this.manuallyCreated = _data["ManuallyCreated"];
             this.holdEntireJob = _data["HoldEntireJob"] ? HoldPattern.fromJS(_data["HoldEntireJob"]) : <any>undefined;
-            if (Array.isArray(_data["CyclesOnFirstProcess"])) {
-                this.cyclesOnFirstProcess = [] as any;
-                for (let item of _data["CyclesOnFirstProcess"])
-                    this.cyclesOnFirstProcess!.push(item);
-            }
-            this.flexCyclesOnFirstProcessBetweenAllPaths = _data["FlexCyclesOnFirstProcessBetweenAllPaths"];
+            this.cycles = _data["Cycles"];
             if (Array.isArray(_data["ProcsAndPaths"])) {
                 this.procsAndPaths = [] as any;
                 for (let item of _data["ProcsAndPaths"])
@@ -2779,12 +2772,7 @@ export class Job implements IJob {
         }
         data["ManuallyCreated"] = this.manuallyCreated;
         data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
-        if (Array.isArray(this.cyclesOnFirstProcess)) {
-            data["CyclesOnFirstProcess"] = [];
-            for (let item of this.cyclesOnFirstProcess)
-                data["CyclesOnFirstProcess"].push(item);
-        }
-        data["FlexCyclesOnFirstProcessBetweenAllPaths"] = this.flexCyclesOnFirstProcessBetweenAllPaths;
+        data["Cycles"] = this.cycles;
         if (Array.isArray(this.procsAndPaths)) {
             data["ProcsAndPaths"] = [];
             for (let item of this.procsAndPaths)
@@ -2804,8 +2792,7 @@ export interface IJob {
     bookings?: string[] | undefined;
     manuallyCreated?: boolean;
     holdEntireJob?: HoldPattern | undefined;
-    cyclesOnFirstProcess: number[];
-    flexCyclesOnFirstProcessBetweenAllPaths?: boolean | undefined;
+    cycles?: number;
     procsAndPaths: ProcessInfo[];
 }
 
@@ -3703,7 +3690,6 @@ export interface IActiveJob extends IHistoricJob {
 
 export class DecrementQuantity implements IDecrementQuantity {
     decrementId!: number;
-    proc1Path!: number;
     timeUTC!: Date;
     quantity!: number;
 
@@ -3719,7 +3705,6 @@ export class DecrementQuantity implements IDecrementQuantity {
     init(_data?: any) {
         if (_data) {
             this.decrementId = _data["DecrementId"];
-            this.proc1Path = _data["Proc1Path"];
             this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
             this.quantity = _data["Quantity"];
         }
@@ -3735,7 +3720,6 @@ export class DecrementQuantity implements IDecrementQuantity {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["DecrementId"] = this.decrementId;
-        data["Proc1Path"] = this.proc1Path;
         data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["Quantity"] = this.quantity;
         return data; 
@@ -3744,7 +3728,6 @@ export class DecrementQuantity implements IDecrementQuantity {
 
 export interface IDecrementQuantity {
     decrementId: number;
-    proc1Path: number;
     timeUTC: Date;
     quantity: number;
 }
@@ -4537,7 +4520,6 @@ export interface IMatToPutOnPallet {
 export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
     decrementId!: number;
     jobUnique!: string;
-    proc1Path!: number;
     timeUTC!: Date;
     part!: string;
     quantity!: number;
@@ -4555,7 +4537,6 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
         if (_data) {
             this.decrementId = _data["DecrementId"];
             this.jobUnique = _data["JobUnique"];
-            this.proc1Path = _data["Proc1Path"];
             this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
             this.part = _data["Part"];
             this.quantity = _data["Quantity"];
@@ -4573,7 +4554,6 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
         data = typeof data === 'object' ? data : {};
         data["DecrementId"] = this.decrementId;
         data["JobUnique"] = this.jobUnique;
-        data["Proc1Path"] = this.proc1Path;
         data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
         data["Part"] = this.part;
         data["Quantity"] = this.quantity;
@@ -4584,7 +4564,6 @@ export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
 export interface IJobAndDecrementQuantity {
     decrementId: number;
     jobUnique: string;
-    proc1Path: number;
     timeUTC: Date;
     part: string;
     quantity: number;

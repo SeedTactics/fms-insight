@@ -351,23 +351,31 @@ namespace MazakMachineInterface
 
       var newDecrs =
         unarchived
-        .SelectMany(j => Enumerable.Range(1, j.Processes[0].Paths.Count).Select(path => new { j, path }))
-        .Select(jobAndPath =>
+        .Where(j => toArchive.Contains(j.UniqueStr))
+        .Select(j =>
         {
-          if (completed.TryGetValue((uniq: jobAndPath.j.UniqueStr, proc1path: jobAndPath.path), out var compCnt))
+          int qty = 0;
+          for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
           {
-            if (compCnt < jobAndPath.j.CyclesOnFirstProcess[jobAndPath.path - 1])
+            if (completed.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var compCnt))
             {
-              return new NewDecrementQuantity()
-              {
-                JobUnique = jobAndPath.j.UniqueStr,
-                Proc1Path = jobAndPath.path,
-                Part = jobAndPath.j.PartName,
-                Quantity = jobAndPath.j.CyclesOnFirstProcess[jobAndPath.path - 1] - compCnt
-              };
+              qty += compCnt;
             }
           }
-          return null;
+
+          if (j.Cycles > qty)
+          {
+            return new NewDecrementQuantity()
+            {
+              JobUnique = j.UniqueStr,
+              Part = j.PartName,
+              Quantity = j.Cycles - qty
+            };
+          }
+          else
+          {
+            return null;
+          }
         })
         .Where(n => n != null);
 

@@ -48,6 +48,7 @@ namespace MazakMachineInterface
       public string UniqueStr { get; init; }
       public string PartName { get; init; }
       public HistoricJob DbJob { get; init; }
+      public int Cycles { get; set; }
       public ImmutableList<int>.Builder CyclesOnFirstProcess { get; init; }
       public IReadOnlyList<ImmutableList<int>.Builder> Completed { get; init; }
       public IReadOnlyList<ImmutableList<ProcPathInfo>.Builder> Processes { get; init; }
@@ -119,13 +120,11 @@ namespace MazakMachineInterface
         CurrentJob job;
         if (!jobsByUniq.TryGetValue(jobUnique, out job))
         {
-          var cyclesOnProc1 = ImmutableList.CreateBuilder<int>();
-          cyclesOnProc1.AddRange(new int[maxProc1Path]);
           job = new CurrentJob()
           {
             UniqueStr = jobUnique,
             PartName = partName,
-            CyclesOnFirstProcess = cyclesOnProc1,
+            Cycles = 0,
             DbJob = jobDB.LoadJob(jobUnique),
             Processes = Enumerable.Range(1, numProc).Select(_ =>
             {
@@ -152,7 +151,7 @@ namespace MazakMachineInterface
         pathBySchID.Add(schRow.Id, procToPath);
 
         //Job Basics
-        job.CyclesOnFirstProcess[procToPath.PathForProc(proc: 1) - 1] = schRow.PlanQuantity;
+        job.Cycles += schRow.PlanQuantity;
         AddCompletedToJob(schRow, job, procToPath);
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.UserHold = true;
@@ -380,7 +379,7 @@ namespace MazakMachineInterface
           BookingIds = job.DbJob?.BookingIds,
           ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
           HoldJob = job.UserHold ? new BlackMaple.MachineFramework.HoldPattern() { UserHold = true } : null,
-          CyclesOnFirstProcess = job.CyclesOnFirstProcess.ToImmutable(),
+          Cycles = job.Cycles,
           Processes = job.Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() }).ToImmutableList(),
           CopiedToSystem = true,
           Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),

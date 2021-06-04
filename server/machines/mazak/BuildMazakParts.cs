@@ -777,80 +777,42 @@ namespace MazakMachineInterface
         {
 
           //each path gets a MazakPart
-          for (int path = 1; path <= job.GetNumPaths(1); path++)
+          if (job.GetNumPaths(process: 1) != 1)
           {
-            var mazakPart = new MazakPart(job, downloadID, partIdx);
-            partIdx += 1;
-
-            string error;
-            BuildProcFromJobWithOneProc(job, path, mazakPart, mazakTy, mazakData, lookupProgram, out error);
-            if (error == null || error == "")
-              ret.Add(mazakPart);
-            else
-              log.Add(error);
+            log.Add("Part " + job.PartName + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller");
+            goto skipPart;
           }
+          var mazakPart = new MazakPart(job, downloadID, partIdx);
+          partIdx += 1;
+
+          string error;
+          BuildProcFromJobWithOneProc(job, mazakPart, mazakTy, mazakData, lookupProgram, out error);
+          if (error == null || error == "")
+            ret.Add(mazakPart);
+          else
+            log.Add(error);
 
         }
         else
         {
-
-          //each path group gets a MazakPart
-
-          //maps process 1 paths to groups
-          var pathGroups = new Dictionary<int, int>();
-
-          for (int path = 1; path <= job.GetNumPaths(1); path++)
+          for (int proc = 1; proc <= job.NumProcesses; proc++)
           {
-            var grp = job.GetPathGroup(1, path);
-
-            if (pathGroups.ContainsValue(grp))
+            if (job.GetNumPaths(proc) != 1)
             {
-              log.Add("Part " + job.PartName + " has a path group where process 1 " +
-                "has more than one part in a group.  This configuration is not supported by" +
-                " the Mazak cell controller.");
+              log.Add("Part " + job.PartName + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller");
               goto skipPart;
             }
-
-            pathGroups.Add(path, grp);
           }
 
-          //check each path group has exactly one process for procs >= 2
-          for (int proc = 2; proc <= job.NumProcesses; proc++)
-          {
-            foreach (int pGroup in pathGroups.Values)
-            {
-              int count = 0;
-              for (int path = 1; path <= job.GetNumPaths(proc); path++)
-              {
-                if (job.GetPathGroup(proc, path) == pGroup)
-                  count += 1;
-              }
+          //label the part by the path number on process 1.
+          var mazakPart = new MazakPart(job, downloadID, partIdx);
+          partIdx += 1;
+          BuildProcFromJob(job, mazakPart, out string error, mazakTy, mazakData, lookupProgram);
 
-              if (count != 1)
-              {
-                log.Add("Part " + job.PartName + " has a part group where process " +
-                        proc.ToString() + " has more than one path in the group.  This " +
-                        "configuration is not supported by the Mazak cell controller. " +
-                        "Skipping this part");
-                goto skipPart;
-              }
-            }
-          }
-
-          foreach (var grp in pathGroups)
-          {
-            //label the part by the path number on process 1.
-            var mazakPart = new MazakPart(job, downloadID, partIdx);
-            partIdx += 1;
-            string error;
-            BuildProcFromPathGroup(job, mazakPart, out error, mazakTy, mazakData,
-                 (proc, path) => grp.Value == job.GetPathGroup(proc, path), lookupProgram);
-
-            if (error == null || error == "")
-              ret.Add(mazakPart);
-            else
-              log.Add(error);
-          }
+          if (error == null || error == "")
+            ret.Add(mazakPart);
+          else
+            log.Add(error);
 
         }
 
@@ -863,91 +825,86 @@ namespace MazakMachineInterface
     //Func<int, int, bool> only introduced in .NET 3.5
     private delegate bool MatchFunc(int proc, int path);
 
-    private static void BuildProcFromPathGroup(BlackMaple.MachineWatchInterface.JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
-                                                   MazakAllData mazakData, MatchFunc matchPath,
-                                                   Func<string, long?, ProgramRevision> lookupProgram)
+    private static void BuildProcFromJob(BlackMaple.MachineWatchInterface.JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
+                                         MazakAllData mazakData, Func<string, long?, ProgramRevision> lookupProgram)
     {
       ErrorDuringCreate = null;
 
       for (int proc = 1; proc <= job.NumProcesses; proc++)
       {
-        for (int path = 1; path <= job.GetNumPaths(proc); path++)
+        // checked above that only a single path
+        var path = 1;
+
+        //Check this proc and path has a program
+        bool has1Stop = false;
+        ProgramRevision prog = null;
+        foreach (var stop in job.GetMachiningStop(proc, path))
         {
-          if (matchPath(proc, path))
+          has1Stop = true;
+          if (stop.Stations.Count == 0)
           {
+            ErrorDuringCreate = "Part " + job.PartName + " has no stations assigned.";
+            return;
+          }
 
-            //Check this proc and path has a program
-            bool has1Stop = false;
-            ProgramRevision prog = null;
-            foreach (var stop in job.GetMachiningStop(proc, path))
+          if (stop.ProgramName == null || stop.ProgramName == "")
+          {
+            ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
+            return;
+          }
+          if (mazakTy == MazakDbType.MazakVersionE)
+          {
+            int progNum;
+            if (!int.TryParse(stop.ProgramName, out progNum))
             {
-              has1Stop = true;
-              if (stop.Stations.Count == 0)
-              {
-                ErrorDuringCreate = "Part " + job.PartName + " has no stations assigned.";
-                return;
-              }
-
-              if (stop.ProgramName == null || stop.ProgramName == "")
-              {
-                ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
-                return;
-              }
-              if (mazakTy == MazakDbType.MazakVersionE)
-              {
-                int progNum;
-                if (!int.TryParse(stop.ProgramName, out progNum))
-                {
-                  ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
-                      " is not an integer.";
-                  return;
-                }
-              }
-              if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
-              {
-                prog = new ProgramRevision()
-                {
-                  CellControllerProgramName = stop.ProgramName
-                };
-              }
-              else
-              {
-                prog = lookupProgram(stop.ProgramName, stop.ProgramRevision);
-                if (prog == null)
-                {
-                  ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
-                    (stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : "") +
-                    " does not exist in the cell controller.";
-                  return;
-                }
-                // check if program already exists
-                foreach (var mp in mazakData.MainPrograms)
-                {
-                  if (MazakProcess.TryParseMainProgramComment(mp.Comment, out string mpProg, out long mpRev))
-                  {
-                    if (mpProg == prog.ProgramName && mpRev == prog.Revision)
-                    {
-                      prog = prog with { CellControllerProgramName = mp.MainProgram };
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-
-            if (!has1Stop)
-            {
-              ErrorDuringCreate = "Part " + job.PartName + " has no machines assigned";
+              ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                  " is not an integer.";
               return;
             }
-
-            mazak.Processes.Add(ProcessFromJob(mazak, proc, path, prog));
+          }
+          if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
+          {
+            prog = new ProgramRevision()
+            {
+              CellControllerProgramName = stop.ProgramName
+            };
+          }
+          else
+          {
+            prog = lookupProgram(stop.ProgramName, stop.ProgramRevision);
+            if (prog == null)
+            {
+              ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+                (stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : "") +
+                " does not exist in the cell controller.";
+              return;
+            }
+            // check if program already exists
+            foreach (var mp in mazakData.MainPrograms)
+            {
+              if (MazakProcess.TryParseMainProgramComment(mp.Comment, out string mpProg, out long mpRev))
+              {
+                if (mpProg == prog.ProgramName && mpRev == prog.Revision)
+                {
+                  prog = prog with { CellControllerProgramName = mp.MainProgram };
+                  break;
+                }
+              }
+            }
           }
         }
+
+        if (!has1Stop)
+        {
+          ErrorDuringCreate = "Part " + job.PartName + " has no machines assigned";
+          return;
+        }
+
+        mazak.Processes.Add(ProcessFromJob(mazak, proc, path, prog));
       }
     }
 
-    private static void BuildProcFromJobWithOneProc(BlackMaple.MachineWatchInterface.JobPlan job, int proc1path, MazakPart mazak, MazakDbType mazakTy,
+    private static void BuildProcFromJobWithOneProc(BlackMaple.MachineWatchInterface.JobPlan job, MazakPart mazak, MazakDbType mazakTy,
                                                     MazakAllData mazakData,
                                                     Func<string, long?, ProgramRevision> lookupProgram,
                                                     out string ErrorDuringCreate)
@@ -956,8 +913,7 @@ namespace MazakMachineInterface
 
       // first try building from the job
       string FromJobError;
-      BuildProcFromPathGroup(job, mazak, out FromJobError, mazakTy, mazakData,
-            (proc, path) => path == proc1path, lookupProgram);  // proc will always equal 1.
+      BuildProcFromJob(job, mazak, out FromJobError, mazakTy, mazakData, lookupProgram);  // proc will always equal 1.
 
       if (FromJobError == null || FromJobError == "")
         return; //Success
@@ -984,7 +940,7 @@ namespace MazakMachineInterface
 
       foreach (var pRow in TemplateRow.Processes)
       {
-        mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow, proc1path));
+        mazak.Processes.Add(new MazakProcessFromTemplate(mazak, pRow, path: 1));
       }
     }
 

@@ -94,50 +94,48 @@ namespace MazakMachineInterface
       //now add the new schedule
       foreach (JobPlan part in jobs)
       {
-        for (int proc1path = 1; proc1path <= part.GetNumPaths(1); proc1path++)
-        {
-          if (part.GetPlannedCyclesOnFirstProcess(proc1path) <= 0) continue;
+        // 1 path per job should have been already prevented by an earlier check
+        if (part.GetNumPaths(1) > 1) continue;
+        if (part.GetPlannedCyclesOnFirstProcess() <= 0) continue;
 
-          //check if part exists downloaded
-          int downloadUid = -1;
-          string mazakPartName = "";
-          string mazakComment = "";
-          foreach (var partRow in mazakData.Parts)
+        //check if part exists downloaded
+        int downloadUid = -1;
+        string mazakPartName = "";
+        string mazakComment = "";
+        foreach (var partRow in mazakData.Parts)
+        {
+          if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
           {
-            if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
+            MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
+            if (u == part.UniqueStr && ps.PathForProc(proc: 1) == 1)
             {
-              MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
-              if (u == part.UniqueStr && ps.PathForProc(proc: 1) == proc1path)
-              {
-                downloadUid = MazakPart.ParseUID(partRow.PartName);
-                mazakPartName = partRow.PartName;
-                mazakComment = partRow.Comment;
-                break;
-              }
+              downloadUid = MazakPart.ParseUID(partRow.PartName);
+              mazakPartName = partRow.PartName;
+              mazakComment = partRow.Comment;
+              break;
             }
           }
-          if (downloadUid < 0)
-          {
-            throw new BlackMaple.MachineFramework.BadRequestException(
-              "Attempting to create schedule for " + part.UniqueStr + " but a part does not exist");
-          }
+        }
+        if (downloadUid < 0)
+        {
+          throw new BlackMaple.MachineFramework.BadRequestException(
+            "Attempting to create schedule for " + part.UniqueStr + " but a part does not exist");
+        }
 
-          if (!scheduledParts.Contains(mazakPartName))
-          {
-            int schid = FindNextScheduleId(usedScheduleIDs);
-            int earlierConflicts = CountEarlierConflicts(part, proc1path, jobs);
-            schs.Add(SchedulePart(
-              SchID: schid,
-              mazakPartName: mazakPartName,
-              mazakComment: mazakComment,
-              numProcess: part.NumProcesses,
-              part: part,
-              proc1path: proc1path,
-              earlierConflicts: earlierConflicts,
-              startingPriority: maxPriMatchingDate + 1,
-              routeStartDate: routeStartDate,
-              UseStartingOffsetForDueDate: UseStartingOffsetForDueDate));
-          }
+        if (!scheduledParts.Contains(mazakPartName))
+        {
+          int schid = FindNextScheduleId(usedScheduleIDs);
+          int earlierConflicts = CountEarlierConflicts(part, jobs);
+          schs.Add(SchedulePart(
+            SchID: schid,
+            mazakPartName: mazakPartName,
+            mazakComment: mazakComment,
+            numProcess: part.NumProcesses,
+            part: part,
+            earlierConflicts: earlierConflicts,
+            startingPriority: maxPriMatchingDate + 1,
+            routeStartDate: routeStartDate,
+            UseStartingOffsetForDueDate: UseStartingOffsetForDueDate));
         }
       }
 
@@ -149,19 +147,19 @@ namespace MazakMachineInterface
 
     private static MazakScheduleRow SchedulePart(
       int SchID, string mazakPartName, string mazakComment, int numProcess,
-      JobPlan part, int proc1path, int earlierConflicts, int startingPriority, DateTime routeStartDate, bool UseStartingOffsetForDueDate)
+      JobPlan part, int earlierConflicts, int startingPriority, DateTime routeStartDate, bool UseStartingOffsetForDueDate)
     {
       bool entireHold = false;
       if (part.HoldEntireJob != null) entireHold = part.HoldEntireJob.IsJobOnHold;
       bool machiningHold = false;
-      if (part.HoldMachining(1, proc1path) != null) machiningHold = part.HoldMachining(1, proc1path).IsJobOnHold;
+      if (part.HoldMachining(1, 1) != null) machiningHold = part.HoldMachining(1, 1).IsJobOnHold;
 
       var newSchRow = new MazakScheduleRow()
       {
         Command = MazakWriteCommand.Add,
         Id = SchID,
         PartName = mazakPartName,
-        PlanQuantity = part.GetPlannedCyclesOnFirstProcess(proc1path),
+        PlanQuantity = part.GetPlannedCyclesOnFirstProcess(),
         CompleteQuantity = 0,
         FixForMachine = 0,
         MissingFixture = 0,
@@ -177,9 +175,9 @@ namespace MazakMachineInterface
 
       if (UseStartingOffsetForDueDate)
       {
-        if (part.GetSimulatedStartingTimeUTC(1, proc1path) != DateTime.MinValue)
+        if (part.GetSimulatedStartingTimeUTC(1, 1) != DateTime.MinValue)
         {
-          var start = part.GetSimulatedStartingTimeUTC(1, proc1path);
+          var start = part.GetSimulatedStartingTimeUTC(1, 1);
           newSchRow = newSchRow with
           {
             DueDate = routeStartDate,
@@ -198,7 +196,7 @@ namespace MazakMachineInterface
 
       int matQty = newSchRow.PlanQuantity;
 
-      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: proc1path)))
+      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: 1)))
       {
         matQty = 0;
       }
@@ -223,74 +221,60 @@ namespace MazakMachineInterface
     }
 
     /// Count up how many JobPaths have an earlier simulation start time and also share a fixture/face with the current job
-    private static int CountEarlierConflicts(JobPlan jobToCheck, int proc1path, IEnumerable<JobPlan> jobs)
+    private static int CountEarlierConflicts(JobPlan jobToCheck, IEnumerable<JobPlan> jobs)
     {
-      var startT = jobToCheck.GetSimulatedStartingTimeUTC(process: 1, path: proc1path);
+      var startT = jobToCheck.GetSimulatedStartingTimeUTC(process: 1, path: 1);
       if (startT == DateTime.MinValue) return 0;
 
       // first, calculate the fixtures and faces used by the job to check
-      var group = jobToCheck.GetPathGroup(process: 1, path: proc1path);
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
       var usedPallets = new HashSet<string>();
       for (int proc = 1; proc <= jobToCheck.NumProcesses; proc++)
       {
-        for (int path = 1; path <= jobToCheck.GetNumPaths(proc); path++)
+        var (plannedFix, plannedFace) = jobToCheck.PlannedFixture(proc, 1);
+        if (string.IsNullOrEmpty(plannedFix))
         {
-          if (jobToCheck.GetPathGroup(proc, path) != group) continue;
-          var (plannedFix, plannedFace) = jobToCheck.PlannedFixture(proc, path);
-          if (string.IsNullOrEmpty(plannedFix))
+          foreach (var p in jobToCheck.PlannedPallets(proc, 1))
           {
-            foreach (var p in jobToCheck.PlannedPallets(proc, path))
-            {
-              usedPallets.Add(p);
-            }
+            usedPallets.Add(p);
           }
-          else
-          {
-            usedFixtureFaces.Add((plannedFix, plannedFace.ToString()));
-          }
+        }
+        else
+        {
+          usedFixtureFaces.Add((plannedFix, plannedFace.ToString()));
         }
       }
 
       int earlierConflicts = 0;
-      // go through each other job and process 1 path
+      // go through each other job
       foreach (var otherJob in jobs)
       {
-        for (var otherProc1Path = 1; otherProc1Path <= otherJob.GetNumPaths(process: 1); otherProc1Path++)
+        if (otherJob.UniqueStr == jobToCheck.UniqueStr) continue;
+
+        // see if the process 1 starting time is later and if so skip the remaining checks
+        var otherStart = otherJob.GetSimulatedStartingTimeUTC(process: 1, path: 1);
+        if (otherStart == DateTime.MinValue) continue;
+        if (otherStart >= startT) continue;
+
+        //the job starts earlier than the jobToCheck, but need to see if it conflicts.
+
+        // go through all processes and if a fixture face matches, count it as a conflict.
+        for (var otherProc = 1; otherProc <= otherJob.NumProcesses; otherProc++)
         {
-          if (otherJob.UniqueStr == jobToCheck.UniqueStr && proc1path == otherProc1Path) continue;
-
-          // see if the process 1 starting time is later and if so skip the remaining checks
-          var otherStart = otherJob.GetSimulatedStartingTimeUTC(process: 1, path: otherProc1Path);
-          if (otherStart == DateTime.MinValue) goto checkNextPath;
-          if (otherStart >= startT) goto checkNextPath;
-          var otherGroup = otherJob.GetPathGroup(process: 1, path: otherProc1Path);
-
-          //the job-path combo starts earlier than the job-path to check, but need to see if it conflicts.
-
-          // go through all processes matching the path group and if a fixture face matches,
-          // count it as a conflict.
-          for (var otherProc = 1; otherProc <= otherJob.NumProcesses; otherProc++)
+          var (otherFix, otherFace) = otherJob.PlannedFixture(otherProc, 1);
+          if (usedFixtureFaces.Contains((otherFix, otherFace.ToString())))
           {
-            for (var otherPath = 1; otherPath <= otherJob.GetNumPaths(otherProc); otherPath++)
-            {
-              if (otherJob.GetPathGroup(otherProc, otherPath) != otherGroup) continue;
-              var (otherFix, otherFace) = otherJob.PlannedFixture(otherProc, otherPath);
-              if (usedFixtureFaces.Contains((otherFix, otherFace.ToString())))
-              {
-                earlierConflicts += 1;
-                goto checkNextPath;
-              }
-              if (otherJob.PlannedPallets(otherProc, otherPath).Any(usedPallets.Contains))
-              {
-                earlierConflicts += 1;
-                goto checkNextPath;
-              }
-            }
+            earlierConflicts += 1;
+            goto checkNextPath;
           }
-
-        checkNextPath:;
+          if (otherJob.PlannedPallets(otherProc, 1).Any(usedPallets.Contains))
+          {
+            earlierConflicts += 1;
+            goto checkNextPath;
+          }
         }
+
+      checkNextPath:;
       }
 
       return earlierConflicts;

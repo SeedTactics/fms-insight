@@ -265,11 +265,25 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "HoldEntireJob", IsRequired = false, EmitDefaultValue = false)]
     public HoldPattern? HoldJob { get; init; }
 
-    [DataMember(Name = "CyclesOnFirstProcess", IsRequired = true)]
-    public ImmutableList<int> CyclesOnFirstProcess { get; init; } = ImmutableList<int>.Empty;
+    [DataMember(Name = "Cycles", IsRequired = false, EmitDefaultValue = true)]
+    public int Cycles { get; init; }
 
-    [DataMember(Name = "FlexCyclesOnFirstProcessBetweenAllPaths", IsRequired = false, EmitDefaultValue = false)]
-    public bool? FlexCyclesOnFirstProcessBetweenAllPaths { get; init; }
+    [DataMember(Name = "CyclesOnFirstProcess", IsRequired = false, EmitDefaultValue = true), Obsolete]
+    private int[] CyclesOnFirstProcess
+    {
+      get
+      {
+        if (Processes.Count == 0) return new int[0];
+
+        var c = new int[Processes[0].Paths.Count];
+        c[0] = Cycles;
+        return c;
+      }
+      init
+      {
+        Cycles = value.Sum();
+      }
+    }
 
     [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
     public ImmutableList<ProcessInfo> Processes { get; init; } = ImmutableList<ProcessInfo>.Empty;
@@ -281,9 +295,11 @@ namespace BlackMaple.MachineFramework
   public record DecrementQuantity
   {
     [DataMember(IsRequired = true)] public long DecrementId { get; init; }
-    [DataMember(IsRequired = true)] public int Proc1Path { get; init; }
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
     [DataMember(IsRequired = true)] public int Quantity { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true), System.ComponentModel.DefaultValue(1), Obsolete]
+    private int Proc1Path { get; init; } = 1;
   }
 
   [DataContract, Draftable]

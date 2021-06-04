@@ -2477,7 +2477,6 @@
           "RouteEndUTC",
           "Archived",
           "PartName",
-          "CyclesOnFirstProcess",
           "ProcsAndPaths"
         ],
         "properties": {
@@ -2520,16 +2519,9 @@
               }
             ]
           },
-          "CyclesOnFirstProcess": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          "FlexCyclesOnFirstProcessBetweenAllPaths": {
-            "type": "boolean",
-            "nullable": true
+          "Cycles": {
+            "type": "integer",
+            "format": "int32"
           },
           "ProcsAndPaths": {
             "type": "array",
@@ -3053,7 +3045,6 @@
         "additionalProperties": false,
         "required": [
           "DecrementId",
-          "Proc1Path",
           "TimeUTC",
           "Quantity"
         ],
@@ -3061,10 +3052,6 @@
           "DecrementId": {
             "type": "integer",
             "format": "int64"
-          },
-          "Proc1Path": {
-            "type": "integer",
-            "format": "int32"
           },
           "TimeUTC": {
             "type": "string",
@@ -3527,7 +3514,6 @@
         "required": [
           "DecrementId",
           "JobUnique",
-          "Proc1Path",
           "TimeUTC",
           "Part",
           "Quantity"
@@ -3539,10 +3525,6 @@
           },
           "JobUnique": {
             "type": "string"
-          },
-          "Proc1Path": {
-            "type": "integer",
-            "format": "int32"
           },
           "TimeUTC": {
             "type": "string",

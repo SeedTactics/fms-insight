@@ -676,7 +676,7 @@ namespace Makino
             newJob = newJob with
             {
               Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
-              CyclesOnFirstProcess = ImmutableList.Create(reader.GetInt32(4)),
+              Cycles = reader.GetInt32(4),
               Precedence = ImmutableList.Create(ImmutableList.Create<long>(reader.GetInt16(5))),
               Processes = newJob.Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
               {

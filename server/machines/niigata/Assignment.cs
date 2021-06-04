@@ -216,32 +216,23 @@ namespace BlackMaple.FMSInsight.Niigata
         ;
     }
 
-    private bool PathHasRemainingProc1ToRun(CellState cellSt, Job job, int proc1path)
+    private bool PathHasRemainingProc1ToRun(CellState cellSt, HistoricJob job, int proc1path)
     {
-      if (job.FlexCyclesOnFirstProcessBetweenAllPaths.GetValueOrDefault(false))
+      if (job.Decrements?.Count > 0) return false;
+
+      int startedQty;
+      if (cellSt.CyclesStartedOnProc1.TryGetValue(job.UniqueStr, out var qty))
       {
-        int remainQty = 0;
-        for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
-        {
-          if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: path), out var qty))
-          {
-            // note qty could be negative if cycles flexed
-            remainQty += qty;
-          }
-        }
-        // only a single pallet is assigned before the assignment logic is recalculated from scratch, so
-        // we can specify that all paths can run here even if there is only a remaining quantity of 1.
-        return remainQty > 0;
+        startedQty = qty;
       }
       else
       {
-        if (cellSt.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: proc1path), out var qty))
-        {
-          return qty > 0;
-        }
+        startedQty = 0;
       }
 
-      return false;
+      // only a single pallet is assigned before the assignment logic is recalculated from scratch, so
+      // we can specify that all paths can run here even if there is only a remaining quantity of 1.
+      return startedQty < job.Cycles;
     }
 
     private bool PathAllowedOnPallet(IEnumerable<JobPath> alreadyLoading, JobPath potentialNewPath)

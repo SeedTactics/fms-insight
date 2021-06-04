@@ -266,16 +266,16 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (st == null) return false;
 
-      int remainQty = 0;
-      for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
+      int startedQty;
+      if (st.CyclesStartedOnProc1.TryGetValue(job.UniqueStr, out var qty))
       {
-        if (st.JobQtyRemainingOnProc1.TryGetValue((uniq: job.UniqueStr, proc1path: path), out var qty))
-        {
-          // note qty could be negative if job.FlexCyclesOnFirstProcessBetweenAllPaths is true
-          remainQty += qty;
-        }
+        startedQty = qty;
       }
-      if (remainQty > 0) return false;
+      else
+      {
+        startedQty = 0;
+      }
+      if (startedQty < job.Cycles) return false;
 
       var matInProc =
         st.Pallets
