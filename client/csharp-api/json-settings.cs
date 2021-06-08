@@ -24,6 +24,7 @@ namespace BlackMaple.FMSInsight.API
 
       var spanString = reader.Value as string;
       if (TimeSpan.TryParse(spanString, out TimeSpan result)) return result;
+      if (ParseIso8601Duration.TryParse(spanString, out result)) return result;
       return System.Xml.XmlConvert.ToTimeSpan(spanString);
     }
 
