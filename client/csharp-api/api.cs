@@ -175,6 +175,11 @@ namespace BlackMaple.FMSInsight.API
                             }
                             return objectResponse_.Object;
                         }
+                        //https://github.com/RicoSuter/NSwag/issues/2995
+                        else if (status_ == 204)
+                        {
+                            return null;
+                        }
                         else
                         {
                             var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
