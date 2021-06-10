@@ -93,7 +93,7 @@ export function buildScheduledJobs(
         historicJob: job,
         inProcJob: null,
         casting: casting ?? "",
-        scheduledQty: LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((c) => c),
+        scheduledQty: job.cycles ?? 0,
         decrementedQty: LazySeq.ofIterable(job.decrements || []).sumOn((d) => d.quantity),
         completedQty: completedMats.get(uniq).getOrNull()?.get(job.procsAndPaths.length).getOrNull() ?? 0,
         inProcessQty: 0,
@@ -115,7 +115,7 @@ export function buildScheduledJobs(
   for (const [uniq, curJob] of LazySeq.ofObject(currentSt.jobs)) {
     const job = result.get(uniq);
     if (job) {
-      const plannedQty = LazySeq.ofIterable(curJob.cyclesOnFirstProcess).sumOn((c) => c);
+      const plannedQty = curJob.cycles ?? 0;
       const completedQty = LazySeq.ofIterable(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumOn((c) => c);
       job.remainingQty = plannedQty - job.inProcessQty - completedQty;
       job.inProcJob = curJob;
@@ -152,7 +152,7 @@ export function buildScheduledJobs(
 // Clipboard
 // --------------------------------------------------------------------------------
 
-export function buildScheduledJobsTable(jobs: ReadonlyArray<ScheduledJobDisplay>, showMaterial: boolean) {
+export function buildScheduledJobsTable(jobs: ReadonlyArray<ScheduledJobDisplay>, showMaterial: boolean): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th>";
   table += "<th>Part</th>";

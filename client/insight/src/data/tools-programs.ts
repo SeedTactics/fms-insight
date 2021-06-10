@@ -104,7 +104,7 @@ export async function calcToolReport(
 ): Promise<Vector<ToolReport>> {
   let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
-    const planQty = LazySeq.ofIterable(job.cyclesOnFirstProcess).sumOn((x) => x);
+    const planQty = job.cycles ?? 0;
     for (let procIdx = 0; procIdx < job.procsAndPaths.length; procIdx++) {
       let completed = 0;
       let programsToAfterInProc = HashMap.empty<StationOperation, number>();
