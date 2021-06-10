@@ -327,14 +327,14 @@ namespace MachineWatchTest
         UniqueStr = "uniq1",
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
-        CyclesOnFirstProcess = ImmutableList.Create(15),
+        Cycles = 15,
       };
       var inProcJob = new Job()
       {
         UniqueStr = "uniq2",
         PartName = "part2",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
-        CyclesOnFirstProcess = ImmutableList.Create(15),
+        Cycles = 15,
       };
       _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null, addAsCopiedToSystem: true);
 
@@ -368,67 +368,6 @@ namespace MachineWatchTest
 
       // without any decrements
       _jobDB.LoadDecrementsForJob("uniq1").Should().BeEmpty();
-    }
-
-    [Fact]
-    public void MultiPathGroups()
-    {
-      // mazak has 15 planned quantity, set job to have 20
-      var completedJob = new Job()
-      {
-        UniqueStr = "uniq1",
-        PartName = "part1",
-        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
-        CyclesOnFirstProcess = ImmutableList.Create(20),
-      };
-      var inProcJob = new Job()
-      {
-        UniqueStr = "uniq2",
-        PartName = "part2",
-        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
-        CyclesOnFirstProcess = ImmutableList.Create(20),
-      };
-
-      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null, addAsCopiedToSystem: true);
-
-      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
-        new[] { "uniq1", "uniq2" }
-      );
-
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
-        File.ReadAllText(
-          Path.Combine("..", "..", "..", "sample-newjobs", "path-groups.json")),
-        jsonSettings
-      );
-
-      _writeJobs.AddJobs(_jobDB, newJobs, null);
-
-      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "path-groups-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeleteParts, "path-groups-delparts.json");
-      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "path-groups-add-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "path-groups-del-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "path-groups-parts.json");
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "path-groups-schedules.json");
-
-      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
-        new[] { "uniq2", "part1-schId1234", "part2-schId1234", "part3-schId1234" }
-      );
-
-      // should have a decrement of 20 - 15
-      _jobDB.LoadDecrementsForJob("uniq1").Should().BeEquivalentTo(
-        new[] {new DecrementQuantity()
-        {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = DateTime.UtcNow,
-          Quantity = 5
-        }},
-        options => options
-          .ComparingByMembers<DecrementQuantity>()
-          .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 20000)) // 20 secs
-          .WhenTypeIs<DateTime>()
-      );
     }
 
     [Fact]

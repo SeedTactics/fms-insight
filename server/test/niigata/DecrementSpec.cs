@@ -61,11 +61,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void Decrements()
     {
-      var qtyRemaining = new Dictionary<(string uniq, int proc1path), int>();
+      var qtyStarted = new Dictionary<string, int>();
 
       var j1 = new HistoricJob()
       {
         UniqueStr = "u1",
+        Cycles = 12,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
@@ -77,15 +78,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
       };
-      qtyRemaining[(uniq: "u1", proc1path: 1)] = 5;
-      qtyRemaining[(uniq: "u1", proc1path: 2)] = 7;
+      qtyStarted["u1"] = 5;
 
       var j2 = new HistoricJob()
       {
         UniqueStr = "u2",
+        Cycles = 22,
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      qtyRemaining[(uniq: "u2", proc1path: 1)] = 0;
+      qtyStarted["u2"] = 22;
 
       var d = new DecrementNotYetStartedJobs();
 
@@ -97,7 +98,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           new CellState()
           {
             UnarchivedJobs = new[] { j1, j2 },
-            JobQtyRemainingOnProc1 = qtyRemaining
+            CyclesStartedOnProc1 = qtyStarted
           }
         ).Should().Be(i == 0); // only something changed first time
 
@@ -106,10 +107,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Decrements = ImmutableList.Create(
             new[] {
               new DecrementQuantity() {
-                DecrementId = 0, Proc1Path = 1, TimeUTC = DateTime.UtcNow, Quantity = 5
-              },
-              new DecrementQuantity() {
-                DecrementId = 0, Proc1Path = 2, TimeUTC = DateTime.UtcNow, Quantity = 7
+                DecrementId = 0, TimeUTC = DateTime.UtcNow, Quantity = 12 - 5
               }
             }
           )
@@ -126,63 +124,5 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         _jobDB.LoadDecrementsForJob("u2").Should().BeEmpty();
       }
     }
-
-    [Fact]
-    public void DecrementWithNegQty()
-    {
-      var qtyRemaining = new Dictionary<(string uniq, int proc1path), int>();
-
-      var j1 = new HistoricJob()
-      {
-        UniqueStr = "u1",
-        Processes = ImmutableList.Create(
-          new ProcessInfo()
-          {
-            Paths = ImmutableList.Create(new ProcPathInfo(), new ProcPathInfo())
-          },
-          new ProcessInfo()
-          {
-            Paths = ImmutableList.Create(new ProcPathInfo())
-          }
-        )
-      };
-      qtyRemaining[(uniq: "u1", proc1path: 1)] = -3;
-      qtyRemaining[(uniq: "u1", proc1path: 2)] = 7;
-
-      var d = new DecrementNotYetStartedJobs();
-
-      for (int i = 0; i < 2; i++)
-      {
-        // decrement twice, the second time keeps everything unchanged
-
-        d.DecrementJobs(_jobDB,
-          new CellState()
-          {
-            UnarchivedJobs = new[] { j1 },
-            JobQtyRemainingOnProc1 = qtyRemaining
-          }
-        ).Should().Be(i == 0); // only something changed first time
-
-        j1 = j1 with
-        {
-          Decrements = ImmutableList.Create(
-            new[] {
-              new DecrementQuantity() {
-                DecrementId = 0, Proc1Path = 2, TimeUTC = DateTime.UtcNow, Quantity = 7 - 3
-              }
-            }
-          )
-        };
-
-        _jobDB.LoadDecrementsForJob("u1").Should().BeEquivalentTo(
-          j1.Decrements,
-          options => options
-            .ComparingByMembers<DecrementQuantity>()
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
-            .WhenTypeIs<DateTime>()
-        );
-      }
-    }
-
   }
 }

@@ -83,8 +83,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
       var assign = new MultiPalletAssign(new IAssignPallets[] {
-        new AssignNewRoutesOnPallets(statNames),
-        new SizedQueues(_settings.Queues)
+  new AssignNewRoutesOnPallets(statNames),
+  new SizedQueues(_settings.Queues)
       });
       var createLog = new CreateCellState(_settings, statNames, machConn);
 
@@ -488,7 +488,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 1);
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
+      j.SetPlannedCyclesOnFirstProcess(numCycles: 3);
       SetPath(j,
         proc: 1,
         path: 1,
@@ -527,8 +527,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 3);
-      j.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 4);
+      j.SetPlannedCyclesOnFirstProcess(numCycles: 7);
 
       // path 1, group 0 on pallets 1, 2, 3, 4
       SetPath(j,
@@ -602,8 +601,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       byMat.Count.Should().Be(7);
 
       var byPath = byMat.ToLookup(mat => (new[] { "1", "2" }).Contains(mat.Skip(1).First().Pallet));
-      byPath[true].Count().Should().Be(3); // true is pallets 1 or 2, path 1
-      byPath[false].Count().Should().Be(4); // false is pallets 5 or 6, path 2
+      byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
+      byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 5 or 6, path 2
 
       foreach (var path in byPath)
       {
@@ -637,8 +636,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
-      j.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 6);
+      j.SetPlannedCyclesOnFirstProcess(numCycles: 14);
 
       // path 1, group 0 on pallets 1, 2
       SetPath(j,
@@ -716,8 +714,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         matIds
           .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
           .ToLookup(mat => (new[] { "1", "2" }).Contains(mat.logs.Skip(1).First().Pallet));
-      byPath[true].Count().Should().Be(8); // true is pallets 1 or 2, path 1
-      byPath[false].Count().Should().Be(6); // false is pallets 3 or 4, path 2
+      byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
+      byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 3 or 4, path 2
 
       foreach (var path in byPath)
       {
@@ -751,7 +749,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2);
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 8);
+      j.SetPlannedCyclesOnFirstProcess(numCycles: 8);
 
       // process 1 on 4 pallets with short times
       SetPath(j,
@@ -813,7 +811,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2);
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 4);
+      j.SetPlannedCyclesOnFirstProcess(numCycles: 4);
 
       // process 1 on 4 pallets with short times
       SetPath(j,
@@ -876,15 +874,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         ReclampGroupNames = new HashSet<string>() { },
         IccMachineToJobMachNames = new Dictionary<int, (string group, int num)> {
-          {1, (group: "RO", num: 1)},
-          {2, (group: "RO", num: 2)},
-          {3, (group: "RO", num: 3)},
-          {4, (group: "RO", num: 4)},
-          {5, (group: "FC", num: 1)},
-          {6, (group: "FC", num: 2)},
-          {7, (group: "FC", num: 3)},
-          {8, (group: "FC", num: 4)},
-        }
+    {1, (group: "RO", num: 1)},
+    {2, (group: "RO", num: 2)},
+    {3, (group: "RO", num: 3)},
+    {4, (group: "RO", num: 4)},
+    {5, (group: "FC", num: 1)},
+    {6, (group: "FC", num: 2)},
+    {7, (group: "FC", num: 3)},
+    {8, (group: "FC", num: 4)},
+  }
       },
       numPals: 16,
       numLoads: 4,
@@ -909,22 +907,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           numProc: 4,
           queue: "Transfer",
           pals: new[] {
-            new[] { 2, 3, 4 },
-            new[] { 5, 6, 7, 8, 9, 10 },
-            new[] { 12, 13, 14, 15, 16},
-            new[] { 11 }
+      new[] { 2, 3, 4 },
+      new[] { 5, 6, 7, 8, 9, 10 },
+      new[] { 12, 13, 14, 15, 16},
+      new[] { 11 }
           },
           machGroups: new[] {
-            new[] { "RO"},
-            new[] { "RO", "FC"},
-            new[] { "FC"},
-            new[] {"RO"}
+      new[] { "RO"},
+      new[] { "RO", "FC"},
+      new[] { "FC"},
+      new[] {"RO"}
           },
           progs: new[] {
-            new[] { (prog: "aaa1RO", rev: 1L) },
-            new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
-            new[] { (prog: "aaa3FC", rev: 1L) },
-            new[] { (prog: "aaa4RO", rev: 1L) },
+      new[] { (prog: "aaa1RO", rev: 1L) },
+      new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
+      new[] { (prog: "aaa3FC", rev: 1L) },
+      new[] { (prog: "aaa4RO", rev: 1L) },
           }
         );
       }
@@ -937,15 +935,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         ReclampGroupNames = new HashSet<string>() { },
         IccMachineToJobMachNames = new Dictionary<int, (string group, int num)> {
-          {1, (group: "RO", num: 1)},
-          {2, (group: "RO", num: 2)},
-          {3, (group: "RO", num: 3)},
-          {4, (group: "RO", num: 4)},
-          {5, (group: "FC", num: 1)},
-          {6, (group: "FC", num: 2)},
-          {7, (group: "FC", num: 3)},
-          {8, (group: "FC", num: 4)},
-        }
+    {1, (group: "RO", num: 1)},
+    {2, (group: "RO", num: 2)},
+    {3, (group: "RO", num: 3)},
+    {4, (group: "RO", num: 4)},
+    {5, (group: "FC", num: 1)},
+    {6, (group: "FC", num: 2)},
+    {7, (group: "FC", num: 3)},
+    {8, (group: "FC", num: 4)},
+  }
       },
       numPals: 16,
       numLoads: 4,
@@ -966,44 +964,44 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               draftPath.InputQueue = "castingQ";
             }
             draftPath.Stops.AdjustAll(d =>
-            {
-              d.Program = null;
-              d.ProgramRevision = null;
-            });
+      {
+        d.Program = null;
+        d.ProgramRevision = null;
+      });
           });
         }
         j.CurrentUnfilledWorkorders.AddRange(new[] {
-          new PartWorkorder()
-          {
-            WorkorderId = "work1",
-            Part = "aaa",
-            Programs = ImmutableList.Create(
-            new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
-            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
-            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
-            new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
-            new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
-          )
-          },
-          new PartWorkorder()
-          {
-            WorkorderId = "work2",
-            Part = "aaa",
-            Programs = ImmutableList.Create(
-            new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
-            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
-            new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
-            new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
-            new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
-          )
-          }
+    new PartWorkorder()
+    {
+      WorkorderId = "work1",
+      Part = "aaa",
+      Programs = ImmutableList.Create(
+      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
+      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
+      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
+      new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
+      new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
+    )
+    },
+    new PartWorkorder()
+    {
+      WorkorderId = "work2",
+      Part = "aaa",
+      Programs = ImmutableList.Create(
+      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
+      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
+      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
+      new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
+      new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
+    )
+    }
         });
         j.Programs.AddRange(new[] {
-          new MachineFramework.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
-          new MachineFramework.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
-          new MachineFramework.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
-          new MachineFramework.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
-          new MachineFramework.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
+    new MachineFramework.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
+    new MachineFramework.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
+    new MachineFramework.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
+    new MachineFramework.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
+    new MachineFramework.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
         });
       };
 
@@ -1035,125 +1033,45 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           castingQueue: "castingQ",
           queue: "Transfer",
           pals: new[] {
-            new[] { 2, 3, 4 },
-            new[] { 5, 6, 7, 8, 9, 10 },
-            new[] { 12, 13, 14, 15, 16},
-            new[] { 11 }
+      new[] { 2, 3, 4 },
+      new[] { 5, 6, 7, 8, 9, 10 },
+      new[] { 12, 13, 14, 15, 16},
+      new[] { 11 }
           },
           machGroups: new[] {
-            new[] { "RO"},
-            new[] { "RO", "FC"},
-            new[] { "FC"},
-            new[] {"RO"}
+      new[] { "RO"},
+      new[] { "RO", "FC"},
+      new[] { "FC"},
+      new[] {"RO"}
           },
           progs: m.Key % 2 == 1 // material ids start at 1, so odd is first
             ? new[] {
-                new[] { (prog: "aaa1RO", rev: 1L) },
-                new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
-                new[] { (prog: "aaa3FC", rev: 1L) },
-                new[] { (prog: "aaa4RO", rev: 1L) },
+    new[] { (prog: "aaa1RO", rev: 1L) },
+    new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
+    new[] { (prog: "aaa3FC", rev: 1L) },
+    new[] { (prog: "aaa4RO", rev: 1L) },
               }
             : new[] {
-                new[] { (prog: "aaa1RO", rev: 2L) },
-                new[] { (prog: "aaa2RO", rev: 2L), (prog: "aaa2FC", rev: 2L) },
-                new[] { (prog: "zzz3FC", rev: 1L) },
-                new[] { (prog: "zzz4RO", rev: 1L) },
+    new[] { (prog: "aaa1RO", rev: 2L) },
+    new[] { (prog: "aaa2RO", rev: 2L), (prog: "aaa2FC", rev: 2L) },
+    new[] { (prog: "zzz3FC", rev: 1L) },
+    new[] { (prog: "zzz4RO", rev: 1L) },
               }
         );
       }
 
       _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-        new QueuedMaterial() {
-          MaterialID = 10,
-          Queue = "castingQ",
-          Position = 0,
-          Unique = "",
-          PartNameOrCasting = "aaa",
-          NumProcesses = 1,
-          AddTimeUTC = addTime
-        }
+  new QueuedMaterial() {
+    MaterialID = 10,
+    Queue = "castingQ",
+    Position = 0,
+    Unique = "",
+    PartNameOrCasting = "aaa",
+    NumProcesses = 1,
+    AddTimeUTC = addTime
+  }
       });
     }
 
-    [Fact]
-    public void FlexQtyBetweenPaths()
-    {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
-      });
-
-      var j = new Job()
-      {
-        UniqueStr = "uniq1",
-        PartName = "part1",
-        CyclesOnFirstProcess = ImmutableList.Create(10, 0), // put all cycles on first path
-        FlexCyclesOnFirstProcessBetweenAllPaths = true,
-        Processes = ImmutableList.Create(
-          new ProcessInfo()
-          {
-            Paths = ImmutableList.Create(
-              // two paths on separte pallets to separate load stations
-              new ProcPathInfo()
-              {
-                Pallets = ImmutableList.Create("1"),
-                Fixture = "fix1",
-                PartsPerPallet = 1,
-                Face = 1,
-                Load = ImmutableList.Create(2),
-                ExpectedLoadTime = TimeSpan.FromMinutes(10),
-                Unload = ImmutableList.Create(2),
-                ExpectedUnloadTime = TimeSpan.FromMinutes(10),
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
-                  Program = "prog111",
-                  ProgramRevision = 5,
-                  ExpectedCycleTime = TimeSpan.FromMinutes(20)
-                }),
-              },
-              // path 2 is a little shorter
-              new ProcPathInfo()
-              {
-                Pallets = ImmutableList.Create("2"),
-                Fixture = "fix1",
-                PartsPerPallet = 1,
-                Face = 1,
-                Load = ImmutableList.Create(1),
-                ExpectedLoadTime = TimeSpan.FromMinutes(8),
-                Unload = ImmutableList.Create(1),
-                ExpectedUnloadTime = TimeSpan.FromMinutes(8),
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
-                  Program = "prog111",
-                  ProgramRevision = 5,
-                  ExpectedCycleTime = TimeSpan.FromMinutes(15)
-                }),
-              }
-            )
-          }
-        )
-      };
-
-      AddJobs(ImmutableList.Create(j), new[] { (prog: "prog111", rev: 5L) });
-
-      var logs = Run();
-
-      var matIds = logs.SelectMany(e => e.Material).Select(m => m.MaterialID).ToHashSet();
-      matIds.Count.Should().Be(10);
-
-      var byPal =
-        matIds
-          .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
-          .ToLookup(mat => mat.logs.Skip(1).First().Pallet);
-
-      byPal.Count.Should().Be(2);
-      byPal["1"].Count().Should().Be(5);
-      byPal["2"].Count().Should().Be(5);
-    }
   }
 }

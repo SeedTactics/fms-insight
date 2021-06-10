@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -48,405 +48,46 @@ namespace MachineWatchTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void BasicFromTemplate(bool useStartingOffset)
-    {
-      //Test everything copied from the template
-      // The JobPlan's have only 1 process but the template has 2 processes so
-      // the resulting parts should have 2 processes
-
-      var job1 = new JobPlan("Job1", 1, new int[] { 2 });
-      job1.PartName = "Part1";
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
-      job1.AddLoadStation(1, 1, 1);
-      job1.AddLoadStation(1, 1, 2);
-      job1.AddLoadStation(1, 2, 5);
-      job1.AddUnloadStation(1, 1, 4);
-      job1.AddUnloadStation(1, 2, 3);
-      var stop = new JobMachiningStop("machine");
-      stop.Stations.Add(1);
-      job1.AddMachiningStop(1, 1, stop);
-      stop = new JobMachiningStop("machine");
-      stop.Stations.Add(3);
-      stop.Stations.Add(4);
-      job1.AddMachiningStop(1, 2, stop);
-
-      var job2 = new JobPlan("Job2", 1, new int[] { 2 });
-      job2.PartName = "Part2";
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(1, 2, "10");
-      job2.AddProcessOnPallet(1, 2, "11");
-      job2.AddProcessOnPallet(1, 2, "12");
-
-      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
-      job3.PartName = "Part3";
-      job3.AddProcessOnPallet(1, 1, "20");
-      job3.AddProcessOnPallet(1, 1, "21");
-
-      var job4 = new JobPlan("Job4", 1, new int[] { 1 });
-      job4.PartName = "Part4";
-      job4.AddProcessOnPallet(1, 1, "20");
-      job4.AddProcessOnPallet(1, 1, "21");
-
-      var log = new List<string>();
-
-      var dset = CreateReadSet();
-
-      CreatePart(dset, "Job1", "Part1", 2, "Test");
-      CreatePart(dset, "Job2", "Part2", 2, "Test");
-      CreatePart(dset, "Job3", "Part3", 1, "Test");
-      CreatePart(dset, "Job4", "Part4", 1, "Test");
-
-      var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3, job4 },
-        3,
-        dset,
-        new HashSet<string>(),
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: useStartingOffset,
-        fmsSettings: new FMSSettings(),
-        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
-        errors: log
-      );
-      if (log.Count > 0) Assert.True(false, log[0]);
-
-      CheckNewFixtures(pMap, new string[] {
-        "F:3:1:1",
-        "F:3:1:2",
-        "F:3:2:1",
-        "F:3:2:2",
-        "F:3:3:1",
-      }, new[] { "Test" });
-
-      var trans = pMap.CreatePartPalletDatabaseRows();
-
-      CheckPartProcess(trans, "Part1:3:1", 1, "F:3:1:1", "1200000000", "0004000000", "10000000");
-      CheckPartProcess(trans, "Part1:3:1", 2, "F:3:1:2", "1200000000", "0004000000", "10000000");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
-
-      CheckPartProcess(trans, "Part1:3:2", 1, "F:3:2:1", "0000500000", "0030000000", "00340000");
-      CheckPartProcess(trans, "Part1:3:2", 2, "F:3:2:2", "0000500000", "0030000000", "00340000");
-      CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
-
-      CheckPartProcess(trans, "Part2:3:3", 1, "F:3:1:1");
-      CheckPartProcess(trans, "Part2:3:3", 2, "F:3:1:2");
-      CheckPart(trans, "Part2:3:3", "Job2-Path1-1-0");
-
-      CheckPartProcess(trans, "Part2:3:4", 1, "F:3:2:1");
-      CheckPartProcess(trans, "Part2:3:4", 2, "F:3:2:2");
-      CheckPart(trans, "Part2:3:4", "Job2-Path2-2-0");
-
-      CheckPartProcess(trans, "Part3:3:5", 1, "F:3:3:1");
-      CheckPart(trans, "Part3:3:5", "Job3-Path1-0");
-
-      CheckPartProcess(trans, "Part4:3:6", 1, "F:3:3:1");
-      CheckPart(trans, "Part4:3:6", "Job4-Path1-0");
-
-      CheckPalletGroup(trans, 1, "F:3:1", 2, new int[] { 4, 5 });
-      CheckPalletGroup(trans, 2, "F:3:2", 2, new int[] { 10, 11, 12 });
-      CheckPalletGroup(trans, 3, "F:3:3", 1, new int[] { 20, 21 });
-
-      AssertPartsPalletsDeleted(trans);
-    }
-
-    [Fact]
-    public void UseExistingFixture()
-    {
-      //again, mazak parts are created from template, not the jobplan
-      var job1 = new JobPlan("Job1", 1, new int[] { 2 });
-      job1.PartName = "Part1";
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
-
-      var job2 = new JobPlan("Job2", 1, new int[] { 2 });
-      job2.PartName = "Part2";
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(1, 2, "10");
-      job2.AddProcessOnPallet(1, 2, "11");
-      job2.AddProcessOnPallet(1, 2, "12");
-
-      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
-      job3.PartName = "Part3";
-      job3.AddProcessOnPallet(1, 1, "20");
-      job3.AddProcessOnPallet(1, 1, "21");
-
-      var job4 = new JobPlan("Job4", 1, new int[] { 1 });
-      job4.PartName = "Part4";
-      job4.AddProcessOnPallet(1, 1, "20");
-      job4.AddProcessOnPallet(1, 1, "21");
-
-      var log = new List<string>();
-
-      var dset = CreateReadSet();
-
-      CreatePart(dset, "Job1", "Part1", 2, "Test");
-      CreatePart(dset, "Job2", "Part2", 2, "Test");
-      CreatePart(dset, "Job3", "Part3", 1, "Test");
-      CreatePart(dset, "Job4", "Part4", 1, "Test");
-
-      //Create fixtures which match for Parts 1 and 2.
-      var savedParts = new HashSet<string>();
-      CreateFixture(dset, "F:2:0:4:1");
-      CreateFixture(dset, "F:2:0:4:2");
-      CreateFixture(dset, "F:2:0:10:1");
-      CreateFixture(dset, "F:2:0:10:2");
-      CreatePart(dset, "Job1.0", "Part1:2:1", 2, "F:2:0:4");
-      savedParts.Add("Part1:2:1");
-      CreatePart(dset, "Job1.0", "Part1:2:2", 2, "F:2:0:10");
-      savedParts.Add("Part1:2:2");
-      CreatePallet(dset, 4, "F:2:0:4", 2, group: 1);
-      CreatePallet(dset, 5, "F:2:0:4", 2, group: 1);
-      CreatePallet(dset, 10, "F:2:0:10", 2, group: 2);
-      CreatePallet(dset, 11, "F:2:0:10", 2, group: 2);
-      CreatePallet(dset, 12, "F:2:0:10", 2, group: 2);
-
-      //Create several fixtures which almost but not quite match for parts 3 and 4.
-
-      //group with an extra pallet
-      CreateFixture(dset, "F:1:0:20:1");
-      CreatePart(dset, "Job3.0", "Part3:1:1", 1, "F:1:0:20");
-      savedParts.Add("Part3:1:1");
-      CreatePallet(dset, 20, "F:1:0:20", 1, group: 3);
-      CreatePallet(dset, 21, "F:1:0:20", 1, group: 3);
-      CreatePallet(dset, 22, "F:1:0:20", 1, group: 3);
-
-      //group with a missing pallet
-      CreateFixture(dset, "F:7:0:20:1");
-      CreatePart(dset, "Job3.1", "Part3:7:1", 1, "F:7:0:20");
-      savedParts.Add("Part3:7:1");
-      CreatePallet(dset, 20, "F:7:0:20", 1, group: 4);
-
-      var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3, job4 },
-        3,
-        dset,
-        savedParts,
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: false,
-        fmsSettings: new FMSSettings(),
-        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
-        errors: log
-      );
-      if (log.Count > 0) Assert.True(false, log[0]);
-
-      CheckNewFixtures(pMap, new string[] {
-        "F:3:7:1"
-      }, new[] { "Test" });
-
-      var trans = pMap.CreatePartPalletDatabaseRows();
-
-      CheckPartProcess(trans, "Part1:3:1", 1, "F:2:0:4:1");
-      CheckPartProcess(trans, "Part1:3:1", 2, "F:2:0:4:2");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
-
-      CheckPartProcess(trans, "Part1:3:2", 1, "F:2:0:10:1");
-      CheckPartProcess(trans, "Part1:3:2", 2, "F:2:0:10:2");
-      CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
-
-      CheckPartProcess(trans, "Part2:3:3", 1, "F:2:0:4:1");
-      CheckPartProcess(trans, "Part2:3:3", 2, "F:2:0:4:2");
-      CheckPart(trans, "Part2:3:3", "Job2-Path1-1-0");
-
-      CheckPartProcess(trans, "Part2:3:4", 1, "F:2:0:10:1");
-      CheckPartProcess(trans, "Part2:3:4", 2, "F:2:0:10:2");
-      CheckPart(trans, "Part2:3:4", "Job2-Path2-2-0");
-
-      CheckPartProcess(trans, "Part3:3:5", 1, "F:3:7:1");
-      CheckPart(trans, "Part3:3:5", "Job3-Path1-0");
-
-      CheckPartProcess(trans, "Part4:3:6", 1, "F:3:7:1");
-      CheckPart(trans, "Part4:3:6", "Job4-Path1-0");
-
-      CheckPalletGroup(trans, 7, "F:3:7", 1, new int[] { 20, 21 });
-
-      AssertPartsPalletsDeleted(trans);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void MultiProcess(bool useStartingOffset)
-    {
-      //A test where Jobs have different number of processes but the same pallet list
-      //again, mazak parts are created from template, not the jobplan
-
-      var job1 = new JobPlan("Job1", 1, new int[] { 2 });
-      job1.PartName = "Part1";
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
-
-      var job2 = new JobPlan("Job2", 1, new int[] { 2 });
-      job2.PartName = "Part2";
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(1, 2, "10");
-      job2.AddProcessOnPallet(1, 2, "11");
-      job2.AddProcessOnPallet(1, 2, "12");
-
-      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
-      job3.PartName = "Part3";
-      job3.AddProcessOnPallet(1, 1, "20");
-      job3.AddProcessOnPallet(1, 1, "21");
-
-      var job4 = new JobPlan("Job4", 1, new int[] { 1 });
-      job4.PartName = "Part4";
-      job4.AddProcessOnPallet(1, 1, "20");
-      job4.AddProcessOnPallet(1, 1, "21");
-
-      var log = new List<string>();
-
-      var dset = CreateReadSet();
-
-      CreatePart(dset, "Job1", "Part1", 2, "Test");
-      CreatePart(dset, "Job2", "Part2", 3, "Test");
-      CreatePart(dset, "Job3", "Part3", 1, "Test");
-      CreatePart(dset, "Job4", "Part4", 1, "Test");
-
-      var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3, job4 },
-        3,
-        dset,
-        new HashSet<string>(),
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: useStartingOffset,
-        fmsSettings: new FMSSettings(),
-        lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
-        errors: log
-      );
-      if (log.Count > 0) Assert.True(false, log[0]);
-
-      CheckNewFixtures(pMap, new string[] {
-        "F:3:1:1",
-        "F:3:1:2",
-        "F:3:1:3",
-        "F:3:2:1",
-        "F:3:2:2",
-        "F:3:2:3",
-        "F:3:3:1",
-      }, new[] { "Test" });
-
-      var trans = pMap.CreatePartPalletDatabaseRows();
-
-      CheckPartProcess(trans, "Part1:3:1", 1, "F:3:1:1");
-      CheckPartProcess(trans, "Part1:3:1", 2, "F:3:1:2");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
-
-      CheckPartProcess(trans, "Part1:3:2", 1, "F:3:2:1");
-      CheckPartProcess(trans, "Part1:3:2", 2, "F:3:2:2");
-      CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
-
-      CheckPartProcess(trans, "Part2:3:3", 1, "F:3:1:1");
-      CheckPartProcess(trans, "Part2:3:3", 2, "F:3:1:2");
-      CheckPartProcess(trans, "Part2:3:3", 3, "F:3:1:3");
-      CheckPart(trans, "Part2:3:3", "Job2-Path1-1-1-0");
-
-      CheckPartProcess(trans, "Part2:3:4", 1, "F:3:2:1");
-      CheckPartProcess(trans, "Part2:3:4", 2, "F:3:2:2");
-      CheckPartProcess(trans, "Part2:3:4", 3, "F:3:2:3");
-      CheckPart(trans, "Part2:3:4", "Job2-Path2-2-2-0");
-
-      CheckPartProcess(trans, "Part3:3:5", 1, "F:3:3:1");
-      CheckPart(trans, "Part3:3:5", "Job3-Path1-0");
-
-      CheckPartProcess(trans, "Part4:3:6", 1, "F:3:3:1");
-      CheckPart(trans, "Part4:3:6", "Job4-Path1-0");
-
-      CheckPalletGroup(trans, 1, "F:3:1", 3, new int[] { 4, 5 });
-      CheckPalletGroup(trans, 2, "F:3:2", 3, new int[] { 10, 11, 12 });
-      CheckPalletGroup(trans, 3, "F:3:3", 1, new int[] { 20, 21 });
-
-      AssertPartsPalletsDeleted(trans);
-
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
     public void BasicFromJob(bool useStartingOffset)
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
+      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
       job1.PartName = "Part1";
-      job1.SetPathGroup(1, 1, 1);
-      job1.SetPathGroup(1, 2, 2);
-      job1.SetPathGroup(2, 1, 1);
-      job1.SetPathGroup(2, 2, 2);
 
       //proc 1 and proc 2 on same pallets
       job1.AddProcessOnPallet(1, 1, "4");
       job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
       job1.AddProcessOnPallet(2, 1, "4");
       job1.AddProcessOnPallet(2, 1, "5");
-      job1.AddProcessOnPallet(2, 2, "10");
-      job1.AddProcessOnPallet(2, 2, "11");
-      job1.AddProcessOnPallet(2, 2, "12");
 
       AddBasicStopsWithProg(job1);
 
-      var job2 = new JobPlan("Job2", 2, new int[] { 2, 2 });
+      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
       job2.PartName = "Part2";
-
-      //make path groups twisted
-      job2.SetPathGroup(1, 1, 1);
-      job2.SetPathGroup(1, 2, 2);
-      job2.SetPathGroup(2, 1, 2);
-      job2.SetPathGroup(2, 2, 1);
 
       //process groups on the same pallet.
       job2.AddProcessOnPallet(1, 1, "4");
       job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(1, 2, "10");
-      job2.AddProcessOnPallet(1, 2, "11");
-      job2.AddProcessOnPallet(1, 2, "12");
-      job2.AddProcessOnPallet(2, 2, "4");
-      job2.AddProcessOnPallet(2, 2, "5");
-      job2.AddProcessOnPallet(2, 1, "10");
-      job2.AddProcessOnPallet(2, 1, "11");
-      job2.AddProcessOnPallet(2, 1, "12");
+      job2.AddProcessOnPallet(2, 1, "4");
+      job2.AddProcessOnPallet(2, 1, "5");
 
       AddBasicStopsWithProg(job2);
 
-      var job3 = new JobPlan("Job3", 1, new int[] { 2 });
+      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
       job3.PartName = "Part3";
       job3.AddProcessOnPallet(1, 1, "20");
       job3.AddProcessOnPallet(1, 1, "21");
-      job3.AddProcessOnPallet(1, 2, "30");
-      job3.AddProcessOnPallet(1, 2, "31");
 
       AddBasicStopsWithProg(job3);
-
-      //make Job 4 a template
-      var job4 = new JobPlan("Job4", 1, new int[] { 2 });
-      job4.PartName = "Part4";
-      job4.AddProcessOnPallet(1, 1, "20");
-      job4.AddProcessOnPallet(1, 1, "21");
-      job4.AddProcessOnPallet(1, 2, "30");
-      job4.AddProcessOnPallet(1, 2, "31");
-
 
       var log = new List<string>();
 
       var dset = CreateReadSet();
 
-      CreatePart(dset, "Job4", "Part4", 1, "Test");
       CreateProgram(dset, "1234");
       CreateFixture(dset, "unusedfixture");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3, job4 },
+        new JobPlan[] { job1, job2, job3 },
         3,
         dset,
         new HashSet<string>(),
@@ -463,9 +104,6 @@ namespace MachineWatchTest
           "F:3:1:1",
           "F:3:1:2",
           "F:3:2:1",
-          "F:3:2:2",
-          "F:3:3:1",
-          "F:3:4:1",
         },
         new[] { "unusedfixture", "Test" }
       );
@@ -476,34 +114,19 @@ namespace MachineWatchTest
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:1:2");
       CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "F:3:2:1");
-      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "F:3:2:2");
-      CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:1:1");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:1:2");
+      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:3", 1, "F:3:1:1");
-      CheckPartProcessFromJob(trans, "Part2:3:3", 2, "F:3:1:2");
-      CheckPart(trans, "Part2:3:3", "Job2-Path1-2-0");
+      CheckPartProcessFromJob(trans, "Part3:3:3", 1, "F:3:2:1");
+      CheckPart(trans, "Part3:3:3", "Job3-Path1-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:4", 1, "F:3:2:1");
-      CheckPartProcessFromJob(trans, "Part2:3:4", 2, "F:3:2:2");
-      CheckPart(trans, "Part2:3:4", "Job2-Path2-1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:5", 1, "F:3:3:1");
-      CheckPart(trans, "Part3:3:5", "Job3-Path1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:6", 1, "F:3:4:1");
-      CheckPart(trans, "Part3:3:6", "Job3-Path2-0");
-
-      CheckPartProcess(trans, "Part4:3:7", 1, "F:3:3:1");
-      CheckPart(trans, "Part4:3:7", "Job4-Path1-0");
-
-      CheckPartProcess(trans, "Part4:3:8", 1, "F:3:4:1");
-      CheckPart(trans, "Part4:3:8", "Job4-Path2-0");
+      CheckPartProcess(trans, "Part4:3:4", 1, "F:3:2:1");
+      CheckPart(trans, "Part4:3:4", "Job4-Path1-0");
 
       CheckPalletGroup(trans, 1, "F:3:1", 2, new int[] { 4, 5 });
-      CheckPalletGroup(trans, 2, "F:3:2", 2, new int[] { 10, 11, 12 });
-      CheckPalletGroup(trans, 3, "F:3:3", 1, new int[] { 20, 21 });
-      CheckPalletGroup(trans, 4, "F:3:4", 1, new int[] { 30, 31 });
+      CheckPalletGroup(trans, 2, "F:3:2", 1, new int[] { 20, 21 });
+      CheckPalletGroup(trans, 3, "F:3:3", 1, new int[] { 30, 31 });
 
       AssertPartsPalletsDeleted(trans);
     }
@@ -513,74 +136,44 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void FromJobReuseOrIgnoreFixtures(bool useStartingOffset)
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
+      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
       job1.PartName = "Part1";
-      job1.SetPathGroup(1, 1, 1);
-      job1.SetPathGroup(1, 2, 2);
-      job1.SetPathGroup(2, 1, 1);
-      job1.SetPathGroup(2, 2, 2);
 
       //proc 1 and proc 2 on same pallets
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
-      job1.AddProcessOnPallet(2, 1, "4");
-      job1.AddProcessOnPallet(2, 1, "5");
-      job1.AddProcessOnPallet(2, 2, "10");
-      job1.AddProcessOnPallet(2, 2, "11");
-      job1.AddProcessOnPallet(2, 2, "12");
+      job1.AddProcessOnPallet(1, 1, "10");
+      job1.AddProcessOnPallet(1, 1, "11");
+      job1.AddProcessOnPallet(1, 1, "12");
+      job1.AddProcessOnPallet(2, 1, "10");
+      job1.AddProcessOnPallet(2, 1, "11");
+      job1.AddProcessOnPallet(2, 1, "12");
 
       AddBasicStopsWithProg(job1);
 
-      var job2 = new JobPlan("Job2", 2, new int[] { 2, 2 });
+      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
       job2.PartName = "Part2";
 
-      //make path groups twisted
-      job2.SetPathGroup(1, 1, 1);
-      job2.SetPathGroup(1, 2, 2);
-      job2.SetPathGroup(2, 1, 2);
-      job2.SetPathGroup(2, 2, 1);
-
       //process groups on the same pallet.
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(1, 2, "10");
-      job2.AddProcessOnPallet(1, 2, "11");
-      job2.AddProcessOnPallet(1, 2, "12");
-      job2.AddProcessOnPallet(2, 2, "4");
-      job2.AddProcessOnPallet(2, 2, "5");
+      job2.AddProcessOnPallet(1, 1, "10");
+      job2.AddProcessOnPallet(1, 1, "11");
+      job2.AddProcessOnPallet(1, 1, "12");
       job2.AddProcessOnPallet(2, 1, "10");
       job2.AddProcessOnPallet(2, 1, "11");
       job2.AddProcessOnPallet(2, 1, "12");
 
       AddBasicStopsWithProg(job2);
 
-      var job3 = new JobPlan("Job3", 1, new int[] { 2 });
+      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
       job3.PartName = "Part3";
-      job3.AddProcessOnPallet(1, 1, "20");
-      job3.AddProcessOnPallet(1, 1, "21");
-      job3.AddProcessOnPallet(1, 2, "30");
-      job3.AddProcessOnPallet(1, 2, "31");
+      job3.AddProcessOnPallet(1, 1, "30");
+      job3.AddProcessOnPallet(1, 1, "31");
 
       AddBasicStopsWithProg(job3);
-
-      //make Job 4 a template
-      var job4 = new JobPlan("Job4", 1, new int[] { 2 });
-      job4.PartName = "Part4";
-      job4.AddProcessOnPallet(1, 1, "20");
-      job4.AddProcessOnPallet(1, 1, "21");
-      job4.AddProcessOnPallet(1, 2, "30");
-      job4.AddProcessOnPallet(1, 2, "31");
-
 
       var log = new List<string>();
 
       var dset = CreateReadSet();
       var savedParts = new HashSet<string>();
 
-      CreatePart(dset, "Job4", "Part4", 1, "Test");
       CreateProgram(dset, "1234");
       CreateFixture(dset, "unusedfixture");
 
@@ -593,7 +186,7 @@ namespace MachineWatchTest
       string pal30fix;
       if (useStartingOffset)
       {
-        pal30fix = "F:3:6:1";
+        pal30fix = "F:3:3:1";
       }
       else
       {
@@ -603,14 +196,11 @@ namespace MachineWatchTest
 
       // pallets 4, 5, 6 doesn't match the exsting so shouldn't be used in either case
       CreateFixture(dset, "F:4:3:4:1");
-      CreatePallet(dset, pal: 4, fix: "F:4:3:4", 1, group: 2);
-      CreatePallet(dset, pal: 5, fix: "F:4:3:4", 1, group: 2);
-      CreatePallet(dset, pal: 6, fix: "F:4:3:4", 1, group: 2);
       CreatePart(dset, "oldpart2", "oldpart2:2", 1, "F:4:3:4");
       savedParts.Add("oldpart2:2");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3, job4 },
+        new JobPlan[] { job1, job2, job3 },
         3,
         dset,
         savedParts,
@@ -626,12 +216,9 @@ namespace MachineWatchTest
       {
         CheckNewFixtures(pMap,
           new string[] {
+            "F:3:2:1",
+            "F:3:2:2",
             "F:3:3:1",
-            "F:3:3:2",
-            "F:3:4:1",
-            "F:3:4:2",
-            "F:3:5:1",
-            "F:3:6:1",
           },
           new[] { "unusedfixture", "Test", }
         );
@@ -640,12 +227,9 @@ namespace MachineWatchTest
       {
         CheckNewFixtures(pMap,
           new string[] {
-            "F:3:3:1",
-            "F:3:3:2",
-            "F:3:4:1",
-            "F:3:4:2",
-            "F:3:5:1",
-            // don't create one for pallets 30 and 31 "F:3:6:1",
+            "F:3:2:1",
+            "F:3:2:2",
+            // don't create one for pallets 30 and 31 "F:3:4:1",
           },
           new[] { "unusedfixture", "Test" }
         );
@@ -653,40 +237,21 @@ namespace MachineWatchTest
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
-      CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:3:1");
-      CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:3:2");
+      CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:2:1");
+      CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:2:2");
       CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "F:3:4:1");
-      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "F:3:4:2");
-      CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:2:1");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:2:2");
+      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:3", 1, "F:3:3:1");
-      CheckPartProcessFromJob(trans, "Part2:3:3", 2, "F:3:3:2");
-      CheckPart(trans, "Part2:3:3", "Job2-Path1-2-0");
+      CheckPartProcessFromJob(trans, "Part3:3:3", 1, pal30fix);
+      CheckPart(trans, "Part3:3:3", "Job3-Path1-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:4", 1, "F:3:4:1");
-      CheckPartProcessFromJob(trans, "Part2:3:4", 2, "F:3:4:2");
-      CheckPart(trans, "Part2:3:4", "Job2-Path2-1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:5", 1, "F:3:5:1");
-      CheckPart(trans, "Part3:3:5", "Job3-Path1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:6", 1, pal30fix);
-      CheckPart(trans, "Part3:3:6", "Job3-Path2-0");
-
-      CheckPartProcess(trans, "Part4:3:7", 1, "F:3:5:1");
-      CheckPart(trans, "Part4:3:7", "Job4-Path1-0");
-
-      CheckPartProcess(trans, "Part4:3:8", 1, pal30fix);
-      CheckPart(trans, "Part4:3:8", "Job4-Path2-0");
-
-      CheckPalletGroup(trans, 3, "F:3:3", 2, new int[] { 4, 5 });
-      CheckPalletGroup(trans, 4, "F:3:4", 2, new int[] { 10, 11, 12 });
-      CheckPalletGroup(trans, 5, "F:3:5", 1, new int[] { 20, 21 });
+      CheckPalletGroup(trans, 2, "F:3:2", 2, new int[] { 10, 11, 12 });
       if (useStartingOffset)
       {
-        CheckPalletGroup(trans, 6, "F:3:6", 1, new int[] { 30, 31 });
+        CheckPalletGroup(trans, 3, "F:3:3", 1, new int[] { 30, 31 });
       }
 
       AssertPartsPalletsDeleted(trans);
@@ -698,68 +263,34 @@ namespace MachineWatchTest
     public void DifferentPallets(bool useStartingOffset)
     {
       //Test when processes have different pallet lists
-      var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
+      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
       job1.PartName = "Part1";
-      job1.SetPathGroup(1, 1, 1);
-      job1.SetPathGroup(1, 2, 2);
-      job1.SetPathGroup(2, 1, 1);
-      job1.SetPathGroup(2, 2, 2);
 
       job1.AddProcessOnPallet(1, 1, "4");
       job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
       job1.AddProcessOnPallet(2, 1, "40");
       job1.AddProcessOnPallet(2, 1, "50");
-      job1.AddProcessOnPallet(2, 2, "100");
-      job1.AddProcessOnPallet(2, 2, "110");
-      job1.AddProcessOnPallet(2, 2, "120");
 
       AddBasicStopsWithProg(job1);
 
-      var job2 = new JobPlan("Job2", 2, new int[] { 2, 2 });
+      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
       job2.PartName = "Part2";
-
-      //make path groups twisted
-      job2.SetPathGroup(1, 1, 1);
-      job2.SetPathGroup(1, 2, 2);
-      job2.SetPathGroup(2, 1, 2);
-      job2.SetPathGroup(2, 2, 1);
 
       //process groups on the same pallet.
       job2.AddProcessOnPallet(1, 1, "4");
       job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(1, 2, "10");
-      job2.AddProcessOnPallet(1, 2, "11");
-      job2.AddProcessOnPallet(1, 2, "12");
-      job2.AddProcessOnPallet(2, 2, "40");
-      job2.AddProcessOnPallet(2, 2, "50");
-      job2.AddProcessOnPallet(2, 1, "100");
-      job2.AddProcessOnPallet(2, 1, "110");
-      job2.AddProcessOnPallet(2, 1, "120");
+      job2.AddProcessOnPallet(2, 1, "40");
+      job2.AddProcessOnPallet(2, 1, "50");
 
       AddBasicStopsWithProg(job2);
 
-      var job3 = new JobPlan("Job3", 2, new int[] { 2, 2 });
+      var job3 = new JobPlan("Job3", 2, new int[] { 1, 1 });
       job3.PartName = "Part3";
 
-      job3.SetPathGroup(1, 1, 1);
-      job3.SetPathGroup(1, 2, 2);
-      job3.SetPathGroup(2, 1, 1);
-      job3.SetPathGroup(2, 2, 2);
-
-      //These do not all match above (some do, but not all)
       job3.AddProcessOnPallet(1, 1, "4");
       job3.AddProcessOnPallet(1, 1, "5");
-      job3.AddProcessOnPallet(1, 2, "22");
-      job3.AddProcessOnPallet(1, 2, "23");
-      job3.AddProcessOnPallet(1, 2, "24");
       job3.AddProcessOnPallet(2, 1, "30");
       job3.AddProcessOnPallet(2, 1, "31");
-      job3.AddProcessOnPallet(2, 2, "100");
-      job3.AddProcessOnPallet(2, 2, "110");
-      job3.AddProcessOnPallet(2, 2, "120");
 
       AddBasicStopsWithProg(job3);
 
@@ -784,10 +315,7 @@ namespace MachineWatchTest
       CheckNewFixtures(pMap, new string[] {
         "F:3:1:1",
         "F:3:2:2",
-        "F:3:3:1",
-        "F:3:4:2",
-        "F:3:5:2",
-        "F:3:6:1",
+        "F:3:3:2",
       });
 
       var trans = pMap.CreatePartPalletDatabaseRows();
@@ -796,32 +324,17 @@ namespace MachineWatchTest
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:2:2");
       CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "F:3:3:1");
-      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "F:3:4:2");
-      CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:1:1");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:2:2");
+      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:3", 1, "F:3:1:1");
-      CheckPartProcessFromJob(trans, "Part2:3:3", 2, "F:3:2:2");
-      CheckPart(trans, "Part2:3:3", "Job2-Path1-2-0");
-
-      CheckPartProcessFromJob(trans, "Part2:3:4", 1, "F:3:3:1");
-      CheckPartProcessFromJob(trans, "Part2:3:4", 2, "F:3:4:2");
-      CheckPart(trans, "Part2:3:4", "Job2-Path2-1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:5", 1, "F:3:1:1");
-      CheckPartProcessFromJob(trans, "Part3:3:5", 2, "F:3:5:2");
-      CheckPart(trans, "Part3:3:5", "Job3-Path1-1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:6", 1, "F:3:6:1");
-      CheckPartProcessFromJob(trans, "Part3:3:6", 2, "F:3:4:2");
-      CheckPart(trans, "Part3:3:6", "Job3-Path2-2-0");
+      CheckPartProcessFromJob(trans, "Part3:3:3", 1, "F:3:1:1");
+      CheckPartProcessFromJob(trans, "Part3:3:3", 2, "F:3:3:2");
+      CheckPart(trans, "Part3:3:3", "Job3-Path1-1-0");
 
       CheckSingleProcPalletGroup(trans, 1, "F:3:1:1", new int[] { 4, 5 });
       CheckSingleProcPalletGroup(trans, 2, "F:3:2:2", new int[] { 40, 50 });
-      CheckSingleProcPalletGroup(trans, 3, "F:3:3:1", new int[] { 10, 11, 12 });
-      CheckSingleProcPalletGroup(trans, 4, "F:3:4:2", new int[] { 100, 110, 120 });
-      CheckSingleProcPalletGroup(trans, 5, "F:3:5:2", new int[] { 30, 31 });
-      CheckSingleProcPalletGroup(trans, 6, "F:3:6:1", new int[] { 22, 23, 24 });
+      CheckSingleProcPalletGroup(trans, 3, "F:3:3:2", new int[] { 30, 31 });
 
       AssertPartsPalletsDeleted(trans);
     }
@@ -829,85 +342,53 @@ namespace MachineWatchTest
     [Fact]
     public void ManualFixtureAssignment()
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
+      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
       job1.PartName = "Part1";
-      job1.SetPathGroup(1, 1, 1);
-      job1.SetPathGroup(1, 2, 2);
-      job1.SetPathGroup(2, 1, 1);
-      job1.SetPathGroup(2, 2, 2);
 
       //proc 1 and proc 2 on same pallets
       job1.AddProcessOnPallet(1, 1, "4");
       job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
       job1.AddProcessOnPallet(2, 1, "4");
       job1.AddProcessOnPallet(2, 1, "5");
-      job1.AddProcessOnPallet(2, 2, "10");
-      job1.AddProcessOnPallet(2, 2, "11");
-      job1.AddProcessOnPallet(2, 2, "12");
 
       //each process uses different faces
       job1.SetFixtureFace(1, 1, "fixAA", 1);
       job1.SetFixtureFace(2, 1, "fixAA", 2);
-      job1.SetFixtureFace(1, 2, "fixBB", 1);
-      job1.SetFixtureFace(2, 2, "fixBB", 2);
 
       AddBasicStopsWithProg(job1);
 
-      var job2 = new JobPlan("Job2", 2, new int[] { 2, 2 });
+      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
       job2.PartName = "Part2";
-
-      //make path groups twisted
-      job2.SetPathGroup(1, 1, 1);
-      job2.SetPathGroup(1, 2, 2);
-      job2.SetPathGroup(2, 1, 2);
-      job2.SetPathGroup(2, 2, 1);
 
       //process groups on the same pallet.
       job2.AddProcessOnPallet(1, 1, "4");
       job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(1, 2, "10");
-      job2.AddProcessOnPallet(1, 2, "11");
-      job2.AddProcessOnPallet(1, 2, "12");
-      job2.AddProcessOnPallet(2, 2, "4");
-      job2.AddProcessOnPallet(2, 2, "5");
-      job2.AddProcessOnPallet(2, 1, "10");
-      job2.AddProcessOnPallet(2, 1, "11");
-      job2.AddProcessOnPallet(2, 1, "12");
+      job2.AddProcessOnPallet(2, 1, "4");
+      job2.AddProcessOnPallet(2, 1, "5");
 
       //each process uses different faces
       job2.SetFixtureFace(1, 1, "fixAA", 1);
-      job2.SetFixtureFace(2, 2, "fixAA", 2);
-      job2.SetFixtureFace(1, 2, "fixBB", 1);
-      job2.SetFixtureFace(2, 1, "fixBB", 2);
+      job2.SetFixtureFace(2, 1, "fixAA", 2);
 
       AddBasicStopsWithProg(job2);
 
-      var job3 = new JobPlan("Job3", 1, new int[] { 2 });
+      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
       job3.PartName = "Part3";
       job3.AddProcessOnPallet(1, 1, "20");
       job3.AddProcessOnPallet(1, 1, "21");
-      job3.AddProcessOnPallet(1, 2, "30");
-      job3.AddProcessOnPallet(1, 2, "31");
 
       //job3 uses separate fixture than job 4, but same fixture and face for both procs
       job3.SetFixtureFace(1, 1, "fix3", 1);
-      job3.SetFixtureFace(1, 2, "fix3", 1);
 
       AddBasicStopsWithProg(job3);
 
-      var job4 = new JobPlan("Job4", 1, new int[] { 2 });
+      var job4 = new JobPlan("Job4", 1, new int[] { 1 });
       job4.PartName = "Part3";
       job4.AddProcessOnPallet(1, 1, "20");
       job4.AddProcessOnPallet(1, 1, "21");
-      job4.AddProcessOnPallet(1, 2, "30");
-      job4.AddProcessOnPallet(1, 2, "31");
 
       //job3 uses separate fixture than job 4
       job4.SetFixtureFace(1, 1, "fix4", 1);
-      job4.SetFixtureFace(1, 2, "fix4", 1);
 
       AddBasicStopsWithProg(job4);
 
@@ -931,12 +412,8 @@ namespace MachineWatchTest
       CheckNewFixtures(pMap, new string[] {
         "F:3:1:fixAA:1",
         "F:3:1:fixAA:2",
-        "F:3:2:fixBB:1",
-        "F:3:2:fixBB:2",
-        "F:3:3:fix3:1",
-        "F:3:4:fix3:1",
-        "F:3:5:fix4:1",
-        "F:3:6:fix4:1",
+        "F:3:2:fix3:1",
+        "F:3:3:fix4:1",
       }, new[] { "Test" });
 
       var trans = pMap.CreatePartPalletDatabaseRows();
@@ -945,36 +422,19 @@ namespace MachineWatchTest
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:1:fixAA:2");
       CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part1:3:2", 1, "F:3:2:fixBB:1");
-      CheckPartProcessFromJob(trans, "Part1:3:2", 2, "F:3:2:fixBB:2");
-      CheckPart(trans, "Part1:3:2", "Job1-Path2-2-0");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:1:fixAA:1");
+      CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:1:fixAA:2");
+      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:3", 1, "F:3:1:fixAA:1");
-      CheckPartProcessFromJob(trans, "Part2:3:3", 2, "F:3:1:fixAA:2");
-      CheckPart(trans, "Part2:3:3", "Job2-Path1-2-0");
+      CheckPartProcessFromJob(trans, "Part3:3:3", 1, "F:3:2:fix3:1");
+      CheckPart(trans, "Part3:3:3", "Job3-Path1-0");
 
-      CheckPartProcessFromJob(trans, "Part2:3:4", 1, "F:3:2:fixBB:1");
-      CheckPartProcessFromJob(trans, "Part2:3:4", 2, "F:3:2:fixBB:2");
-      CheckPart(trans, "Part2:3:4", "Job2-Path2-1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:5", 1, "F:3:3:fix3:1");
-      CheckPart(trans, "Part3:3:5", "Job3-Path1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:6", 1, "F:3:4:fix3:1");
-      CheckPart(trans, "Part3:3:6", "Job3-Path2-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:7", 1, "F:3:5:fix4:1");
-      CheckPart(trans, "Part3:3:7", "Job4-Path1-0");
-
-      CheckPartProcessFromJob(trans, "Part3:3:8", 1, "F:3:6:fix4:1");
-      CheckPart(trans, "Part3:3:8", "Job4-Path2-0");
+      CheckPartProcessFromJob(trans, "Part3:3:4", 1, "F:3:3:fix4:1");
+      CheckPart(trans, "Part3:3:4", "Job4-Path1-0");
 
       CheckPalletGroup(trans, 1, new[] { "F:3:1:fixAA:1", "F:3:1:fixAA:2" }, new int[] { 4, 5 });
-      CheckPalletGroup(trans, 2, new[] { "F:3:2:fixBB:1", "F:3:2:fixBB:2" }, new int[] { 10, 11, 12 });
-      CheckPalletGroup(trans, 3, new[] { "F:3:3:fix3:1" }, new int[] { 20, 21 });
-      CheckPalletGroup(trans, 4, new[] { "F:3:4:fix3:1" }, new int[] { 30, 31 });
-      CheckPalletGroup(trans, 5, new[] { "F:3:5:fix4:1" }, new int[] { 20, 21 });
-      CheckPalletGroup(trans, 6, new[] { "F:3:6:fix4:1" }, new int[] { 30, 31 });
+      CheckPalletGroup(trans, 2, new[] { "F:3:2:fix3:1" }, new int[] { 20, 21 });
+      CheckPalletGroup(trans, 3, new[] { "F:3:3:fix4:1" }, new int[] { 20, 21 });
 
       AssertPartsPalletsDeleted(trans);
     }
@@ -1115,24 +575,13 @@ namespace MachineWatchTest
     [Fact]
     public void DeleteUnusedPartsPals()
     {
-      //Test when processes have different pallet lists
-      var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
+      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
       job1.PartName = "Part1";
-      job1.SetPathGroup(1, 1, 1);
-      job1.SetPathGroup(1, 2, 2);
-      job1.SetPathGroup(2, 1, 1);
-      job1.SetPathGroup(2, 2, 2);
 
       job1.AddProcessOnPallet(1, 1, "4");
       job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(1, 2, "10");
-      job1.AddProcessOnPallet(1, 2, "11");
-      job1.AddProcessOnPallet(1, 2, "12");
       job1.AddProcessOnPallet(2, 1, "40");
       job1.AddProcessOnPallet(2, 1, "50");
-      job1.AddProcessOnPallet(2, 2, "100");
-      job1.AddProcessOnPallet(2, 2, "110");
-      job1.AddProcessOnPallet(2, 2, "120");
 
       AddBasicStopsWithProg(job1);
 
@@ -1189,17 +638,11 @@ namespace MachineWatchTest
     public void ErrorsOnMissingProgram()
     {
       //Test when processes have different pallet lists
-      var job1 = new JobPlan("Job1", 2, new int[] { 2, 2 });
+      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
       job1.PartName = "Part1";
-      job1.SetPathGroup(1, 1, 1);
-      job1.SetPathGroup(1, 2, 2);
-      job1.SetPathGroup(2, 1, 1);
-      job1.SetPathGroup(2, 2, 2);
 
       job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 2, "10");
       job1.AddProcessOnPallet(2, 1, "40");
-      job1.AddProcessOnPallet(2, 2, "100");
 
       AddBasicStopsWithProg(job1);
 
@@ -1231,7 +674,6 @@ namespace MachineWatchTest
       log.Should().BeEquivalentTo(new[] {
 				// one for each process
 				"Part Part1 program 1234 does not exist in the cell controller.",
-        "Part Part1 program 1234 does not exist in the cell controller."
       });
     }
 

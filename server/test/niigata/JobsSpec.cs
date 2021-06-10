@@ -102,7 +102,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         UniqueStr = "u1",
         PartName = "p1",
-        CyclesOnFirstProcess = ImmutableList.Create(70),
+        Cycles = 70,
         RouteStartUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
         Processes = ImmutableList.Create(new ProcessInfo()
         {
@@ -129,7 +129,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         new DecrementQuantity()
         {
           DecrementId = 0,
-          Proc1Path = 1,
           TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
           Quantity = 30
         }
@@ -141,7 +140,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         UniqueStr = "u2",
         PartName = "p1",
         RouteStartUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-        CyclesOnFirstProcess = ImmutableList.Create(0),
+        Cycles = 0,
         Processes = ImmutableList.Create(new ProcessInfo()
         {
           Paths = ImmutableList.Create(new ProcPathInfo()
@@ -157,7 +156,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         UniqueStr = "u3",
         PartName = "p1",
         RouteStartUTC = new DateTime(2020, 04, 19, 10, 18, 0, DateTimeKind.Utc),
-        CyclesOnFirstProcess = ImmutableList.Create(0),
+        Cycles = 0,
         Processes = ImmutableList.Create(new ProcessInfo()
         {
           Paths = ImmutableList.Create(new ProcPathInfo()
@@ -328,7 +327,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectedJob = j.CloneToDerived<ActiveJob, Job>() with
         {
           CopiedToSystem = true,
-          CyclesOnFirstProcess = ImmutableList.Create(70 - 30),
+          Cycles = 70 - 30,
           Completed = ImmutableList.Create(ImmutableList.Create(1)),
           Precedence = ImmutableList.Create(ImmutableList.Create(3L)), // has last precedence
           Decrements = job1Decrements,
@@ -339,7 +338,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectedJob2 = j2.CloneToDerived<ActiveJob, Job>() with
         {
           CopiedToSystem = true,
-          CyclesOnFirstProcess = ImmutableList.Create(0),
+          Cycles = 0,
           Completed = ImmutableList.Create(ImmutableList.Create(0)),
           Precedence = ImmutableList.Create(ImmutableList.Create(2L)), // has middle precedence
           Decrements = null,
@@ -350,7 +349,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectedJob3 = j3.CloneToDerived<ActiveJob, Job>() with
         {
           CopiedToSystem = true,
-          CyclesOnFirstProcess = ImmutableList.Create(0),
+          Cycles = 0,
           Completed = ImmutableList.Create(ImmutableList.Create(0)),
           Precedence = ImmutableList.Create(ImmutableList.Create(1L)), // has first precedence
           Decrements = null,
@@ -411,8 +410,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       //add some existing jobs
       var completedJob = new JobPlan("old", 2);
       completedJob.PartName = "oldpart";
+      completedJob.SetPlannedCyclesOnFirstProcess(3);
       var toKeepJob = new JobPlan("tokeep", 1);
       toKeepJob.PartName = "tokeep";
+      toKeepJob.SetPlannedCyclesOnFirstProcess(10);
       toKeepJob.PathInspections(1, 1).Add(new PathInspection()
       {
         InspectionType = "insp",
@@ -425,16 +426,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         Pallets = new List<PalletAndMaterial>(),
         QueuedMaterial = new List<InProcessMaterialAndJob>(),
-        JobQtyRemainingOnProc1 = new Dictionary<(string uniq, int proc1path), int>() {
-          {(uniq: "old", proc1path: 1), 0},
-          {(uniq: "tokeep", proc1path: 1), 5}
+        CyclesStartedOnProc1 = new Dictionary<string, int>() {
+          {"old", 3},
+          {"tokeep", 5}
         }
       });
 
       //some new jobs
       var newJob1 = new JobPlan("uu1", 2);
       newJob1.PartName = "p1";
-      newJob1.SetPlannedCyclesOnFirstProcess(1, 10);
+      newJob1.SetPlannedCyclesOnFirstProcess(10);
       newJob1.AddLoadStation(1, 1, 1);
       newJob1.AddLoadStation(2, 1, 1);
       newJob1.AddUnloadStation(1, 1, 2);
@@ -491,14 +492,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         new NewDecrementQuantity()
         {
           JobUnique = "u1",
-          Proc1Path = 1,
           Part = "p1",
           Quantity = 10
         },
         new NewDecrementQuantity()
         {
           JobUnique = "u2",
-          Proc1Path = 2,
           Part = "p2",
           Quantity = 5
         }
@@ -509,7 +508,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           DecrementId = 0,
           JobUnique = "u1",
-          Proc1Path = 1,
           Part = "p1",
           Quantity = 10,
           TimeUTC = now
@@ -517,7 +515,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         new JobAndDecrementQuantity()
         {
           DecrementId = 0,
-          Proc1Path = 2,
           JobUnique = "u2",
           Part = "p2",
           Quantity = 5,
@@ -615,7 +612,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         UniqueStr = "uuu1",
         PartName = "p1",
-        CyclesOnFirstProcess = ImmutableList.Create(0),
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
@@ -738,7 +735,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         UniqueStr = "uuu1",
         PartName = "p1",
-        CyclesOnFirstProcess = ImmutableList.Create(5),
+        Cycles = 5,
         Processes = ImmutableList.Create(
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }

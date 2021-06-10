@@ -49,7 +49,6 @@ namespace MazakMachineInterface
       public string PartName { get; init; }
       public HistoricJob DbJob { get; init; }
       public int Cycles { get; set; }
-      public ImmutableList<int>.Builder CyclesOnFirstProcess { get; init; }
       public IReadOnlyList<ImmutableList<int>.Builder> Completed { get; init; }
       public IReadOnlyList<ImmutableList<ProcPathInfo>.Builder> Processes { get; init; }
       public IReadOnlyList<ImmutableList<long>.Builder> Precedence { get; init; }
@@ -240,9 +239,9 @@ namespace MazakMachineInterface
                 action = new InProcessMaterialAction()
                 {
                   Type =
-                        palSub.PartProcessNumber == job.Processes.Count
-                            ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                            : InProcessMaterialAction.ActionType.UnloadToInProcess,
+                  palSub.PartProcessNumber == job.Processes.Count
+                      ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                      : InProcessMaterialAction.ActionType.UnloadToInProcess,
                   UnloadIntoQueue = job.Processes[palSub.PartProcessNumber - 1][procToPath.PathForProc(palSub.PartProcessNumber) - 1].OutputQueue,
                   ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
                 };
@@ -275,16 +274,16 @@ namespace MazakMachineInterface
                 Serial = matDetails?.Serial,
                 WorkorderId = matDetails?.Workorder,
                 SignaledInspections =
-                      jobDB.LookupInspectionDecisions(matID)
-                      .Where(x => x.Inspect)
-                      .Select(x => x.InspType)
-                      .Distinct()
-                      .ToImmutableList(),
+                jobDB.LookupInspectionDecisions(matID)
+                .Where(x => x.Inspect)
+                .Select(x => x.InspType)
+                .Distinct()
+                .ToImmutableList(),
                 LastCompletedMachiningRouteStopIndex =
                   oldCycles.Any(
-                      c => c.LogType == LogType.MachineCycle
-                      && !c.StartOfCycle
-                      && c.Material.Any(m => m.MaterialID == matID && m.Process == palSub.PartProcessNumber)
+                c => c.LogType == LogType.MachineCycle
+                && !c.StartOfCycle
+                && c.Material.Any(m => m.MaterialID == matID && m.Process == palSub.PartProcessNumber)
                     )
                     ? (int?)0
                     : null,
@@ -328,11 +327,11 @@ namespace MazakMachineInterface
           Serial = matDetails?.Serial,
           WorkorderId = matDetails?.Workorder,
           SignaledInspections =
-                jobDB.LookupInspectionDecisions(mat.MaterialID)
-                .Where(x => x.Inspect)
-                .Select(x => x.InspType)
-                .Distinct()
-                .ToImmutableList(),
+          jobDB.LookupInspectionDecisions(mat.MaterialID)
+          .Where(x => x.Inspect)
+          .Select(x => x.InspType)
+          .Distinct()
+          .ToImmutableList(),
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
@@ -398,7 +397,7 @@ namespace MazakMachineInterface
           .Select(a => a.AlarmMessage)
           .Concat(
             queueSyncFault.CurrentQueueMismatch ? new[] {
-              "Queue contents and Mazak schedule quantity mismatch."
+        "Queue contents and Mazak schedule quantity mismatch."
             } : new string[] { }
           )
           .ToImmutableList()
@@ -406,10 +405,10 @@ namespace MazakMachineInterface
     }
 
     private static void CalculateMaxProcAndPath(MazakAllData mazakData,
-                                                IRepository jobDB,
-                                               out Dictionary<string, int> uniqueToMaxProc1Path,
-                                               out Dictionary<string, int> uniqueToMaxProcess,
-                                               out Dictionary<string, int> partNameToNumProc)
+                  IRepository jobDB,
+                 out Dictionary<string, int> uniqueToMaxProc1Path,
+                 out Dictionary<string, int> uniqueToMaxProcess,
+                 out Dictionary<string, int> partNameToNumProc)
     {
       uniqueToMaxProc1Path = new Dictionary<string, int>();
       uniqueToMaxProcess = new Dictionary<string, int>();
@@ -710,10 +709,10 @@ namespace MazakMachineInterface
             Serial = matDetails?.Serial,
             WorkorderId = matDetails?.Workorder,
             SignaledInspections =
-                          log.LookupInspectionDecisions(matID)
-                          .Where(x => x.Inspect)
-                          .Select(x => x.InspType)
-                          .ToImmutableList(),
+              log.LookupInspectionDecisions(matID)
+              .Where(x => x.Inspect)
+              .Select(x => x.InspType)
+              .ToImmutableList(),
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -1058,16 +1057,16 @@ namespace MazakMachineInterface
     private static string ConvertStatIntV2ToV1(int statNum)
     {
       char[] ret = {
-        '0',
-        '0',
-        '0',
-        '0',
-        '0',
-        '0',
-        '0',
-        '0',
-        '0',
-        '0'
+  '0',
+  '0',
+  '0',
+  '0',
+  '0',
+  '0',
+  '0',
+  '0',
+  '0',
+  '0'
       };
 
       for (int i = 0; i <= ret.Length - 1; i++)

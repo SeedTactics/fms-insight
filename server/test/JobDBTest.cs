@@ -98,10 +98,7 @@ namespace MachineWatchTest
         Assert.Equal(job1.GetNumPaths(proc), job2.GetNumPaths(proc));
       }
 
-      for (int path = 1; path <= job1.GetNumPaths(1); path++)
-      {
-        Assert.Equal(job1.GetPlannedCyclesOnFirstProcess(path), job2.GetPlannedCyclesOnFirstProcess(path));
-      }
+      Assert.Equal(job1.GetPlannedCyclesOnFirstProcess(), job2.GetPlannedCyclesOnFirstProcess());
 
       for (int proc = 1; proc <= job1.NumProcesses; proc++)
       {

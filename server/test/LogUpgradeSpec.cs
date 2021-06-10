@@ -80,99 +80,99 @@ namespace MachineWatchTest
       var mat3 = new LogMaterial(3, "uuu2", 1, "part2", 1, "", "work3", face: "E");
 
       _log.GetLogEntries(now, now.AddDays(1)).Should().BeEquivalentTo(new[] {
-        new LogEntry(
-          cntr: -1,
-          mat: new [] {mat1_1, mat2_1},
-          pal: "3",
-          ty: LogType.MachineCycle,
-          locName: "MC",
-          locNum: 1,
-          prog: "proggg",
-          start: false,
-          endTime: now,
-          result: "result",
-          endOfRoute: false
-        ),
-        new LogEntry(
-          cntr: -1,
-          mat: new [] {mat1_2, mat2_2},
-          pal: "5",
-          ty: LogType.MachineCycle,
-          locName: "MC",
-          locNum: 1,
-          prog: "proggg2",
-          start: false,
-          endTime: now.AddMinutes(10),
-          result: "result2",
-          endOfRoute: false
-        ),
-        new LogEntry(
-          cntr: -1,
-          mat: new [] {mat1_1},
-          pal: "",
-          ty: LogType.PartMark,
-          locName: "Mark",
-          locNum: 1,
-          prog: "MARK",
-          start: false,
-          endTime: now.AddMinutes(20),
-          result: "serial1",
-          endOfRoute: false
-        ),
-        new LogEntry(
-          cntr: -1,
-          mat: new [] {mat1_1},
-          pal: "",
-          ty: LogType.OrderAssignment,
-          locName: "Order",
-          locNum: 1,
-          prog: "",
-          start: false,
-          endTime: now.AddMinutes(30),
-          result: "work1",
-          endOfRoute: false
-        ),
-        new LogEntry(
-          cntr: -1,
-          mat: new [] {mat2_2},
-          pal: "",
-          ty: LogType.PartMark,
-          locName: "Mark",
-          locNum: 1,
-          prog: "MARK",
-          start: false,
-          endTime: now.AddMinutes(40),
-          result: "serial2",
-          endOfRoute: false
-        ),
-        new LogEntry(
-          cntr: -1,
-          mat: new [] {mat3},
-          pal: "1",
-          ty: LogType.LoadUnloadCycle,
-          locName: "L/U",
-          locNum: 5,
-          prog: "LOAD",
-          start: false,
-          endTime: now.AddMinutes(50),
-          result: "LOAD",
-          endOfRoute: false
-        ),
-        new LogEntry(
-          cntr: -1,
-          mat: new [] {mat3},
-          pal: "",
-          ty: LogType.OrderAssignment,
-          locName: "Order",
-          locNum: 1,
-          prog: "",
-          start: false,
-          endTime: now.AddMinutes(60),
-          result: "work3",
-          endOfRoute: false
-        ),
+  new LogEntry(
+    cntr: -1,
+    mat: new [] {mat1_1, mat2_1},
+    pal: "3",
+    ty: LogType.MachineCycle,
+    locName: "MC",
+    locNum: 1,
+    prog: "proggg",
+    start: false,
+    endTime: now,
+    result: "result",
+    endOfRoute: false
+  ),
+  new LogEntry(
+    cntr: -1,
+    mat: new [] {mat1_2, mat2_2},
+    pal: "5",
+    ty: LogType.MachineCycle,
+    locName: "MC",
+    locNum: 1,
+    prog: "proggg2",
+    start: false,
+    endTime: now.AddMinutes(10),
+    result: "result2",
+    endOfRoute: false
+  ),
+  new LogEntry(
+    cntr: -1,
+    mat: new [] {mat1_1},
+    pal: "",
+    ty: LogType.PartMark,
+    locName: "Mark",
+    locNum: 1,
+    prog: "MARK",
+    start: false,
+    endTime: now.AddMinutes(20),
+    result: "serial1",
+    endOfRoute: false
+  ),
+  new LogEntry(
+    cntr: -1,
+    mat: new [] {mat1_1},
+    pal: "",
+    ty: LogType.OrderAssignment,
+    locName: "Order",
+    locNum: 1,
+    prog: "",
+    start: false,
+    endTime: now.AddMinutes(30),
+    result: "work1",
+    endOfRoute: false
+  ),
+  new LogEntry(
+    cntr: -1,
+    mat: new [] {mat2_2},
+    pal: "",
+    ty: LogType.PartMark,
+    locName: "Mark",
+    locNum: 1,
+    prog: "MARK",
+    start: false,
+    endTime: now.AddMinutes(40),
+    result: "serial2",
+    endOfRoute: false
+  ),
+  new LogEntry(
+    cntr: -1,
+    mat: new [] {mat3},
+    pal: "1",
+    ty: LogType.LoadUnloadCycle,
+    locName: "L/U",
+    locNum: 5,
+    prog: "LOAD",
+    start: false,
+    endTime: now.AddMinutes(50),
+    result: "LOAD",
+    endOfRoute: false
+  ),
+  new LogEntry(
+    cntr: -1,
+    mat: new [] {mat3},
+    pal: "",
+    ty: LogType.OrderAssignment,
+    locName: "Order",
+    locNum: 1,
+    prog: "",
+    start: false,
+    endTime: now.AddMinutes(60),
+    result: "work3",
+    endOfRoute: false
+  ),
       }, options =>
-        options.Excluding(x => x.Counter).ComparingByMembers<LogEntry>()
+  options.Excluding(x => x.Counter).ComparingByMembers<LogEntry>()
       );
 
       _log.GetMaterialDetails(1).Should().BeEquivalentTo(new MaterialDetails()
@@ -237,7 +237,6 @@ namespace MachineWatchTest
       _log.LoadDecrementsForJob("Unique1").Should().BeEquivalentTo(new DecrementQuantity()
       {
         DecrementId = 12,
-        Proc1Path = 0,
         TimeUTC = new DateTime(2020, 10, 22, 4, 5, 6, DateTimeKind.Utc),
         Quantity = 123
       });
@@ -264,21 +263,19 @@ namespace MachineWatchTest
 
       var now = DateTime.UtcNow;
       _log.AddNewDecrement(new[] {
-        new NewDecrementQuantity() {
-          JobUnique = "mynewunique",
-          Proc1Path = 22,
-          Part = "thepart",
-          Quantity = 88
-        }
+  new NewDecrementQuantity() {
+    JobUnique = "mynewunique",
+    Part = "thepart",
+    Quantity = 88
+  }
       }, now);
 
       _log.LoadDecrementsForJob("mynewunique").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 13, // existing old job had decrement id 12
-          Proc1Path = 22,
+  new DecrementQuantity() {
+    DecrementId = 13, // existing old job had decrement id 12
           TimeUTC = now,
-          Quantity = 88
-        }
+    Quantity = 88
+  }
       });
     }
 
@@ -286,8 +283,7 @@ namespace MachineWatchTest
     {
       var job1 = new JobPlan("Unique1", 2, new int[] { 2, 3 });
       job1.PartName = "Job1";
-      job1.SetPlannedCyclesOnFirstProcess(1, 125);
-      job1.SetPlannedCyclesOnFirstProcess(2, 53);
+      job1.SetPlannedCyclesOnFirstProcess(178);
       job1.RouteStartingTimeUTC = DateTime.Parse("2019-10-22 20:24 GMT").ToUniversalTime();
       job1.RouteEndingTimeUTC = job1.RouteStartingTimeUTC.AddHours(100);
       job1.Archived = false;
@@ -493,79 +489,79 @@ namespace MachineWatchTest
 
 
     /*
-    public void CreateV17()
-    {
-      var now = new DateTime(2018, 7, 12, 5, 6, 7, DateTimeKind.Utc);
+		public void CreateV17()
+		{
+		  var now = new DateTime(2018, 7, 12, 5, 6, 7, DateTimeKind.Utc);
 
-      var m1 = _log.AllocateMaterialID("uuu1");
-      var m2 = _log.AllocateMaterialID("uuu1");
-      var m3 = _log.AllocateMaterialID("uuu2");
+		  var m1 = _log.AllocateMaterialID("uuu1");
+		  var m2 = _log.AllocateMaterialID("uuu1");
+		  var m3 = _log.AllocateMaterialID("uuu2");
 
-      var mat1_1 = new LogMaterial(m1, "uuu1", 1, "part1", 2, face: "A");
-      var mat1_2 = new LogMaterial(m1, "uuu1", 2, "part1", 2, face: "B");
-      var mat2_1 = new LogMaterial(m2, "uuu1", 1, "part1", 2, face: "C");
-      var mat2_2 = new LogMaterial(m2, "uuu1", 1, "part1", 2, face: "D");
-      var mat3 = new LogMaterial(m3, "uuu2", 1, "part2", 1, face: "E");
+		  var mat1_1 = new LogMaterial(m1, "uuu1", 1, "part1", 2, face: "A");
+		  var mat1_2 = new LogMaterial(m1, "uuu1", 2, "part1", 2, face: "B");
+		  var mat2_1 = new LogMaterial(m2, "uuu1", 1, "part1", 2, face: "C");
+		  var mat2_2 = new LogMaterial(m2, "uuu1", 1, "part1", 2, face: "D");
+		  var mat3 = new LogMaterial(m3, "uuu2", 1, "part2", 1, face: "E");
 
-      var log1 = new LogEntry(
-        cntr: -1,
-        mat: new [] {mat1_1, mat2_1},
-        pal: "3",
-        ty: LogType.MachineCycle,
-        locName: "MC",
-        locNum: 1,
-        prog: "proggg",
-        start: false,
-        endTime: now,
-        result: "result",
-        endOfRoute: false
-      );
-      _log.AddLogEntry(log1);
+		  var log1 = new LogEntry(
+		    cntr: -1,
+		    mat: new [] {mat1_1, mat2_1},
+		    pal: "3",
+		    ty: LogType.MachineCycle,
+		    locName: "MC",
+		    locNum: 1,
+		    prog: "proggg",
+		    start: false,
+		    endTime: now,
+		    result: "result",
+		    endOfRoute: false
+		  );
+		  _log.AddLogEntry(log1);
 
-      var log2 = new LogEntry(
-        cntr: -1,
-        mat: new [] {mat1_2, mat2_2},
-        pal: "5",
-        ty: LogType.MachineCycle,
-        locName: "MC",
-        locNum: 1,
-        prog: "proggg2",
-        start: false,
-        endTime: now.AddMinutes(10),
-        result: "result2",
-        endOfRoute: false
-      );
-      _log.AddLogEntry(log2);
+		  var log2 = new LogEntry(
+		    cntr: -1,
+		    mat: new [] {mat1_2, mat2_2},
+		    pal: "5",
+		    ty: LogType.MachineCycle,
+		    locName: "MC",
+		    locNum: 1,
+		    prog: "proggg2",
+		    start: false,
+		    endTime: now.AddMinutes(10),
+		    result: "result2",
+		    endOfRoute: false
+		  );
+		  _log.AddLogEntry(log2);
 
-      _log.RecordSerialForMaterialID(mat1_1, "serial1", now.AddMinutes(20));
-      _log.RecordWorkorderForMaterialID(mat1_1, "work1", now.AddMinutes(30));
-      _log.RecordSerialForMaterialID(mat2_2, "serial2", now.AddMinutes(40));
+		  _log.RecordSerialForMaterialID(mat1_1, "serial1", now.AddMinutes(20));
+		  _log.RecordWorkorderForMaterialID(mat1_1, "work1", now.AddMinutes(30));
+		  _log.RecordSerialForMaterialID(mat2_2, "serial2", now.AddMinutes(40));
 
-      var log3 = new LogEntry(
-        cntr: -1,
-        mat: new [] {mat3},
-        pal: "1",
-        ty: LogType.LoadUnloadCycle,
-        locName: "L/U",
-        locNum: 5,
-        prog: "LOAD",
-        start: false,
-        endTime: now.AddMinutes(50),
-        result: "LOAD",
-        endOfRoute: false
-      );
-      _log.AddLogEntry(log3);
+		  var log3 = new LogEntry(
+		    cntr: -1,
+		    mat: new [] {mat3},
+		    pal: "1",
+		    ty: LogType.LoadUnloadCycle,
+		    locName: "L/U",
+		    locNum: 5,
+		    prog: "LOAD",
+		    start: false,
+		    endTime: now.AddMinutes(50),
+		    result: "LOAD",
+		    endOfRoute: false
+		  );
+		  _log.AddLogEntry(log3);
 
-      _log.RecordWorkorderForMaterialID(mat3, "work3", now.AddMinutes(60));
-    }*/
+		  _log.RecordWorkorderForMaterialID(mat3, "work3", now.AddMinutes(60));
+		}*/
 
     /*
-    public void CreateV16()
-    {
-      var job1 = CreateJob();
-      _jobs.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { job1 } }, null);
-    }
-    */
+		public void CreateV16()
+		{
+		  var job1 = CreateJob();
+		  _jobs.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { job1 } }, null);
+		}
+		*/
 
   }
 
@@ -603,57 +599,57 @@ namespace MachineWatchTest
         Archived = job.Archived,
         RouteStartUTC = job.RouteStartingTimeUTC,
         RouteEndUTC = job.RouteEndingTimeUTC,
-        CyclesOnFirstProcess = Enumerable.Range(1, job.GetNumPaths(process: 1)).Select(job.GetPlannedCyclesOnFirstProcess).ToImmutableList(),
+        Cycles = job.GetPlannedCyclesOnFirstProcess(),
         Processes = Enumerable.Range(1, job.NumProcesses).Select(proc =>
           new ProcessInfo()
           {
             Paths = Enumerable.Range(1, job.GetNumPaths(process: proc)).Select(path =>
-              new ProcPathInfo()
-              {
-                ExpectedUnloadTime = job.GetExpectedUnloadTime(proc, path),
-                OutputQueue = job.GetOutputQueue(proc, path),
-                InputQueue = job.GetInputQueue(proc, path),
-                PartsPerPallet = job.PartsPerPallet(proc, path),
-                HoldLoadUnload = ToInsightHold(job.HoldLoadUnload(proc, path)),
-                HoldMachining = ToInsightHold(job.HoldMachining(proc, path)),
-                SimulatedAverageFlowTime = job.GetSimulatedAverageFlowTime(proc, path),
-                SimulatedStartingUTC = job.GetSimulatedStartingTimeUTC(proc, path),
-                SimulatedProduction = job.GetSimulatedProduction(proc, path).Select(s => new SimulatedProduction()
-                {
-                  TimeUTC = s.TimeUTC,
-                  Quantity = s.Quantity
-                }).ToImmutableList(),
-                Stops = job.GetMachiningStop(proc, path).Select(stop => new MachiningStop()
-                {
-                  Stations = stop.Stations.ToImmutableList(),
-                  Program = stop.ProgramName,
-                  ProgramRevision = stop.ProgramRevision,
-                  Tools = stop.Tools.ToImmutableDictionary(k => k.Key, k => k.Value),
-                  StationGroup = stop.StationGroup,
-                  ExpectedCycleTime = stop.ExpectedCycleTime
-                }).ToImmutableList(),
-                Casting = proc == 1 ? job.GetCasting(path) : null,
-                Unload = job.UnloadStations(proc, path).ToImmutableList(),
-                ExpectedLoadTime = job.GetExpectedLoadTime(proc, path),
-                Load = job.LoadStations(proc, path).ToImmutableList(),
-                Face = job.PlannedFixture(proc, path).face,
-                Fixture = job.PlannedFixture(proc, path).fixture,
-                Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
+        new ProcPathInfo()
+        {
+          ExpectedUnloadTime = job.GetExpectedUnloadTime(proc, path),
+          OutputQueue = job.GetOutputQueue(proc, path),
+          InputQueue = job.GetInputQueue(proc, path),
+          PartsPerPallet = job.PartsPerPallet(proc, path),
+          HoldLoadUnload = ToInsightHold(job.HoldLoadUnload(proc, path)),
+          HoldMachining = ToInsightHold(job.HoldMachining(proc, path)),
+          SimulatedAverageFlowTime = job.GetSimulatedAverageFlowTime(proc, path),
+          SimulatedStartingUTC = job.GetSimulatedStartingTimeUTC(proc, path),
+          SimulatedProduction = job.GetSimulatedProduction(proc, path).Select(s => new SimulatedProduction()
+          {
+            TimeUTC = s.TimeUTC,
+            Quantity = s.Quantity
+          }).ToImmutableList(),
+          Stops = job.GetMachiningStop(proc, path).Select(stop => new MachiningStop()
+          {
+            Stations = stop.Stations.ToImmutableList(),
+            Program = stop.ProgramName,
+            ProgramRevision = stop.ProgramRevision,
+            Tools = stop.Tools.ToImmutableDictionary(k => k.Key, k => k.Value),
+            StationGroup = stop.StationGroup,
+            ExpectedCycleTime = stop.ExpectedCycleTime
+          }).ToImmutableList(),
+          Casting = proc == 1 ? job.GetCasting(path) : null,
+          Unload = job.UnloadStations(proc, path).ToImmutableList(),
+          ExpectedLoadTime = job.GetExpectedLoadTime(proc, path),
+          Load = job.LoadStations(proc, path).ToImmutableList(),
+          Face = job.PlannedFixture(proc, path).face,
+          Fixture = job.PlannedFixture(proc, path).fixture,
+          Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
 #pragma warning disable CS0612 // obsolete PathGroup
-                PathGroup = job.GetPathGroup(proc, path),
+          PathGroup = job.GetPathGroup(proc, path),
 #pragma warning restore CS0612
-                Inspections =
-                  job.PathInspections(proc, path).Select(i => new PathInspection()
-                  {
-                    InspectionType = i.InspectionType,
-                    Counter = i.Counter,
-                    MaxVal = i.MaxVal,
-                    RandomFreq = i.RandomFreq,
-                    TimeInterval = i.TimeInterval,
-                    ExpectedInspectionTime = i.ExpectedInspectionTime
-                  }
-                  ).ToImmutableList()
-              }
+          Inspections =
+      job.PathInspections(proc, path).Select(i => new PathInspection()
+      {
+        InspectionType = i.InspectionType,
+        Counter = i.Counter,
+        MaxVal = i.MaxVal,
+        RandomFreq = i.RandomFreq,
+        TimeInterval = i.TimeInterval,
+        ExpectedInspectionTime = i.ExpectedInspectionTime
+      }
+      ).ToImmutableList()
+        }
             ).ToImmutableList()
           }
         ).ToImmutableList()
