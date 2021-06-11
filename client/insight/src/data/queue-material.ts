@@ -172,6 +172,8 @@ export function extractJobRawMaterial(
           const rawMatName = path.casting && path.casting !== "" ? path.casting : j.partName;
           return {
             job: j,
+            // Eventually, once everyone has updated to a version which removes path groups and all existing jobs
+            // no longer use path groups, change this to merge quantites from all paths so each job is just one row
             proc1Path: pathNum,
             path: path,
             rawMatName: rawMatName,
