@@ -53,6 +53,6 @@ namespace BlackMaple.MachineFramework
     public PrintLabelForMaterial PrintLabel { get; set; } = null;
     public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
+    public string CustomStationMonitorDialogUrl { get; set; } = null;
   }
-
 }

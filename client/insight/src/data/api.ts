@@ -2087,6 +2087,7 @@ export class FMSInfo implements IFMSInfo {
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
     licenseExpires?: Date | undefined;
+    customStationMonitorDialogUrl?: string | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -2122,6 +2123,7 @@ export class FMSInfo implements IFMSInfo {
             this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.allowEditJobPlanQuantityFromQueuesPage = _data["AllowEditJobPlanQuantityFromQueuesPage"];
             this.licenseExpires = _data["LicenseExpires"] ? new Date(_data["LicenseExpires"].toString()) : <any>undefined;
+            this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
         }
     }
 
@@ -2157,6 +2159,7 @@ export class FMSInfo implements IFMSInfo {
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         data["LicenseExpires"] = this.licenseExpires ? this.licenseExpires.toISOString() : <any>undefined;
+        data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
         return data; 
     }
 }
@@ -2181,6 +2184,7 @@ export interface IFMSInfo {
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
     licenseExpires?: Date | undefined;
+    customStationMonitorDialogUrl?: string | undefined;
 }
 
 export class ServerEvent implements IServerEvent {
