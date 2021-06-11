@@ -69,6 +69,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public DateTime? LicenseExpires { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string CustomStationMonitorDialogUrl { get; init; }
   }
 
   [ApiController]
@@ -111,6 +114,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
         LicenseExpires = _impl.LicenseExpires?.Invoke(),
+        CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,
       };
     }
 

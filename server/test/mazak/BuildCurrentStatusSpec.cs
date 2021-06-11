@@ -139,7 +139,6 @@ namespace MachineWatchTest
     [InlineData("multiface-transfer-faces")]
     [InlineData("multiface-transfer-faces-and-unload")]
     [InlineData("multiface-transfer-user-jobs")]
-    [InlineData("pathgroups-load")]
     public void StatusSnapshot(string scenario)
     {
 
@@ -184,15 +183,6 @@ namespace MachineWatchTest
             Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
           jsonSettings
         );
-      }
-      else if (scenario.Contains("pathgroups"))
-      {
-        newJobs = JsonConvert.DeserializeObject<NewJobs>(
-          File.ReadAllText(
-            Path.Combine("..", "..", "..", "sample-newjobs", "path-groups.json")),
-          jsonSettings
-        );
-
       }
       repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 

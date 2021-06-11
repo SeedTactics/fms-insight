@@ -50,6 +50,7 @@ import Tooltip from "@material-ui/core/Tooltip";
 import {
   programReportRefreshTime,
   currentProgramReport,
+  useRefreshProgramReport,
   CellControllerProgram,
   programToShowContent,
   programContent,
@@ -68,7 +69,7 @@ import Collapse from "@material-ui/core/Collapse";
 import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
 import { PartIdenticon } from "../station-monitor/Material";
-import { useSetRecoilState, useRecoilState, useRecoilValueLoadable, useRecoilValue } from "recoil";
+import { useSetRecoilState, useRecoilState, useRecoilValue } from "recoil";
 import Dialog from "@material-ui/core/Dialog";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
@@ -730,10 +731,15 @@ export function ProgramHistoryDialog(): JSX.Element {
 }
 
 function ProgNavHeader() {
-  const [reloadTime, setReloadTime] = useRecoilState(programReportRefreshTime);
-  const report = useRecoilValueLoadable(currentProgramReport);
+  const reloadTime = useRecoilValue(programReportRefreshTime);
+  const [loading, setLoading] = React.useState(false);
+  const refreshPrograms = useRefreshProgramReport();
   const demo = useIsDemo();
-  const loading = report.state === "loading";
+
+  function refresh() {
+    setLoading(true);
+    refreshPrograms().finally(() => setLoading(false));
+  }
 
   if (demo) {
     return <div />;
@@ -745,11 +751,15 @@ function ProgNavHeader() {
           size="large"
           variant="extended"
           style={{ margin: "2em" }}
-          onClick={() => setReloadTime(new Date())}
+          onClick={refresh}
           disabled={loading}
         >
           <>
-            <RefreshIcon style={{ marginRight: "1em" }} />
+            {loading ? (
+              <CircularProgress size={10} style={{ marginRight: "1em" }} />
+            ) : (
+              <RefreshIcon fontSize="inherit" style={{ marginRight: "1em" }} />
+            )}
             Load Programs
           </>
         </Fab>
@@ -769,7 +779,7 @@ function ProgNavHeader() {
       >
         <Tooltip title="Refresh Tools">
           <div>
-            <IconButton onClick={() => setReloadTime(new Date())} disabled={loading} size="small">
+            <IconButton onClick={refresh} disabled={loading} size="small">
               {loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
             </IconButton>
           </div>

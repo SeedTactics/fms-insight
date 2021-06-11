@@ -175,6 +175,11 @@ namespace BlackMaple.FMSInsight.API
                             }
                             return objectResponse_.Object;
                         }
+                        //https://github.com/RicoSuter/NSwag/issues/2995
+                        else if (status_ == 204)
+                        {
+                            return null;
+                        }
                         else
                         {
                             var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -4698,13 +4703,23 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("HoldEntireJob", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public HoldPattern HoldEntireJob { get; set; }
     
-        [Newtonsoft.Json.JsonProperty("CyclesOnFirstProcess", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required]
-        public System.Collections.Generic.ICollection<int> CyclesOnFirstProcess { get; set; } = new System.Collections.ObjectModel.Collection<int>();
-    
-        [Newtonsoft.Json.JsonProperty("FlexCyclesOnFirstProcessBetweenAllPaths", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? FlexCyclesOnFirstProcessBetweenAllPaths { get; set; }
-    
+        [Newtonsoft.Json.JsonProperty("Cycles", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int Cycles { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("CyclesOnFirstProcess", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        private System.Collections.Generic.ICollection<int> CyclesOnFirstProcess
+        {
+            get {
+                if (ProcsAndPaths.Count == 0) return new int[0];
+                var c = new int[System.Linq.Enumerable.First(ProcsAndPaths).Paths.Count];
+                c[0] = Cycles;
+                return c;
+            }
+            set {
+                Cycles = System.Linq.Enumerable.Sum(value);
+            }
+        }
+
         [Newtonsoft.Json.JsonProperty("ProcsAndPaths", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<ProcessInfo> ProcsAndPaths { get; set; } = new System.Collections.ObjectModel.Collection<ProcessInfo>();
@@ -4810,7 +4825,7 @@ namespace BlackMaple.FMSInsight.API
     
         [Newtonsoft.Json.JsonProperty("Casting", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Casting { get; set; }
-
+    
         [Newtonsoft.Json.JsonProperty("PathGroup", Required = Newtonsoft.Json.Required.Default, DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Include, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         private int PathGroup { get; set; }
     }
@@ -5046,9 +5061,6 @@ namespace BlackMaple.FMSInsight.API
     {
         [Newtonsoft.Json.JsonProperty("DecrementId", Required = Newtonsoft.Json.Required.Always)]
         public long DecrementId { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("Proc1Path", Required = Newtonsoft.Json.Required.Always)]
-        public int Proc1Path { get; set; }
     
         [Newtonsoft.Json.JsonProperty("TimeUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
@@ -5408,9 +5420,6 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("JobUnique", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string JobUnique { get; set; }
-    
-        [Newtonsoft.Json.JsonProperty("Proc1Path", Required = Newtonsoft.Json.Required.Always)]
-        public int Proc1Path { get; set; }
     
         [Newtonsoft.Json.JsonProperty("TimeUTC", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]

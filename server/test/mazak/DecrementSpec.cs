@@ -89,31 +89,31 @@ namespace MachineWatchTest
       _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
-          new MazakScheduleRow()
-          {
-            Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
-            PartName = "pppp:1",
-            PlanQuantity = 50,
-            CompleteQuantity = 30,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
+    new MazakScheduleRow()
+    {
+      Id = 15,
+      Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
+      PartName = "pppp:1",
+      PlanQuantity = 50,
+      CompleteQuantity = 30,
+      Processes = new List<MazakScheduleProcessRow> {
+        new MazakScheduleProcessRow() {
+    MazakScheduleRowId = 15,
+    FixQuantity = 1,
+    ProcessNumber = 1,
+    ProcessMaterialQuantity = 15,
+    ProcessExecuteQuantity = 5
         }
+      }
+    }
+  }
       });
 
       var j = new Job
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Cycles = 50,
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
@@ -131,12 +131,11 @@ namespace MachineWatchTest
       sch.Processes.Should().BeEmpty();
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = now,
-          Quantity = 50 - 35
-        }
+  new DecrementQuantity() {
+    DecrementId = 0,
+    TimeUTC = now,
+    Quantity = 50 - 35
+  }
       });
     }
 
@@ -147,31 +146,31 @@ namespace MachineWatchTest
       _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
-          new MazakScheduleRow()
-          {
-            Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] {1}, manual: true),
-            PartName = "pppp:1",
-            PlanQuantity = 50,
-            CompleteQuantity = 30,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
+    new MazakScheduleRow()
+    {
+      Id = 15,
+      Comment = MazakPart.CreateComment("uuuu", new[] {1}, manual: true),
+      PartName = "pppp:1",
+      PlanQuantity = 50,
+      CompleteQuantity = 30,
+      Processes = new List<MazakScheduleProcessRow> {
+        new MazakScheduleProcessRow() {
+    MazakScheduleRowId = 15,
+    FixQuantity = 1,
+    ProcessNumber = 1,
+    ProcessMaterialQuantity = 15,
+    ProcessExecuteQuantity = 5
         }
+      }
+    }
+  }
       });
 
       var j = new Job
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Cycles = 50,
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
@@ -192,31 +191,31 @@ namespace MachineWatchTest
       _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
-          new MazakScheduleRow()
-          {
-            Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] {1}, manual: false),
-            PartName = "pppp:1",
-            PlanQuantity = 50,
-            CompleteQuantity = 30,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
+    new MazakScheduleRow()
+    {
+      Id = 15,
+      Comment = MazakPart.CreateComment("uuuu", new[] {1}, manual: false),
+      PartName = "pppp:1",
+      PlanQuantity = 50,
+      CompleteQuantity = 30,
+      Processes = new List<MazakScheduleProcessRow> {
+        new MazakScheduleProcessRow() {
+    MazakScheduleRowId = 15,
+    FixQuantity = 1,
+    ProcessNumber = 1,
+    ProcessMaterialQuantity = 15,
+    ProcessExecuteQuantity = 5
         }
+      }
+    }
+  }
       });
 
       var j = new Job
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Cycles = 50,
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
@@ -226,21 +225,20 @@ namespace MachineWatchTest
 
       var now = DateTime.UtcNow.AddHours(-1);
       _jobDB.AddNewDecrement(new[] {
-        new NewDecrementQuantity() {
-          JobUnique = "uuuu", Proc1Path = 1, Part = "pppp", Quantity = 3
-        }
+  new NewDecrementQuantity() {
+    JobUnique = "uuuu", Part = "pppp", Quantity = 3
+  }
       }, now);
 
       _decr.Decrement(_jobDB);
 
       _write.Schedules.Should().BeNull();
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = now,
-          Quantity = 3
-        }
+  new DecrementQuantity() {
+    DecrementId = 0,
+    TimeUTC = now,
+    Quantity = 3
+  }
       });
     }
 
@@ -251,60 +249,60 @@ namespace MachineWatchTest
       _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
-          new MazakScheduleRow()
-          {
-            Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
-            PartName = "pppp:1",
-            PlanQuantity = 50,
-            CompleteQuantity = 30,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
-        },
-        LoadActions = new[] {
-          new LoadAction() {
-            LoadStation = 1,
-            LoadEvent = true, // load
-            Unique = "uuuu",
-            Part = "pppp",
-            Process = 1,
-            Path = 1,
-            Qty = 1
-          },
-          new LoadAction() {
-            LoadStation = 1,
-            LoadEvent = false, // unload, should be ignored
-            Unique = "uuuu",
-            Part = "pppp",
-            Process = 1,
-            Path = 1,
-            Qty = 1
-          },
-          new LoadAction() {
-            LoadStation = 2,
-            LoadEvent = true, // load of different part
-            Unique = "uuuu2",
-            Part = "pppp",
-            Process = 1,
-            Path = 1,
-            Qty = 1
-          }
+    new MazakScheduleRow()
+    {
+      Id = 15,
+      Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
+      PartName = "pppp:1",
+      PlanQuantity = 50,
+      CompleteQuantity = 30,
+      Processes = new List<MazakScheduleProcessRow> {
+        new MazakScheduleProcessRow() {
+    MazakScheduleRowId = 15,
+    FixQuantity = 1,
+    ProcessNumber = 1,
+    ProcessMaterialQuantity = 15,
+    ProcessExecuteQuantity = 5
         }
+      }
+    }
+  },
+        LoadActions = new[] {
+    new LoadAction() {
+      LoadStation = 1,
+      LoadEvent = true, // load
+            Unique = "uuuu",
+      Part = "pppp",
+      Process = 1,
+      Path = 1,
+      Qty = 1
+    },
+    new LoadAction() {
+      LoadStation = 1,
+      LoadEvent = false, // unload, should be ignored
+            Unique = "uuuu",
+      Part = "pppp",
+      Process = 1,
+      Path = 1,
+      Qty = 1
+    },
+    new LoadAction() {
+      LoadStation = 2,
+      LoadEvent = true, // load of different part
+            Unique = "uuuu2",
+      Part = "pppp",
+      Process = 1,
+      Path = 1,
+      Qty = 1
+    }
+  }
       });
 
       var j = new Job
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Cycles = 50,
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
@@ -319,12 +317,11 @@ namespace MachineWatchTest
       _write.Schedules[0].PlanQuantity.Should().Be(36);
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = now,
-          Quantity = 50 - 36
-        }
+  new DecrementQuantity() {
+    DecrementId = 0,
+    TimeUTC = now,
+    Quantity = 50 - 36
+  }
       });
     }
 
@@ -336,31 +333,31 @@ namespace MachineWatchTest
       _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
-          new MazakScheduleRow()
-          {
-            Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
-            PartName = "pppp:1",
-            PlanQuantity = 35,
-            CompleteQuantity = 30,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
+    new MazakScheduleRow()
+    {
+      Id = 15,
+      Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
+      PartName = "pppp:1",
+      PlanQuantity = 35,
+      CompleteQuantity = 30,
+      Processes = new List<MazakScheduleProcessRow> {
+        new MazakScheduleProcessRow() {
+    MazakScheduleRowId = 15,
+    FixQuantity = 1,
+    ProcessNumber = 1,
+    ProcessMaterialQuantity = 15,
+    ProcessExecuteQuantity = 5
         }
+      }
+    }
+  }
       });
 
       var j = new Job
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
-        CyclesOnFirstProcess = ImmutableList.Create(50),
+        Cycles = 50,
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
       };
       _jobDB.AddJobs(new NewJobs()
@@ -374,111 +371,11 @@ namespace MachineWatchTest
       _write.Schedules.Should().BeNull();
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = now,
-          Quantity = 50 - 35
-        }
-      });
-    }
-
-    [Fact]
-    public void MultplePathsAndProcs()
-    {
-      // path 1: plan 50, complete 30, 5 in-proc #1, 3 in-proc #2, 2 material proc #2, 0 material proc1 (has input queue).  10 un-started parts
-      // path 2: plan 25, complete 3, 2 in-proc #1, 4 in-proc #2, 3 material proc #2, 25 - 3 - 2 - 4 - 3 = 13 un-started parts
-      _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
-      {
-        Schedules = new[] {
-          new MazakScheduleRow()
-          {
-            Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] {1, 2}, false),
-            PartName = "pppp:1",
-            PlanQuantity = 50,
-            CompleteQuantity = 30,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 0,
-                ProcessExecuteQuantity = 5
-              },
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 2,
-                ProcessMaterialQuantity = 2,
-                ProcessExecuteQuantity = 3
-              }
-            }
-          },
-          new MazakScheduleRow()
-          {
-            Id = 16,
-            Comment = MazakPart.CreateComment("uuuu", new[] {2, 1}, false),
-            PartName = "pppp:1",
-            PlanQuantity = 25,
-            CompleteQuantity = 3,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 16,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 0,
-                ProcessExecuteQuantity = 2
-              },
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 16,
-                FixQuantity = 1,
-                ProcessNumber = 2,
-                ProcessMaterialQuantity = 3,
-                ProcessExecuteQuantity = 4
-              }
-            }
-          }
-        }
-      });
-
-      var j = new JobPlan("uuuu", 2, new[] { 2, 2 });
-      j.PartName = "pppp";
-      j.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
-      j.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 25);
-      j.SetPathGroup(process: 1, path: 1, pgroup: 1);
-      j.SetPathGroup(process: 2, path: 2, pgroup: 1);
-      j.SetPathGroup(process: 1, path: 2, pgroup: 2);
-      j.SetPathGroup(process: 2, path: 1, pgroup: 2);
-      j.SetInputQueue(process: 1, path: 1, queue: "castings");
-      j.SetInputQueue(process: 1, path: 2, queue: "castings");
-      _jobDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
-      }, null, addAsCopiedToSystem: true);
-
-      var now = DateTime.UtcNow;
-      _decr.Decrement(_jobDB, now);
-
-      _write.Schedules.Count.Should().Be(2);
-      _write.Schedules[0].Id.Should().Be(15);
-      _write.Schedules[0].PlanQuantity.Should().Be(50 - 10);
-      _write.Schedules[1].Id.Should().Be(16);
-      _write.Schedules[1].PlanQuantity.Should().Be(25 - 13);
-
-      _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = now,
-          Quantity = 10
-        },
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 2,
-          TimeUTC = now,
-          Quantity = 13
-        }
+  new DecrementQuantity() {
+    DecrementId = 0,
+    TimeUTC = now,
+    Quantity = 50 - 35
+  }
       });
     }
 
@@ -490,37 +387,36 @@ namespace MachineWatchTest
       _read.LoadStatusAndTools().Returns(new MazakCurrentStatusAndTools()
       {
         Schedules = new[] {
-          new MazakScheduleRow()
-          {
-            Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
-            PartName = "pppp:1",
-            PlanQuantity = 50,
-            CompleteQuantity = 30,
-            Processes = new List<MazakScheduleProcessRow> {
-              new MazakScheduleProcessRow() {
-                MazakScheduleRowId = 15,
-                FixQuantity = 1,
-                ProcessNumber = 1,
-                ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
+    new MazakScheduleRow()
+    {
+      Id = 15,
+      Comment = MazakPart.CreateComment("uuuu", new[] {1}, false),
+      PartName = "pppp:1",
+      PlanQuantity = 50,
+      CompleteQuantity = 30,
+      Processes = new List<MazakScheduleProcessRow> {
+        new MazakScheduleProcessRow() {
+    MazakScheduleRowId = 15,
+    FixQuantity = 1,
+    ProcessNumber = 1,
+    ProcessMaterialQuantity = 15,
+    ProcessExecuteQuantity = 5
         }
+      }
+    }
+  }
       });
 
       var now = DateTime.UtcNow;
 
       var uuuu = new JobPlan("uuuu", 1);
       uuuu.PartName = "pppp";
-      uuuu.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 50);
+      uuuu.SetPlannedCyclesOnFirstProcess(numCycles: 50);
       uuuu.RouteStartingTimeUTC = now.AddHours(-12);
       uuuu.RouteEndingTimeUTC = now.AddHours(12);
       var vvvv = new JobPlan("vvvv", 1, new[] { 2 });
       vvvv.PartName = "oooo";
-      vvvv.SetPlannedCyclesOnFirstProcess(path: 1, numCycles: 4);
-      vvvv.SetPlannedCyclesOnFirstProcess(path: 2, numCycles: 7);
+      vvvv.SetPlannedCyclesOnFirstProcess(numCycles: 4 + 7);
       vvvv.RouteStartingTimeUTC = now.AddHours(-12);
       vvvv.RouteEndingTimeUTC = now.AddHours(12);
       _jobDB.AddJobs(new NewJobs()
@@ -541,53 +437,35 @@ namespace MachineWatchTest
       sch.Processes.Should().BeEmpty();
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = now,
-          Quantity = 50 - 35
-        }
+  new DecrementQuantity() {
+    DecrementId = 0,
+    TimeUTC = now,
+    Quantity = 50 - 35
+  }
       });
       _jobDB.LoadDecrementsForJob("vvvv").Should().BeEquivalentTo(new[] {
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 1,
-          TimeUTC = now,
-          Quantity = 4
-        },
-        new DecrementQuantity() {
-          DecrementId = 0,
-          Proc1Path = 2,
-          TimeUTC = now,
-          Quantity = 7
-        }
+  new DecrementQuantity() {
+    DecrementId = 0,
+    TimeUTC = now,
+    Quantity = 4 + 7
+  },
       });
 
       _jobDB.LoadDecrementQuantitiesAfter(now.AddHours(-12)).Should().BeEquivalentTo(new[] {
-        new JobAndDecrementQuantity() {
-          DecrementId = 0,
-          JobUnique = "uuuu",
-          Proc1Path = 1,
-          Part = "pppp",
-          Quantity = 50 - 35,
-          TimeUTC = now
-        },
-        new JobAndDecrementQuantity() {
-          DecrementId = 0,
-          JobUnique = "vvvv",
-          Proc1Path = 1,
-          Part = "oooo",
-          Quantity = 4,
-          TimeUTC = now
-        },
-        new JobAndDecrementQuantity() {
-          DecrementId = 0,
-          JobUnique = "vvvv",
-          Proc1Path = 2,
-          Part = "oooo",
-          Quantity = 7,
-          TimeUTC = now
-        }
+  new JobAndDecrementQuantity() {
+    DecrementId = 0,
+    JobUnique = "uuuu",
+    Part = "pppp",
+    Quantity = 50 - 35,
+    TimeUTC = now
+  },
+  new JobAndDecrementQuantity() {
+    DecrementId = 0,
+    JobUnique = "vvvv",
+    Part = "oooo",
+    Quantity = 4 + 7,
+    TimeUTC = now
+  },
       });
 
       _jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false)

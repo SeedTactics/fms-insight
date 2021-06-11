@@ -53,7 +53,6 @@ function describePath(path: Readonly<api.IProcPathInfo>): string {
 }
 
 interface RawMatDetails {
-  readonly planned: number;
   readonly path: string;
   readonly queues: HashSet<string>;
 }
@@ -61,16 +60,13 @@ interface RawMatDetails {
 function rawMatDetails(job: Readonly<api.IActiveJob>, pathIdx: number): RawMatDetails {
   const queue = job.procsAndPaths[0].paths[pathIdx].inputQueue;
   return {
-    planned: job.cyclesOnFirstProcess[pathIdx] || 0,
     path: describePath(job.procsAndPaths[0].paths[pathIdx]),
     queues: queue !== undefined && queue !== "" ? HashSet.of(queue) : HashSet.empty(),
   };
 }
 
 function joinRawMatDetails(details: ReadonlyArray<RawMatDetails>): string {
-  const planned = LazySeq.ofIterable(details).sumOn((d) => d.planned);
-  const path = LazySeq.ofIterable(details).foldLeft("", (x, details) => x + " | " + details.path);
-  return `Plan Qty ${planned} ${path}`;
+  return LazySeq.ofIterable(details).foldLeft("", (x, details) => x + " | " + details.path);
 }
 
 interface PathDetails {
@@ -166,9 +162,7 @@ export function extractJobRawMaterial(
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
     .filter(
-      ([, j]) =>
-        LazySeq.ofIterable(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumOn((x) => x) <
-        LazySeq.ofIterable(j.cyclesOnFirstProcess).sumOn((x) => x)
+      ([, j]) => LazySeq.ofIterable(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumOn((x) => x) < (j.cycles ?? 0)
     )
     .flatMap(([, j]) =>
       j.procsAndPaths[0].paths
@@ -178,11 +172,13 @@ export function extractJobRawMaterial(
           const rawMatName = path.casting && path.casting !== "" ? path.casting : j.partName;
           return {
             job: j,
+            // Eventually, once everyone has updated to a version which removes path groups and all existing jobs
+            // no longer use path groups, change this to merge quantites from all paths so each job is just one row
             proc1Path: pathNum,
             path: path,
             rawMatName: rawMatName,
             pathDetails: j.procsAndPaths[0].paths.length === 1 ? null : describePath(path),
-            plannedQty: j.cyclesOnFirstProcess[pathNum - 1] ?? 0,
+            plannedQty: j.cycles ?? 0,
             startedQty:
               (j.completed?.[0]?.[pathNum - 1] || 0) +
               LazySeq.ofIterable(mats)

@@ -45,7 +45,7 @@ export interface DataPoint {
 }
 
 function displayJob(job: api.IActiveJob, proc: number): DataPoint {
-  const totalPlan = job.cyclesOnFirstProcess.reduce((a, b) => a + b, 0);
+  const totalPlan = job.cycles ?? 0;
   const completed = job.completed ? job.completed[proc].reduce((a, b) => a + b, 0) : 0;
 
   const stops = job.procsAndPaths[proc].paths[0].stops;

@@ -102,24 +102,8 @@ namespace BlackMaple.FMSInsight.Niigata
           }).ToArray();
 
         // take decremented quantity out of the planned cycles
-        var newPlanned = j.CyclesOnFirstProcess.ToBuilder();
-
-        for (int proc1path = 1; proc1path <= j.Processes.Count; proc1path += 1)
-        {
-          int decrQty = j.Decrements?.Where(p => p.Proc1Path == proc1path)?.Sum(d => d.Quantity) ?? 0;
-          if (decrQty > 0)
-          {
-            var planned = newPlanned[proc1path - 1];
-            if (planned < decrQty)
-            {
-              newPlanned[proc1path - 1] = 0;
-            }
-            else
-            {
-              newPlanned[proc1path - 1] = planned - decrQty;
-            }
-          }
-        }
+        int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
+        var newPlanned = j.Cycles - decrQty;
 
         var workorders = jobDB.GetWorkordersForUnique(j.UniqueStr);
 
@@ -127,7 +111,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           CopiedToSystem = true,
           Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
-          CyclesOnFirstProcess = newPlanned.ToImmutable(),
+          Cycles = newPlanned,
           ScheduleId = j.ScheduleId,
           Precedence = precedence.Select(p => ImmutableList.Create(p)).ToImmutableList(),
           Decrements = j.Decrements == null || j.Decrements.Count == 0 ? null : j.Decrements,

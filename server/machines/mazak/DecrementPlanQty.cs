@@ -169,18 +169,21 @@ namespace MazakMachineInterface
 
     private void RecordDecrement(IRepository jobDB, List<DecrSchedule> decrs, DateTime? now)
     {
+      var decrsByJob = decrs.GroupBy(d => d.Job.UniqueStr);
+
       var decrAmt = new List<NewDecrementQuantity>();
-      foreach (var decr in decrs)
+      foreach (var decrsForJob in decrsByJob)
       {
-        var planned = decr.Job.CyclesOnFirstProcess[decr.Proc1Path - 1];
-        if (planned > decr.NewPlanQty)
+        var job = decrsForJob.First().Job;
+        var planned = job.Cycles;
+        var newPlanQty = decrsForJob.Sum(d => d.NewPlanQty);
+        if (planned > newPlanQty)
         {
           decrAmt.Add(new NewDecrementQuantity()
           {
-            JobUnique = decr.Job.UniqueStr,
-            Proc1Path = decr.Proc1Path,
-            Part = decr.Job.PartName,
-            Quantity = planned - decr.NewPlanQty
+            JobUnique = job.UniqueStr,
+            Part = job.PartName,
+            Quantity = planned - newPlanQty
           });
         }
       }
@@ -188,16 +191,12 @@ namespace MazakMachineInterface
       var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddHours(1), includeDecremented: false);
       foreach (var j in oldJobs)
       {
-        for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
+        decrAmt.Add(new NewDecrementQuantity()
         {
-          decrAmt.Add(new NewDecrementQuantity()
-          {
-            JobUnique = j.UniqueStr,
-            Proc1Path = path,
-            Part = j.PartName,
-            Quantity = j.CyclesOnFirstProcess[path - 1]
-          });
-        }
+          JobUnique = j.UniqueStr,
+          Part = j.PartName,
+          Quantity = j.Cycles
+        });
       }
 
       if (decrAmt.Count > 0)

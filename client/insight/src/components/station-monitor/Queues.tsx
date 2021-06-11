@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* eslint-disable react/prop-types */
 import * as React from "react";
 import { WithStyles, createStyles, withStyles, makeStyles } from "@material-ui/core/styles";
 import { SortEnd } from "react-sortable-hoc";
@@ -95,7 +96,7 @@ import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../.
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../data/material-details";
 import Collapse from "@material-ui/core/Collapse";
 
-const useTableStyles = makeStyles((theme) =>
+const useTableStyles = makeStyles(() =>
   createStyles({
     mainRow: {
       "& > *": {
@@ -242,10 +243,10 @@ interface RawMaterialJobTableProps {
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentSt = useRecoilValue(currentStatus);
-  const jobs = React.useMemo(() => extractJobRawMaterial(props.queue, currentSt.jobs, currentSt.material), [
-    props.queue,
-    currentSt,
-  ]);
+  const jobs = React.useMemo(
+    () => extractJobRawMaterial(props.queue, currentSt.jobs, currentSt.material),
+    [props.queue, currentSt]
+  );
 
   return (
     <Table size="small">
@@ -337,7 +338,7 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
   );
 });
 
-export const ConnectedEditNoteDialog = connect((s) => ({}), {
+export const ConnectedEditNoteDialog = connect(() => ({}), {
   updateCommentInEvents: (uniq: string, comment: string) => ({
     type: events.ActionType.SetJobComment,
     uniq: uniq,
@@ -675,20 +676,17 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
   const operator = useRecoilValue(currentOperator);
   const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
   const rawMaterialQueues = useSelector((st) => st.Events.last30.sim_use.rawMaterialQueues);
-  const data = React.useMemo(() => selectQueueData(props.showFree, props.queues, currentSt, rawMaterialQueues), [
-    currentSt,
-    props.queues,
-    props.showFree,
-    rawMaterialQueues,
-  ]);
+  const data = React.useMemo(
+    () => selectQueueData(props.showFree, props.queues, currentSt, rawMaterialQueues),
+    [currentSt, props.queues, props.showFree, rawMaterialQueues]
+  );
 
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IActiveJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
   const [editQtyForJob, setEditQtyForJob] = React.useState<JobRawMaterialData | null>(null);
   const closeEditJobQtyDialog = React.useCallback(() => setEditQtyForJob(null), []);
-  const [multiMaterialDialog, setMultiMaterialDialog] = React.useState<ReadonlyArray<
-    Readonly<api.IInProcessMaterial>
-  > | null>(null);
+  const [multiMaterialDialog, setMultiMaterialDialog] =
+    React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(null);
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
@@ -765,7 +763,7 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
   );
 });
 
-export default function QueuesPage(props: QueueProps) {
+export default function QueuesPage(props: QueueProps): JSX.Element {
   React.useEffect(() => {
     document.title = "Material Queues - FMS Insight";
   }, []);

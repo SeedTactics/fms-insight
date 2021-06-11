@@ -103,6 +103,7 @@ import { BarcodeListener } from "../store/barcode";
 import { ScheduleHistory } from "./analysis/ScheduleHistory";
 import { LoadDemoData } from "./DemoData";
 import { differenceInDays, startOfToday } from "date-fns";
+import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
 
 const tabsStyle = {
   alignSelf: "flex-end" as const,
@@ -506,6 +507,7 @@ function Header(p: HeaderProps) {
             )}
             <LoadingIcon />
             {p.showOperator ? <OperatorSelect /> : undefined}
+            {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
             {p.showSearch ? <SearchButtons /> : undefined}
             <HelpButton />
             {p.showLogout ? <LogoutButton /> : undefined}
@@ -528,6 +530,7 @@ function Header(p: HeaderProps) {
             {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
             <div style={{ flexGrow: 1 }} />
             <LoadingIcon />
+            {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
             {p.showSearch ? <SearchButtons /> : undefined}
             <HelpButton />
             {p.showLogout ? <LogoutButton /> : undefined}

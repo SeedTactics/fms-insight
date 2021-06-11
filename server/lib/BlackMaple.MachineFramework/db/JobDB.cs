@@ -482,8 +482,7 @@ namespace BlackMaple.MachineFramework
             CopiedToSystem = reader.IsDBNull(7) ? false : reader.GetBoolean(7),
             ScheduleId = reader.IsDBNull(8) ? null : reader.GetString(8),
             ManuallyCreated = !reader.IsDBNull(9) && reader.GetBoolean(9),
-            FlexCyclesOnFirstProcessBetweenAllPaths = reader.IsDBNull(10) ? null : reader.GetBoolean(10),
-            CyclesOnFirstProcess = details.CyclesOnFirstProc,
+            Cycles = details.CyclesOnFirstProc.Sum(),
             Processes = details.Procs,
             BookingIds = details.Bookings,
             HoldJob = details.Hold?.ToHoldPattern(),
@@ -652,7 +651,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths FROM jobs WHERE Archived = 0";
+        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual FROM jobs WHERE Archived = 0";
         using (var trans = _connection.BeginTransaction())
         {
           cmd.Transaction = trans;
@@ -663,7 +662,7 @@ namespace BlackMaple.MachineFramework
 
     public IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true)
     {
-      var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths" +
+      var cmdTxt = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual" +
                   " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND CopiedToSystem = 0";
       if (!includeDecremented)
       {
@@ -687,7 +686,7 @@ namespace BlackMaple.MachineFramework
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths " +
+        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual" +
             " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
         jobCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         jobCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
@@ -706,7 +705,7 @@ namespace BlackMaple.MachineFramework
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths " +
+        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual" +
             " FROM jobs WHERE ScheduleId > $sid";
         jobCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
 
@@ -842,7 +841,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths" +
+        cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual" +
                   " FROM jobs WHERE ScheduleId = $sid";
 
         lock (_cfg)
@@ -873,7 +872,7 @@ namespace BlackMaple.MachineFramework
 
           HistoricJob job = null;
 
-          cmd.CommandText = "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths FROM jobs WHERE UniqueStr = $uniq";
+          cmd.CommandText = "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual FROM jobs WHERE UniqueStr = $uniq";
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
 
           var trans = _connection.BeginTransaction();
@@ -899,8 +898,7 @@ namespace BlackMaple.MachineFramework
                   CopiedToSystem = reader.IsDBNull(6) ? false : reader.GetBoolean(6),
                   ScheduleId = reader.IsDBNull(7) ? null : reader.GetString(7),
                   ManuallyCreated = !reader.IsDBNull(8) && reader.GetBoolean(8),
-                  FlexCyclesOnFirstProcessBetweenAllPaths = reader.IsDBNull(9) ? null : reader.GetBoolean(9),
-                  CyclesOnFirstProcess = details.CyclesOnFirstProc,
+                  Cycles = details.CyclesOnFirstProc.Sum(),
                   Processes = details.Procs,
                   BookingIds = details.Bookings,
                   HoldJob = details.Hold?.ToHoldPattern(),
@@ -1033,8 +1031,8 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, FlexCyclesAcrossPaths) " +
-            "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual,$flex)";
+          "INSERT INTO jobs(UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual) " +
+            "VALUES($uniq,$part,$proc,$comment,$start,$end,$archived,$copied,$sid,$manual)";
 
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("part", SqliteType.Text).Value = job.PartName;
@@ -1052,8 +1050,6 @@ namespace BlackMaple.MachineFramework
         else
           cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
         cmd.Parameters.Add("manual", SqliteType.Integer).Value = job.ManuallyCreated;
-        cmd.Parameters.Add("flex", SqliteType.Integer).Value =
-          job.FlexCyclesOnFirstProcessBetweenAllPaths.HasValue ? job.FlexCyclesOnFirstProcessBetweenAllPaths.Value : DBNull.Value;
 
         cmd.ExecuteNonQuery();
 
@@ -1070,18 +1066,13 @@ namespace BlackMaple.MachineFramework
           }
         }
 
+        // eventually move to store directly on job table, but leave here for backwards compatibility
         cmd.CommandText = "INSERT INTO planqty(UniqueStr, Path, PlanQty) VALUES ($uniq,$path,$plan)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-        cmd.Parameters.Add("path", SqliteType.Integer);
-        cmd.Parameters.Add("plan", SqliteType.Integer);
-
-        for (int i = 0; i < job.Processes[0].Paths.Count; i++)
-        {
-          cmd.Parameters[1].Value = i;
-          cmd.Parameters[2].Value = job.CyclesOnFirstProcess[i];
-          cmd.ExecuteNonQuery();
-        }
+        cmd.Parameters.Add("path", SqliteType.Integer).Value = 0;
+        cmd.Parameters.Add("plan", SqliteType.Integer).Value = job.Cycles;
+        cmd.ExecuteNonQuery();
 
         cmd.CommandText = "INSERT OR REPLACE INTO simulated_production(UniqueStr, Process, Path, TimeUTC, Quantity) VALUES ($uniq,$proc,$path,$time,$qty)";
         cmd.Parameters.Clear();
@@ -1869,7 +1860,7 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Parameters[0].Value = decrementId;
           cmd.Parameters[1].Value = q.JobUnique;
-          cmd.Parameters[2].Value = q.Proc1Path;
+          cmd.Parameters[2].Value = 1; // For now, leave Proc1Path in the database
           cmd.Parameters[3].Value = now.Ticks;
           cmd.Parameters[4].Value = q.Part;
           cmd.Parameters[5].Value = q.Quantity;
@@ -1910,7 +1901,7 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.CommandText = "SELECT DecrementId,Proc1Path,TimeUTC,Quantity FROM job_decrements WHERE JobUnique = $uniq";
+        cmd.CommandText = "SELECT DecrementId,TimeUTC,Quantity FROM job_decrements WHERE JobUnique = $uniq";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
         var ret = ImmutableList.CreateBuilder<DecrementQuantity>();
         using (var reader = cmd.ExecuteReader())
@@ -1920,9 +1911,8 @@ namespace BlackMaple.MachineFramework
             var j = new DecrementQuantity()
             {
               DecrementId = reader.GetInt64(0),
-              Proc1Path = reader.GetInt32(1),
-              TimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
-              Quantity = reader.GetInt32(3),
+              TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc),
+              Quantity = reader.GetInt32(2),
             };
             ret.Add(j);
           }
@@ -1937,7 +1927,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          cmd.CommandText = "SELECT DecrementId,JobUnique,Proc1Path,TimeUTC,Part,Quantity FROM job_decrements WHERE DecrementId > $after";
+          cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM job_decrements WHERE DecrementId > $after";
           cmd.Parameters.Add("after", SqliteType.Integer).Value = afterId;
           return LoadDecrementQuantitiesHelper(cmd);
         }
@@ -1950,7 +1940,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          cmd.CommandText = "SELECT DecrementId,JobUnique,Proc1Path,TimeUTC,Part,Quantity FROM job_decrements WHERE TimeUTC > $after";
+          cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM job_decrements WHERE TimeUTC > $after";
           cmd.Parameters.Add("after", SqliteType.Integer).Value = afterUTC.Ticks;
           return LoadDecrementQuantitiesHelper(cmd);
         }
@@ -1968,10 +1958,9 @@ namespace BlackMaple.MachineFramework
           {
             DecrementId = reader.GetInt64(0),
             JobUnique = reader.GetString(1),
-            Proc1Path = reader.GetInt32(2),
-            TimeUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
-            Part = reader.GetString(4),
-            Quantity = reader.GetInt32(5),
+            TimeUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
+            Part = reader.GetString(3),
+            Quantity = reader.GetInt32(4),
           });
         }
         return ret;

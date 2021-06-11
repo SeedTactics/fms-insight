@@ -505,26 +505,16 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     // Planned cycles
-    public int GetPlannedCyclesOnFirstProcess(int path)
+    public int GetPlannedCyclesOnFirstProcess()
     {
-      if (path >= 1 && path <= _pCycles.Length)
-      {
-        return _pCycles[path - 1];
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid path number");
-      }
+      return _pCycles.Sum();
     }
-    public void SetPlannedCyclesOnFirstProcess(int path, int numCycles)
+    public void SetPlannedCyclesOnFirstProcess(int numCycles)
     {
-      if (path >= 1 && path <= _pCycles.Length)
+      _pCycles[0] = numCycles;
+      for (int i = 1; i < _pCycles.Length; i++)
       {
-        _pCycles[path - 1] = numCycles;
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid path number");
+        _pCycles[i] = 0;
       }
     }
 
@@ -1305,12 +1295,7 @@ namespace BlackMaple.MachineWatchInterface
       dest.RouteStartingTimeUTC = source.RouteStartUTC;
       dest.RouteEndingTimeUTC = source.RouteEndUTC;
       if (source.HoldJob != null) dest.HoldEntireJob = ToLegacyHold(source.HoldJob);
-
-      var firstProcCycles = source.CyclesOnFirstProcess;
-      for (int path = 1; path <= firstProcCycles.Count; path++)
-      {
-        dest.SetPlannedCyclesOnFirstProcess(path: path, numCycles: firstProcCycles[path - 1]);
-      }
+      dest.SetPlannedCyclesOnFirstProcess(source.Cycles);
 
       // Ignore obsolete job-level inspections
 

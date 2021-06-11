@@ -52,7 +52,7 @@ it("converts events to points", () => {
       unique: "uniq1",
       manuallyCreated: false,
       holdEntireJob: new api.HoldPattern(dummyHold),
-      cyclesOnFirstProcess: [40, 42],
+      cycles: 82,
       completed: [[20, 21], [22]],
       procsAndPaths: [
         new api.ProcessInfo({

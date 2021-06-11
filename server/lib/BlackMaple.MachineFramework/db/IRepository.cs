@@ -277,7 +277,6 @@ namespace BlackMaple.MachineFramework
   public record NewDecrementQuantity
   {
     public string JobUnique { get; init; }
-    public int Proc1Path { get; init; }
     public string Part { get; init; }
     public int Quantity { get; init; }
   }
