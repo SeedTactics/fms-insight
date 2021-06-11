@@ -408,11 +408,13 @@ namespace DebugMachineWatchApiServer
 
     public List<ToolInMachine> CurrentToolsInMachines()
     {
+      System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
       return Tools;
     }
 
     public List<ProgramInCellController> CurrentProgramsInCellController()
     {
+      System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
       return Programs
         .Where(p => !string.IsNullOrEmpty(p.CellControllerProgramName))
         .Select(p => new ProgramInCellController()

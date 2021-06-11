@@ -31,11 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ActionType, ICurrentStatus } from "./api";
+import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "./api";
 import { LazySeq } from "./lazyseq";
 import { Vector, HashMap, HashSet } from "prelude-ts";
 import { duration } from "moment";
-import { atom, selector } from "recoil";
+import { atom, selector, useRecoilCallback } from "recoil";
 import {
   ToolUsage,
   ProgramToolUseInSingleCycle,
@@ -97,11 +97,12 @@ export interface ToolReport {
   readonly parts: Vector<PartToolUsage>;
 }
 
-export async function calcToolReport(
+export function calcToolReport(
   currentSt: Readonly<ICurrentStatus>,
+  toolsInMach: ReadonlyArray<Readonly<IToolInMachine>>,
   usage: ToolUsage,
   machineFilter: string | null
-): Promise<Vector<ToolReport>> {
+): Vector<ToolReport> {
   let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
     const planQty = job.cycles ?? 0;
@@ -172,7 +173,6 @@ export async function calcToolReport(
         )
     );
 
-  const toolsInMach = await MachineBackend.getToolsInMachines();
   return LazySeq.ofIterable(toolsInMach)
     .filter((t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum))
     .groupBy((t) => t.toolName)
@@ -215,15 +215,19 @@ export async function calcToolReport(
     });
 }
 
+export const toolReportMachineFilter = atom<string | null>({
+  key: "tool-report-machine-filter",
+  default: null,
+});
+
 export const toolReportRefreshTime = atom<Date | null>({
   key: "tool-report-refresh-time",
   default: null,
 });
 
-export const toolReportMachineFilter = atom<string | null>({
-  key: "tool-report-machine-filter",
-  default: null,
-});
+/*
+This code is the way when we can use react concurrent mode and useTransition,
+otherwise the table flashes each time the currentStatus changes.
 
 export const currentToolReport = selector<Vector<ToolReport> | null>({
   key: "tool-report",
@@ -235,11 +239,38 @@ export const currentToolReport = selector<Vector<ToolReport> | null>({
       if (reduxStore === null) return null;
       const machineFilter = get(toolReportMachineFilter);
       const currentSt = get(currentStatus);
+      const toolsInMach = await MachineBackend.getToolsInMachines();
       const usage = reduxStore.getState().Events.last30.cycles.tool_usage;
-      return await calcToolReport(currentSt, usage, machineFilter);
+      return calcToolReport(currentSt, usage, machineFilter);
     }
   },
 });
+*/
+
+const toolsInMachine = atom<ReadonlyArray<Readonly<IToolInMachine>> | null>({
+  key: "tools-in-machines",
+  default: null,
+});
+
+export const currentToolReport = selector<Vector<ToolReport> | null>({
+  key: "tool-report",
+  get: ({ get }) => {
+    if (reduxStore === null) return null;
+    const toolsInMach = get(toolsInMachine);
+    if (toolsInMach === null) return null;
+    const machineFilter = get(toolReportMachineFilter);
+    const currentSt = get(currentStatus);
+    const usage = reduxStore.getState().Events.last30.cycles.tool_usage;
+    return calcToolReport(currentSt, toolsInMach, usage, machineFilter);
+  },
+});
+
+export function useRefreshToolReport(): () => Promise<void> {
+  return useRecoilCallback(({ set }) => async () => {
+    set(toolsInMachine, await MachineBackend.getToolsInMachines());
+    set(toolReportRefreshTime, new Date());
+  });
+}
 
 export function buildToolReportHTML(tools: Vector<ToolReport>, singleMachine: boolean): string {
   let table = "<table>\n<thead><tr>";
@@ -300,12 +331,13 @@ export interface ProgramReport {
   readonly cellNameDifferentFromProgName: boolean;
 }
 
-export async function calcProgramReport(
+export function calcProgramReport(
   usage: ToolUsage,
   cycleTimes: EstimatedCycleTimes,
   partOperations: HashSet<PartAndStationOperation>,
+  progsInCellCtrl: ReadonlyArray<Readonly<IProgramInCellController>>,
   progsToShow: ReadonlySet<string> | null
-): Promise<ProgramReport> {
+): ProgramReport {
   const tools = averageToolUse(usage, true);
 
   const progToPart = LazySeq.ofIterable(partOperations)
@@ -318,7 +350,7 @@ export async function calcProgramReport(
       (_, x) => x
     );
 
-  let allPrograms = LazySeq.ofIterable(await MachineBackend.getProgramsInCellController());
+  let allPrograms = LazySeq.ofIterable(progsInCellCtrl);
 
   if (progsToShow != null) {
     allPrograms = allPrograms.filter((p) => progsToShow.has(p.programName));
@@ -358,11 +390,16 @@ export const programFilter = atom<"AllPrograms" | "ActivePrograms">({
   default: "AllPrograms",
 });
 
+const programsInCellCtrl = atom<ReadonlyArray<Readonly<IProgramInCellController>> | null>({
+  key: "programs-in-cell-controller",
+  default: null,
+});
+
 export const currentProgramReport = selector<ProgramReport | null>({
   key: "cell-controller-programs",
   get: ({ get }) => {
     const time = get(programReportRefreshTime);
-    if (time === null || reduxStore === null) return Promise.resolve(null);
+    if (time === null || reduxStore === null) return null;
 
     const filter = get(programFilter);
     let progsToShow: ReadonlySet<string> | null = null;
@@ -378,14 +415,31 @@ export const currentProgramReport = selector<ProgramReport | null>({
       );
     }
 
+    /*
+    This code is the way when we can use react concurrent mode and useTransition,
+    otherwise the table flashes each time the currentStatus changes.
+
+    const progsInCell = await MachineBackend.getProgramsInCellController();
+    */
+    const progsInCell = get(programsInCellCtrl);
+    if (progsInCell === null) return null;
+
     return calcProgramReport(
       reduxStore.getState().Events.last30.cycles.tool_usage,
       reduxStore.getState().Events.last30.cycles.estimatedCycleTimes,
       reduxStore.getState().Events.last30.cycles.part_and_operation_names,
+      progsInCell,
       progsToShow
     );
   },
 });
+
+export function useRefreshProgramReport(): () => Promise<void> {
+  return useRecoilCallback(({ set }) => async () => {
+    set(programsInCellCtrl, await MachineBackend.getProgramsInCellController());
+    set(programReportRefreshTime, new Date());
+  });
+}
 
 export interface ProgramNameAndRevision {
   readonly programName: string;

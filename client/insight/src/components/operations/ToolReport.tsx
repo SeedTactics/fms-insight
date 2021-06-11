@@ -48,9 +48,10 @@ import Tooltip from "@material-ui/core/Tooltip";
 import {
   ToolReport,
   currentToolReport,
-  toolReportRefreshTime,
+  useRefreshToolReport,
   toolReportMachineFilter,
   copyToolReportToClipboard,
+  toolReportRefreshTime,
 } from "../../data/tools-programs";
 import TableBody from "@material-ui/core/TableBody";
 import IconButton from "@material-ui/core/IconButton";
@@ -61,7 +62,7 @@ import { LazySeq } from "../../data/lazyseq";
 import { makeStyles } from "@material-ui/core/styles";
 import { PartIdenticon } from "../station-monitor/Material";
 import clsx from "clsx";
-import { useRecoilState, useRecoilValueLoadable, useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { useIsDemo } from "../../data/routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import Select from "@material-ui/core/Select";
@@ -222,7 +223,7 @@ type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemai
 
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
-export function ToolSummaryTable() {
+export function ToolSummaryTable(): JSX.Element {
   const [machineFilter, setMachineFilter] = useRecoilState(toolReportMachineFilter);
   const tools = useRecoilValue(currentToolReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
@@ -235,7 +236,7 @@ export function ToolSummaryTable() {
   }
 
   const rows = tools.sortBy((a: ToolReport, b: ToolReport) => {
-    let c: number = 0;
+    let c = 0;
     switch (sortCol) {
       case "ToolName":
         c = a.toolName.localeCompare(b.toolName);
@@ -394,10 +395,15 @@ export function ToolSummaryTable() {
 }
 
 function ToolNavHeader() {
-  const [reloadTime, setReloadTime] = useRecoilState(toolReportRefreshTime);
-  const report = useRecoilValueLoadable(currentToolReport);
+  const reloadTime = useRecoilValue(toolReportRefreshTime);
+  const [loading, setLoading] = React.useState(false);
+  const refreshToolReport = useRefreshToolReport();
   const demo = useIsDemo();
-  const loading = report.state === "loading";
+
+  function refresh() {
+    setLoading(true);
+    refreshToolReport().finally(() => setLoading(false));
+  }
 
   if (demo) {
     return <div />;
@@ -409,11 +415,15 @@ function ToolNavHeader() {
           size="large"
           variant="extended"
           style={{ margin: "2em" }}
-          onClick={() => setReloadTime(new Date())}
+          onClick={refresh}
           disabled={loading}
         >
           <>
-            <RefreshIcon style={{ marginRight: "1em" }} />
+            {loading ? (
+              <CircularProgress size={10} style={{ marginRight: "1em" }} />
+            ) : (
+              <RefreshIcon fontSize="inherit" style={{ marginRight: "1em" }} />
+            )}
             Load Tools
           </>
         </Fab>
@@ -433,7 +443,7 @@ function ToolNavHeader() {
       >
         <Tooltip title="Refresh Tools">
           <div>
-            <IconButton onClick={() => setReloadTime(new Date())} disabled={loading} size="small">
+            <IconButton onClick={refresh} disabled={loading} size="small">
               {loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
             </IconButton>
           </div>
@@ -446,7 +456,7 @@ function ToolNavHeader() {
   }
 }
 
-export function ToolReportPage() {
+export function ToolReportPage(): JSX.Element {
   React.useEffect(() => {
     document.title = "Tool Report - FMS Insight";
   }, []);
