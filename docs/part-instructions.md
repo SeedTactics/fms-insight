@@ -1,8 +1,12 @@
 ---
-id: part-instructions
-title: Part Instructions
-sidebar_label: Instructions
+title: Operator Instructions
+nav: FMS Insight Server > Instructions
+description: >-
+  The FMS Insight server can be configured to display arbitrary load, unload, wash
+  and inspection instructions to the operator.
 ---
+
+# FMS Insight Operator Instructions
 
 FMS Insight can display load, wash, and inspection instructions to the operator.
 The instructions are documents (typically PDF files) stored on the FMS Insight server,
@@ -12,7 +16,7 @@ browser tab.
 ### Configuration
 
 The instruction files are kept on the FMS Insight server in a single directory. The
-directory is configured via a [configuration option](server-config.md) `InstructionFilePath`
+directory is configured via a [configuration option](server-config) `InstructionFilePath`
 within the `FMS` section. Once configured, this directory should be filled with files
 that can be displayed in a browser (PDF is a good choice). When the user requests an
 instruction file, the FMS Insight server will search the filename of all files inside this
@@ -22,7 +26,7 @@ directory
 
 There are four instruction types: load, unload, wash, and inspections. Each instruction type will
 search for a different file depending on the page on the
-[station monitor screen](client-station-monitor.md) and the currently selected part. To create
+[station monitor screen](client-station-monitor) and the currently selected part. To create
 instruction files for all possiblities, you should create files as follows:
 
 - For each part, create a file with the partname and `load` in the filename. Inside this
@@ -53,7 +57,7 @@ instruction files for all possiblities, you should create files as follows:
 
 ### Opening the instructions
 
-To open the instructions, click on any material card in the [station monitor page](client-station-monitor.md). When clicked, a dialog will appear with details about the
+To open the instructions, click on any material card in the [station monitor page](client-station-monitor). When clicked, a dialog will appear with details about the
 material. On the bottom of the dialog, there is a button "Instructions". When clicked,
 FMS Insight will search for a file matching the current partname and page (load, wash, or inspection) as described above. The instruction file will then be displayed in a new tab. When subsequent instructions are requested, the tab will be re-used. Thus the tab does not need to be
 manually closed after each operation.

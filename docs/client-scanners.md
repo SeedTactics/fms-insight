@@ -1,12 +1,16 @@
 ---
-id: client-scanners
-title: Scanners
-sidebar_label: Scanners
+title: Barcode Scanners
+nav: FMS Insight Client > Scanners
+description: >-
+  All FMS Insight pages supports barcode or QR-code scanners for easy material tracking
+  on the shop floor.
 ---
+
+# FMS Insight Barcode Scanners
 
 All FMS Insight pages supports barcode or QR-code scanners.
 When a part's serial is scanned, the dialog corresponding to the piece of material is opened.
-For example, if the [inspection station monitor](client-station-monitor.md) is open and a part's serial is scanned,
+For example, if the [inspection station monitor](client-station-monitor) is open and a part's serial is scanned,
 the dialog for this serial will be opened to show the material details, log of events, and buttons to
 complete the inspection. (The exact same dialog which is opened if you click on a piece of material on the screen.)
 In this way, the scanner can be used to more quickly locate the material card and open the details about it.
@@ -16,7 +20,7 @@ In this way, the scanner can be used to more quickly locate the material card an
 A serial can be entered via the keyboard by clicking on the magnifying glass icon in the top-right of the page.
 A dialog will open allowing you to enter a serial and then the material details for that serial will be loaded.
 
-![Screenshot of toolbar buttons](assets/insight-toolbar-btns.png).
+![Screenshot of toolbar buttons](screenshots/insight-toolbar-btns.png)
 
 ## Configuring a handheld scanner
 
@@ -47,10 +51,10 @@ are used as the serial. To scan a QR-code, there is a camera button on the
 toolbar in the top-right. Clicking this button will open a dialog showing the camera
 and will close when a QR-code is detected.
 
-![Screenshot of toolbar buttons](assets/insight-toolbar-btns.png)
+![Screenshot of toolbar buttons](screenshots/insight-toolbar-btns.png)
 
 Due to browser security restrictions, the camera is only available to
 web pages when the location is `localhost` or secure https SSL is used. Thus if you
 are going to use the camera to scan QR-codes, FMS Insight server must be configured to
-use SSL. The [security docs](security.md) contains details on enabling secure
+use SSL. The [security docs](security) contains details on enabling secure
 https. If SSL is not currently in use, the camera icon will not be shown.

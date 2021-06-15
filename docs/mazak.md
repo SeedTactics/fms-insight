@@ -1,8 +1,13 @@
 ---
-id: mazak
 title: Mazak Palletech Integration
-sidebar_label: Mazak
+nav: FMS Insight Server > Mazak
+description: >-
+  FMS Insight works with all Palletech cell controller versions from Mazak:
+  Version E, Web Version, and Smooth PMC. FMS Insight can read all events from
+  the cell controller and can also edit almost all the data in the cell controller.
 ---
+
+# FMS Insight Mazak Palletech Integration
 
 FMS Insight works with all Palletech cell controller versions from Mazak:
 Version E, Web Version, and Smooth PMC. FMS Insight can read all events from
@@ -66,7 +71,7 @@ training new operators and managers.
 
 ## Starting Offset and Decrement Priority
 
-The Mazak [config.ini](server-config.md) contains a setting `Use Starting Offset`
+The Mazak [config.ini](server-config) contains a setting `Use Starting Offset`
 which control how new schedules are added into the cell controller.
 
 When `Use Starting Offset` is enabled, new Mazak schedules will

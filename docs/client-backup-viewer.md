@@ -1,15 +1,20 @@
 ---
-id: client-backup-viewer
 title: FMS Insight Backup Viewer
-sidebar_label: Backup Viewer
+nav: FMS Insight Client > Backup Viewer
+description: >-
+  The FMS Insight stores the log of FMS events and jobs in a SQLite database.
+  The Backup Viewer program is a standalone program which displays data
+  directly from the database.
 ---
 
+# FMS Insight Backup Viewer
+
 FMS Insight stores data in a SQLite database local to the cell controller
-(path is set in the [configuration](server-config.md)). FMS Insight is
+(path is set in the [configuration](server-config)). FMS Insight is
 resilient to the loss of the databases; if the databases are deleted or lost,
 FMS Insight will start logging cell controller events to a new blank database
 and new jobs can be downloaded to continue production. The [Starting Serial
-Config Setting](server-config.md) can be used to cause the new empty FMS
+Config Setting](server-config) can be used to cause the new empty FMS
 Insight to start producing serials larger than previously used serials. In
 this way, the FMS Insight databases are not production critical; if they are
 lost the cell can continue production. Thus periodic backups of the FMS
@@ -17,7 +22,7 @@ Insight databases are not required.
 
 Despite this, the FMS Insight log database does contain a wealth of
 historical data that is helpful for [analyzing the
-cell](client-flexibility-analysis.md) as well as the production history for each
+cell](client-flexibility-analysis) as well as the production history for each
 serial. Thus the SQLite databases can be periodically backed up to maintain
 an archive of historical log data. The _FMS Insight Backup Viewer_ program is
 a desktop application which allows you to open the SQLite database file

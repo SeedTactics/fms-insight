@@ -1,14 +1,19 @@
 ---
-id: client-engineering
-title: Engineering Daily Monitoring
-sidebar_label: Engineering
+title: FMS Engineering Daily Monitoring
+nav: FMS Insight Client > Engineering
+description: >-
+  The FMS Insight engineering pages are used by part programming engineers.
+  These pages display information about the past few days of machine cycles
+  and program execution.
 ---
+
+# FMS Insight Engineering Pages
 
 The _Engineering_ page is intended for the part programming engineers. We suggest they bookmark this page and
 visit it directly. The page can be used after a new part-program is introduced to closly watch the timings of
 the new program. The page can also be used to stay on top of problematic programs which are frequently interrupted.
 
-![Screenshot of Machine outliers](assets/insight-machine-outliers.png)
+![Screenshot of Machine outliers](screenshots/insight-machine-outliers.png)
 
 First, there is a table which shows cycles from the last three days which are
 statistical outliers. The outlier detection is based on the [median absolute
@@ -24,18 +29,18 @@ cycle will appear here:
   case, the expected machine time in the flexibility plan should be adjusted to be equal to the median time. Alternativly,
   perhaps the program should be changed to improve the machine time.
 
-![Screenshot of machine hours](assets/insight-machine-hours.png)
+![Screenshot of machine hours](screenshots/insight-machine-hours.png)
 
 Next, the planned and actual machine hours for the past 7 days are shown. The
 data can be toggled between a bar chart and a table. Anything older than 7
-days is available as part of the [monthly review](improve-fms.md) on the
-[flexibility analysis page](client-flexibility-analysis.md).
+days is available as part of the [monthly review](improve-fms) on the
+[flexibility analysis page](client-flexibility-analysis).
 
-![Screenshot of machine cycles](assets/insight-machine-cycle-graph.png)
+![Screenshot of machine cycles](screenshots/insight-machine-cycle-graph.png)
 
 Finally, the page contains a chart of all machine cycles from the past 3 days. The chart can
 be zoomed by clicking and dragging, filtered to specific parts and/or
 pallets, and toggled to a table. Clicking on any point allows more details
 about the cycle to be loaded. Anything older than 3
-days is available as part of the [monthly review](improve-fms.md) on the
-[flexibility analysis page](client-flexibility-analysis.md).
+days is available as part of the [monthly review](improve-fms) on the
+[flexibility analysis page](client-flexibility-analysis).

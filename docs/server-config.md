@@ -1,8 +1,12 @@
 ---
-id: server-config
-title: Server Configuration
-sidebar_label: Configuration
+title: FMS Insight Server Configuration
+nav: FMS Insight Server > Configuration
+description: >-
+  The FMS Insight server runs on the cell controller and is configured by
+  a config.ini file.
 ---
+
+# FMS Insight Server Configuration
 
 The FMS Insight server is configured via a file
 `SeedTactics\FMSInsight\config.ini` located in the Windows Common AppData
@@ -24,7 +28,7 @@ Comments describing each option are prefixed by a hash (`#`) and the options the
 are prefixed by a semicolon (`;`). To edit an option, remove the leading semicolon (`;`)
 and then edit the option value. Remember to restart the FMS Insight server. If any configuration
 errors are present, FMS Insight will generate an error message with details into the
-[event log](server-errors.md).
+[event log](server-errors).
 
 ## Databases
 
@@ -50,3 +54,5 @@ are deleted (and recreated) the cell will continue to operate just fine in
 the future (minus the historical data). Thus it is not necessary to backup
 the databases (but of course you can if you want to preserve historical
 data).
+
+The [Backup Viewer Program](client-backup-viewer) can be used to view the data inside the databases.

@@ -1,16 +1,22 @@
 ---
-id: client-flexibility-analysis
-title: Flexibility Analysis
-sidebar_label: Flexibility Analysis
+title: FMS Monthly Flexibility Analysis
+nav: FMS Insight Client > Flexibility Analysis
+description: >-
+  The FMS Insight flexibility analysis pages are used by managers to view
+  a monthly report on the system and to focus on continuous improvement.
+  The pages highlight potential bottlenecks and places for efficiency improvements
+  in the cell.
 ---
+
+# FMS Insight Monthly Flexibility Analysis
 
 FMS Insight supports continuous improvement by assisting with a monthly review.
 We suggest that approximately once a month, all stakeholders review the operation of the cell and
-decide on potential improvements. The [improve an FMS](improve-fms.md)
+decide on potential improvements. The [improve an FMS](improve-fms)
 documentation goes into more details about how to make the most of these
 efficiency calculations.
 
-![Screenshot of choosing analysis month](assets/insight-choose-analysis-month.png)
+![Screenshot of choosing analysis month](screenshots/insight-choose-analysis-month.png)
 
 At the top of the page are two radio buttons allowing you to analyize either the last
 30 days or a specific calendar month.
@@ -28,7 +34,7 @@ of the cell to improve the performance.
 
 ## Machine Cycles
 
-![Screenshot of station cycle chart](assets/insight-machinecycle-graph.png)
+![Screenshot of station cycle chart](screenshots/insight-machinecycle-graph.png)
 
 The machine cycle chart displays a point for each program cycle. The cycles
 can be filtered by a specific part, a specific program, a specific machine, a
@@ -47,7 +53,7 @@ statistical median and deviation of the points; the middle of the gray band is
 the median of the program time and the width of the band is determined by calculating
 the median absolute deviation of the median (MAD). In contrast, the horizontal
 black line is the expected cycle time entered during scheduling and sent in
-the [scheduled jobs](creating-jobs.md). Thus if the horizontal black line differs
+the scheduled jobs. Thus if the horizontal black line differs
 significantly from the middle of the gray band, this means that likely the expected
 time used in the simulation and scheduling is incorrect.
 
@@ -61,7 +67,7 @@ spend a large amount of time focusing on this part. If instead the graph
 showed many points outside the gray band and longer than 40 minutes, it would
 be worth it to investigate and improve the part program and tooling.
 
-![Screenshot of station cycle table](assets/insight-machinecycle-table.png)
+![Screenshot of station cycle table](screenshots/insight-machinecycle-table.png)
 
 The cycles can be toggled to display the raw data in a table instead of a chart.
 The table can be filtered, sorted, and restricted to a specific date range. The resulting
@@ -69,7 +75,7 @@ raw data can be copied to the clipboard to be pasted into a spreadsheet for furt
 
 ## Load/Unload Cycles
 
-![Screenshot of load station cycle chart](assets/insight-loadcycle-graph.png)
+![Screenshot of load station cycle chart](screenshots/insight-loadcycle-graph.png)
 
 The load/unload cycle chart displays a point for each load or unload event.
 The x-axis is the days of the month and the y-axis is time in minutes.
@@ -94,7 +100,7 @@ For each cycle, FMS Insight splits the time the pallet spends at the load
 station among each piece of material being loaded, transfered, or unload. To
 do so, FMS Insight uses the list of material loaded/unloaded/transfered and
 calculates the expected time the operation should take based on the values
-entered into the [scheduled jobs](creating-jobs.md). The expected time is
+entered into the scheduled jobs. The expected time is
 then used to calculate a percentage consuption for each material, and this
 percentage is then applied to the actual wall clock time of the pallet
 occupancy. For example, consider an operation where part _aaa_ is loaded and
@@ -121,11 +127,11 @@ example from the previous paragraph, the points would have y-coordinate 5.8
 and 9.2 minutes.) Exactly like the machine cycles, FMS Insight calculates the
 median and median absolute deviaion of the points and plots them as a gray band
 in the background. Finally, the expected time entered into the
-[scheduled jobs](creating-jobs.md) is graphed as a horizontal black line.
+scheduled jobs is graphed as a horizontal black line.
 
 ## Pallet Cycles
 
-![Screenshot of pallet cycle chart](assets/insight-analysis-pallets.png)
+![Screenshot of pallet cycle chart](screenshots/insight-analysis-pallets.png)
 
 Select a pallet from the combo box in the top-right. Once selected, all
 pallet cycles are displayed. The x-axis is the days of the month and the
@@ -147,12 +153,12 @@ pallet cycle times vary wildly, there is likely taffic jams or other flow proble
 
 ## Buffer Occupancy
 
-![Screenshot of buffer occupancy chart](assets/insight-buffer-occupancy.png)
+![Screenshot of buffer occupancy chart](screenshots/insight-buffer-occupancy.png)
 
 As material moves through the system, it buffers before various operations. It can buffer
 on a pallet waiting on the inbound rotary table, it can buffer on a pallet in the
 stocker waiting for either machining or unloading, or it can buffer between processes
-in a [transfer queue](material-tracking.md). In general, material will buffer right in
+in a [transfer queue](material-tracking). In general, material will buffer right in
 front of the bottleneck operation. The buffer occupancy chart can thus be used to determine
 which operation (machining, loading, unloading) is the current bottleneck and also how the
 bottleneck changes over time.
@@ -179,7 +185,7 @@ occupancy will drop to zero.
 
 ## Station Use
 
-![Screenshot of Station Use Heatmap](assets/insight-analysis-station-oee.png)
+![Screenshot of Station Use Heatmap](screenshots/insight-analysis-station-oee.png)
 
 The Station Use heatmap shows the station usage over the month. On the x-axis
 are the days of the month and on the y-axis are the machines and load
@@ -194,7 +200,7 @@ corner: "Standard OEE", "Planned OEE", and "Occupied".
   with a color with darker colors higher OEE and lighter colors lower OEE. A grid cell
   can be moused over to obtain extra information in a tooltip.
 
-- The "Planned OEE" chart displays the simulated station usage for the [downloaded jobs](creating-jobs.md) and
+- The "Planned OEE" chart displays the simulated station usage for the downloaded jobs and
   is the prediction of what the OEE should look like based on all the schedules for the month.
 
 - The "Occupied" chart computes the total percentage of time that a pallet is occupying the station. For
@@ -229,7 +235,7 @@ to help find a part that might be changed to run on the lightly loaded machine.
 
 ## Part Production
 
-![Screenshot of Part Production Heatmap](assets/insight-analysis-part-completed.png)
+![Screenshot of Part Production Heatmap](screenshots/insight-analysis-part-completed.png)
 
 The Part Production heatmap shows the distribution of completed parts over
 the month. On the x-axis are the days of the month and on the y-axis are the
@@ -250,11 +256,11 @@ Note that these heatmaps should only be used to brainstorm ideas. We would still
 to investigate if expanding `yyy` to include machine 2 would increase overall
 system performance. Are there enough pallets? How many extra inspections are required?
 Will this cause a traffic jam? These questions can be answered using simulation, _SeedTactic: Designer_,
-Little's Law, or a tool such as our [SeedTactic: Planning](https://www.seedtactics.com/products/seedtactic-planning).
+Little's Law, or a tool such as our [SeedTactic: Planning](https://www.seedtactics.com/features#seedtactic-planning).
 
 ## Inspections
 
-![Screenshot of Inspection Sankey](assets/insight-analysis-sankey.png)
+![Screenshot of Inspection Sankey](screenshots/insight-analysis-sankey.png)
 
 The inspections chart shows a Sankey diagram of the material paths and
 inspection results. First, select an inspection type and then select a part

@@ -1,8 +1,13 @@
 ---
-id: niigata
 title: Niigata ICC Integration
-sidebar_label: Niigata
+nav: FMS Insight Server > Niigata
+description: >-
+  FMS Insight works with the recent Niigata ICC Cell Controller
+  FMS Insight can monitor the events from the cell controller and can also set
+  routes and control each pallet.
 ---
+
+# FMS Insight Niigata ICC Cell Controller
 
 FMS Insight works with a modified version of the Niigata ICC Cell Controller.
 Contact your Niigata Sales or Support Representative to request more information
@@ -14,7 +19,7 @@ about using FMS Insight with the Niigata ICC Cell Controller.
 
 By default, all machine stops in the downloaded jobs are assumed to be machines.
 To support reclamp stops, a specific name of the reclamp stop can be defined
-in the FMS Insight [config.ini](server-config.md) file. Once defined,
+in the FMS Insight [config.ini](server-config) file. Once defined,
 any machine stop in the downloaded jobs which match this configured name will
 be treated as reclamp stops.
 
@@ -22,7 +27,7 @@ be treated as reclamp stops.
 
 By default, ICC machine numbers are mapped to the identical machine number in
 the downloaded jobs. That is, ICC machine 1 is mapped to MC1 in the jobs,
-ICC machine 2 is mapped to MC2, and so on. The [config.ini](server-config.md) file can
+ICC machine 2 is mapped to MC2, and so on. The [config.ini](server-config) file can
 specify an alternative job machine name and number to be assigned to each ICC machine
 number. This allows different types of machines to be named differently in the
 flexibility plan and jobs.
@@ -31,7 +36,7 @@ flexibility plan and jobs.
 
 If specified, FMS Insight will use the Machine IP addresses and ports to load
 tooling data from the machines, record it as part of the log of events, and display some
-[summary reports](client-tools-programs.md) of tooling data. FMS Insight does not
+[summary reports](client-tools-programs) of tooling data. FMS Insight does not
 require the IP addresses to be specified; if they are missing, no tool data is loaded
 but all other functions of FMS Insight work (managing jobs, logging events, etc.).
 
@@ -40,13 +45,13 @@ but all other functions of FMS Insight work (managing jobs, logging events, etc.
 FMS Insight supports specifying a size for each queue defined in the config file.
 FMS Insight will then hold and unhold pallets that are waiting to be unloaded so that
 the queue does not exceed the configured size. Note that by using the
-[queues page](client-station-monitor.md), an operator can manually insert more material
+[queues page](client-station-monitor), an operator can manually insert more material
 into the queue beyond the configured size. The configured size is only used for holding
 and unholding pallets.
 
 ## Operations
 
-FMS Insight translates the [jobs](creating-jobs.md) into the Niigata ICC Cell Controller
+FMS Insight translates the jobs into the Niigata ICC Cell Controller
 via three mechanisms: adding programs, setting pallet master routes, and controlling
 a few flags on the pallet tracking.
 
@@ -67,7 +72,7 @@ material and will use either the old revision or the new program revision
 based on which material is currently loaded onto the pallet. Once the old
 job completes, FMS Insight will remove the old program revision from the Niigata
 ICC. Program revisions and Niigata ICC program numbers can be seen on the
-[program report page](client-tools-programs.md).
+[program report page](client-tools-programs).
 
 #### Pallet Master
 
@@ -118,7 +123,7 @@ causes the pallet to route to the stocker. (See below for more about the No Work
 FMS Insight always keeps the cycle count at 1 and increments it when the pallet arrives
 to be unloaded if needed. That is, consider when a pallet arrives to be unloaded. The
 current remaining cycle count is 1. FMS Insight will check the available material in the
-[queues](material-tracking.md) to determine if there is a piece of material to be loaded.
+[queues](material-tracking) to determine if there is a piece of material to be loaded.
 If no material is available, FMS Insight will do nothing; the Niigata ICC will then
 decrement the cycle count from 1 to 0 and send the pallet to the stocker no matter if the
 operator presses the LOAD or UNLOAD/NOT LOADED button. Instead, if there is available
@@ -128,7 +133,7 @@ the operator presses the LOAD button, the Niigata ICC will then set the status t
 the operator presses the UNLOAD/NOT LOADED button, the Niigata ICC will set the No Work
 flag and route the pallet to the stocker.
 
-The FMS Insight [load station page](client-station-monitor.md) will always contain the
+The FMS Insight [load station page](client-station-monitor) will always contain the
 expected operations to occur at the load station.
 
 #### No Work and Skip
@@ -163,7 +168,7 @@ data for the new job, if required).
 
 #### Load Station Normal Operation
 
-FMS Insight's [load station page](client-station-monitor.md) will display what the Niigata ICC is
+FMS Insight's [load station page](client-station-monitor) will display what the Niigata ICC is
 expecting to happen at the load station. Specifically, the page will display the material
 to load, the material to unload, and the material to transfer between faces (if the pallet has
 multiple faces). If the operator performs all the tasks as specified, the operator presses
@@ -185,10 +190,10 @@ the material to the quarantine queue once the unload finishes.
 If the material has already been unloaded without clicking the "Signal for Quarantine" action,
 FMS Insight will add the material that was unloaded
 into the in-process queue, visible on either the
-[load station or queues pages](client-station-monitor.md).
+[load station or queues pages](client-station-monitor).
 To remove the material, the operator must click on the material card and then
 click either the "Remove From System" or "Quarantine Material" action
-(depending on if [quarantine queues](material-quarantine.md) are configured).
+(depending on if [quarantine queues](material-quarantine) are configured).
 This will either remove the material from the system completely or remove it
 from the active FMS Insight queue and place it in a special quarantine queue.
 In either case, once the material is no longer in the queue, FMS Insight will
@@ -214,7 +219,7 @@ reactivate the pallet until more material enters the queue.
 
 #### Reworked material is ready to re-enter the flow
 
-Consider when material was removed from the system or placed into [quarantine queues](material-quarantine.md)
+Consider when material was removed from the system or placed into [quarantine queues](material-quarantine)
 as described above, and now the material has been successfully fixed and is ready to complete the remainder of
 the process. Once the material arrives back at the load station and is ready to go, the operator adds the material
 back into the in-process queue. To do so, the operator clicks a button on the queues page, enters

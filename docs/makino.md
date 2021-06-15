@@ -1,8 +1,13 @@
 ---
-id: makino
 title: Makino Cell Integration
-sidebar_label: Makino
+nav: FMS Insight Server > Makino
+description: >-
+  FMS Insight works with recent Makino cell controller versions. FMS Insight
+  can read events from the cell controller and can also insert parts, jobs, and
+  orders; at the current time FMS Insight cannot create pallets or fixtures.
 ---
+
+# FMS Insight Makino Integration
 
 FMS Insight works with recent Makino cell controller versions. FMS Insight
 can read events from the cell controller and can also insert parts, jobs, and
@@ -21,7 +26,7 @@ just creates the appropriate file in the ADE folder.
 
 By default, FMS Insight uses `c:\Makino\ADE` as the ADE folder and connects
 to the database on the local computer. Both of these settings can be changed
-in the [configuration file](server-config.md).
+in the [configuration file](server-config).
 
 ## Download Only Orders
 
@@ -30,6 +35,6 @@ folder), FMS Insight has two modes. First, it can include a description of
 the part, job, and order, causing the Makino cell controller to create a new
 part, a new job, and a new order. This is the default, since it minimizes the
 amount of data which must be manually entered into the cell controller.
-Alternatively, via a setting in the [config file](server-config.md), FMS
+Alternatively, via a setting in the [config file](server-config), FMS
 Insight will only create orders. FMS Insight will assume that a matching part
 already exists inside the Makino cell controller.

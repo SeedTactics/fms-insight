@@ -1,8 +1,12 @@
 ---
-id: improve-fms
 title: Use analytics to improve a FMS
-sidebar_label: Monthly Review
+nav: Procedures > Monthly Review
+description: >-
+  Implement continuous improvement of a flexible machining system by reviewing
+  targeted metrics which expose cell efficiency and cost per piece.
 ---
+
+# Use analytics to improve a FMS
 
 The performance of an automated flexible machining system (FMS) depends on
 the interaction between scheduling, part programming, operations, engineering
@@ -34,7 +38,7 @@ therefore if the process change should be kept or adjusted. The entire business 
 visible and accurate cost-per-piece metrics, because various departments and employees can see that
 even if a change requires them to perform extra work, it improves the overall business value of the
 system. The only data required from daily operations is the monthly quantity of parts produced,
-and it is implemented on the [flexibility analysis page](client-flexibility-analysis.md).
+and it is implemented on the [flexibility analysis page](client-flexibility-analysis).
 
 While it is the ultimate goal, overall cost-per-piece is not a useful metric to improve the system.
 Sure, a cost-per-piece breakdown will show the costs of labor, machining, and tooling but how do
@@ -57,7 +61,7 @@ department and component of the system, and the council's job is to decide on th
 operation. By combining representatives from all areas of the system, the tactics council can
 produce actions (changes in how the system operates) based on the information and metrics on OEE and
 system performance. Helpful efficiency metrics and graphs are displayed in the
-[flexibility analysis page](client-flexibility-analysis.md).
+[flexibility analysis page](client-flexibility-analysis).
 
 ## Tactics Council
 
@@ -76,7 +80,7 @@ adjust phases of PDCA and in the 6-weeks to two months between meetings, individ
 perform the do and check phases of PDCA. The tactics council should focus on only a single or at
 most two improvements at once.
 
-For example, say that an improvement idea is to implement [material tracking](material-tracking.md) by adding a serial and barcode to each part during
+For example, say that an improvement idea is to implement [material tracking](material-tracking) by adding a serial and barcode to each part during
 machining and then scanning the barcode at the inspection station, allowing the inspection operator to
 view the pallet, machine, and time for this specific part. The first step is to develop the plan,
 which would include the cost of purchasing a barcode printer, an analysis of the extra time at the
@@ -126,7 +130,7 @@ dividing costs by planned use of resources. Collect data on the total quantity o
 during a month, along with their planned use of each resource such as machining time, load station
 time, tooling use, and inspection time and rates. The total cost is then divided among the parts
 according to weights based on their planned use of system resources. The cost-per-part can then be
-[exported to the ERP](workorder-report.md) and combined with order data from the ERP to calculate a cost-per-order.
+exported to the ERP and combined with order data from the ERP to calculate a cost-per-order.
 
 The cost-per-piece is the primary metric and insight produced by the tactics council. It should be
 broadcast to the entire business as an actionable insight for quoting work, future capital investment,
