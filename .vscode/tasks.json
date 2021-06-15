@@ -97,19 +97,6 @@
       },
       "type": "shell",
       "problemMatcher": []
-    },
-    {
-      "label": "docs:dev",
-      "command": "yarn start",
-      "options": {
-        "cwd": "${workspaceFolder}/website"
-      },
-      "type": "shell",
-      "presentation": {
-        "reveal": "silent",
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
     }
   ]
 }
