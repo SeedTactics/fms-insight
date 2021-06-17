@@ -42,31 +42,10 @@ import HelpOutline from "@material-ui/icons/HelpOutline";
 import ExitToApp from "@material-ui/icons/ExitToApp";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemIcon from "@material-ui/core/ListItemIcon";
-import ListSubheader from "@material-ui/core/ListSubheader";
-import ListItemText from "@material-ui/core/ListItemText";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import Button from "@material-ui/core/Button";
 import Badge from "@material-ui/core/Badge";
 import Notifications from "@material-ui/icons/Notifications";
-import Drawer from "@material-ui/core/Drawer";
-import ShoppingBasket from "@material-ui/icons/ShoppingBasket";
-import DirectionsIcon from "@material-ui/icons/Directions";
-import StarIcon from "@material-ui/icons/StarRate";
-import ChartIcon from "@material-ui/icons/InsertChart";
-import ExtensionIcon from "@material-ui/icons/Extension";
-import BugIcon from "@material-ui/icons/BugReport";
-import InfoIcon from "@material-ui/icons/Info";
-import OpacityIcon from "@material-ui/icons/Opacity";
-import MemoryIcon from "@material-ui/icons/Memory";
-import MoneyIcon from "@material-ui/icons/AttachMoney";
-import MenuIcon from "@material-ui/icons/Menu";
-import CheckIcon from "@material-ui/icons/CheckCircle";
-import PersonIcon from "@material-ui/icons/Person";
-import ProgramIcon from "@material-ui/icons/Receipt";
-import ToolIcon from "@material-ui/icons/Dns";
 import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 
 import OperationDashboard from "./operations/Dashboard";
@@ -101,7 +80,6 @@ import { WebsocketConnection } from "../store/websocket";
 import { currentStatus } from "../data/current-status";
 import { BarcodeListener } from "../store/barcode";
 import { ScheduleHistory } from "./analysis/ScheduleHistory";
-import { LoadDemoData } from "./DemoData";
 import { differenceInDays, startOfToday } from "date-fns";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
 
@@ -111,16 +89,12 @@ const tabsStyle = {
 };
 
 interface HeaderNavProps {
-  readonly demo: boolean;
   readonly full: boolean;
   readonly setRoute: (r: routes.RouteState) => void;
   readonly routeState: routes.RouteState;
 }
 
 function OperationsTabs(p: HeaderNavProps) {
-  if (p.demo) {
-    return <div style={{ flexGrow: 1 }} />;
-  }
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
@@ -140,9 +114,6 @@ function OperationsTabs(p: HeaderNavProps) {
 }
 
 function QualityTabs(p: HeaderNavProps) {
-  if (p.demo) {
-    return <div style={{ flexGrow: 1 }} />;
-  }
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
@@ -159,9 +130,6 @@ function QualityTabs(p: HeaderNavProps) {
 }
 
 function ToolsTabs(p: HeaderNavProps) {
-  if (p.demo) {
-    return <div style={{ flexGrow: 1 }} />;
-  }
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
@@ -176,9 +144,6 @@ function ToolsTabs(p: HeaderNavProps) {
 }
 
 function AnalysisTabs(p: HeaderNavProps) {
-  if (p.demo) {
-    return <div style={{ flexGrow: 1 }} />;
-  }
   return (
     <Tabs
       variant={p.full ? "fullWidth" : "standard"}
@@ -191,158 +156,6 @@ function AnalysisTabs(p: HeaderNavProps) {
       <Tab label="Schedules" value={routes.RouteLocation.Analysis_Schedules} />
       <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
     </Tabs>
-  );
-}
-
-function DemoNav(p: HeaderNavProps) {
-  return (
-    <List component="nav">
-      <ListSubheader>Shop Floor</ListSubheader>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Station_LoadMonitor}
-        onClick={() =>
-          p.setRoute({ route: routes.RouteLocation.Station_LoadMonitor, loadNum: 1, free: false, queues: [] })
-        }
-      >
-        <ListItemIcon>
-          <DirectionsIcon />
-        </ListItemIcon>
-        <ListItemText>Load Station</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Station_Queues}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Station_Queues, free: false, queues: ["Queue1"] })}
-      >
-        <ListItemIcon>
-          <ExtensionIcon />
-        </ListItemIcon>
-        <ListItemText>Queues</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Station_InspectionMonitorWithType}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Station_InspectionMonitorWithType, inspType: "CMM" })}
-      >
-        <ListItemIcon>
-          <InfoIcon />
-        </ListItemIcon>
-        <ListItemText>Inspection</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Station_WashMonitor}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Station_WashMonitor })}
-      >
-        <ListItemIcon>
-          <OpacityIcon />
-        </ListItemIcon>
-        <ListItemText>Wash</ListItemText>
-      </ListItem>
-      <ListSubheader>Daily Monitoring</ListSubheader>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Operations_Dashboard}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Dashboard })}
-      >
-        <ListItemIcon>
-          <ShoppingBasket />
-        </ListItemIcon>
-        <ListItemText>Operations</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Operations_LoadStation}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_LoadStation })}
-      >
-        <ListItemIcon>
-          <PersonIcon />
-        </ListItemIcon>
-        <ListItemText>Load Station</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Operations_Machines}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Machines })}
-      >
-        <ListItemIcon>
-          <MemoryIcon />
-        </ListItemIcon>
-        <ListItemText>Engineering</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Operations_CompletedParts}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_CompletedParts })}
-      >
-        <ListItemIcon>
-          <CheckIcon />
-        </ListItemIcon>
-        <ListItemText>Scheduling</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Quality_Dashboard}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Quality_Dashboard })}
-      >
-        <ListItemIcon>
-          <StarIcon />
-        </ListItemIcon>
-        <ListItemText>Quality</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Quality_Serials}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Quality_Serials })}
-      >
-        <ListItemIcon>
-          <BugIcon />
-        </ListItemIcon>
-        <ListItemText>Part Lookup</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Operations_Tools}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Tools })}
-      >
-        <ListItemIcon>
-          <ToolIcon />
-        </ListItemIcon>
-        <ListItemText>Tools</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Operations_Programs}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Operations_Programs })}
-      >
-        <ListItemIcon>
-          <ProgramIcon />
-        </ListItemIcon>
-        <ListItemText>Programs</ListItemText>
-      </ListItem>
-      <ListSubheader>Monthly Review</ListSubheader>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Analysis_Efficiency}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Analysis_Efficiency })}
-      >
-        <ListItemIcon>
-          <ChartIcon />
-        </ListItemIcon>
-        <ListItemText>OEE Improvement</ListItemText>
-      </ListItem>
-      <ListItem
-        button
-        selected={p.routeState.route === routes.RouteLocation.Analysis_CostPerPiece}
-        onClick={() => p.setRoute({ route: routes.RouteLocation.Analysis_CostPerPiece })}
-      >
-        <ListItemIcon>
-          <MoneyIcon />
-        </ListItemIcon>
-        <ListItemText>Cost Per Piece</ListItemText>
-      </ListItem>
-    </List>
   );
 }
 
@@ -368,47 +181,47 @@ function helpUrl(r: routes.RouteState): string {
     case routes.RouteLocation.Station_InspectionMonitorWithType:
     case routes.RouteLocation.Station_WashMonitor:
     case routes.RouteLocation.Station_Queues:
-      return "https://fms-insight.seedtactics.com/docs/client-station-monitor.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-station-monitor";
 
     case routes.RouteLocation.Operations_Dashboard:
     case routes.RouteLocation.Operations_LoadStation:
     case routes.RouteLocation.Operations_Machines:
     case routes.RouteLocation.Operations_AllMaterial:
     case routes.RouteLocation.Operations_CompletedParts:
-      return "https://fms-insight.seedtactics.com/docs/client-operations.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
     case routes.RouteLocation.Operations_Tools:
     case routes.RouteLocation.Operations_Programs:
-      return "https://fms-insight.seedtactics.com/docs/client-tools-programs.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
 
     case routes.RouteLocation.Engineering:
-      return "https://fms-insight.seedtactics.com/docs/client-engineering.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-engineering";
 
     case routes.RouteLocation.Quality_Dashboard:
     case routes.RouteLocation.Quality_Serials:
     case routes.RouteLocation.Quality_Paths:
     case routes.RouteLocation.Quality_Quarantine:
     case routes.RouteLocation.Backup_PartLookup:
-      return "https://fms-insight.seedtactics.com/docs/client-tools-programs.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
 
     case routes.RouteLocation.Tools_Dashboard:
     case routes.RouteLocation.Tools_Programs:
-      return "https://fms-insight.seedtactics.com/docs/client-operations.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
     case routes.RouteLocation.Analysis_Efficiency:
     case routes.RouteLocation.Analysis_DataExport:
     case routes.RouteLocation.Backup_Efficiency:
-      return "https://fms-insight.seedtactics.com/docs/client-flexibility-analysis.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
 
     case routes.RouteLocation.Analysis_CostPerPiece:
-      return "https://fms-insight.seedtactics.com/docs/client-cost-per-piece.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-cost-per-piece";
 
     case routes.RouteLocation.Backup_InitialOpen:
-      return "https://fms-insight.seedtactics.com/docs/client-backup-viewer.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-backup-viewer";
 
     case routes.RouteLocation.ChooseMode:
     default:
-      return "https://fms-insight.seedtactics.com/docs/client-launch.html";
+      return "https://www.seedtactics.com/docs/fms-insight/client-launch";
   }
 }
 
@@ -426,7 +239,6 @@ function ShowLicense({ d }: { d: Date }) {
 }
 
 interface HeaderProps {
-  demo: boolean;
   showAlarms: boolean;
   showLogout: boolean;
   showSearch: boolean;
@@ -439,7 +251,6 @@ interface HeaderProps {
 }
 
 function Header(p: HeaderProps) {
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
   const alarms = useRecoilValue(currentStatus).alarms;
   const hasAlarms = alarms && alarms.length > 0;
 
@@ -487,21 +298,15 @@ function Header(p: HeaderProps) {
       <Hidden smDown>
         <AppBar position="static">
           <Toolbar>
-            {p.demo ? (
-              <a href="/">
-                <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
-              </a>
-            ) : (
-              <Tooltip title={tooltip}>
-                <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
-              </Tooltip>
-            )}
+            <Tooltip title={tooltip}>
+              <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
+            </Tooltip>
             <Typography variant="h6" style={{ marginRight: "2em" }}>
               Insight
             </Typography>
             {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
             {p.children ? (
-              p.children({ full: false, setRoute: p.setRoute, demo: p.demo, routeState: p.routeState })
+              p.children({ full: false, setRoute: p.setRoute, routeState: p.routeState })
             ) : (
               <div style={{ flexGrow: 1 }} />
             )}
@@ -518,11 +323,6 @@ function Header(p: HeaderProps) {
       <Hidden mdUp>
         <AppBar position="static">
           <Toolbar>
-            {p.demo ? (
-              <IconButton onClick={() => setDrawerOpen(!drawerOpen)}>
-                <MenuIcon />
-              </IconButton>
-            ) : undefined}
             <Tooltip title={tooltip}>
               <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
             </Tooltip>
@@ -536,33 +336,14 @@ function Header(p: HeaderProps) {
             {p.showLogout ? <LogoutButton /> : undefined}
             {p.showAlarms ? <Alarms /> : undefined}
           </Toolbar>
-          {p.children
-            ? p.children({ full: true, setRoute: p.setRoute, demo: p.demo, routeState: p.routeState })
-            : undefined}
+          {p.children ? p.children({ full: true, setRoute: p.setRoute, routeState: p.routeState }) : undefined}
         </AppBar>
-        {p.demo ? (
-          <Drawer variant="temporary" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-            <DemoNav
-              full={false}
-              setRoute={(r) => {
-                p.setRoute(r);
-                setDrawerOpen(false);
-              }}
-              demo={true}
-              routeState={p.routeState}
-            />
-          </Drawer>
-        ) : undefined}
       </Hidden>
     </>
   );
 }
 
-export interface AppProps {
-  demo: boolean;
-}
-
-const App = React.memo(function App(props: AppProps) {
+const App = React.memo(function App() {
   const fmsInfoLoadable = useRecoilValueLoadable(serverSettings.fmsInformation);
   const [route, setRoute] = routes.useCurrentRoute();
 
@@ -722,13 +503,9 @@ const App = React.memo(function App(props: AppProps) {
 
       case routes.RouteLocation.ChooseMode:
       default:
-        if (props.demo) {
-          page = <OperationDashboard />;
-        } else {
-          page = <ChooseMode setRoute={setRoute} />;
-          showSearch = false;
-          showAlarms = false;
-        }
+        page = <ChooseMode setRoute={setRoute} />;
+        showSearch = false;
+        showAlarms = false;
     }
   } else if (fmsInfo && serverSettings.requireLogin(fmsInfo)) {
     page = (
@@ -756,7 +533,6 @@ const App = React.memo(function App(props: AppProps) {
       <Header
         routeState={route}
         fmsInfo={fmsInfo}
-        demo={props.demo}
         showAlarms={showAlarms}
         showSearch={showSearch}
         showLogout={showLogout}
@@ -765,20 +541,9 @@ const App = React.memo(function App(props: AppProps) {
       >
         {navigation}
       </Header>
-      {props.demo ? (
-        <div style={{ display: "flex" }}>
-          <Hidden smDown>
-            <div style={{ borderRight: "1px solid" }}>
-              <DemoNav full={false} setRoute={setRoute} demo={true} routeState={route} />
-            </div>
-          </Hidden>
-          <div style={{ width: "100%" }}>{page}</div>
-        </div>
-      ) : (
-        page
-      )}
+      {page}
       {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
-      {props.demo ? <LoadDemoData /> : <WebsocketConnection />}
+      <WebsocketConnection />
       <BarcodeListener />
     </div>
   );

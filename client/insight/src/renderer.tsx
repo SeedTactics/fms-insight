@@ -52,11 +52,10 @@ import { Router } from "wouter";
 import { enableMapSet } from "immer";
 enableMapSet();
 
-import App, { AppProps } from "./components/App";
+import App from "./components/App";
 import { Store } from "./store/typed-redux";
-import { useDemoLocation } from "./data/routes";
 
-export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElement | null): void {
+export function render<A, S>(store: Store<A, S>, elem: HTMLElement | null): void {
   const theme = createMuiTheme({
     palette: {
       primary: green,
@@ -67,11 +66,11 @@ export function render<A, S>(props: AppProps, store: Store<A, S>, elem: HTMLElem
   ReactDOM.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router hook={props.demo ? useDemoLocation : undefined}>
+      <Router>
         <RecoilRoot>
           <store.Provider>
             {/* <React.StrictMode> */}
-            <App {...props} />
+            <App />
             {/* </React.StrictMode> */}
           </store.Provider>
         </RecoilRoot>
