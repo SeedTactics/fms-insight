@@ -10,7 +10,6 @@
     "allowJs": false,
     "jsx": "react",
     "moduleResolution": "node",
-    "rootDir": "src",
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
 

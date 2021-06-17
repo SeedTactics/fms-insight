@@ -37,7 +37,7 @@ afterEach(cleanup);
 import "@testing-library/jest-dom/extend-expect";
 
 import Efficiency from "./Efficiency";
-import { createTestStore } from "../../test-util";
+import { createTestStore } from "../../../test/test-util";
 import LoadingIcon from "../LoadingIcon";
 import { RecoilRoot } from "recoil";
 

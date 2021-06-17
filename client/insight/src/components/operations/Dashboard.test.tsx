@@ -37,16 +37,17 @@ afterEach(cleanup);
 import "@testing-library/jest-dom/extend-expect";
 
 import Dashboard from "./Dashboard";
-import { createTestStore } from "../../test-util";
+import { createTestStore } from "../../../test/test-util";
 import { RecoilRoot, useRecoilCallback } from "recoil";
 import { JobsBackend } from "../../data/backend";
 import { currentStatus } from "../../data/current-status";
 
 function RegisterData() {
   const load = useRecoilCallback(
-    ({ set }) => () => {
-      JobsBackend.currentStatus().then((st) => set(currentStatus, st));
-    },
+    ({ set }) =>
+      () => {
+        JobsBackend.currentStatus().then((st) => set(currentStatus, st));
+      },
     []
   );
   React.useEffect(() => load(), []);
