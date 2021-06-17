@@ -5,8 +5,27 @@
 [![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/) [![Swagger](https://img.shields.io/swagger/valid/2.0/https/raw.githubusercontent.com/SeedTactics/fms-insight/main/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json)
 [![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework/)
 
-FMS Insight is a client and server which runs on an flexible machining system (FMS)
-cell controller which provides:
+FMS Insight is a program which runs on an flexible machining system (FMS)
+cell controller which has the following goals:
+
+- Track material by barcode serial throughout the manufacturing process, tracking
+  the material through both automated handling and manual handling. The log of all
+  material is stored in a database.
+- Use the material tracking to help the operators on the shop floor by providing instructions
+  and data displays, for example to provide the inspection operator with data about the
+  specific part being inspected. FMS Insight provides a HTML client optimized for touchscreen use.
+- Disseminate information about the daily cell operation throughout the factory. FMS Insight provides targeted pages
+  for engineering, quality control, supervisors, scheduling, and management.
+- Facilitate continuous improvement and cost reduction via analytics. FMS Insight assists in a monthly review
+  of the cell by display metrics and graphs to help improve the cost/piece and efficiency
+  of the FMS.
+- Simplify job/plan data creation in the cell controller to prevent traffic jams. Too many
+  jobs with too much demand in an automated system leads to pallet traffic jams just like too many
+  cars on the road lead to traffic jams. When job/plan data creation inside the cell controller
+  is simple and painless, it is much easier to rate-limit the flow of demand into the system
+  to prevent traffic jams.
+
+To implement the above goals, FMS Insight provides:
 
 - A server which stores a log of all events and stores a log of planned jobs.
 - A server which translates incoming planned jobs into jobs in the cell controller.

@@ -31,11 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { demoData } from "../demo-data";
+import curSt from "../../test/status-mock.json";
 import { selectAllMaterialIntoBins } from "./all-material-bins";
 import { CurrentStatus } from "./api";
 
 it("creates all material", () => {
-  const status = CurrentStatus.fromJS(demoData.curSt);
+  const status = CurrentStatus.fromJS(curSt);
   expect(selectAllMaterialIntoBins(status, [])).toMatchSnapshot("all material bins");
 });

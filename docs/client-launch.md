@@ -1,8 +1,51 @@
 ---
-id: client-launch
 title: FMS Insight Client
-sidebar_label: Launch
+nav: FMS Insight Client > Launch
+description: >-
+  FMS Insight provides a webpage viewable in any recent version of Firefox, Chrome,
+  Edge, Android, or iOS browsers.  FMS Insight provides specific pages targeted at
+  specific users which display relevant information.
 ---
+
+# FMS Insight Client
+
+FMS Insight provides touchscreen optimized webpages. Many people
+throughout the factory interact with the cell in different ways. Thus, FMS Insight provides
+specific pages targeted at specific users which display relevant information. We suggest that
+each user bookmarks the relevant page; for example, engineers in the quality department should just
+bookmark the quality page in FMS Insight, visiting it directly to monitor the cell. All FMS
+Insight pages support a connected [barcode scanner](client-scanners) to scan the
+serial number of a part.
+
+## Shop Floor
+
+FMS Insight provides several [station monitor](client-station-monitor)
+pages. These pages are intended to be viewed at various operator stations
+throughout the factory and provide information to the operator on what
+actions to take. For example, at the load station it shows what to load and
+unload and at the inspection stand it shows what inspections were triggered.
+
+FMS Insight also provides a page for operators in the [tool room](client-tools-programs). This
+page shows current tool use in the machines, tool usage per program, and estimated tool usage
+for the remaining schedule in the cell controller.
+
+## Daily Monitoring
+
+FMS Insight provides targeted pages to assist with the day-to-day operation of the cell.
+There is a targeted page for [factory floor supervisors](client-operations), [engineering/programming](client-engineering),
+and [quality control](client-quality).
+
+## Monthly Review
+
+FMS Insight supports continuous improvement by assisting with a monthly review.
+We suggest that approximately once a month, all stakeholders review the operation of the cell and
+decide on potential improvements. FMS Insight provides a [flexibility analysis](client-flexibility-analysis)
+page which displays a monthly summary of the cell, displays cost/piece, and helps identify areas for improvement.
+
+FMS Insight also provides a [Backup Viewer](client-backup-viewer), which is a standalone program to
+view data directly historical backups.
+
+## Browser Page
 
 Once installed, the FMS Insight client can be launched by connecting to the
 server using a browser. Any recent version of Firefox, Chrome, Edge, Android,
@@ -12,20 +55,4 @@ on which you installed FMS Insight server, you can open the FMS Insight
 client by visiting [http://localhost:5000](http://localhost:5000). Make sure
 that firewall rules allow connections on port 5000 through to the FMS Insight
 server. (The port 5000 and using https/SSL instead of http can be changed in
-the [server configuration](server-config.md).)
-
-# Targeted Pages
-
-Many people throughout the factory interact with the cell in different ways.
-Thus, FMS Insight provides specific pages targeted at specific users which
-display relevant information. We suggest that you bookmark this page or set
-it as the home page of the browser.
-
-Once launched, the user must choose one of the following modes:
-
-- [Load Station, Queue Management, Inspection Stand, Wash](client-station-monitor.md)
-- [Tools and Programs](client-tools-programs.md)
-- [Operation Management](client-operations.md)
-- [Engineering](client-engineering.md)
-- [Quality Analysis](client-quality.md)
-- [Flexibility Analysis](client-flexibility-analysis.md)
+the [server configuration](server-config).)

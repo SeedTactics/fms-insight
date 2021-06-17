@@ -1,19 +1,24 @@
 ---
-id: client-tools-programs
-title: Tool and Program Report
-sidebar_label: Tools & Programs
+title: FMS Quality Daily Monitoring
+nav: FMS Insight Client > Tools & Programs
+description: >-
+  The FMS Insight tools pages are used by tool room and factory floor supervisors.
+  These pages display information about the current tools in the machines, the tool
+  usage of each program, and an estimate of the upcoming usage for the scheduled parts.
 ---
 
+# FMS Insight Tools & Programs Page
+
 The tools and programs report are accessible from two different places; first, the reports are available
-on the [Operations Management Page](client-operations.md) so that the floor supervisor can view information
+on the [Operations Management Page](client-operations) so that the floor supervisor can view information
 about the tools and programs along with the other metrics and data for day-to-day management. Second,
 just the tools and programs reports tables are available on a dedicated page accessible from the
-initial [launch page](client-launch.md). This page is intended for display in the tool-room or elsewhere
+initial [launch page](client-launch). This page is intended for display in the tool-room or elsewhere
 on the shop floor where tools are managed. We suggest that this page is bookmarked and directly opened.
 
 ## Tool Report
 
-![Screenshot of tool report](assets/insight-tool-report.png)
+![Screenshot of tool report](screenshots/insight-tool-report.png)
 
 The current tool use and life from each machine is loaded by clicking the "Load Tools" button. The data
 can be refreshed by clicking the circular icon in the top bar.
@@ -41,7 +46,7 @@ tool and the current use and remaining life.
 
 ## Program Report
 
-![Screenshot of program report](assets/insight-program-report.png)
+![Screenshot of program report](screenshots/insight-program-report.png)
 
 The current programs in the cell controller are loaded by clicking the "Load Programs" button. The data
 can be refreshed by clicking the circular icon in the top bar.
@@ -53,8 +58,8 @@ The main table shows the following columns:
   different from the program name.
 - _Part_: the part and process number that uses this program.
 - _Revision_: this shows the program revision, but will only appear if program revisions are used as part of
-  a [downloaded job](creating-jobs.md). If revisions are not used, this column will not appear.
-- _Median Time and Deviation_: For the [flexibility analysis](client-flexibility-analysis.md), FMS Insight
+  a downloaded job. If revisions are not used, this column will not appear.
+- _Median Time and Deviation_: For the [flexibility analysis](client-flexibility-analysis), FMS Insight
   uses the data from the last 30 days to calculate a statistical median and deviation running time for each
   program. Because times above the median (likely due to program interruptions) is a different probability
   distribution to times below the median (likely due to normal Gaussian noise), we calculate deviations

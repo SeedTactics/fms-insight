@@ -5069,7 +5069,8 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("Quantity", Required = Newtonsoft.Json.Required.Always)]
         public int Quantity { get; set; }
     
-    
+        [Newtonsoft.Json.JsonProperty("Proc1Path", Required = Newtonsoft.Json.Required.Default, DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Include, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        private int Proc1Path { get; set; }
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.4.3.0 (Newtonsoft.Json v11.0.0.0)")]

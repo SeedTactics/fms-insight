@@ -1,8 +1,12 @@
 ---
-id: material-quarantine
 title: Material Quarantine
-sidebar_label: Material Quarantine
+nav: Procedures > Material Quarantine
+description: >-
+  FMS Insight can help track and manage material that has been temporarily
+  removed from the FMS cell for re-machining or rework.
 ---
+
+# Material Quarantine
 
 FMS Insight provides an optional feature to help track and manage material
 that has been temporarily removed from the cell for re-machining, more
@@ -11,14 +15,14 @@ material currently on hold, allows a supervisor/manager to update the status
 of quarantined material, and finally allows the material to be re-introduced
 to the cell or scrapped.
 
-The implementation extends the [material tracking](material-tracking.md) to
+The implementation extends the [material tracking](material-tracking) to
 also include whiteboard regions for quarantined material. By default, FMS
 Insight creates whiteboard regions for each pallet, inspection stand, the
 wash stand, and any in-process queues of material between processes. These
 are the "active" whiteboard regions and contain material which is flowing
 through the normal workflow. FMS Insight keeps these whiteboard regions
 updated automatically by recording the log of automated cell activity.
-In the [server configuration](server-config.md), FMS Insight allows you to
+In the [server configuration](server-config), FMS Insight allows you to
 define a list of Queues and this list of queues must contain a queue for
 each "active" in-process queue defined in the flexibility plan and used to
 hold material in the normal workflow. Any queue which is listed inside
@@ -26,7 +30,7 @@ the flexibility plan is treated by FMS Insight as an "active" queue.
 
 To support quarantined material, you can create extra whiteboard
 regions/queues for the various tasks that might be performed on quarantined
-material. To the list of queues defined in the [server configuration](server-config.md),
+material. To the list of queues defined in the [server configuration](server-config),
 you can add extra queues to represent the various quarantined material tasks.
 A queue that is not listed inside the flexibility plan is considered as a
 quarantined material queue and FMS Insight will not update the queue
@@ -35,13 +39,13 @@ between the various quarantined material queues to assist with tracking the
 material. The material can also be moved back into an "active" queue to
 reintroduce it into the cell or removed completely if scrapped.
 
-The [operations](client-operations.md#material) and [quality](client-quality.md#quarantine-material)
+The [operations](client-operations#material) and [quality](client-quality#quarantine-material)
 webpages allow supervisors, quality engineers and others to manually move
 material between the various quarantined queues, view all the material, add
 notes, re-introduce material to "active" queues, or scrap material. In
-addition, the [server configuration](server-config.md) contains a setting
+addition, the [server configuration](server-config) contains a setting
 _QuarantineQueue_ for the initial quarantine queue. If this setting is given,
-the [station monitor webpages](client-station-monitor.md) will contain a
+the [station monitor webpages](client-station-monitor) will contain a
 button _Quarantine Material_: if pressed the material is moved out of the
 "active" whiteboard regions/queues and into the quarantine queue specified in
 the server configuration file.
@@ -75,4 +79,4 @@ management/project management technique.
   of the automated handling system, it can be moved back into an "active" queue.
   If instead the material is scrap, it can be removed from the quarantined queues.
 
-![Screenshot of Material screen](assets/insight-operations-material.png)
+![Screenshot of Material screen](screenshots/insight-operations-material.png)

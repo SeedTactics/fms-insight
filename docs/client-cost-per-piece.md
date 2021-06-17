@@ -1,10 +1,14 @@
 ---
-id: client-cost-per-piece
-title: Cost Per Piece
-sidebar_label: Cost/Piece
+title: FMS Monthly Cost Per Piece Analysis
+nav: FMS Insight Client > Cost/Piece
+description: >-
+  The FMS Insight cost per piece page is used by managers to view
+  a monthly cost/piece report on the system.
 ---
 
-Cost-per-piece is a great [actionable insight](improve-fms.md) for scheduling, operations
+# FMS Insight Monthly Cost/Piece Page
+
+Cost-per-piece is a great [metric](improve-fms) for scheduling, operations
 management, future capital purchases, quoting work, accounting, and
 budgeting. The cost/piece tab is largely intended to serve as a
 verification that flexibility and operational changes are reducing part
@@ -13,7 +17,7 @@ understand if the change improved the system.
 Indeed, FMS Insight has a narrow view of just the cell itself and does not
 take into account any overhead or other costs. Therefore, for budgeting,
 quoting work, and other management decisions, we suggest that you export the
-cost breakdown or [workorder data](workorder-report.md) to your ERP and implement
+cost breakdown or workorder data to your ERP and implement
 a cost report in your ERP taking into account all factors.
 
 Cost/piece is not a great metric to use initially when searching for techniques
@@ -30,7 +34,7 @@ labor across the parts that were produced. To do so, we use a monthly analysis w
 actual operations together with the planned use of resources to determine a percentage breakdown
 of the cost for each part.
 
-![Screenshot of cost breakdown table](assets/insight-cost-percentages.png)
+![Screenshot of cost breakdown table](screenshots/insight-cost-percentages.png)
 
 To do so, consider that the system produces two part types, aaa and bbb,
 and aaa has a planned cycle time of 3 hours and bbb has a planned cycle time of 2 hours.
@@ -50,7 +54,7 @@ active and idle time) among the parts produced during the month based on their w
 calculation of machine utilization gives `(1200 + 1000) / (24*30*4) = 76%` use. The above method
 divides the 24% of the time the machine is not in use among aaa and bbb based on their percentages
 of planned use. Attempting to identify OEE problems are better addressed using the
-[efficiency tab](client-flexibility-analysis.md).
+[efficiency tab](client-flexibility-analysis).
 
 The data can be copied to the clipboard via the two-arrow-icon button in the top right.
 
@@ -58,9 +62,9 @@ The data can be copied to the clipboard via the two-arrow-icon button in the top
 
 Once the percentage breakdown for each part is calculated, the webpage allows you to
 enter the total machining, labor, and automation cost for the period. This value
-is then multipled by the above cost breakdown percentages to get a total cost per
+is then multiplied by the above cost breakdown percentages to get a total cost per
 piece. As mentioned above, we suggest that you copy the above cost breakdown percentages
 into your own spreadsheet or ERP system to be able to account for overhead, overtime,
-material costs, and other costs not visibile to FMS Insight.
+material costs, and other costs not visible to FMS Insight.
 
-![Screenshot of part cost/piece page](assets/insight-part-cost.png)
+![Screenshot of part cost/piece page](screenshots/insight-part-cost.png)

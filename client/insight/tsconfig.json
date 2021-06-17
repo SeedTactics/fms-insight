@@ -10,7 +10,6 @@
     "allowJs": false,
     "jsx": "react",
     "moduleResolution": "node",
-    "rootDir": "src",
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
 
@@ -23,5 +22,5 @@
     "resolveJsonModule": true,
     "esModuleInterop": true
   },
-  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist", "demo"]
+  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist"]
 }

@@ -36,9 +36,9 @@ import * as api from "./api";
 import { registerBackend } from "./backend";
 import { LazySeq } from "./lazyseq";
 
-export type DemoEvents = ReadonlyArray<object /* ILogEntry json */>;
+export type MockEvents = ReadonlyArray<object /* ILogEntry json */>;
 
-export interface DemoData {
+export interface MockData {
   readonly curSt: object /* current status json */;
   readonly jobs: ReadonlyArray<object /* new jobs json */>;
   readonly tools: ReadonlyArray<object /* tool in machine json */>;
@@ -46,7 +46,7 @@ export interface DemoData {
   readonly toolUse: { [evtCounter: string]: object /* tool use json */ };
 }
 
-interface TransformedDemoData {
+interface TransformedMockData {
   readonly curSt: api.ICurrentStatus;
   readonly jobs: api.IHistoricData;
   readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
@@ -67,8 +67,8 @@ function offsetJob(j: api.Job, offsetSeconds: number) {
   }
 }
 
-function transformTime(offsetSeconds: number, demo: DemoData): TransformedDemoData {
-  const status = api.CurrentStatus.fromJS(demo.curSt);
+function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockData {
+  const status = api.CurrentStatus.fromJS(mockD.curSt);
   status.timeOfCurrentStatusUTC = addSeconds(status.timeOfCurrentStatusUTC, offsetSeconds);
   for (const j of Object.values(status.jobs)) {
     offsetJob(j, offsetSeconds);
@@ -85,7 +85,7 @@ function transformTime(offsetSeconds: number, demo: DemoData): TransformedDemoDa
     }
   }
 
-  const allNewJobs = demo.jobs.map(api.NewJobs.fromJS);
+  const allNewJobs = mockD.jobs.map(api.NewJobs.fromJS);
   const historicJobs: { [key: string]: api.HistoricJob } = {};
   for (const newJ of allNewJobs) {
     for (const j of newJ.jobs) {
@@ -111,17 +111,17 @@ function transformTime(offsetSeconds: number, demo: DemoData): TransformedDemoDa
     curSt: status,
     jobs: historic,
     workorders: new Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>(),
-    tools: demo.tools.map(api.ToolInMachine.fromJS),
-    programs: demo.programs.map(api.ProgramInCellController.fromJS),
+    tools: mockD.tools.map(api.ToolInMachine.fromJS),
+    programs: mockD.programs.map(api.ProgramInCellController.fromJS),
   };
 }
 
 async function loadEventsJson(
   offsetSeconds: number,
-  demoData: Promise<DemoData>,
-  evts: Promise<DemoEvents>
+  mockD: Promise<MockData>,
+  evts: Promise<MockEvents>
 ): Promise<Readonly<api.ILogEntry>[]> {
-  const toolUse = (await demoData).toolUse;
+  const toolUse = (await mockD).toolUse;
 
   return LazySeq.ofIterable(await evts)
     .map((evtJson) => {
@@ -152,9 +152,13 @@ async function loadEventsJson(
     .toArray();
 }
 
-export function registerDemoBackend(offsetSeconds: number, demoData: Promise<DemoData>, demoEvts: Promise<DemoEvents>) {
-  const data = demoData.then((d) => transformTime(offsetSeconds, d));
-  const events = loadEventsJson(offsetSeconds, demoData, demoEvts);
+export function registerMockBackend(
+  offsetSeconds: number,
+  mockD: Promise<MockData>,
+  mockEvts: Promise<MockEvents>
+): void {
+  const data = mockD.then((d) => transformTime(offsetSeconds, d));
+  const events = loadEventsJson(offsetSeconds, mockD, mockEvts);
 
   const fmsB = {
     fMSInformation() {
@@ -217,7 +221,7 @@ export function registerDemoBackend(offsetSeconds: number, demoData: Promise<Dem
     },
   };
 
-  const serialsToMatId = data.then((d) =>
+  const serialsToMatId = data.then(() =>
     events.then((evts) =>
       LazySeq.ofIterable(evts)
         .filter((e) => e.type === api.LogType.PartMark)
@@ -231,20 +235,20 @@ export function registerDemoBackend(offsetSeconds: number, demoData: Promise<Dem
 
   const logB = {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then((d) => events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC)));
+      return data.then(() => events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC)));
     },
     recent(_lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       // no recent events, everything is static
       return Promise.resolve([]);
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then((d) =>
+      return data.then(() =>
         events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => m.id === materialID)))
       );
     },
     logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       const matIds = new Set(materialIDs);
-      return data.then((d) =>
+      return data.then(() =>
         events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => matIds.has(m.id))))
       );
     },
@@ -296,7 +300,7 @@ export function registerDemoBackend(offsetSeconds: number, demoData: Promise<Dem
           InspectionType: inspType,
         },
       };
-      return data.then((d) =>
+      return data.then(() =>
         events.then((evts) => {
           evts.push(evt);
           return evt;
@@ -362,7 +366,7 @@ export function registerDemoBackend(offsetSeconds: number, demoData: Promise<Dem
         active: wash.active,
         details: wash.extraData,
       };
-      return data.then((d) =>
+      return data.then(() =>
         events.then((evts) => {
           evts.push(evt);
           return evt;

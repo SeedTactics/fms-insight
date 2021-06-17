@@ -37,9 +37,7 @@
           "InspectSingleProcess": -1
         }
       ],
-      "CyclesOnFirstProcess": [
-        16
-      ],
+      "Cycles": 16,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -295,9 +293,7 @@
           "InspectSingleProcess": -1
         }
       ],
-      "CyclesOnFirstProcess": [
-        10
-      ],
+      "Cycles": 10,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -507,9 +503,7 @@
           "InspectSingleProcess": -1
         }
       ],
-      "CyclesOnFirstProcess": [
-        17
-      ],
+      "Cycles": 17,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -756,9 +750,7 @@
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
-      "CyclesOnFirstProcess": [
-        3
-      ],
+      "Cycles": 3,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -838,9 +830,7 @@
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
-      "CyclesOnFirstProcess": [
-        28
-      ],
+      "Cycles": 28,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -964,9 +954,7 @@
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
-      "CyclesOnFirstProcess": [
-        22
-      ],
+      "Cycles":  22,
       "ProcsAndPaths": [
         {
           "paths": [

@@ -31,23 +31,23 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { demoData } from "../demo-data";
+import curSt from "../../test/status-mock.json";
 import { CurrentStatus } from "./api";
 import { selectLoadStationAndQueueProps } from "./load-station";
 
 describe("load station status", () => {
   it("load 1 with no queues", () => {
-    const status = CurrentStatus.fromJS(demoData.curSt);
+    const status = CurrentStatus.fromJS(curSt);
     expect(selectLoadStationAndQueueProps(1, [], false, status)).toMatchSnapshot("load 1 with no queues");
   });
 
   it("load 2 with queue", () => {
-    const status = CurrentStatus.fromJS(demoData.curSt);
+    const status = CurrentStatus.fromJS(curSt);
     expect(selectLoadStationAndQueueProps(2, ["Queue1"], false, status)).toMatchSnapshot("load 2 with queue");
   });
 
   it("load 3 with empty pallet", () => {
-    const status = CurrentStatus.fromJS(demoData.curSt);
+    const status = CurrentStatus.fromJS(curSt);
     expect(selectLoadStationAndQueueProps(3, ["Queue2"], false, status)).toMatchSnapshot("load 3 with empty pallet");
   });
 });

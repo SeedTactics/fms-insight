@@ -1,8 +1,12 @@
 ---
-id: security
-title: Server Security
-sidebar_label: Security
+title: FMS Insight Security
+nav: FMS Insight Server > Security
+description: >-
+  The FMS Insight server runs on the cell controller and uses TLS and OpenID
+  Connect.
 ---
+
+# FMS Insight Security
 
 FMS Insight implements a JSON+REST-based HTTP server and runs on the cell
 controller. By default, FMS Insight listens on port 5000 with no TLS and no
@@ -28,7 +32,7 @@ network and is configured to only allow traffic on the FMS Insight port.
 
 To enable HTTPS, a server certificate must be created and stored in a pfx file. This
 should be signed by the enterprise domain, but could also be a self-signed certificate.
-Once created, within the FMS Insight [config.ini](server-config.md) file, enable the
+Once created, within the FMS Insight [config.ini](server-config) file, enable the
 `TLSCertFile` setting with the path to the certificate.
 
 Within your identity provider, create an application for FMS Insight and create a client.
@@ -38,7 +42,7 @@ Finally, most identity providers allow the administrator to restrict an
 application to a set of users (e.g. Azure Active Directory allows assigning specific users
 or groups to the application).
 
-Once the client has been created, there are four settings in the [config.ini](server-config.md).
+Once the client has been created, there are four settings in the [config.ini](server-config).
 
 - `OpenIDConnectAuthority`: This setting is the path to the well-known configuration document for the identity provider.
   For example, for AzureAD, this is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
@@ -85,7 +89,7 @@ should require OpenID Connect authentication for all routes starting with `/api`
 Our small C# reverse-proxy implements OpenID Connect authentication and has been tested with AzureAD, Okta,
 and Keycloak. Alternatively, Nginx+ or IIS can be configured to require authentication.
 
-In this scenario, two settings are needed in FMS Insight's [config.ini](server-config.md):
+In this scenario, two settings are needed in FMS Insight's [config.ini](server-config):
 
 - `OpenIDConnectAuthority`: This setting is the path to the well-known configuration document for the identity provider.
   For example, for AzureAD, this is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.
@@ -113,7 +117,7 @@ configured to first proxy all connections from the factory network to FMS Insigh
 is then also configured to proxy the request from FMS Insight to the OpenID Connect configuration document to
 the real identity provider.
 
-The configuration in FMS Insight's [config.ini](server-config.md) are as follows:
+The configuration in FMS Insight's [config.ini](server-config) are as follows:
 
 - `OpenIDConnectAuthority`: The real identity-provided authority URL.
   For example, for AzureAD, this is `https://login.microsoftonline.com/{tenant}/v2.0` where `{tenant}` is your tenant GUID.

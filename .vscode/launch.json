@@ -15,53 +15,6 @@
       "internalConsoleOptions": "neverOpen"
     },
     {
-      "name": "Mazak",
-      "type": "coreclr",
-      "request": "launch",
-      "program": "${workspaceRoot}/server/machines/mazak/bin/Debug/net5.0/BlackMaple.FMSInsight.Mazak.dll",
-      "args": [],
-      "cwd": "${workspaceRoot}/server/machines/mazak/bin/Debug/net5.0",
-      "stopAtEntry": false,
-      "console": "internalConsole",
-      "preLaunchTask": "build:mazak",
-      "env": {
-        "Mazak__SQL ConnectionString": "Server=localhost;User Id=mazakpmc;Password=Fms-978",
-        "Mazak__Log CSV Path": "../../../log",
-        "Mazak__Program Directory": ".",
-        "QUEUE__castingQ": "-1",
-        "QUEUE__transQ": "-1",
-        "QUEUE__QuarantineQ": "-1",
-        "FMS__AutomaticSerials": "true",
-        "FMS__StartingSerial": "abcd",
-        "FMS__QuarantineQueue": "QuarantineQ",
-        "SERVER__EnableDebugLog": "true",
-        "SERVER__RequireExistingMaterialWhenAddingToQueue": "false",
-        "SERVER__RequireSerialWhenAddingMaterialToQueue": "false",
-        "SERVER__AddRawMaterialAsUnassigned": "true",
-        "SERVER__RequireOperatorNamePromptWhenAddingMaterial": "true"
-      }
-    },
-    {
-      "name": "Niigata",
-      "type": "coreclr",
-      "request": "launch",
-      "program": "${workspaceRoot}/server/machines/niigata/bin/Debug/net5.0/BlackMaple.FMSInsight.Niigata.dll",
-      "args": [],
-      "cwd": "${workspaceRoot}/server/machines/niigata/bin/Debug/net5.0",
-      "stopAtEntry": false,
-      "console": "internalConsole",
-      "preLaunchTask": "build:niigata",
-      "env": {
-        "Niigata__Connection String": "Host=localhost;Username=niigata;Password=${input:password}",
-        "Niigata__Program Directory": "../../../programs",
-        "Niigata__Machine Names": "RO1, RO2, RO3, RO4, FC1, FC2, FC3, FC4",
-        "QUEUE__Transfer": "-1",
-        "FMS__AutomaticSerials": "true",
-        "FMS__StartingSerial": "abcd",
-        "SERVER__EnableDebugLog": "true"
-      }
-    },
-    {
       "name": "Mock Server",
       "type": "coreclr",
       "request": "launch",

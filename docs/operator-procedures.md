@@ -1,18 +1,20 @@
 ---
-id: operator-procedures
-title: Operator Procedures
-sidebar_label: Procedures
+title: Load/Unload Procedures
+nav: Procedures > Operator Load/Unload
+description: >-
+  Implement continuous improvement of a flexible machining system by reviewing
+  targeted metrics which expose cell efficiency and cost per piece.
 ---
 
-FMS Insight provides [targeted pages](client-station-monitor.md) for operators on the factory floor:
+# Load/Unload Procedures
+
+FMS Insight provides [targeted pages](client-station-monitor) for operators on the factory floor:
 a page for each load station which shows the material to load or unload, a page for each inspection stand
 showing details about the material to be inspected, a page for the wash station, and finally a page
-for in-process material queue management. These pages use the [whiteboard metaphor](material-tracking.md)
+for in-process material queue management. These pages use the [whiteboard metaphor](material-tracking)
 for material tracking. We suggest that each station has a dedicated display or tablet with the relevant page
 bookmarked or made the homepage; these pages are designed to work on a touchscreen. In addition, each station
 should have an attached barcode scanner.
-
-## Load/Unload Procedures
 
 FMS Insight's load station page will display what the cell controller
 is expecting to happen at the load station. Specifically, the page will display the material
@@ -21,7 +23,7 @@ multiple faces). If the operator performs all the tasks as specified, the operat
 the load button to signal to the cell controller that the load is complete. FMS Insight monitors
 the cell controller and will update the page.
 
-![Screenshot of Load Station screen](assets/insight-load-station.png)
+![Screenshot of Load Station screen](screenshots/insight-load-station.png)
 
 If queues are used for managing material, the load station screen also can show the queues on the
 right hand side. The specific material that is marked as loaded is the first material in the queue
@@ -33,7 +35,7 @@ matches the job is loaded.
 
 ## Introducing Raw Material
 
-The [jobs](creating-jobs.md) control how raw material is introduced. If no raw
+The jobs control how raw material is introduced. If no raw
 material queue is set on the job, the cell controller will assume that raw material is
 always available and bring a pallet to be loaded as soon as it is empty. FMS Insight is watching
 the cell controller and will create new material once the load is complete.
@@ -44,16 +46,16 @@ station to be loaded. The Queues webpage shows the contents of the queue and all
 to scan or enter new material into the queue. The page also shows a table of scheduled jobs and
 shows the quantity of parts that still must be loaded.
 
-![Screenshot of queues page](assets/insight-queues-jobs-table.png)
+![Screenshot of queues page](screenshots/insight-queues-jobs-table.png)
 
 The operator should physically bring the casting/raw material to the cell and place it in
 a designated area nearby the load station. Once the material has arrived, the operator
 can click a button on the queues webpage (or scan a barcode) to add the material to the queue.
-FMS Insight supports a variety of techniques controlled by [config settings](server-config.md):
+FMS Insight supports a variety of techniques controlled by [config settings](server-config):
 adding raw material assigned to a specific job, adding raw material with or without a serial,
 or bulk adding a large quantity of material.
 
-Each physical location on the shop floor which holds material should coorespond to a queue
+Each physical location on the shop floor which holds material should correspond to a queue
 in FMS Insight. In addition, each queue should have a dedicated display or tablet mounted
 on the shop floor right next to the queue. This display should have the queues page
 bookmarked or set as the homepage and only show the queues page. This allows the operators
@@ -62,7 +64,7 @@ the material FMS Insight records as in the queue.
 
 ## Quarantine Material
 
-FMS Insight optionally supports the ability to [quarantine material](material-quarantine.md).
+FMS Insight optionally supports the ability to [quarantine material](material-quarantine).
 Quarantined material is material that is temporarily removed from the cell for re-machining,
 more detailed inspection, or some other rework. Material can be quarantined on the queues
 page by opening the material dialog and clicking a button. This moves the material to
@@ -82,7 +84,7 @@ that these instructions took place. FMS Insight will take the material from the 
 and record it as loaded onto the pallet. The cell controller will begin moving the pallet
 to the machine.
 
-If for whatever reason the load instructions can not be followed, idealy the operator should
+If for whatever reason the load instructions can not be followed, ideally the operator should
 edit the cell controller **before** the load is completed. FMS Insight will adjust itself
 based on whatever the cell controller expects to happen and only at the time that the load
 is completed is anything finalized and recorded.
@@ -92,13 +94,13 @@ to match what actually happened. FMS Insight is watching the cell controller and
 the pallet status is adjusted, FMS Insight will move any material that was thought to
 be loaded on the pallet to the quarantine queue. That material can then be re-introduced
 back into the queue so that the queue in FMS Insight matches the material on the shop floor.
-In addition, FMS Insight allows the ability to invalidate the inadvertant load events that
+In addition, FMS Insight allows the ability to invalidate the inadvertent load events that
 were created.
 
-Finally, in certian situations depending on the specific configuration of the jobs and queues,
+Finally, in certain situations depending on the specific configuration of the jobs and queues,
 FMS Insight supports a serial swap. FMS Insight assumes the material that is loaded is the
 first material in the queue which matches the job the cell controller expects.
-If the serial actually loaded is different but the job and detials match, the supervisor can
+If the serial actually loaded is different but the job and details match, the supervisor can
 swap the two serials on the supervisor's material page. This is a data-only change and no
 change is made to the cell controller. If a swap cannot be performed, the material must be
 quarantined and invalidated as described above.

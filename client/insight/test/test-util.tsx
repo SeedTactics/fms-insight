@@ -31,13 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import * as React from "react";
-import { demoData } from "./demo-data";
-import { initStore } from "./store/store";
+import { initStore } from "../src/store/store";
 import { differenceInSeconds } from "date-fns";
-import { registerDemoBackend } from "./data/backend-demo";
-import * as events from "./data/events";
-import evtsJson from "./demo-data/log-events.json";
+import { registerMockBackend } from "../src/data/backend-mock";
+import * as events from "../src/data/events";
+
+import evtsJson from "./log-events.json";
+import newJobs from "./newjobs.json";
+import tools from "./tools.json";
+import programs from "./programs.json";
+import statusJson from "./status-mock.json";
+import toolUse from "./tool-use.json";
 
 export function mockComponent(name: string): (props: { [key: string]: object }) => JSX.Element {
   return function MockedComponent(props) {
@@ -62,7 +68,17 @@ export async function createTestStore() {
   const offsetSeconds = differenceInSeconds(new Date(Date.UTC(2018, 6, 2, 4, 10, 0)), jan18);
 
   const store = initStore();
-  registerDemoBackend(offsetSeconds, Promise.resolve(demoData), Promise.resolve(evtsJson as ReadonlyArray<object>));
+  registerMockBackend(
+    offsetSeconds,
+    Promise.resolve({
+      curSt: statusJson,
+      jobs: newJobs,
+      tools: tools,
+      programs: programs,
+      toolUse: toolUse,
+    }),
+    Promise.resolve(evtsJson as ReadonlyArray<object>)
+  );
   store.dispatch(events.loadLast30Days());
 
   return store;
