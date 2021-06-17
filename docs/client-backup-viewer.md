@@ -35,7 +35,7 @@ then be used to view the historical data directly from the backed up files.
 
 To create the backup, FMS Insight can be stopped, the database files copied,
 and FMS Insight started again. Alternatively, SQLite files can be backed-up
-online using the `.backup` command in the [sqlite command line
+online using the `.backup` command in the [SQLite command line
 tool](https://sqlite.org/cli.html#special_commands_to_sqlite3_dot_commands_),
 for example:
 

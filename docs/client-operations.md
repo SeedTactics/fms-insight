@@ -4,7 +4,7 @@ nav: FMS Insight Client > Operations
 description: >-
   The FMS Insight operations pages are used by the factory floor supervisors.
   These pages display information about the past few days of cell operation
-  and allow the superviors to keep the cell operating smoothly.
+  and allow the supervisors to keep the cell operating smoothly.
 ---
 
 # FMS Insight Cell Operations Pages
@@ -76,14 +76,14 @@ First, there is a table which shows cycles from the last three days which are
 statistical outliers. The outlier detection is based on the [median absolute
 deviation of the
 median](https://en.wikipedia.org/wiki/Median_absolute_deviation), which is
-more resiliant to outliers than the standard deviation. There are two reasons that a load/unload
+more resilient to outliers than the standard deviation. There are two reasons that a load/unload
 cycle will appear here:
 
 - If the actual time at the load station is far away from the median actual time, the cycle will be displayed. Cycles of this
   type indicate that the load operation took longer than expected.
 - If the expected load time from the job is far away from the median actual time, the cycle will be displayed. Cycles of this
-  type indicate that the expected time is unrealistic (as long as enough cycles are available to obtain good stastitics). In this
-  case, the expected load time in the flexibility plan should be adjusted to be equal to the median time. Alternativly,
+  type indicate that the expected time is unrealistic (as long as enough cycles are available to obtain good statistics). In this
+  case, the expected load time in the flexibility plan should be adjusted to be equal to the median time. Alternatively,
   perhaps the steps or procedures at the load station should be changed.
 
 ![Screenshot of Load Station Hours](screenshots/insight-load-hours.png)
@@ -109,7 +109,7 @@ machines. It displays identical data as the _Load/Unload_ tab but for
 machines instead. First, there are outlier cycles from the last three days
 based on the [median absolute deviation of the
 median](https://en.wikipedia.org/wiki/Median_absolute_deviation). Next, the
-planned and actual machine hours for the past 7 days, and finally a zoomable
+planned and actual machine hours for the past 7 days, and finally a zoom-able
 and filterable chart of recent machine cycles.
 
 ![Screenshot of Machine outliers](screenshots/insight-machine-outliers.png)
@@ -139,7 +139,7 @@ stages.
 Note that in an ideal situation these numbers add up properly (scheduled = completed + in-process + remaining),
 this does not need to be the case. If parts are scrapped, an operator or supervisor edits the schedules in the
 cell controller, or other unplanned changes are made, the quantity of parts in these columns is updated to
-reflect the current sitation on the shop floor. Thus, this table can be used to provide an overview of the
+reflect the current situation on the shop floor. Thus, this table can be used to provide an overview of the
 actual operations as compared to the original planned schedule.
 
 ## Material

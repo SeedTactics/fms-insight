@@ -27,7 +27,7 @@ directory
 There are four instruction types: load, unload, wash, and inspections. Each instruction type will
 search for a different file depending on the page on the
 [station monitor screen](client-station-monitor) and the currently selected part. To create
-instruction files for all possiblities, you should create files as follows:
+instruction files for all possibilities, you should create files as follows:
 
 - For each part, create a file with the partname and `load` in the filename. Inside this
   file, add pictures and text to explain how to load and optionally unload the part from the pallet.

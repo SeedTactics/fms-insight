@@ -84,8 +84,8 @@ This whiteboard of sticky notes has several great features:
 - It is straightforward to accommodate all sorts of material tasks both inside and outside of
   automation. For example, if a part must be quarantined as potential scrap, its sticky note can be set on
   the side of the whiteboard. Once examined, if the part is determined to be scrap the sticky note can
-  be thrown in the trash can. If the part needs some remachining, the sticky note can be added
-  back onto the whiteboard once the remachining has completed and the part is ready for the remainder of the
+  be thrown in the trash can. If the part needs some re-machining, the sticky note can be added
+  back onto the whiteboard once the re-machining has completed and the part is ready for the remainder of the
   process.
 
 - By using a metaphor of physical sticky notes, the design provides an intuitive understanding for users.

@@ -62,9 +62,9 @@ The data can be copied to the clipboard via the two-arrow-icon button in the top
 
 Once the percentage breakdown for each part is calculated, the webpage allows you to
 enter the total machining, labor, and automation cost for the period. This value
-is then multipled by the above cost breakdown percentages to get a total cost per
+is then multiplied by the above cost breakdown percentages to get a total cost per
 piece. As mentioned above, we suggest that you copy the above cost breakdown percentages
 into your own spreadsheet or ERP system to be able to account for overhead, overtime,
-material costs, and other costs not visibile to FMS Insight.
+material costs, and other costs not visible to FMS Insight.
 
 ![Screenshot of part cost/piece page](screenshots/insight-part-cost.png)

@@ -36,7 +36,7 @@ search for similar paths. This is done in three steps:
 
 1. First, the serial for a part is manually entered or [scanned](client-scanners).
 
-2. The details for this specific serial is loaded and displayed. FMS Insight also extacts the path and time that
+2. The details for this specific serial is loaded and displayed. FMS Insight also extracts the path and time that
    machining completed.
 
 3. Similar paths are displayed. FMS Insight initially searches for all paths for this part within 5 days of the time that

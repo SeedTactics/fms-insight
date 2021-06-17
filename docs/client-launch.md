@@ -2,8 +2,8 @@
 title: FMS Insight Client
 nav: FMS Insight Client > Launch
 description: >-
-  FMS Insight provides a webpage viewable in any recnt version of Firefox, Chrome,
-  Edge, Anrdoid, or iOS browsers.  FMS Insight provides specific pages targeted at
+  FMS Insight provides a webpage viewable in any recent version of Firefox, Chrome,
+  Edge, Android, or iOS browsers.  FMS Insight provides specific pages targeted at
   specific users which display relevant information.
 ---
 

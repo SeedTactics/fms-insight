@@ -18,7 +18,7 @@ efficiency calculations.
 
 ![Screenshot of choosing analysis month](screenshots/insight-choose-analysis-month.png)
 
-At the top of the page are two radio buttons allowing you to analyize either the last
+At the top of the page are two radio buttons allowing you to analyze either the last
 30 days or a specific calendar month.
 
 # Efficiency
@@ -97,11 +97,11 @@ pallet at the load station among the various operations such as loading or
 unloading that occurred.
 
 For each cycle, FMS Insight splits the time the pallet spends at the load
-station among each piece of material being loaded, transfered, or unload. To
-do so, FMS Insight uses the list of material loaded/unloaded/transfered and
+station among each piece of material being loaded, transferred, or unload. To
+do so, FMS Insight uses the list of material loaded/unloaded/transferred and
 calculates the expected time the operation should take based on the values
 entered into the scheduled jobs. The expected time is
-then used to calculate a percentage consuption for each material, and this
+then used to calculate a percentage consumption for each material, and this
 percentage is then applied to the actual wall clock time of the pallet
 occupancy. For example, consider an operation where part _aaa_ is loaded and
 part _bbb_ is unloaded. The schedule says that the loading of _aaa_ should
@@ -109,7 +109,7 @@ take 5 minutes and the unloading of _bbb_ should take 8 minutes for a total
 time the pallet should spend at the load station of 13 minutes. Now say that
 the pallet actually spent 15 minutes at the load station. The load of _aaa_
 is expected to consume `5/13 = 38%` of the cycle and the unload of _bbb_ is
-expected to consume `8/13 = 62%` of the cycle. The 38% is multipled by the
+expected to consume `8/13 = 62%` of the cycle. The 38% is multiplied by the
 actual wall clock time of 15 minutes to give approximately 5.8 minutes for
 the load of _aaa_. Similarly for the unload of _bbb_, 15 minutes times 62% is
 approximately 9.2 minutes. Note how the "extra" 2 minutes (15 minutes
@@ -125,7 +125,7 @@ as described above and then plots a point with the y-coordinate the
 calculated time, filtering the data to a specific part and/or pallet. (In the
 example from the previous paragraph, the points would have y-coordinate 5.8
 and 9.2 minutes.) Exactly like the machine cycles, FMS Insight calculates the
-median and median absolute deviaion of the points and plots them as a gray band
+median and median absolute deviation of the points and plots them as a gray band
 in the background. Finally, the expected time entered into the
 scheduled jobs is graphed as a horizontal black line.
 
@@ -147,9 +147,9 @@ the bottom-right.
 The pallet cycle chart is best used to determine if the cell is running lean
 and validate the [daily allocation and scheduling
 technique](https://www.seedtactics.com/docs/concepts/preventing-traffic-jams)
-to determine if there are traffic jams occuring in the pallets. In a lean,
+to determine if there are traffic jams occurring in the pallets. In a lean,
 healthy cell, most pallet cycles should be low and reasonably consistent. If
-pallet cycle times vary wildly, there is likely taffic jams or other flow problems.
+pallet cycle times vary wildly, there is likely traffic jams or other flow problems.
 
 ## Buffer Occupancy
 
@@ -179,7 +179,7 @@ reflected in the buffer occupancy chart with the "Stocker[Waiting for unload]" l
 or almost zero, the "Rotary" for each machine always above zero, the
 "Stocker[Waiting for machining]" only positive if all rotary tables are full, and any
 in-process transfer queues small. If instead the load stations become the bottleneck,
-the buffer occupancy chart will show a rise either "Stocker[Wating for unload]" or a
+the buffer occupancy chart will show a rise either "Stocker[Waiting for unload]" or a
 rise in the in-process transfer queue between processes. Also, the rotary buffer
 occupancy will drop to zero.
 
@@ -226,8 +226,8 @@ machine cycle charts, ensure the expected time entered into the schedule is actu
 machine maintenance records, etc.)
 
 Finally, the Standard OEE heatmap helps visualize how balanced the machines were loaded over the month.
-We want to see all the machines consitantly roughly the same color. If you see that
-a machine has a lighter color for a couple days, that indiciates either the machine was down or
+We want to see all the machines consistently roughly the same color. If you see that
+a machine has a lighter color for a couple days, that indicates either the machine was down or
 that the daily mix for that day did not have enough flexibility. You should then consider
 picking a part and extending that part to run on the lightly loaded machine. To find such a
 part, you can use the part production chart below to see which part mix was run on this day

@@ -55,7 +55,7 @@ FMS Insight supports a variety of techniques controlled by [config settings](ser
 adding raw material assigned to a specific job, adding raw material with or without a serial,
 or bulk adding a large quantity of material.
 
-Each physical location on the shop floor which holds material should coorespond to a queue
+Each physical location on the shop floor which holds material should correspond to a queue
 in FMS Insight. In addition, each queue should have a dedicated display or tablet mounted
 on the shop floor right next to the queue. This display should have the queues page
 bookmarked or set as the homepage and only show the queues page. This allows the operators
@@ -84,7 +84,7 @@ that these instructions took place. FMS Insight will take the material from the 
 and record it as loaded onto the pallet. The cell controller will begin moving the pallet
 to the machine.
 
-If for whatever reason the load instructions can not be followed, idealy the operator should
+If for whatever reason the load instructions can not be followed, ideally the operator should
 edit the cell controller **before** the load is completed. FMS Insight will adjust itself
 based on whatever the cell controller expects to happen and only at the time that the load
 is completed is anything finalized and recorded.
@@ -94,13 +94,13 @@ to match what actually happened. FMS Insight is watching the cell controller and
 the pallet status is adjusted, FMS Insight will move any material that was thought to
 be loaded on the pallet to the quarantine queue. That material can then be re-introduced
 back into the queue so that the queue in FMS Insight matches the material on the shop floor.
-In addition, FMS Insight allows the ability to invalidate the inadvertant load events that
+In addition, FMS Insight allows the ability to invalidate the inadvertent load events that
 were created.
 
-Finally, in certian situations depending on the specific configuration of the jobs and queues,
+Finally, in certain situations depending on the specific configuration of the jobs and queues,
 FMS Insight supports a serial swap. FMS Insight assumes the material that is loaded is the
 first material in the queue which matches the job the cell controller expects.
-If the serial actually loaded is different but the job and detials match, the supervisor can
+If the serial actually loaded is different but the job and details match, the supervisor can
 swap the two serials on the supervisor's material page. This is a data-only change and no
 change is made to the cell controller. If a swap cannot be performed, the material must be
 quarantined and invalidated as described above.
