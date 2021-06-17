@@ -517,8 +517,6 @@ namespace BlackMaple.FMSInsight.Niigata
       int stopIdx = -1;
       foreach (var stop in path.PathInfo.Stops)
       {
-        stopIdx += 1;
-
         if (_statNames != null && _statNames.ReclampGroupNames.Contains(stop.StationGroup))
         {
           steps.Add(new ReclampStep()
@@ -528,6 +526,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
+          stopIdx += 1;
 
           int? iccProgram = null;
 
