@@ -50,7 +50,7 @@ if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
   );
 }
 
-render({ demo: false }, store, document.getElementById("root"));
+render(store, document.getElementById("root"));
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
