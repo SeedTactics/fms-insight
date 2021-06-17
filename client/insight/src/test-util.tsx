@@ -35,7 +35,7 @@ import * as React from "react";
 import { demoData } from "./demo-data";
 import { initStore } from "./store/store";
 import { differenceInSeconds } from "date-fns";
-import { registerDemoBackend } from "./data/backend-demo";
+import { registerMockBackend } from "./data/backend-mock";
 import * as events from "./data/events";
 import evtsJson from "./demo-data/log-events.json";
 
@@ -62,7 +62,7 @@ export async function createTestStore() {
   const offsetSeconds = differenceInSeconds(new Date(Date.UTC(2018, 6, 2, 4, 10, 0)), jan18);
 
   const store = initStore();
-  registerDemoBackend(offsetSeconds, Promise.resolve(demoData), Promise.resolve(evtsJson as ReadonlyArray<object>));
+  registerMockBackend(offsetSeconds, Promise.resolve(demoData), Promise.resolve(evtsJson as ReadonlyArray<object>));
   store.dispatch(events.loadLast30Days());
 
   return store;
