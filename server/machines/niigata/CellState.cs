@@ -390,7 +390,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : logDB.WorkordersById(details?.Workorder).ToImmutableList()
               };
             })
-            .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
+            .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
             .ToList();
 
           foreach (var mat in castings.Take(face.PathInfo.PartsPerPallet))
@@ -533,7 +533,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : logDB.WorkordersById(details?.Workorder).ToImmutableList()
                 };
               })
-              .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face))
+              .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
               .ToList();
             foreach (var mat in availableMaterial)
             {
@@ -1606,7 +1606,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public ImmutableList<PartWorkorder> Workorders { get; set; }
     }
 
-    public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails mat, PalletFace face)
+    public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails mat, PalletFace face, NiigataStationNames statNames)
     {
       if (face.Process == 1 && mat.NextProcess == 1 && string.IsNullOrEmpty(mat.Unique))
       {
@@ -1625,7 +1625,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (face.Programs == null)
         {
-          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(1, matWorkProgs));
+          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(1, matWorkProgs), statNames);
         }
         else
         {
@@ -1646,7 +1646,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (face.Programs == null && matWorkProgs != null)
         {
-          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(face.Process, matWorkProgs));
+          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(face.Process, matWorkProgs), statNames);
         }
         else if (face.Programs != null && matWorkProgs == null)
         {
@@ -1691,12 +1691,12 @@ namespace BlackMaple.FMSInsight.Niigata
       return byStop.Count == 0;
     }
 
-    private static bool CheckProgramsMatchJobSteps(string workorder, PalletFace face, IEnumerable<ProgramsForProcess> ps)
+    private static bool CheckProgramsMatchJobSteps(string workorder, PalletFace face, IEnumerable<ProgramsForProcess> ps, NiigataStationNames statNames)
     {
       var byStop = ps.GroupBy(p => p.StopIndex).ToDictionary(p => p.Key, p => p.First());
 
       int stopIdx = -1;
-      foreach (var stop in face.PathInfo.Stops)
+      foreach (var stop in face.PathInfo.Stops.Where(s => !statNames.ReclampGroupNames.Contains(s.StationGroup)))
       {
         stopIdx += 1;
 

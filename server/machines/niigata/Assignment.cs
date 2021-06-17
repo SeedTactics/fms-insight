@@ -253,7 +253,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return true;
     }
 
-    private static bool CanMaterialLoadOntoPath(InProcessMaterialAndJob mat, JobPath path, ImmutableList<ProgramsForProcess> programs)
+    private bool CanMaterialLoadOntoPath(InProcessMaterialAndJob mat, JobPath path, ImmutableList<ProgramsForProcess> programs)
     {
       var m = mat.Mat;
       return CreateCellState.FilterMaterialAvailableToLoadOntoFace(new CreateCellState.QueuedMaterialWithDetails()
@@ -277,7 +277,8 @@ namespace BlackMaple.FMSInsight.Niigata
         Face = 1,
         FaceIsMissingMaterial = false,
         Programs = programs
-      });
+      },
+      _statNames);
     }
 
     private ImmutableList<ProgramsForProcess> ProgramsForMaterial(InProcessMaterialAndJob mat, JobPath path, out bool programsOverrideJob)
