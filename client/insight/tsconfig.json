@@ -23,5 +23,5 @@
     "resolveJsonModule": true,
     "esModuleInterop": true
   },
-  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist", "demo"]
+  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist"]
 }
