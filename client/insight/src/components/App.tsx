@@ -59,7 +59,7 @@ import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
-import logo from "url:../seedtactics-logo.svg";
+import { SeedtacticLogo } from "../seedtactics-logo";
 import BackupViewer from "./BackupViewer";
 import { SerialScannerButton } from "./QRScan";
 import { ManualScanButton } from "./ManualScan";
@@ -299,9 +299,9 @@ function Header(p: HeaderProps) {
         <AppBar position="static">
           <Toolbar>
             <Tooltip title={tooltip}>
-              <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
+              <SeedtacticLogo />
             </Tooltip>
-            <Typography variant="h6" style={{ marginRight: "2em" }}>
+            <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
               Insight
             </Typography>
             {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
@@ -324,9 +324,11 @@ function Header(p: HeaderProps) {
         <AppBar position="static">
           <Toolbar>
             <Tooltip title={tooltip}>
-              <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
+              <SeedtacticLogo />
             </Tooltip>
-            <Typography variant="h6">Insight</Typography>
+            <Typography variant="h6" style={{ marginLeft: "4px" }}>
+              Insight
+            </Typography>
             {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
             <div style={{ flexGrow: 1 }} />
             <LoadingIcon />
