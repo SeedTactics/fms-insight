@@ -48,8 +48,7 @@ import {
 import { reduxStore } from "../store/store";
 import { MachineBackend } from "./backend";
 import { currentStatus } from "./current-status";
-// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-const copy = require("copy-to-clipboard");
+import copy from "copy-to-clipboard";
 
 function averageToolUse(
   usage: ToolUsage,

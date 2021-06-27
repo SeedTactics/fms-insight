@@ -48,8 +48,7 @@ import * as api from "./api";
 import { format, differenceInSeconds } from "date-fns";
 import { duration } from "moment";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const copy = require("copy-to-clipboard");
+import copy from "copy-to-clipboard";
 
 export interface FilteredStationCycles {
   readonly seriesLabel: string;
