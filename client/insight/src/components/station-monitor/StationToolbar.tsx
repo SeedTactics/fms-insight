@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Select from "@material-ui/core/Select";
-import MenuItem from "@material-ui/core/MenuItem";
-import Input from "@material-ui/core/Input";
-import FormControl from "@material-ui/core/FormControl";
+import { Select } from "@material-ui/core";
+import { MenuItem } from "@material-ui/core";
+import { Input } from "@material-ui/core";
+import { FormControl } from "@material-ui/core";
 
 import { useSelector } from "../../store/store";
 import { useRecoilValue } from "recoil";

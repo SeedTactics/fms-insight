@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Grid from "@material-ui/core/Grid";
-import Table from "@material-ui/core/Table";
+import { Grid } from "@material-ui/core";
+import { Table } from "@material-ui/core";
 
 import { FlexibleWidthXYPlot, XAxis, YAxis, VerticalBarSeries, DiscreteColorLegend, Hint } from "react-vis";
 import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";

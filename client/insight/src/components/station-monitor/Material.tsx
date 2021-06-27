@@ -33,23 +33,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as jdenticon from "jdenticon";
-import Typography from "@material-ui/core/Typography";
-import ButtonBase from "@material-ui/core/ButtonBase";
-import Button from "@material-ui/core/Button";
-import Tooltip from "@material-ui/core/Tooltip";
+import { Typography } from "@material-ui/core";
+import { ButtonBase } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
 import WarningIcon from "@material-ui/icons/Warning";
 import SearchIcon from "@material-ui/icons/Search";
-import Avatar from "@material-ui/core/Avatar";
-import Paper from "@material-ui/core/Paper";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import TextField from "@material-ui/core/TextField";
+import { Avatar } from "@material-ui/core";
+import { Paper } from "@material-ui/core";
+import { CircularProgress } from "@material-ui/core";
+import { TextField } from "@material-ui/core";
 import TimeAgo from "react-timeago";
-import Dialog from "@material-ui/core/Dialog";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogTitle from "@material-ui/core/DialogTitle";
+import { Dialog } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
+import { DialogTitle } from "@material-ui/core";
 import DragIndicator from "@material-ui/icons/DragIndicator";
-import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
+import { withStyles } from "@material-ui/core";
+import { createStyles } from "@material-ui/core";
+import { WithStyles } from "@material-ui/core";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import { DraggableProvided } from "react-beautiful-dnd";
 

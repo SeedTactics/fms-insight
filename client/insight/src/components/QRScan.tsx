@@ -33,16 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import QrReader from "react-qr-reader";
-import Dialog from "@material-ui/core/Dialog";
-import Button from "@material-ui/core/Button";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogTitle from "@material-ui/core/DialogTitle";
+import { Dialog } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
+import { DialogTitle } from "@material-ui/core";
 import CameraAlt from "@material-ui/icons/CameraAlt";
 import { materialToShowInDialog } from "../data/material-details";
 import { useSetRecoilState } from "recoil";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
+import { Tooltip } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 
 export const SerialScannerButton = React.memo(function SerialScanner() {
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);

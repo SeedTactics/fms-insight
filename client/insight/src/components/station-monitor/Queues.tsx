@@ -33,27 +33,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import { WithStyles, createStyles, withStyles, makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core";
+import { withStyles } from "@material-ui/core";
+import { createStyles } from "@material-ui/core";
+import { WithStyles } from "@material-ui/core";
 import { SortEnd } from "react-sortable-hoc";
-import Table from "@material-ui/core/Table";
-import TableHead from "@material-ui/core/TableHead";
-import TableCell from "@material-ui/core/TableCell";
-import TableRow from "@material-ui/core/TableRow";
-import TableBody from "@material-ui/core/TableBody";
-import Button from "@material-ui/core/Button";
-import Tooltip from "@material-ui/core/Tooltip";
-import Typography from "@material-ui/core/Typography";
+import { Table } from "@material-ui/core";
+import { TableHead } from "@material-ui/core";
+import { TableCell } from "@material-ui/core";
+import { TableRow } from "@material-ui/core";
+import { TableBody } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
+import { Typography } from "@material-ui/core";
 import EditIcon from "@material-ui/icons/Edit";
-import Dialog from "@material-ui/core/Dialog";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import DialogContent from "@material-ui/core/DialogContent";
+import { Dialog } from "@material-ui/core";
+import { DialogTitle } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-import TextField from "@material-ui/core/TextField";
-import DialogActions from "@material-ui/core/DialogActions";
-import Fab from "@material-ui/core/Fab";
-import IconButton from "@material-ui/core/IconButton";
-import CircularProgress from "@material-ui/core/CircularProgress";
+import { TextField } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
+import { Fab } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
+import { CircularProgress } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import AssignIcon from "@material-ui/icons/AssignmentReturn";
 
@@ -94,7 +97,7 @@ import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil"
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../data/current-status";
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../data/material-details";
-import Collapse from "@material-ui/core/Collapse";
+import { Collapse } from "@material-ui/core";
 
 const useTableStyles = makeStyles(() =>
   createStyles({

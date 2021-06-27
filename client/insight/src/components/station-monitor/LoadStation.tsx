@@ -32,10 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import Divider from "@material-ui/core/Divider";
-import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
-import Button from "@material-ui/core/Button";
-import Hidden from "@material-ui/core/Hidden";
+import { Divider } from "@material-ui/core";
+import { withStyles } from "@material-ui/core";
+import { createStyles } from "@material-ui/core";
+import { WithStyles } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Hidden } from "@material-ui/core";
 import FolderOpenIcon from "@material-ui/icons/FolderOpen";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
@@ -63,8 +65,8 @@ import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import ReactToPrint from "react-to-print";
 import { instructionUrl } from "../../data/backend";
-import Tooltip from "@material-ui/core/Tooltip";
-import Fab from "@material-ui/core/Fab";
+import { Tooltip } from "@material-ui/core";
+import { Fab } from "@material-ui/core";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, reorder_queued_mat } from "../../data/current-status";

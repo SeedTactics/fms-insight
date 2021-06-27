@@ -32,18 +32,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import * as api from "../data/api";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
+import { Table } from "@material-ui/core";
+import { TableBody } from "@material-ui/core";
+import { TableCell } from "@material-ui/core";
+import { TableHead } from "@material-ui/core";
+import { TableRow } from "@material-ui/core";
 import DateTimeDisplay from "./DateTimeDisplay";
 import { LazySeq } from "../data/lazyseq";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
+import { Tooltip } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ImportExport from "@material-ui/icons/ImportExport";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { WithStyles } from "@material-ui/core";
+import { withStyles } from "@material-ui/core";
+import { createStyles } from "@material-ui/core";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
 import { duration } from "moment";
 import clsx from "clsx";

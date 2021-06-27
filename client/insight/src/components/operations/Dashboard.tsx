@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Grid from "@material-ui/core/Grid";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
-import Hidden from "@material-ui/core/Hidden";
+import { Grid } from "@material-ui/core";
+import { Card } from "@material-ui/core";
+import { CardContent } from "@material-ui/core";
+import { Hidden } from "@material-ui/core";
 
 import StationOEEs from "./OEESummary";
 import { CurrentJobs } from "./CurrentJobs";

@@ -31,19 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Card from "@material-ui/core/Card";
-import CardHeader from "@material-ui/core/CardHeader";
-import CardContent from "@material-ui/core/CardContent";
+import { Card } from "@material-ui/core";
+import { CardHeader } from "@material-ui/core";
+import { CardContent } from "@material-ui/core";
 import BugIcon from "@material-ui/icons/BugReport";
 import { createSelector } from "reselect";
 import { HashMap, Vector } from "prelude-ts";
 import { addDays, startOfToday } from "date-fns";
-import Tooltip from "@material-ui/core/Tooltip";
+import { Tooltip } from "@material-ui/core";
 import WorkIcon from "@material-ui/icons/Work";
-import IconButton from "@material-ui/core/IconButton";
-import Select from "@material-ui/core/Select";
+import { IconButton } from "@material-ui/core";
+import { Select } from "@material-ui/core";
 import ImportExport from "@material-ui/icons/ImportExport";
-import MenuItem from "@material-ui/core/MenuItem";
+import { MenuItem } from "@material-ui/core";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
 
 import StationDataTable from "../analysis/StationDataTable";

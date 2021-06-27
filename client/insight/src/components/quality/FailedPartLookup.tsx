@@ -31,12 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import TextField from "@material-ui/core/TextField";
-import Button from "@material-ui/core/Button";
-import Stepper from "@material-ui/core/Stepper";
-import Step from "@material-ui/core/Step";
-import StepLabel from "@material-ui/core/StepLabel";
-import StepContent from "@material-ui/core/StepContent";
+import { TextField } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Stepper } from "@material-ui/core";
+import { Step } from "@material-ui/core";
+import { StepLabel } from "@material-ui/core";
+import { StepContent } from "@material-ui/core";
 
 import * as matDetails from "../../data/material-details";
 import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material";

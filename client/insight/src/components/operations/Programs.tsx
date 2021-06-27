@@ -31,22 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Fab from "@material-ui/core/Fab";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
+import { Fab } from "@material-ui/core";
+import { CircularProgress } from "@material-ui/core";
+import { Card } from "@material-ui/core";
+import { CardContent } from "@material-ui/core";
 import TimeAgo from "react-timeago";
 import RefreshIcon from "@material-ui/icons/Refresh";
-import CardHeader from "@material-ui/core/CardHeader";
+import { CardHeader } from "@material-ui/core";
 import ProgramIcon from "@material-ui/icons/Receipt";
 import CodeIcon from "@material-ui/icons/Code";
-import Table from "@material-ui/core/Table";
-import TableHead from "@material-ui/core/TableHead";
-import TableCell from "@material-ui/core/TableCell";
-import TableRow from "@material-ui/core/TableRow";
-import TableSortLabel from "@material-ui/core/TableSortLabel";
-import Typography from "@material-ui/core/Typography";
-import Tooltip from "@material-ui/core/Tooltip";
+import { Table } from "@material-ui/core";
+import { TableHead } from "@material-ui/core";
+import { TableCell } from "@material-ui/core";
+import { TableRow } from "@material-ui/core";
+import { TableSortLabel } from "@material-ui/core";
+import { Typography } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
 import {
   programReportRefreshTime,
   currentProgramReport,
@@ -57,31 +57,31 @@ import {
   programToShowHistory,
   programFilter,
 } from "../../data/tools-programs";
-import TableBody from "@material-ui/core/TableBody";
-import IconButton from "@material-ui/core/IconButton";
+import { TableBody } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import FirstPageIcon from "@material-ui/icons/FirstPage";
 import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
 import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
 import HistoryIcon from "@material-ui/icons/History";
-import Collapse from "@material-ui/core/Collapse";
+import { Collapse } from "@material-ui/core";
 import { LazySeq } from "../../data/lazyseq";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core";
 import { PartIdenticon } from "../station-monitor/Material";
 import { useSetRecoilState, useRecoilState, useRecoilValue } from "recoil";
-import Dialog from "@material-ui/core/Dialog";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import Button from "@material-ui/core/Button";
-import DialogActions from "@material-ui/core/DialogActions";
+import { Dialog } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
+import { DialogTitle } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
 import { useIsDemo } from "../../data/routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import { Vector } from "prelude-ts";
 import { IProgramRevision } from "../../data/api";
 import { MachineBackend } from "../../data/backend";
-import Select from "@material-ui/core/Select";
-import MenuItem from "@material-ui/core/MenuItem";
+import { Select } from "@material-ui/core";
+import { MenuItem } from "@material-ui/core";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;

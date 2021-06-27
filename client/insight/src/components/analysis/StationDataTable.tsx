@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Table from "@material-ui/core/Table";
+import { Table } from "@material-ui/core";
 import { HashMap, ToOrderable } from "prelude-ts";
 
 import { PartCycleData } from "../../data/events.cycles";
@@ -47,8 +47,8 @@ import {
 } from "./DataTable";
 import { addDays, addHours } from "date-fns";
 import * as api from "../../data/api";
-import Menu from "@material-ui/core/Menu";
-import MenuItem from "@material-ui/core/MenuItem";
+import { Menu } from "@material-ui/core";
+import { MenuItem } from "@material-ui/core";
 import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../data/material-details";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";

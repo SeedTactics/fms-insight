@@ -32,19 +32,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import AppBar from "@material-ui/core/AppBar";
-import Tabs from "@material-ui/core/Tabs";
-import Tab from "@material-ui/core/Tab";
-import Typography from "@material-ui/core/Typography";
-import Toolbar from "@material-ui/core/Toolbar";
-import Hidden from "@material-ui/core/Hidden";
+import { AppBar } from "@material-ui/core";
+import { Tabs } from "@material-ui/core";
+import { Tab } from "@material-ui/core";
+import { Typography } from "@material-ui/core";
+import { Toolbar } from "@material-ui/core";
+import { Hidden } from "@material-ui/core";
 import HelpOutline from "@material-ui/icons/HelpOutline";
 import ExitToApp from "@material-ui/icons/ExitToApp";
-import IconButton from "@material-ui/core/IconButton";
-import Tooltip from "@material-ui/core/Tooltip";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import Button from "@material-ui/core/Button";
-import Badge from "@material-ui/core/Badge";
+import { IconButton } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
+import { CircularProgress } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Badge } from "@material-ui/core";
 import Notifications from "@material-ui/icons/Notifications";
 import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 

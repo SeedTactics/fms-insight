@@ -33,18 +33,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { connect, useSelector } from "../../store/store";
 import { AnalysisPeriod } from "../../data/events";
-import Card from "@material-ui/core/Card";
-import CardHeader from "@material-ui/core/CardHeader";
-import CardContent from "@material-ui/core/CardContent";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
-import TextField from "@material-ui/core/TextField";
+import { Card } from "@material-ui/core";
+import { CardHeader } from "@material-ui/core";
+import { CardContent } from "@material-ui/core";
+import { Table } from "@material-ui/core";
+import { TableBody } from "@material-ui/core";
+import { TableCell } from "@material-ui/core";
+import { TableHead } from "@material-ui/core";
+import { TableRow } from "@material-ui/core";
+import { TextField } from "@material-ui/core";
 import MoneyIcon from "@material-ui/icons/AttachMoney";
 import ImportExport from "@material-ui/icons/ImportExport";
-import { makeStyles, createStyles } from "@material-ui/core/styles";
+import { createStyles } from "@material-ui/core";
+import { makeStyles } from "@material-ui/core";
 import { PartCycleData } from "../../data/events.cycles";
 import BuildIcon from "@material-ui/icons/Build";
 import CallSplit from "@material-ui/icons/CallSplit";
@@ -52,7 +53,7 @@ import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { HashMap, HashSet, Vector } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import * as localForage from "localforage";
-import CircularProgress from "@material-ui/core/CircularProgress";
+import { CircularProgress } from "@material-ui/core";
 import {
   MachineCostPerYear,
   compute_monthly_cost,
@@ -62,10 +63,10 @@ import {
   copyCostBreakdownToClipboard,
 } from "../../data/cost-per-piece";
 import { format } from "date-fns";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
+import { Tooltip } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import { PartIdenticon } from "../station-monitor/Material";
-import Typography from "@material-ui/core/Typography";
+import { Typography } from "@material-ui/core";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
