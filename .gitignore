@@ -2,9 +2,6 @@
 **/bin/Release/
 **/obj/
 node_modules/
-client/insight/.parcel-dev/
-client/insight/.parcel-cache/
-client/insight/demo/
 client/insight/dist/
 client/backup-viewer/.tsbuildinfo
 client/backup-viewer/build/

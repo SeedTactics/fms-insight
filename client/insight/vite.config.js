@@ -10,4 +10,8 @@ export default {
   server: {
     port: 1234,
   },
+  build: {
+    outDir: "../dist", // relative to root
+    chunkSizeWarningLimit: 1800,
+  },
 };
