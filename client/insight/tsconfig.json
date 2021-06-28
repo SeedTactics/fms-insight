@@ -1,11 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": ".build",
     "baseUrl": "/",
     "module": "esnext",
-    // "target": "es2016", https://github.com/parcel-bundler/parcel/issues/954
-    "target": "es5",
-    "lib": ["es2017", "dom"],
+    "target": "es2018",
+    "lib": ["es2018", "dom"],
     "sourceMap": true,
     "allowJs": false,
     "jsx": "react",
@@ -22,5 +20,5 @@
     "resolveJsonModule": true,
     "esModuleInterop": true
   },
-  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist"]
+  "exclude": ["node_modules", "dist"]
 }
