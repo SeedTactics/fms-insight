@@ -40,8 +40,6 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import "react-dates/lib/css/_datepicker.css";
-import "./components/analysis/data-table.css";
 
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";

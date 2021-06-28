@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { TableBody } from "@material-ui/core";
+import { Dialog, DialogActions, DialogContent, DialogTitle, TableBody, makeStyles } from "@material-ui/core";
 import { TableCell } from "@material-ui/core";
 import { TableHead } from "@material-ui/core";
 import { TableRow } from "@material-ui/core";
@@ -46,15 +46,14 @@ import { Toolbar } from "@material-ui/core";
 import { Typography } from "@material-ui/core";
 import { Select } from "@material-ui/core";
 import ZoomOutIcon from "@material-ui/icons/ZoomOut";
+import ZoomInIcon from "@material-ui/icons/ZoomIn";
 import { InputBase } from "@material-ui/core";
 import SkipPrevIcon from "@material-ui/icons/SkipPrevious";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
 import { MenuItem } from "@material-ui/core";
 import { Button } from "@material-ui/core";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import moment from "moment";
-import "react-dates/initialize";
-import { DateRangePicker } from "react-dates";
+import Calendar from "react-calendar";
 
 import { addDays } from "date-fns";
 import { LazySeq } from "../../data/lazyseq";
@@ -76,7 +75,7 @@ export interface DataTableHeadProps<Id, Row> {
   readonly showDetailsCol: boolean;
 }
 
-export function DataTableHead<Id extends string | number, Row>(props: DataTableHeadProps<Id, Row>) {
+export function DataTableHead<Id extends string | number, Row>(props: DataTableHeadProps<Id, Row>): JSX.Element {
   return (
     <TableHead>
       <TableRow>
@@ -109,23 +108,125 @@ export enum DataTableActionZoomType {
   ExtendDays = "Extend",
 }
 
+interface DataTableActionZoomIntoRange {
+  readonly type: DataTableActionZoomType.ZoomIntoRange;
+  readonly default_date_range: Date[];
+  readonly current_date_zoom: { start: Date; end: Date } | undefined;
+  readonly set_date_zoom_range: (p: { start: Date; end: Date } | undefined) => void;
+}
+
 export type DataTableActionZoom =
   | {
       readonly type: DataTableActionZoomType.Last30Days;
       readonly set_days_back: (numDaysBack: number | null) => void;
     }
-  | {
-      readonly type: DataTableActionZoomType.ZoomIntoRange;
-      readonly default_date_range: Date[];
-      readonly current_date_zoom: { start: Date; end: Date } | undefined;
-      readonly set_date_zoom_range: (p: { start: Date; end: Date } | undefined) => void;
-    }
+  | DataTableActionZoomIntoRange
   | {
       readonly type: DataTableActionZoomType.ExtendDays;
       readonly curStart: Date;
       readonly curEnd: Date;
       readonly extend: (numDays: number) => void;
     };
+
+interface SelectDateRangeProps {
+  readonly zoom: DataTableActionZoomIntoRange;
+}
+
+const dateFormat = new Intl.DateTimeFormat([], { year: "numeric", month: "short", day: "numeric" });
+const monthFormat = new Intl.DateTimeFormat([], { year: "numeric", month: "long" });
+
+const useDateRangeStyles = makeStyles((theme) => ({
+  calendar: {
+    width: "350px",
+    "& .react-calendar__month-view__weekdays": {
+      textAlign: "center",
+      textTransform: "uppercase",
+      fontWeight: "bold",
+    },
+    "& .react-calendar__tile": {
+      textAlign: "center",
+      padding: ".75em .5em",
+      margin: 0,
+      border: 0,
+      background: "none",
+      outline: "none",
+      cursor: "pointer",
+      "&:hover": {
+        backgroundColor: "rgb(230, 230, 230)",
+      },
+      "&--active": {
+        backgroundColor: theme.palette.primary.light,
+        "&:hover": {
+          backgroundColor: theme.palette.primary.dark,
+        },
+      },
+    },
+    // react-calendar__tile--hover is when selecting range of days.
+    "&.react-calendar--selectRange .react-calendar__tile--hover": {
+      backgroundColor: "rgb(230, 230, 230)",
+    },
+  },
+}));
+
+function SelectDateRange(props: SelectDateRangeProps) {
+  const classes = useDateRangeStyles();
+  const [open, setOpen] = React.useState(false);
+  const start = props.zoom.current_date_zoom ? props.zoom.current_date_zoom.start : props.zoom.default_date_range[0];
+  const end = addDays(
+    props.zoom.current_date_zoom ? props.zoom.current_date_zoom.end : props.zoom.default_date_range[1],
+    -1
+  );
+
+  function onChange(d: ReadonlyArray<Date>) {
+    props.zoom.set_date_zoom_range({
+      start: d[0],
+      end: addDays(d[1], 1),
+    });
+    setOpen(false);
+  }
+
+  // @types/react-calendar has the wrong type for onChange
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+  const matchingOnChange: (d: Date) => void = onChange as any;
+
+  return (
+    <>
+      <span>
+        {dateFormat.format(props.zoom.current_date_zoom?.start ?? props.zoom.default_date_range[0])} -{" "}
+        {dateFormat.format(props.zoom.current_date_zoom?.end ?? props.zoom.default_date_range[1])}
+      </span>
+      <Tooltip title="Zoom To Date Range">
+        <IconButton onClick={() => setOpen(true)}>
+          <ZoomInIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Reset Date Range">
+        <IconButton onClick={() => props.zoom.set_date_zoom_range(undefined)}>
+          <ZoomOutIcon />
+        </IconButton>
+      </Tooltip>
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>Select Date Range {monthFormat.format(props.zoom.default_date_range[0])}</DialogTitle>
+        <DialogContent>
+          <Calendar
+            className={classes.calendar}
+            minDate={props.zoom.default_date_range[0]}
+            maxDate={props.zoom.default_date_range[1]}
+            calendarType="US"
+            selectRange
+            showNavigation={false}
+            showNeighboringMonth={false}
+            value={[start, end]}
+            onChange={matchingOnChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
 
 export interface DataTableActionsProps {
   readonly page: number;
@@ -136,9 +237,8 @@ export interface DataTableActionsProps {
   readonly zoom?: DataTableActionZoom;
 }
 
-export function DataTableActions(props: DataTableActionsProps) {
+export function DataTableActions(props: DataTableActionsProps): JSX.Element {
   const zoom = props.zoom;
-  const [focusedDateEntry, setFocusedDateEntry] = React.useState<"startDate" | "endDate" | null>(null);
 
   let zoomCtrl;
   if (zoom && zoom.type === DataTableActionZoomType.Last30Days) {
@@ -197,43 +297,7 @@ export function DataTableActions(props: DataTableActionsProps) {
       </>
     );
   } else if (zoom && zoom.type === DataTableActionZoomType.ZoomIntoRange) {
-    zoomCtrl = (
-      <>
-        <DateRangePicker
-          startDate={moment(zoom.current_date_zoom ? zoom.current_date_zoom.start : zoom.default_date_range[0])}
-          startDateId="station-data-table-start-date"
-          endDate={moment(
-            addDays(zoom.current_date_zoom ? zoom.current_date_zoom.end : zoom.default_date_range[1], -1)
-          )}
-          navPrev={<span />}
-          navNext={<span />}
-          endDateId="station-data-table-start-date"
-          noBorder={true}
-          numberOfMonths={1}
-          withPortal
-          openDirection="up"
-          hideKeyboardShortcutsPanel
-          minimumNights={0}
-          onDatesChange={(d) =>
-            zoom.set_date_zoom_range({
-              start: d.startDate ? d.startDate.toDate() : zoom.default_date_range[0],
-              end: d.endDate ? addDays(d.endDate.toDate(), 1) : zoom.default_date_range[1],
-            })
-          }
-          keepOpenOnDateSelect
-          isOutsideRange={(day) =>
-            day.toDate() < zoom.default_date_range[0] || day.toDate() >= zoom.default_date_range[1]
-          }
-          focusedInput={focusedDateEntry}
-          onFocusChange={setFocusedDateEntry}
-        />
-        <Tooltip title="Reset Date Range">
-          <IconButton onClick={() => zoom.set_date_zoom_range(undefined)}>
-            <ZoomOutIcon />
-          </IconButton>
-        </Tooltip>
-      </>
-    );
+    zoomCtrl = <SelectDateRange zoom={zoom} />;
   } else if (zoom && zoom.type === DataTableActionZoomType.ExtendDays) {
     zoomCtrl = (
       <>
@@ -322,7 +386,7 @@ export interface DataTableBodyProps<Id, Row> {
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<DataTableBodyProps<Id, Row>> {
-  render() {
+  render(): JSX.Element {
     const onClickDetails = this.props.onClickDetails;
     return (
       <TableBody>
