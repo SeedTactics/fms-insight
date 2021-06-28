@@ -46,7 +46,7 @@ import {
 import { LazySeq } from "./lazyseq";
 import * as api from "./api";
 import { format, differenceInSeconds } from "date-fns";
-import { duration } from "moment";
+import { durationToMinutes } from "./parseISODuration";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 import copy from "copy-to-clipboard";
 
@@ -146,7 +146,7 @@ export function loadOccupancyCycles(
         chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
           .transform(LazySeq.ofIterable)
           .mapOption((chunk) => {
-            var cycle = chunk.find((e) => {
+            const cycle = chunk.find((e) => {
               if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
                 return false;
               }
@@ -523,8 +523,8 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
       table += "<td>" + (mat.serial || "") + "</td>";
       table += "<td>" + (mat.workorder || "") + "</td>";
       table += "<td>" + result(cycle) + "</td>";
-      table += "<td>" + duration(cycle.elapsed).asMinutes().toFixed(1) + "</td>";
-      table += "<td>" + duration(cycle.active).asMinutes().toFixed(1) + "</td>";
+      table += "<td>" + durationToMinutes(cycle.elapsed).toFixed(1) + "</td>";
+      table += "<td>" + durationToMinutes(cycle.active).toFixed(1) + "</td>";
       table += "</tr>\n";
     }
   }

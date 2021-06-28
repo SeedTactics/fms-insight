@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "./api";
 import { LazySeq } from "./lazyseq";
 import { Vector, HashMap, HashSet } from "prelude-ts";
-import { duration } from "moment";
+import { durationToMinutes } from "./parseISODuration";
 import { atom, selector, useRecoilCallback } from "recoil";
 import {
   ToolUsage,
@@ -184,8 +184,8 @@ export function calcToolReport(
           (t) => t.pocket
         )
         .map((m) => {
-          const currentUseMinutes = m.currentUse !== "" ? duration(m.currentUse).asMinutes() : 0;
-          const lifetimeMinutes = m.totalLifeTime && m.totalLifeTime !== "" ? duration(m.totalLifeTime).asMinutes() : 0;
+          const currentUseMinutes = m.currentUse !== "" ? durationToMinutes(m.currentUse) : 0;
+          const lifetimeMinutes = m.totalLifeTime && m.totalLifeTime !== "" ? durationToMinutes(m.totalLifeTime) : 0;
           return {
             machineName: m.machineGroupName + " #" + m.machineNum.toString(),
             pocket: m.pocket,

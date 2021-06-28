@@ -33,15 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { RecoilState, useRecoilState, useSetRecoilState } from "recoil";
-import produce, { Draft, Immutable } from "immer";
+import produce, { Draft } from "immer";
 
 export function useRecoilStateDraft<T>(recoilState: RecoilState<T>): [T, (f: (d: Draft<T>) => void) => void] {
   const [st, setState] = useRecoilState(recoilState);
   const setDraft = React.useCallback(
     function setDraft(f: (d: Draft<T>) => void) {
-      const mapper: (t: Immutable<Draft<T>>) => Immutable<Draft<T>> = produce((d) => void f(d));
-      // convert Immutable<Draft<T>> to T
-      setState((mapper as unknown) as (t: T) => T);
+      const mapper = produce((d) => void f(d));
+      setState(mapper);
     },
     [setState]
   );
@@ -52,9 +51,8 @@ export function useSetRecoilStateDraft<T>(recoilState: RecoilState<T>): (f: (d: 
   const setState = useSetRecoilState(recoilState);
   const setDraft = React.useCallback(
     function setDraft(f: (d: Draft<T>) => void) {
-      const mapper: (t: Immutable<Draft<T>>) => Immutable<Draft<T>> = produce((d) => void f(d));
-      // convert Immutable<Draft<T>> to T
-      setState((mapper as unknown) as (t: T) => T);
+      const mapper = produce((d) => void f(d));
+      setState(mapper);
     },
     [setState]
   );

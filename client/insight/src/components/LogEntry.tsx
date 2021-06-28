@@ -47,7 +47,7 @@ import { WithStyles } from "@material-ui/core";
 import { withStyles } from "@material-ui/core";
 import { createStyles } from "@material-ui/core";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
-import { duration } from "moment";
+import { durationToMinutes, durationToSeconds } from "../data/parseISODuration";
 import clsx from "clsx";
 
 const logStyles = createStyles({
@@ -396,7 +396,7 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
   if (e.tools) {
     for (const [toolName, use] of LazySeq.ofObject(e.tools)) {
       if (use.toolUseDuringCycle && use.toolUseDuringCycle !== "") {
-        let msg = duration(use.toolUseDuringCycle).asMinutes().toFixed(1) + " min used during cycle.";
+        let msg = durationToMinutes(use.toolUseDuringCycle).toFixed(1) + " min used during cycle.";
 
         if (
           use.totalToolUseAtEndOfCycle &&
@@ -404,10 +404,10 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
           use.totalToolUseAtEndOfCycle !== "" &&
           use.configuredToolLife !== ""
         ) {
-          const total = duration(use.totalToolUseAtEndOfCycle);
-          const life = duration(use.configuredToolLife);
-          const pct = total.asSeconds() / life.asSeconds();
-          msg += ` Total use at end of cycle: ${total.asMinutes().toFixed(1)}/${life.asMinutes().toFixed(1)} min (${(
+          const total = durationToSeconds(use.totalToolUseAtEndOfCycle);
+          const life = durationToSeconds(use.configuredToolLife);
+          const pct = total / life;
+          msg += ` Total use at end of cycle: ${(total / 60).toFixed(1)}/${(life / 60).toFixed(1)} min (${(
             pct * 100
           ).toFixed(0)}%).`;
         }
