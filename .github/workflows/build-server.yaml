@@ -66,6 +66,7 @@ jobs:
           directory: server/test/TestResults
           flags: server-unittests
 
+      - run: yarn --cwd client/insight version --new-version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
       - run: yarn --cwd client/insight install --frozen-lockfile --network-timeout 1000000 --check-files
       - run: yarn --cwd client/insight test
       - run: yarn --cwd client/insight run build

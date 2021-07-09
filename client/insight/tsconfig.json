@@ -1,24 +1,30 @@
 {
   "compilerOptions": {
     "baseUrl": "/",
-    "module": "esnext",
-    "target": "es2018",
-    "lib": ["es2018", "dom"],
+    "rootDir": "./src",
+    "module": "es2020",
+    "target": "es2020",
+    "lib": ["es2020", "dom"],
     "sourceMap": true,
+
     "allowJs": false,
     "jsx": "react",
     "moduleResolution": "node",
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
 
     "strict": true,
     "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true
+    "noUnusedLocals": true
   },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
   "exclude": ["node_modules", "dist"]
 }

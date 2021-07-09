@@ -1,14 +1,12 @@
 {
   "name": "@seedtactics/insight-client",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "license": "BSD-3-Clause",
   "private": true,
-  "main": "./src/index.ts",
-  "targets": {
-    "main": false
-  },
+  "type": "module",
+  "exports": "./projdist/index.js",
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --project tsconfig.production.json && vite build",
     "start": "vite",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
