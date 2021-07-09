@@ -736,7 +736,7 @@ exports[`renders the dashboard: current jobs plot 1`] = `
 
 exports[`renders the dashboard: station oee 1`] = `
 <div
-  class="MuiGrid-root MuiGrid-container MuiGrid-justify-xs-space-around"
+  class="MuiGrid-root MuiGrid-container MuiGrid-justify-content-xs-space-around"
   data-testid="stationoee-container"
 >
   <div
