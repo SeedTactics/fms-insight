@@ -3660,10 +3660,9 @@ prelude-ls@~1.1.2:
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.1.2.tgz#21932a549f5e52ffd9a827f570e04be62a97da54"
   integrity sha1-IZMqVJ9eUv/ZqCf1cOBL5iqX2lQ=
 
-prelude-ts@^1.0.2:
+"prelude-ts@https://github.com/wuzzeb/prelude-ts.git#master":
   version "1.0.2"
-  resolved "https://registry.yarnpkg.com/prelude-ts/-/prelude-ts-1.0.2.tgz#bb0d3df807bce29ebf85099d485fc45dee1874ce"
-  integrity sha512-JubuTUHKuVTczV8HOVV2hWcomza8SO8ifB18wRzwji0y6zpnIg4/odh11qWlkW+ReoFVycqt8pYeJQMGjDlRzw==
+  resolved "https://github.com/wuzzeb/prelude-ts.git#631e96bc6fd3501fa01432a6eec0106b5c71ff03"
   dependencies:
     hamt_plus "1.0.2"
     list "2.0.19"
