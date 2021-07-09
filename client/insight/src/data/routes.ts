@@ -71,6 +71,8 @@ export enum RouteLocation {
   Backup_Efficiency = "/backup/efficiency",
   Backup_PartLookup = "/backup/lookup",
   Backup_Schedules = "/backup/schedules",
+
+  Client_Custom = "/client/:custom+",
 }
 
 export type RouteState =
@@ -101,7 +103,8 @@ export type RouteState =
   | { route: RouteLocation.Backup_InitialOpen }
   | { route: RouteLocation.Backup_Efficiency }
   | { route: RouteLocation.Backup_Schedules }
-  | { route: RouteLocation.Backup_PartLookup };
+  | { route: RouteLocation.Backup_PartLookup }
+  | { route: RouteLocation.Client_Custom; custom: ReadonlyArray<string> };
 
 function routeToUrl(route: RouteState): string {
   switch (route.route) {
@@ -136,6 +139,9 @@ function routeToUrl(route: RouteState): string {
         return `/station/queues`;
       }
 
+    case RouteLocation.Client_Custom:
+      return "/client/" + route.custom.map((r) => encodeURIComponent(r)).join("/");
+
     default:
       return route.route;
   }
@@ -154,9 +160,10 @@ export function useIsDemo(): boolean {
 
 export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
   const router = useRouter();
+  // eslint-disable-next-line prefer-const
   let [location, setLocation] = router.hook();
 
-  let queryString: string = "";
+  let queryString = "";
   if (router.hook === useDemoLocation) {
     const idx = location.indexOf("?");
     if (idx >= 0) {
@@ -167,6 +174,7 @@ export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
     queryString = window.location.search;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   const setRoute = useCallback((r) => setLocation(routeToUrl(r)), []);
 
   const curRoute: RouteState = useMemo(() => {
@@ -202,12 +210,19 @@ export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
               return { route: RouteLocation.Station_InspectionMonitor };
             }
 
-          case RouteLocation.Station_Queues:
+          case RouteLocation.Station_Queues: {
             const search = new URLSearchParams(queryString);
             return {
               route: RouteLocation.Station_Queues,
               free: search.has("free"),
               queues: search.getAll("queue"),
+            };
+          }
+
+          case RouteLocation.Client_Custom:
+            return {
+              route: RouteLocation.Client_Custom,
+              custom: (params?.custom ?? []) as ReadonlyArray<string>,
             };
 
           default:
