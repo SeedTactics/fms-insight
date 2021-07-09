@@ -50,97 +50,107 @@ import MemoryIcon from "@material-ui/icons/Memory";
 
 import { RouteState, RouteLocation } from "../data/routes";
 
+export type ChooseModeItem =
+  | { readonly type: "Subheader"; readonly caption: string }
+  | { readonly type: "Link"; route: RouteState; readonly icon: JSX.Element; readonly label: string };
+
+export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
+  { type: "Subheader", caption: "Shop Floor" },
+  {
+    type: "Link",
+    route: {
+      route: RouteLocation.Station_LoadMonitor,
+      loadNum: 1,
+      free: false,
+      queues: [],
+    },
+    icon: <DirectionsIcon />,
+    label: "Load Station",
+  },
+  {
+    type: "Link",
+    route: {
+      route: RouteLocation.Station_Queues,
+      free: false,
+      queues: [],
+    },
+    icon: <ExtensionIcon />,
+    label: "Queue Management",
+  },
+  {
+    type: "Link",
+    route: {
+      route: RouteLocation.Station_InspectionMonitor,
+    },
+    icon: <InfoIcon />,
+    label: "Inspection Stand",
+  },
+  {
+    type: "Link",
+    route: {
+      route: RouteLocation.Station_WashMonitor,
+    },
+    icon: <OpacityIcon />,
+    label: "Wash",
+  },
+  {
+    type: "Link",
+    route: {
+      route: RouteLocation.Tools_Dashboard,
+    },
+    icon: <BuildIcon />,
+    label: "Tool Management",
+  },
+  {
+    type: "Subheader",
+    caption: "Daily Monitoring",
+  },
+  {
+    type: "Link",
+    route: { route: RouteLocation.Operations_Dashboard },
+    icon: <ShoppingBasket />,
+    label: "Operation Management",
+  },
+  {
+    type: "Link",
+    route: { route: RouteLocation.Engineering },
+    icon: <MemoryIcon />,
+    label: "Engineering",
+  },
+  {
+    type: "Link",
+    route: { route: RouteLocation.Quality_Dashboard },
+    icon: <StarIcon />,
+    label: "Quality Analysis",
+  },
+  { type: "Subheader", caption: "Monthly Review" },
+  {
+    type: "Link",
+    route: { route: RouteLocation.Analysis_Efficiency },
+    icon: <ChartIcon />,
+    label: "Flexibility Analysis",
+  },
+];
+
 export interface ChooseModeProps {
   readonly setRoute: (r: RouteState) => void;
+  readonly modes?: ReadonlyArray<ChooseModeItem>;
 }
 
-export function ChooseMode(p: ChooseModeProps) {
+export function ChooseMode(p: ChooseModeProps): JSX.Element {
   const navList = (
     <Paper>
       <List component="nav">
-        <ListSubheader>Shop Floor</ListSubheader>
-        <ListItem
-          button
-          onClick={() =>
-            p.setRoute({
-              route: RouteLocation.Station_LoadMonitor,
-              loadNum: 1,
-              free: false,
-              queues: [],
-            })
-          }
-        >
-          <ListItemIcon>
-            <DirectionsIcon />
-          </ListItemIcon>
-          <ListItemText>Load Station</ListItemText>
-        </ListItem>
-        <ListItem
-          button
-          onClick={() =>
-            p.setRoute({
-              route: RouteLocation.Station_Queues,
-              free: false,
-              queues: [],
-            })
-          }
-        >
-          <ListItemIcon>
-            <ExtensionIcon />
-          </ListItemIcon>
-          <ListItemText>Queue Management</ListItemText>
-        </ListItem>
-        <ListItem
-          button
-          onClick={() =>
-            p.setRoute({
-              route: RouteLocation.Station_InspectionMonitor,
-            })
-          }
-        >
-          <ListItemIcon>
-            <InfoIcon />
-          </ListItemIcon>
-          <ListItemText>Inspection Stand</ListItemText>
-        </ListItem>
-        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Station_WashMonitor })}>
-          <ListItemIcon>
-            <OpacityIcon />
-          </ListItemIcon>
-          <ListItemText>Wash</ListItemText>
-        </ListItem>
-        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Tools_Dashboard })}>
-          <ListItemIcon>
-            <BuildIcon />
-          </ListItemIcon>
-          <ListItemText>Tool Management</ListItemText>
-        </ListItem>
-        <ListSubheader>Daily Monitoring</ListSubheader>
-        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Operations_Dashboard })}>
-          <ListItemIcon>
-            <ShoppingBasket />
-          </ListItemIcon>
-          <ListItemText>Operation Management</ListItemText>
-        </ListItem>
-        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Engineering })}>
-          <ListItemIcon>
-            <MemoryIcon />
-          </ListItemIcon>
-          <ListItemText>Engineering</ListItemText>
-        </ListItem>
-        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Quality_Dashboard })}>
-          <ListItemIcon>
-            <StarIcon />
-          </ListItemIcon>
-          <ListItemText>Quality Analysis</ListItemText>
-        </ListItem>
-        <ListSubheader>Monthly Review</ListSubheader>
-        <ListItem button onClick={() => p.setRoute({ route: RouteLocation.Analysis_Efficiency })}>
-          <ListItemIcon>
-            <ChartIcon />
-          </ListItemIcon>
-          <ListItemText>Flexibility Analysis</ListItemText>
-        </ListItem>
+        {(p.modes ?? defaultChooseModes).map((mode, idx) =>
+          mode.type === "Subheader" ? (
+            <ListSubheader key={idx}>{mode.caption}</ListSubheader>
+          ) : (
+            <ListItem key={idx} button onClick={() => p.setRoute(mode.route)}>
+              <ListItemIcon>{mode.icon}</ListItemIcon>
+              <ListItemText>{mode.label}</ListItemText>
+            </ListItem>
+          )
+        )}
       </List>
     </Paper>
   );

@@ -44,17 +44,17 @@ import "@fontsource/roboto/700.css";
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";
 import { ThemeProvider } from "@material-ui/core";
-import { createMuiTheme } from "@material-ui/core";
+import { createTheme } from "@material-ui/core/styles";
 import { RecoilRoot } from "recoil";
 import { Router } from "wouter";
 import { enableMapSet } from "immer";
 enableMapSet();
 
-import App from "./components/App";
+import App, { AppProps } from "./components/App";
 import { Store } from "./store/typed-redux";
 
-export function render<A, S>(store: Store<A, S>, elem: HTMLElement | null): void {
-  const theme = createMuiTheme({
+export function render<A, S>(store: Store<A, S>, appProps: AppProps | null, elem: HTMLElement | null): void {
+  const theme = createTheme({
     palette: {
       primary: green,
       secondary: brown,
@@ -68,7 +68,7 @@ export function render<A, S>(store: Store<A, S>, elem: HTMLElement | null): void
         <RecoilRoot>
           <store.Provider>
             {/* <React.StrictMode> */}
-            <App />
+            <App {...appProps} />
             {/* </React.StrictMode> */}
           </store.Provider>
         </RecoilRoot>

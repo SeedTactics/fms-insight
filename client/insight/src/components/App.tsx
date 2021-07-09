@@ -1,4 +1,3 @@
-/* eslint-disable react/display-name */
 /* Copyright (c) 2020, John Lenz
 
 All rights reserved.
@@ -54,7 +53,7 @@ import CostPerPiece from "./analysis/CostPerPiece";
 import Efficiency from "./analysis/Efficiency";
 import StationToolbar from "./station-monitor/StationToolbar";
 import DataExport from "./analysis/DataExport";
-import ChooseMode from "./ChooseMode";
+import ChooseMode, { ChooseModeItem } from "./ChooseMode";
 import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
 import * as api from "../data/api";
@@ -82,6 +81,8 @@ import { BarcodeListener } from "../store/barcode";
 import { ScheduleHistory } from "./analysis/ScheduleHistory";
 import { differenceInDays, startOfToday } from "date-fns";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
+
+/* eslint-disable react/display-name */
 
 const tabsStyle = {
   alignSelf: "flex-end" as const,
@@ -220,6 +221,7 @@ function helpUrl(r: routes.RouteState): string {
       return "https://www.seedtactics.com/docs/fms-insight/client-backup-viewer";
 
     case routes.RouteLocation.ChooseMode:
+    case routes.RouteLocation.Client_Custom:
     default:
       return "https://www.seedtactics.com/docs/fms-insight/client-launch";
   }
@@ -345,7 +347,15 @@ function Header(p: HeaderProps) {
   );
 }
 
-const App = React.memo(function App() {
+export interface AppProps {
+  readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
+    readonly nav: (props: HeaderNavProps) => JSX.Element;
+    readonly page: JSX.Element;
+  };
+  readonly chooseModes?: ReadonlyArray<ChooseModeItem>;
+}
+
+const App = React.memo(function App(props: AppProps) {
   const fmsInfoLoadable = useRecoilValueLoadable(serverSettings.fmsInformation);
   const [route, setRoute] = routes.useCurrentRoute();
 
@@ -503,9 +513,17 @@ const App = React.memo(function App() {
         showAlarms = false;
         break;
 
+      case routes.RouteLocation.Client_Custom: {
+        const customPage = props.renderCustomPage?.(route.custom);
+        navigation = customPage?.nav;
+        page = customPage?.page ?? <ChooseMode setRoute={setRoute} modes={props.chooseModes} />;
+        showAlarms = false;
+        break;
+      }
+
       case routes.RouteLocation.ChooseMode:
       default:
-        page = <ChooseMode setRoute={setRoute} />;
+        page = <ChooseMode setRoute={setRoute} modes={props.chooseModes} />;
         showSearch = false;
         showAlarms = false;
     }
