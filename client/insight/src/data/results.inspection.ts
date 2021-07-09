@@ -36,8 +36,7 @@ import { InspectionLogEntry, InspectionLogResultType } from "./events.inspection
 import { LazySeq } from "./lazyseq";
 import { format } from "date-fns";
 import { MaterialDetail } from "./material-details";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const copy = require("copy-to-clipboard");
+import copy from "copy-to-clipboard";
 
 export interface TriggeredInspectionEntry {
   readonly time: Date;

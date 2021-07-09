@@ -53,9 +53,9 @@ if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
 render(store, document.getElementById("root"));
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
+  void navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (const reg of registrations) {
-      reg.unregister();
+      void reg.unregister();
     }
   });
 }

@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Table from "@material-ui/core/Table";
-import Accordian from "@material-ui/core/Accordion";
-import AccordianDetails from "@material-ui/core/AccordionDetails";
-import AccordianSummary from "@material-ui/core/AccordionSummary";
+import { Table } from "@material-ui/core";
+import { Accordion } from "@material-ui/core";
+import { AccordionDetails } from "@material-ui/core";
+import { AccordionSummary } from "@material-ui/core";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 
 import {
@@ -46,7 +46,7 @@ import {
   DataTableActionZoomType,
 } from "./DataTable";
 import { InspectionLogEntry } from "../../data/events.inspection";
-import Typography from "@material-ui/core/Typography";
+import { Typography } from "@material-ui/core";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 import { addDays, addHours } from "date-fns";
@@ -169,20 +169,20 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
         const points = groups.get(path).getOrThrow();
         const page = Math.min(pages.get(path).getOrElse(0), Math.ceil(points.material.length() / rowsPerPage));
         return (
-          <Accordian
+          <Accordion
             expanded={path === curPath}
             key={path}
             onChange={(_evt, open) => setCurPathOpen(open ? path : undefined)}
           >
-            <AccordianSummary expandIcon={<ExpandMoreIcon />}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" style={{ flexBasis: "33.33%", flexShrink: 0 }}>
                 {path}
               </Typography>
               <Typography variant="caption">
                 {points.material.length()} total parts, {points.failedCnt} failed
               </Typography>
-            </AccordianSummary>
-            <AccordianDetails>
+            </AccordionSummary>
+            <AccordionDetails>
               <div style={{ width: "100%" }}>
                 <Table>
                   <DataTableHead
@@ -223,8 +223,8 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   zoom={zoom}
                 />
               </div>
-            </AccordianDetails>
-          </Accordian>
+            </AccordionDetails>
+          </Accordion>
         );
       })}
     </div>

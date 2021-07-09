@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import { duration } from "moment";
+import { durationToMinutes } from "./parseISODuration";
 import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 
@@ -74,7 +74,7 @@ export type ExpireOldData =
   | { type: ExpireOldDataType.NoExpire };
 
 function stat_name(e: api.ISimulatedStationUtilization): string {
-  return e.stationGroup + " #" + e.stationNum;
+  return e.stationGroup + " #" + e.stationNum.toString();
 }
 
 export function process_sim_use(
@@ -120,8 +120,8 @@ export function process_sim_use(
     station: stat_name(simUse),
     start: simUse.startUTC,
     end: simUse.endUTC,
-    utilizationTime: duration(simUse.utilizationTime).asMinutes(),
-    plannedDownTime: duration(simUse.plannedDownTime).asMinutes(),
+    utilizationTime: durationToMinutes(simUse.utilizationTime),
+    plannedDownTime: durationToMinutes(simUse.plannedDownTime),
   }));
 
   const newProd = LazySeq.ofObject(newHistory.jobs).flatMap(function* ([_, jParam]: [string, api.IJob]) {
@@ -132,7 +132,7 @@ export function process_sim_use(
         const pathInfo = procInfo.paths[path];
         let machTime = 0;
         for (const stop of pathInfo.stops) {
-          machTime += duration(stop.expectedCycleTime).asMinutes();
+          machTime += durationToMinutes(stop.expectedCycleTime);
         }
         let prevQty = 0;
         for (const prod of pathInfo.simulatedProduction || []) {

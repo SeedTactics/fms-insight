@@ -44,18 +44,18 @@ import {
   ActionType,
 } from "./api";
 import faker from "faker";
-import { duration } from "moment";
+import { durationToSeconds } from "./parseISODuration";
 import { addSeconds, addMinutes } from "date-fns";
 
 faker.seed(0x6f79);
 
 export function fakeMaterial(part?: string, proc?: number): LogMaterial {
   return new LogMaterial({
-    id: faker.random.number(),
+    id: faker.datatype.number(),
     uniq: "uniq" + faker.random.alphaNumeric(),
     part: part || "part" + faker.random.alphaNumeric(),
-    proc: proc || faker.random.number({ max: 4 }),
-    numproc: faker.random.number({ max: 4 }),
+    proc: proc || faker.datatype.number({ max: 4 }),
+    numproc: faker.datatype.number({ max: 4 }),
     face: "face" + faker.random.alphaNumeric(),
     serial: "serial" + faker.random.alphaNumeric(),
     workorder: "work" + faker.random.alphaNumeric(),
@@ -67,8 +67,8 @@ export function fakeInProcMaterial(matId: number, queue?: string, queuePos?: num
     materialID: matId,
     jobUnique: "uniq" + faker.random.alphaNumeric(),
     partName: "part" + faker.random.alphaNumeric(),
-    path: faker.random.number({ max: 100 }),
-    process: faker.random.number({ max: 100 }),
+    path: faker.datatype.number({ max: 100 }),
+    process: faker.datatype.number({ max: 100 }),
     signaledInspections: [],
     location:
       queue && queuePos
@@ -87,8 +87,8 @@ export function fakeInProcMaterial(matId: number, queue?: string, queuePos?: num
 }
 
 function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
-  const elapsed = duration(e.elapsed);
-  const startTime = addSeconds(e.endUTC, -elapsed.asSeconds());
+  const elapsed = durationToSeconds(e.elapsed);
+  const startTime = addSeconds(e.endUTC, -elapsed);
   const start = {
     ...e,
     counter: e.counter - 1,
@@ -127,8 +127,8 @@ export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date,
     locnum: 1,
     result: "True",
     program: "theprogramshouldbeignored",
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
     details: {
       InspectionType: inspType,
       ActualPath: JSON.stringify(path),
@@ -152,8 +152,8 @@ export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, 
     locnum: 1,
     result: "True",
     program: inspType,
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
   };
 }
 
@@ -180,8 +180,8 @@ export function fakeInspComplete(
     locnum: 1,
     result: success.toString(),
     program: inspType,
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
   };
 }
 
@@ -212,14 +212,14 @@ export function fakeCycle(
     locnum: 1,
     result: "LOAD",
     program: "LOAD",
-    elapsed: "00:06:00",
-    active: "00:06:00",
+    elapsed: "PT6M",
+    active: "PT6M",
   });
 
   counter += 2;
   time = addMinutes(time, machineTime + 3);
 
-  const elapsed = "00:" + machineTime.toString() + ":00";
+  const elapsed = "PT" + machineTime.toString() + "M";
   addStartAndEnd(es, {
     counter,
     material,
@@ -249,14 +249,14 @@ export function fakeCycle(
     locnum: 2,
     result: "UNLOAD",
     program: "UNLOAD",
-    elapsed: "00:03:00",
-    active: "00:03:00",
+    elapsed: "PT3M",
+    active: "PT3M",
   });
 
   if (!noInspections) {
     time = addMinutes(time, 5);
     counter += 1;
-    if (faker.random.boolean() === true) {
+    if (faker.datatype.boolean() === true) {
       es.push(fakeInspForce(material[0], "Insp1", time, counter));
       time = addSeconds(time, 5);
       counter += 1;
@@ -275,8 +275,8 @@ export function fakeCycle(
     locnum: 2,
     result: "PalletCycle",
     program: "",
-    elapsed: "00:44:00",
-    active: "-00:01:00",
+    elapsed: "PT44M",
+    active: "PT-1M",
   });
 
   if (!noInspections) {
@@ -302,8 +302,8 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
     locnum: 1,
     result: serial,
     program: "",
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
   };
 }
 
@@ -320,8 +320,8 @@ export function fakeWashComplete(mat?: LogMaterial): ILogEntry {
     locnum: 1,
     result: "",
     program: "",
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
   };
 }
 
@@ -339,8 +339,8 @@ export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILog
     locnum: 1,
     result: workorder,
     program: "",
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
   };
 }
 
@@ -357,8 +357,8 @@ export function fakeAddToQueue(queue?: string, mat?: LogMaterial): ILogEntry {
     locnum: 1,
     result: "",
     program: "",
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
   };
 }
 
@@ -375,7 +375,7 @@ export function fakeRemoveFromQueue(queue?: string, mat?: LogMaterial): ILogEntr
     locnum: 1,
     result: "",
     program: "",
-    elapsed: "00:00:00",
-    active: "00:00:00",
+    elapsed: "PT0S",
+    active: "PT0S",
   };
 }

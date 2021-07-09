@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { addDays } from "date-fns";
-import Grid from "@material-ui/core/Grid";
-import Button from "@material-ui/core/Button";
-import Tooltip from "@material-ui/core/Tooltip";
-import DialogActions from "@material-ui/core/DialogActions";
+import { Grid } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
 
 import { Store, useSelector } from "../../store/store";
 import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";

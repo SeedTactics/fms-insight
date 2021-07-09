@@ -33,14 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as api from "../../data/api";
-import IconButton from "@material-ui/core/IconButton";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
+import { IconButton } from "@material-ui/core";
+import { Table } from "@material-ui/core";
+import { TableBody } from "@material-ui/core";
+import { TableCell } from "@material-ui/core";
+import { TableHead } from "@material-ui/core";
+import { TableRow } from "@material-ui/core";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import { duration } from "moment";
+import { durationToMinutes } from "../../data/parseISODuration";
 import { format } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { LazySeq } from "../../data/lazyseq";
@@ -107,19 +107,19 @@ function JobDisplay(props: JobDisplayProps) {
                   {path.inputQueue ? <div>Input Queue: {path.inputQueue}</div> : undefined}
                   {path.casting ? <div>Raw Material: {path.casting}</div> : undefined}
                   <div>
-                    Load Stations: {path.load.join(",")} | {duration(path.expectedLoadTime).minutes().toFixed(1)} mins
+                    Load Stations: {path.load.join(",")} | {durationToMinutes(path.expectedLoadTime).toFixed(1)} mins
                   </div>
                   {path.stops.map((stop, stopIdx) => (
                     <React.Fragment key={stopIdx}>
                       <div>
                         {stop.stationGroup}: {(stop.stationNums ?? []).join(",")} | Program: {stop.program}
                         {stop.programRevision ? " rev" + stop.programRevision.toString() : undefined} |{" "}
-                        {duration(stop.expectedCycleTime).minutes().toFixed(1)} mins
+                        {durationToMinutes(stop.expectedCycleTime).toFixed(1)} mins
                       </div>
                     </React.Fragment>
                   ))}
                   <div>
-                    Unload Stations: {path.unload.join(",")} | {duration(path.expectedUnloadTime).minutes().toFixed(1)}{" "}
+                    Unload Stations: {path.unload.join(",")} | {durationToMinutes(path.expectedUnloadTime).toFixed(1)}{" "}
                     mins
                   </div>
                   {path.outputQueue ? <div>Output Queue: {path.outputQueue}</div> : undefined}

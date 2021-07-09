@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Button from "@material-ui/core/Button";
+import { Button } from "@material-ui/core";
 
 import { connect } from "../store/store";
 import { requestOpenBackupFile } from "../data/backend-backupviewer";

@@ -32,17 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import Input from "@material-ui/core/Input";
-import InputAdornment from "@material-ui/core/InputAdornment";
-import IconButton from "@material-ui/core/IconButton";
+import { Input } from "@material-ui/core";
+import { InputAdornment } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import CalendarIcon from "@material-ui/icons/CalendarToday";
-import Dialog from "@material-ui/core/Dialog";
-import DialogContent from "@material-ui/core/DialogContent";
+import { Dialog } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
 import { format, startOfMonth, addYears } from "date-fns";
 import LeftArrowIcon from "@material-ui/icons/KeyboardArrowLeft";
 import RightArrowIcon from "@material-ui/icons/KeyboardArrowRight";
-import Button from "@material-ui/core/Button";
-import Typography from "@material-ui/core/Typography";
+import { Button } from "@material-ui/core";
+import { Typography } from "@material-ui/core";
 import { LazySeq } from "../data/lazyseq";
 
 export interface MonthSelectProps {

@@ -34,6 +34,14 @@
       <PackagePath>contentFiles\any\net5.0\wwwroot</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
+    <Content Include="..\..\..\client\insight\package.json">
+      <PackagePath>contentFiles\any\net5.0\insight-client\package.json</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+    <Content Include="..\..\..\client\insight\projdist\**\*">
+      <PackagePath>contentFiles\any\net5.0\insight-client\projdist</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
     <Content Include="..\..\..\client\backup-viewer\build\background\*">
       <PackagePath>contentFiles\any\net5.0\background-viewer</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>

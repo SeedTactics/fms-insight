@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "./api";
-import { duration } from "moment";
+import { durationToMinutes } from "./parseISODuration";
 import { HashMap, HashSet, Vector, Option, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { differenceInSeconds } from "date-fns";
@@ -375,9 +375,7 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): E
     .filter((c) => c.type === api.LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
     .groupBy((c) => PartAndStationOperation.ofLogCycle(c))
     .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(
-        cyclesForPartAndStat.map((cycle) => duration(cycle.elapsed).asMinutes() / cycle.material.length)
-      )
+      estimateCycleTimes(cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length))
     );
 
   const loads = splitElapsedLoadTime(
@@ -386,8 +384,8 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): E
     ),
     (c) => c.locnum,
     (c) => c.endUTC,
-    (c) => duration(c.elapsed).asMinutes(),
-    (c) => (c.active === "" ? -1 : duration(c.active).asMinutes())
+    (c) => durationToMinutes(c.elapsed),
+    (c) => (c.active === "" ? -1 : durationToMinutes(c.active))
   )
     .groupBy((c) => PartAndStationOperation.ofLogCycle(c.cycle))
     .mapValues((cyclesForPartAndStat) =>
@@ -398,7 +396,7 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): E
 }
 
 function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>): number {
-  const aMins = duration(cycle.active).asMinutes();
+  const aMins = durationToMinutes(cycle.active);
   if (cycle.active === "" || aMins <= 0 || cycle.material.length === 0) {
     return stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length;
   } else {
@@ -414,7 +412,7 @@ function process_tools(cycle: Readonly<api.ILogEntry>, toolUsage: ToolUsage): To
   const toolsUsedInCycle = LazySeq.ofObject(cycle.tools)
     .map(([toolName, use]) => ({
       toolName,
-      cycleUsageMinutes: use.toolUseDuringCycle === "" ? 0 : duration(use.toolUseDuringCycle).asMinutes(),
+      cycleUsageMinutes: use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle),
       toolChanged: use.toolChangeOccurred === true,
     }))
     .toArray();
@@ -523,7 +521,7 @@ export function process_events(
         cycle.material.length > 0
           ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
           : Option.none<StatisticalCycleTime>();
-      const elapsed = duration(cycle.elapsed).asMinutes();
+      const elapsed = durationToMinutes(cycle.elapsed);
       if (stats.isSome() && !isOutlier(stats.get(), elapsed)) {
         toolUsage = process_tools(cycle, toolUsage);
       }
@@ -555,8 +553,8 @@ export function process_events(
       LazySeq.ofIterable(cyclesForPal)
         .map((c) => ({
           x: c.endUTC,
-          y: duration(c.elapsed).asMinutes(),
-          active: duration(c.active).asMinutes(),
+          y: durationToMinutes(c.elapsed),
+          active: durationToMinutes(c.active),
           completed: false,
         }))
         .toArray()

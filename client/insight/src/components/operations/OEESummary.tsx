@@ -31,13 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Grid from "@material-ui/core/Grid";
-import Tooltip from "@material-ui/core/Tooltip";
+import { Grid } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
 import TimeAgo from "react-timeago";
 
 import { connect } from "../../store/store";
 import * as api from "../../data/api";
-import { duration } from "moment";
 import { addSeconds, addDays } from "date-fns";
 import { PalletData, buildPallets } from "../../data/load-station";
 import { Vector } from "prelude-ts";
@@ -45,6 +44,7 @@ import { stationMinutes } from "../../data/results.cycles";
 import { PartCycleData } from "../../data/events.cycles";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../data/current-status";
+import { durationToSeconds } from "../../data/parseISODuration";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;
@@ -124,7 +124,7 @@ function palletMaterial(
         matStatus = " (machining)";
         if (mat.action.expectedRemainingMachiningTime && dateOfCurrentStatus) {
           matStatus += " completing ";
-          const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+          const seconds = durationToSeconds(mat.action.expectedRemainingMachiningTime);
           matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)} />;
         }
         break;
@@ -189,7 +189,7 @@ function isMaterialOverdue(dateOfCurrentStatus: Date | undefined, p: PalletData)
   }
   for (const mat of p.material) {
     if (mat.action.expectedRemainingMachiningTime) {
-      const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+      const seconds = durationToSeconds(mat.action.expectedRemainingMachiningTime);
       if (seconds < 0) {
         return true;
       }

@@ -37,8 +37,7 @@ import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { chunkCyclesWithSimilarEndTime } from "./events.cycles";
 import { PartCycleData, stat_name_and_num } from "./events.cycles";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const copy = require("copy-to-clipboard");
+import copy from "copy-to-clipboard";
 
 // --------------------------------------------------------------------------------
 // Actual

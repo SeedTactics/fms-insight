@@ -32,20 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import * as api from "../data/api";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
+import { Table } from "@material-ui/core";
+import { TableBody } from "@material-ui/core";
+import { TableCell } from "@material-ui/core";
+import { TableHead } from "@material-ui/core";
+import { TableRow } from "@material-ui/core";
 import DateTimeDisplay from "./DateTimeDisplay";
 import { LazySeq } from "../data/lazyseq";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
+import { Tooltip } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ImportExport from "@material-ui/icons/ImportExport";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { WithStyles } from "@material-ui/core";
+import { withStyles } from "@material-ui/core";
+import { createStyles } from "@material-ui/core";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
-import { duration } from "moment";
+import { durationToMinutes, durationToSeconds } from "../data/parseISODuration";
 import clsx from "clsx";
 
 const logStyles = createStyles({
@@ -394,7 +396,7 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
   if (e.tools) {
     for (const [toolName, use] of LazySeq.ofObject(e.tools)) {
       if (use.toolUseDuringCycle && use.toolUseDuringCycle !== "") {
-        let msg = duration(use.toolUseDuringCycle).asMinutes().toFixed(1) + " min used during cycle.";
+        let msg = durationToMinutes(use.toolUseDuringCycle).toFixed(1) + " min used during cycle.";
 
         if (
           use.totalToolUseAtEndOfCycle &&
@@ -402,10 +404,10 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
           use.totalToolUseAtEndOfCycle !== "" &&
           use.configuredToolLife !== ""
         ) {
-          const total = duration(use.totalToolUseAtEndOfCycle);
-          const life = duration(use.configuredToolLife);
-          const pct = total.asSeconds() / life.asSeconds();
-          msg += ` Total use at end of cycle: ${total.asMinutes().toFixed(1)}/${life.asMinutes().toFixed(1)} min (${(
+          const total = durationToSeconds(use.totalToolUseAtEndOfCycle);
+          const life = durationToSeconds(use.configuredToolLife);
+          const pct = total / life;
+          msg += ` Total use at end of cycle: ${(total / 60).toFixed(1)}/${(life / 60).toFixed(1)} min (${(
             pct * 100
           ).toFixed(0)}%).`;
         }

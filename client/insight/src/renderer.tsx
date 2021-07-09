@@ -33,20 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import CssBaseline from "@material-ui/core/CssBaseline";
+import { CssBaseline } from "@material-ui/core";
 import "react-vis/dist/style.css";
 import "highlight.js/styles/default.css";
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import "react-dates/lib/css/_datepicker.css";
-import "./components/analysis/data-table.css";
 
 import green from "@material-ui/core/colors/green";
 import brown from "@material-ui/core/colors/brown";
-import { ThemeProvider } from "@material-ui/core/styles";
-import createMuiTheme from "@material-ui/core/styles/createMuiTheme";
+import { ThemeProvider } from "@material-ui/core";
+import { createMuiTheme } from "@material-ui/core";
 import { RecoilRoot } from "recoil";
 import { Router } from "wouter";
 import { enableMapSet } from "immer";

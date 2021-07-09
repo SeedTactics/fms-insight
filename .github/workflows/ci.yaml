@@ -69,4 +69,4 @@ jobs:
       - name: Install backup-viewer deps
         run: yarn --cwd client/backup-viewer install --frozen-lockfile
       - name: Backup-Viewer Build
-        run: yarn --cwd client/backup-viewer run build
+        run: yarn --cwd client/backup-viewer run build-background

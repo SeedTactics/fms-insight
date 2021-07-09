@@ -32,18 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import Select from "@material-ui/core/Select";
-import MenuItem from "@material-ui/core/MenuItem";
-import ListItemText from "@material-ui/core/ListItemText";
-import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
-import IconButton from "@material-ui/core/IconButton";
+import { Select } from "@material-ui/core";
+import { MenuItem } from "@material-ui/core";
+import { ListItemText } from "@material-ui/core";
+import { ListItemSecondaryAction } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
-import Dialog from "@material-ui/core/Dialog";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import TextField from "@material-ui/core/TextField";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogActions from "@material-ui/core/DialogActions";
-import Button from "@material-ui/core/Button";
+import { Dialog } from "@material-ui/core";
+import { DialogTitle } from "@material-ui/core";
+import { TextField } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
+import { Button } from "@material-ui/core";
 
 import { useRecoilState, useRecoilValue } from "recoil";
 import { allOperators, currentOperator } from "../data/operators";

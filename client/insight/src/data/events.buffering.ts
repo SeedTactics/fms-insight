@@ -34,7 +34,7 @@ import * as api from "./api";
 import { ExpireOldData, ExpireOldDataType } from "./events.cycles";
 import { LazySeq } from "./lazyseq";
 import { Vector } from "prelude-ts";
-import { duration } from "moment";
+import { durationToSeconds } from "./parseISODuration";
 
 export type BufferType =
   | { readonly type: "Rotary"; readonly machineGroup: string; readonly machineNum: number }
@@ -92,7 +92,7 @@ export function process_events(
 
   for (const e of newEvts) {
     if (e.elapsed === "") continue;
-    const elapsedSeconds = duration(e.elapsed).asSeconds();
+    const elapsedSeconds = durationToSeconds(e.elapsed);
     if (elapsedSeconds <= 0) continue;
 
     switch (e.type) {

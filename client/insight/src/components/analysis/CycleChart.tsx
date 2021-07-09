@@ -45,15 +45,17 @@ import {
   AreaSeries,
   LineSeries,
 } from "react-vis";
-import Button from "@material-ui/core/Button";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { Button } from "@material-ui/core";
+import { WithStyles } from "@material-ui/core";
+import { withStyles } from "@material-ui/core";
+import { createStyles } from "@material-ui/core";
 import { HashMap } from "prelude-ts";
 import { StatisticalCycleTime } from "../../data/events.cycles";
-import Dialog from "@material-ui/core/Dialog";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogActions from "@material-ui/core/DialogActions";
-import TextField from "@material-ui/core/TextField";
-import IconButton from "@material-ui/core/IconButton";
+import { Dialog } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
+import { TextField } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import ZoomIn from "@material-ui/icons/ZoomIn";
 
 interface YZoomRange {

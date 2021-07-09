@@ -31,20 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import Fab from "@material-ui/core/Fab";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
+import { Fab } from "@material-ui/core";
+import { CircularProgress } from "@material-ui/core";
+import { Card } from "@material-ui/core";
+import { CardContent } from "@material-ui/core";
 import TimeAgo from "react-timeago";
 import RefreshIcon from "@material-ui/icons/Refresh";
-import CardHeader from "@material-ui/core/CardHeader";
+import { CardHeader } from "@material-ui/core";
 import ToolIcon from "@material-ui/icons/Dns";
-import Table from "@material-ui/core/Table";
-import TableHead from "@material-ui/core/TableHead";
-import TableCell from "@material-ui/core/TableCell";
-import TableRow from "@material-ui/core/TableRow";
-import TableSortLabel from "@material-ui/core/TableSortLabel";
-import Tooltip from "@material-ui/core/Tooltip";
+import { Table } from "@material-ui/core";
+import { TableHead } from "@material-ui/core";
+import { TableCell } from "@material-ui/core";
+import { TableRow } from "@material-ui/core";
+import { TableSortLabel } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
 import {
   ToolReport,
   currentToolReport,
@@ -53,21 +53,21 @@ import {
   copyToolReportToClipboard,
   toolReportRefreshTime,
 } from "../../data/tools-programs";
-import TableBody from "@material-ui/core/TableBody";
-import IconButton from "@material-ui/core/IconButton";
+import { TableBody } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-import Collapse from "@material-ui/core/Collapse";
+import { Collapse } from "@material-ui/core";
 import { LazySeq } from "../../data/lazyseq";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core";
 import { PartIdenticon } from "../station-monitor/Material";
 import clsx from "clsx";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { useIsDemo } from "../../data/routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
-import Select from "@material-ui/core/Select";
+import { Select } from "@material-ui/core";
 import ImportExport from "@material-ui/icons/ImportExport";
-import MenuItem from "@material-ui/core/MenuItem";
+import { MenuItem } from "@material-ui/core";
 import { useSelector } from "../../store/store";
 
 interface ToolRowProps {

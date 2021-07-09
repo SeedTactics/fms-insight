@@ -32,14 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import SearchIcon from "@material-ui/icons/Search";
-import Card from "@material-ui/core/Card";
-import CardContent from "@material-ui/core/CardContent";
-import CardHeader from "@material-ui/core/CardHeader";
-import Select from "@material-ui/core/Select";
-import MenuItem from "@material-ui/core/MenuItem";
+import { Card } from "@material-ui/core";
+import { CardContent } from "@material-ui/core";
+import { CardHeader } from "@material-ui/core";
+import { Select } from "@material-ui/core";
+import { MenuItem } from "@material-ui/core";
 import { Sankey, Hint } from "react-vis";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
+import { Tooltip } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 import ImportExport from "@material-ui/icons/ImportExport";
 
 import { PartIdenticon } from "../station-monitor/Material";

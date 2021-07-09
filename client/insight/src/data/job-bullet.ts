@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "./api";
-import { duration } from "moment";
+import { durationToSeconds } from "./parseISODuration";
 import { Vector, Option } from "prelude-ts";
 
 export interface DataPoint {
@@ -49,12 +49,11 @@ function displayJob(job: api.IActiveJob, proc: number): DataPoint {
   const completed = job.completed ? job.completed[proc].reduce((a, b) => a + b, 0) : 0;
 
   const stops = job.procsAndPaths[proc].paths[0].stops;
-  let cycleTime = duration();
+  let cycleTimeSeconds = 0;
   for (let i = 0; i < stops.length; i++) {
-    const x = duration(stops[i].expectedCycleTime);
-    cycleTime = cycleTime.add(x);
+    cycleTimeSeconds += durationToSeconds(stops[i].expectedCycleTime);
   }
-  const cycleTimeHours = cycleTime.asHours() / job.procsAndPaths[proc].paths[0].partsPerPallet;
+  const cycleTimeHours = cycleTimeSeconds / (60 * 60) / job.procsAndPaths[proc].paths[0].partsPerPallet;
   return {
     part: job.partName + "-" + (proc + 1).toString(),
     completed: cycleTimeHours * completed,

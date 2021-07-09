@@ -1,26 +1,29 @@
 {
   "compilerOptions": {
-    "outDir": ".build",
     "baseUrl": "/",
-    "module": "esnext",
-    // "target": "es2016", https://github.com/parcel-bundler/parcel/issues/954
-    "target": "es5",
-    "lib": ["es2017", "dom"],
+    "module": "es2020",
+    "target": "es2020",
+    "lib": ["es2020", "dom"],
     "sourceMap": true,
+
     "allowJs": false,
     "jsx": "react",
     "moduleResolution": "node",
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
 
     "strict": true,
     "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true
+    "noUnusedLocals": true
   },
-  "exclude": ["node_modules", ".parcel-dev", ".parcel-cache", "dist"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": ["node_modules", "dist"]
 }

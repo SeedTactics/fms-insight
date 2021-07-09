@@ -32,19 +32,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import AppBar from "@material-ui/core/AppBar";
-import Tabs from "@material-ui/core/Tabs";
-import Tab from "@material-ui/core/Tab";
-import Typography from "@material-ui/core/Typography";
-import Toolbar from "@material-ui/core/Toolbar";
-import Hidden from "@material-ui/core/Hidden";
+import { AppBar } from "@material-ui/core";
+import { Tabs } from "@material-ui/core";
+import { Tab } from "@material-ui/core";
+import { Typography } from "@material-ui/core";
+import { Toolbar } from "@material-ui/core";
+import { Hidden } from "@material-ui/core";
 import HelpOutline from "@material-ui/icons/HelpOutline";
 import ExitToApp from "@material-ui/icons/ExitToApp";
-import IconButton from "@material-ui/core/IconButton";
-import Tooltip from "@material-ui/core/Tooltip";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import Button from "@material-ui/core/Button";
-import Badge from "@material-ui/core/Badge";
+import { IconButton } from "@material-ui/core";
+import { Tooltip } from "@material-ui/core";
+import { CircularProgress } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Badge } from "@material-ui/core";
 import Notifications from "@material-ui/icons/Notifications";
 import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 
@@ -59,7 +59,7 @@ import LoadingIcon from "./LoadingIcon";
 import * as routes from "../data/routes";
 import * as api from "../data/api";
 import * as serverSettings from "../data/server-settings";
-import logo from "url:../seedtactics-logo.svg";
+import { SeedtacticLogo } from "../seedtactics-logo";
 import BackupViewer from "./BackupViewer";
 import { SerialScannerButton } from "./QRScan";
 import { ManualScanButton } from "./ManualScan";
@@ -299,9 +299,9 @@ function Header(p: HeaderProps) {
         <AppBar position="static">
           <Toolbar>
             <Tooltip title={tooltip}>
-              <img src={logo} alt="Logo" style={{ height: "30px", marginRight: "1em" }} />
+              <SeedtacticLogo />
             </Tooltip>
-            <Typography variant="h6" style={{ marginRight: "2em" }}>
+            <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
               Insight
             </Typography>
             {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
@@ -324,9 +324,11 @@ function Header(p: HeaderProps) {
         <AppBar position="static">
           <Toolbar>
             <Tooltip title={tooltip}>
-              <img src={logo} alt="Logo" style={{ height: "25px", marginRight: "4px" }} />
+              <SeedtacticLogo />
             </Tooltip>
-            <Typography variant="h6">Insight</Typography>
+            <Typography variant="h6" style={{ marginLeft: "4px" }}>
+              Insight
+            </Typography>
             {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
             <div style={{ flexGrow: 1 }} />
             <LoadingIcon />

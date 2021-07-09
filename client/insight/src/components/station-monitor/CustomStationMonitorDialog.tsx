@@ -32,15 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import Dialog from "@material-ui/core/Dialog";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
+import { Dialog } from "@material-ui/core";
+import { DialogActions } from "@material-ui/core";
+import { DialogContent } from "@material-ui/core";
 import { useRecoilValue } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { Button } from "@material-ui/core";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
-import DialogTitle from "@material-ui/core/DialogTitle";
+import { Tooltip } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
+import { DialogTitle } from "@material-ui/core";
 import SettingsIcon from "@material-ui/icons/Settings";
 
 export const CustomStationMonitorDialog = React.memo(function CustomStationMonitorDialog(): JSX.Element | null {

@@ -32,14 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import Divider from "@material-ui/core/Divider";
-import { WithStyles, createStyles, withStyles } from "@material-ui/core/styles";
-import Button from "@material-ui/core/Button";
-import Hidden from "@material-ui/core/Hidden";
+import { Divider } from "@material-ui/core";
+import { withStyles } from "@material-ui/core";
+import { createStyles } from "@material-ui/core";
+import { WithStyles } from "@material-ui/core";
+import { Button } from "@material-ui/core";
+import { Hidden } from "@material-ui/core";
 import FolderOpenIcon from "@material-ui/icons/FolderOpen";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
-import { duration } from "moment";
+import { durationToSeconds } from "../../data/parseISODuration";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from "../../data/load-station";
 import {
@@ -63,8 +65,8 @@ import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import ReactToPrint from "react-to-print";
 import { instructionUrl } from "../../data/backend";
-import Tooltip from "@material-ui/core/Tooltip";
-import Fab from "@material-ui/core/Fab";
+import { Tooltip } from "@material-ui/core";
+import { Fab } from "@material-ui/core";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, reorder_queued_mat } from "../../data/current-status";
@@ -92,7 +94,7 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
       matStatus = " (machining)";
       if (mat.action.expectedRemainingMachiningTime) {
         matStatus += " completing ";
-        const seconds = duration(mat.action.expectedRemainingMachiningTime).asSeconds();
+        const seconds = durationToSeconds(mat.action.expectedRemainingMachiningTime);
         matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)} />;
       }
       break;
@@ -235,12 +237,12 @@ function MultiInstructionButton({
 const palletStyles = createStyles({
   palletContainerFill: {
     width: "100%",
-    position: "relative" as "relative",
+    position: "relative",
     flexGrow: 1,
   },
   palletContainerScroll: {
     width: "100%",
-    position: "relative" as "relative",
+    position: "relative",
     minHeight: "12em",
   },
   statStatusFill: {
@@ -255,7 +257,7 @@ const palletStyles = createStyles({
     minHeight: "12em",
   },
   labelContainer: {
-    position: "absolute" as "absolute",
+    position: "absolute",
     top: "4px",
     left: "4px",
   },
@@ -533,14 +535,14 @@ const loadStyles = createStyles({
   palCol: {
     flexGrow: 1,
     display: "flex",
-    flexDirection: "column" as "column",
+    flexDirection: "column",
     position: "relative",
   },
   queueCol: {
     width: "16em",
     padding: "8px",
     display: "flex",
-    flexDirection: "column" as "column",
+    flexDirection: "column",
     borderLeft: "1px solid rgba(0, 0, 0, 0.12)",
   },
   fabFillViewport: {
@@ -712,7 +714,7 @@ export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProp
   );
 });
 
-function LoadStationCheckWidth(props: LoadStationProps) {
+function LoadStationCheckWidth(props: LoadStationProps): JSX.Element {
   React.useEffect(() => {
     document.title = "Load " + props.loadNum.toString() + " - FMS Insight";
   }, [props.loadNum]);
