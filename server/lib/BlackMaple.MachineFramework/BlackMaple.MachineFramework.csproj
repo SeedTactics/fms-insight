@@ -38,6 +38,10 @@
       <PackagePath>contentFiles\any\net5.0\insight-client\package.json</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
+    <Content Include="..\..\..\client\insight\tsconfig.json">
+      <PackagePath>contentFiles\any\net5.0\insight-client\tsconfig.json</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
     <Content Include="..\..\..\client\insight\projdist\**\*">
       <PackagePath>contentFiles\any\net5.0\insight-client\projdist</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
