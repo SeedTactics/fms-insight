@@ -4,9 +4,9 @@
   "license": "BSD-3-Clause",
   "private": true,
   "type": "module",
-  "main": "./projdist/index.js",
+  "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc --project tsconfig.production.json && vite build",
+    "build": "tsc --noEmit && vite build",
     "start": "vite",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
