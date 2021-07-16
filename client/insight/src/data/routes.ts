@@ -222,7 +222,7 @@ export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
           case RouteLocation.Client_Custom:
             return {
               route: RouteLocation.Client_Custom,
-              custom: (params?.custom ?? []) as ReadonlyArray<string>,
+              custom: params?.custom?.split("/")?.map((s) => decodeURIComponent(s)) ?? [],
             };
 
           default:

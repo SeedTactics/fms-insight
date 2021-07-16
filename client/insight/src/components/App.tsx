@@ -89,7 +89,7 @@ const tabsStyle = {
   flexGrow: 1,
 };
 
-interface HeaderNavProps {
+export interface HeaderNavProps {
   readonly full: boolean;
   readonly setRoute: (r: routes.RouteState) => void;
   readonly routeState: routes.RouteState;
