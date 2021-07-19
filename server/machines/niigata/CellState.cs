@@ -248,10 +248,15 @@ namespace BlackMaple.FMSInsight.Niigata
             lastCompletedIccIdx += 1;
           }
           var completedMachineSteps =
-            pallet.Master.Routes
-            .Take(lastCompletedIccIdx)
-            .Where(r => r is MachiningStep || r is ReclampStep)
-            .Count();
+            Math.Min(
+              pallet.Master.Routes
+                .Take(lastCompletedIccIdx)
+                .Where(r => r is MachiningStep || r is ReclampStep)
+                .Count(),
+              // Should never be hit, but if the user edits the pallet and forgets to set "Manual" in the comment field,
+              // it can be higher than the configured steps.  Add a bound just in case.
+              stops.Count
+            );
 
           if (completedMachineSteps > 0)
           {
