@@ -37,6 +37,7 @@ using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using Npgsql;
 using Dapper;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -51,6 +52,13 @@ namespace BlackMaple.FMSInsight.Niigata
     private Thread _thread;
     private Random _rng = new Random();
     private DateTime _lastActionTime = DateTime.MinValue;
+
+    // ICC has a bug when deleting programs, sometimes the program is not fully deleted from the internal ICC software, even
+    // though it is deleted from the postgres status tables.  We can't tell the difference between a successfully deleted program
+    // and one with this problem.  Instead, when we try and add a program with the same number, the ICC will timeout.  Therefore,
+    // when we detect a ICC timeout adding the program, we store it here.  The bad program numbers are returned in the status
+    // and the assignment the next time will attempt to use a new program number.  This is only kept in memory.
+    private ImmutableHashSet<int> _badProgramNumbers = ImmutableHashSet<int>.Empty;
 
     public event Action NewCurrentStatus;
 
@@ -282,6 +290,7 @@ namespace BlackMaple.FMSInsight.Niigata
             transaction: trans
           );
           status.TimeOfStatusUTC = DateTime.UtcNow;
+          status.BadProgramNumbers = _badProgramNumbers;
 
           status.LoadStations =
             conn.Query<LoadStatus>(
@@ -541,7 +550,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public string Error { get; set; }
     }
 
-    private void WaitForCompletion(AutoResetEvent evt, object request, Func<ChangeResponse> check, Action clear, string ignoreError = null)
+    private void WaitForCompletion(AutoResetEvent evt, object request, Func<ChangeResponse> check, Action clear, string ignoreError = null, Action timeout = null)
     {
       do
       {
@@ -551,6 +560,10 @@ namespace BlackMaple.FMSInsight.Niigata
           Log.Warning("ICC change request timeout {@request}", request);
           try
           {
+            if (timeout != null)
+            {
+              timeout();
+            }
             clear();
           }
           catch (Exception ex)
@@ -1038,16 +1051,17 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         WaitForCompletion(_programRegistered, add,
-          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM register_program WHERE registration_id = @RegId", new { RegId }),
-          () =>
-          {
-            using (var trans = conn.BeginTransaction())
+          check: () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM register_program WHERE registration_id = @RegId", new { RegId }),
+          clear: () =>
             {
-              conn.Execute("DELETE FROM register_program WHERE registration_id = @RegId", new { RegId }, transaction: trans);
-              conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
-              trans.Commit();
-            }
-          }
+              using (var trans = conn.BeginTransaction())
+              {
+                conn.Execute("DELETE FROM register_program WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+                conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+                trans.Commit();
+              }
+            },
+          timeout: () => _badProgramNumbers = _badProgramNumbers.Add(add.ProgramNum)
         );
       }
 

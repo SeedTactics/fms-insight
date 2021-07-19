@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
@@ -306,6 +307,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public ModeE Mode { get; set; }
     public bool Alarm { get; set; }
     public DateTime TimeOfStatusUTC { get; set; }
+    public ImmutableHashSet<int> BadProgramNumbers { get; set; }
   }
 
   public abstract class NiigataAction { }
