@@ -16,6 +16,8 @@ def printRouteStep(pal, i, route):
       return f'{before}UL[{",".join(map(str, route["UnloadStations"]))}]{after}'
     elif route["$type"] == "MachiningStep":
       return f'{before}MC[{",".join(map(str, route["Machines"]))}][{",".join(map(str, route["ProgramNumsToRun"]))}]{after}'
+    elif route["$type"] == "ReclampStep":
+      return f'{before}RC[{",".join(map(str, route["Reclamp"]))}]{after}'
   return str(i)
 
 def printCellState(timestamp, pals):

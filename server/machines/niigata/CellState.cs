@@ -142,7 +142,7 @@ namespace BlackMaple.FMSInsight.Niigata
           pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)
         ), logDB, jobCache.Lookup);
 
-      var progsInUse = FindProgramNums(logDB, jobCache.AllJobs, queuedMats, status);
+      var progsInUse = FindProgramNums(logDB, jobCache.AllJobs, pals.SelectMany(p => p.Material).Concat(queuedMats), status);
 
       return new CellState()
       {
@@ -248,10 +248,15 @@ namespace BlackMaple.FMSInsight.Niigata
             lastCompletedIccIdx += 1;
           }
           var completedMachineSteps =
-            pallet.Master.Routes
-            .Take(lastCompletedIccIdx)
-            .Where(r => r is MachiningStep || r is ReclampStep)
-            .Count();
+            Math.Min(
+              pallet.Master.Routes
+                .Take(lastCompletedIccIdx)
+                .Where(r => r is MachiningStep || r is ReclampStep)
+                .Count(),
+              // Should never be hit, but if the user edits the pallet and forgets to set "Manual" in the comment field,
+              // it can be higher than the configured steps.  Add a bound just in case.
+              stops.Count
+            );
 
           if (completedMachineSteps > 0)
           {
@@ -1751,7 +1756,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(IRepository jobDB, IEnumerable<Job> unarchivedJobs, IEnumerable<InProcessMaterialAndJob> queuedMats, NiigataStatus status)
+    private Dictionary<(string progName, long revision), ProgramRevision> FindProgramNums(IRepository jobDB, IEnumerable<Job> unarchivedJobs, IEnumerable<InProcessMaterialAndJob> mats, NiigataStatus status)
     {
       var progs = new Dictionary<(string progName, long revision), ProgramRevision>();
 
@@ -1779,13 +1784,14 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      foreach (var mat in queuedMats)
+      foreach (var mat in mats)
       {
         if (mat.Workorders != null)
         {
+          var nextOrCurProc = mat.Mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet ? mat.Mat.Process : mat.Mat.Process + 1;
           foreach (var workProg in mat.Workorders.SelectMany(w => w.Programs ?? Enumerable.Empty<WorkorderProgram>()))
           {
-            if (workProg.Revision.HasValue)
+            if (workProg.Revision.HasValue && workProg.ProcessNumber >= nextOrCurProc)
             {
               var prog = jobDB.LoadProgram(workProg.ProgramName, workProg.Revision.Value);
               if (!string.IsNullOrEmpty(prog.CellControllerProgramName) && int.TryParse(prog.CellControllerProgramName, out var progNum))

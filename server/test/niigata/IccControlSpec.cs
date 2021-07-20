@@ -2253,7 +2253,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .AdvanceMinutes(2)
 
-        /// update work1 process 1 to have a new program, but should not be used because part is loaded already
+        /// update work1 process 1 to have a new program, old already running program should not be changed because part is loaded already
         .ReplaceWorkorders(
           new[] {
             new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
@@ -2269,7 +2269,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new MachineFramework.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
           }
         )
-        .ExpectNoChanges()
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectAddNewProgram(progNum: 2102, name: "prog111", rev: 10, mcMin: 14),
+        })
 
         .MoveToMachine(pal: 1, mach: 6)
         .StartMachine(mach: 6, program: 2100)
@@ -2393,7 +2395,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
         })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectAddNewProgram(progNum: 2102, name: "prog111", rev: 10, mcMin: 14),
           FakeIccDsl.ExpectNewRoute(
             pal: 3,
             pri: 2,

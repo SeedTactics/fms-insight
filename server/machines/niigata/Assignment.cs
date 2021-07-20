@@ -840,7 +840,7 @@ namespace BlackMaple.FMSInsight.Niigata
       else
       {
         // search in workorders
-        foreach (var work in cellSt.QueuedMaterial.SelectMany(m => m.Workorders ?? Enumerable.Empty<PartWorkorder>()).Where(w => w.Programs != null))
+        foreach (var work in cellSt.QueuedMaterial.Concat(cellSt.Pallets.SelectMany(p => p.Material)).SelectMany(m => m.Workorders ?? Enumerable.Empty<PartWorkorder>()).Where(w => w.Programs != null))
         {
           var workProg = work.Programs.FirstOrDefault(p => p.ProgramName == prog.ProgramName && p.Revision == prog.Revision);
           if (workProg != null)
@@ -856,9 +856,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       var existing = new HashSet<int>(
-        cellSt.Status.Programs.Keys.Concat(
-        cellSt.OldUnusedPrograms.Select(p => int.TryParse(p.CellControllerProgramName, out var num) ? num : 0)
-      ));
+        cellSt.Status.Programs.Keys
+        .Concat(cellSt.OldUnusedPrograms.Select(p => int.TryParse(p.CellControllerProgramName, out var num) ? num : 0))
+        .Concat(cellSt.Status.BadProgramNumbers ?? Enumerable.Empty<int>())
+      );
 
       int progNum = 0;
       if (process >= 1 && process <= 9)
