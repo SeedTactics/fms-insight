@@ -301,7 +301,9 @@ function Header(p: HeaderProps) {
         <AppBar position="static">
           <Toolbar>
             <Tooltip title={tooltip}>
-              <SeedtacticLogo />
+              <div>
+                <SeedtacticLogo />
+              </div>
             </Tooltip>
             <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
               Insight
@@ -326,7 +328,9 @@ function Header(p: HeaderProps) {
         <AppBar position="static">
           <Toolbar>
             <Tooltip title={tooltip}>
-              <SeedtacticLogo />
+              <div>
+                <SeedtacticLogo />
+              </div>
             </Tooltip>
             <Typography variant="h6" style={{ marginLeft: "4px" }}>
               Insight

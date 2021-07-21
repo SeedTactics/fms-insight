@@ -115,8 +115,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public WebsocketManager(IFMSBackend backend)
     {
       _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
-      _serSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-      _serSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
+      Startup.NewtonsoftJsonSettings(_serSettings);
 
       _messages = new System.Collections.Concurrent.BlockingCollection<ServerEvent>(100);
       _thread = new System.Threading.Thread(SendThread);

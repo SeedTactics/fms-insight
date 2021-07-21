@@ -47,6 +47,17 @@ namespace BlackMaple.MachineFramework
 {
   public class Startup
   {
+    public static void NewtonsoftJsonSettings(Newtonsoft.Json.JsonSerializerSettings settings)
+    {
+      settings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
+      settings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFK";
+      settings.Converters.Add(new StringEnumConverter());
+      settings.Converters.Add(new TimespanConverter());
+      settings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
+      settings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
+    }
+
+
     public static void AddServices(IServiceCollection services, FMSImplementation fmsImpl, FMSSettings fmsSt, ServerSettings serverSt)
     {
       services
@@ -64,7 +75,7 @@ namespace BlackMaple.MachineFramework
               .WithOrigins(
                   fmsSt.AdditionalLogServers
 #if DEBUG
-                          .Concat(new[] { "http://localhost:1234" }) // parcel bundler url
+                          .Concat(new[] { "http://localhost:1234" }) // vite url
 #endif
                           .ToArray()
               )
@@ -91,12 +102,7 @@ namespace BlackMaple.MachineFramework
           })
           .AddNewtonsoftJson(options =>
           {
-            options.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
-            options.SerializerSettings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFK";
-            options.SerializerSettings.Converters.Add(new StringEnumConverter());
-            options.SerializerSettings.Converters.Add(new TimespanConverter());
-            options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-            options.SerializerSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
+            NewtonsoftJsonSettings(options.SerializerSettings);
           });
 
       services.AddOpenApiDocument(cfg =>
@@ -195,7 +201,7 @@ namespace BlackMaple.MachineFramework
       app.Use(async (context, next) =>
       {
         context.Response.Headers.Add("Content-Security-Policy",
-          "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; " +
+          "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; " +
           // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
           "script-src 'self' 'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo=' 'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E='"
         );

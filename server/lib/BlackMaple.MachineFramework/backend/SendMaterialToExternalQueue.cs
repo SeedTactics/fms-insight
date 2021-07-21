@@ -37,10 +37,11 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
+using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
+  [Draftable]
   public record MaterialToSendToExternalQueue
   {
     public string Server { get; init; }

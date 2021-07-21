@@ -49,23 +49,28 @@ export const currentStatus = atom<Readonly<ICurrentStatus>>({
 
 export const currentStatusJobComment = selectorFamily<string | null, string>({
   key: "current-status-job-comment",
-  get: (uniq) => ({ get }) => get(currentStatus).jobs[uniq]?.comment ?? null,
-  set: (uniq) => async ({ set }, newVal) => {
-    const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
+  get:
+    (uniq) =>
+    ({ get }) =>
+      get(currentStatus).jobs[uniq]?.comment ?? null,
+  set:
+    (uniq) =>
+    async ({ set }, newVal) => {
+      const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
 
-    set(currentStatus, (st) => {
-      const oldJob = st.jobs[uniq];
-      if (oldJob) {
-        var newJob = new ActiveJob(oldJob);
-        newJob.comment = newComment;
-        return { ...st, jobs: { ...st.jobs, [uniq]: newJob } };
-      } else {
-        return st;
-      }
-    });
+      set(currentStatus, (st) => {
+        const oldJob = st.jobs[uniq];
+        if (oldJob) {
+          const newJob = new ActiveJob(oldJob);
+          newJob.comment = newComment;
+          return { ...st, jobs: { ...st.jobs, [uniq]: newJob } };
+        } else {
+          return st;
+        }
+      });
 
-    await JobsBackend.setJobComment(uniq, newComment);
-  },
+      await JobsBackend.setJobComment(uniq, newComment);
+    },
 });
 
 export function processEventsIntoCurrentStatus(

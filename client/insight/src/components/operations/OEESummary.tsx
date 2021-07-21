@@ -269,7 +269,7 @@ function StationOEEs(props: Props) {
     .addAll(stationMins.keySet())
     .toArray({ sortOn: [(s) => s.startsWith("L/U"), (s) => s] }); // put machines first
   return (
-    <Grid data-testid="stationoee-container" container justify="space-around">
+    <Grid data-testid="stationoee-container" container justifyContent="space-around">
       {stats.map((stat, idx) => (
         <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
           <StationOEE
