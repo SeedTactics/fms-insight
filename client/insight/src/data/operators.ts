@@ -41,7 +41,7 @@ const selectedOperator = atom<string | null>({
   effects_UNSTABLE: [
     ({ onSet }) => {
       onSet((newVal) => {
-        if (newVal instanceof DefaultValue || newVal === null) {
+        if (newVal === null) {
           localStorage.removeItem("current-operator");
         } else {
           localStorage.setItem("current-operator", newVal);
