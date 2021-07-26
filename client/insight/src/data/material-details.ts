@@ -82,6 +82,7 @@ export const materialToShowInDialog = selector<MaterialToShow | null>({
       set(matToShow, newVal);
     }
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 //--------------------------------------------------------------------------------
@@ -107,6 +108,7 @@ const localMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
         }
     }
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 const otherMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
@@ -135,6 +137,7 @@ const otherMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
 
     return evts;
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export interface MaterialDetail {
@@ -263,6 +266,7 @@ export const materialDetail = selector<MaterialDetail | null>({
       events: allEvents,
     };
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 //--------------------------------------------------------------------------------
@@ -306,6 +310,7 @@ export const possibleWorkordersForMaterialInDialog = selector<Vector<WorkorderPl
       (w) => -w.plan.priority
     );
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 //--------------------------------------------------------------------------------

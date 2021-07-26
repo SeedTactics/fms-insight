@@ -262,6 +262,7 @@ export const currentToolReport = selector<Vector<ToolReport> | null>({
     const usage = reduxStore.getState().Events.last30.cycles.tool_usage;
     return calcToolReport(currentSt, toolsInMach, usage, machineFilter);
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export function useRefreshToolReport(): () => Promise<void> {
@@ -431,6 +432,7 @@ export const currentProgramReport = selector<ProgramReport | null>({
       progsToShow
     );
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export function useRefreshProgramReport(): () => Promise<void> {
@@ -464,6 +466,7 @@ export const programContent = selector<string>({
       return await MachineBackend.getProgramRevisionContent(prog.programName, prog.revision);
     }
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export interface ProgramHistoryRequest {

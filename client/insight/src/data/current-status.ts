@@ -71,6 +71,7 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
 
       await JobsBackend.setJobComment(uniq, newComment);
     },
+  //cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export function processEventsIntoCurrentStatus(

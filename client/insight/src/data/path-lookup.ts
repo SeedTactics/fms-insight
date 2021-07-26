@@ -62,6 +62,7 @@ const localLogEntries = selector<PathLookupLogEntries>({
       by_part: HashMap.empty(),
     }).by_part;
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 const otherLogEntries = selector<PathLookupLogEntries>({
@@ -79,6 +80,7 @@ const otherLogEntries = selector<PathLookupLogEntries>({
 
     return st.by_part;
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export const inspectionLogEntries = selector<PathLookupLogEntries>({
@@ -104,6 +106,7 @@ export const inspectionLogEntries = selector<PathLookupLogEntries>({
       return m;
     }
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export function extendRange(numDays: number): (range: PathLookupRange | null) => PathLookupRange | null {

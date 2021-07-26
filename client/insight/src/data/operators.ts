@@ -79,4 +79,5 @@ export const currentOperator = selector<string | null>({
   set: ({ set }, newVal) => {
     set(selectedOperator, newVal);
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });

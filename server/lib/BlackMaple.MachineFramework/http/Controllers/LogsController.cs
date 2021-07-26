@@ -152,7 +152,6 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/for-serial/{serial}")]
-    [EnableCors("AllowOtherLogServers")]
     public List<LogEntry> LogForSerial(string serial)
     {
       using (var db = _backend.OpenRepository())

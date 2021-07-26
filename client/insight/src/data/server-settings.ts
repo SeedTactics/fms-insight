@@ -90,6 +90,7 @@ async function loadInfo(): Promise<FMSInfoAndUser> {
 export const fmsInformation = selector<FMSInfoAndUser>({
   key: "fms-info",
   get: () => loadInfo(),
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export function login(fmsInfo: FMSInfoAndUser) {
