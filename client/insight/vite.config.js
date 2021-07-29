@@ -7,7 +7,7 @@ import legacy from "@vitejs/plugin-legacy";
 export default {
   root: "src",
   plugins: [reactRefresh(), legacy({ targets: ["defaults", "not IE 11", "edge 18"] })],
-  base: "./",
+  base: "/",
   server: {
     port: 1234,
   },
