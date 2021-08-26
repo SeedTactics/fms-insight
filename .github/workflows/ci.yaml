@@ -58,16 +58,16 @@ jobs:
         run: npm install -g pnpm
 
       - name: Install client deps
-        run: pnpm --cwd client/insight install --frozen-lockfile
+        run: pnpm --dir client/insight install --frozen-lockfile
       - name: Client Test Suite
-        run: pnpm --cwd client/insight run test
+        run: pnpm --dir client/insight run test
       - name: Client Main Build
-        run: pnpm --cwd client/insight run build
+        run: pnpm --dir client/insight run build
 
       - name: Install backup-viewer deps
-        run: pnpm --cwd client/backup-viewer install --frozen-lockfile
+        run: pnpm --dir client/backup-viewer install --frozen-lockfile
       - name: Backup-Viewer Build
-        run: pnpm --cwd client/backup-viewer run build-background
+        run: pnpm --dir client/backup-viewer run build-background
 
       - name: Cleanup pnpm cache
         run: pnpm store prune
