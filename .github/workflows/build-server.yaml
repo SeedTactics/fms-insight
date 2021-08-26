@@ -46,7 +46,7 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Install pnpm
-        run: (Invoke-WebRequest 'https://get.pnpm.io/pnpm.js' -UseBasicParsing).Content | node - add --global pnpm
+        run: npm install -g pnpm
 
       # ----------------------------------------------------------
       # Test and Build

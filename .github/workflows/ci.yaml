@@ -55,7 +55,7 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Install pnpm
-        run: curl -f https://get.pnpm.io/pnpm.js | node - add --global pnpm
+        run: npm install -g pnpm
 
       - name: Install client deps
         run: pnpm --cwd client/insight install --frozen-lockfile
