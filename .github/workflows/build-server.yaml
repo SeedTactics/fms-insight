@@ -40,16 +40,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
       - uses: actions/cache@v2
         with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarncache-${{ hashFiles('client/insight/yarn.lock', 'client/backup-viewer/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarncache-
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install pnpm
+        run: (Invoke-WebRequest 'https://get.pnpm.io/pnpm.js' -UseBasicParsing).Content | node - add --global pnpm
 
       # ----------------------------------------------------------
       # Test and Build
@@ -66,13 +63,13 @@ jobs:
           directory: server/test/TestResults
           flags: server-unittests
 
-      - run: yarn --cwd client/insight version --new-version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
-      - run: yarn --cwd client/insight install --frozen-lockfile --network-timeout 1000000 --check-files
-      - run: yarn --cwd client/insight test
-      - run: yarn --cwd client/insight run build
+      - run: pnpm --cwd client/insight version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
+      - run: pnpm --cwd client/insight install --frozen-lockfile
+      - run: pnpm --cwd client/insight run test
+      - run: pnpm --cwd client/insight run build
 
-      - run: yarn --cwd client/backup-viewer install --frozen-lockfile --network-timeout 1000000
-      - run: yarn --cwd client/backup-viewer run build-background
+      - run: pnpm --cwd client/backup-viewer install --frozen-lockfile
+      - run: pnpm --cwd client/backup-viewer run build-background
 
       - name: Build MachineFramework
         run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/lib/BlackMaple.MachineFramework
@@ -95,3 +92,10 @@ jobs:
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
       - name: Publish Niigata
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
+
+      # ----------------------------------------------------------
+      # Cleanup
+      # ----------------------------------------------------------
+
+      - name: Clean pnpm
+        run: pnpm store prune
