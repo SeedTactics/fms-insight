@@ -75,7 +75,7 @@
     },
     {
       "label": "insight:dev",
-      "command": "yarn start",
+      "command": "pnpm start",
       "options": {
         "cwd": "${workspaceFolder}/client/insight",
         "env": {
@@ -91,7 +91,7 @@
     },
     {
       "label": "insight:test",
-      "command": "yarn test",
+      "command": "pnpm test",
       "options": {
         "cwd": "${workspaceFolder}/client/insight"
       },
