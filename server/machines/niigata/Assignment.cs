@@ -288,25 +288,13 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         // use from job
         programsOverrideJob = false;
-        return path.PathInfo.Stops.Select((stop, stopIdx) =>
-          new ProgramsForProcess()
-          {
-            StopIndex = stopIdx,
-            ProgramName = stop.Program,
-            Revision = stop.ProgramRevision
-          }
-        ).ToImmutableList();
+        return CreateCellState.JobProgramsFromStops(path.PathInfo.Stops, _statNames).ToImmutableList();
       }
       else
       {
         // use from workorder
         programsOverrideJob = true;
-        return matWorkProgs.Where(p => p.ProcessNumber == path.Process).Select(p => new ProgramsForProcess()
-        {
-          StopIndex = p.StopIndex ?? 0,
-          ProgramName = p.ProgramName,
-          Revision = p.Revision
-        }).ToImmutableList();
+        return CreateCellState.WorkorderProgramsForProcess(path.Process, matWorkProgs).ToImmutableList();
       }
     }
 
@@ -515,7 +503,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private List<RouteStep> MiddleStepsForPath(JobPathAndPrograms path, IReadOnlyDictionary<(string progNum, long revision), ProgramRevision> progs)
     {
       var steps = new List<RouteStep>();
-      int stopIdx = -1;
+      int machStopIdx = -1;
       foreach (var stop in path.PathInfo.Stops)
       {
         if (_statNames != null && _statNames.ReclampGroupNames.Contains(stop.StationGroup))
@@ -527,11 +515,11 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          stopIdx += 1;
+          machStopIdx += 1;
 
           int? iccProgram = null;
 
-          var workorderProg = path.Programs?.FirstOrDefault(p => p.StopIndex == stopIdx);
+          var workorderProg = path.Programs?.FirstOrDefault(p => p.MachineStopIndex == machStopIdx);
 
           if (workorderProg != null && workorderProg.Revision.HasValue)
           {
@@ -849,7 +837,10 @@ namespace BlackMaple.FMSInsight.Niigata
             var job = cellSt.UnarchivedJobs.Where(j => j.PartName == work.Part).FirstOrDefault();
             if (job != null && process >= 1 && process <= job.Processes.Count)
             {
-              elapsed = job.Processes[process - 1].Paths[0].Stops.ElementAtOrDefault(workProg.StopIndex ?? 0)?.ExpectedCycleTime ?? TimeSpan.Zero;
+              elapsed =
+                job.Processes[process - 1].Paths[0].Stops
+                  .Where(s => _statNames == null || !_statNames.ReclampGroupNames.Contains(s.StationGroup))
+                  .ElementAtOrDefault(workProg.StopIndex ?? 0)?.ExpectedCycleTime ?? TimeSpan.Zero;
             }
           }
         }

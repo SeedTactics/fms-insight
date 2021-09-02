@@ -42,7 +42,7 @@ namespace BlackMaple.FMSInsight.Niigata
   [DataContract]
   public record ProgramsForProcess
   {
-    [DataMember] public int StopIndex { get; init; }
+    [DataMember(Name = "StopIndex")] public int MachineStopIndex { get; init; }
     [DataMember] public string ProgramName { get; init; }
     [DataMember] public long? Revision { get; init; }
   }

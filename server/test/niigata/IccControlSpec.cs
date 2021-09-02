@@ -2154,6 +2154,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             unloadMins1: 9,
             machMins1: 14,
             machMins2: 10,
+            reclamp1: new[] {2},
+            reclamp1Mins: 4,
+            reclamp2: new[] {2},
+            reclamp2Min: 5,
             loadMins2: 11,
             unloadMins2: 12,
             fixture: "fix1",
@@ -2209,7 +2213,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machs: new[] { 5, 6 },
             progs: new[] { 2100 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) },
-            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog111", Revision = 5}})}
+            reclamp: new[] { 2 },
+            reclampFirst: false,
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { MachineStopIndex = 0, ProgramName = "prog111", Revision = 5}})}
           )
         })
 
@@ -2300,6 +2306,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectMachineEnd(pal: 1, mach: 6, program: "prog111", rev: 5, elapsedMin: 4, activeMin: 14, mats: mat1)
         })
+        .SetBeforeReclamp(pal: 1)
+        .MoveToLoad(pal: 1, lul: 2)
+        .UpdateExpectedMaterial(mat1, m =>
+        {
+          m.SetAction(new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            ElapsedLoadUnloadTime = TimeSpan.Zero,
+          });
+          m.LastCompletedMachiningRouteStopIndex = 0;
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectReclampBegin(pal: 1, lul: 2, mats: mat1)
+        })
+        .AdvanceMinutes(2)
+        .SetAfterReclamp(pal: 1)
+        .UpdateExpectedMaterial(mat1, m =>
+        {
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting, });
+          m.LastCompletedMachiningRouteStopIndex = 1;
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectReclampEnd(pal: 1, lul: 2, mats: mat1, elapsedMin: 2, activeMin: 4)
+        })
 
         // second one goes on a pallet with different programs (2101 and revision 4)
         .MoveToBuffer(pal: 2, buff: 2)
@@ -2325,7 +2355,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machs: new[] { 5, 6 },
             progs: new[] { 2101 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) },
-            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog111", Revision = 4}})}
+            reclamp: new[] { 2 },
+            reclampFirst: false,
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { MachineStopIndex = 0, ProgramName = "prog111", Revision = 4}})}
           )
         })
         .MoveToLoad(pal: 2, lul: 4)
@@ -2347,7 +2379,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 0),
           _dsl.LoadToFace(pal: 2, lul: 4, face: 1, unique: "uniq1", elapsedMin: 5, activeMins: 8, loadingMats: new[] {queuedMat2}, loadedMats: out var mat2, part: "part1"),
-          FakeIccDsl.RemoveFromQueue("castingQ", pos: 0, elapMin: 11, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2)))
+          FakeIccDsl.RemoveFromQueue("castingQ", pos: 0, elapMin: 13, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2)))
         })
         .SetBeforeMC(pal: 2)
         .MoveToMachine(pal: 2, mach: 5)
@@ -2402,7 +2434,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machs: new[] { 5, 6 },
             progs: new[] { 2102 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 1, path: 1) },
-            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog111", Revision = 10}})}
+            reclamp: new[] { 2 },
+            reclampFirst: false,
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { MachineStopIndex = 0, ProgramName = "prog111", Revision = 10}})}
           ),
         })
         .MoveToLoad(pal: 3, lul: 4)
@@ -2463,13 +2497,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machs: new[] { 5, 6 },
             progs: new[] { 2201 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 2, path: 1) },
-            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { StopIndex = 0, ProgramName = "prog333", Revision = 7}})}
+            reclamp: new[] { 2 },
+            reclampFirst: true,
+            progOverride: new [] { (face: 1, progs: new[] { new ProgramsForProcess() { MachineStopIndex = 0, ProgramName = "prog333", Revision = 7}})}
           )
         })
         .MoveToLoad(pal: 4, lul: 3)
         .UpdateExpectedMaterial(queuedMat3.MaterialID, m => m.Action.ElapsedLoadUnloadTime = TimeSpan.Zero)
         .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 4, lul: 3) })
         .AdvanceMinutes(6)
+
 
         // reorder queue, should not change anything since programs don't match
         .SetInQueue(queuedMat4, queue: "qqq", pos: 0)
@@ -2498,10 +2535,53 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _dsl.LoadToFace(pal: 4, lul: 3, face: 1, unique: "uniq1", elapsedMin: 6, activeMins: 11, loadingMats: new[] {queuedMat3}, loadedMats: out var mat3, part: "part1"),
           FakeIccDsl.RemoveFromQueue("qqq", pos: 1, elapMin: 6, mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, mat3)))
         })
+
+        .SetBeforeReclamp(pal: 4)
+        .MoveToLoad(pal: 4, lul: 2)
+        .UpdateExpectedMaterial(mat3, m =>
+        {
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading, ElapsedLoadUnloadTime = TimeSpan.Zero });
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectReclampBegin(pal: 4, lul: 2, mats: mat3)
+        })
+        .AdvanceMinutes(7)
+        .SetAfterReclamp(pal: 4)
+        .UpdateExpectedMaterial(mat3, m =>
+        {
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.LastCompletedMachiningRouteStopIndex = 0;
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectReclampEnd(pal: 4, lul: 2, mats: mat3, elapsedMin: 7, activeMin: 5)
+        })
+
         .SetBeforeMC(pal: 4)
-        .MoveToBuffer(pal: 4, buff: 4)
-        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
-          FakeIccDsl.ExpectStockerStart(pal: 4, stocker: 4, waitForMach: true, mats: mat3)
+        .MoveToMachine(pal: 4, mach: 5)
+        .StartMachine(mach: 5, program: 2201)
+        .UpdateExpectedMaterial(mat3, m =>
+        {
+          m.SetAction(new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Machining,
+            Program = "prog333 rev7",
+            ElapsedMachiningTime = TimeSpan.Zero,
+            ExpectedRemainingMachiningTime = TimeSpan.FromMinutes(10),
+          });
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineBegin(pal: 4, machine: 5, program: "prog333", rev: 7, mat: mat3)
+        })
+        .AdvanceMinutes(4)
+        .SetAfterMC(pal: 4)
+        .EndMachine(mach: 5)
+        .UpdateExpectedMaterial(mat3, m =>
+        {
+          m.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+          m.LastCompletedMachiningRouteStopIndex = 1;
+        })
+        .ExpectTransition(new[] {
+          FakeIccDsl.ExpectMachineEnd(pal: 4, mach: 5, program: "prog333", rev: 7, mats: mat3, elapsedMin: 4, activeMin: 10)
         })
         ;
     }
