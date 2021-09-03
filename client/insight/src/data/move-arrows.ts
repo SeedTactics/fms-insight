@@ -93,21 +93,30 @@ export interface MoveMaterialArrow {
   readonly curveDirection: number; // 1 or -1
 }
 
-interface MoveMaterialByKind {
-  readonly freeMaterial?: ClientRect;
-  readonly completedMaterial?: ClientRect;
-  readonly faces: HashMap<number, ClientRect>;
-  readonly queues: HashMap<string, ClientRect>;
-
-  readonly material: Vector<[ClientRect, Readonly<api.IInProcessMaterial>]>;
+export interface MoveArrowElemRect {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+  readonly bottom: number;
+  readonly right: number;
 }
 
-function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialByKind {
+interface MoveMaterialByKind {
+  readonly freeMaterial?: MoveArrowElemRect;
+  readonly completedMaterial?: MoveArrowElemRect;
+  readonly faces: HashMap<number, MoveArrowElemRect>;
+  readonly queues: HashMap<string, MoveArrowElemRect>;
+
+  readonly material: Vector<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>;
+}
+
+function buildMatByKind(data: MoveMaterialArrowData<MoveArrowElemRect>): MoveMaterialByKind {
   return data.node_type.foldLeft(
     {
-      faces: HashMap.empty<number, ClientRect>(),
-      queues: HashMap.empty<string, ClientRect>(),
-      material: Vector.empty<[ClientRect, Readonly<api.IInProcessMaterial>]>(),
+      faces: HashMap.empty<number, MoveArrowElemRect>(),
+      queues: HashMap.empty<string, MoveArrowElemRect>(),
+      material: Vector.empty<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>(),
     } as MoveMaterialByKind,
     (acc, [key, kind]) => {
       const nodeM = data.nodes.get(key);
@@ -135,7 +144,7 @@ function buildMatByKind(data: MoveMaterialArrowData<ClientRect>): MoveMaterialBy
   );
 }
 
-export function computeArrows(data: MoveMaterialArrowData<ClientRect>): ReadonlyArray<MoveMaterialArrow> {
+export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): ReadonlyArray<MoveMaterialArrow> {
   const container = data.container;
   if (!container) {
     return [];
@@ -168,7 +177,7 @@ export function computeArrows(data: MoveMaterialArrowData<ClientRect>): Readonly
         });
         break;
       case api.ActionType.UnloadToInProcess: {
-        let dest: Option<ClientRect>;
+        let dest: Option<MoveArrowElemRect>;
         let lastSlotUsed: number;
         if (mat.action.unloadIntoQueue) {
           dest = byKind.queues.get(mat.action.unloadIntoQueue);
