@@ -375,6 +375,22 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = null;
         cmd.CommandText = "VACUUM";
         cmd.ExecuteNonQuery();
+
+        try
+        {
+          if (!string.IsNullOrEmpty(oldInspDbFile) && System.IO.File.Exists(oldInspDbFile))
+          {
+            System.IO.File.Delete(oldInspDbFile);
+          }
+          if (!string.IsNullOrEmpty(oldJobDbFile) && System.IO.File.Exists(oldJobDbFile))
+          {
+            System.IO.File.Delete(oldJobDbFile);
+          }
+        }
+        catch (Exception ex)
+        {
+          Serilog.Log.Error(ex, "Error deleting old database files");
+        }
       }
     }
 

@@ -234,12 +234,12 @@ namespace MachineWatchTest
 
       JobEqualityChecks.CheckJobEqual(expected, actual, true);
 
-      _log.LoadDecrementsForJob("Unique1").Should().BeEquivalentTo(new DecrementQuantity()
+      _log.LoadDecrementsForJob("Unique1").Should().BeEquivalentTo(new[] {new DecrementQuantity()
       {
         DecrementId = 12,
         TimeUTC = new DateTime(2020, 10, 22, 4, 5, 6, DateTimeKind.Utc),
         Quantity = 123
-      });
+      }});
     }
 
     [Fact]

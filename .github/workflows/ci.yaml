@@ -50,23 +50,26 @@ jobs:
           node-version: "14"
 
       - uses: actions/cache@v2
-        id: yarn-cache
         with:
-          path: |
-            client/insight/node_modules
-            client/backup-viewer/node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('client/insight/yarn.lock', 'client/backup-viewer/yarn.lock') }}
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-node-modules-
+            ${{ runner.os }}-pnpm-
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install client deps
-        run: yarn --cwd client/insight install --frozen-lockfile
+        run: pnpm --dir client/insight install --frozen-lockfile
       - name: Client Test Suite
-        run: yarn --cwd client/insight test
+        run: pnpm --dir client/insight run test
       - name: Client Main Build
-        run: yarn --cwd client/insight run build
+        run: pnpm --dir client/insight run build
 
       - name: Install backup-viewer deps
-        run: yarn --cwd client/backup-viewer install --frozen-lockfile
+        run: pnpm --dir client/backup-viewer install --frozen-lockfile
       - name: Backup-Viewer Build
-        run: yarn --cwd client/backup-viewer run build-background
+        run: pnpm --dir client/backup-viewer run build-background
+
+      - name: Cleanup pnpm cache
+        run: pnpm store prune

@@ -115,6 +115,7 @@ function OutlierCycles(props: OutlierCycleProps) {
           set_date_zoom_range={undefined}
           last30_days={true}
           showWorkorderAndInspect={false}
+          defaultSortDesc
         />
       </CardContent>
     </Card>

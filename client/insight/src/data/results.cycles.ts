@@ -131,16 +131,23 @@ export interface LoadCycleFilter {
   readonly zoom?: { start: Date; end: Date };
   readonly partAndProc?: PartAndProcess;
   readonly pallet?: string;
+  readonly station?: string;
 }
 
 export function loadOccupancyCycles(
   allCycles: Vector<PartCycleData>,
-  { zoom, partAndProc, pallet }: LoadCycleFilter
+  { zoom, partAndProc, pallet, station }: LoadCycleFilter
 ): FilteredLoadCycles {
   return {
     seriesLabel: "Station",
     data: LazySeq.ofIterable(allCycles)
-      .filter((e) => e.isLabor)
+      .filter((e) => {
+        if (!station || station === FilterAnyLoadKey) {
+          return e.isLabor;
+        } else {
+          return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
+        }
+      })
       .groupBy((e) => stat_name_and_num(e.stationGroup, e.stationNumber))
       .mapValues((cyclesForStat) =>
         chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
@@ -183,17 +190,24 @@ export function loadOccupancyCycles(
 export interface LoadOpFilters {
   readonly operation: PartAndStationOperation;
   readonly pallet?: string;
+  readonly station?: string;
   readonly zoom?: { readonly start: Date; readonly end: Date };
 }
 
 export function estimateLulOperations(
   allCycles: Vector<PartCycleData>,
-  { operation, pallet, zoom }: LoadOpFilters
+  { operation, pallet, zoom, station }: LoadOpFilters
 ): FilteredLoadCycles {
   return {
     seriesLabel: "Station",
     data: LazySeq.ofIterable(allCycles)
-      .filter((e) => e.isLabor)
+      .filter((e) => {
+        if (!station || station === FilterAnyLoadKey) {
+          return e.isLabor;
+        } else {
+          return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
+        }
+      })
       .groupBy((e) => stat_name_and_num(e.stationGroup, e.stationNumber))
       .mapValues((cyclesForStat) =>
         chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)

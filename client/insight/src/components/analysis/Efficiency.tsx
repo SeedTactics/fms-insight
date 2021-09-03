@@ -413,6 +413,11 @@ function PartLoadStationCycleChart() {
       ? st.Events.last30.cycles.part_and_proc_names
       : st.Events.selected_month.cycles.part_and_proc_names
   );
+  const loadStationNames = useSelector((st) =>
+    st.Events.analysis_period === AnalysisPeriod.Last30Days
+      ? st.Events.last30.cycles.loadstation_names
+      : st.Events.selected_month.cycles.loadstation_names
+  );
   const palletNames = useSelector((st) =>
     st.Events.analysis_period === AnalysisPeriod.Last30Days
       ? st.Events.last30.cycles.pallet_names
@@ -425,6 +430,7 @@ function PartLoadStationCycleChart() {
     demo ? new PartAndProcess("aaa", 2) : undefined
   );
   const [selectedOperation, setSelectedOperation] = React.useState<LoadCycleFilter>(demo ? "LoadOp" : "LULOccupancy");
+  const [selectedLoadStation, setSelectedLoadStation] = React.useState<string>(FilterAnyLoadKey);
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
   const curOperation =
@@ -456,25 +462,30 @@ function PartLoadStationCycleChart() {
       : st.Events.selected_month.cycles.estimatedCycleTimes
   );
   const points = React.useMemo(() => {
-    if (selectedPart || selectedPallet) {
+    if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
       if (curOperation) {
-        return estimateLulOperations(cycles, { operation: curOperation, pallet: selectedPallet });
+        return estimateLulOperations(cycles, {
+          operation: curOperation,
+          pallet: selectedPallet,
+          station: selectedLoadStation,
+        });
       } else if (showGraph) {
         return loadOccupancyCycles(cycles, {
           partAndProc: selectedPart,
           pallet: selectedPallet,
+          station: selectedLoadStation,
         });
       } else {
         return filterStationCycles(cycles, {
           partAndProc: selectedPart,
           pallet: selectedPallet,
-          station: FilterAnyLoadKey,
+          station: selectedLoadStation,
         });
       }
     } else {
       return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<LoadCycleData>>() };
     }
-  }, [selectedPart, selectedPallet, selectedOperation, cycles, showGraph]);
+  }, [selectedPart, selectedPallet, selectedOperation, selectedLoadStation, cycles, showGraph]);
   const plannedSeries = React.useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
       return plannedOperationSeries(points, true);
@@ -564,6 +575,27 @@ function PartLoadStationCycleChart() {
               <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
               {selectedPart ? <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem> : undefined}
               {selectedPart ? <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem> : undefined}
+            </Select>
+            <Select
+              name="Station-Cycles-cycle-chart-station-select"
+              autoWidth
+              displayEmpty
+              value={selectedLoadStation}
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => {
+                setSelectedLoadStation(e.target.value as string);
+              }}
+            >
+              <MenuItem key={-1} value={FilterAnyLoadKey}>
+                <em>Any Station</em>
+              </MenuItem>
+              {loadStationNames.toArray({ sortOn: (x) => x }).map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
+                </MenuItem>
+              ))}
             </Select>
             <Select
               name="Station-Cycles-cycle-chart-station-pallet"
@@ -715,6 +747,7 @@ const ConnectedPalletCycleChart = connect((st) => {
 // --------------------------------------------------------------------------------
 
 // https://github.com/mui-org/material-ui/issues/20191
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SliderAny: React.ComponentType<any> = Slider;
 
 function BufferOccupancyChart() {
@@ -735,7 +768,7 @@ function BufferOccupancyChart() {
               steps={0.2}
               valueLabelDisplay="off"
               value={movingAverageHours}
-              onChange={(e: React.ChangeEvent<{}>, v: number) => setMovingAverage(v)}
+              onChange={(e: React.ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
             />
           </div>
         }
@@ -925,7 +958,7 @@ const ConnectedInspection = connect((st) => ({
 // Efficiency
 // --------------------------------------------------------------------------------
 
-export function EfficiencyCards() {
+export function EfficiencyCards(): JSX.Element {
   return (
     <>
       <div data-testid="part-cycle-chart">
@@ -953,7 +986,7 @@ export function EfficiencyCards() {
   );
 }
 
-export default function Efficiency() {
+export default function Efficiency(): JSX.Element {
   React.useEffect(() => {
     document.title = "Efficiency - FMS Insight";
   }, []);

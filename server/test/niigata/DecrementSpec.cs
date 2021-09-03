@@ -117,7 +117,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           j1.Decrements,
           options => options
             .ComparingByMembers<DecrementQuantity>()
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
             .WhenTypeIs<DateTime>()
         );
 
