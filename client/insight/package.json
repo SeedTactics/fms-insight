@@ -19,7 +19,7 @@
     "copy-to-clipboard": "^3.0.0",
     "date-fns": "^2.23.0",
     "highlight.js": "^11.1.0",
-    "immer": "^9.0.5",
+    "immer": "^9.0.6",
     "jdenticon": "^3.1.0",
     "jsbarcode": "^3.11.4",
     "localforage": "^1.9.0",
