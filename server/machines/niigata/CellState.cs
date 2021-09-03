@@ -185,12 +185,10 @@ namespace BlackMaple.FMSInsight.Niigata
             PathInfo = pathInfo,
             Face = m.Face,
             FaceIsMissingMaterial = false,
-            Programs = m.ProgOverride?.ToImmutableList() ?? pathInfo.Stops.Select((stop, stopIdx) => new ProgramsForProcess()
-            {
-              StopIndex = stopIdx,
-              ProgramName = stop.Program,
-              Revision = stop.ProgramRevision
-            }).ToImmutableList()
+            Programs =
+              m.ProgOverride?.ToImmutableList()
+              ??
+              JobProgramsFromStops(pathInfo.Stops, _stationNames).ToImmutableList()
           };
         })
         .ToList();
@@ -987,11 +985,10 @@ namespace BlackMaple.FMSInsight.Niigata
       var ret = new List<StopAndStep>();
 
       int stepIdx = 1; // 0-indexed, first step is load so skip it
-      int stopIdx = -1;
+      int machineStopIdx = -1;
 
       foreach (var stop in face.PathInfo.Stops)
       {
-        stopIdx += 1;
 
         // find out if job stop is machine or reclamp and which program
         string programName = null;
@@ -1004,7 +1001,8 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          var faceProg = face.Programs.FirstOrDefault(p => p.StopIndex == stopIdx);
+          machineStopIdx += 1;
+          var faceProg = face.Programs.FirstOrDefault(p => p.MachineStopIndex == machineStopIdx);
           if (faceProg != null && faceProg.Revision.HasValue)
           {
             programName = faceProg.ProgramName;
@@ -1630,11 +1628,11 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (face.Programs == null)
         {
-          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(1, matWorkProgs), statNames);
+          return CheckProgramsMatchJobSteps(mat.Workorder, face, WorkorderProgramsForProcess(1, matWorkProgs), statNames);
         }
         else
         {
-          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(1, matWorkProgs));
+          return CheckProgramsMatch(face.Programs, WorkorderProgramsForProcess(1, matWorkProgs));
         }
       }
       else
@@ -1651,23 +1649,15 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else if (face.Programs == null && matWorkProgs != null)
         {
-          return CheckProgramsMatchJobSteps(mat.Workorder, face, FilterProgramsToProcess(face.Process, matWorkProgs), statNames);
+          return CheckProgramsMatchJobSteps(mat.Workorder, face, WorkorderProgramsForProcess(face.Process, matWorkProgs), statNames);
         }
         else if (face.Programs != null && matWorkProgs == null)
         {
-          var progsForMat = face.PathInfo.Stops.Select((stop, stopIdx) =>
-            new ProgramsForProcess()
-            {
-              StopIndex = stopIdx,
-              ProgramName = stop.Program,
-              Revision = stop.ProgramRevision
-            }
-          );
-          return CheckProgramsMatch(face.Programs, progsForMat);
+          return CheckProgramsMatch(face.Programs, JobProgramsFromStops(face.PathInfo.Stops, statNames));
         }
         else
         {
-          return CheckProgramsMatch(face.Programs, FilterProgramsToProcess(face.Process, matWorkProgs));
+          return CheckProgramsMatch(face.Programs, WorkorderProgramsForProcess(face.Process, matWorkProgs));
         }
       }
     }
@@ -1675,17 +1665,17 @@ namespace BlackMaple.FMSInsight.Niigata
     private static bool CheckProgramsMatch(IEnumerable<ProgramsForProcess> ps1, IEnumerable<ProgramsForProcess> ps2)
     {
       // can use Enumerable.SequenceEqual when ProgramsForProcess is converted to a record
-      var byStop = ps1.GroupBy(p => p.StopIndex).ToDictionary(p => p.Key, p => p.First());
+      var byStop = ps1.GroupBy(p => p.MachineStopIndex).ToDictionary(p => p.Key, p => p.First());
 
       foreach (var p2 in ps2)
       {
-        if (byStop.TryGetValue(p2.StopIndex, out var p1))
+        if (byStop.TryGetValue(p2.MachineStopIndex, out var p1))
         {
           if (p1.ProgramName != p2.ProgramName || p1.Revision != p2.Revision)
           {
             return false;
           }
-          byStop.Remove(p2.StopIndex);
+          byStop.Remove(p2.MachineStopIndex);
         }
         else
         {
@@ -1698,16 +1688,16 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private static bool CheckProgramsMatchJobSteps(string workorder, PalletFace face, IEnumerable<ProgramsForProcess> ps, NiigataStationNames statNames)
     {
-      var byStop = ps.GroupBy(p => p.StopIndex).ToDictionary(p => p.Key, p => p.First());
+      var byStop = ps.GroupBy(p => p.MachineStopIndex).ToDictionary(p => p.Key, p => p.First());
 
-      int stopIdx = -1;
+      int machStopIdx = -1;
       foreach (var stop in face.PathInfo.Stops.Where(s => !statNames.ReclampGroupNames.Contains(s.StationGroup)))
       {
-        stopIdx += 1;
+        machStopIdx += 1;
 
-        if (byStop.TryGetValue(stopIdx, out var p))
+        if (byStop.TryGetValue(machStopIdx, out var p))
         {
-          byStop.Remove(stopIdx);
+          byStop.Remove(machStopIdx);
         }
         else
         {
@@ -1732,11 +1722,25 @@ namespace BlackMaple.FMSInsight.Niigata
       return works?.Where(w => w.Part == part).FirstOrDefault()?.Programs;
     }
 
-    private static IEnumerable<ProgramsForProcess> FilterProgramsToProcess(int proc, IEnumerable<WorkorderProgram> works)
+    public static IEnumerable<ProgramsForProcess> JobProgramsFromStops(IEnumerable<MachiningStop> stops, NiigataStationNames statNames)
+    {
+      return stops
+        .Where(s => statNames == null || !statNames.ReclampGroupNames.Contains(s.StationGroup))
+        .Select((stop, stopIdx) =>
+          new ProgramsForProcess()
+          {
+            MachineStopIndex = stopIdx,
+            ProgramName = stop.Program,
+            Revision = stop.ProgramRevision
+          }
+        );
+    }
+
+    public static IEnumerable<ProgramsForProcess> WorkorderProgramsForProcess(int proc, IEnumerable<WorkorderProgram> works)
     {
       return works.Where(p => p.ProcessNumber == proc).Select(p => new ProgramsForProcess()
       {
-        StopIndex = p.StopIndex ?? 0,
+        MachineStopIndex = p.StopIndex ?? 0,
         ProgramName = p.ProgramName,
         Revision = p.Revision
       });
