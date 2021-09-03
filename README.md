@@ -119,7 +119,7 @@ nuget as [BlackMaple.FMSInsight.API](https://www.nuget.org/packages/BlackMaple.F
 ## HTML Client
 
 The client is written using React, Recoil, Typescript, and MaterialUI. The
-client is compiled using parcel and the resulting
+client is compiled using vite and the resulting
 HTML and Javascript is included in the server builds. The code lives in
 [client/insight](client/insight/).
 
