@@ -161,6 +161,7 @@ interface StationDataTableProps {
   readonly last30_days: boolean;
   readonly showWorkorderAndInspect: boolean;
   readonly hideMedian?: boolean;
+  readonly defaultSortDesc?: boolean;
 }
 
 function extractData(
@@ -212,7 +213,7 @@ interface DetailMenuData {
 
 export default React.memo(function StationDataTable(props: StationDataTableProps) {
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
+  const [order, setOrder] = React.useState<"asc" | "desc">(props.defaultSortDesc ? "desc" : "asc");
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [detailMenu, setDetailMenu] = React.useState<DetailMenuData | null>(null);
