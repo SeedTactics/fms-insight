@@ -291,7 +291,7 @@ namespace MachineWatchTest
               ctx.Subject.Should().Be(System.IO.Path.Combine(path));
             }
           })
-          .When(info => info.SelectedMemberPath.EndsWith("MainProgram"))
+          .When(info => info.Path.EndsWith("MainProgram"))
       );
     }
 

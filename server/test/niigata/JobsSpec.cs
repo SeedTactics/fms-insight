@@ -556,7 +556,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       });
 
       var mats = _logDB.GetMaterialInAllQueues().ToList();
-      mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
+      mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
       mats.Should().BeEquivalentTo(new[] {
          new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC },
@@ -572,7 +572,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
             { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC}
-        }, options => options.Using<DateTime?>(ctx => ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, 4000)).WhenTypeIs<DateTime?>());
+        }, options => options.Using<DateTime?>(ctx => ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, TimeSpan.FromSeconds(4))).WhenTypeIs<DateTime?>());
 
       _syncMock.Received().JobsOrQueuesChanged();
       _syncMock.ClearReceivedCalls();
@@ -585,9 +585,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         AddToQueueExpectedEntry(mat1, cntr: 2, queue: "q1", position: 0, operName: "theoper", reason: "SetByOperator"),
         RemoveFromQueueExpectedEntry(mat1, cntr: 4, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
       }, options => options
-        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<DateTime>()
-        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<TimeSpan>()
         .ComparingByMembers<LogEntry>()
       );
@@ -595,9 +595,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB.GetLogForMaterial(materialID: 2).Should().BeEquivalentTo(new[] {
         AddToQueueExpectedEntry(mat2, cntr: 3, queue: "q1", position: 1, operName: "theoper", reason: "SetByOperator"),
       }, options => options
-        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<DateTime>()
-        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<TimeSpan>()
         .ComparingByMembers<LogEntry>()
       );
@@ -636,7 +636,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }, options => options.ComparingByMembers<MaterialDetails>());
 
       var mats = _logDB.GetMaterialInAllQueues().ToList();
-      mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
+      mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
@@ -664,7 +664,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _syncMock.ClearReceivedCalls();
 
       mats = _logDB.GetMaterialInAllQueues().ToList();
-      mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: 4000);
+      mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
           { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
@@ -678,9 +678,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         RemoveFromQueueExpectedEntry(logMat, cntr: 3, queue: "q1", position: 0, elapsedMin: 0, operName: "myoper"),
         AddToQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, operName: "theoper", reason: "SetByOperator"),
       }, options => options
-        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<DateTime>()
-        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<TimeSpan>()
         .ComparingByMembers<LogEntry>()
       );
@@ -722,7 +722,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB.GetLogForMaterial(materialID: 1).Should().BeEquivalentTo(new[] {
         SignalQuarantineExpectedEntry(logMat, cntr: 1, pal: "4", queue: "q1", operName: "theoper")
       }, options => options
-        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<DateTime>()
         .ComparingByMembers<LogEntry>()
       );
@@ -774,9 +774,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         RemoveFromQueueExpectedEntry(logMat, cntr: 4, queue: "q1", position: 0, elapsedMin: 0, operName: "theoper"),
         AddToQueueExpectedEntry(logMat, cntr: 5, queue: "q2", position: 0, operName: "theoper", reason: "SetByOperator")
       }, options => options
-        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<DateTime>()
-        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: 4000))
+        .Using<TimeSpan>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4)))
         .WhenTypeIs<TimeSpan>()
         .ComparingByMembers<LogEntry>()
       );

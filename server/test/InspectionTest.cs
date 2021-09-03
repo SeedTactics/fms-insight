@@ -397,7 +397,7 @@ namespace MachineWatchTest
               options =>
                 options
                   .ComparingByMembers<Decision>()
-                  .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, 1000))
+                  .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
                     .WhenTypeIs<DateTime>()
             );
           if (d.Forced) forcedCnt += 1; else decisionCnt += 1;
@@ -414,7 +414,7 @@ namespace MachineWatchTest
         if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType)
         {
           inspEntries += 1;
-          entry.EndTimeUTC.Should().BeCloseTo(now, 1000);
+          entry.EndTimeUTC.Should().BeCloseTo(now, TimeSpan.FromSeconds(4));
           entry.Program.Should().Be(counter);
           entry.Result.Should().Be(inspect.ToString());
         }
