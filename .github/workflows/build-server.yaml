@@ -51,6 +51,11 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
+      - name: Check pnpm
+        run: |
+          Get-Command pnpm
+          pnpm store path
+
       # ----------------------------------------------------------
       # Test and Build
       # ----------------------------------------------------------
