@@ -63,8 +63,12 @@ jobs:
       # ----------------------------------------------------------
 
       - run: pnpm --dir client/insight install --frozen-lockfile
-      - run: pnpm --dir client/insight version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
+
+      - run: pnpm version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
+        working-directory: client/insight
+
       - run: pnpm --dir client/insight run test
+
       - run: pnpm --dir client/insight run build
 
       - run: pnpm --dir client/backup-viewer install --frozen-lockfile
