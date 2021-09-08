@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: "16"
+          node-version: "16.9"
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.9
@@ -34,9 +34,19 @@ jobs:
         with:
           targetPath: server
 
+      - name: Corepack
+        run: corepack enable
+
+      - name: Find pnpm cache
+        id: pnpmcache
+        shell: pwsh
+        run: |
+          $path = pnpm store path | Out-String
+          Write-Host "::set-output name=cachedir::$path"
+
       - uses: actions/cache@v2
         with:
-          path: ~/.nuget/packages
+          path: ${{ steps.pnpmcache.outputs.cachedir }}
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
@@ -48,30 +58,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Check pnpm
-        run: |
-          Get-Command pnpm
-          pnpm store path
-
       # ----------------------------------------------------------
       # Test and Build
       # ----------------------------------------------------------
 
-      - name: Server TestSuite
-        run: |
-          tzutil /s "Pacific Standard Time"
-          dotnet test server/test --collect:"XPlat Code Coverage"
-
-      - run: pnpm --dir client/insight version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
       - run: pnpm --dir client/insight install --frozen-lockfile
+      - run: pnpm --dir client/insight version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
       - run: pnpm --dir client/insight run test
       - run: pnpm --dir client/insight run build
 
       - run: pnpm --dir client/backup-viewer install --frozen-lockfile
       - run: pnpm --dir client/backup-viewer run build-background
+
+      - name: Server TestSuite
+        run: |
+          tzutil /s "Pacific Standard Time"
+          dotnet test server/test --collect:"XPlat Code Coverage"
 
       - name: Build MachineFramework
         run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/lib/BlackMaple.MachineFramework
