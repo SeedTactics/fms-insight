@@ -62,14 +62,14 @@ import {
   LoadCycleData,
   FilterAnyLoadKey,
 } from "../../data/results.cycles";
-import * as events from "../../data/events";
 import * as matDetails from "../../data/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
-import { OEEProps, OEEChart, OEETable } from "./OEEChart";
-import { copyOeeToClipboard, buildOeeSeries, OEEBarSeries } from "../../data/results.oee";
+import { OEEChart, OEETable } from "./OEEChart";
+import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee";
 import { LazySeq } from "../../data/lazyseq";
-import { useSetRecoilState } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { last30SimStationUse } from "../../cell-status/sim-station-use";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -158,8 +158,19 @@ const ConnectedOutlierMachines = connect((st) => ({
 // OEE/Hours
 // -----------------------------------------------------------------------------------
 
-function StationOEEChart(p: OEEProps) {
+const StationOEEChart = React.memo(function StationOEEChart({ showLabor }: { readonly showLabor: boolean }) {
   const [showChart, setShowChart] = React.useState(true);
+
+  const start = addDays(startOfToday(), -6);
+  const end = addDays(startOfToday(), 1);
+
+  const cycles = useSelector((s) => s.Events.last30.cycles.part_cycles);
+  const statUse = useRecoilValue(last30SimStationUse);
+  const points = React.useMemo(
+    () => buildOeeSeries(start, end, showLabor, cycles, statUse),
+    [start, end, showLabor, cycles, statUse]
+  );
+
   return (
     <Card raised>
       <CardHeader
@@ -171,7 +182,7 @@ function StationOEEChart(p: OEEProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyOeeToClipboard(p.points)}
+                onClick={() => copyOeeToClipboard(points)}
               >
                 <ImportExport />
               </IconButton>
@@ -192,40 +203,16 @@ function StationOEEChart(p: OEEProps) {
           </div>
         }
       />
-      <CardContent>{showChart ? <OEEChart {...p} /> : <OEETable {...p} />}</CardContent>
+      <CardContent>
+        {showChart ? (
+          <OEEChart start={start} end={end} showLabor={showLabor} points={points} />
+        ) : (
+          <OEETable start={start} end={end} showLabor={showLabor} points={points} />
+        )}
+      </CardContent>
     </Card>
   );
-}
-
-const oeePointsSelector = createSelector(
-  (last30: events.Last30Days, _: boolean, _t: Date) => last30.cycles.part_cycles,
-  (last30: events.Last30Days, _: boolean, _t: Date) => last30.sim_use.station_use,
-  (_: events.Last30Days, showLabor: boolean, _t: Date) => showLabor,
-  (_: events.Last30Days, _l: boolean, today: Date) => today,
-  (cycles, statUse, showLabor, today): ReadonlyArray<OEEBarSeries> => {
-    const start = addDays(today, -6);
-    const end = addDays(today, 1);
-    return buildOeeSeries(start, end, showLabor, cycles, statUse);
-  }
-);
-
-const ConnectedLoadOEE = connect((st: Store) => {
-  return {
-    showLabor: true,
-    start: addDays(startOfToday(), -6),
-    end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, true, startOfToday()),
-  };
-})(StationOEEChart);
-
-const ConnectedMachineOEE = connect((st: Store) => {
-  return {
-    showLabor: false,
-    start: addDays(startOfToday(), -6),
-    end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, false, startOfToday()),
-  };
-})(StationOEEChart);
+});
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -465,12 +452,12 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   );
 }
 
-const ConnectedLaborCycleChart = connect((st) => ({
+const ConnectedLaborCycleChart = connect(() => ({
   showLabor: true,
   default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(PartStationCycleChart);
 
-const ConnectedMachineCycleChart = connect((st) => ({
+const ConnectedMachineCycleChart = connect(() => ({
   showLabor: false,
   default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
 }))(PartStationCycleChart);
@@ -479,14 +466,14 @@ const ConnectedMachineCycleChart = connect((st) => ({
 // Main
 // -----------------------------------------------------------------------------------
 
-export function LoadUnloadRecentOverview() {
+export function LoadUnloadRecentOverview(): JSX.Element {
   return (
     <>
       <div data-testid="outlier-cycles">
         <ConnectedOutlierLabor />
       </div>
       <div data-testid="oee-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedLoadOEE />
+        <StationOEEChart showLabor={true} />
       </div>
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
         <ConnectedLaborCycleChart />
@@ -495,7 +482,7 @@ export function LoadUnloadRecentOverview() {
   );
 }
 
-export function OperationLoadUnload() {
+export function OperationLoadUnload(): JSX.Element {
   React.useEffect(() => {
     document.title = "Load/Unload Management - FMS Insight";
   }, []);
@@ -506,14 +493,14 @@ export function OperationLoadUnload() {
   );
 }
 
-export function MachinesRecentOverview() {
+export function MachinesRecentOverview(): JSX.Element {
   return (
     <>
       <div data-testid="outlier-cycles">
         <ConnectedOutlierMachines />
       </div>
       <div data-testid="oee-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedMachineOEE />
+        <StationOEEChart showLabor={false} />
       </div>
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
         <ConnectedMachineCycleChart />
@@ -522,7 +509,7 @@ export function MachinesRecentOverview() {
   );
 }
 
-export function OperationMachines() {
+export function OperationMachines(): JSX.Element {
   React.useEffect(() => {
     document.title = "Machine Management - FMS Insight";
   }, []);

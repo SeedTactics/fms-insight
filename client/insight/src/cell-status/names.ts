@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -30,29 +30,51 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
-import { CircularProgress } from "@material-ui/core";
+import * as api from "../data/api";
+import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 
-import { connect, Store } from "../store/store";
-import { Tooltip } from "@material-ui/core";
-import { websocketReconnecting } from "../store/websocket";
-import { useRecoilValue } from "recoil";
-import { loadingCellStatus } from "../cell-status";
+const rawMaterialQueuesRW = atom<ReadonlySet<string>>({
+  key: "rawMaterialQueueNames",
+  default: new Set(),
+});
+export const rawMaterialQueues: RecoilValueReadOnly<ReadonlySet<string>> = rawMaterialQueuesRW;
 
-function LoadingIcon({ loading }: { loading: boolean }) {
-  const websocketLoading = useRecoilValue(websocketReconnecting);
-  const cellStLoading = useRecoilValue(loadingCellStatus);
-  if (loading || websocketLoading || cellStLoading) {
-    return (
-      <Tooltip title="Loading">
-        <CircularProgress data-testid="loading-icon" color="secondary" />
-      </Tooltip>
-    );
-  } else {
-    return null;
-  }
+const castingNamesRW = atom<ReadonlySet<string>>({
+  key: "castingNames",
+  default: new Set(),
+});
+export const castingNames: RecoilValueReadOnly<ReadonlySet<string>> = castingNamesRW;
+
+export function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Readonly<api.IJob>>): void {
+  t.set(rawMaterialQueuesRW, (queues) => {
+    const newQ = new Set<string>();
+    for (const j of newJobs) {
+      for (const path of j.procsAndPaths[0].paths) {
+        if (path.inputQueue && path.inputQueue !== "" && !queues.has(path.inputQueue)) {
+          newQ.add(path.inputQueue);
+        }
+      }
+    }
+    if (newQ.size === 0) {
+      return queues;
+    } else {
+      return new Set([...queues, ...newQ]);
+    }
+  });
+
+  t.set(castingNamesRW, (names) => {
+    const newC = new Set<string>();
+    for (const j of newJobs) {
+      for (const path of j.procsAndPaths[0].paths) {
+        if (path.casting && path.casting !== "" && !names.has(path.casting)) {
+          newC.add(path.casting);
+        }
+      }
+    }
+    if (newC.size === 0) {
+      return names;
+    } else {
+      return new Set([...names, ...newC]);
+    }
+  });
 }
-
-export default connect((st: Store) => ({
-  loading: st.Events.loading_log_entries || st.Events.loading_analysis_month_log,
-}))(LoadingIcon);

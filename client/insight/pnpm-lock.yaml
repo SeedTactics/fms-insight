@@ -34,6 +34,7 @@ specifiers:
   jdenticon: ^3.1.1
   jest: ^27.1.0
   jsbarcode: ^3.11.5
+  list: ^2.0.19
   localforage: ^1.10.0
   nswag: ^13.13.2
   oidc-client: ^1.11.5
@@ -70,6 +71,7 @@ dependencies:
   immer: 9.0.6
   jdenticon: 3.1.1
   jsbarcode: 3.11.5
+  list: 2.0.19
   localforage: 1.10.0
   oidc-client: 1.11.5
   prelude-ts: 1.0.3

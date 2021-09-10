@@ -33,10 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Radio } from "@material-ui/core";
 import { FormControlLabel } from "@material-ui/core";
+import { atom, selector, useRecoilState, useRecoilTransaction_UNSTABLE } from "recoil";
+import { startOfMonth } from "date-fns";
 
-import * as events from "../../data/events";
-import { Store, connect } from "../../store/store";
 import MonthSelect from "../MonthSelect";
+import { useLoadSpecificMonth } from "../../cell-status";
 
 const toolbarStyle = {
   display: "flex",
@@ -44,67 +45,78 @@ const toolbarStyle = {
   paddingLeft: "24px",
   paddingRight: "24px",
   minHeight: "2.5em",
-  alignItems: "center" as "center",
-  justifyContent: "space-evenly" as "space-evenly",
+  alignItems: "center",
+  justifyContent: "space-evenly",
 };
 
-interface AnalysisSelectToolbarProps {
-  period: events.AnalysisPeriod;
-  period_month: Date;
-  analyzeLast30Days: () => void;
-  analyzeMonth: (month: Date) => void;
-  setMonth: (month: Date) => void;
-}
+const selectType = atom<"Last30" | "SpecificMonth">({
+  key: "analysisSelectType",
+  default: "Last30",
+});
 
-class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps> {
-  render() {
-    return (
-      <nav style={toolbarStyle}>
+const selectMonth = atom<Date>({ key: "analysisSelectMonth", default: startOfMonth(new Date()) });
+
+export type SelectedAnalysisPeriod = { type: "Last30" } | { type: "SpecificMonth"; month: Date };
+export const selectedAnalysisPeriod = selector<SelectedAnalysisPeriod>({
+  key: "selectedAnalysisPeriod",
+  get: ({ get }) => {
+    const ty = get(selectType);
+    if (ty === "Last30") {
+      return { type: "Last30" };
+    } else {
+      return { type: "SpecificMonth", month: get(selectMonth) };
+    }
+  },
+});
+
+export default React.memo(function AnalysisSelectToolbar() {
+  const [selTy, setSelTy] = useRecoilState(selectType);
+  const [selMonth, setSelMonth] = useRecoilState(selectMonth);
+  const loadSpecificMonth = useLoadSpecificMonth();
+
+  const analyzeMonth = useRecoilTransaction_UNSTABLE(
+    ({ get, set }) =>
+      (m: Date) => {
+        set(selectType, "SpecificMonth");
+        if (get(selectMonth) !== m) {
+          set(selectMonth, m);
+          loadSpecificMonth(m);
+        }
+      },
+    [loadSpecificMonth]
+  );
+
+  return (
+    <nav style={toolbarStyle}>
+      <FormControlLabel
+        control={
+          <Radio checked={selTy === "Last30"} onChange={(e, checked) => (checked ? setSelTy("Last30") : null)} />
+        }
+        label="Last 30 days"
+      />
+      <div style={{ display: "flex", alignItems: "center" }}>
         <FormControlLabel
           control={
             <Radio
-              checked={this.props.period === events.AnalysisPeriod.Last30Days}
-              onChange={(e, checked) => (checked ? this.props.analyzeLast30Days() : null)}
+              checked={selTy === "SpecificMonth"}
+              onChange={(e, checked) => (checked ? analyzeMonth(selMonth) : null)}
             />
           }
-          label="Last 30 days"
+          label="Select Month"
         />
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <FormControlLabel
-            control={
-              <Radio
-                checked={this.props.period === events.AnalysisPeriod.SpecificMonth}
-                onChange={(e, checked) => (checked ? this.props.analyzeMonth(this.props.period_month) : null)}
-              />
+        <MonthSelect
+          curMonth={selMonth}
+          onSelectMonth={(m) => {
+            if (selTy === "SpecificMonth") {
+              // if month type is selected, reload data
+              analyzeMonth(m);
+            } else {
+              // otherwise, just store month
+              setSelMonth(m);
             }
-            label="Select Month"
-          />
-          <MonthSelect
-            curMonth={this.props.period_month}
-            onSelectMonth={(m) => {
-              if (this.props.period === events.AnalysisPeriod.SpecificMonth) {
-                // if month type is selected, reload data
-                this.props.analyzeMonth(m);
-              } else {
-                // otherwise, just store month
-                this.props.setMonth(m);
-              }
-            }}
-          />
-        </div>
-      </nav>
-    );
-  }
-}
-
-export default connect(
-  (s: Store) => ({
-    period: s.Events.analysis_period,
-    period_month: s.Events.analysis_period_month,
-  }),
-  {
-    analyzeLast30Days: events.analyzeLast30Days,
-    analyzeMonth: events.analyzeSpecificMonth,
-    setMonth: events.setAnalysisMonth,
-  }
-)(AnalysisSelectToolbar);
+          }}
+        />
+      </div>
+    </nav>
+  );
+});

@@ -45,14 +45,14 @@ import { TableRow } from "@material-ui/core";
 import { TableCell } from "@material-ui/core";
 import { TableHead } from "@material-ui/core";
 import { TableBody } from "@material-ui/core";
-import { connect } from "../../store/store";
+import { useSelector } from "../../store/store";
 import { addDays, startOfToday } from "date-fns";
 import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
 import { IHistoricJob } from "../../data/api";
 import { PartIdenticon } from "../station-monitor/Material";
 import { createStyles } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core";
-import { ConnectedEditNoteDialog } from "../station-monitor/Queues";
+import { EditNoteDialog } from "../station-monitor/Queues";
 import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
 import { JobDetails } from "../station-monitor/JobDetails";
@@ -62,17 +62,17 @@ import { HashMap } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../data/current-status";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { last30Jobs } from "../../cell-status/scheduled-jobs";
 
 export interface JobsTableProps {
   readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
   readonly matIds: HashMap<number, MaterialSummaryAndCompletedData>;
-  readonly showMaterial: boolean;
   readonly showInProcCnt: boolean;
   readonly start: Date;
   readonly end: Date;
 }
 
-const useTableStyles = makeStyles((theme) =>
+const useTableStyles = makeStyles(() =>
   createStyles({
     mainRow: {
       "& > *": {
@@ -192,9 +192,20 @@ function JobsRow(props: JobsRowProps) {
   );
 }
 
-export function JobsTable(props: JobsTableProps) {
+export function JobsTable(props: JobsTableProps): JSX.Element {
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
   const currentSt = useRecoilValue(currentStatus);
+
+  const showMaterial = React.useMemo(() => {
+    for (const [, newJob] of props.schJobs) {
+      for (const p of newJob.procsAndPaths[0]?.paths ?? []) {
+        if (p.casting !== null && p.casting !== undefined && p.casting !== "") {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [props.schJobs]);
 
   const jobs = React.useMemo(() => {
     return buildScheduledJobs(props.start, props.end, props.matIds, props.schJobs, currentSt);
@@ -211,7 +222,7 @@ export function JobsTable(props: JobsTableProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyScheduledJobsToClipboard(jobs, props.showMaterial)}
+                onClick={() => copyScheduledJobsToClipboard(jobs, showMaterial)}
               >
                 <ImportExport />
               </IconButton>
@@ -225,7 +236,7 @@ export function JobsTable(props: JobsTableProps) {
             <TableRow>
               <TableCell>Date</TableCell>
               <TableCell>Part</TableCell>
-              {props.showMaterial ? <TableCell>Material</TableCell> : undefined}
+              {showMaterial ? <TableCell>Material</TableCell> : undefined}
               {props.showInProcCnt ? <TableCell>Note</TableCell> : undefined}
               <TableCell align="right">Scheduled</TableCell>
               <TableCell align="right">Removed</TableCell>
@@ -244,31 +255,33 @@ export function JobsTable(props: JobsTableProps) {
               <JobsRow
                 key={jobIdx}
                 job={job}
-                showMaterial={props.showMaterial}
+                showMaterial={showMaterial}
                 setCurEditNoteJob={setCurEditNoteJob}
                 showInProcCnt={props.showInProcCnt}
               />
             ))}
           </TableBody>
         </Table>
-        <ConnectedEditNoteDialog
-          job={curEditNoteJob?.historicJob ?? null}
-          closeDialog={() => setCurEditNoteJob(null)}
-        />
+        <EditNoteDialog job={curEditNoteJob?.historicJob ?? null} closeDialog={() => setCurEditNoteJob(null)} />
       </CardContent>
     </Card>
   );
 }
 
-export const RecentSchedules = connect((st) => ({
-  matIds: st.Events.last30.mat_summary.matsById,
-  schJobs: st.Events.last30.scheduled_jobs.jobs,
-  showMaterial: st.Events.last30.scheduled_jobs.someJobHasCasting,
-  start: addDays(startOfToday(), -6),
-  end: addDays(startOfToday(), 1),
-}))(JobsTable);
+export const RecentSchedules = React.memo(function RecentSchedules({
+  showInProcCnt,
+}: {
+  readonly showInProcCnt: boolean;
+}) {
+  const matIds = useSelector((st) => st.Events.last30.mat_summary.matsById);
+  const schJobs = useRecoilValue(last30Jobs);
+  const start = addDays(startOfToday(), -6);
+  const end = addDays(startOfToday(), 1);
 
-export function CompletedParts() {
+  return <JobsTable matIds={matIds} schJobs={schJobs} start={start} end={end} showInProcCnt={showInProcCnt} />;
+});
+
+export function CompletedParts(): JSX.Element {
   React.useEffect(() => {
     document.title = "Scheduled Jobs - FMS Insight";
   }, []);

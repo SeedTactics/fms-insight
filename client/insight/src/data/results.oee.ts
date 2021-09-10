@@ -31,13 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { SimStationUse } from "./events.simuse";
 import { startOfDay, addSeconds, addDays, max, min } from "date-fns";
 import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
 import { LazySeq } from "./lazyseq";
 import { chunkCyclesWithSimilarEndTime } from "./events.cycles";
 import { PartCycleData, stat_name_and_num } from "./events.cycles";
 import copy from "copy-to-clipboard";
+import { SimStationUse } from "../cell-status/sim-station-use";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -263,7 +263,7 @@ export function copyOeeHeatmapToClipboard(yTitle: string, points: ReadonlyArray<
   copy(buildOeeHeatmapTable(yTitle, points));
 }
 
-export function buildOeeTable(series: Iterable<OEEBarSeries>) {
+export function buildOeeTable(series: Iterable<OEEBarSeries>): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Day</th><th>Station</th><th>Actual Hours</th><th>Planned Hours</th>";
   table += "</tr></thead>\n<tbody>\n";

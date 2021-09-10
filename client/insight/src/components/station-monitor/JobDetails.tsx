@@ -49,7 +49,7 @@ import { materialToShowInDialog } from "../../data/material-details";
 import { HashMap, HashSet } from "prelude-ts";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { currentStatus } from "../../data/current-status";
-import { AnalysisPeriod } from "../../data/events";
+import { selectedAnalysisPeriod } from "../analysis/AnalysisSelectToolbar";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;
@@ -236,14 +236,15 @@ export interface JobDetailsProps {
   readonly checkAnalysisMonth: boolean;
 }
 
-export function JobDetails(props: JobDetailsProps) {
+export function JobDetails(props: JobDetailsProps): JSX.Element {
+  const period = useRecoilValue(selectedAnalysisPeriod);
   const matsFromEvents = useSelector((s) =>
-    props.checkAnalysisMonth && s.Events.analysis_period === AnalysisPeriod.SpecificMonth
+    props.checkAnalysisMonth && period.type === "SpecificMonth"
       ? s.Events.selected_month.mat_summary.matsById
       : s.Events.last30.mat_summary.matsById
   );
   const matIdsForJob = useSelector((s) =>
-    props.checkAnalysisMonth && s.Events.analysis_period === AnalysisPeriod.SpecificMonth
+    props.checkAnalysisMonth && period.type === "SpecificMonth"
       ? s.Events.selected_month.mat_summary.matIdsForJob
       : s.Events.last30.mat_summary.matIdsForJob
   );

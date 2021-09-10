@@ -34,6 +34,7 @@ import { HashMap } from "prelude-ts";
 import { JobsBackend } from "./backend";
 import { InProcessMaterial, ICurrentStatus, IInProcessMaterial, ILogEntry, LogType, LocType, ActiveJob } from "./api";
 import { atom, DefaultValue, selectorFamily } from "recoil";
+import { updateJobComment } from "../cell-status/scheduled-jobs";
 
 export const currentStatus = atom<Readonly<ICurrentStatus>>({
   key: "current-status",
@@ -68,6 +69,8 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
           return st;
         }
       });
+
+      updateJobComment(set, uniq, newComment);
 
       await JobsBackend.setJobComment(uniq, newComment);
     },

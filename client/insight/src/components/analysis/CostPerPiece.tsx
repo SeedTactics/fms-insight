@@ -31,8 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { connect, useSelector } from "../../store/store";
-import { AnalysisPeriod } from "../../data/events";
+import { useSelector } from "../../store/store";
 import { Card } from "@material-ui/core";
 import { CardHeader } from "@material-ui/core";
 import { CardContent } from "@material-ui/core";
@@ -46,11 +45,10 @@ import MoneyIcon from "@material-ui/icons/AttachMoney";
 import ImportExport from "@material-ui/icons/ImportExport";
 import { createStyles } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core";
-import { PartCycleData } from "../../data/events.cycles";
 import BuildIcon from "@material-ui/icons/Build";
 import CallSplit from "@material-ui/icons/CallSplit";
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
-import { HashMap, HashSet, Vector } from "prelude-ts";
+import AnalysisSelectToolbar, { selectedAnalysisPeriod } from "./AnalysisSelectToolbar";
+import { HashSet, Vector } from "prelude-ts";
 import { LazySeq } from "../../data/lazyseq";
 import * as localForage from "localforage";
 import { CircularProgress } from "@material-ui/core";
@@ -67,7 +65,7 @@ import { Tooltip } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";
 import { PartIdenticon } from "../station-monitor/Material";
 import { Typography } from "@material-ui/core";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { useRecoilValue } from "recoil";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
@@ -124,7 +122,7 @@ function AutomationCostInput(props: AutomationCostInputProps) {
       onBlur={() => {
         if (cost != null) {
           const newCost = isNaN(cost) ? null : cost;
-          saveAutomationCostPerYear(newCost);
+          void saveAutomationCostPerYear(newCost);
           props.setAutomationCostPerYear(newCost);
         }
         setCost(null);
@@ -154,9 +152,9 @@ function LaborCost(props: LaborCostProps) {
         if (cost != null) {
           const newCost = isNaN(cost) ? null : cost;
           if (props.month === null) {
-            saveLast30LaborCost(newCost);
+            void saveLast30LaborCost(newCost);
           } else {
-            savePerMonthLabor(props.month, newCost);
+            void savePerMonthLabor(props.month, newCost);
           }
           props.setLaborCost(newCost);
         }
@@ -191,7 +189,7 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
           } else {
             newCost[props.machineGroup] = cost;
           }
-          saveMachineCostPerYear(newCost);
+          void saveMachineCostPerYear(newCost);
           props.setMachineCostPerYear(newCost);
         }
         setCost(null);
@@ -210,7 +208,7 @@ function StationCostInputs(props: StationCostInputProps) {
   );
 }
 
-const useTableStyles = makeStyles((theme) =>
+const useTableStyles = makeStyles(() =>
   createStyles({
     labelContainer: {
       display: "flex",
@@ -464,23 +462,29 @@ function CostInputCard(props: { children: React.ReactNode }) {
   );
 }
 
-interface CostPerPieceProps {
-  readonly statGroups: HashSet<string>;
-  readonly cycles: Vector<PartCycleData>;
-  readonly matIds: HashMap<number, MaterialSummaryAndCompletedData>;
-  readonly month: Date | null;
-}
-
-function CostPerPiecePage(props: CostPerPieceProps) {
+export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   const [loading, setLoading] = React.useState(false);
   const [machineCostPerYear, setMachineCostPerYear] = React.useState<MachineCostPerYear>({});
   const [last30LaborCost, setLast30LaborCost] = React.useState<number | null>(null);
   const [curMonthLaborCost, setCurMonthLaborCost] = React.useState<number | null | "LOADING">(null);
   const [automationCostPerYear, setAutomationCostPerYear] = React.useState<number | null>(null);
+
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const month = period.type === "Last30" ? null : period.month;
+  const statGroups = useSelector((s) =>
+    period.type === "Last30" ? s.Events.last30.cycles.machine_groups : s.Events.selected_month.cycles.machine_groups
+  );
+  const cycles = useSelector((s) =>
+    period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
+  );
+  const matIds = useSelector((s) =>
+    period.type === "Last30" ? s.Events.last30.mat_summary.matsById : s.Events.selected_month.mat_summary.matsById
+  );
+
   const thirtyDaysAgo = useSelector((s) => s.Events.last30.thirty_days_ago);
 
   React.useEffect(() => {
-    (async () => {
+    void (async () => {
       setLoading(true);
       try {
         await Promise.all([
@@ -495,13 +499,13 @@ function CostPerPiecePage(props: CostPerPieceProps) {
   }, []);
 
   React.useEffect(() => {
-    if (props.month) {
+    if (month) {
       setCurMonthLaborCost("LOADING");
-      loadPerMonthLabor(props.month)
+      loadPerMonthLabor(month)
         .then(setCurMonthLaborCost)
         .catch(() => setCurMonthLaborCost(null));
     }
-  }, [props.month]);
+  }, [month]);
 
   const computedCosts = React.useMemo(() => {
     if (loading) {
@@ -514,7 +518,7 @@ function CostPerPiecePage(props: CostPerPieceProps) {
       };
     }
     let totalLaborCost = 0;
-    if (props.month) {
+    if (month) {
       totalLaborCost = curMonthLaborCost !== "LOADING" ? curMonthLaborCost ?? 0 : 0;
     } else {
       totalLaborCost = last30LaborCost ?? 0;
@@ -523,19 +527,11 @@ function CostPerPiecePage(props: CostPerPieceProps) {
       machineCostPerYear,
       automationCostPerYear,
       totalLaborCost,
-      props.cycles,
-      props.matIds,
-      props.month ? { month: props.month } : { thirtyDaysAgo }
+      cycles,
+      matIds,
+      month ? { month: month } : { thirtyDaysAgo }
     );
-  }, [
-    machineCostPerYear,
-    automationCostPerYear,
-    props.cycles,
-    props.month,
-    curMonthLaborCost,
-    last30LaborCost,
-    loading,
-  ]);
+  }, [machineCostPerYear, automationCostPerYear, cycles, matIds, month, curMonthLaborCost, last30LaborCost, loading]);
 
   if (loading || curMonthLaborCost === "LOADING") {
     return (
@@ -551,17 +547,17 @@ function CostPerPiecePage(props: CostPerPieceProps) {
       <div style={{ display: "flex", justifyContent: "center" }}>
         <CostInputCard>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {props.month === null ? (
+            {month === null ? (
               <LaborCost month={null} laborCost={last30LaborCost} setLaborCost={setLast30LaborCost} />
             ) : (
-              <LaborCost month={props.month} laborCost={curMonthLaborCost} setLaborCost={setCurMonthLaborCost} />
+              <LaborCost month={month} laborCost={curMonthLaborCost} setLaborCost={setCurMonthLaborCost} />
             )}
             <AutomationCostInput
               automationCostPerYear={automationCostPerYear}
               setAutomationCostPerYear={setAutomationCostPerYear}
             />
             <StationCostInputs
-              statGroups={props.statGroups}
+              statGroups={statGroups}
               machineCostPerYear={machineCostPerYear}
               setMachineCostPerYear={setMachineCostPerYear}
             />
@@ -571,25 +567,9 @@ function CostPerPiecePage(props: CostPerPieceProps) {
       <CostOutputCard costs={computedCosts} />
     </>
   );
-}
+});
 
-export const ConnectedCostPerPiecePage = connect((s) => ({
-  statGroups:
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.cycles.machine_groups
-      : s.Events.selected_month.cycles.machine_groups,
-  cycles:
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.cycles.part_cycles
-      : s.Events.selected_month.cycles.part_cycles,
-  matIds:
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.mat_summary.matsById
-      : s.Events.selected_month.mat_summary.matsById,
-  month: s.Events.analysis_period === AnalysisPeriod.Last30Days ? null : s.Events.analysis_period_month,
-}))(CostPerPiecePage);
-
-export default function CostPerPiece() {
+export default function CostPerPiece(): JSX.Element {
   React.useEffect(() => {
     document.title = "Cost/Piece - FMS Insight";
   }, []);
@@ -597,7 +577,7 @@ export default function CostPerPiece() {
     <>
       <AnalysisSelectToolbar />
       <main style={{ padding: "8px" }}>
-        <ConnectedCostPerPiecePage />
+        <CostPerPiecePage />
       </main>
     </>
   );

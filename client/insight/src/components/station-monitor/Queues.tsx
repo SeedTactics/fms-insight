@@ -69,8 +69,6 @@ import {
   MaterialDetailTitle,
 } from "./Material";
 import * as api from "../../data/api";
-import { connect, useSelector } from "../../store/store";
-import * as events from "../../data/events";
 import {
   QueueMaterialDialog,
   AddBySerialDialog,
@@ -98,6 +96,7 @@ import { fmsInformation } from "../../data/server-settings";
 import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../data/current-status";
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../data/material-details";
 import { Collapse } from "@material-ui/core";
+import { rawMaterialQueues } from "../../cell-status/names";
 
 const useTableStyles = makeStyles(() =>
   createStyles({
@@ -279,12 +278,11 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
 interface EditNoteDialogProps {
   readonly job: { readonly unique: string; readonly partName: string; readonly comment?: string | null } | null;
   readonly closeDialog: () => void;
-  readonly updateCommentInEvents: (uniq: string, comment: string) => void;
 }
 
 const nullCommentAtom = atom<string | null>({ key: "null-comment-atom", default: null });
 
-const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogProps) {
+export const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogProps) {
   const [note, setNote] = React.useState<string | null>(null);
   const setJobComment = useSetRecoilState(props.job ? currentStatusJobComment(props.job.unique) : nullCommentAtom);
 
@@ -295,7 +293,6 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
 
   function save() {
     if (note === null || props.job === null || note === props.job.comment) return;
-    props.updateCommentInEvents(props.job.unique, note);
     setJobComment(note);
     close();
   }
@@ -340,14 +337,6 @@ const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogP
     </Dialog>
   );
 });
-
-export const ConnectedEditNoteDialog = connect(() => ({}), {
-  updateCommentInEvents: (uniq: string, comment: string) => ({
-    type: events.ActionType.SetJobComment,
-    uniq: uniq,
-    comment: comment,
-  }),
-})(EditNoteDialog);
 
 interface EditJobPlanQtyProps {
   readonly job: JobRawMaterialData | null;
@@ -678,18 +667,19 @@ interface QueueProps {
 export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
   const operator = useRecoilValue(currentOperator);
   const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
-  const rawMaterialQueues = useSelector((st) => st.Events.last30.sim_use.rawMaterialQueues);
+  const rawMatQueues = useRecoilValue(rawMaterialQueues);
   const data = React.useMemo(
-    () => selectQueueData(props.showFree, props.queues, currentSt, rawMaterialQueues),
-    [currentSt, props.queues, props.showFree, rawMaterialQueues]
+    () => selectQueueData(props.showFree, props.queues, currentSt, rawMatQueues),
+    [currentSt, props.queues, props.showFree, rawMatQueues]
   );
 
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IActiveJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
   const [editQtyForJob, setEditQtyForJob] = React.useState<JobRawMaterialData | null>(null);
   const closeEditJobQtyDialog = React.useCallback(() => setEditQtyForJob(null), []);
-  const [multiMaterialDialog, setMultiMaterialDialog] =
-    React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(null);
+  const [multiMaterialDialog, setMultiMaterialDialog] = React.useState<ReadonlyArray<
+    Readonly<api.IInProcessMaterial>
+  > | null>(null);
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
@@ -759,7 +749,7 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
       <AddBySerialDialog />
       <AddWithoutSerialDialog queueNames={props.queues} />
       <BulkAddCastingWithoutSerialDialog />
-      <ConnectedEditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
+      <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />
     </div>
