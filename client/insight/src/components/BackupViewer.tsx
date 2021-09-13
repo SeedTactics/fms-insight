@@ -34,9 +34,10 @@ import * as React from "react";
 import { Button } from "@material-ui/core";
 
 import { connect } from "../store/store";
-import { requestOpenBackupFile } from "../data/backend-backupviewer";
+import { useRequestOpenBackupFile } from "../data/backend-backupviewer";
 
 function BackupViewer(props: { loading_error: Error | undefined }) {
+  const requestOpenBackupFile = useRequestOpenBackupFile();
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>

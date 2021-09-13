@@ -41,6 +41,7 @@ import {
 import { ICurrentStatus, IHistoricData, ServerEvent } from "../data/api";
 import * as simProd from "./sim-production";
 import * as simUse from "./sim-station-use";
+import * as schJobs from "./scheduled-jobs";
 import * as names from "./names";
 import React from "react";
 import { addDays, addMonths } from "date-fns";
@@ -55,6 +56,11 @@ export function onServerEvent(t: TransactionInterface_UNSTABLE, now: Date, evt: 
   } else if (evt.newJobs) {
     simProd.onNewJobs(t, evt.newJobs.jobs, now);
     simUse.onNewJobs(t, evt.newJobs.stationUse, now);
+    schJobs.onNewJobs(
+      t,
+      evt.newJobs.jobs.map((j) => ({ ...j, copiedToSystem: true })),
+      now
+    );
     names.onNewJobs(t, evt.newJobs.jobs);
   } else if (evt.newCurrentStatus) {
     t.set(currentStatus, evt.newCurrentStatus);
@@ -72,8 +78,11 @@ export const loadingCellStatus = selector<boolean>({
 });
 
 function onLast30Jobs(t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>): void {
+  const jobsArr = Object.values(historicData.jobs);
   simUse.onNewJobs(t, historicData.stationUse);
-  simProd.onNewJobs(t, Object.values(historicData.jobs));
+  simProd.onNewJobs(t, jobsArr);
+  schJobs.onNewJobs(t, jobsArr);
+  names.onNewJobs(t, jobsArr);
   t.set(loadingJobsLast30, false);
 }
 
@@ -97,7 +106,7 @@ export function useRefreshCellStatus(): () => Promise<void> {
   }, []);
 }
 
-export function useLoadLast30Days(): (now: Date) => void {
+export function useLoadLast30Days(): (now: Date) => Promise<void> {
   const setJobsLoading = useSetRecoilState(loadingJobsLast30);
   const setLoadingCurSt = useSetRecoilState(loadingCurSt);
   const handleHistoricData = useRecoilTransaction_UNSTABLE(
@@ -105,7 +114,10 @@ export function useLoadLast30Days(): (now: Date) => void {
     []
   );
   const handleCurrentStatus = useRecoilTransaction_UNSTABLE(
-    (t) => (curSt: Readonly<ICurrentStatus>) => t.set(currentStatus, curSt),
+    (t) => (curSt: Readonly<ICurrentStatus>) => {
+      t.set(currentStatus, curSt);
+      t.set(loadingCurSt, false);
+    },
     []
   );
   const dispatch = useDispatch();
@@ -122,10 +134,12 @@ export function useLoadLast30Days(): (now: Date) => void {
 
     // TODO: errors
     setLoadingCurSt(true);
-    void JobsBackend.currentStatus().then(handleCurrentStatus);
+    const loadSt = JobsBackend.currentStatus().then(handleCurrentStatus);
 
     setJobsLoading(true);
-    void JobsBackend.history(thirtyDaysAgo, now).then(handleHistoricData);
+    const loadJob = JobsBackend.history(thirtyDaysAgo, now).then(handleHistoricData);
+
+    return Promise.all([loadSt, loadJob]).then(() => void 0);
   }, []);
 }
 

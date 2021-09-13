@@ -35,7 +35,7 @@ import { materialToShowInDialog } from "../data/material-details";
 import { useEffect } from "react";
 import { useSetRecoilState } from "recoil";
 
-export function BarcodeListener() {
+export function BarcodeListener(): null {
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
   useEffect(() => {
     let timeout: number | undefined;
@@ -97,7 +97,7 @@ export function BarcodeListener() {
     document.addEventListener("keydown", onKeyDown);
 
     return () => document.removeEventListener("keydown", onKeyDown);
-  });
+  }, [setMatToShow]);
 
   return null;
 }

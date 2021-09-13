@@ -116,7 +116,7 @@ export function WebsocketConnection(): null {
             storeDispatch(events.refreshLogEntries(st.last30.latest_log_counter));
             void refreshSt().then(() => set(websocketReconnectingAtom, false));
           } else {
-            loadLast30(new Date());
+            void loadLast30(new Date()).then(() => set(websocketReconnectingAtom, false));
           }
         };
         websocket.onclose = () => {
