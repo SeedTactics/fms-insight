@@ -60,7 +60,7 @@ import { Collapse } from "@material-ui/core";
 import clsx from "clsx";
 import { HashMap } from "prelude-ts";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { last30Jobs } from "../../cell-status/scheduled-jobs";
 

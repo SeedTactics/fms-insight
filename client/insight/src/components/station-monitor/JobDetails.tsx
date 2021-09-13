@@ -48,7 +48,7 @@ import { useSelector } from "../../store/store";
 import { materialToShowInDialog } from "../../data/material-details";
 import { HashMap, HashSet } from "prelude-ts";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 import { selectedAnalysisPeriod } from "../analysis/AnalysisSelectToolbar";
 
 interface JobDisplayProps {

@@ -38,7 +38,7 @@ import { FormControl } from "@material-ui/core";
 
 import { useSelector } from "../../store/store";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 import { RouteLocation, useCurrentRoute } from "../../data/routes";
 
 const toolbarStyle = {

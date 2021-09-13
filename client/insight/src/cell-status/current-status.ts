@@ -31,10 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { HashMap } from "prelude-ts";
-import { JobsBackend } from "./backend";
-import { InProcessMaterial, ICurrentStatus, IInProcessMaterial, ILogEntry, LogType, LocType, ActiveJob } from "./api";
+import { JobsBackend } from "../data/backend";
+import {
+  InProcessMaterial,
+  ICurrentStatus,
+  IInProcessMaterial,
+  ILogEntry,
+  LogType,
+  LocType,
+  ActiveJob,
+} from "../data/api";
 import { atom, DefaultValue, selectorFamily } from "recoil";
-import { updateJobComment } from "../cell-status/scheduled-jobs";
+import { updateJobComment } from "./scheduled-jobs";
 
 export const currentStatus = atom<Readonly<ICurrentStatus>>({
   key: "current-status",

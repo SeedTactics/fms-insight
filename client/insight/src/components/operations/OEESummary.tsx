@@ -43,7 +43,7 @@ import { Vector } from "prelude-ts";
 import { stationMinutes } from "../../data/results.cycles";
 import { PartCycleData } from "../../data/events.cycles";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 import { durationToSeconds } from "../../data/parseISODuration";
 
 interface StationOEEProps {

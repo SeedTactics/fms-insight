@@ -40,7 +40,7 @@ import Dashboard from "./Dashboard";
 import { createTestStore } from "../../../test/test-util";
 import { RecoilRoot, useRecoilCallback } from "recoil";
 import { JobsBackend } from "../../data/backend";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 
 function RegisterData() {
   const load = useRecoilCallback(

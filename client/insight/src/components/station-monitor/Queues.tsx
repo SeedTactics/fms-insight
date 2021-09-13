@@ -93,7 +93,7 @@ import { PrintedLabel } from "./PrintedLabel";
 import { JobDetails } from "./JobDetails";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
-import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../data/current-status";
+import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../cell-status/current-status";
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../data/material-details";
 import { Collapse } from "@material-ui/core";
 import { rawMaterialQueues } from "../../cell-status/names";

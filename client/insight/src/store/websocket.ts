@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ReconnectingWebSocket from "reconnecting-websocket";
 import * as events from "../data/events";
-import { CurrentStatus, EditMaterialInLogEvents, ServerEvent } from "../data/api";
-import { BackendHost, JobsBackend } from "../data/backend";
+import { EditMaterialInLogEvents, ServerEvent } from "../data/api";
+import { BackendHost } from "../data/backend";
 import { User } from "oidc-client";
 import { fmsInformation } from "../data/server-settings";
 import {
@@ -46,8 +46,7 @@ import {
   useRecoilValueLoadable,
 } from "recoil";
 import { useEffect, useRef } from "react";
-import { currentStatus, processEventsIntoCurrentStatus } from "../data/current-status";
-import { onServerEvent, useLoadLast30Days } from "../cell-status";
+import { onServerEvent, useLoadLast30Days, useRefreshCellStatus } from "../cell-status";
 
 const websocketReconnectingAtom = atom<boolean>({
   key: "websocket-reconnecting",
@@ -69,12 +68,6 @@ export function configureWebsocket(d: (a: any) => void, ges: () => events.State)
 function onMessage(t: TransactionInterface_UNSTABLE, now: Date, evt: ServerEvent) {
   if (evt.logEntry) {
     if (storeDispatch) storeDispatch(events.receiveNewEvents([evt.logEntry]));
-    t.set(currentStatus, processEventsIntoCurrentStatus(evt.logEntry));
-  } else if (evt.newJobs) {
-    // do nothing, handled by onServerEvent
-  } else if (evt.newCurrentStatus) {
-    const status = CurrentStatus.fromJS(evt.newCurrentStatus);
-    t.set(currentStatus, status);
   } else if (evt.editMaterialInLog) {
     const swap = EditMaterialInLogEvents.fromJS(evt.editMaterialInLog);
     if (storeDispatch) storeDispatch(events.onEditMaterialOnPallet(swap));
@@ -89,6 +82,7 @@ export function WebsocketConnection(): null {
     onMessage(t, now, evt);
   });
   const loadLast30 = useLoadLast30Days();
+  const refreshSt = useRefreshCellStatus();
 
   const open = useRecoilCallback(
     ({ set }) =>
@@ -120,14 +114,10 @@ export function WebsocketConnection(): null {
           const st = getEvtState();
           if (st.last30.latest_log_counter !== undefined) {
             storeDispatch(events.refreshLogEntries(st.last30.latest_log_counter));
+            void refreshSt().then(() => set(websocketReconnectingAtom, false));
           } else {
             loadLast30(new Date());
           }
-
-          void JobsBackend.currentStatus().then((st) => {
-            set(currentStatus, st);
-            set(websocketReconnectingAtom, false);
-          });
         };
         websocket.onclose = () => {
           if (!storeDispatch) {

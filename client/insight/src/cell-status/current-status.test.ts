@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as cs from "./current-status";
-import * as api from "./api";
+import * as api from "../data/api";
 import {
   fakeMaterial,
   fakeSerial,
@@ -41,7 +41,7 @@ import {
   fakeInspComplete,
   fakeInspForce,
   fakeInProcMaterial,
-} from "./events.fake";
+} from "../data/events.fake";
 
 const statusWithMat: api.ICurrentStatus = {
   timeOfCurrentStatusUTC: new Date(),

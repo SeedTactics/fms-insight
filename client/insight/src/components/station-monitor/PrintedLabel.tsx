@@ -36,7 +36,7 @@ import JsBarcode from "jsbarcode";
 import { LazySeq } from "../../data/lazyseq";
 import { format } from "date-fns";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 
 interface BarcodeProps {
   readonly text: string;

@@ -42,7 +42,7 @@ import {
   moveMaterialInBin,
 } from "../../data/all-material-bins";
 import * as matDetails from "../../data/material-details";
-import * as currentSt from "../../data/current-status";
+import * as currentSt from "../../cell-status/current-status";
 import { Paper } from "@material-ui/core";
 import { Typography } from "@material-ui/core";
 import { Button } from "@material-ui/core";

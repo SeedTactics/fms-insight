@@ -38,7 +38,7 @@ import {
   useRecoilTransaction_UNSTABLE,
   useSetRecoilState,
 } from "recoil";
-import { IHistoricData, ServerEvent } from "../data/api";
+import { ICurrentStatus, IHistoricData, ServerEvent } from "../data/api";
 import * as simProd from "./sim-production";
 import * as simUse from "./sim-station-use";
 import * as names from "./names";
@@ -47,44 +47,73 @@ import { addDays, addMonths } from "date-fns";
 import { JobsBackend, LogBackend } from "../data/backend";
 import { useDispatch } from "react-redux";
 import * as events from "../data/events";
+import { currentStatus, processEventsIntoCurrentStatus } from "./current-status";
 
 export function onServerEvent(t: TransactionInterface_UNSTABLE, now: Date, evt: ServerEvent): void {
-  if (evt.newJobs) {
+  if (evt.logEntry) {
+    t.set(currentStatus, processEventsIntoCurrentStatus(evt.logEntry));
+  } else if (evt.newJobs) {
     simProd.onNewJobs(t, evt.newJobs.jobs, now);
     simUse.onNewJobs(t, evt.newJobs.stationUse, now);
     names.onNewJobs(t, evt.newJobs.jobs);
+  } else if (evt.newCurrentStatus) {
+    t.set(currentStatus, evt.newCurrentStatus);
   }
 }
 
-function onLast30Jobs(t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>): void {
-  simUse.onNewJobs(t, historicData.stationUse);
-  simProd.onNewJobs(t, Object.values(historicData.jobs));
-}
-
-function onSpecificMonthJobs(t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>): void {
-  simUse.onSpecificMonthJobs(t, historicData.stationUse);
-  simProd.onSpecificMonthJobs(t, Object.values(historicData.jobs));
-}
-
+const loadingCurSt = atom<boolean>({ key: "insightBackendLoadingCurSt", default: false });
 const loadingJobsLast30 = atom<boolean>({ key: "insightBackendLoadingJobs", default: false });
 const loadingJobsMonth = atom<boolean>({ key: "insightBackendLoadingJobsMonth", default: false });
 export const loadingCellStatus = selector<boolean>({
   key: "insightBackendLoading",
   get: ({ get }) => {
-    return get(loadingJobsLast30) || get(loadingJobsMonth);
+    return get(loadingJobsLast30) || get(loadingJobsMonth) || get(loadingCurSt);
   },
 });
 
+function onLast30Jobs(t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>): void {
+  simUse.onNewJobs(t, historicData.stationUse);
+  simProd.onNewJobs(t, Object.values(historicData.jobs));
+  t.set(loadingJobsLast30, false);
+}
+
+function onSpecificMonthJobs(t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>): void {
+  simUse.onSpecificMonthJobs(t, historicData.stationUse);
+  simProd.onSpecificMonthJobs(t, Object.values(historicData.jobs));
+  t.set(loadingJobsMonth, false);
+}
+
+export function useRefreshCellStatus(): () => Promise<void> {
+  const setLoadingCurSt = useSetRecoilState(loadingCurSt);
+  const handleCurrentStatus = useRecoilTransaction_UNSTABLE(
+    (t) => (curSt: Readonly<ICurrentStatus>) => t.set(currentStatus, curSt),
+    []
+  );
+
+  return React.useCallback(() => {
+    // TODO: errors
+    setLoadingCurSt(true);
+    return JobsBackend.currentStatus().then(handleCurrentStatus);
+  }, []);
+}
+
 export function useLoadLast30Days(): (now: Date) => void {
   const setJobsLoading = useSetRecoilState(loadingJobsLast30);
+  const setLoadingCurSt = useSetRecoilState(loadingCurSt);
   const handleHistoricData = useRecoilTransaction_UNSTABLE(
     (t) => (historicData: Readonly<IHistoricData>) => onLast30Jobs(t, historicData),
+    []
+  );
+  const handleCurrentStatus = useRecoilTransaction_UNSTABLE(
+    (t) => (curSt: Readonly<ICurrentStatus>) => t.set(currentStatus, curSt),
     []
   );
   const dispatch = useDispatch();
 
   return React.useCallback((now: Date) => {
     const thirtyDaysAgo = addDays(now, -30);
+
+    // use ref to store latest event counter and merge useRefreshCellStatus and useLoadLast30Days?
     dispatch({
       type: events.ActionType.LoadRecentLogEntries,
       now: now,
@@ -92,11 +121,11 @@ export function useLoadLast30Days(): (now: Date) => void {
     });
 
     // TODO: errors
+    setLoadingCurSt(true);
+    void JobsBackend.currentStatus().then(handleCurrentStatus);
 
     setJobsLoading(true);
-    void JobsBackend.history(thirtyDaysAgo, now)
-      .then(handleHistoricData)
-      .finally(() => setJobsLoading(false));
+    void JobsBackend.history(thirtyDaysAgo, now).then(handleHistoricData);
   }, []);
 }
 

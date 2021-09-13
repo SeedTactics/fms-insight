@@ -76,7 +76,7 @@ import Queues from "./station-monitor/Queues";
 import { ToolReportPage } from "./operations/ToolReport";
 import { ProgramReportPage } from "./operations/Programs";
 import { WebsocketConnection } from "../store/websocket";
-import { currentStatus } from "../data/current-status";
+import { currentStatus } from "../cell-status/current-status";
 import { BarcodeListener } from "../store/barcode";
 import { ScheduleHistory } from "./analysis/ScheduleHistory";
 import { differenceInDays, startOfToday } from "date-fns";

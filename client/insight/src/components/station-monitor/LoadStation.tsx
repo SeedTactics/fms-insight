@@ -69,7 +69,7 @@ import { Tooltip } from "@material-ui/core";
 import { Fab } from "@material-ui/core";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
-import { currentStatus, reorder_queued_mat } from "../../data/current-status";
+import { currentStatus, reorder_queued_mat } from "../../cell-status/current-status";
 import { useIsDemo } from "../../data/routes";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {

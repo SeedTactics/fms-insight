@@ -47,7 +47,7 @@ import {
 } from "./events.cycles";
 import { reduxStore } from "../store/store";
 import { MachineBackend } from "./backend";
-import { currentStatus } from "./current-status";
+import { currentStatus } from "../cell-status/current-status";
 import copy from "copy-to-clipboard";
 
 function averageToolUse(

@@ -64,7 +64,7 @@ import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../data/server-settings";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 import { useAddNewCastingToQueue } from "../../data/material-details";
 import { castingNames } from "../../cell-status/names";
 
