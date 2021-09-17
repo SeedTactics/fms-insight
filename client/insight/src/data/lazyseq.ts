@@ -238,6 +238,18 @@ export class LazySeq<T> {
     });
   }
 
+  collect<S>(f: (x: T) => S | null | undefined): LazySeq<S> {
+    const iter = this.iter;
+    return LazySeq.ofIterator(function* () {
+      for (const x of iter) {
+        const y = f(x);
+        if (y !== null && y !== undefined) {
+          yield y;
+        }
+      }
+    });
+  }
+
   maxBy(compare: (v1: T, v2: T) => Ordering): Option<T> {
     return this.reduce((v1, v2) => (compare(v1, v2) < 0 ? v2 : v1));
   }

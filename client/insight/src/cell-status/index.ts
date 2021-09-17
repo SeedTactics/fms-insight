@@ -42,6 +42,7 @@ import { ICurrentStatus, IHistoricData } from "../data/api";
 import * as simProd from "./sim-production";
 import * as simUse from "./sim-station-use";
 import * as schJobs from "./scheduled-jobs";
+import * as buffers from "./buffers";
 import * as names from "./names";
 import React from "react";
 import { addDays, addMonths } from "date-fns";
@@ -54,12 +55,14 @@ import { ServerEventAndTime } from "../store/websocket";
 
 export const onServerEvent = conduit<ServerEventAndTime>(
   (t: TransactionInterface_UNSTABLE, evt: ServerEventAndTime) => {
+    simProd.updateLast30JobProduction.transform(t, evt);
+    simUse.updateLast30SimStatUse.transform(t, evt);
+    schJobs.updateLast30Jobs.transform(t, evt);
+    buffers.updateLast30Buffer.transform(t, evt);
+
     if (evt.evt.logEntry) {
       t.set(currentStatus, processEventsIntoCurrentStatus(evt.evt.logEntry));
     } else if (evt.evt.newJobs) {
-      simProd.updateLast30JobProduction.transform(t, evt);
-      simUse.updateLast30SimStatUse.transform(t, evt);
-      schJobs.updateLast30Jobs.transform(t, evt);
       names.onNewJobs(t, evt.evt.newJobs.jobs);
     } else if (evt.evt.newCurrentStatus) {
       t.set(currentStatus, evt.evt.newCurrentStatus);
