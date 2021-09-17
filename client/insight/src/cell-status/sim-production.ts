@@ -30,12 +30,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "../data/api";
 import { durationToMinutes } from "../data/parseISODuration";
 import { LazySeq } from "../data/lazyseq";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import * as L from "list/methods";
 import { addDays } from "date-fns";
+import { conduit } from "../store/recoil-util";
+import { ServerEventAndTime } from "../store/websocket";
+import { IHistoricData, IJob } from "../data/api";
 
 export interface SimPartCompleted {
   readonly part: string;
@@ -56,7 +58,7 @@ const specificMonthSimProductionRW = atom<L.List<SimPartCompleted>>({
 });
 export const specificMonthSimProduction: RecoilValueReadOnly<L.List<SimPartCompleted>> = specificMonthSimProductionRW;
 
-function jobToPartCompleted(jobs: Iterable<Readonly<api.IJob>>): L.List<SimPartCompleted> {
+function jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): L.List<SimPartCompleted> {
   return L.from(
     LazySeq.ofIterable(jobs).flatMap(function* (jParam) {
       const j = jParam;
@@ -84,30 +86,36 @@ function jobToPartCompleted(jobs: Iterable<Readonly<api.IJob>>): L.List<SimPartC
   );
 }
 
-export function onNewJobs(
-  t: TransactionInterface_UNSTABLE,
-  apiNewJobs: ReadonlyArray<Readonly<api.IJob>>,
-  now?: Date
-): void {
-  t.set(last30SimProductionRW, (simProd) => {
-    if (now) {
-      const expire = addDays(now, -30);
-      // check if nothing to expire and no new data
-      const minProd = LazySeq.ofIterable(simProd).minOn((e) => e.completeTime.getTime());
-      if ((minProd.isNone() || minProd.get().completeTime >= expire) && apiNewJobs.length === 0) {
-        return simProd;
-      }
+export const setLast30JobProduction = conduit<Readonly<IHistoricData>>(
+  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+    t.set(last30SimProductionRW, (oldProd) => oldProd.concat(jobToPartCompleted(Object.values(history.jobs))));
+  }
+);
 
-      simProd = simProd.filter((e) => e.completeTime >= expire);
+export const updateLast30JobProduction = conduit<ServerEventAndTime>(
+  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.newJobs) {
+      const apiNewJobs = evt.newJobs.jobs;
+      t.set(last30SimProductionRW, (simProd) => {
+        if (expire) {
+          const expire = addDays(now, -30);
+          // check if nothing to expire and no new data
+          const minProd = LazySeq.ofIterable(simProd).minOn((e) => e.completeTime.getTime());
+          if ((minProd.isNone() || minProd.get().completeTime >= expire) && apiNewJobs.length === 0) {
+            return simProd;
+          }
+
+          simProd = simProd.filter((e) => e.completeTime >= expire);
+        }
+
+        return simProd.concat(jobToPartCompleted(apiNewJobs));
+      });
     }
+  }
+);
 
-    return simProd.concat(jobToPartCompleted(apiNewJobs));
-  });
-}
-
-export function onSpecificMonthJobs(
-  t: TransactionInterface_UNSTABLE,
-  apiNewJobs: ReadonlyArray<Readonly<api.IJob>>
-): void {
-  t.set(specificMonthSimProductionRW, jobToPartCompleted(apiNewJobs));
-}
+export const setSpecificMonthJobProduction = conduit<Readonly<IHistoricData>>(
+  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+    t.set(specificMonthSimProductionRW, jobToPartCompleted(Object.values(history.jobs)));
+  }
+);

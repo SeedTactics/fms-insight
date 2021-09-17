@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ReconnectingWebSocket from "reconnecting-websocket";
 import * as events from "../data/events";
-import { EditMaterialInLogEvents, ServerEvent } from "../data/api";
+import { EditMaterialInLogEvents, IServerEvent, ServerEvent } from "../data/api";
 import { BackendHost } from "../data/backend";
 import { User } from "oidc-client";
 import { fmsInformation } from "../data/server-settings";
@@ -47,6 +47,12 @@ import {
 } from "recoil";
 import { useEffect, useRef } from "react";
 import { onServerEvent, useLoadLast30Days, useRefreshCellStatus } from "../cell-status";
+
+export interface ServerEventAndTime {
+  readonly evt: Readonly<IServerEvent>;
+  readonly now: Date;
+  readonly expire: boolean;
+}
 
 const websocketReconnectingAtom = atom<boolean>({
   key: "websocket-reconnecting",
@@ -72,7 +78,7 @@ function onMessage(t: TransactionInterface_UNSTABLE, now: Date, evt: ServerEvent
     const swap = EditMaterialInLogEvents.fromJS(evt.editMaterialInLog);
     if (storeDispatch) storeDispatch(events.onEditMaterialOnPallet(swap));
   }
-  onServerEvent(t, now, evt);
+  onServerEvent.transform(t, { evt, now, expire: true });
 }
 
 export function WebsocketConnection(): null {

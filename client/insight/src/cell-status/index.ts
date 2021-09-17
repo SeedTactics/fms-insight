@@ -38,7 +38,7 @@ import {
   useRecoilTransaction_UNSTABLE,
   useSetRecoilState,
 } from "recoil";
-import { ICurrentStatus, IHistoricData, ServerEvent } from "../data/api";
+import { ICurrentStatus, IHistoricData } from "../data/api";
 import * as simProd from "./sim-production";
 import * as simUse from "./sim-station-use";
 import * as schJobs from "./scheduled-jobs";
@@ -49,23 +49,23 @@ import { JobsBackend, LogBackend } from "../data/backend";
 import { useDispatch } from "react-redux";
 import * as events from "../data/events";
 import { currentStatus, processEventsIntoCurrentStatus } from "./current-status";
+import { conduit } from "../store/recoil-util";
+import { ServerEventAndTime } from "../store/websocket";
 
-export function onServerEvent(t: TransactionInterface_UNSTABLE, now: Date, evt: ServerEvent): void {
-  if (evt.logEntry) {
-    t.set(currentStatus, processEventsIntoCurrentStatus(evt.logEntry));
-  } else if (evt.newJobs) {
-    simProd.onNewJobs(t, evt.newJobs.jobs, now);
-    simUse.onNewJobs(t, evt.newJobs.stationUse, now);
-    schJobs.onNewJobs(
-      t,
-      evt.newJobs.jobs.map((j) => ({ ...j, copiedToSystem: true })),
-      now
-    );
-    names.onNewJobs(t, evt.newJobs.jobs);
-  } else if (evt.newCurrentStatus) {
-    t.set(currentStatus, evt.newCurrentStatus);
+export const onServerEvent = conduit<ServerEventAndTime>(
+  (t: TransactionInterface_UNSTABLE, evt: ServerEventAndTime) => {
+    if (evt.evt.logEntry) {
+      t.set(currentStatus, processEventsIntoCurrentStatus(evt.evt.logEntry));
+    } else if (evt.evt.newJobs) {
+      simProd.updateLast30JobProduction.transform(t, evt);
+      simUse.updateLast30SimStatUse.transform(t, evt);
+      schJobs.updateLast30Jobs.transform(t, evt);
+      names.onNewJobs(t, evt.evt.newJobs.jobs);
+    } else if (evt.evt.newCurrentStatus) {
+      t.set(currentStatus, evt.evt.newCurrentStatus);
+    }
   }
-}
+);
 
 const loadingCurSt = atom<boolean>({ key: "insightBackendLoadingCurSt", default: false });
 const loadingJobsLast30 = atom<boolean>({ key: "insightBackendLoadingJobs", default: false });
@@ -79,16 +79,17 @@ export const loadingCellStatus = selector<boolean>({
 
 function onLast30Jobs(t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>): void {
   const jobsArr = Object.values(historicData.jobs);
-  simUse.onNewJobs(t, historicData.stationUse);
-  simProd.onNewJobs(t, jobsArr);
-  schJobs.onNewJobs(t, jobsArr);
+  simUse.setLast30SimStatUse.transform(t, historicData);
+  simProd.setLast30JobProduction.transform(t, historicData);
+  schJobs.setLast30Jobs.transform(t, historicData);
   names.onNewJobs(t, jobsArr);
   t.set(loadingJobsLast30, false);
 }
 
 function onSpecificMonthJobs(t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>): void {
-  simUse.onSpecificMonthJobs(t, historicData.stationUse);
-  simProd.onSpecificMonthJobs(t, Object.values(historicData.jobs));
+  simUse.setSpecificMonthSimStatUse.transform(t, historicData);
+  simProd.setSpecificMonthJobProduction.transform(t, historicData);
+  schJobs.updateSpecificMonthJobs.transform(t, historicData);
   t.set(loadingJobsMonth, false);
 }
 

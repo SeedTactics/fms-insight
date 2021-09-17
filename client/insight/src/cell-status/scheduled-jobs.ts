@@ -30,57 +30,76 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "../data/api";
 import { LazySeq } from "../data/lazyseq";
-import { atom, RecoilValueReadOnly, SetRecoilState, TransactionInterface_UNSTABLE } from "recoil";
+import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
 import { HashMap } from "prelude-ts";
+import { conduit } from "../store/recoil-util";
+import { ServerEventAndTime } from "../store/websocket";
+import { IHistoricData, IHistoricJob } from "../data/api";
 
-const last30JobsRW = atom<HashMap<string, Readonly<api.IHistoricJob>>>({
+const last30JobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "last30Jobs",
   default: HashMap.empty(),
 });
-export const last30Jobs: RecoilValueReadOnly<HashMap<string, Readonly<api.IHistoricJob>>> = last30JobsRW;
+export const last30Jobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
 
-const specificMonthJobsRW = atom<HashMap<string, Readonly<api.IHistoricJob>>>({
+const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "specificMonthJobs",
   default: HashMap.empty(),
 });
-export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<api.IHistoricJob>>> = specificMonthJobsRW;
+export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
 
-export function onNewJobs(t: TransactionInterface_UNSTABLE, apiNewJobs: Iterable<api.IHistoricJob>, now?: Date): void {
-  const newJobs = LazySeq.ofIterable(apiNewJobs);
-  t.set(last30JobsRW, (oldJobs) => {
-    if (now) {
-      const expire = addDays(now, -30);
+export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+  t.set(last30JobsRW, (oldJobs) => LazySeq.ofObject(history.jobs).foldLeft(oldJobs, (m, [_, j]) => m.put(j.unique, j)));
+});
 
-      const minStat = LazySeq.ofIterable(oldJobs).minOn(([, e]) => e.routeStartUTC.getTime());
+export const updateLast30Jobs = conduit<ServerEventAndTime>(
+  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.newJobs) {
+      const newJobs = LazySeq.ofIterable(evt.newJobs.jobs);
+      t.set(last30JobsRW, (oldJobs) => {
+        if (expire) {
+          const expire = addDays(now, -30);
 
-      if ((minStat.isNone() || minStat.get()[1].routeStartUTC >= expire) && newJobs.isEmpty()) {
-        return oldJobs;
-      }
+          const minStat = LazySeq.ofIterable(oldJobs).minOn(([, e]) => e.routeStartUTC.getTime());
 
-      oldJobs = oldJobs.filter((_, j) => j.routeStartUTC >= expire);
+          if ((minStat.isNone() || minStat.get()[1].routeStartUTC >= expire) && newJobs.isEmpty()) {
+            return oldJobs;
+          }
+
+          oldJobs = oldJobs.filter((_, j) => j.routeStartUTC >= expire);
+        }
+
+        return newJobs.foldLeft(oldJobs, (m, j) => m.put(j.unique, { ...j, copiedToSystem: true }));
+      });
     }
+  }
+);
 
-    return newJobs.foldLeft(oldJobs, (m, j) => m.put(j.unique, j));
-  });
-}
+export const updateSpecificMonthJobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+  t.set(specificMonthJobsRW, HashMap.ofObjectDictionary(history.jobs));
+});
 
-export function onSpecificMonthJobs(
-  t: TransactionInterface_UNSTABLE,
-  apiNewJobs: { readonly [key: string]: api.IHistoricJob }
-): void {
-  t.set(specificMonthJobsRW, HashMap.ofObjectDictionary(apiNewJobs));
-}
+export const last30JobComment = selectorFamily<string | null, string>({
+  key: "last-30-job-comment",
+  get:
+    (uniq) =>
+    ({ get }) =>
+      get(last30Jobs).get(uniq).getOrNull()?.comment ?? null,
+  set:
+    (uniq) =>
+    ({ set }, newVal) => {
+      const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
 
-export function updateJobComment(set: SetRecoilState, uniq: string, comment: string | null): void {
-  set(last30JobsRW, (oldJobs) => {
-    const old = oldJobs.get(uniq);
-    if (old.isSome()) {
-      return oldJobs.put(uniq, { ...old.get(), comment: comment ?? undefined });
-    } else {
-      return oldJobs;
-    }
-  });
-}
+      set(last30JobsRW, (oldJobs) => {
+        const old = oldJobs.get(uniq);
+        if (old.isSome()) {
+          return oldJobs.put(uniq, { ...old.get(), comment: newComment ?? undefined });
+        } else {
+          return oldJobs;
+        }
+      });
+    },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});

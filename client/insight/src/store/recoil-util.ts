@@ -32,7 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { RecoilState, useRecoilState, useSetRecoilState } from "recoil";
+import {
+  RecoilState,
+  TransactionInterface_UNSTABLE,
+  useRecoilState,
+  useRecoilTransaction_UNSTABLE,
+  useSetRecoilState,
+} from "recoil";
 import produce, { Draft } from "immer";
 
 export function useRecoilStateDraft<T>(recoilState: RecoilState<T>): [T, (f: (d: Draft<T>) => void) => void] {
@@ -57,4 +63,60 @@ export function useSetRecoilStateDraft<T>(recoilState: RecoilState<T>): (f: (d: 
     [setState]
   );
   return setDraft;
+}
+
+export interface RecoilConduit<T> {
+  readonly transform: (trans: TransactionInterface_UNSTABLE, val: T) => void;
+}
+
+export function useRecoilConduit<T>({ transform }: RecoilConduit<T>): (val: T) => void {
+  return useRecoilTransaction_UNSTABLE((trans) => (val: T) => transform(trans, val));
+}
+
+export function conduit<T>(transform: (trans: TransactionInterface_UNSTABLE, val: T) => void): RecoilConduit<T> {
+  return { transform };
+}
+
+type Destructor = () => void;
+
+export interface SourceInterface {
+  readonly send: <T>(conduit: RecoilConduit<T>, val: T) => void;
+}
+
+export type RecoilSource =
+  | { effect: (interf: SourceInterface) => void | Destructor }
+  | { effectWithRef: (interf: SourceInterface, ref: React.MutableRefObject<unknown>) => void | Destructor };
+
+export function source(effect: (interf: SourceInterface) => void | Destructor): RecoilSource {
+  return { effect };
+}
+
+export function sourceWithRef<Ref>(
+  effect: (interf: SourceInterface, ref: React.MutableRefObject<Ref | undefined>) => void | Destructor
+): RecoilSource {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+  return { effectWithRef: effect as any };
+}
+
+export function useRecoilSource(source: RecoilSource): void {
+  const ref = React.useRef(undefined);
+  const send = useRecoilTransaction_UNSTABLE(
+    (t) =>
+      <T>(conduit: RecoilConduit<T>, val: T) =>
+        conduit.transform(t, val)
+  );
+  React.useEffect(() => {
+    if ("effect" in source) {
+      return source.effect({
+        send,
+      });
+    } else {
+      return source.effectWithRef(
+        {
+          send,
+        },
+        ref
+      );
+    }
+  }, []);
 }

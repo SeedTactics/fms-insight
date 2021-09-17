@@ -42,7 +42,7 @@ import {
   ActiveJob,
 } from "../data/api";
 import { atom, DefaultValue, selectorFamily } from "recoil";
-import { updateJobComment } from "./scheduled-jobs";
+import { last30JobComment } from "./scheduled-jobs";
 
 export const currentStatus = atom<Readonly<ICurrentStatus>>({
   key: "current-status",
@@ -78,11 +78,11 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
         }
       });
 
-      updateJobComment(set, uniq, newComment);
+      set(last30JobComment(uniq), newComment);
 
       await JobsBackend.setJobComment(uniq, newComment);
     },
-  //cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 export function processEventsIntoCurrentStatus(

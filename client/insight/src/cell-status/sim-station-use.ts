@@ -30,12 +30,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "../data/api";
 import { durationToMinutes } from "../data/parseISODuration";
 import { LazySeq } from "../data/lazyseq";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import * as L from "list/methods";
 import { addDays } from "date-fns";
+import { ServerEventAndTime } from "../store/websocket";
+import { conduit } from "../store/recoil-util";
+import { IHistoricData, ISimulatedStationUtilization } from "../data/api";
 
 export interface SimStationUse {
   readonly station: string;
@@ -57,7 +59,7 @@ const specificMonthSimStationUseRW = atom<L.List<SimStationUse>>({
 });
 export const specificMonthSimStationUse: RecoilValueReadOnly<L.List<SimStationUse>> = specificMonthSimStationUseRW;
 
-function procSimUse(apiSimUse: ReadonlyArray<api.ISimulatedStationUtilization>): L.List<SimStationUse> {
+function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): L.List<SimStationUse> {
   return L.from(apiSimUse).map((simUse) => ({
     station: simUse.stationGroup + " #" + simUse.stationNum.toString(),
     start: simUse.startUTC,
@@ -67,34 +69,36 @@ function procSimUse(apiSimUse: ReadonlyArray<api.ISimulatedStationUtilization>):
   }));
 }
 
-export function onNewJobs(
-  t: TransactionInterface_UNSTABLE,
-  apiSimUse: ReadonlyArray<api.ISimulatedStationUtilization> | null | undefined,
-  now?: Date
-): void {
-  if (apiSimUse) {
-    t.set(last30SimStationUseRW, (simUse) => {
-      if (now) {
-        const expire = addDays(now, -30);
-        // check if nothing to expire and no new data
-        const minStat = LazySeq.ofIterable(simUse).minOn((e) => e.end.getTime());
-        if ((minStat.isNone() || minStat.get().start >= expire) && apiSimUse.length === 0) {
-          return simUse;
+export const setLast30SimStatUse = conduit<Readonly<IHistoricData>>(
+  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+    t.set(last30SimStationUseRW, (oldSimUse) => oldSimUse.concat(procSimUse(history.stationUse)));
+  }
+);
+
+export const updateLast30SimStatUse = conduit<ServerEventAndTime>(
+  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
+    if (evt.newJobs?.stationUse) {
+      const apiSimUse = evt.newJobs?.stationUse;
+      t.set(last30SimStationUseRW, (simUse) => {
+        if (expire) {
+          const expireT = addDays(now, -30);
+          // check if nothing to expire and no new data
+          const minStat = LazySeq.ofIterable(simUse).minOn((e) => e.end.getTime());
+          if ((minStat.isNone() || minStat.get().start >= expireT) && apiSimUse.length === 0) {
+            return simUse;
+          }
+
+          simUse = simUse.filter((e) => e.start >= expireT);
         }
 
-        simUse = simUse.filter((e) => e.start >= expire);
-      }
-
-      return simUse.concat(procSimUse(apiSimUse));
-    });
+        return simUse.concat(procSimUse(apiSimUse));
+      });
+    }
   }
-}
+);
 
-export function onSpecificMonthJobs(
-  t: TransactionInterface_UNSTABLE,
-  apiSimUse: ReadonlyArray<api.ISimulatedStationUtilization> | null | undefined
-): void {
-  if (apiSimUse) {
-    t.set(specificMonthSimStationUseRW, procSimUse(apiSimUse));
+export const setSpecificMonthSimStatUse = conduit<Readonly<IHistoricData>>(
+  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+    t.set(specificMonthSimStationUseRW, procSimUse(history.stationUse));
   }
-}
+);
