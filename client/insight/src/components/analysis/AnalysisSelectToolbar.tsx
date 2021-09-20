@@ -33,11 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Radio } from "@material-ui/core";
 import { FormControlLabel } from "@material-ui/core";
-import { atom, selector, useRecoilState, useRecoilTransaction_UNSTABLE } from "recoil";
-import { startOfMonth } from "date-fns";
+import { useRecoilValue } from "recoil";
 
 import MonthSelect from "../MonthSelect";
-import { useLoadSpecificMonth } from "../../cell-status";
+import {
+  selectedAnalysisPeriod,
+  selectedMonth,
+  useSetSpecificMonthWithoutLoading,
+  useLoadSpecificMonth,
+  useSetLast30,
+} from "../../store/load-specific-month";
 
 const toolbarStyle = {
   display: "flex",
@@ -49,56 +54,24 @@ const toolbarStyle = {
   justifyContent: "space-evenly",
 };
 
-const selectType = atom<"Last30" | "SpecificMonth">({
-  key: "analysisSelectType",
-  default: "Last30",
-});
-
-const selectMonth = atom<Date>({ key: "analysisSelectMonth", default: startOfMonth(new Date()) });
-
-export type SelectedAnalysisPeriod = { type: "Last30" } | { type: "SpecificMonth"; month: Date };
-export const selectedAnalysisPeriod = selector<SelectedAnalysisPeriod>({
-  key: "selectedAnalysisPeriod",
-  get: ({ get }) => {
-    const ty = get(selectType);
-    if (ty === "Last30") {
-      return { type: "Last30" };
-    } else {
-      return { type: "SpecificMonth", month: get(selectMonth) };
-    }
-  },
-});
-
 export default React.memo(function AnalysisSelectToolbar() {
-  const [selTy, setSelTy] = useRecoilState(selectType);
-  const [selMonth, setSelMonth] = useRecoilState(selectMonth);
-  const loadSpecificMonth = useLoadSpecificMonth();
-
-  const analyzeMonth = useRecoilTransaction_UNSTABLE(
-    ({ get, set }) =>
-      (m: Date) => {
-        set(selectType, "SpecificMonth");
-        if (get(selectMonth) !== m) {
-          set(selectMonth, m);
-          loadSpecificMonth(m);
-        }
-      },
-    [loadSpecificMonth]
-  );
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const selMonth = useRecoilValue(selectedMonth);
+  const analyzeMonth = useLoadSpecificMonth();
+  const setMonthWithoutLoading = useSetSpecificMonthWithoutLoading();
+  const setLast30 = useSetLast30();
 
   return (
     <nav style={toolbarStyle}>
       <FormControlLabel
-        control={
-          <Radio checked={selTy === "Last30"} onChange={(e, checked) => (checked ? setSelTy("Last30") : null)} />
-        }
+        control={<Radio checked={period.type === "Last30"} onChange={(e, checked) => (checked ? setLast30() : null)} />}
         label="Last 30 days"
       />
       <div style={{ display: "flex", alignItems: "center" }}>
         <FormControlLabel
           control={
             <Radio
-              checked={selTy === "SpecificMonth"}
+              checked={period.type === "SpecificMonth"}
               onChange={(e, checked) => (checked ? analyzeMonth(selMonth) : null)}
             />
           }
@@ -107,12 +80,12 @@ export default React.memo(function AnalysisSelectToolbar() {
         <MonthSelect
           curMonth={selMonth}
           onSelectMonth={(m) => {
-            if (selTy === "SpecificMonth") {
+            if (period.type === "SpecificMonth") {
               // if month type is selected, reload data
               analyzeMonth(m);
             } else {
               // otherwise, just store month
-              setSelMonth(m);
+              setMonthWithoutLoading(m);
             }
           }}
         />

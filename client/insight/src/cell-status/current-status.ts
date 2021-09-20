@@ -41,10 +41,12 @@ import {
   LocType,
   ActiveJob,
 } from "../data/api";
-import { atom, DefaultValue, selectorFamily } from "recoil";
+import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
 import { last30JobComment } from "./scheduled-jobs";
+import { conduit } from "../store/recoil-util";
+import { ServerEventAndTime } from "../store/websocket";
 
-export const currentStatus = atom<Readonly<ICurrentStatus>>({
+const currentStatusRW = atom<Readonly<ICurrentStatus>>({
   key: "current-status",
   default: {
     timeOfCurrentStatusUTC: new Date(),
@@ -55,6 +57,7 @@ export const currentStatus = atom<Readonly<ICurrentStatus>>({
     queues: {},
   },
 });
+export const currentStatus: RecoilValueReadOnly<ICurrentStatus> = currentStatusRW;
 
 export const currentStatusJobComment = selectorFamily<string | null, string>({
   key: "current-status-job-comment",
@@ -67,7 +70,7 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
     async ({ set }, newVal) => {
       const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
 
-      set(currentStatus, (st) => {
+      set(currentStatusRW, (st) => {
         const oldJob = st.jobs[uniq];
         if (oldJob) {
           const newJob = new ActiveJob(oldJob);
@@ -85,7 +88,21 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
-export function processEventsIntoCurrentStatus(
+export const setCurrentStatus = conduit<Readonly<ICurrentStatus>>((t: TransactionInterface_UNSTABLE, st) =>
+  t.set(currentStatusRW, st)
+);
+
+export const updateCurrentStatus = conduit<ServerEventAndTime>(
+  (t: TransactionInterface_UNSTABLE, { evt }: ServerEventAndTime) => {
+    if (evt.logEntry) {
+      t.set(currentStatusRW, processEventsIntoCurrentStatus(evt.logEntry));
+    } else if (evt.newCurrentStatus) {
+      t.set(currentStatusRW, evt.newCurrentStatus);
+    }
+  }
+);
+
+function processEventsIntoCurrentStatus(
   entry: Readonly<ILogEntry>
 ): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
   return (curSt) => {

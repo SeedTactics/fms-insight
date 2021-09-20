@@ -32,21 +32,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import ReconnectingWebSocket from "reconnecting-websocket";
-import * as events from "../data/events";
-import { EditMaterialInLogEvents, IServerEvent, ServerEvent } from "../data/api";
-import { BackendHost } from "../data/backend";
+import { IServerEvent, ServerEvent } from "../data/api";
+import { BackendHost, JobsBackend, LogBackend } from "../data/backend";
 import { User } from "oidc-client";
 import { fmsInformation } from "../data/server-settings";
-import {
-  atom,
-  RecoilValue,
-  TransactionInterface_UNSTABLE,
-  useRecoilCallback,
-  useRecoilTransaction_UNSTABLE,
-  useRecoilValueLoadable,
-} from "recoil";
+import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback, useRecoilValueLoadable } from "recoil";
 import { useEffect, useRef } from "react";
-import { onServerEvent, useLoadLast30Days, useRefreshCellStatus } from "../cell-status";
+import {
+  lastEventCounter,
+  onLoadCurrentSt,
+  onLoadLast30Jobs,
+  onLoadLast30Log,
+  onServerEvent,
+} from "../cell-status/loading";
+import { addDays } from "date-fns";
+import { RecoilConduit } from "./recoil-util";
 
 export interface ServerEventAndTime {
   readonly evt: Readonly<IServerEvent>;
@@ -58,45 +58,47 @@ const websocketReconnectingAtom = atom<boolean>({
   key: "websocket-reconnecting",
   default: false,
 });
+export const websocketReconnecting: RecoilValueReadOnly<boolean> = websocketReconnectingAtom;
 
-export const websocketReconnecting: RecoilValue<boolean> = websocketReconnectingAtom;
+const errorLoadingLast30RW = atom<string | null>({ key: "error-last30-data", default: null });
+export const errorLoadingLast30: RecoilValueReadOnly<string | null> = errorLoadingLast30RW;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let storeDispatch: ((a: any) => void) | undefined;
-let getEvtState: (() => events.State) | undefined;
+function loadInitial(
+  set: <T>(s: RecoilState<T>, t: T) => void,
+  push: <T>(c: RecoilConduit<T>) => (t: T) => void
+): void {
+  const now = new Date();
+  const thirtyDaysAgo = addDays(now, -30);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function configureWebsocket(d: (a: any) => void, ges: () => events.State): void {
-  storeDispatch = d;
-  getEvtState = ges;
+  const curStProm = JobsBackend.currentStatus().then(push(onLoadCurrentSt));
+  const jobsProm = JobsBackend.history(thirtyDaysAgo, now).then(push(onLoadLast30Jobs));
+  const logProm = LogBackend.get(thirtyDaysAgo, now).then(push(onLoadLast30Log));
+
+  Promise.all([curStProm, jobsProm, logProm])
+    .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? e.toString()))
+    .finally(() => set(websocketReconnectingAtom, false));
 }
 
-function onMessage(t: TransactionInterface_UNSTABLE, now: Date, evt: ServerEvent) {
-  if (evt.logEntry) {
-    if (storeDispatch) storeDispatch(events.receiveNewEvents([evt.logEntry]));
-  } else if (evt.editMaterialInLog) {
-    const swap = EditMaterialInLogEvents.fromJS(evt.editMaterialInLog);
-    if (storeDispatch) storeDispatch(events.onEditMaterialOnPallet(swap));
-  }
-  onServerEvent.transform(t, { evt, now, expire: true });
+function loadMissed(
+  lastCntr: number,
+  set: <T>(s: RecoilState<T>, t: T) => void,
+  push: <T>(c: RecoilConduit<T>) => (t: T) => void
+): void {
+  const curStProm = JobsBackend.currentStatus().then(push(onLoadCurrentSt));
+  const logProm = LogBackend.recent(lastCntr).then(push(onLoadLast30Log));
+
+  Promise.all([curStProm, logProm])
+    .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? e.toString()))
+    .finally(() => set(websocketReconnectingAtom, false));
 }
 
 export function WebsocketConnection(): null {
   const fmsInfoLoadable = useRecoilValueLoadable(fmsInformation);
   const websocketRef = useRef<ReconnectingWebSocket | null>(null);
-  const processMessage = useRecoilTransaction_UNSTABLE((t) => (now: Date, evt: ServerEvent) => {
-    onMessage(t, now, evt);
-  });
-  const loadLast30 = useLoadLast30Days();
-  const refreshSt = useRefreshCellStatus();
 
   const open = useRecoilCallback(
-    ({ set }) =>
+    ({ set, snapshot, transact_UNSTABLE }) =>
       (user: User | null) => {
-        if (!storeDispatch || !getEvtState) {
-          return;
-        }
-
         set(websocketReconnectingAtom, true);
         const loc = window.location;
         let uri: string;
@@ -111,31 +113,26 @@ export function WebsocketConnection(): null {
           uri += "?token=" + encodeURIComponent(user.access_token || user.id_token);
         }
 
+        function push<T>(c: RecoilConduit<T>): (t: T) => void {
+          return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
+        }
+
         const websocket = new ReconnectingWebSocket(uri);
         websocket.onopen = () => {
-          if (!storeDispatch || !getEvtState) {
-            return;
-          }
-
-          const st = getEvtState();
-          if (st.last30.latest_log_counter !== undefined) {
-            storeDispatch(events.refreshLogEntries(st.last30.latest_log_counter));
-            void refreshSt().then(() => set(websocketReconnectingAtom, false));
+          set(errorLoadingLast30RW, null);
+          const lastSeenCntr = snapshot.getLoadable(lastEventCounter).valueMaybe();
+          if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
+            loadMissed(lastSeenCntr, set, push);
           } else {
-            void loadLast30(new Date()).then(() => set(websocketReconnectingAtom, false));
+            loadInitial(set, push);
           }
         };
         websocket.onclose = () => {
-          if (!storeDispatch) {
-            return;
-          }
           set(websocketReconnectingAtom, true);
         };
         websocket.onmessage = (evt) => {
-          if (!storeDispatch) {
-            return;
-          }
-          processMessage(new Date(), ServerEvent.fromJS(JSON.parse(evt.data)));
+          const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
+          push(onServerEvent)({ evt: serverEvt, now: new Date(), expire: true });
         };
 
         websocketRef.current = websocket;

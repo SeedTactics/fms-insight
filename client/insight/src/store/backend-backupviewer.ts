@@ -31,11 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { RouteLocation } from "./routes";
-import { registerBackend } from "./backend";
-import { useLoadLast30Days } from "../cell-status";
-import React from "react";
+import * as api from "../data/api";
+import { RouteLocation } from "../data/routes";
+import { registerBackend } from "../data/backend";
+import { onLoadLast30Jobs, onLoadLast30Log } from "../cell-status/loading";
+import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback } from "recoil";
+import { RecoilConduit } from "../store/recoil-util";
+import { addDays } from "date-fns";
 
 type Request = {
   name: string;
@@ -54,32 +56,62 @@ let lastId = 0;
 let port: MessagePort | null = null;
 let msgHandlerRegsitered = false;
 
+const loadingBackupViewerRW = atom<boolean>({ key: "loading-backup-viewer-data", default: false });
+export const loadingBackupViewer: RecoilValueReadOnly<boolean> = loadingBackupViewerRW;
+
+const errorLoadingBackupViewerRW = atom<string | null>({ key: "error-backup-viewer-data", default: null });
+export const errorLoadingBackupViewer: RecoilValueReadOnly<string | null> = errorLoadingBackupViewerRW;
+
+function loadLast30(set: <T>(s: RecoilState<T>, t: T) => void, push: <T>(c: RecoilConduit<T>) => (t: T) => void): void {
+  set(loadingBackupViewerRW, true);
+  set(errorLoadingBackupViewerRW, null);
+
+  const now = new Date();
+  const thirtyDaysAgo = addDays(now, -30);
+
+  const jobsProm = JobsBackend.history(thirtyDaysAgo, now).then(push(onLoadLast30Jobs));
+  const logProm = LogBackend.get(thirtyDaysAgo, now).then(push(onLoadLast30Log));
+
+  Promise.all([jobsProm, logProm])
+    .catch((e: Record<string, string | undefined>) => set(errorLoadingBackupViewerRW, e.message ?? e.toString()))
+    .finally(() => set(loadingBackupViewerRW, false));
+}
+
 export function useRequestOpenBackupFile(): () => void {
-  const loadLast30 = useLoadLast30Days();
-  return React.useCallback(() => {
-    function onWindowMessage(evt: MessageEvent<unknown>) {
-      if (evt.source === window && evt.data === "insight-file-opened") {
-        port = evt.ports[0];
-        port.onmessage = (msg) => {
-          const response: Response = msg.data;
-          const handler = inFlight.get(response.id);
-          if (handler) {
-            handler(response);
+  return useRecoilCallback(
+    ({ set, transact_UNSTABLE }) =>
+      () => {
+        function push<T>(c: RecoilConduit<T>): (t: T) => void {
+          return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
+        }
+
+        function onWindowMessage(evt: MessageEvent<unknown>) {
+          if (evt.source === window && evt.data === "insight-file-opened") {
+            port = evt.ports[0];
+            port.onmessage = (msg) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              const response: Response = msg.data;
+              const handler = inFlight.get(response.id);
+              if (handler) {
+                handler(response);
+              }
+            };
+            window.removeEventListener("message", onWindowMessage);
+            window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
+
+            loadLast30(set, push);
           }
-        };
-        window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
-        loadLast30(new Date());
-        window.removeEventListener("message", onWindowMessage);
-      }
-    }
+        }
 
-    if (msgHandlerRegsitered === false) {
-      window.addEventListener("message", onWindowMessage);
-      msgHandlerRegsitered = true;
-    }
+        if (msgHandlerRegsitered === false) {
+          window.addEventListener("message", onWindowMessage);
+          msgHandlerRegsitered = true;
+        }
 
-    window.postMessage("open-insight-file", "*");
-  }, [loadLast30]);
+        window.postMessage("open-insight-file", "*");
+      },
+    []
+  );
 }
 
 export function registerBackupViewerBackend(): void {

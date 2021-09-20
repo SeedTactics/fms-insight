@@ -139,7 +139,7 @@ export const updateLast30Buffer = conduit<ServerEventAndTime>(
   }
 );
 
-export const updateSpecificMonthBuffer = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
+export const setSpecificMonthBuffer = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(specificMonthBufferEntriesRW, L.from(LazySeq.ofIterable(log).collect(convertEntry)));
   }
