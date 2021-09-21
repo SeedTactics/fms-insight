@@ -41,7 +41,6 @@ import {
   LineSeries,
   DiscreteColorLegend,
 } from "react-vis";
-import { useSelector } from "../../store/store";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import { buildBufferChart } from "../../data/results.bufferchart";
 import { seriesColor } from "./CycleChart";
@@ -49,6 +48,7 @@ import { HashSet } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
+import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;
@@ -60,9 +60,7 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const entries = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.buffering.entries : s.Events.selected_month.buffering.entries
-  );
+  const entries = useRecoilValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
   const rawMatQueues = useRecoilValue(rawMaterialQueues);
 
   const [disabledBuffers, setDisabledBuffers] = React.useState<HashSet<string>>(HashSet.empty());

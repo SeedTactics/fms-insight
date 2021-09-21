@@ -39,7 +39,6 @@ import * as api from "../network/api";
 import * as cycles from "./events.cycles";
 import * as matsummary from "./events.matsummary";
 import * as inspection from "./events.inspection";
-import * as buffering from "./events.buffering";
 import { LogBackend } from "../network/backend";
 
 export enum AnalysisPeriod {
@@ -54,21 +53,18 @@ export interface Last30Days {
 
   readonly cycles: cycles.CycleState;
   readonly inspection: inspection.InspectionState;
-  readonly buffering: buffering.BufferingState;
   readonly mat_summary: matsummary.MatSummaryState; // matSummary should be global, not 30 days or specific month
 }
 
 export interface AnalysisMonth {
   readonly cycles: cycles.CycleState;
   readonly inspection: inspection.InspectionState;
-  readonly buffering: buffering.BufferingState;
   readonly mat_summary: matsummary.MatSummaryState;
 }
 
 const emptyAnalysisMonth: AnalysisMonth = {
   cycles: cycles.initial,
   inspection: inspection.initial,
-  buffering: buffering.initial,
   mat_summary: matsummary.initial,
 };
 
@@ -94,7 +90,6 @@ export const initial: State = {
     cycles: cycles.initial,
     mat_summary: matsummary.initial,
     inspection: inspection.initial,
-    buffering: buffering.initial,
   },
 
   selected_month: emptyAnalysisMonth,
@@ -198,11 +193,6 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
       undefined,
       s.inspection
     ),
-    buffering: buffering.process_events(
-      { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
-      evts,
-      s.buffering
-    ),
   });
 }
 
@@ -215,7 +205,6 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
       s.cycles
     ),
     inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection),
-    buffering: buffering.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.buffering),
     mat_summary: matsummary.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.mat_summary),
   });
 }
