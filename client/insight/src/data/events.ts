@@ -38,7 +38,6 @@ import { LazySeq } from "../util/lazyseq";
 import * as api from "../network/api";
 import * as cycles from "./events.cycles";
 import * as matsummary from "./events.matsummary";
-import * as inspection from "./events.inspection";
 import { LogBackend } from "../network/backend";
 
 export enum AnalysisPeriod {
@@ -52,19 +51,16 @@ export interface Last30Days {
   readonly most_recent_10_events: Vector<Readonly<api.ILogEntry>>;
 
   readonly cycles: cycles.CycleState;
-  readonly inspection: inspection.InspectionState;
   readonly mat_summary: matsummary.MatSummaryState; // matSummary should be global, not 30 days or specific month
 }
 
 export interface AnalysisMonth {
   readonly cycles: cycles.CycleState;
-  readonly inspection: inspection.InspectionState;
   readonly mat_summary: matsummary.MatSummaryState;
 }
 
 const emptyAnalysisMonth: AnalysisMonth = {
   cycles: cycles.initial,
-  inspection: inspection.initial,
   mat_summary: matsummary.initial,
 };
 
@@ -89,7 +85,6 @@ export const initial: State = {
     most_recent_10_events: Vector.empty(),
     cycles: cycles.initial,
     mat_summary: matsummary.initial,
-    inspection: inspection.initial,
   },
 
   selected_month: emptyAnalysisMonth,
@@ -187,12 +182,6 @@ function processRecentLogEntries(now: Date, evts: ReadonlyArray<Readonly<api.ILo
       evts,
       s.mat_summary
     ),
-    inspection: inspection.process_events(
-      { type: cycles.ExpireOldDataType.ExpireEarlierThan, d: thirtyDaysAgo },
-      evts,
-      undefined,
-      s.inspection
-    ),
   });
 }
 
@@ -204,7 +193,6 @@ function processSpecificMonthLogEntries(evts: ReadonlyArray<Readonly<api.ILogEnt
       true, // initial load is true
       s.cycles
     ),
-    inspection: inspection.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, undefined, s.inspection),
     mat_summary: matsummary.process_events({ type: cycles.ExpireOldDataType.NoExpire }, evts, s.mat_summary),
   });
 }
@@ -273,7 +261,6 @@ export function reducer(s: State | undefined, a: Action): State {
         ...s,
         last30: {
           ...s.last30,
-          inspection: inspection.process_swap(a.swap, s.last30.inspection),
           mat_summary: matsummary.process_swap(a.swap, s.last30.mat_summary),
           cycles: cycles.process_swap(a.swap, s.last30.cycles),
         },

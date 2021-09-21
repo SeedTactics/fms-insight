@@ -39,7 +39,6 @@ import { IconButton } from "@material-ui/core";
 import ImportExport from "@material-ui/icons/ImportExport";
 import { Table } from "@material-ui/core";
 import BugIcon from "@material-ui/icons/BugReport";
-import { InspectionState } from "../../data/events.inspection";
 import { Vector, ToOrderable } from "prelude-ts";
 import {
   extractFailedInspections,
@@ -47,17 +46,15 @@ import {
   copyFailedInspectionsToClipboard,
 } from "../../data/results.inspection";
 import { LazySeq } from "../../util/lazyseq";
-import { createSelector } from "reselect";
 import { addDays, startOfToday } from "date-fns";
-import { connect } from "../../store/store";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
 import { materialToShowInDialog } from "../../cell-status/material-details";
-import { RouteLocation } from "../routes";
-import { useSetRecoilState } from "recoil";
+import { RouteLocation, useCurrentRoute } from "../routes";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { last30Inspections } from "../../cell-status/inspections";
 
 interface RecentFailedInspectionsProps {
   readonly failed: Vector<FailedInspectionEntry>;
-  readonly openDetails: () => void;
 }
 
 enum ColumnId {
@@ -107,6 +104,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
   const [origCurPage, setPage] = React.useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(50);
+  const [, setRoute] = useCurrentRoute();
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
   function handleRequestSort(property: ColumnId) {
@@ -145,7 +143,6 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
           columns={columns}
           pageData={points.drop(curPage * rowsPerPage).take(rowsPerPage)}
           onClickDetails={(_, row) => {
-            props.openDetails();
             setMatToShow({
               type: "MatSummary",
               summary: {
@@ -158,6 +155,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
                 signaledInspections: [],
               },
             });
+            setRoute({ route: RouteLocation.Quality_Serials });
           }}
         />
       </Table>
@@ -172,7 +170,13 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   );
 }
 
-function RecentFailedInspectionsTable(props: RecentFailedInspectionsProps) {
+function RecentFailedInspectionsTable() {
+  const inspections = useRecoilValue(last30Inspections);
+  const failed = React.useMemo(() => {
+    const today = startOfToday();
+    const allEvts = LazySeq.ofIterable(inspections).flatMap(([_, evts]) => evts);
+    return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
+  }, [inspections]);
   return (
     <Card raised>
       <CardHeader
@@ -184,7 +188,7 @@ function RecentFailedInspectionsTable(props: RecentFailedInspectionsProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyFailedInspectionsToClipboard(props.failed)}
+                onClick={() => copyFailedInspectionsToClipboard(failed)}
               >
                 <ImportExport />
               </IconButton>
@@ -194,38 +198,20 @@ function RecentFailedInspectionsTable(props: RecentFailedInspectionsProps) {
         subheader="Inspections marked as failed in the last 5 days"
       />
       <CardContent>
-        <RecentFailedTable {...props} />
+        <RecentFailedTable failed={failed} />
       </CardContent>
     </Card>
   );
 }
 
-const failedReducer = createSelector(
-  (st: InspectionState, _: Date) => st.by_part,
-  (_: InspectionState, today: Date) => today,
-  (byPart, today) => {
-    const allEvts = LazySeq.ofIterable(byPart).flatMap(([_, evts]) => evts);
-    return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
-  }
-);
-
-export const RecentFailedInspections = connect(
-  (st) => ({
-    failed: failedReducer(st.Events.last30.inspection, startOfToday()),
-  }),
-  {
-    openDetails: () => ({ type: RouteLocation.Quality_Serials }),
-  }
-)(RecentFailedInspectionsTable);
-
-export function QualityDashboard() {
+export function QualityDashboard(): JSX.Element {
   React.useEffect(() => {
     document.title = "Quality - FMS Insight";
   }, []);
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="recent-failed">
-        <RecentFailedInspections />
+        <RecentFailedInspectionsTable />
       </div>
     </main>
   );

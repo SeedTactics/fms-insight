@@ -38,6 +38,7 @@ import * as simUse from "./sim-station-use";
 import * as schJobs from "./scheduled-jobs";
 import * as buffers from "./buffers";
 import * as currentSt from "./current-status";
+import * as insp from "./inspections";
 import * as names from "./names";
 import { conduit } from "../util/recoil-util";
 import { LazySeq } from "../util/lazyseq";
@@ -61,6 +62,7 @@ export const onServerEvent = conduit<ServerEventAndTime>(
     schJobs.updateLast30Jobs.transform(t, evt);
     buffers.updateLast30Buffer.transform(t, evt);
     currentSt.updateCurrentStatus.transform(t, evt);
+    insp.updateLast30Inspections.transform(t, evt);
 
     if (evt.evt.logEntry) {
       const newCntr = evt.evt.logEntry.counter;
@@ -82,6 +84,7 @@ export const onLoadLast30Jobs = conduit<Readonly<IHistoricData>>(
 export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     buffers.setLast30Buffer.transform(t, log);
+    insp.setLast30Inspections.transform(t, log);
 
     const newCntr = LazySeq.ofIterable(log)
       .maxOn((x) => x.counter)
@@ -108,5 +111,6 @@ export const onLoadSpecificMonthJobs = conduit<Readonly<IHistoricData>>(
 export const onLoadSpecificMonthLog = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     buffers.setSpecificMonthBuffer.transform(t, log);
+    insp.setSpecificMonthInspections.transform(t, log);
   }
 );

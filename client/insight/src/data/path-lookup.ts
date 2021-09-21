@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { LogBackend, OtherLogBackends } from "../network/backend";
 import { HashMap } from "prelude-ts";
-import { InspectionLogEntry } from "./events.inspection";
-import * as insp from "./events.inspection";
 import { addDays } from "date-fns";
 import { atom, selector, waitForAny } from "recoil";
+import { convertLogToInspections, PartAndInspType, InspectionLogEntry } from "../cell-status/inspections";
+import { LazySeq } from "../util/lazyseq";
 
-export type PathLookupLogEntries = HashMap<insp.PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+export type PathLookupLogEntries = HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
 
 export interface PathLookupRange {
   readonly part: string;
@@ -58,9 +58,13 @@ const localLogEntries = selector<PathLookupLogEntries>({
     if (range == null) return HashMap.empty();
 
     const events = await LogBackend.get(range.curStart, range.curEnd);
-    return insp.process_events({ type: insp.ExpireOldDataType.NoExpire }, events, range.part, {
-      by_part: HashMap.empty(),
-    }).by_part;
+    return HashMap.ofIterable(
+      LazySeq.ofIterable(events)
+        .flatMap(convertLogToInspections)
+        .filter((e) => e.key.part === range.part)
+        .groupBy((e) => e.key)
+        .map((k, es) => [k, es.map((e) => e.entry).toArray()])
+    );
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -71,14 +75,23 @@ const otherLogEntries = selector<PathLookupLogEntries>({
     const range = get(pathLookupRange);
     if (range == null) return HashMap.empty();
 
-    let st: insp.InspectionState = { by_part: HashMap.empty() };
+    let parts: PathLookupLogEntries = HashMap.empty();
 
     for (const b of OtherLogBackends) {
       const events = await b.get(range.curStart, range.curEnd);
-      st = insp.process_events({ type: insp.ExpireOldDataType.NoExpire }, events, range.part, st);
+
+      parts = events
+        .flatMap(convertLogToInspections)
+        .reduce(
+          (m, e) =>
+            m.putWithMerge(e.key, [e.entry], (a, b) =>
+              a.concat(b).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
+            ),
+          parts
+        );
     }
 
-    return st.by_part;
+    return parts;
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });

@@ -96,6 +96,7 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use";
 import { last30SimProduction, SimPartCompleted, specificMonthSimProduction } from "../../cell-status/sim-production";
+import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -912,9 +913,7 @@ function CompletedCountHeatmap() {
 function ConnectedInspection() {
   const period = useRecoilValue(selectedAnalysisPeriod);
 
-  const inspectionlogs = useSelector((st) =>
-    period.type === "Last30" ? st.Events.last30.inspection.by_part : st.Events.selected_month.inspection.by_part
-  );
+  const inspectionlogs = useRecoilValue(period.type === "Last30" ? last30Inspections : specificMonthInspections);
   const zoomType =
     period.type === "Last30" ? DataTableActionZoomType.Last30Days : DataTableActionZoomType.ZoomIntoRange;
   const default_date_range =
