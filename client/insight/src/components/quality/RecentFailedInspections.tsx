@@ -46,13 +46,13 @@ import {
   FailedInspectionEntry,
   copyFailedInspectionsToClipboard,
 } from "../../data/results.inspection";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { createSelector } from "reselect";
 import { addDays, startOfToday } from "date-fns";
 import { connect } from "../../store/store";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
-import { materialToShowInDialog } from "../../data/material-details";
-import { RouteLocation } from "../../data/routes";
+import { materialToShowInDialog } from "../../cell-status/material-details";
+import { RouteLocation } from "../routes";
 import { useSetRecoilState } from "recoil";
 
 interface RecentFailedInspectionsProps {

@@ -42,7 +42,7 @@ import {
   useSetSpecificMonthWithoutLoading,
   useLoadSpecificMonth,
   useSetLast30,
-} from "../../store/load-specific-month";
+} from "../../network/load-specific-month";
 
 const toolbarStyle = {
   display: "flex",

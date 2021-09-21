@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { HashMap, Option } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
-import { ICurrentStatus, IHistoricJob, IActiveJob } from "./api";
+import { ICurrentStatus, IHistoricJob, IActiveJob } from "../network/api";
 import copy from "copy-to-clipboard";
 
 export interface ScheduledJobDisplay {

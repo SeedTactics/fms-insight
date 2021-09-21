@@ -36,7 +36,8 @@ import { useRecoilValue } from "recoil";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs";
 import { useSelector } from "../../store/store";
 import { JobsTable } from "../operations/CompletedParts";
-import AnalysisSelectToolbar, { selectedAnalysisPeriod } from "./AnalysisSelectToolbar";
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 
 function ConnectedSchedules() {
   const period = useRecoilValue(selectedAnalysisPeriod);

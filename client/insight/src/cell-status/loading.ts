@@ -32,16 +32,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { ICurrentStatus, IHistoricData, ILogEntry } from "../data/api";
+import { ICurrentStatus, IHistoricData, ILogEntry, IServerEvent } from "../network/api";
 import * as simProd from "./sim-production";
 import * as simUse from "./sim-station-use";
 import * as schJobs from "./scheduled-jobs";
 import * as buffers from "./buffers";
 import * as currentSt from "./current-status";
 import * as names from "./names";
-import { conduit } from "../store/recoil-util";
-import { ServerEventAndTime } from "../store/websocket";
-import { LazySeq } from "../data/lazyseq";
+import { conduit } from "../util/recoil-util";
+import { LazySeq } from "../util/lazyseq";
+
+export interface ServerEventAndTime {
+  readonly evt: Readonly<IServerEvent>;
+  readonly now: Date;
+  readonly expire: boolean;
+}
 
 const lastEventCounterRW = atom<number | null>({
   key: "websocket-last-event-counter",

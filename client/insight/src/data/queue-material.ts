@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { LazySeq } from "./lazyseq";
+import * as api from "../network/api";
+import { LazySeq } from "../util/lazyseq";
 import { HashSet, HashMap } from "prelude-ts";
-import { LogBackend } from "./backend";
+import { LogBackend } from "../network/backend";
 import { differenceInSeconds } from "date-fns";
 
 export interface JobAndGroups {

@@ -36,7 +36,7 @@ import { addDays } from "date-fns";
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
 import { fakeCycle } from "./events.fake";
-import { ILogEntry } from "./api";
+import { ILogEntry } from "../network/api";
 
 it("creates initial state", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

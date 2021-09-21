@@ -10,7 +10,7 @@
     "start": "vite",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
-    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api.json /output:src/data/api.ts"
+    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:NetCore20 /input:../../server/fms-insight-api.json /output:src/network/api.ts"
   },
   "packageManager": "pnpm@6.14.7",
   "dependencies": {

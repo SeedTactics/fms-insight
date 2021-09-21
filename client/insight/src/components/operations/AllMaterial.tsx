@@ -41,14 +41,14 @@ import {
   MaterialBin,
   moveMaterialInBin,
 } from "../../data/all-material-bins";
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import * as currentSt from "../../cell-status/current-status";
 import { Paper } from "@material-ui/core";
 import { Typography } from "@material-ui/core";
 import { Button } from "@material-ui/core";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
-import { IInProcessMaterial, LocType, QueuePosition } from "../../data/api";
+import { IInProcessMaterial, LocType, QueuePosition } from "../../network/api";
 import { HashMap, Ordering } from "prelude-ts";
 import {
   InvalidateCycleDialogButtons,
@@ -59,7 +59,7 @@ import {
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { JobsBackend } from "../../data/backend";
+import { JobsBackend } from "../../network/backend";
 
 enum DragType {
   Material = "DRAG_MATERIAL",

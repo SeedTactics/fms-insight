@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import JsBarcode from "jsbarcode";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { format } from "date-fns";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";

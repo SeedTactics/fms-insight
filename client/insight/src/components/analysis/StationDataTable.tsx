@@ -36,7 +36,7 @@ import { HashMap, ToOrderable } from "prelude-ts";
 
 import { PartCycleData } from "../../data/events.cycles";
 import { format_cycle_inspection } from "../../data/results.cycles";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import {
   Column,
   DataTableHead,
@@ -46,11 +46,11 @@ import {
   DataTableActionZoomType,
 } from "./DataTable";
 import { addDays, addHours } from "date-fns";
-import * as api from "../../data/api";
+import * as api from "../../network/api";
 import { Menu } from "@material-ui/core";
 import { MenuItem } from "@material-ui/core";
 import { useSetRecoilState } from "recoil";
-import { materialToShowInDialog } from "../../data/material-details";
+import { materialToShowInDialog } from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 enum ColumnId {

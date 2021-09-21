@@ -41,7 +41,7 @@ import { Hidden } from "@material-ui/core";
 import FolderOpenIcon from "@material-ui/icons/FolderOpen";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
-import { durationToSeconds } from "../../data/parseISODuration";
+import { durationToSeconds } from "../../util/parseISODuration";
 
 import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from "../../data/load-station";
 import {
@@ -52,25 +52,25 @@ import {
   SortableWhiteboardRegion,
   InstructionButton,
 } from "./Material";
-import * as api from "../../data/api";
-import * as matDetails from "../../data/material-details";
+import * as api from "../../network/api";
+import * as matDetails from "../../cell-status/material-details";
 import { SelectWorkorderDialog } from "./SelectWorkorder";
 import SelectInspTypeDialog, { selectInspTypeDialogOpen } from "./SelectInspType";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";
 import { HashMap, Option } from "prelude-ts";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import ReactToPrint from "react-to-print";
-import { instructionUrl } from "../../data/backend";
+import { instructionUrl } from "../../network/backend";
 import { Tooltip } from "@material-ui/core";
 import { Fab } from "@material-ui/core";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../data/server-settings";
+import { fmsInformation } from "../../network/server-settings";
 import { currentStatus, reorder_queued_mat } from "../../cell-status/current-status";
-import { useIsDemo } from "../../data/routes";
+import { useIsDemo } from "../routes";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();

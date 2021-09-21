@@ -36,7 +36,7 @@ import { Dialog } from "@material-ui/core";
 import { DialogActions } from "@material-ui/core";
 import { DialogContent } from "@material-ui/core";
 import { useRecoilValue } from "recoil";
-import { fmsInformation } from "../../data/server-settings";
+import { fmsInformation } from "../../network/server-settings";
 import { Button } from "@material-ui/core";
 import { Tooltip } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";

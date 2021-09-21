@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import * as api from "../../data/api";
+import * as api from "../../network/api";
 import { IconButton } from "@material-ui/core";
 import { Table } from "@material-ui/core";
 import { TableBody } from "@material-ui/core";
@@ -40,16 +40,16 @@ import { TableCell } from "@material-ui/core";
 import { TableHead } from "@material-ui/core";
 import { TableRow } from "@material-ui/core";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import { durationToMinutes } from "../../data/parseISODuration";
+import { durationToMinutes } from "../../util/parseISODuration";
 import { format } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { useSelector } from "../../store/store";
-import { materialToShowInDialog } from "../../data/material-details";
+import { materialToShowInDialog } from "../../cell-status/material-details";
 import { HashMap, HashSet } from "prelude-ts";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
-import { selectedAnalysisPeriod } from "../analysis/AnalysisSelectToolbar";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;

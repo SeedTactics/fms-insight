@@ -62,11 +62,11 @@ import {
   LoadCycleData,
   FilterAnyLoadKey,
 } from "../../data/results.cycles";
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
 import { OEEChart, OEETable } from "./OEEChart";
 import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { last30SimStationUse } from "../../cell-status/sim-station-use";

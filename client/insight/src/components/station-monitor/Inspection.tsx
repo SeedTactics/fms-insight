@@ -40,13 +40,13 @@ import { DialogActions } from "@material-ui/core";
 
 import { Store, useSelector } from "../../store/store";
 import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
 import { HashMap, HashSet } from "prelude-ts";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../data/server-settings";
+import { fmsInformation } from "../../network/server-settings";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -171,10 +171,10 @@ interface InspectionProps {
 
 export function Inspection(props: InspectionProps): JSX.Element {
   const matsById = useSelector((st: Store) => st.Events.last30.mat_summary.matsById);
-  const recent_inspections = React.useMemo(() => extractRecentInspections(matsById, props.focusInspectionType), [
-    matsById,
-    props.focusInspectionType,
-  ]);
+  const recent_inspections = React.useMemo(
+    () => extractRecentInspections(matsById, props.focusInspectionType),
+    [matsById, props.focusInspectionType]
+  );
 
   return (
     <div data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>

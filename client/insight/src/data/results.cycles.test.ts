@@ -35,7 +35,7 @@ import { addDays, addHours } from "date-fns";
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
 import { fakeCycle } from "./events.fake";
-import { ILogEntry } from "./api";
+import { ILogEntry } from "../network/api";
 import {
   stationMinutes,
   filterStationCycles,

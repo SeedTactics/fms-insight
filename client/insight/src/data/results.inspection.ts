@@ -30,12 +30,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "./api";
+import * as api from "../network/api";
 import { Vector, ToOrderable, HashMap, Option } from "prelude-ts";
 import { InspectionLogEntry, InspectionLogResultType } from "./events.inspection";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { format } from "date-fns";
-import { MaterialDetail } from "./material-details";
+import { MaterialDetail } from "../cell-status/material-details";
 import copy from "copy-to-clipboard";
 
 export interface TriggeredInspectionEntry {

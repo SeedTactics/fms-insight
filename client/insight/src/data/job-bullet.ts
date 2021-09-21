@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { durationToSeconds } from "./parseISODuration";
+import * as api from "../network/api";
+import { durationToSeconds } from "../util/parseISODuration";
 import { Vector, Option } from "prelude-ts";
 
 export interface DataPoint {

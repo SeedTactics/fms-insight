@@ -30,10 +30,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "./api";
-import { durationToMinutes } from "./parseISODuration";
+import * as api from "../network/api";
+import { durationToMinutes } from "../util/parseISODuration";
 import { HashMap, HashSet, Vector, Option, fieldsHashCode } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { differenceInSeconds } from "date-fns";
 
 export interface CycleData {

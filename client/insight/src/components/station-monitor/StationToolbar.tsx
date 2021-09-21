@@ -39,7 +39,7 @@ import { FormControl } from "@material-ui/core";
 import { useSelector } from "../../store/store";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
-import { RouteLocation, useCurrentRoute } from "../../data/routes";
+import { RouteLocation, useCurrentRoute } from "../routes";
 
 const toolbarStyle = {
   display: "flex",

@@ -30,13 +30,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { LazySeq } from "../data/lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
 import { HashMap } from "prelude-ts";
-import { conduit } from "../store/recoil-util";
-import { ServerEventAndTime } from "../store/websocket";
-import { IHistoricData, IHistoricJob } from "../data/api";
+import { conduit } from "../util/recoil-util";
+import type { ServerEventAndTime } from "./loading";
+import { IHistoricData, IHistoricJob } from "../network/api";
 
 const last30JobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "last30Jobs",

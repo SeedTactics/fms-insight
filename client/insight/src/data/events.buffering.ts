@@ -30,11 +30,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "./api";
+import * as api from "../network/api";
 import { ExpireOldData, ExpireOldDataType } from "./events.cycles";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { Vector } from "prelude-ts";
-import { durationToSeconds } from "./parseISODuration";
+import { durationToSeconds } from "../util/parseISODuration";
 
 export type BufferType =
   | { readonly type: "Rotary"; readonly machineGroup: string; readonly machineNum: number }

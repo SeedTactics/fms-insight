@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Button } from "@material-ui/core";
 
-import { errorLoadingBackupViewer, useRequestOpenBackupFile } from "../store/backend-backupviewer";
+import { errorLoadingBackupViewer, useRequestOpenBackupFile } from "../network/backend-backupviewer";
 import { useRecoilValue } from "recoil";
 
 export function BackupViewer(): JSX.Element {

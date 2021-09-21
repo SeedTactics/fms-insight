@@ -36,7 +36,7 @@ import { Tooltip } from "@material-ui/core";
 import TimeAgo from "react-timeago";
 
 import { connect } from "../../store/store";
-import * as api from "../../data/api";
+import * as api from "../../network/api";
 import { addSeconds, addDays } from "date-fns";
 import { PalletData, buildPallets } from "../../data/load-station";
 import { Vector } from "prelude-ts";
@@ -44,7 +44,7 @@ import { stationMinutes } from "../../data/results.cycles";
 import { PartCycleData } from "../../data/events.cycles";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
-import { durationToSeconds } from "../../data/parseISODuration";
+import { durationToSeconds } from "../../util/parseISODuration";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;

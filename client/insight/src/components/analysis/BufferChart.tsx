@@ -48,7 +48,7 @@ import { seriesColor } from "./CycleChart";
 import { HashSet } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names";
-import { selectedAnalysisPeriod } from "./AnalysisSelectToolbar";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;

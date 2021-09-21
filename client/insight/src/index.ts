@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { initStore } from "./store/store";
 import { render } from "./renderer";
-import { RouteLocation } from "./data/routes";
-import { registerBackupViewerBackend } from "./store/backend-backupviewer";
-import { registerNetworkBackend } from "./data/backend";
+import { RouteLocation } from "./components/routes";
+import { registerBackupViewerBackend } from "./network/backend-backupviewer";
+import { registerNetworkBackend } from "./network/backend";
 
 const store = initStore();
 

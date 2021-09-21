@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { LogBackend, OtherLogBackends } from "./backend";
+import { LogBackend, OtherLogBackends } from "../network/backend";
 import { HashMap } from "prelude-ts";
 import { InspectionLogEntry } from "./events.inspection";
 import * as insp from "./events.inspection";

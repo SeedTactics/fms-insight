@@ -43,7 +43,7 @@ import { CardActions } from "@material-ui/core";
 import { Grid } from "@material-ui/core";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
 
-import * as api from "../../data/api";
+import * as api from "../../network/api";
 import { Store, connect } from "../../store/store";
 import { LogEntries } from "../LogEntry";
 

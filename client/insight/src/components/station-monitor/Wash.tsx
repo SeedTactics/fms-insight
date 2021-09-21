@@ -40,9 +40,9 @@ import { useSelector } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material";
 import { SelectWorkorderDialog } from "./SelectWorkorder";
 import { Tooltip } from "@material-ui/core";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
-import { fmsInformation } from "../../data/server-settings";
+import { fmsInformation } from "../../network/server-settings";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import {
   loadWorkordersForMaterialInDialog,
@@ -50,7 +50,7 @@ import {
   materialToShowInDialog,
   useAddExistingMaterialToQueue,
   useCompleteWash,
-} from "../../data/material-details";
+} from "../../cell-status/material-details";
 
 const WashDialog = React.memo(function WashDialog() {
   const operator = useRecoilValue(currentOperator);

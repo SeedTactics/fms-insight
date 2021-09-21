@@ -36,8 +36,8 @@ import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
 import { fakeCycle, fakeMaterial } from "./events.fake";
-import { ILogEntry, LogType } from "./api";
-import { LazySeq } from "./lazyseq";
+import { ILogEntry, LogType } from "../network/api";
+import { LazySeq } from "../util/lazyseq";
 import { binActiveCyclesByDayAndStat, binOccupiedCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee";
 
 it("bins actual cycles by day", () => {

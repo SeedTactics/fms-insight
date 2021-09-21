@@ -43,10 +43,10 @@ import {
   chunkCyclesWithSimilarEndTime,
   splitElapsedTimeAmongChunk,
 } from "./events.cycles";
-import { LazySeq } from "./lazyseq";
-import * as api from "./api";
+import { LazySeq } from "../util/lazyseq";
+import * as api from "../network/api";
 import { format, differenceInSeconds } from "date-fns";
-import { durationToMinutes } from "./parseISODuration";
+import { durationToMinutes } from "../util/parseISODuration";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 import copy from "copy-to-clipboard";
 

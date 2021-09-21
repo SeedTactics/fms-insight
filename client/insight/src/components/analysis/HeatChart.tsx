@@ -42,7 +42,7 @@ import { Tooltip } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";
 import ImportExport from "@material-ui/icons/ImportExport";
 
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 
 export interface HeatChartPoint {
   readonly x: Date;

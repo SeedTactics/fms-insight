@@ -48,7 +48,7 @@ import { TableBody } from "@material-ui/core";
 import { useSelector } from "../../store/store";
 import { addDays, startOfToday } from "date-fns";
 import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
-import { IHistoricJob } from "../../data/api";
+import { IHistoricJob } from "../../network/api";
 import { PartIdenticon } from "../station-monitor/Material";
 import { createStyles } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core";

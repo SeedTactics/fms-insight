@@ -46,7 +46,7 @@ import ShoppingBasketIcon from "@material-ui/icons/ShoppingBasket";
 import { TextField } from "@material-ui/core";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 
 function workorderComplete(w: matDetails.WorkorderPlanAndSummary): string {

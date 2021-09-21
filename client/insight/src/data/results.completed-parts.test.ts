@@ -36,9 +36,9 @@ import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
 import { PledgeStatus } from "../store/middleware";
 import * as events from "./events";
 import { fakeCycle } from "./events.fake";
-import { ILogEntry } from "./api";
+import { ILogEntry } from "../network/api";
 import { binCyclesByDayAndPart, buildCompletedPartsHeatmapTable } from "./results.completed-parts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time

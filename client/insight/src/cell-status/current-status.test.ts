@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as cs from "./current-status";
-import * as api from "../data/api";
+import * as api from "../network/api";
 import {
   fakeMaterial,
   fakeSerial,

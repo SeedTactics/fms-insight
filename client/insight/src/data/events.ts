@@ -33,14 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays } from "date-fns";
 import { PledgeStatus, Pledge, ActionBeforeMiddleware } from "../store/middleware";
 import { Vector } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 
-import * as api from "./api";
+import * as api from "../network/api";
 import * as cycles from "./events.cycles";
 import * as matsummary from "./events.matsummary";
 import * as inspection from "./events.inspection";
 import * as buffering from "./events.buffering";
-import { LogBackend } from "./backend";
+import { LogBackend } from "../network/backend";
 
 export enum AnalysisPeriod {
   Last30Days = "Last_30_Days",

@@ -47,9 +47,10 @@ import { createStyles } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core";
 import BuildIcon from "@material-ui/icons/Build";
 import CallSplit from "@material-ui/icons/CallSplit";
-import AnalysisSelectToolbar, { selectedAnalysisPeriod } from "./AnalysisSelectToolbar";
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { HashSet, Vector } from "prelude-ts";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import * as localForage from "localforage";
 import { CircularProgress } from "@material-ui/core";
 import {

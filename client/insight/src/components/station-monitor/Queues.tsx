@@ -68,7 +68,7 @@ import {
   InProcMaterial,
   MaterialDetailTitle,
 } from "./Material";
-import * as api from "../../data/api";
+import * as api from "../../network/api";
 import {
   QueueMaterialDialog,
   AddBySerialDialog,
@@ -85,16 +85,16 @@ import {
   JobRawMaterialData,
 } from "../../data/queue-material";
 import { LogEntries } from "../LogEntry";
-import { JobsBackend, BackendUrl } from "../../data/backend";
-import { LazySeq } from "../../data/lazyseq";
+import { JobsBackend, BackendUrl } from "../../network/backend";
+import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
 import ReactToPrint from "react-to-print";
 import { PrintedLabel } from "./PrintedLabel";
 import { JobDetails } from "./JobDetails";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../data/server-settings";
+import { fmsInformation } from "../../network/server-settings";
 import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../cell-status/current-status";
-import { useAddExistingMaterialToQueue, usePrintLabel } from "../../data/material-details";
+import { useAddExistingMaterialToQueue, usePrintLabel } from "../../cell-status/material-details";
 import { Collapse } from "@material-ui/core";
 import { rawMaterialQueues } from "../../cell-status/names";
 

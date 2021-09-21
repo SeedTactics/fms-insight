@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
+import * as api from "../network/api";
 import { HashMap } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { atom } from "recoil";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;

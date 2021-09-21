@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { HashMap } from "prelude-ts";
-import { JobsBackend } from "../data/backend";
+import { JobsBackend } from "../network/backend";
 import {
   InProcessMaterial,
   ICurrentStatus,
@@ -40,11 +40,11 @@ import {
   LogType,
   LocType,
   ActiveJob,
-} from "../data/api";
+} from "../network/api";
 import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
 import { last30JobComment } from "./scheduled-jobs";
-import { conduit } from "../store/recoil-util";
-import { ServerEventAndTime } from "../store/websocket";
+import { conduit } from "../util/recoil-util";
+import type { ServerEventAndTime } from "./loading";
 
 const currentStatusRW = atom<Readonly<ICurrentStatus>>({
   key: "current-status",

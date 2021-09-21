@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
+import * as api from "../network/api";
 import { HashMap, Vector } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 
 export interface PalletData {
   pallet: api.IPalletStatus;
@@ -195,10 +195,9 @@ export function selectLoadStationAndQueueProps(
     }
   }
 
-  const allJobsHaveRawMatQueue =
-    LazySeq.ofObject(curSt.jobs ?? {})
+  const allJobsHaveRawMatQueue = LazySeq.ofObject(curSt.jobs ?? {})
     .flatMap(([_, j]) => j.procsAndPaths[0]?.paths ?? [])
-    .allMatch(p => !!p.inputQueue && p.inputQueue !== "");
+    .allMatch((p) => !!p.inputQueue && p.inputQueue !== "");
 
   return {
     loadNum,
@@ -208,6 +207,6 @@ export function selectLoadStationAndQueueProps(
     freeLoadingMaterial: freeLoading,
     free: free,
     queues: queueNames.mergeWith(queueMat, (m1, m2) => [...m1, ...m2]),
-    allJobsHaveRawMatQueue
+    allJobsHaveRawMatQueue,
   };
 }

@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { PartCycleData } from "./events.cycles";
 import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { Vector, HasEquals, HashMap } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 import copy from "copy-to-clipboard";
 
@@ -96,10 +96,7 @@ export function compute_monthly_cost(
     if (s) {
       s.add(c.stationNumber);
     } else {
-      stationCount.set(
-        c.stationGroup,
-        new Set<number>([c.stationNumber])
-      );
+      stationCount.set(c.stationGroup, new Set<number>([c.stationNumber]));
     }
   }
 

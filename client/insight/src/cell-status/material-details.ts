@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "./backend";
+import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "../network/backend";
 import { Vector, HashSet } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
-import { MaterialSummary } from "./events.matsummary";
+import { LazySeq } from "../util/lazyseq";
+import { MaterialSummary } from "../data/events.matsummary";
 import { atom, DefaultValue, selector, useSetRecoilState, waitForNone } from "recoil";
 import {
   IInProcessMaterial,
@@ -47,8 +47,8 @@ import {
   NewInspectionCompleted,
   NewWash,
   QueuePosition,
-} from "./api";
-import { useCallback, useState } from "react";
+} from "../network/api";
+import { useCallback, useEffect, useState } from "react";
 
 export type MaterialToShow =
   | { readonly type: "MatSummary"; readonly summary: Readonly<MaterialSummary> }
@@ -268,6 +268,73 @@ export const materialDetail = selector<MaterialDetail | null>({
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
+
+export function BarcodeListener(): null {
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+  useEffect(() => {
+    let timeout: number | undefined;
+    let scanActive = false;
+    let scannedTxt = "";
+
+    function cancelDetection() {
+      scannedTxt = "";
+      scanActive = false;
+    }
+
+    function startDetection() {
+      scannedTxt = "";
+      scanActive = true;
+      timeout = window.setTimeout(cancelDetection, 10 * 1000);
+    }
+
+    function success() {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = undefined;
+      }
+      scanActive = false;
+
+      let serial = scannedTxt;
+      const commaIdx = serial.indexOf(",");
+      const semiIdx = serial.indexOf(";");
+      if (commaIdx >= 0 && semiIdx >= 0) {
+        serial = serial.substring(0, Math.min(commaIdx, semiIdx));
+      } else if (commaIdx >= 0) {
+        serial = serial.substring(0, commaIdx);
+      } else if (semiIdx >= 0) {
+        serial = serial.substring(0, semiIdx);
+      }
+
+      setMatToShow({ type: "Serial", serial });
+    }
+
+    function onKeyDown(k: KeyboardEvent) {
+      if (k.keyCode === 112) {
+        // F1
+        startDetection();
+        k.stopPropagation();
+        k.preventDefault();
+      } else if (scanActive && k.keyCode === 13) {
+        // Enter
+        success();
+        k.stopPropagation();
+        k.preventDefault();
+      } else if (scanActive && k.key && k.key.length === 1) {
+        if (/[a-zA-Z0-9-_,;]/.test(k.key)) {
+          scannedTxt += k.key;
+          k.stopPropagation();
+          k.preventDefault();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [setMatToShow]);
+
+  return null;
+}
 
 //--------------------------------------------------------------------------------
 // Workorders

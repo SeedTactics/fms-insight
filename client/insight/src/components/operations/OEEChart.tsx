@@ -36,7 +36,7 @@ import { Table } from "@material-ui/core";
 
 import { FlexibleWidthXYPlot, XAxis, YAxis, VerticalBarSeries, DiscreteColorLegend, Hint } from "react-vis";
 import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { ToOrderable } from "prelude-ts";
 import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee";
 

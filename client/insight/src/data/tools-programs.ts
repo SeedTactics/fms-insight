@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "./api";
-import { LazySeq } from "./lazyseq";
+import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api";
+import { LazySeq } from "../util/lazyseq";
 import { Vector, HashMap, HashSet } from "prelude-ts";
-import { durationToMinutes } from "./parseISODuration";
+import { durationToMinutes } from "../util/parseISODuration";
 import { atom, selector, useRecoilCallback } from "recoil";
 import {
   ToolUsage,
@@ -46,7 +46,7 @@ import {
   stat_name_and_num,
 } from "./events.cycles";
 import { reduxStore } from "../store/store";
-import { MachineBackend } from "./backend";
+import { MachineBackend } from "../network/backend";
 import { currentStatus } from "../cell-status/current-status";
 import copy from "copy-to-clipboard";
 

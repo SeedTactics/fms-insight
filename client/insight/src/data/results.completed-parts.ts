@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { startOfDay } from "date-fns";
 import { HashMap, fieldsHashCode } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { PartCycleData } from "./events.cycles";
 import { MaterialSummaryAndCompletedData } from "./events.matsummary";
 import copy from "copy-to-clipboard";

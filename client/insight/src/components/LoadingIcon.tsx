@@ -43,10 +43,10 @@ import {
 import ErrorIcon from "@material-ui/icons/Error";
 
 import { Tooltip } from "@material-ui/core";
-import { errorLoadingLast30, websocketReconnecting } from "../store/websocket";
+import { errorLoadingLast30, websocketReconnecting } from "../network/websocket";
 import { useRecoilValue } from "recoil";
-import { errorLoadingBackupViewer, loadingBackupViewer } from "../store/backend-backupviewer";
-import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../store/load-specific-month";
+import { errorLoadingBackupViewer, loadingBackupViewer } from "../network/backend-backupviewer";
+import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month";
 
 export const LoadingIcon = React.memo(function LoadingIcon() {
   const websocketLoading = useRecoilValue(websocketReconnecting);

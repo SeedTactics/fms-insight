@@ -30,14 +30,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { durationToMinutes } from "../data/parseISODuration";
-import { LazySeq } from "../data/lazyseq";
+import { durationToMinutes } from "../util/parseISODuration";
+import { LazySeq } from "../util/lazyseq";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import * as L from "list/methods";
 import { addDays } from "date-fns";
-import { conduit } from "../store/recoil-util";
-import { ServerEventAndTime } from "../store/websocket";
-import { IHistoricData, IJob } from "../data/api";
+import { conduit } from "../util/recoil-util";
+import type { ServerEventAndTime } from "./loading";
+import { IHistoricData, IJob } from "../network/api";
 
 export interface SimPartCompleted {
   readonly part: string;

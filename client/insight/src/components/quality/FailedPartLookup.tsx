@@ -38,14 +38,14 @@ import { Step } from "@material-ui/core";
 import { StepLabel } from "@material-ui/core";
 import { StepContent } from "@material-ui/core";
 
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material";
 import { buildPathString, extractPath } from "../../data/results.inspection";
 import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
-import { LogType } from "../../data/api";
+import { LogType } from "../../network/api";
 import { InspectionSankey } from "../analysis/InspectionSankey";
 import { DataTableActionZoomType } from "../analysis/DataTable";
-import { useIsDemo } from "../../data/routes";
+import { useIsDemo } from "../routes";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";

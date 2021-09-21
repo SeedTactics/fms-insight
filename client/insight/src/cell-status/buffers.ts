@@ -32,12 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import { conduit } from "../store/recoil-util";
-import { ServerEventAndTime } from "../store/websocket";
-import { ILogEntry, LogType } from "../data/api";
+import { conduit } from "../util/recoil-util";
+import type { ServerEventAndTime } from "./loading";
+import { ILogEntry, LogType } from "../network/api";
 import * as L from "list/methods";
-import { durationToSeconds } from "../data/parseISODuration";
-import { LazySeq } from "../data/lazyseq";
+import { durationToSeconds } from "../util/parseISODuration";
+import { LazySeq } from "../util/lazyseq";
 
 export type BufferType =
   | { readonly type: "Rotary"; readonly machineGroup: string; readonly machineNum: number }

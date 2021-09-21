@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { startOfDay, addSeconds, addDays, max, min } from "date-fns";
 import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { chunkCyclesWithSimilarEndTime } from "./events.cycles";
 import { PartCycleData, stat_name_and_num } from "./events.cycles";
 import copy from "copy-to-clipboard";

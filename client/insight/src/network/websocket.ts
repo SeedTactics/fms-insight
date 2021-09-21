@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import ReconnectingWebSocket from "reconnecting-websocket";
-import { IServerEvent, ServerEvent } from "../data/api";
-import { BackendHost, JobsBackend, LogBackend } from "../data/backend";
+import { ServerEvent } from "./api";
+import { BackendHost, JobsBackend, LogBackend } from "./backend";
 import { User } from "oidc-client";
-import { fmsInformation } from "../data/server-settings";
+import { fmsInformation } from "./server-settings";
 import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback, useRecoilValueLoadable } from "recoil";
 import { useEffect, useRef } from "react";
 import {
@@ -46,13 +46,7 @@ import {
   onServerEvent,
 } from "../cell-status/loading";
 import { addDays } from "date-fns";
-import { RecoilConduit } from "./recoil-util";
-
-export interface ServerEventAndTime {
-  readonly evt: Readonly<IServerEvent>;
-  readonly now: Date;
-  readonly expire: boolean;
-}
+import { RecoilConduit } from "../util/recoil-util";
 
 const websocketReconnectingAtom = atom<boolean>({
   key: "websocket-reconnecting",

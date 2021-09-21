@@ -56,7 +56,7 @@ import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import Calendar from "react-calendar";
 
 import { addDays } from "date-fns";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import { ToOrderable } from "prelude-ts";
 
 export interface Column<Id, Row> {

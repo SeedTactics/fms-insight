@@ -31,14 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as api from "../data/api";
+import * as api from "../network/api";
 import { Table } from "@material-ui/core";
 import { TableBody } from "@material-ui/core";
 import { TableCell } from "@material-ui/core";
 import { TableHead } from "@material-ui/core";
 import { TableRow } from "@material-ui/core";
 import DateTimeDisplay from "./DateTimeDisplay";
-import { LazySeq } from "../data/lazyseq";
+import { LazySeq } from "../util/lazyseq";
 import { Tooltip } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
@@ -47,7 +47,7 @@ import { WithStyles } from "@material-ui/core";
 import { withStyles } from "@material-ui/core";
 import { createStyles } from "@material-ui/core";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
-import { durationToMinutes, durationToSeconds } from "../data/parseISODuration";
+import { durationToMinutes, durationToSeconds } from "../util/parseISODuration";
 import clsx from "clsx";
 
 const logStyles = createStyles({

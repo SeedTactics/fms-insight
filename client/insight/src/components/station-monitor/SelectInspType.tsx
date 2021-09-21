@@ -47,7 +47,7 @@ import { HashSet } from "prelude-ts";
 
 import { MaterialDetailTitle } from "./Material";
 import { Store, connect } from "../../store/store";
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import { atom, useRecoilState, useRecoilValue } from "recoil";
 
 interface ManualInpTypeEntryProps {
