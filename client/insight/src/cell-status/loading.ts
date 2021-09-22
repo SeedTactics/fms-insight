@@ -63,6 +63,7 @@ export const onServerEvent = conduit<ServerEventAndTime>(
     buffers.updateLast30Buffer.transform(t, evt);
     currentSt.updateCurrentStatus.transform(t, evt);
     insp.updateLast30Inspections.transform(t, evt);
+    names.updateNames.transform(t, evt);
 
     if (evt.evt.logEntry) {
       const newCntr = evt.evt.logEntry.counter;
@@ -73,11 +74,10 @@ export const onServerEvent = conduit<ServerEventAndTime>(
 
 export const onLoadLast30Jobs = conduit<Readonly<IHistoricData>>(
   (t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>) => {
-    const jobsArr = Object.values(historicData.jobs);
     simUse.setLast30SimStatUse.transform(t, historicData);
     simProd.setLast30JobProduction.transform(t, historicData);
     schJobs.setLast30Jobs.transform(t, historicData);
-    names.onNewJobs(t, jobsArr);
+    names.setNamesFromLast30Jobs.transform(t, historicData);
   }
 );
 
@@ -85,6 +85,7 @@ export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     buffers.setLast30Buffer.transform(t, log);
     insp.setLast30Inspections.transform(t, log);
+    names.setNamesFromLast30Evts.transform(t, log);
 
     const newCntr = LazySeq.ofIterable(log)
       .maxOn((x) => x.counter)

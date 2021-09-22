@@ -43,12 +43,12 @@ import { DialogContent } from "@material-ui/core";
 import { DialogTitle } from "@material-ui/core";
 import SearchIcon from "@material-ui/icons/Search";
 import { TextField } from "@material-ui/core";
-import { HashSet } from "prelude-ts";
 
 import { MaterialDetailTitle } from "./Material";
-import { Store, connect } from "../../store/store";
 import * as matDetails from "../../cell-status/material-details";
 import { atom, useRecoilState, useRecoilValue } from "recoil";
+import { last30InspectionTypes } from "../../cell-status/names";
+import { LazySeq } from "../../util/lazyseq";
 
 interface ManualInpTypeEntryProps {
   readonly close: () => void;
@@ -83,14 +83,12 @@ export const selectInspTypeDialogOpen = atom<boolean>({
   default: false,
 });
 
-interface SelectInspTypeProps {
-  readonly inspTypes: HashSet<string>;
-}
-
-function SelectInspTypeDialog(props: SelectInspTypeProps) {
+export const SelectInspTypeDialog = React.memo(function SelectInspTypeDialog() {
   const mat = useRecoilValue(matDetails.materialDetail);
   const [forceInsp] = matDetails.useForceInspection();
   const [dialogOpen, setDialogOpen] = useRecoilState(selectInspTypeDialogOpen);
+  const inspTypes = useRecoilValue(last30InspectionTypes);
+  const sortedInspTypes = LazySeq.ofIterable(inspTypes).sortOn((x) => x);
 
   let body: JSX.Element | undefined;
 
@@ -99,7 +97,7 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
   } else {
     const inspList = (
       <List>
-        {props.inspTypes.toArray({ sortOn: (x) => x }).map((iType) => (
+        {sortedInspTypes.map((iType) => (
           <ListItem
             key={iType}
             button
@@ -139,8 +137,4 @@ function SelectInspTypeDialog(props: SelectInspTypeProps) {
       {body}
     </Dialog>
   );
-}
-
-export default connect((st: Store) => ({
-  inspTypes: st.Events.last30.mat_summary.inspTypes,
-}))(SelectInspTypeDialog);
+});

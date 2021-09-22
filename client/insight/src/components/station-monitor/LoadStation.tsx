@@ -55,7 +55,7 @@ import {
 import * as api from "../../network/api";
 import * as matDetails from "../../cell-status/material-details";
 import { SelectWorkorderDialog } from "./SelectWorkorder";
-import SelectInspTypeDialog, { selectInspTypeDialogOpen } from "./SelectInspType";
+import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows";
 import { SortEnd } from "react-sortable-hoc";

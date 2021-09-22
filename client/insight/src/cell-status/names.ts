@@ -30,8 +30,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "../network/api";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
+import { IHistoricData, IJob, ILogEntry, LogType } from "../network/api";
+import { conduit } from "../util/recoil-util";
+import type { ServerEventAndTime } from "./loading";
 
 const rawMaterialQueuesRW = atom<ReadonlySet<string>>({
   key: "rawMaterialQueueNames",
@@ -45,7 +47,31 @@ const castingNamesRW = atom<ReadonlySet<string>>({
 });
 export const castingNames: RecoilValueReadOnly<ReadonlySet<string>> = castingNamesRW;
 
-export function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Readonly<api.IJob>>): void {
+const inspectionTypesRW = atom<ReadonlySet<string>>({
+  key: "inspectionTypes",
+  default: new Set(),
+});
+export const last30InspectionTypes: RecoilValueReadOnly<ReadonlySet<string>> = inspectionTypesRW;
+
+export const updateNames = conduit<ServerEventAndTime>(
+  (t: TransactionInterface_UNSTABLE, { evt }: ServerEventAndTime) => {
+    if (evt.newJobs) {
+      onNewJobs(t, evt.newJobs.jobs);
+    } else if (evt.logEntry) {
+      onLog(t, [evt.logEntry]);
+    }
+  }
+);
+
+export const setNamesFromLast30Jobs = conduit<Readonly<IHistoricData>>(
+  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+    onNewJobs(t, Object.values(history.jobs));
+  }
+);
+
+export const setNamesFromLast30Evts = conduit<ReadonlyArray<Readonly<ILogEntry>>>(onLog);
+
+function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Readonly<IJob>>): void {
   t.set(rawMaterialQueuesRW, (queues) => {
     const newQ = new Set<string>();
     for (const j of newJobs) {
@@ -75,6 +101,39 @@ export function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArr
       return names;
     } else {
       return new Set([...names, ...newC]);
+    }
+  });
+}
+
+function onLog(t: TransactionInterface_UNSTABLE, evts: Iterable<Readonly<ILogEntry>>): void {
+  t.set(inspectionTypesRW, (inspTypes) => {
+    const newC = new Set<string>();
+    for (const evt of evts) {
+      switch (evt.type) {
+        case LogType.Inspection:
+          {
+            const inspType = (evt.details || {}).InspectionType;
+            if (inspType && !inspTypes.has(inspType)) {
+              newC.add(inspType);
+            }
+          }
+          break;
+
+        case LogType.InspectionForce:
+        case LogType.InspectionResult:
+          {
+            const inspType = evt.program;
+            if (!inspTypes.has(inspType)) {
+              newC.add(inspType);
+            }
+          }
+          break;
+      }
+    }
+    if (newC.size === 0) {
+      return inspTypes;
+    } else {
+      return new Set([...inspTypes, ...newC]);
     }
   });
 }
