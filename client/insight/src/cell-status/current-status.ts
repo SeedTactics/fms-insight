@@ -165,62 +165,66 @@ function processEventsIntoCurrentStatus(
   };
 }
 
-export function reorder_queued_mat(
-  queue: string,
-  matId: number,
-  newIdx: number
-): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
-  return (curSt) => {
-    const oldMat = curSt.material.find((i) => i.materialID === matId);
-    if (!oldMat || oldMat.location.type !== LocType.InQueue) {
-      return curSt;
-    }
-    if (oldMat.location.currentQueue === queue && oldMat.location.queuePosition === newIdx) {
-      return curSt;
-    }
-
-    const oldQueue = oldMat.location.currentQueue;
-    const oldIdx = oldMat.location.queuePosition;
-    if (oldIdx === undefined || oldQueue === undefined) {
-      return curSt;
-    }
-
-    const newMats = curSt.material.map((m) => {
-      if (
-        m.location.type !== LocType.InQueue ||
-        m.location.queuePosition === undefined ||
-        m.location.currentQueue === undefined
-      ) {
-        return m;
-      }
-
-      if (m.materialID === matId) {
-        return new InProcessMaterial({
-          ...m,
-          location: { type: LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
-        } as IInProcessMaterial);
-      }
-
-      let idx = m.location.queuePosition;
-      // old queue material is moved down
-      if (m.location.currentQueue === oldQueue && m.location.queuePosition > oldIdx) {
-        idx -= 1;
-      }
-      // new queue material is moved up to make room
-      if (m.location.currentQueue === queue && idx >= newIdx) {
-        idx += 1;
-      }
-
-      if (idx !== m.location.queuePosition) {
-        return new InProcessMaterial({
-          ...m,
-          location: { ...m.location, queuePosition: idx },
-        } as IInProcessMaterial);
-      } else {
-        return m;
-      }
-    });
-
-    return { ...curSt, material: newMats };
-  };
+export interface QueueReordering {
+  readonly queue: string;
+  readonly matId: number;
+  readonly newIdx: number;
 }
+
+export const reorderQueuedMatInCurrentStatus = conduit<QueueReordering>(
+  (t: TransactionInterface_UNSTABLE, { queue, matId, newIdx }: QueueReordering) => {
+    t.set(currentStatusRW, (curSt) => {
+      const oldMat = curSt.material.find((i) => i.materialID === matId);
+      if (!oldMat || oldMat.location.type !== LocType.InQueue) {
+        return curSt;
+      }
+      if (oldMat.location.currentQueue === queue && oldMat.location.queuePosition === newIdx) {
+        return curSt;
+      }
+
+      const oldQueue = oldMat.location.currentQueue;
+      const oldIdx = oldMat.location.queuePosition;
+      if (oldIdx === undefined || oldQueue === undefined) {
+        return curSt;
+      }
+
+      const newMats = curSt.material.map((m) => {
+        if (
+          m.location.type !== LocType.InQueue ||
+          m.location.queuePosition === undefined ||
+          m.location.currentQueue === undefined
+        ) {
+          return m;
+        }
+
+        if (m.materialID === matId) {
+          return new InProcessMaterial({
+            ...m,
+            location: { type: LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
+          } as IInProcessMaterial);
+        }
+
+        let idx = m.location.queuePosition;
+        // old queue material is moved down
+        if (m.location.currentQueue === oldQueue && m.location.queuePosition > oldIdx) {
+          idx -= 1;
+        }
+        // new queue material is moved up to make room
+        if (m.location.currentQueue === queue && idx >= newIdx) {
+          idx += 1;
+        }
+
+        if (idx !== m.location.queuePosition) {
+          return new InProcessMaterial({
+            ...m,
+            location: { ...m.location, queuePosition: idx },
+          } as IInProcessMaterial);
+        } else {
+          return m;
+        }
+      });
+
+      return { ...curSt, material: newMats };
+    });
+  }
+);

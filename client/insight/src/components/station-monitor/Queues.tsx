@@ -91,12 +91,17 @@ import { currentOperator } from "../../data/operators";
 import ReactToPrint from "react-to-print";
 import { PrintedLabel } from "./PrintedLabel";
 import { JobDetails } from "./JobDetails";
-import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
-import { currentStatus, currentStatusJobComment, reorder_queued_mat } from "../../cell-status/current-status";
+import {
+  currentStatus,
+  currentStatusJobComment,
+  reorderQueuedMatInCurrentStatus,
+} from "../../cell-status/current-status";
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../cell-status/material-details";
 import { Collapse } from "@material-ui/core";
 import { rawMaterialQueues } from "../../cell-status/names";
+import { useRecoilConduit } from "../../util/recoil-util";
 
 const useTableStyles = makeStyles(() =>
   createStyles({
@@ -666,7 +671,8 @@ interface QueueProps {
 
 export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
   const operator = useRecoilValue(currentOperator);
-  const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
+  const currentSt = useRecoilValue(currentStatus);
+  const reorderQueuedMat = useRecoilConduit(reorderQueuedMatInCurrentStatus);
   const rawMatQueues = useRecoilValue(rawMaterialQueues);
   const data = React.useMemo(
     () => selectQueueData(props.showFree, props.queues, currentSt, rawMatQueues),
@@ -705,7 +711,11 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
                 queuePosition: se.newIndex,
                 operator: operator,
               });
-              setCurrentStatus(reorder_queued_mat(region.label, region.material[se.oldIndex].materialID, se.newIndex));
+              reorderQueuedMat({
+                queue: region.label,
+                matId: region.material[se.oldIndex].materialID,
+                newIdx: se.newIndex,
+              });
             }}
           >
             {region.material.map((m, matIdx) => (

@@ -67,10 +67,11 @@ import ReactToPrint from "react-to-print";
 import { instructionUrl } from "../../network/backend";
 import { Tooltip } from "@material-ui/core";
 import { Fab } from "@material-ui/core";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
-import { currentStatus, reorder_queued_mat } from "../../cell-status/current-status";
+import { currentStatus, reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status";
 import { useIsDemo } from "../routes";
+import { useRecoilConduit } from "../../util/recoil-util";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -569,7 +570,8 @@ interface LoadStationDisplayProps extends LoadStationProps {
 
 export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
   const operator = useRecoilValue(currentOperator);
-  const [currentSt, setCurrentStatus] = useRecoilState(currentStatus);
+  const currentSt = useRecoilValue(currentStatus);
+  const reorderQueuedMat = useRecoilConduit(reorderQueuedMatInCurrentStatus);
   const data = React.useMemo(
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, props.showFree, currentSt),
     [currentSt, props.loadNum, props.showFree, props.queues]
@@ -640,7 +642,11 @@ export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProp
                       queuePosition: se.newIndex,
                       operator: operator,
                     });
-                    setCurrentStatus(reorder_queued_mat(mat.label, mat.material[se.oldIndex].materialID, se.newIndex));
+                    reorderQueuedMat({
+                      queue: mat.label,
+                      matId: mat.material[se.oldIndex].materialID,
+                      newIdx: se.newIndex,
+                    });
                   }}
                 >
                   {mat.material.map((m, matIdx) => (
@@ -685,7 +691,11 @@ export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProp
                       queuePosition: se.newIndex,
                       operator: operator,
                     });
-                    setCurrentStatus(reorder_queued_mat(mat.label, mat.material[se.oldIndex].materialID, se.newIndex));
+                    reorderQueuedMat({
+                      queue: mat.label,
+                      matId: mat.material[se.oldIndex].materialID,
+                      newIdx: se.newIndex,
+                    });
                   }}
                 >
                   {mat.material.map((m, matIdx) => (
