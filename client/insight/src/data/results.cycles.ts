@@ -47,7 +47,7 @@ import { LazySeq } from "../util/lazyseq";
 import * as api from "../network/api";
 import { format, differenceInSeconds } from "date-fns";
 import { durationToMinutes } from "../util/parseISODuration";
-import { MaterialSummaryAndCompletedData } from "./events.matsummary";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import copy from "copy-to-clipboard";
 
 export interface FilteredStationCycles {

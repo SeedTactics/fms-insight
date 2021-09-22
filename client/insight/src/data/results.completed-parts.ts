@@ -35,7 +35,7 @@ import { startOfDay } from "date-fns";
 import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { PartCycleData } from "./events.cycles";
-import { MaterialSummaryAndCompletedData } from "./events.matsummary";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import copy from "copy-to-clipboard";
 import { SimPartCompleted } from "../cell-status/sim-production";
 

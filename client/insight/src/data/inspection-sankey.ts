@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api";
-import { InspectionLogResultType, InspectionLogEntry } from "./events.inspection";
+import { InspectionLogResultType, InspectionLogEntry } from "../cell-status/inspections";
 import { fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 

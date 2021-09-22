@@ -93,11 +93,14 @@ import { DataTableActionZoomType } from "./DataTable";
 import { BufferChart } from "./BufferChart";
 import { useIsDemo } from "../routes";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use";
 import { last30SimProduction, SimPartCompleted, specificMonthSimProduction } from "../../cell-status/sim-production";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
+import {
+  last30MaterialSummary,
+  specificMonthMaterialSummary,
+  MaterialSummaryAndCompletedData,
+} from "../../cell-status/material-summary";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles

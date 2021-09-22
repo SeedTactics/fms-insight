@@ -40,7 +40,7 @@ import { DialogActions } from "@material-ui/core";
 
 import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../cell-status/material-details";
-import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
+import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary";
 import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";

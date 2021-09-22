@@ -35,7 +35,7 @@ import { PartCycleData } from "./events.cycles";
 import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { Vector, HasEquals, HashMap } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
-import { MaterialSummaryAndCompletedData } from "./events.matsummary";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import copy from "copy-to-clipboard";
 
 export interface PartCost {

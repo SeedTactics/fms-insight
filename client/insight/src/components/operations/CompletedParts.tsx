@@ -60,9 +60,8 @@ import clsx from "clsx";
 import { HashMap } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { last30Jobs } from "../../cell-status/scheduled-jobs";
-import { last30MaterialSummary } from "../../cell-status/material-summary";
+import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
 
 export interface JobsTableProps {
   readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;

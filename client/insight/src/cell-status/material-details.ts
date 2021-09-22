@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "../network/backend";
 import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
-import { MaterialSummary } from "../data/events.matsummary";
+import { MaterialSummary } from "./material-summary";
 import { atom, DefaultValue, selector, useSetRecoilState, waitForNone } from "recoil";
 import {
   IInProcessMaterial,

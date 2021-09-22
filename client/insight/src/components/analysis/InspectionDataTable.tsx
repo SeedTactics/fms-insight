@@ -45,7 +45,7 @@ import {
   DataTableActionZoom,
   DataTableActionZoomType,
 } from "./DataTable";
-import { InspectionLogEntry } from "../../data/events.inspection";
+import { InspectionLogEntry } from "../../cell-status/inspections";
 import { Typography } from "@material-ui/core";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";

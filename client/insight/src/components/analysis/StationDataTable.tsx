@@ -51,7 +51,7 @@ import { Menu } from "@material-ui/core";
 import { MenuItem } from "@material-ui/core";
 import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
 
 enum ColumnId {
   Date,

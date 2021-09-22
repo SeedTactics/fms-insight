@@ -42,7 +42,7 @@ import { TableRow } from "@material-ui/core";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
 import { durationToMinutes } from "../../util/parseISODuration";
 import { format } from "date-fns";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
 import { LazySeq } from "../../util/lazyseq";
 import { materialToShowInDialog } from "../../cell-status/material-details";
 import { HashMap, HashSet } from "prelude-ts";
