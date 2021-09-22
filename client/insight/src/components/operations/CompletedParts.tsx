@@ -45,7 +45,6 @@ import { TableRow } from "@material-ui/core";
 import { TableCell } from "@material-ui/core";
 import { TableHead } from "@material-ui/core";
 import { TableBody } from "@material-ui/core";
-import { useSelector } from "../../store/store";
 import { addDays, startOfToday } from "date-fns";
 import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
 import { IHistoricJob } from "../../network/api";
@@ -63,6 +62,7 @@ import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
 import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { last30Jobs } from "../../cell-status/scheduled-jobs";
+import { last30MaterialSummary } from "../../cell-status/material-summary";
 
 export interface JobsTableProps {
   readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
@@ -273,12 +273,12 @@ export const RecentSchedules = React.memo(function RecentSchedules({
 }: {
   readonly showInProcCnt: boolean;
 }) {
-  const matIds = useSelector((st) => st.Events.last30.mat_summary.matsById);
+  const matIds = useRecoilValue(last30MaterialSummary);
   const schJobs = useRecoilValue(last30Jobs);
   const start = addDays(startOfToday(), -6);
   const end = addDays(startOfToday(), 1);
 
-  return <JobsTable matIds={matIds} schJobs={schJobs} start={start} end={end} showInProcCnt={showInProcCnt} />;
+  return <JobsTable matIds={matIds.matsById} schJobs={schJobs} start={start} end={end} showInProcCnt={showInProcCnt} />;
 });
 
 export function CompletedParts(): JSX.Element {

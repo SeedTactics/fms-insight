@@ -38,7 +38,6 @@ import { Button } from "@material-ui/core";
 import { Tooltip } from "@material-ui/core";
 import { DialogActions } from "@material-ui/core";
 
-import { Store, useSelector } from "../../store/store";
 import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../data/events.matsummary";
@@ -47,6 +46,7 @@ import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
+import { last30MaterialSummary } from "../../cell-status/material-summary";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -170,10 +170,10 @@ interface InspectionProps {
 }
 
 export function Inspection(props: InspectionProps): JSX.Element {
-  const matsById = useSelector((st: Store) => st.Events.last30.mat_summary.matsById);
+  const matSummary = useRecoilValue(last30MaterialSummary);
   const recent_inspections = React.useMemo(
-    () => extractRecentInspections(matsById, props.focusInspectionType),
-    [matsById, props.focusInspectionType]
+    () => extractRecentInspections(matSummary.matsById, props.focusInspectionType),
+    [matSummary, props.focusInspectionType]
   );
 
   return (

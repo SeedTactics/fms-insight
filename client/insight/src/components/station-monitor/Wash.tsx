@@ -36,7 +36,6 @@ import { addHours } from "date-fns";
 import { Grid } from "@material-ui/core";
 import { Button } from "@material-ui/core";
 
-import { useSelector } from "../../store/store";
 import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material";
 import { SelectWorkorderDialog } from "./SelectWorkorder";
 import { Tooltip } from "@material-ui/core";
@@ -51,6 +50,7 @@ import {
   useAddExistingMaterialToQueue,
   useCompleteWash,
 } from "../../cell-status/material-details";
+import { last30MaterialSummary } from "../../cell-status/material-summary";
 
 const WashDialog = React.memo(function WashDialog() {
   const operator = useRecoilValue(currentOperator);
@@ -146,11 +146,11 @@ const WashDialog = React.memo(function WashDialog() {
   );
 });
 
-export function Wash() {
-  const matsById = useSelector((st) => st.Events.last30.mat_summary.matsById);
+export function Wash(): JSX.Element {
+  const matSummary = useRecoilValue(last30MaterialSummary);
   const recentCompleted = React.useMemo(() => {
     const cutoff = addHours(new Date(), -36);
-    const recent = LazySeq.ofIterable(matsById.valueIterable())
+    const recent = LazySeq.ofIterable(matSummary.matsById.valueIterable())
       .filter(
         (e) =>
           e.completed_last_proc_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff
@@ -161,7 +161,7 @@ export function Wash() {
       e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
     );
     return recent;
-  }, [matsById]);
+  }, [matSummary]);
 
   const unwashed = LazySeq.ofIterable(recentCompleted).filter((m) => m.wash_completed === undefined);
   const washed = LazySeq.ofIterable(recentCompleted).filter((m) => m.wash_completed !== undefined);
@@ -190,7 +190,7 @@ export function Wash() {
   );
 }
 
-export default function WashPage() {
+export default function WashPage(): JSX.Element {
   React.useEffect(() => {
     document.title = "Wash - FMS Insight";
   }, []);

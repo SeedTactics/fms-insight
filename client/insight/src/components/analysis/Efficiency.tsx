@@ -97,6 +97,7 @@ import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use";
 import { last30SimProduction, SimPartCompleted, specificMonthSimProduction } from "../../cell-status/sim-production";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -141,9 +142,7 @@ function PartMachineCycleChart() {
       ? st.Events.last30.cycles.estimatedCycleTimes
       : st.Events.selected_month.cycles.estimatedCycleTimes
   );
-  const matsById = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.mat_summary.matsById : s.Events.selected_month.mat_summary.matsById
-  );
+  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
   // filter/display state
   const demo = useIsDemo();
@@ -229,7 +228,7 @@ function PartMachineCycleChart() {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, matsById, zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(points, matSummary.matsById, zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -360,7 +359,7 @@ function PartMachineCycleChart() {
         ) : (
           <StationDataTable
             points={points.data}
-            matsById={matsById}
+            matsById={matSummary.matsById}
             default_date_range={defaultDateRange}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
@@ -437,9 +436,7 @@ function PartLoadStationCycleChart() {
   const cycles = useSelector((s) =>
     period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
   );
-  const matsById = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.mat_summary.matsById : s.Events.selected_month.mat_summary.matsById
-  );
+  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
   const estimatedCycleTimes = useSelector((st) =>
     period.type === "Last30"
       ? st.Events.last30.cycles.estimatedCycleTimes
@@ -498,7 +495,12 @@ function PartLoadStationCycleChart() {
               <Tooltip title="Copy to Clipboard">
                 <IconButton
                   onClick={() =>
-                    copyCyclesToClipboard(points, matsById, zoomDateRange, selectedOperation === "LULOccupancy")
+                    copyCyclesToClipboard(
+                      points,
+                      matSummary.matsById,
+                      zoomDateRange,
+                      selectedOperation === "LULOccupancy"
+                    )
                   }
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
@@ -618,7 +620,7 @@ function PartLoadStationCycleChart() {
         ) : (
           <StationDataTable
             points={points.data}
-            matsById={matsById}
+            matsById={matSummary.matsById}
             default_date_range={defaultDateRange}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
@@ -884,13 +886,14 @@ function CompletedCountHeatmap() {
         }
   );
   const productionCounts = useRecoilValue(period.type === "Last30" ? last30SimProduction : specificMonthSimProduction);
+  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
   const points = React.useMemo(() => {
     if (selected === "Completed") {
-      return partsCompletedPoints(data.evts.cycles, data.evts.mat_summary.matsById, data.start, data.end);
+      return partsCompletedPoints(data.evts.cycles, matSummary.matsById, data.start, data.end);
     } else {
       return partsPlannedPoints(productionCounts);
     }
-  }, [selected, data.evts, data.start, data.end, productionCounts]);
+  }, [selected, data.evts, data.start, data.end, matSummary, productionCounts]);
   return (
     <SelectableHeatChart
       card_label="Part Production"

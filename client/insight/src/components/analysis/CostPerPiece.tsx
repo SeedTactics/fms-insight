@@ -67,6 +67,7 @@ import { IconButton } from "@material-ui/core";
 import { PartIdenticon } from "../station-monitor/Material";
 import { Typography } from "@material-ui/core";
 import { useRecoilValue } from "recoil";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
@@ -478,9 +479,7 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   const cycles = useSelector((s) =>
     period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
   );
-  const matIds = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.mat_summary.matsById : s.Events.selected_month.mat_summary.matsById
-  );
+  const matIds = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
   const thirtyDaysAgo = useSelector((s) => s.Events.last30.thirty_days_ago);
 
@@ -529,7 +528,7 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
       automationCostPerYear,
       totalLaborCost,
       cycles,
-      matIds,
+      matIds.matsById,
       month ? { month: month } : { thirtyDaysAgo }
     );
   }, [machineCostPerYear, automationCostPerYear, cycles, matIds, month, curMonthLaborCost, last30LaborCost, loading]);

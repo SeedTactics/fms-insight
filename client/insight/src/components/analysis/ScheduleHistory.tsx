@@ -34,22 +34,20 @@ import { addDays, addMonths, startOfToday } from "date-fns";
 import * as React from "react";
 import { useRecoilValue } from "recoil";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs";
-import { useSelector } from "../../store/store";
 import { JobsTable } from "../operations/CompletedParts";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
 
 function ConnectedSchedules() {
   const period = useRecoilValue(selectedAnalysisPeriod);
 
-  const matIds = useSelector((st) =>
-    period.type === "Last30" ? st.Events.last30.mat_summary.matsById : st.Events.selected_month.mat_summary.matsById
-  );
+  const matIds = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
   const schJobs = useRecoilValue(period.type === "Last30" ? last30Jobs : specificMonthJobs);
   const start = period.type === "Last30" ? addDays(startOfToday(), -29) : period.month;
   const end = period.type === "Last30" ? addDays(startOfToday(), 1) : addMonths(period.month, 1);
 
-  return <JobsTable matIds={matIds} schJobs={schJobs} showInProcCnt={false} start={start} end={end} />;
+  return <JobsTable matIds={matIds.matsById} schJobs={schJobs} showInProcCnt={false} start={start} end={end} />;
 }
 
 export function ScheduleHistory(): JSX.Element {
