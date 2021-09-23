@@ -2969,7 +2969,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             priority: 5,
             partsPerPal: 1,
             pals1: new[] { 1, 2 },
-            pals2: new[] { 4 },
+            pals2: new[] { 4, 5 },
             load1: new[] { 3 },
             unload1: new[] { 3 },
             load2: new[] { 3 },
@@ -2995,6 +2995,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
         .MoveToMachineQueue(pal: 2, mach: 2)
+        .SetManualControl(pal: 5, manual: true)
         .SetExpectedLoadCastings(new[] {
           (uniq: "uniq1", part: "part1", pal: 1, path: 1, face: 1)
         })
@@ -3261,21 +3262,38 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             progs: new[] { 654 },
             faces: new[] { (face: 1, unique: "uniq1", proc: 2, path: 1) }
           )
-          // pal 2 on hold since pallet 4 not available
+          // pal 2 on hold since pallet 4 not available and 5 is in manual control
+        })
+        .MoveToBuffer(pal: 1, buff: 1)
+        .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
+          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: CCCproc1),
         })
 
-        // load pallet 4
-        .MoveToBuffer(pal: 1, buff: 1)
+        // pallet 4 is in the buffer and waiting to move to the load station, so pallet 2 should not be unheld yet even if pallet 5 becomes available
+        .SetManualControl(pal: 5, manual: false)
+        .ExpectNoChanges()
+
+        // start load pallet 4
         .MoveToLoad(pal: 4, lul: 3)
         .UpdateExpectedMaterial(AAAProc1, im =>
         {
           im.Action.ElapsedLoadUnloadTime = TimeSpan.Zero;
         })
         .ExpectTransition(new[] {
-          FakeIccDsl.ExpectStockerStart(pal: 1, stocker: 1, waitForMach: true, mats: CCCproc1),
           FakeIccDsl.ExpectLoadBegin(pal: 4, lul: 3)
         })
-        .AdvanceMinutes(5)
+        .AdvanceMinutes(3)
+
+        // make pallet 5 no longer available (it would trigger pallet 2 unhold as soon as pallet 4 finishes)
+        .UpdateExpectedMaterial(AAAProc1, im =>
+        {
+          im.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(3);
+        })
+        .SetManualControl(pal: 5, manual: true)
+        .ExpectNoChanges()
+
+        // finish load of pallet 4
+        .AdvanceMinutes(2)
         .SetAfterLoad(pal: 4)
         .UpdateExpectedMaterial(AAAProc1, im =>
         {

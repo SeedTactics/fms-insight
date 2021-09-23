@@ -155,7 +155,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // take out anything currently in the queue
       foreach (var m in cellState.QueuedMaterial)
       {
-        if (m.Mat.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Mat.Action.Type != InProcessMaterialAction.ActionType.Loading)
+        if (m.Mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
         {
           if (remain.ContainsKey(m.Mat.Location.CurrentQueue))
           {
@@ -164,14 +164,17 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      // also take out anything on a pallet currently unloading or moving to be unloaded.
+      // also take out anything on a pallet
+      // - currently loading
+      // - currently unloading
+      // - moving to be unloaded
+      // - has a pallet inbound to load material
       foreach (var pal in palsToCheck.Where(p => !p.Status.Master.Skip))
       {
         var curRouteIdx = pal.Status.Tracking.CurrentStepNum - 1;
         if (curRouteIdx == pal.Status.Master.Routes.Count - 2 && !pal.Status.Tracking.BeforeCurrentStep)
         {
-          // after final step, take out everything
-          // this accounts for any unheld pallet currently rotating out of the machine
+          // the pallet currently not on hold and ready to move to the unload station
           foreach (var mat in pal.Material)
           {
             if (mat.Mat.Process >= 1)
@@ -186,7 +189,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          // take out anything being unloaded
+          // take out anything being loaded or unloaded
           foreach (var mat in pal.Material)
           {
             if (mat.Mat.Action.Type == InProcessMaterialAction.ActionType.UnloadToInProcess)
@@ -196,6 +199,15 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 remain[queue] -= 1;
               }
+            }
+            else if (mat.Mat.Action.Type == InProcessMaterialAction.ActionType.Loading)
+            {
+              var queue = mat.Mat.Location.CurrentQueue;
+              if (!string.IsNullOrEmpty(queue) && remain.ContainsKey(queue))
+              {
+                remain[queue] -= 1;
+              }
+
             }
           }
 
@@ -231,7 +243,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var availPallets = new HashSet<string>(
         cellState.Pallets
-        .Where(pal => !pal.Status.HasWork)
+        .Where(pal => !pal.Status.HasWork && !pal.ManualControl)
         .Select(pal => pal.Status.Master.PalletNum.ToString())
       );
 
