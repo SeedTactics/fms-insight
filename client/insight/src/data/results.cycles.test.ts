@@ -32,9 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addHours } from "date-fns";
 
-import { PledgeStatus } from "../store/middleware";
-import * as events from "./events";
-import { fakeCycle } from "./events.fake";
+import { fakeCycle } from "../../test/events.fake";
 import { ILogEntry } from "../network/api";
 import {
   stationMinutes,
@@ -44,6 +42,12 @@ import {
   outlierLoadCycles,
   outlierMachineCycles,
 } from "./results.cycles";
+import { applyConduitToSnapshot } from "../util/recoil-util";
+import { snapshot_UNSTABLE } from "recoil";
+import { onLoadLast30Log } from "../cell-status/loading";
+import { last30StationCycles } from "../cell-status/station-cycles";
+import { last30MaterialSummary } from "../cell-status/material-summary";
+import { last30EstimatedCycleTimes } from "../cell-status/estimated-cycle-times";
 
 it("creates cycles clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -53,21 +57,17 @@ it("creates cycles clipboard table", () => {
     fakeCycle(addHours(now, -3), 20),
     fakeCycle(addHours(now, -15), 15)
   );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts,
-    },
-  });
-  const data = filterStationCycles(st.last30.cycles.part_cycles, {});
+  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
+  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+  const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
+
+  const data = filterStationCycles(cycles, {});
 
   const table = document.createElement("div");
-  table.innerHTML = buildCycleTable(data, st.last30.mat_summary.matsById, undefined, undefined);
+  table.innerHTML = buildCycleTable(data, matSummary.matsById, undefined, undefined);
   expect(table).toMatchSnapshot("cycle clipboard table");
 
-  table.innerHTML = buildCycleTable(data, st.last30.mat_summary.matsById, addHours(now, -3), now);
+  table.innerHTML = buildCycleTable(data, matSummary.matsById, addHours(now, -3), now);
   expect(table).toMatchSnapshot("cycle filtered clipboard table");
 });
 
@@ -79,28 +79,18 @@ it("loads outlier cycles", () => {
     fakeCycle(addHours(now, -3), 20),
     fakeCycle(addHours(now, -15), 15)
   );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts,
-    },
-  });
+  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
+  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+  const estimatedCycleTimes = snapshot.getLoadable(last30EstimatedCycleTimes).valueOrThrow();
 
-  const loadOutliers = outlierLoadCycles(
-    st.last30.cycles.part_cycles,
-    new Date(2018, 0, 1),
-    new Date(2018, 11, 1),
-    st.last30.cycles.estimatedCycleTimes
-  );
+  const loadOutliers = outlierLoadCycles(cycles, new Date(2018, 0, 1), new Date(2018, 11, 1), estimatedCycleTimes);
   expect(loadOutliers.data.length()).toBe(0);
 
   const machineOutliers = outlierMachineCycles(
-    st.last30.cycles.part_cycles,
+    cycles,
     new Date(2018, 0, 1),
     new Date(2018, 11, 1),
-    st.last30.cycles.estimatedCycleTimes
+    estimatedCycleTimes
   );
   expect(machineOutliers.data.length()).toBe(0);
 });
@@ -113,16 +103,10 @@ it("computes station oee", () => {
     fakeCycle(addDays(now, -3), 20),
     fakeCycle(addDays(now, -15), 15)
   );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts,
-    },
-  });
+  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
+  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
 
-  const statMins = stationMinutes(st.last30.cycles.part_cycles, addDays(now, -7));
+  const statMins = stationMinutes(cycles, addDays(now, -7));
   expect(statMins).toMatchSnapshot("station minutes for last week");
 });
 

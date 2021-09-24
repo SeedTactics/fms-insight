@@ -31,14 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
+import { addHours, differenceInMinutes, addMinutes } from "date-fns";
 
-import { PledgeStatus } from "../store/middleware";
-import * as events from "./events";
-import { fakeCycle, fakeMaterial } from "./events.fake";
+import { fakeCycle, fakeMaterial } from "../../test/events.fake";
 import { ILogEntry, LogType } from "../network/api";
 import { LazySeq } from "../util/lazyseq";
 import { binActiveCyclesByDayAndStat, binOccupiedCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee";
+import { snapshot_UNSTABLE } from "recoil";
+import { applyConduitToSnapshot } from "../util/recoil-util";
+import { onLoadLast30Log } from "../cell-status/loading";
+import { last30StationCycles } from "../cell-status/station-cycles";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -69,16 +71,11 @@ it("bins actual cycles by day", () => {
       })
       .toArray()
   );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts,
-    },
-  });
 
-  let byDayAndStat = binActiveCyclesByDayAndStat(st.last30.cycles.part_cycles);
+  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
+  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+
+  let byDayAndStat = binActiveCyclesByDayAndStat(cycles);
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone
@@ -89,7 +86,7 @@ it("bins actual cycles by day", () => {
 
   expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
 
-  byDayAndStat = binOccupiedCyclesByDayAndStat(st.last30.cycles.part_cycles);
+  byDayAndStat = binOccupiedCyclesByDayAndStat(cycles);
   byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(byDayAndStat).toMatchSnapshot("occupied cycles binned by day and station");
@@ -104,16 +101,11 @@ it("creates points clipboard table", () => {
     fakeCycle(addHours(now, -3), 20),
     fakeCycle(addHours(now, -15), 15)
   );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts,
-    },
-  });
 
-  const byDayAndStat = binActiveCyclesByDayAndStat(st.last30.cycles.part_cycles);
+  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
+  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+
+  const byDayAndStat = binActiveCyclesByDayAndStat(cycles);
 
   const points = LazySeq.ofIterable(byDayAndStat)
     .map(([dayAndStat, val]) => ({

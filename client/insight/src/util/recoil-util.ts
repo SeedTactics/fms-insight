@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import {
   RecoilState,
+  Snapshot,
   TransactionInterface_UNSTABLE,
   useRecoilState,
   useRecoilTransaction_UNSTABLE,
@@ -119,4 +120,17 @@ export function useRecoilSource(source: RecoilSource): void {
       );
     }
   }, []);
+}
+
+export function applyConduitToSnapshot<T>(snapshot: Snapshot, conduit: RecoilConduit<T>, val: T): Snapshot {
+  return snapshot.map((ms) =>
+    conduit.transform(
+      {
+        get: (s) => ms.getLoadable(s).valueOrThrow(),
+        set: ms.set,
+        reset: ms.reset,
+      },
+      val
+    )
+  );
 }

@@ -42,9 +42,9 @@ import {
   InProcessMaterialLocation,
   InProcessMaterialAction,
   ActionType,
-} from "../network/api";
+} from "../src/network/api";
 import faker from "faker";
-import { durationToSeconds } from "../util/parseISODuration";
+import { durationToSeconds } from "../src/util/parseISODuration";
 import { addSeconds, addMinutes } from "date-fns";
 
 faker.seed(0x6f79);

@@ -41,7 +41,10 @@ import {
   fakeInspComplete,
   fakeInspForce,
   fakeInProcMaterial,
-} from "../data/events.fake";
+} from "../../test/events.fake";
+import { Snapshot, snapshot_UNSTABLE } from "recoil";
+import { applyConduitToSnapshot } from "../util/recoil-util";
+import { onLoadCurrentSt, onServerEvent } from "./loading";
 
 const statusWithMat: api.ICurrentStatus = {
   timeOfCurrentStatusUTC: new Date(),
@@ -73,17 +76,31 @@ const statusWithMat: api.ICurrentStatus = {
   ],
 };
 
+function applyEvent(e: api.ILogEntry): Snapshot {
+  let snapshot = snapshot_UNSTABLE();
+  snapshot = applyConduitToSnapshot(snapshot, onLoadCurrentSt, statusWithMat);
+  snapshot = applyConduitToSnapshot(snapshot, onServerEvent, {
+    evt: { logEntry: new api.LogEntry(e) },
+    expire: false,
+    now: new Date(),
+  });
+
+  return snapshot;
+}
+
 it("sets the serial", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
-  const st = cs.processEventsIntoCurrentStatus(fakeSerial(mat, "serial12345"))(statusWithMat);
+  const snapshot = applyEvent(fakeSerial(mat, "serial12345"));
+  const newStatus = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
 
-  const actualInProcMat = st.material.filter((m) => m.materialID === mat.id)[0];
+  const actualInProcMat = newStatus.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.serial).toEqual("serial12345");
 });
 
 it("sets a workorder", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
-  const st = cs.processEventsIntoCurrentStatus(fakeWorkorderAssign(mat, "work7777"))(statusWithMat);
+  const snapshot = applyEvent(fakeWorkorderAssign(mat, "work7777"));
+  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
 
   const actualInProcMat = st.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.workorderId).toEqual("work7777");
@@ -91,7 +108,8 @@ it("sets a workorder", () => {
 
 it("sets an inspection", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
-  const st = cs.processEventsIntoCurrentStatus(fakeInspSignal(mat, "insp11"))(statusWithMat);
+  const snapshot = applyEvent(fakeInspSignal(mat, "insp11"));
+  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
 
   const actualInProcMat = st.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp11"]);
@@ -99,7 +117,8 @@ it("sets an inspection", () => {
 
 it("sets a forced inspection", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
-  const st = cs.processEventsIntoCurrentStatus(fakeInspForce(mat, "insp55"))(statusWithMat);
+  const snapshot = applyEvent(fakeInspForce(mat, "insp55"));
+  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
 
   const actualInProcMat = st.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp55"]);
@@ -107,7 +126,8 @@ it("sets a forced inspection", () => {
 
 it("ignores other cycles", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
-  const st = cs.processEventsIntoCurrentStatus(fakeInspComplete(mat))(statusWithMat);
+  const snapshot = applyEvent(fakeInspComplete(mat));
+  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
 
   expect(st).toBe(statusWithMat);
 });
@@ -123,6 +143,14 @@ function adjPos(m: api.InProcessMaterial, newPos: number, newQueue?: string): ap
   } as api.IInProcessMaterial);
 }
 
+function reorderStatus(st: api.ICurrentStatus, reorder: cs.QueueReordering): api.ICurrentStatus {
+  let snapshot = snapshot_UNSTABLE();
+  snapshot = applyConduitToSnapshot(snapshot, onLoadCurrentSt, st);
+  snapshot = applyConduitToSnapshot(snapshot, cs.reorderQueuedMatInCurrentStatus, reorder);
+
+  return snapshot.getLoadable(cs.currentStatus).valueOrThrow();
+}
+
 it("reorders in-process material backwards", () => {
   const mats = [
     fakeInProcMaterial(0, "abc", 0),
@@ -135,7 +163,7 @@ it("reorders in-process material backwards", () => {
     fakeInProcMaterial(7),
   ];
   const initialSt = { ...statusWithMat, material: mats };
-  const st = cs.reorder_queued_mat("abc", 1, 3)(initialSt);
+  const st = reorderStatus(initialSt, { queue: "abc", matId: 1, newIdx: 3 });
 
   expect(st.material).toEqual([
     mats[0],
@@ -162,7 +190,7 @@ it("reorders in-process material forwards", () => {
   ];
 
   const initialSt = { ...statusWithMat, material: mats };
-  const st = cs.reorder_queued_mat("abc", 3, 1)(initialSt);
+  const st = reorderStatus(initialSt, { queue: "abc", matId: 3, newIdx: 1 });
 
   expect(st.material).toEqual([
     mats[0],
@@ -191,7 +219,7 @@ it("moves between queue", () => {
   ];
 
   const initialSt = { ...statusWithMat, material: mats };
-  const st = cs.reorder_queued_mat("abc", 6, 1)(initialSt);
+  const st = reorderStatus(initialSt, { queue: "abc", matId: 6, newIdx: 1 });
 
   expect(st.material).toEqual([
     mats[0],

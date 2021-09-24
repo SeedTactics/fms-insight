@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { filterRemoveAddQueue } from "./LogEntry";
-import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../data/events.fake";
+import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake";
 
 it("doesn't filter just a single add", () => {
   const cycles = [...fakeCycle(new Date(), 100), fakeAddToQueue()];
