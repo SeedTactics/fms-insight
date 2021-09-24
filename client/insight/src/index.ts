@@ -31,13 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { initStore } from "./store/store";
 import { render } from "./renderer";
 import { RouteLocation } from "./components/routes";
 import { registerBackupViewerBackend } from "./network/backend-backupviewer";
 import { registerNetworkBackend } from "./network/backend";
-
-const store = initStore();
 
 if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
   registerBackupViewerBackend();
@@ -45,7 +42,7 @@ if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
   registerNetworkBackend();
 }
 
-render(store, null, document.getElementById("root"));
+render(null, document.getElementById("root"));
 
 if ("serviceWorker" in navigator) {
   void navigator.serviceWorker.getRegistrations().then((registrations) => {

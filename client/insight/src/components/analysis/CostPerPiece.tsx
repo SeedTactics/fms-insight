@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { useSelector } from "../../store/store";
 import { Card } from "@material-ui/core";
 import { CardHeader } from "@material-ui/core";
 import { CardContent } from "@material-ui/core";
@@ -61,13 +60,14 @@ import {
   PartCost,
   copyCostBreakdownToClipboard,
 } from "../../data/cost-per-piece";
-import { format } from "date-fns";
+import { format, startOfToday, addDays } from "date-fns";
 import { Tooltip } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";
 import { PartIdenticon } from "../station-monitor/Material";
 import { Typography } from "@material-ui/core";
 import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
+import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
@@ -473,9 +473,7 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
 
   const period = useRecoilValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
-  const cycles = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
-  );
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const statGroups = React.useMemo(() => {
     const groups = new Set<string>();
     for (const c of cycles) {
@@ -485,7 +483,7 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   }, [cycles]);
   const matIds = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
-  const thirtyDaysAgo = useSelector((s) => s.Events.last30.thirty_days_ago);
+  const thirtyDaysAgo = addDays(startOfToday(), -30);
 
   React.useEffect(() => {
     void (async () => {

@@ -32,12 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { startOfDay, addSeconds, addDays, max, min } from "date-fns";
-import { HashMap, fieldsHashCode, Vector } from "prelude-ts";
+import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
-import { PartCycleData, stat_name_and_num } from "./events.cycles";
 import copy from "copy-to-clipboard";
 import { SimStationUse } from "../cell-status/sim-station-use";
 import { chunkCyclesWithSimilarEndTime } from "../cell-status/estimated-cycle-times";
+import * as L from "list/methods";
+import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -103,8 +104,8 @@ export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): Ha
     );
 }
 
-export function binOccupiedCyclesByDayAndStat(cycles: Vector<PartCycleData>): HashMap<DayAndStation, number> {
-  return cycles
+export function binOccupiedCyclesByDayAndStat(cycles: L.List<PartCycleData>): HashMap<DayAndStation, number> {
+  return LazySeq.ofIterable(cycles)
     .groupBy((point) => stat_name_and_num(point.stationGroup, point.stationNumber))
     .transform(LazySeq.ofIterable)
     .flatMap(([station, cyclesForStat]) =>

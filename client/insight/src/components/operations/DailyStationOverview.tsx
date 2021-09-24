@@ -45,9 +45,7 @@ import { MenuItem } from "@material-ui/core";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
 
 import StationDataTable from "../analysis/StationDataTable";
-import { connect, useSelector } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
-import { PartAndStationOperation, PartAndProcess } from "../../data/events.cycles";
 import {
   filterStationCycles,
   outlierMachineCycles,
@@ -58,6 +56,7 @@ import {
   loadOccupancyCycles,
   LoadCycleData,
   FilterAnyLoadKey,
+  PartAndProcess,
 } from "../../data/results.cycles";
 import * as matDetails from "../../cell-status/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
@@ -66,7 +65,8 @@ import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { last30SimStationUse } from "../../cell-status/sim-station-use";
 import { last30MaterialSummary } from "../../cell-status/material-summary";
-import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times";
+import { last30EstimatedCycleTimes, PartAndStationOperation } from "../../cell-status/estimated-cycle-times";
+import { last30StationCycles } from "../../cell-status/station-cycles";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -80,7 +80,7 @@ const OutlierCycles = React.memo(function OutlierCycles(props: OutlierCycleProps
   const matSummary = useRecoilValue(last30MaterialSummary);
   const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
   const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
-  const allCycles = useSelector((s) => s.Events.last30.cycles.part_cycles);
+  const allCycles = useRecoilValue(last30StationCycles);
   const points = React.useMemo(() => {
     const today = startOfToday();
     if (props.showLabor) {
@@ -139,7 +139,7 @@ const StationOEEChart = React.memo(function StationOEEChart({ showLabor }: { rea
   const start = addDays(startOfToday(), -6);
   const end = addDays(startOfToday(), 1);
 
-  const cycles = useSelector((s) => s.Events.last30.cycles.part_cycles);
+  const cycles = useRecoilValue(last30StationCycles);
   const statUse = useRecoilValue(last30SimStationUse);
   const points = React.useMemo(
     () => buildOeeSeries(start, end, showLabor, cycles, statUse),
@@ -195,10 +195,9 @@ const StationOEEChart = React.memo(function StationOEEChart({ showLabor }: { rea
 
 interface PartStationCycleChartProps {
   readonly showLabor: boolean;
-  readonly default_date_range: Date[];
 }
 
-function PartStationCycleChart(props: PartStationCycleChartProps) {
+const PartStationCycleCart = React.memo(function PartStationCycleChart(props: PartStationCycleChartProps) {
   const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
@@ -233,8 +232,9 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
 
   const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
+  const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
 
-  const cycles = useSelector((st) => st.Events.last30.cycles.part_cycles);
+  const cycles = useRecoilValue(last30StationCycles);
   const matSummary = useRecoilValue(last30MaterialSummary);
   const points = React.useMemo(() => {
     const today = startOfToday();
@@ -377,7 +377,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
           <CycleChart
             points={points.data}
             series_label={points.seriesLabel}
-            default_date_range={props.default_date_range}
+            default_date_range={default_date_range}
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={chartZoom.zoom}
             set_date_zoom_range={setChartZoom}
@@ -396,7 +396,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
           <StationDataTable
             points={points.data}
             matsById={matSummary.matsById}
-            default_date_range={props.default_date_range}
+            default_date_range={default_date_range}
             current_date_zoom={undefined}
             set_date_zoom_range={undefined}
             last30_days={true}
@@ -407,17 +407,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       </CardContent>
     </Card>
   );
-}
-
-const ConnectedLaborCycleChart = connect(() => ({
-  showLabor: true,
-  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
-}))(PartStationCycleChart);
-
-const ConnectedMachineCycleChart = connect(() => ({
-  showLabor: false,
-  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
-}))(PartStationCycleChart);
+});
 
 // -----------------------------------------------------------------------------------
 // Main
@@ -433,7 +423,7 @@ export function LoadUnloadRecentOverview(): JSX.Element {
         <StationOEEChart showLabor={true} />
       </div>
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedLaborCycleChart />
+        <PartStationCycleCart showLabor={true} />
       </div>
     </>
   );
@@ -460,7 +450,7 @@ export function MachinesRecentOverview(): JSX.Element {
         <StationOEEChart showLabor={false} />
       </div>
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedMachineCycleChart />
+        <PartStationCycleCart showLabor={false} />
       </div>
     </>
   );

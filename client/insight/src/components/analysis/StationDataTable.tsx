@@ -34,7 +34,6 @@ import * as React from "react";
 import { Table } from "@material-ui/core";
 import { HashMap, ToOrderable } from "prelude-ts";
 
-import { PartCycleData } from "../../data/events.cycles";
 import { format_cycle_inspection } from "../../data/results.cycles";
 import { LazySeq } from "../../util/lazyseq";
 import {
@@ -52,6 +51,7 @@ import { MenuItem } from "@material-ui/core";
 import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
+import { PartCycleData } from "../../cell-status/station-cycles";
 
 enum ColumnId {
   Date,

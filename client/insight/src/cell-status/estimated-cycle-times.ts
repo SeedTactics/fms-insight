@@ -31,9 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { differenceInSeconds } from "date-fns";
-import { HashMap, Vector } from "prelude-ts";
+import { fieldsHashCode, HashMap, Vector } from "prelude-ts";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { PartAndStationOperation } from "../data/events.cycles";
 import { ILogEntry, LogType } from "../network/api";
 import { LazySeq } from "../util/lazyseq";
 import { durationToMinutes } from "../util/parseISODuration";
@@ -44,6 +43,37 @@ export interface StatisticalCycleTime {
   readonly MAD_belowMinutes: number; // MAD of points below the median
   readonly MAD_aboveMinutes: number; // MAD of points above the median
   readonly expectedCycleMinutesForSingleMat: number;
+}
+
+export class PartAndStationOperation {
+  public constructor(
+    public readonly part: string,
+    public readonly proc: number,
+    public readonly statGroup: string,
+    public readonly operation: string
+  ) {}
+  public static ofLogCycle(c: Readonly<ILogEntry>): PartAndStationOperation {
+    return new PartAndStationOperation(
+      c.material[0].part,
+      c.material[0].proc,
+      c.loc,
+      c.type === LogType.LoadUnloadCycle ? c.result : c.program
+    );
+  }
+  equals(other: PartAndStationOperation): boolean {
+    return (
+      this.part === other.part &&
+      this.proc === other.proc &&
+      this.statGroup === other.statGroup &&
+      this.operation === other.operation
+    );
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.part, this.proc, this.statGroup, this.operation);
+  }
+  toString(): string {
+    return `{part: ${this.part}}, proc: ${this.proc}, statGroup: ${this.statGroup}, operation: ${this.operation}}`;
+  }
 }
 
 export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCycleTime>;

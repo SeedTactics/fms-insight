@@ -33,10 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api";
 import { LazySeq } from "../util/lazyseq";
-import { Vector, HashMap } from "prelude-ts";
+import { Vector, HashMap, fieldsHashCode } from "prelude-ts";
 import { durationToMinutes } from "../util/parseISODuration";
 import { atom, selector, useRecoilCallback } from "recoil";
-import { PartAndStationOperation, StationOperation, stat_name_and_num } from "./events.cycles";
 import { MachineBackend } from "../network/backend";
 import { currentStatus } from "../cell-status/current-status";
 import copy from "copy-to-clipboard";
@@ -44,8 +43,10 @@ import { last30ToolUse, ProgramToolUseInSingleCycle, ToolUsage } from "../cell-s
 import {
   EstimatedCycleTimes,
   last30EstimatedCycleTimes,
+  PartAndStationOperation,
   StatisticalCycleTime,
 } from "../cell-status/estimated-cycle-times";
+import { stat_name_and_num } from "../cell-status/station-cycles";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -91,6 +92,19 @@ export interface ToolReport {
   readonly minRemainingMinutes: number;
   readonly minRemainingMachine: string;
   readonly parts: Vector<PartToolUsage>;
+}
+
+class StationOperation {
+  public constructor(public readonly statGroup: string, public readonly operation: string) {}
+  equals(other: PartAndStationOperation): boolean {
+    return this.statGroup === other.statGroup && this.operation === other.operation;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.statGroup, this.operation);
+  }
+  toString(): string {
+    return `{statGroup: ${this.statGroup}, operation: ${this.operation}}`;
+  }
 }
 
 export function calcToolReport(

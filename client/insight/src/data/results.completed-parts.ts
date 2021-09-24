@@ -34,10 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { startOfDay } from "date-fns";
 import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
-import { PartCycleData } from "./events.cycles";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import copy from "copy-to-clipboard";
 import { SimPartCompleted } from "../cell-status/sim-production";
+import { PartCycleData } from "../cell-status/station-cycles";
 
 // --------------------------------------------------------------------------------
 // Actual

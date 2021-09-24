@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { HashMap, Option } from "prelude-ts";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { PartAndStationOperation } from "../data/events.cycles";
 import { ILogEntry, LogType } from "../network/api";
 import { LazySeq } from "../util/lazyseq";
 import { conduit } from "../util/recoil-util";
@@ -43,6 +42,7 @@ import {
   EstimatedCycleTimes,
   isOutlier,
   last30EstimatedCycleTimes,
+  PartAndStationOperation,
   StatisticalCycleTime,
 } from "./estimated-cycle-times";
 

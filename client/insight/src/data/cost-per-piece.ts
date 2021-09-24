@@ -31,12 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { PartCycleData } from "./events.cycles";
 import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { Vector, HasEquals, HashMap } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
+import * as L from "list/methods";
 import copy from "copy-to-clipboard";
+import { PartCycleData } from "../cell-status/station-cycles";
 
 export interface PartCost {
   readonly part: string;
@@ -74,7 +75,7 @@ export function compute_monthly_cost(
   machineCostPerYear: MachineCostPerYear,
   automationCostPerYear: number | null,
   totalLaborCostForPeriod: number,
-  cycles: Vector<PartCycleData>,
+  cycles: L.List<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   type: { month: Date } | { thirtyDaysAgo: Date }
 ): CostData {
@@ -118,7 +119,7 @@ export function compute_monthly_cost(
     );
 
   const parts = Array.from(
-    cycles
+    LazySeq.ofIterable(cycles)
       .filter((c) => c.x >= start && c.x <= end)
       .groupBy((c) => c.part)
       .map((partName, forPart) => [

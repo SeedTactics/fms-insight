@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import WorkIcon from "@material-ui/icons/Work";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
-import { addMonths, addDays, startOfToday, startOfDay } from "date-fns";
+import { addMonths, addDays, startOfToday } from "date-fns";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
 import { HashMap } from "prelude-ts";
@@ -53,16 +53,8 @@ import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart } from "./HeatChart";
-import { useSelector } from "../../store/store";
 import * as matDetails from "../../cell-status/material-details";
 import { InspectionSankey } from "./InspectionSankey";
-import {
-  PartCycleData,
-  CycleData,
-  CycleState,
-  PartAndProcess,
-  PartAndStationOperation,
-} from "../../data/events.cycles";
 import {
   filterStationCycles,
   FilterAnyMachineKey,
@@ -74,6 +66,7 @@ import {
   FilterAnyLoadKey,
   copyPalletCyclesToClipboard,
   emptyStationCycles,
+  PartAndProcess,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../util/lazyseq";
@@ -102,7 +95,13 @@ import {
   specificMonthMaterialSummary,
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary";
-import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "../../cell-status/estimated-cycle-times";
+import {
+  last30EstimatedCycleTimes,
+  PartAndStationOperation,
+  specificMonthEstimatedCycleTimes,
+} from "../../cell-status/estimated-cycle-times";
+import { last30PalletCycles, PalletCycleData, specificMonthPalletCycles } from "../../cell-status/pallet-cycles";
+import { last30StationCycles, PartCycleData, specificMonthStationCycles } from "../../cell-status/station-cycles";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -149,9 +148,7 @@ function PartMachineCycleChart() {
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const cycles = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
-  );
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const points = React.useMemo(() => {
     if (selectedPart) {
       if (selectedOperation) {
@@ -398,9 +395,7 @@ function PartLoadStationCycleChart() {
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const cycles = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
-  );
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
   const estimatedCycleTimes = useRecoilValue(
     period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
@@ -613,16 +608,16 @@ function PalletCycleChart() {
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
 
-  const palletCycles = useSelector((st) =>
-    period.type === "Last30" ? st.Events.last30.cycles.by_pallet : st.Events.selected_month.cycles.by_pallet
-  );
-  let points = HashMap.empty<string, ReadonlyArray<CycleData>>();
-  if (selectedPallet) {
-    const palData = palletCycles.get(selectedPallet);
-    if (palData.isSome()) {
-      points = HashMap.of([selectedPallet, palData.get()]);
+  const palletCycles = useRecoilValue(period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles);
+  const points = React.useMemo(() => {
+    if (selectedPallet) {
+      const palData = palletCycles.get(selectedPallet);
+      if (palData.isSome()) {
+        return HashMap.of([selectedPallet, palData.get().toArray()]);
+      }
     }
-  }
+    return HashMap.empty<string, ReadonlyArray<PalletCycleData>>();
+  }, [selectedPallet, palletCycles]);
   return (
     <Card raised>
       <CardHeader
@@ -747,17 +742,17 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
 function StationOeeHeatmap() {
   const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
   const period = useRecoilValue(selectedAnalysisPeriod);
-  const data = useSelector((s) => (period.type === "Last30" ? s.Events.last30 : s.Events.selected_month));
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const statUse = useRecoilValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
   const points = React.useMemo(() => {
     if (selected === "Standard OEE") {
-      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(data.cycles.part_cycles));
+      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles));
     } else if (selected === "Occupied") {
-      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(data.cycles.part_cycles));
+      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles));
     } else {
       return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse));
     }
-  }, [selected, data, statUse]);
+  }, [selected, cycles, statUse]);
 
   return (
     <SelectableHeatChart<StationOeeHeatmapTypes>
@@ -781,12 +776,12 @@ function StationOeeHeatmap() {
 type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
 function partsCompletedPoints(
-  cycles: CycleState,
+  partCycles: Iterable<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
   end: Date
 ) {
-  const pts = binCyclesByDayAndPart(cycles.part_cycles, matsById, start, end);
+  const pts = binCyclesByDayAndPart(partCycles, matsById, start, end);
   return LazySeq.ofIterable(pts)
     .map(([dayAndPart, val]) => {
       return {
@@ -836,28 +831,19 @@ function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
 function CompletedCountHeatmap() {
   const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
   const period = useRecoilValue(selectedAnalysisPeriod);
-  const data = useSelector((s) =>
-    period.type === "Last30"
-      ? {
-          evts: s.Events.last30,
-          start: startOfDay(s.Events.last30.thirty_days_ago),
-          end: addDays(startOfDay(s.Events.last30.thirty_days_ago), 31),
-        }
-      : {
-          evts: s.Events.selected_month,
-          start: period.month,
-          end: addMonths(period.month, 1),
-        }
-  );
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const productionCounts = useRecoilValue(period.type === "Last30" ? last30SimProduction : specificMonthSimProduction);
   const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
   const points = React.useMemo(() => {
     if (selected === "Completed") {
-      return partsCompletedPoints(data.evts.cycles, matSummary.matsById, data.start, data.end);
+      const today = startOfToday();
+      const start = period.type === "Last30" ? addDays(today, -30) : period.month;
+      const endD = period.type === "Last30" ? addDays(today, 1) : addMonths(period.month, 1);
+      return partsCompletedPoints(cycles, matSummary.matsById, start, endD);
     } else {
       return partsPlannedPoints(productionCounts);
     }
-  }, [selected, data.evts, data.start, data.end, matSummary, productionCounts]);
+  }, [selected, cycles, matSummary, productionCounts]);
   return (
     <SelectableHeatChart
       card_label="Part Production"

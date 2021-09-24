@@ -33,6 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ICurrentStatus, IHistoricData, ILogEntry, IServerEvent } from "../network/api";
+import { conduit } from "../util/recoil-util";
+import { LazySeq } from "../util/lazyseq";
+
 import * as simProd from "./sim-production";
 import * as simUse from "./sim-station-use";
 import * as schJobs from "./scheduled-jobs";
@@ -42,8 +45,8 @@ import * as insp from "./inspections";
 import * as names from "./names";
 import * as estimated from "./estimated-cycle-times";
 import * as tool from "./tool-usage";
-import { conduit } from "../util/recoil-util";
-import { LazySeq } from "../util/lazyseq";
+import * as palCycles from "./pallet-cycles";
+import * as statCycles from "./station-cycles";
 
 export interface ServerEventAndTime {
   readonly evt: Readonly<IServerEvent>;
@@ -67,6 +70,8 @@ export const onServerEvent = conduit<ServerEventAndTime>(
     insp.updateLast30Inspections.transform(t, evt);
     names.updateNames.transform(t, evt);
     tool.updateLast30ToolUse.transform(t, evt);
+    palCycles.updateLast30PalletCycles.transform(t, evt);
+    statCycles.updateLast30StationCycles.transform(t, evt);
 
     if (evt.evt.logEntry) {
       const newCntr = evt.evt.logEntry.counter;
@@ -91,6 +96,8 @@ export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
     insp.setLast30Inspections.transform(t, log);
     names.setNamesFromLast30Evts.transform(t, log);
     tool.setLast30ToolUse.transform(t, log);
+    palCycles.setLast30PalletCycles.transform(t, log);
+    statCycles.setLast30StationCycles.transform(t, log);
 
     const newCntr = LazySeq.ofIterable(log)
       .maxOn((x) => x.counter)
@@ -119,5 +126,7 @@ export const onLoadSpecificMonthLog = conduit<ReadonlyArray<Readonly<ILogEntry>>
     estimated.setSpecificMonthEstimatedCycleTimes.transform(t, log);
     buffers.setSpecificMonthBuffer.transform(t, log);
     insp.setSpecificMonthInspections.transform(t, log);
+    palCycles.setSpecificMonthPalletCycles.transform(t, log);
+    statCycles.setSpecificMonthStationCycles.transform(t, log);
   }
 );
