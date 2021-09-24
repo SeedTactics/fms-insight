@@ -36,7 +36,7 @@ import BasketIcon from "@material-ui/icons/ShoppingBasket";
 import { addMonths, addDays, startOfToday, startOfDay } from "date-fns";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
-import { HashMap, Vector } from "prelude-ts";
+import { HashMap } from "prelude-ts";
 import { Card } from "@material-ui/core";
 import { CardHeader } from "@material-ui/core";
 import { Select } from "@material-ui/core";
@@ -73,6 +73,7 @@ import {
   loadOccupancyCycles,
   FilterAnyLoadKey,
   copyPalletCyclesToClipboard,
+  emptyStationCycles,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { LazySeq } from "../../util/lazyseq";
@@ -101,6 +102,7 @@ import {
   specificMonthMaterialSummary,
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary";
+import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "../../cell-status/estimated-cycle-times";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -126,24 +128,8 @@ function PartMachineCycleChart() {
 
   // values which user can select to be filtered on
   const period = useRecoilValue(selectedAnalysisPeriod);
-  const allParts = useSelector((st) =>
-    period.type === "Last30"
-      ? st.Events.last30.cycles.part_and_proc_names
-      : st.Events.selected_month.cycles.part_and_proc_names
-  );
-  const machineGroups = useSelector((st) =>
-    period.type === "Last30" ? st.Events.last30.cycles.machine_groups : st.Events.selected_month.cycles.machine_groups
-  );
-  const machineNames = useSelector((st) =>
-    period.type === "Last30" ? st.Events.last30.cycles.machine_names : st.Events.selected_month.cycles.machine_names
-  );
-  const palletNames = useSelector((st) =>
-    period.type === "Last30" ? st.Events.last30.cycles.pallet_names : st.Events.selected_month.cycles.pallet_names
-  );
-  const estimatedCycleTimes = useSelector((st) =>
-    period.type === "Last30"
-      ? st.Events.last30.cycles.estimatedCycleTimes
-      : st.Events.selected_month.cycles.estimatedCycleTimes
+  const estimatedCycleTimes = useRecoilValue(
+    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
   );
   const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
@@ -154,28 +140,9 @@ function PartMachineCycleChart() {
     demo ? new PartAndProcess("aaa", 2) : undefined
   );
   const [selectedMachine, setSelectedMachine] = React.useState<string>(FilterAnyMachineKey);
-  const [selectedOperation, setSelectedOperation] = React.useState<number>();
+  const [selectedOperation, setSelectedOperation] = React.useState<PartAndStationOperation>();
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
-
-  const operationNames = React.useMemo(
-    () =>
-      selectedPart
-        ? LazySeq.ofIterable(estimatedCycleTimes)
-            .filter(
-              ([k]) =>
-                selectedPart.part === k.part && selectedPart.proc === k.proc && machineGroups.contains(k.statGroup)
-            )
-            .map(([k]) => k)
-            .toVector()
-            .sortOn(
-              (k) => k.statGroup,
-              (k) => k.operation
-            )
-        : Vector.empty<PartAndStationOperation>(),
-    [selectedPart, estimatedCycleTimes, machineGroups]
-  );
-  const curOperation = selectedPart ? operationNames.get(selectedOperation ?? 0).getOrNull() : null;
 
   // calculate points
   const defaultDateRange =
@@ -187,8 +154,8 @@ function PartMachineCycleChart() {
   );
   const points = React.useMemo(() => {
     if (selectedPart) {
-      if (curOperation) {
-        return filterStationCycles(cycles, { operation: curOperation, pallet: selectedPallet });
+      if (selectedOperation) {
+        return filterStationCycles(cycles, { operation: selectedOperation, pallet: selectedPallet });
       } else {
         return filterStationCycles(cycles, {
           partAndProc: selectedPart,
@@ -200,21 +167,21 @@ function PartMachineCycleChart() {
       if (selectedPallet || selectedMachine !== FilterAnyMachineKey) {
         return filterStationCycles(cycles, { pallet: selectedPallet, station: selectedMachine });
       } else {
-        return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
+        return emptyStationCycles(cycles);
       }
     }
-  }, [selectedPart, selectedPallet, selectedMachine, curOperation, cycles]);
+  }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
   const plannedSeries = React.useMemo(() => {
-    if (curOperation !== null) {
+    if (selectedOperation !== null) {
       return plannedOperationSeries(points, false);
     } else {
       return undefined;
     }
-  }, [points, curOperation]);
+  }, [points, selectedOperation]);
 
-  if (demo && selectedPart !== undefined && !allParts.isEmpty()) {
+  if (demo && selectedPart !== undefined && points.allPartAndProcNames.length !== 0) {
     // Select below compares object equality, but it takes time to load the demo data
-    const fromLst = allParts.findAny((p) => p.part === "aaa" && p.proc == 2).getOrUndefined();
+    const fromLst = points.allPartAndProcNames.find((p) => p.part === "aaa" && p.proc == 2);
     if (fromLst !== selectedPart) {
       setSelectedPart(fromLst);
     }
@@ -255,18 +222,20 @@ function PartMachineCycleChart() {
               name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={selectedPart || ""}
+              value={selectedPart ? points.allPartAndProcNames.findIndex((o) => selectedPart.equals(o)) : -1}
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as PartAndProcess));
+                setSelectedPart(
+                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                );
                 setSelectedOperation(undefined);
               }}
             >
-              <MenuItem key={0} value="">
+              <MenuItem key={0} value={-1}>
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
-                <MenuItem key={idx} value={n as any}>
+              {points.allPartAndProcNames.map((n, idx) => (
+                <MenuItem key={idx} value={idx}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={n.part} size={20} />
                     <span style={{ marginRight: "1em" }}>
@@ -280,23 +249,29 @@ function PartMachineCycleChart() {
               name="Station-Cycles-cycle-chart-station-select"
               autoWidth
               displayEmpty
-              value={selectedPart ? selectedOperation ?? 0 : selectedMachine}
+              value={
+                selectedPart
+                  ? selectedOperation
+                    ? points.allMachineOperations.findIndex((o) => selectedOperation.equals(o))
+                    : -1
+                  : selectedMachine
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
                 if (selectedPart) {
-                  setSelectedOperation(e.target.value as number);
+                  setSelectedOperation(points.allMachineOperations[e.target.value as number]);
                 } else {
                   setSelectedMachine(e.target.value as string);
                 }
               }}
             >
               {selectedPart ? (
-                operationNames.length() === 0 ? (
-                  <MenuItem value={0}>
+                points.allMachineOperations.length === 0 ? (
+                  <MenuItem value={-1}>
                     <em>Any Operation</em>
                   </MenuItem>
                 ) : (
-                  LazySeq.ofIterable(operationNames).map((oper, idx) => (
+                  points.allMachineOperations.map((oper, idx) => (
                     <MenuItem key={idx} value={idx}>
                       {oper.statGroup} {oper.operation}
                     </MenuItem>
@@ -307,7 +282,7 @@ function PartMachineCycleChart() {
                   <MenuItem key={-1} value={FilterAnyMachineKey}>
                     <em>Any Machine</em>
                   </MenuItem>,
-                  machineNames.toArray({ sortOn: (x) => x }).map((n) => (
+                  points.allMachineNames.map((n) => (
                     <MenuItem key={n} value={n}>
                       <div style={{ display: "flex", alignItems: "center" }}>
                         <span style={{ marginRight: "1em" }}>{n}</span>
@@ -328,7 +303,7 @@ function PartMachineCycleChart() {
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {palletNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {points.allPalletNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -348,9 +323,9 @@ function PartMachineCycleChart() {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
+            stats={selectedOperation ? estimatedCycleTimes.get(selectedOperation).getOrUndefined() : undefined}
             partCntPerPoint={
-              curOperation
+              selectedOperation
                 ? points.data
                     .findAny(() => true)
                     .map(([, cs]) => cs[0]?.material.length)
@@ -402,19 +377,6 @@ function PartLoadStationCycleChart() {
   );
 
   const period = useRecoilValue(selectedAnalysisPeriod);
-  const allParts = useSelector((st) =>
-    period.type === "Last30"
-      ? st.Events.last30.cycles.part_and_proc_names
-      : st.Events.selected_month.cycles.part_and_proc_names
-  );
-  const loadStationNames = useSelector((st) =>
-    period.type === "Last30"
-      ? st.Events.last30.cycles.loadstation_names
-      : st.Events.selected_month.cycles.loadstation_names
-  );
-  const palletNames = useSelector((st) =>
-    period.type === "Last30" ? st.Events.last30.cycles.pallet_names : st.Events.selected_month.cycles.pallet_names
-  );
 
   const demo = useIsDemo();
   const [showGraph, setShowGraph] = React.useState(true);
@@ -440,10 +402,8 @@ function PartLoadStationCycleChart() {
     period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
   );
   const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
-  const estimatedCycleTimes = useSelector((st) =>
-    period.type === "Last30"
-      ? st.Events.last30.cycles.estimatedCycleTimes
-      : st.Events.selected_month.cycles.estimatedCycleTimes
+  const estimatedCycleTimes = useRecoilValue(
+    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
   );
   const points = React.useMemo(() => {
     if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
@@ -467,7 +427,7 @@ function PartLoadStationCycleChart() {
         });
       }
     } else {
-      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<LoadCycleData>>() };
+      return emptyStationCycles(cycles);
     }
   }, [selectedPart, selectedPallet, selectedOperation, selectedLoadStation, cycles, showGraph]);
   const plannedSeries = React.useMemo(() => {
@@ -478,9 +438,9 @@ function PartLoadStationCycleChart() {
     }
   }, [points, selectedOperation]);
 
-  if (demo && selectedPart !== undefined && !allParts.isEmpty()) {
+  if (demo && selectedPart !== undefined && points.allPartAndProcNames.length !== 0) {
     // Select below compares object equality, but it takes time to load the demo data
-    const fromLst = allParts.findAny((p) => p.part === "aaa" && p.proc == 2).getOrUndefined();
+    const fromLst = points.allPartAndProcNames.find((p) => p.part === "aaa" && p.proc == 2);
     if (fromLst !== selectedPart) {
       setSelectedPart(fromLst);
     }
@@ -525,25 +485,26 @@ function PartLoadStationCycleChart() {
               </MenuItem>
             </Select>
             <Select
-              name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={selectedPart || ""}
+              value={selectedPart ? points.allPartAndProcNames.findIndex((o) => selectedPart.equals(o)) : -1}
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                if (e.target.value === "") {
+                if (e.target.value === -1) {
                   setSelectedPart(undefined);
                   setSelectedOperation("LULOccupancy");
                 } else {
-                  setSelectedPart(e.target.value as PartAndProcess);
+                  setSelectedPart(
+                    e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                  );
                 }
               }}
             >
-              <MenuItem key={0} value="">
+              <MenuItem key={0} value={-1}>
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
-                <MenuItem key={idx} value={n as any}>
+              {points.allPartAndProcNames.map((n, idx) => (
+                <MenuItem key={idx} value={idx}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={n.part} size={20} />
                     <span style={{ marginRight: "1em" }}>
@@ -578,7 +539,7 @@ function PartLoadStationCycleChart() {
               <MenuItem key={-1} value={FilterAnyLoadKey}>
                 <em>Any Station</em>
               </MenuItem>
-              {loadStationNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {points.allLoadStationNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -597,7 +558,7 @@ function PartLoadStationCycleChart() {
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {palletNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {points.allPalletNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>

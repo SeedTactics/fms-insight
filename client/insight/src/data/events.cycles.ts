@@ -34,7 +34,13 @@ import * as api from "../network/api";
 import { durationToMinutes } from "../util/parseISODuration";
 import { HashMap, HashSet, Vector, Option, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
-import { differenceInSeconds } from "date-fns";
+import {
+  activeMinutes,
+  EstimatedCycleTimes,
+  LogEntryWithSplitElapsed,
+  splitElapsedLoadTime,
+  StatisticalCycleTime,
+} from "../cell-status/estimated-cycle-times";
 
 export interface CycleData {
   readonly x: Date;
@@ -59,13 +65,6 @@ export interface PartCycleData extends CycleData {
   readonly isLabor: boolean;
   readonly material: ReadonlyArray<Readonly<api.ILogMaterial>>;
   readonly operator: string;
-}
-
-export interface StatisticalCycleTime {
-  readonly medianMinutesForSingleMat: number;
-  readonly MAD_belowMinutes: number; // MAD of points below the median
-  readonly MAD_aboveMinutes: number; // MAD of points above the median
-  readonly expectedCycleMinutesForSingleMat: number;
 }
 
 export class PartAndProcess {
@@ -137,43 +136,14 @@ export class StationOperation {
   }
 }
 
-export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCycleTime>;
-
-export interface ProgramToolUseInSingleCycle {
-  readonly tools: ReadonlyArray<{
-    readonly toolName: string;
-    readonly cycleUsageMinutes: number;
-    readonly toolChanged: boolean;
-  }>;
-}
-
-export type ToolUsage = HashMap<PartAndStationOperation, Vector<ProgramToolUseInSingleCycle>>;
-
 export interface CycleState {
   readonly part_cycles: Vector<PartCycleData>;
   readonly by_pallet: HashMap<string, ReadonlyArray<PalletCycleData>>;
-
-  readonly part_and_proc_names: HashSet<PartAndProcess>;
-  readonly part_and_operation_names: HashSet<PartAndStationOperation>;
-  readonly machine_groups: HashSet<string>;
-  readonly machine_names: HashSet<string>;
-  readonly loadstation_names: HashSet<string>;
-  readonly pallet_names: HashSet<string>;
-  readonly estimatedCycleTimes: EstimatedCycleTimes;
-  readonly tool_usage: ToolUsage;
 }
 
 export const initial: CycleState = {
   part_cycles: Vector.empty(),
-  part_and_proc_names: HashSet.empty(),
-  part_and_operation_names: HashSet.empty(),
   by_pallet: HashMap.empty(),
-  machine_groups: HashSet.empty(),
-  machine_names: HashSet.empty(),
-  loadstation_names: HashSet.empty(),
-  pallet_names: HashSet.empty(),
-  estimatedCycleTimes: HashMap.empty(),
-  tool_usage: HashMap.empty(),
 };
 
 export enum ExpireOldDataType {
@@ -193,171 +163,6 @@ export function stat_name_and_num(stationGroup: string, stationNumber: number): 
   }
 }
 
-// Assume: samples come from two distributions:
-//  - the program runs without interruption, giving a guassian iid around the cycle time.
-//  - the program is interrupted or stopped, which adds a random amount to the program
-//    and results in an outlier.
-//  - the program doesn't run at all, which results in a random short cycle time.
-// We use median absolute deviation to detect outliers, remove the outliers,
-// then compute average to find cycle time.
-
-export function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
-  if (s.medianMinutesForSingleMat === 0) {
-    return false;
-  }
-  if (mins < s.medianMinutesForSingleMat) {
-    return (s.medianMinutesForSingleMat - mins) / s.MAD_belowMinutes > 2;
-  } else {
-    return (mins - s.medianMinutesForSingleMat) / s.MAD_aboveMinutes > 2;
-  }
-}
-
-function median(vals: LazySeq<number>): number {
-  const sorted = vals.toArray().sort();
-  const cnt = sorted.length;
-  if (cnt === 0) {
-    return 0;
-  }
-  const half = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 0) {
-    // average two middle
-    return (sorted[half - 1] + sorted[half]) / 2;
-  } else {
-    // return middle
-    return sorted[half];
-  }
-}
-
-function estimateCycleTimes(cycles: Vector<number>): StatisticalCycleTime {
-  // compute median
-  const medianMinutes = median(LazySeq.ofIterable(cycles));
-
-  // absolute deviation from median, but use different values for below and above
-  // median.  Below is assumed to be from fake cycles and above is from interrupted programs.
-  // since we assume gaussian, use consistantcy constant of 1.4826
-
-  let madBelowMinutes =
-    1.4826 *
-    median(
-      LazySeq.ofIterable(cycles)
-        .filter((x) => x <= medianMinutes)
-        .map((x) => medianMinutes - x)
-    );
-  // clamp at 15 seconds
-  if (madBelowMinutes < 0.25) {
-    madBelowMinutes = 0.25;
-  }
-
-  let madAboveMinutes =
-    1.4826 *
-    median(
-      LazySeq.ofIterable(cycles)
-        .filter((x) => x >= medianMinutes)
-        .map((x) => x - medianMinutes)
-    );
-  // clamp at 15 seconds
-  if (madAboveMinutes < 0.25) {
-    madAboveMinutes = 0.25;
-  }
-
-  const statCycleTime = {
-    medianMinutesForSingleMat: medianMinutes,
-    MAD_belowMinutes: madBelowMinutes,
-    MAD_aboveMinutes: madAboveMinutes,
-    expectedCycleMinutesForSingleMat: 0,
-  };
-
-  // filter to only inliers
-  const inliers = cycles.filter((x) => !isOutlier(statCycleTime, x)).toArray();
-  // compute average of inliers
-  const expectedCycleMinutesForSingleMat = inliers.reduce((sum, x) => sum + x, 0) / inliers.length;
-
-  return { ...statCycleTime, expectedCycleMinutesForSingleMat };
-}
-
-export function chunkCyclesWithSimilarEndTime<T>(cycles: Vector<T>, getTime: (c: T) => Date): Vector<ReadonlyArray<T>> {
-  const sorted = cycles.sortOn((c) => getTime(c).getTime());
-  return Vector.ofIterable(
-    LazySeq.ofIterator(function* () {
-      let chunk: Array<T> = [];
-      for (const c of sorted) {
-        if (chunk.length === 0) {
-          chunk = [c];
-        } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {
-          chunk.push(c);
-        } else {
-          yield chunk;
-          chunk = [c];
-        }
-      }
-      if (chunk.length > 0) {
-        yield chunk;
-      }
-    })
-  );
-}
-
-interface LogEntryWithSplitElapsed<T> {
-  readonly cycle: T;
-  readonly elapsedForSingleMaterialMinutes: number;
-}
-
-export function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<unknown> }>(
-  chunk: ReadonlyArray<T>,
-  getElapsedMins: (c: T) => number,
-  getActiveMins: (c: T) => number
-): ReadonlyArray<LogEntryWithSplitElapsed<T>> {
-  let totalActiveMins = 0;
-  let totalMatCount = 0;
-  let allEventsHaveActive = true;
-  for (const cycle of chunk) {
-    if (getActiveMins(cycle) < 0) {
-      allEventsHaveActive = false;
-    }
-    totalMatCount += cycle.material.length;
-    totalActiveMins += getActiveMins(cycle);
-  }
-
-  if (allEventsHaveActive && totalActiveMins > 0) {
-    //split by active.  First multiply by (active/totalActive) ratio to get fraction of elapsed
-    //for this cycle, then by material count to get per-material
-    return chunk.map((cycle) => ({
-      cycle,
-      elapsedForSingleMaterialMinutes:
-        (getElapsedMins(cycle) * getActiveMins(cycle)) / totalActiveMins / cycle.material.length,
-    }));
-  }
-
-  // split equally among all material
-  if (totalMatCount > 0) {
-    return chunk.map((cycle) => ({
-      cycle,
-      elapsedForSingleMaterialMinutes: getElapsedMins(cycle) / totalMatCount,
-    }));
-  }
-
-  // only when no events have material, which should never happen
-  return chunk.map((cycle) => ({
-    cycle,
-    elapsedForSingleMaterialMinutes: getElapsedMins(cycle),
-  }));
-}
-
-function splitElapsedLoadTime<T extends { material: ReadonlyArray<unknown> }>(
-  cycles: LazySeq<T>,
-  getLuL: (c: T) => number,
-  getTime: (c: T) => Date,
-  getElapsedMins: (c: T) => number,
-  getActiveMins: (c: T) => number
-): LazySeq<LogEntryWithSplitElapsed<T>> {
-  const loadEventsByLUL = cycles.groupBy(getLuL).mapValues((cs) => chunkCyclesWithSimilarEndTime(cs, getTime));
-
-  return LazySeq.ofIterable(loadEventsByLUL.valueIterable())
-    .flatMap((cycles) => cycles)
-    .map((cs) => splitElapsedTimeAmongChunk(cs, getElapsedMins, getActiveMins))
-    .flatMap((chunk) => chunk);
-}
-
 export function splitElapsedLoadTimeAmongCycles(
   cycles: LazySeq<PartCycleData>
 ): LazySeq<LogEntryWithSplitElapsed<PartCycleData>> {
@@ -370,79 +175,14 @@ export function splitElapsedLoadTimeAmongCycles(
   );
 }
 
-function estimateCycleTimesOfParts(cycles: Iterable<Readonly<api.ILogEntry>>): EstimatedCycleTimes {
-  const machines = LazySeq.ofIterable(cycles)
-    .filter((c) => c.type === api.LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
-    .groupBy((c) => PartAndStationOperation.ofLogCycle(c))
-    .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length))
-    );
-
-  const loads = splitElapsedLoadTime(
-    LazySeq.ofIterable(cycles).filter(
-      (c) => c.type === api.LogType.LoadUnloadCycle && !c.startofcycle && c.material.length > 0
-    ),
-    (c) => c.locnum,
-    (c) => c.endUTC,
-    (c) => durationToMinutes(c.elapsed),
-    (c) => (c.active === "" ? -1 : durationToMinutes(c.active))
-  )
-    .groupBy((c) => PartAndStationOperation.ofLogCycle(c.cycle))
-    .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(cyclesForPartAndStat.map((c) => c.elapsedForSingleMaterialMinutes))
-    );
-
-  return machines.mergeWith(loads, (s1, _) => s1);
-}
-
-function activeMinutes(cycle: Readonly<api.ILogEntry>, stats: Option<StatisticalCycleTime>): number {
-  const aMins = durationToMinutes(cycle.active);
-  if (cycle.active === "" || aMins <= 0 || cycle.material.length === 0) {
-    return stats.map((s) => s.expectedCycleMinutesForSingleMat).getOrElse(0) * cycle.material.length;
-  } else {
-    return aMins;
-  }
-}
-
-function process_tools(cycle: Readonly<api.ILogEntry>, toolUsage: ToolUsage): ToolUsage {
-  if (cycle.tools === undefined || cycle.type !== api.LogType.MachineCycle) {
-    return toolUsage;
-  }
-
-  const toolsUsedInCycle = LazySeq.ofObject(cycle.tools)
-    .map(([toolName, use]) => ({
-      toolName,
-      cycleUsageMinutes: use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle),
-      toolChanged: use.toolChangeOccurred === true,
-    }))
-    .toArray();
-
-  if (toolsUsedInCycle.length === 0) {
-    return toolUsage;
-  }
-
-  const key = PartAndStationOperation.ofLogCycle(cycle);
-  return toolUsage.putWithMerge(key, Vector.of({ tools: toolsUsedInCycle }), (oldV, newV) =>
-    oldV.drop(Math.max(0, oldV.length() - 4)).appendAll(newV)
-  );
-}
-
 export function process_events(
   expire: ExpireOldData,
+  estimatedCycleTimes: EstimatedCycleTimes,
   newEvts: ReadonlyArray<Readonly<api.ILogEntry>>,
-  initialLoad: boolean,
   st: CycleState
 ): CycleState {
   let allPartCycles = st.part_cycles;
   let pals = st.by_pallet;
-
-  let estimatedCycleTimes: EstimatedCycleTimes;
-  if (initialLoad) {
-    estimatedCycleTimes = estimateCycleTimesOfParts(newEvts);
-  } else {
-    estimatedCycleTimes = st.estimatedCycleTimes;
-  }
-  let toolUsage = st.tool_usage;
 
   const invalidateOldCyclesOnEvent = expire.type === ExpireOldDataType.ExpireEarlierThan;
 
@@ -471,47 +211,6 @@ export function process_events(
       break;
   }
 
-  let partNames = st.part_and_proc_names;
-  let operationNames = st.part_and_operation_names;
-  let machNames = st.machine_names;
-  let machineGroups = st.machine_groups;
-  let lulNames = st.loadstation_names;
-  let palNames = st.pallet_names;
-  for (const e of newEvts) {
-    for (const m of e.material) {
-      const p = new PartAndProcess(m.part, m.proc);
-      if (!partNames.contains(p)) {
-        partNames = partNames.add(p);
-      }
-    }
-    if (e.material.length > 0) {
-      const op = PartAndStationOperation.ofLogCycle(e);
-      if (!operationNames.contains(op)) {
-        operationNames = operationNames.add(op);
-      }
-    }
-    if (e.pal !== "") {
-      if (!palNames.contains(e.pal)) {
-        palNames = palNames.add(e.pal);
-      }
-    }
-    if (e.type === api.LogType.MachineCycle) {
-      if (!machineGroups.contains(e.loc)) {
-        machineGroups = machineGroups.add(e.loc);
-      }
-      const machName = stat_name_and_num(e.loc, e.locnum);
-      if (!machNames.contains(machName)) {
-        machNames = machNames.add(machName);
-      }
-    }
-    if (e.type === api.LogType.LoadUnloadCycle) {
-      const n = stat_name_and_num(e.loc, e.locnum);
-      if (!lulNames.contains(n)) {
-        lulNames = lulNames.add(n);
-      }
-    }
-  }
-
   const newCycles: LazySeq<PartCycleData> = LazySeq.ofIterable(newEvts)
     .filter((c) => !c.startofcycle && (c.type === api.LogType.LoadUnloadCycle || c.type === api.LogType.MachineCycle))
     .map((cycle) => {
@@ -522,14 +221,11 @@ export function process_events(
           ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
           : Option.none<StatisticalCycleTime>();
       const elapsed = durationToMinutes(cycle.elapsed);
-      if (stats.isSome() && !isOutlier(stats.get(), elapsed)) {
-        toolUsage = process_tools(cycle, toolUsage);
-      }
       return {
         x: cycle.endUTC,
         y: elapsed,
         cntr: cycle.counter,
-        activeMinutes: activeMinutes(cycle, stats),
+        activeMinutes: activeMinutes(cycle, stats.getOrNull()),
         medianCycleMinutes: stats.map((s) => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
         MAD_aboveMinutes: stats.map((s) => s.MAD_aboveMinutes).getOrElse(0),
         part: part,
@@ -585,27 +281,10 @@ export function process_events(
     });
   }
 
-  const newSt: CycleState = {
-    ...st,
+  return {
     part_cycles: allPartCycles,
-    part_and_proc_names: partNames,
-    part_and_operation_names: operationNames,
     by_pallet: pals,
-    machine_groups: machineGroups,
-    machine_names: machNames,
-    loadstation_names: lulNames,
-    pallet_names: palNames,
-    tool_usage: toolUsage,
   };
-
-  if (initialLoad) {
-    return {
-      ...newSt,
-      estimatedCycleTimes: estimatedCycleTimes,
-    };
-  } else {
-    return newSt;
-  }
 }
 
 export function process_swap(swap: Readonly<api.IEditMaterialInLogEvents>, st: CycleState): CycleState {

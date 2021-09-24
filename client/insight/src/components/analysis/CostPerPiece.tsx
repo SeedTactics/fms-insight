@@ -49,7 +49,7 @@ import BuildIcon from "@material-ui/icons/Build";
 import CallSplit from "@material-ui/icons/CallSplit";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { HashSet, Vector } from "prelude-ts";
+import { Vector } from "prelude-ts";
 import { LazySeq } from "../../util/lazyseq";
 import * as localForage from "localforage";
 import { CircularProgress } from "@material-ui/core";
@@ -167,7 +167,7 @@ function LaborCost(props: LaborCostProps) {
 }
 
 interface StationCostInputProps {
-  readonly statGroups: HashSet<string>;
+  readonly statGroups: ReadonlyArray<string>;
   readonly machineCostPerYear: MachineCostPerYear;
   readonly setMachineCostPerYear: (m: MachineCostPerYear) => void;
 }
@@ -203,7 +203,7 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
 function StationCostInputs(props: StationCostInputProps) {
   return (
     <>
-      {props.statGroups.toArray({ sortOn: (x) => x }).map((s, idx) => (
+      {props.statGroups.map((s, idx) => (
         <SingleStationCostInput key={idx} {...props} machineGroup={s} />
       ))}
     </>
@@ -473,12 +473,16 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
 
   const period = useRecoilValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
-  const statGroups = useSelector((s) =>
-    period.type === "Last30" ? s.Events.last30.cycles.machine_groups : s.Events.selected_month.cycles.machine_groups
-  );
   const cycles = useSelector((s) =>
     period.type === "Last30" ? s.Events.last30.cycles.part_cycles : s.Events.selected_month.cycles.part_cycles
   );
+  const statGroups = React.useMemo(() => {
+    const groups = new Set<string>();
+    for (const c of cycles) {
+      groups.add(c.stationGroup);
+    }
+    return Array.from(groups).sort((a, b) => a.localeCompare(b));
+  }, [cycles]);
   const matIds = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
   const thirtyDaysAgo = useSelector((s) => s.Events.last30.thirty_days_ago);

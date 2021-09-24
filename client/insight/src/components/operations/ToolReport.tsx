@@ -52,6 +52,7 @@ import {
   toolReportMachineFilter,
   copyToolReportToClipboard,
   toolReportRefreshTime,
+  machinesWithTools,
 } from "../../data/tools-programs";
 import { TableBody } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";
@@ -68,7 +69,6 @@ import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import { Select } from "@material-ui/core";
 import ImportExport from "@material-ui/icons/ImportExport";
 import { MenuItem } from "@material-ui/core";
-import { useSelector } from "../../store/store";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -228,7 +228,7 @@ export function ToolSummaryTable(): JSX.Element {
   const tools = useRecoilValue(currentToolReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-  const machineNames = useSelector((st) => st.Events.last30.cycles.machine_names);
+  const machineNames = useRecoilValue(machinesWithTools);
   const tableRowStyles = useRowStyles();
 
   if (tools === null) {
@@ -297,7 +297,7 @@ export function ToolSummaryTable(): JSX.Element {
               <MenuItem value={FilterAnyMachineKey}>
                 <em>All Machines</em>
               </MenuItem>
-              {machineNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {machineNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>

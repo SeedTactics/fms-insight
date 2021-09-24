@@ -50,13 +50,13 @@ import { WithStyles } from "@material-ui/core";
 import { withStyles } from "@material-ui/core";
 import { createStyles } from "@material-ui/core";
 import { HashMap } from "prelude-ts";
-import { StatisticalCycleTime } from "../../data/events.cycles";
 import { Dialog } from "@material-ui/core";
 import { DialogContent } from "@material-ui/core";
 import { DialogActions } from "@material-ui/core";
 import { TextField } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";
 import ZoomIn from "@material-ui/icons/ZoomIn";
+import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times";
 
 interface YZoomRange {
   readonly y_low: number;
