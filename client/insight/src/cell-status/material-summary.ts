@@ -214,7 +214,7 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
     mats = mats.put(logMat.id, mat);
   }
 
-  return { ...st, matsById: mats, matIdsForJob: jobs };
+  return { matsById: mats, matIdsForJob: jobs };
 }
 
 function filter_old(expire: Date, { matIdsForJob, matsById }: MatSummaryState): MatSummaryState {

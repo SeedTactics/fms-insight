@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -78,50 +78,6 @@ export function conduit<T>(transform: (trans: TransactionInterface_UNSTABLE, val
   return { transform };
 }
 
-type Destructor = () => void;
-
-export interface SourceInterface {
-  readonly send: <T>(conduit: RecoilConduit<T>, val: T) => void;
-}
-
-export type RecoilSource =
-  | { effect: (interf: SourceInterface) => void | Destructor }
-  | { effectWithRef: (interf: SourceInterface, ref: React.MutableRefObject<unknown>) => void | Destructor };
-
-export function source(effect: (interf: SourceInterface) => void | Destructor): RecoilSource {
-  return { effect };
-}
-
-export function sourceWithRef<Ref>(
-  effect: (interf: SourceInterface, ref: React.MutableRefObject<Ref | undefined>) => void | Destructor
-): RecoilSource {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-  return { effectWithRef: effect as any };
-}
-
-export function useRecoilSource(source: RecoilSource): void {
-  const ref = React.useRef(undefined);
-  const send = useRecoilTransaction_UNSTABLE(
-    (t) =>
-      <T>(conduit: RecoilConduit<T>, val: T) =>
-        conduit.transform(t, val)
-  );
-  React.useEffect(() => {
-    if ("effect" in source) {
-      return source.effect({
-        send,
-      });
-    } else {
-      return source.effectWithRef(
-        {
-          send,
-        },
-        ref
-      );
-    }
-  }, []);
-}
-
 export function applyConduitToSnapshot<T>(snapshot: Snapshot, conduit: RecoilConduit<T>, val: T): Snapshot {
   return snapshot.map((ms) =>
     conduit.transform(
@@ -133,4 +89,31 @@ export function applyConduitToSnapshot<T>(snapshot: Snapshot, conduit: RecoilCon
       val
     )
   );
+}
+
+type Destructor = () => void;
+
+export interface SourceInterface {
+  readonly push: <T>(conduit: RecoilConduit<T>, val: T) => void;
+}
+
+export interface RecoilSource {
+  effect: (interf: SourceInterface) => void | Destructor;
+}
+
+export function source(effect: (interf: SourceInterface) => void | Destructor): RecoilSource {
+  return { effect };
+}
+
+export function useRecoilSource(source: RecoilSource): void {
+  const push = useRecoilTransaction_UNSTABLE(
+    (t) =>
+      <T>(conduit: RecoilConduit<T>, val: T) =>
+        conduit.transform(t, val)
+  );
+  React.useEffect(() => {
+    return source.effect({
+      push,
+    });
+  }, []);
 }

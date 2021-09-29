@@ -42,6 +42,7 @@ import * as schJobs from "./scheduled-jobs";
 import * as buffers from "./buffers";
 import * as currentSt from "./current-status";
 import * as insp from "./inspections";
+import * as mats from "./material-summary";
 import * as names from "./names";
 import * as estimated from "./estimated-cycle-times";
 import * as tool from "./tool-usage";
@@ -67,6 +68,7 @@ export const onServerEvent = conduit<ServerEventAndTime>(
     schJobs.updateLast30Jobs.transform(t, evt);
     buffers.updateLast30Buffer.transform(t, evt);
     currentSt.updateCurrentStatus.transform(t, evt);
+    mats.updateLast30MatSummary.transform(t, evt);
     insp.updateLast30Inspections.transform(t, evt);
     names.updateNames.transform(t, evt);
     tool.updateLast30ToolUse.transform(t, evt);
@@ -94,6 +96,7 @@ export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
     estimated.setLast30EstimatedCycleTimes.transform(t, log);
     buffers.setLast30Buffer.transform(t, log);
     insp.setLast30Inspections.transform(t, log);
+    mats.setLast30MatSummary.transform(t, log);
     names.setNamesFromLast30Evts.transform(t, log);
     tool.setLast30ToolUse.transform(t, log);
     palCycles.setLast30PalletCycles.transform(t, log);
@@ -126,6 +129,7 @@ export const onLoadSpecificMonthLog = conduit<ReadonlyArray<Readonly<ILogEntry>>
     estimated.setSpecificMonthEstimatedCycleTimes.transform(t, log);
     buffers.setSpecificMonthBuffer.transform(t, log);
     insp.setSpecificMonthInspections.transform(t, log);
+    mats.setSpecificMonthMatSummary.transform(t, log);
     palCycles.setSpecificMonthPalletCycles.transform(t, log);
     statCycles.setSpecificMonthStationCycles.transform(t, log);
   }
