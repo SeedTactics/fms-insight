@@ -576,6 +576,7 @@ export interface AddNewMaterialToQueueData {
   readonly serial?: string;
   readonly operator: string | null;
   readonly onNewMaterial?: (mat: Readonly<IInProcessMaterial>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readonly onError?: (reason: any) => void;
 }
 
@@ -612,6 +613,7 @@ export interface AddNewCastingToQueueData {
   readonly serials?: ReadonlyArray<string>;
   readonly operator: string | null;
   readonly onNewMaterial?: (mats: ReadonlyArray<Readonly<IInProcessMaterial>>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readonly onError?: (reason: any) => void;
 }
 
