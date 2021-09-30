@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import ReconnectingWebSocket from "reconnecting-websocket";
 import { ServerEvent } from "./api";
 import { BackendHost, JobsBackend, LogBackend } from "./backend";
-import { User } from "oidc-client";
 import { fmsInformation } from "./server-settings";
 import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback, useRecoilValueLoadable } from "recoil";
 import { useEffect, useRef } from "react";
@@ -87,58 +86,69 @@ function loadMissed(
 }
 
 export function WebsocketConnection(): null {
-  const fmsInfoLoadable = useRecoilValueLoadable(fmsInformation);
-  const websocketRef = useRef<ReconnectingWebSocket | null>(null);
-
-  const open = useRecoilCallback(
+  const onOpen = useRecoilCallback(
     ({ set, snapshot, transact_UNSTABLE }) =>
-      (user: User | null) => {
-        set(websocketReconnectingAtom, true);
-        const loc = window.location;
-        let uri: string;
-        if (loc.protocol === "https:") {
-          uri = "wss:";
-        } else {
-          uri = "ws:";
-        }
-        uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
-
-        if (user) {
-          uri += "?token=" + encodeURIComponent(user.access_token || user.id_token);
-        }
-
+      () => {
         function push<T>(c: RecoilConduit<T>): (t: T) => void {
           return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
         }
-
-        const websocket = new ReconnectingWebSocket(uri);
-        websocket.onopen = () => {
-          set(errorLoadingLast30RW, null);
-          const lastSeenCntr = snapshot.getLoadable(lastEventCounter).valueMaybe();
-          if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
-            loadMissed(lastSeenCntr, set, push);
-          } else {
-            loadInitial(set, push);
-          }
-        };
-        websocket.onclose = () => {
-          set(websocketReconnectingAtom, true);
-        };
-        websocket.onmessage = (evt) => {
-          const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
-          push(onServerEvent)({ evt: serverEvt, now: new Date(), expire: true });
-        };
-
-        websocketRef.current = websocket;
+        const lastSeenCntr = snapshot.getLoadable(lastEventCounter).valueMaybe();
+        set(websocketReconnectingAtom, true);
+        set(errorLoadingLast30RW, null);
+        if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
+          loadMissed(lastSeenCntr, set, push);
+        } else {
+          loadInitial(set, push);
+        }
       },
     []
   );
+
+  const onClose = useRecoilCallback(
+    ({ set }) =>
+      () => {
+        set(websocketReconnectingAtom, true);
+      },
+    []
+  );
+
+  const onMessage = useRecoilCallback(
+    ({ transact_UNSTABLE }) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (evt: MessageEvent<any>) => {
+        const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
+        transact_UNSTABLE((trans) => onServerEvent.transform(trans, { evt: serverEvt, now: new Date(), expire: true }));
+      },
+    []
+  );
+
+  const fmsInfoLoadable = useRecoilValueLoadable(fmsInformation);
+  const websocketRef = useRef<ReconnectingWebSocket | null>(null);
 
   useEffect(() => {
     if (fmsInfoLoadable.state !== "hasValue") return;
     if (websocketRef.current) return;
 
-    open(fmsInfoLoadable.valueOrThrow().user ?? null);
+    const user = fmsInfoLoadable.valueOrThrow().user ?? null;
+
+    const loc = window.location;
+    let uri: string;
+    if (loc.protocol === "https:") {
+      uri = "wss:";
+    } else {
+      uri = "ws:";
+    }
+    uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
+
+    if (user) {
+      uri += "?token=" + encodeURIComponent(user.access_token || user.id_token);
+    }
+
+    const websocket = new ReconnectingWebSocket(uri);
+    websocket.onopen = onOpen;
+    websocket.onclose = onClose;
+    websocket.onmessage = onMessage;
+    websocketRef.current = websocket;
 
     return () => {
       if (websocketRef.current) {

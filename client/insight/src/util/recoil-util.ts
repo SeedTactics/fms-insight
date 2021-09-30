@@ -90,30 +90,3 @@ export function applyConduitToSnapshot<T>(snapshot: Snapshot, conduit: RecoilCon
     )
   );
 }
-
-type Destructor = () => void;
-
-export interface SourceInterface {
-  readonly push: <T>(conduit: RecoilConduit<T>, val: T) => void;
-}
-
-export interface RecoilSource {
-  effect: (interf: SourceInterface) => void | Destructor;
-}
-
-export function source(effect: (interf: SourceInterface) => void | Destructor): RecoilSource {
-  return { effect };
-}
-
-export function useRecoilSource(source: RecoilSource): void {
-  const push = useRecoilTransaction_UNSTABLE(
-    (t) =>
-      <T>(conduit: RecoilConduit<T>, val: T) =>
-        conduit.transform(t, val)
-  );
-  React.useEffect(() => {
-    return source.effect({
-      push,
-    });
-  }, []);
-}
