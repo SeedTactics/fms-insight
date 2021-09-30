@@ -168,13 +168,14 @@ function PartMachineCycleChart() {
       }
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
+  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
   const plannedSeries = React.useMemo(() => {
-    if (selectedOperation !== null) {
+    if (curOperation) {
       return plannedOperationSeries(points, false);
     } else {
       return undefined;
     }
-  }, [points, selectedOperation]);
+  }, [points, curOperation]);
 
   if (demo && selectedPart !== undefined && points.allPartAndProcNames.length !== 0) {
     // Select below compares object equality, but it takes time to load the demo data
@@ -248,8 +249,8 @@ function PartMachineCycleChart() {
               displayEmpty
               value={
                 selectedPart
-                  ? selectedOperation
-                    ? points.allMachineOperations.findIndex((o) => selectedOperation.equals(o))
+                  ? curOperation
+                    ? points.allMachineOperations.findIndex((o) => curOperation.equals(o))
                     : -1
                   : selectedMachine
               }
@@ -320,9 +321,9 @@ function PartMachineCycleChart() {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            stats={selectedOperation ? estimatedCycleTimes.get(selectedOperation).getOrUndefined() : undefined}
+            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
             partCntPerPoint={
-              selectedOperation
+              curOperation
                 ? points.data
                     .findAny(() => true)
                     .map(([, cs]) => cs[0]?.material.length)

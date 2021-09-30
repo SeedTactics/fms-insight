@@ -187,6 +187,7 @@ export function filterStationCycles(
           return stat_name_and_num(e.stationGroup, e.stationNumber);
         }
       })
+      .filter((_, e) => !e.isEmpty())
       .mapValues((e) => e.toArray()),
   };
 }
@@ -257,7 +258,8 @@ export function loadOccupancyCycles(
             }
           })
           .toArray()
-      ),
+      )
+      .filter((_, e) => e.length > 0),
   };
 }
 
@@ -324,7 +326,8 @@ export function estimateLulOperations(
             }
           })
           .toArray()
-      ),
+      )
+      .filter((_, e) => e.length > 0),
   };
 }
 

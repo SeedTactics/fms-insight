@@ -259,13 +259,14 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
       });
     }
   }, [cycles, props.showLabor, selectedPart, selectedPallet, selectedOperation, showGraph]);
+  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
   const plannedSeries = React.useMemo(() => {
-    if (selectedOperation !== null) {
+    if (curOperation) {
       return plannedOperationSeries(points, false);
     } else {
       return undefined;
     }
-  }, [points, selectedOperation]);
+  }, [points, curOperation]);
 
   return (
     <Card raised>
@@ -331,9 +332,7 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
                 name="Station-Cycles-cycle-chart-station-select"
                 autoWidth
                 displayEmpty
-                value={
-                  selectedOperation ? points.allMachineOperations.findIndex((o) => selectedOperation.equals(o)) : -1
-                }
+                value={curOperation ? points.allMachineOperations.findIndex((o) => curOperation.equals(o)) : -1}
                 style={{ marginLeft: "1em" }}
                 onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
               >
@@ -381,9 +380,9 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={chartZoom.zoom}
             set_date_zoom_range={setChartZoom}
-            stats={selectedOperation ? estimatedCycleTimes.get(selectedOperation).getOrUndefined() : undefined}
+            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
             partCntPerPoint={
-              selectedOperation
+              curOperation
                 ? points.data
                     .findAny(() => true)
                     .map(([, cs]) => cs[0]?.material.length)
