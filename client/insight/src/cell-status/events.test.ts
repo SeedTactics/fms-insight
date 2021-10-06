@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { fakeCycle } from "../../test/events.fake";
 import { Snapshot, snapshot_UNSTABLE } from "recoil";
 import { applyConduitToSnapshot } from "../util/recoil-util";
-import { onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading";
+import { lastEventCounter, onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading";
 import { addDays } from "date-fns";
 import { last30BufferEntries, specificMonthBufferEntries } from "./buffers";
 import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "./estimated-cycle-times";
@@ -55,6 +55,7 @@ function checkLast30(snapshot: Snapshot, msg: string) {
   expect(snapshot.getLoadable(last30PalletCycles).valueOrThrow()).toMatchSnapshot(msg + " - pallet cycles");
   expect(snapshot.getLoadable(last30StationCycles).valueOrThrow()).toMatchSnapshot(msg + " - station cycles");
   expect(snapshot.getLoadable(last30ToolUse).valueOrThrow()).toMatchSnapshot(msg + " - tool use");
+  expect(snapshot.getLoadable(lastEventCounter).valueOrThrow()).toMatchSnapshot(msg + " - event counter");
 }
 
 function twentySevenTwoAndTodayCycles(now: Date) {
@@ -113,6 +114,7 @@ it("processes last 30 events", () => {
     proc: 1,
     pallet: "palcc",
     includeTools: true,
+    counter: 50,
   });
 
   for (const c of sixDaysCycle) {

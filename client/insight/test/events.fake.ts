@@ -194,6 +194,7 @@ export function fakeCycle({
   pallet,
   noInspections,
   includeTools,
+  counter,
 }: {
   time: Date;
   machineTime: number;
@@ -202,11 +203,12 @@ export function fakeCycle({
   pallet?: string;
   noInspections?: boolean;
   includeTools?: boolean;
+  counter?: number;
 }): ReadonlyArray<ILogEntry> {
   const pal = pallet || "pal" + faker.random.alphaNumeric();
   const material = [fakeMaterial(part, proc)];
 
-  let counter = 1;
+  counter = counter ?? 1;
   time = addMinutes(time, 5);
 
   const es: ILogEntry[] = [];
@@ -230,7 +232,7 @@ export function fakeCycle({
   time = addMinutes(time, 5);
 
   addStartAndEnd(es, {
-    counter: 100,
+    counter,
     material,
     pal,
     type: LogType.PalletInStocker,

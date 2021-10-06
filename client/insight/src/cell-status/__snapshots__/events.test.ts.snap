@@ -803,6 +803,8 @@ Map {
 }
 `;
 
+exports[`processes last 30 events: after filter - event counter 1`] = `59`;
+
 exports[`processes last 30 events: after filter - inspections 1`] = `
 Map {
   "PartAndInspType {
@@ -897,7 +899,7 @@ Map {
       "workorder": "work7",
     },
     Object {
-      "cntr": 8,
+      "cntr": 57,
       "inspType": "Insp1",
       "materialID": 56538,
       "part": "part111",
@@ -910,7 +912,7 @@ Map {
       "workorder": "work6",
     },
     Object {
-      "cntr": 9,
+      "cntr": 58,
       "inspType": "Insp1",
       "materialID": 56538,
       "part": "part111",
@@ -938,7 +940,7 @@ Map {
       "workorder": "work6",
     },
     Object {
-      "cntr": 10,
+      "cntr": 59,
       "inspType": "Insp1",
       "materialID": 56538,
       "part": "part111",
@@ -1237,7 +1239,7 @@ Array [
   Object {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
-    "cntr": 1,
+    "cntr": 50,
     "isLabor": true,
     "material": Array [
       Object {
@@ -1265,7 +1267,7 @@ Array [
   Object {
     "MAD_aboveMinutes": 0,
     "activeMinutes": 12,
-    "cntr": 5,
+    "cntr": 54,
     "isLabor": false,
     "material": Array [
       Object {
@@ -1293,7 +1295,7 @@ Array [
   Object {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
-    "cntr": 7,
+    "cntr": 56,
     "isLabor": true,
     "material": Array [
       Object {
@@ -1524,6 +1526,8 @@ Map {
   },
 }
 `;
+
+exports[`processes last 30 events: initial 27 days ago, two days ago, and today - event counter 1`] = `9`;
 
 exports[`processes last 30 events: initial 27 days ago, two days ago, and today - inspections 1`] = `
 Map {

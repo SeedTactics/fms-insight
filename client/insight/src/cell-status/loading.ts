@@ -56,7 +56,7 @@ export interface ServerEventAndTime {
 }
 
 const lastEventCounterRW = atom<number | null>({
-  key: "websocket-last-event-counter",
+  key: "log-last-event-counter",
   default: null,
 });
 export const lastEventCounter: RecoilValueReadOnly<number | null> = lastEventCounterRW;
