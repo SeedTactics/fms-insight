@@ -43,6 +43,7 @@ import {
   last30EstimatedCycleTimes,
   LogEntryWithSplitElapsed,
   PartAndStationOperation,
+  specificMonthEstimatedCycleTimes,
   splitElapsedLoadTime,
   StatisticalCycleTime,
 } from "./estimated-cycle-times";
@@ -201,9 +202,9 @@ export const updateLast30StationCycles = conduit<ServerEventAndTime>(
 
 export const setSpecificMonthStationCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    const estimatedCycleTimes = t.get(last30EstimatedCycleTimes);
+    const estimatedCycleTimes = t.get(specificMonthEstimatedCycleTimes);
     t.set(
-      last30StationCyclesRW,
+      specificMonthStationCyclesRW,
       L.from(LazySeq.ofIterable(log).collect((c) => convertLogToCycle(estimatedCycleTimes, c)))
     );
   }

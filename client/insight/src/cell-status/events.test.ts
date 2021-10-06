@@ -34,14 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { fakeCycle } from "../../test/events.fake";
 import { Snapshot, snapshot_UNSTABLE } from "recoil";
 import { applyConduitToSnapshot } from "../util/recoil-util";
-import { onLoadLast30Log, onServerEvent } from "./loading";
+import { onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading";
 import { addDays } from "date-fns";
-import { last30BufferEntries } from "./buffers";
-import { last30EstimatedCycleTimes } from "./estimated-cycle-times";
-import { last30Inspections } from "./inspections";
-import { last30MaterialSummary } from "./material-summary";
-import { last30PalletCycles } from "./pallet-cycles";
-import { last30StationCycles } from "./station-cycles";
+import { last30BufferEntries, specificMonthBufferEntries } from "./buffers";
+import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "./estimated-cycle-times";
+import { last30Inspections, specificMonthInspections } from "./inspections";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "./material-summary";
+import { last30PalletCycles, specificMonthPalletCycles } from "./pallet-cycles";
+import { last30StationCycles, specificMonthStationCycles } from "./station-cycles";
 import { last30ToolUse } from "./tool-usage";
 import { LogEntry } from "../network/api";
 
@@ -57,36 +57,43 @@ function checkLast30(snapshot: Snapshot, msg: string) {
   expect(snapshot.getLoadable(last30ToolUse).valueOrThrow()).toMatchSnapshot(msg + " - tool use");
 }
 
+function twentySevenTwoAndTodayCycles(now: Date) {
+  const twoDaysAgo = addDays(now, -2);
+  const twentySevenDaysAgo = addDays(now, -27);
+
+  return {
+    todayCycle: fakeCycle({
+      time: now,
+      machineTime: 30,
+      part: "part111",
+      proc: 1,
+      pallet: "palbb",
+      includeTools: true,
+    }),
+    twoDaysAgoCycle: fakeCycle({
+      time: twoDaysAgo,
+      machineTime: 24,
+      part: "part222",
+      proc: 1,
+      pallet: "palbb",
+      includeTools: true,
+    }),
+    twentySevenCycle: fakeCycle({
+      time: twentySevenDaysAgo,
+      machineTime: 18,
+      part: "part222",
+      proc: 2,
+      pallet: "palaa",
+      includeTools: true,
+    }),
+  };
+}
+
 it("processes last 30 events", () => {
   const now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
 
   // start with cycles from 27 days ago, 2 days ago, and today
-  const todayCycle = fakeCycle({
-    time: now,
-    machineTime: 30,
-    part: "part111",
-    proc: 1,
-    pallet: "palbb",
-    includeTools: true,
-  });
-  const twoDaysAgo = addDays(now, -2);
-  const twoDaysAgoCycle = fakeCycle({
-    time: twoDaysAgo,
-    machineTime: 24,
-    part: "part222",
-    proc: 1,
-    pallet: "palbb",
-    includeTools: true,
-  });
-  const twentySevenDaysAgo = addDays(now, -27);
-  const twentySevenCycle = fakeCycle({
-    time: twentySevenDaysAgo,
-    machineTime: 18,
-    part: "part222",
-    proc: 2,
-    pallet: "palaa",
-    includeTools: true,
-  });
+  const { twentySevenCycle, twoDaysAgoCycle, todayCycle } = twentySevenTwoAndTodayCycles(now);
 
   let snapshot = snapshot_UNSTABLE();
   snapshot = applyConduitToSnapshot(snapshot, onLoadLast30Log, [
@@ -122,4 +129,24 @@ it("processes last 30 events", () => {
   checkLast30(snapshot, "after filter");
 });
 
-// TODO: load specific month
+it("processes events in a specific month", () => {
+  const now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
+
+  const { twentySevenCycle, twoDaysAgoCycle, todayCycle } = twentySevenTwoAndTodayCycles(now);
+
+  let snapshot = snapshot_UNSTABLE();
+  snapshot = applyConduitToSnapshot(snapshot, onLoadSpecificMonthLog, [
+    ...twentySevenCycle,
+    ...twoDaysAgoCycle,
+    ...todayCycle,
+  ]);
+
+  expect(snapshot.getLoadable(specificMonthBufferEntries).valueOrThrow()).toMatchSnapshot("buffers");
+  expect(snapshot.getLoadable(specificMonthEstimatedCycleTimes).valueOrThrow()).toMatchSnapshot(
+    "estimated cycle times"
+  );
+  expect(snapshot.getLoadable(specificMonthInspections).valueOrThrow()).toMatchSnapshot("inspections");
+  expect(snapshot.getLoadable(specificMonthMaterialSummary).valueOrThrow()).toMatchSnapshot("material summary");
+  expect(snapshot.getLoadable(specificMonthPalletCycles).valueOrThrow()).toMatchSnapshot("pallet cycles");
+  expect(snapshot.getLoadable(specificMonthStationCycles).valueOrThrow()).toMatchSnapshot("station cycles");
+});

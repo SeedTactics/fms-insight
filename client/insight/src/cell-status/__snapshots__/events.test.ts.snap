@@ -1,5 +1,672 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`processes events in a specific month: buffers 1`] = `
+Array [
+  Object {
+    "buffer": Object {
+      "stockerNum": 4,
+      "type": "StockerWaitForMC",
+    },
+    "elapsedSeconds": 240,
+    "endTime": 2018-01-06T09:14:05.000Z,
+    "numMaterial": 1,
+  },
+  Object {
+    "buffer": Object {
+      "stockerNum": 4,
+      "type": "StockerWaitForMC",
+    },
+    "elapsedSeconds": 240,
+    "endTime": 2018-01-31T09:14:05.000Z,
+    "numMaterial": 1,
+  },
+  Object {
+    "buffer": Object {
+      "stockerNum": 4,
+      "type": "StockerWaitForMC",
+    },
+    "elapsedSeconds": 240,
+    "endTime": 2018-02-02T09:14:05.000Z,
+    "numMaterial": 1,
+  },
+]
+`;
+
+exports[`processes events in a specific month: estimated cycle times 1`] = `
+Map {
+  "PartAndStationOperation {
+  \\"operation\\": \\"UNLOAD\\",
+  \\"part\\": \\"part111\\",
+  \\"proc\\": 1,
+  \\"statGroup\\": \\"L/U\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"LOAD\\",
+  \\"part\\": \\"part222\\",
+  \\"proc\\": 1,
+  \\"statGroup\\": \\"L/U\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 6,
+    "medianMinutesForSingleMat": 6,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"progk\\",
+  \\"part\\": \\"part111\\",
+  \\"proc\\": 1,
+  \\"statGroup\\": \\"MC\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 30,
+    "medianMinutesForSingleMat": 30,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"LOAD\\",
+  \\"part\\": \\"part111\\",
+  \\"proc\\": 1,
+  \\"statGroup\\": \\"L/U\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 6,
+    "medianMinutesForSingleMat": 6,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"prog6\\",
+  \\"part\\": \\"part222\\",
+  \\"proc\\": 1,
+  \\"statGroup\\": \\"MC\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 24,
+    "medianMinutesForSingleMat": 24,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"progc\\",
+  \\"part\\": \\"part222\\",
+  \\"proc\\": 2,
+  \\"statGroup\\": \\"MC\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 18,
+    "medianMinutesForSingleMat": 18,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"UNLOAD\\",
+  \\"part\\": \\"part222\\",
+  \\"proc\\": 2,
+  \\"statGroup\\": \\"L/U\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"LOAD\\",
+  \\"part\\": \\"part222\\",
+  \\"proc\\": 2,
+  \\"statGroup\\": \\"L/U\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 6,
+    "medianMinutesForSingleMat": 6,
+  },
+  "PartAndStationOperation {
+  \\"operation\\": \\"UNLOAD\\",
+  \\"part\\": \\"part222\\",
+  \\"proc\\": 1,
+  \\"statGroup\\": \\"L/U\\",
+}" => Object {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+}
+`;
+
+exports[`processes events in a specific month: inspections 1`] = `
+Map {
+  "PartAndInspType {
+  \\"inspType\\": \\"Insp1\\",
+  \\"part\\": \\"part222\\",
+}" => Array [
+    Object {
+      "cntr": 8,
+      "inspType": "Insp1",
+      "materialID": 78875,
+      "part": "part222",
+      "result": Object {
+        "actualPath": Array [
+          Object {
+            "LoadStation": 1,
+            "MaterialID": 78875,
+            "Pallet": "6",
+            "Process": 1,
+            "Stops": Array [
+              Object {
+                "StationName": "MC",
+                "StationNum": 4,
+              },
+            ],
+            "UnloadStation": 2,
+          },
+        ],
+        "toInspect": true,
+        "type": 0,
+      },
+      "serial": "serialo",
+      "time": 2018-01-06T09:50:05.000Z,
+      "workorder": "workk",
+    },
+    Object {
+      "cntr": 9,
+      "inspType": "Insp1",
+      "materialID": 78875,
+      "part": "part222",
+      "result": Object {
+        "success": true,
+        "type": 2,
+      },
+      "serial": "serialo",
+      "time": 2018-01-06T09:57:05.000Z,
+      "workorder": "workk",
+    },
+    Object {
+      "cntr": 8,
+      "inspType": "Insp1",
+      "materialID": 41194,
+      "part": "part222",
+      "result": Object {
+        "toInspect": true,
+        "type": 1,
+      },
+      "serial": "serialq",
+      "time": 2018-01-31T09:56:05.000Z,
+      "workorder": "workk",
+    },
+    Object {
+      "cntr": 9,
+      "inspType": "Insp1",
+      "materialID": 41194,
+      "part": "part222",
+      "result": Object {
+        "actualPath": Array [
+          Object {
+            "LoadStation": 1,
+            "MaterialID": 41194,
+            "Pallet": "6",
+            "Process": 1,
+            "Stops": Array [
+              Object {
+                "StationName": "MC",
+                "StationNum": 4,
+              },
+            ],
+            "UnloadStation": 2,
+          },
+        ],
+        "toInspect": true,
+        "type": 0,
+      },
+      "serial": "serialq",
+      "time": 2018-01-31T09:56:10.000Z,
+      "workorder": "workk",
+    },
+    Object {
+      "cntr": 10,
+      "inspType": "Insp1",
+      "materialID": 41194,
+      "part": "part222",
+      "result": Object {
+        "success": true,
+        "type": 2,
+      },
+      "serial": "serialq",
+      "time": 2018-01-31T10:03:10.000Z,
+      "workorder": "workk",
+    },
+  ],
+  "PartAndInspType {
+  \\"inspType\\": \\"Insp1\\",
+  \\"part\\": \\"part111\\",
+}" => Array [
+    Object {
+      "cntr": 8,
+      "inspType": "Insp1",
+      "materialID": 62494,
+      "part": "part111",
+      "result": Object {
+        "toInspect": true,
+        "type": 1,
+      },
+      "serial": "serialo",
+      "time": 2018-02-02T10:02:05.000Z,
+      "workorder": "workv",
+    },
+    Object {
+      "cntr": 9,
+      "inspType": "Insp1",
+      "materialID": 62494,
+      "part": "part111",
+      "result": Object {
+        "actualPath": Array [
+          Object {
+            "LoadStation": 1,
+            "MaterialID": 62494,
+            "Pallet": "6",
+            "Process": 1,
+            "Stops": Array [
+              Object {
+                "StationName": "MC",
+                "StationNum": 4,
+              },
+            ],
+            "UnloadStation": 2,
+          },
+        ],
+        "toInspect": true,
+        "type": 0,
+      },
+      "serial": "serialo",
+      "time": 2018-02-02T10:02:10.000Z,
+      "workorder": "workv",
+    },
+    Object {
+      "cntr": 10,
+      "inspType": "Insp1",
+      "materialID": 62494,
+      "part": "part111",
+      "result": Object {
+        "success": true,
+        "type": 2,
+      },
+      "serial": "serialo",
+      "time": 2018-02-02T10:09:10.000Z,
+      "workorder": "workv",
+    },
+  ],
+}
+`;
+
+exports[`processes events in a specific month: material summary 1`] = `
+Object {
+  "matIdsForJob": Map {
+    "uniqf" => Array [
+      78875,
+    ],
+    "uniqn" => Array [
+      62494,
+    ],
+    "uniqv" => Array [
+      41194,
+    ],
+  },
+  "matsById": Map {
+    "41194" => Object {
+      "completedInspections": Object {
+        "Insp1": Object {
+          "success": true,
+          "time": 2018-01-31T10:03:10.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-01-31T10:03:10.000Z,
+      "jobUnique": "uniqv",
+      "last_event": 2018-01-31T10:03:10.000Z,
+      "last_unload_time": 2018-01-31T09:51:05.000Z,
+      "materialID": 41194,
+      "numProcesses": 2,
+      "partName": "part222",
+      "signaledInspections": Array [
+        "Insp1",
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": Object {
+        "1": 2018-01-31T09:51:05.000Z,
+      },
+    },
+    "78875" => Object {
+      "completedInspections": Object {
+        "Insp1": Object {
+          "success": true,
+          "time": 2018-01-06T09:57:05.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-01-06T09:57:05.000Z,
+      "jobUnique": "uniqf",
+      "last_event": 2018-01-06T09:57:05.000Z,
+      "last_unload_time": 2018-01-06T09:45:05.000Z,
+      "materialID": 78875,
+      "numProcesses": 3,
+      "partName": "part222",
+      "signaledInspections": Array [
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": Object {
+        "2": 2018-01-06T09:45:05.000Z,
+      },
+    },
+    "62494" => Object {
+      "completedInspections": Object {
+        "Insp1": Object {
+          "success": true,
+          "time": 2018-02-02T10:09:10.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-02-02T10:09:10.000Z,
+      "jobUnique": "uniqn",
+      "last_event": 2018-02-02T10:09:10.000Z,
+      "last_unload_time": 2018-02-02T09:57:05.000Z,
+      "materialID": 62494,
+      "numProcesses": 3,
+      "partName": "part111",
+      "signaledInspections": Array [
+        "Insp1",
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": Object {
+        "1": 2018-02-02T09:57:05.000Z,
+      },
+    },
+  },
+}
+`;
+
+exports[`processes events in a specific month: pallet cycles 1`] = `
+Map {
+  "palaa" => Array [
+    Object {
+      "active": -1,
+      "x": 2018-01-06T09:50:05.000Z,
+      "y": 44,
+    },
+  ],
+  "palbb" => Array [
+    Object {
+      "active": -1,
+      "x": 2018-01-31T09:56:10.000Z,
+      "y": 44,
+    },
+    Object {
+      "active": -1,
+      "x": 2018-02-02T10:02:10.000Z,
+      "y": 44,
+    },
+  ],
+}
+`;
+
+exports[`processes events in a specific month: station cycles 1`] = `
+Array [
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 6,
+    "cntr": 1,
+    "isLabor": true,
+    "material": Array [
+      Object {
+        "face": "face5",
+        "id": 78875,
+        "numproc": 3,
+        "part": "part222",
+        "proc": 2,
+        "serial": "serialo",
+        "uniq": "uniqf",
+        "workorder": "workk",
+      },
+    ],
+    "medianCycleMinutes": 6,
+    "operation": "LOAD",
+    "operator": "",
+    "pallet": "palaa",
+    "part": "part222",
+    "process": 2,
+    "stationGroup": "L/U",
+    "stationNumber": 1,
+    "x": 2018-01-06T09:09:05.000Z,
+    "y": 6,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 18,
+    "cntr": 5,
+    "isLabor": false,
+    "material": Array [
+      Object {
+        "face": "face5",
+        "id": 78875,
+        "numproc": 3,
+        "part": "part222",
+        "proc": 2,
+        "serial": "serialo",
+        "uniq": "uniqf",
+        "workorder": "workk",
+      },
+    ],
+    "medianCycleMinutes": 18,
+    "operation": "progc",
+    "operator": "",
+    "pallet": "palaa",
+    "part": "part222",
+    "process": 2,
+    "stationGroup": "MC",
+    "stationNumber": 1,
+    "x": 2018-01-06T09:35:05.000Z,
+    "y": 18,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 3,
+    "cntr": 7,
+    "isLabor": true,
+    "material": Array [
+      Object {
+        "face": "face5",
+        "id": 78875,
+        "numproc": 3,
+        "part": "part222",
+        "proc": 2,
+        "serial": "serialo",
+        "uniq": "uniqf",
+        "workorder": "workk",
+      },
+    ],
+    "medianCycleMinutes": 3,
+    "operation": "UNLOAD",
+    "operator": "",
+    "pallet": "palaa",
+    "part": "part222",
+    "process": 2,
+    "stationGroup": "L/U",
+    "stationNumber": 2,
+    "x": 2018-01-06T09:45:05.000Z,
+    "y": 3,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 6,
+    "cntr": 1,
+    "isLabor": true,
+    "material": Array [
+      Object {
+        "face": "faceh",
+        "id": 41194,
+        "numproc": 2,
+        "part": "part222",
+        "proc": 1,
+        "serial": "serialq",
+        "uniq": "uniqv",
+        "workorder": "workk",
+      },
+    ],
+    "medianCycleMinutes": 6,
+    "operation": "LOAD",
+    "operator": "",
+    "pallet": "palbb",
+    "part": "part222",
+    "process": 1,
+    "stationGroup": "L/U",
+    "stationNumber": 1,
+    "x": 2018-01-31T09:09:05.000Z,
+    "y": 6,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 24,
+    "cntr": 5,
+    "isLabor": false,
+    "material": Array [
+      Object {
+        "face": "faceh",
+        "id": 41194,
+        "numproc": 2,
+        "part": "part222",
+        "proc": 1,
+        "serial": "serialq",
+        "uniq": "uniqv",
+        "workorder": "workk",
+      },
+    ],
+    "medianCycleMinutes": 24,
+    "operation": "prog6",
+    "operator": "",
+    "pallet": "palbb",
+    "part": "part222",
+    "process": 1,
+    "stationGroup": "MC",
+    "stationNumber": 1,
+    "x": 2018-01-31T09:41:05.000Z,
+    "y": 24,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 3,
+    "cntr": 7,
+    "isLabor": true,
+    "material": Array [
+      Object {
+        "face": "faceh",
+        "id": 41194,
+        "numproc": 2,
+        "part": "part222",
+        "proc": 1,
+        "serial": "serialq",
+        "uniq": "uniqv",
+        "workorder": "workk",
+      },
+    ],
+    "medianCycleMinutes": 3,
+    "operation": "UNLOAD",
+    "operator": "",
+    "pallet": "palbb",
+    "part": "part222",
+    "process": 1,
+    "stationGroup": "L/U",
+    "stationNumber": 2,
+    "x": 2018-01-31T09:51:05.000Z,
+    "y": 3,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 6,
+    "cntr": 1,
+    "isLabor": true,
+    "material": Array [
+      Object {
+        "face": "facep",
+        "id": 62494,
+        "numproc": 3,
+        "part": "part111",
+        "proc": 1,
+        "serial": "serialo",
+        "uniq": "uniqn",
+        "workorder": "workv",
+      },
+    ],
+    "medianCycleMinutes": 6,
+    "operation": "LOAD",
+    "operator": "",
+    "pallet": "palbb",
+    "part": "part111",
+    "process": 1,
+    "stationGroup": "L/U",
+    "stationNumber": 1,
+    "x": 2018-02-02T09:09:05.000Z,
+    "y": 6,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 30,
+    "cntr": 5,
+    "isLabor": false,
+    "material": Array [
+      Object {
+        "face": "facep",
+        "id": 62494,
+        "numproc": 3,
+        "part": "part111",
+        "proc": 1,
+        "serial": "serialo",
+        "uniq": "uniqn",
+        "workorder": "workv",
+      },
+    ],
+    "medianCycleMinutes": 30,
+    "operation": "progk",
+    "operator": "",
+    "pallet": "palbb",
+    "part": "part111",
+    "process": 1,
+    "stationGroup": "MC",
+    "stationNumber": 1,
+    "x": 2018-02-02T09:47:05.000Z,
+    "y": 30,
+  },
+  Object {
+    "MAD_aboveMinutes": 0.25,
+    "activeMinutes": 3,
+    "cntr": 7,
+    "isLabor": true,
+    "material": Array [
+      Object {
+        "face": "facep",
+        "id": 62494,
+        "numproc": 3,
+        "part": "part111",
+        "proc": 1,
+        "serial": "serialo",
+        "uniq": "uniqn",
+        "workorder": "workv",
+      },
+    ],
+    "medianCycleMinutes": 3,
+    "operation": "UNLOAD",
+    "operator": "",
+    "pallet": "palbb",
+    "part": "part111",
+    "process": 1,
+    "stationGroup": "L/U",
+    "stationNumber": 2,
+    "x": 2018-02-02T09:57:05.000Z,
+    "y": 3,
+  },
+]
+`;
+
 exports[`processes last 30 events: after filter - buffers 1`] = `
 Array [
   Object {
