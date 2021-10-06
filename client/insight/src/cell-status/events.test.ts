@@ -60,14 +60,33 @@ function checkLast30(snapshot: Snapshot, msg: string) {
 it("processes last 30 events", () => {
   const now = new Date(Date.UTC(2018, 1, 2, 9, 4, 5));
 
-  // TODO: tools, buffers
-
   // start with cycles from 27 days ago, 2 days ago, and today
-  const todayCycle = fakeCycle(now, 30, "part111", 1, "palbb");
+  const todayCycle = fakeCycle({
+    time: now,
+    machineTime: 30,
+    part: "part111",
+    proc: 1,
+    pallet: "palbb",
+    includeTools: true,
+  });
   const twoDaysAgo = addDays(now, -2);
-  const twoDaysAgoCycle = fakeCycle(twoDaysAgo, 24, "part222", 1, "palbb");
+  const twoDaysAgoCycle = fakeCycle({
+    time: twoDaysAgo,
+    machineTime: 24,
+    part: "part222",
+    proc: 1,
+    pallet: "palbb",
+    includeTools: true,
+  });
   const twentySevenDaysAgo = addDays(now, -27);
-  const twentySevenCycle = fakeCycle(twentySevenDaysAgo, 18, "part222", 2, "palaa");
+  const twentySevenCycle = fakeCycle({
+    time: twentySevenDaysAgo,
+    machineTime: 18,
+    part: "part222",
+    proc: 2,
+    pallet: "palaa",
+    includeTools: true,
+  });
 
   let snapshot = snapshot_UNSTABLE();
   snapshot = applyConduitToSnapshot(snapshot, onLoadLast30Log, [
@@ -80,7 +99,14 @@ it("processes last 30 events", () => {
 
   // Now add again 6 days from now so that twenty seven is removed from processing 30 days
   const sixDays = addDays(now, 6);
-  const sixDaysCycle = fakeCycle(sixDays, 12, "part111", 1, "palcc");
+  const sixDaysCycle = fakeCycle({
+    time: sixDays,
+    machineTime: 12,
+    part: "part111",
+    proc: 1,
+    pallet: "palcc",
+    includeTools: true,
+  });
 
   for (const c of sixDaysCycle) {
     snapshot = applyConduitToSnapshot(snapshot, onServerEvent, {

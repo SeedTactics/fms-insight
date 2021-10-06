@@ -94,7 +94,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:23 AM
+          Mar 4, 2018, 9:28 AM
         </td>
         <td>
           partk-3
@@ -131,7 +131,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:33 AM
+          Mar 4, 2018, 9:38 AM
         </td>
         <td>
           partk-3
@@ -205,7 +205,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:28 PM
+          Mar 4, 2018, 9:33 PM
         </td>
         <td>
           partm-2
@@ -242,7 +242,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:38 PM
+          Mar 4, 2018, 9:43 PM
         </td>
         <td>
           partm-2
@@ -316,7 +316,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 12:38 AM
+          Mar 5, 2018, 12:43 AM
         </td>
         <td>
           part4-1
@@ -353,7 +353,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 12:48 AM
+          Mar 5, 2018, 12:53 AM
         </td>
         <td>
           part4-1
@@ -481,7 +481,7 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:28 PM
+          Mar 4, 2018, 9:33 PM
         </td>
         <td>
           partm-2
@@ -518,7 +518,7 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:38 PM
+          Mar 4, 2018, 9:43 PM
         </td>
         <td>
           partm-2
@@ -634,7 +634,36 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 12:38 AM
+          Mar 5, 2018, 12:10 AM
+        </td>
+        <td>
+          parti-3
+        </td>
+        <td>
+          Stocker
+        </td>
+        <td>
+          palo
+        </td>
+        <td>
+          serialr
+        </td>
+        <td>
+          work3
+        </td>
+        <td />
+        <td>
+          4.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 12:43 AM
         </td>
         <td>
           parti-3
@@ -665,7 +694,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 12:48 AM
+          Mar 5, 2018, 12:53 AM
         </td>
         <td>
           parti-3
@@ -696,7 +725,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 12:53 AM
+          Mar 5, 2018, 12:58 AM
         </td>
         <td>
           parti-3
@@ -725,7 +754,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 12:53 AM
+          Mar 5, 2018, 12:58 AM
         </td>
         <td>
           parti-3
@@ -754,7 +783,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 5, 2018, 1:00 AM
+          Mar 5, 2018, 1:05 AM
         </td>
         <td>
           parti-3
@@ -814,7 +843,36 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:28 PM
+          Mar 4, 2018, 9:10 PM
+        </td>
+        <td>
+          partl-1
+        </td>
+        <td>
+          Stocker
+        </td>
+        <td>
+          palv
+        </td>
+        <td>
+          serialw
+        </td>
+        <td>
+          workj
+        </td>
+        <td />
+        <td>
+          4.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:33 PM
         </td>
         <td>
           partl-1
@@ -845,7 +903,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:38 PM
+          Mar 4, 2018, 9:43 PM
         </td>
         <td>
           partl-1
@@ -876,7 +934,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:43 PM
+          Mar 4, 2018, 9:48 PM
         </td>
         <td>
           partl-1
@@ -905,7 +963,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:50 PM
+          Mar 4, 2018, 9:55 PM
         </td>
         <td>
           partl-1
@@ -965,7 +1023,36 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:23 AM
+          Mar 4, 2018, 9:10 AM
+        </td>
+        <td>
+          partr-4
+        </td>
+        <td>
+          Stocker
+        </td>
+        <td>
+          pal2
+        </td>
+        <td>
+          seriald
+        </td>
+        <td>
+          workz
+        </td>
+        <td />
+        <td>
+          4.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:28 AM
         </td>
         <td>
           partr-4
@@ -996,7 +1083,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:33 AM
+          Mar 4, 2018, 9:38 AM
         </td>
         <td>
           partr-4
@@ -1027,7 +1114,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:38 AM
+          Mar 4, 2018, 9:43 AM
         </td>
         <td>
           partr-4
@@ -1056,7 +1143,7 @@ exports[`creates log entries clipboard table: events clipboard table 1`] = `
 
       <tr>
         <td>
-          Mar 4, 2018, 9:45 AM
+          Mar 4, 2018, 9:50 AM
         </td>
         <td>
           partr-4

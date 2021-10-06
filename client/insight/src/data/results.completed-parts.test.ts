@@ -47,9 +47,9 @@ it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle(now, 30),
-    fakeCycle(addHours(now, -3), 20),
-    fakeCycle(addHours(now, -15), 15)
+    fakeCycle({ time: now, machineTime: 30 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15 })
   );
   const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();

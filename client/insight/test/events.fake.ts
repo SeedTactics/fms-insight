@@ -41,6 +41,7 @@ import {
   InProcessMaterial,
   InProcessMaterialLocation,
   InProcessMaterialAction,
+  ToolUse,
   ActionType,
 } from "../src/network/api";
 import faker from "faker";
@@ -185,14 +186,23 @@ export function fakeInspComplete(
   };
 }
 
-export function fakeCycle(
-  time: Date,
-  machineTime: number,
-  part?: string,
-  proc?: number,
-  pallet?: string,
-  noInspections?: boolean
-): ReadonlyArray<ILogEntry> {
+export function fakeCycle({
+  time,
+  machineTime,
+  part,
+  proc,
+  pallet,
+  noInspections,
+  includeTools,
+}: {
+  time: Date;
+  machineTime: number;
+  part?: string;
+  proc?: number;
+  pallet?: string;
+  noInspections?: boolean;
+  includeTools?: boolean;
+}): ReadonlyArray<ILogEntry> {
   const pal = pallet || "pal" + faker.random.alphaNumeric();
   const material = [fakeMaterial(part, proc)];
 
@@ -217,6 +227,24 @@ export function fakeCycle(
   });
 
   counter += 2;
+  time = addMinutes(time, 5);
+
+  addStartAndEnd(es, {
+    counter: 100,
+    material,
+    pal,
+    type: LogType.PalletInStocker,
+    startofcycle: false,
+    loc: "Stocker",
+    locnum: 4,
+    endUTC: time,
+    result: "WaitForMachine",
+    program: "Arrive",
+    elapsed: "PT4M",
+    active: "PT0S",
+  });
+
+  counter += 2;
   time = addMinutes(time, machineTime + 3);
 
   const elapsed = "PT" + machineTime.toString() + "M";
@@ -234,6 +262,10 @@ export function fakeCycle(
     elapsed: elapsed,
     active: elapsed,
   });
+
+  if (includeTools) {
+    es[es.length - 1].tools = fakeToolUsage();
+  }
 
   counter += 2;
   time = addMinutes(time, 10);
@@ -377,5 +409,20 @@ export function fakeRemoveFromQueue(queue?: string, mat?: LogMaterial): ILogEntr
     program: "",
     elapsed: "PT0S",
     active: "PT0S",
+  };
+}
+
+export function fakeToolUsage(): { [tool: string]: ToolUse } {
+  const use = faker.datatype.number({ min: 5, max: 30 });
+  return {
+    [faker.random.alphaNumeric()]: new ToolUse({
+      toolUseDuringCycle: "PT" + use.toString() + "S",
+      totalToolUseAtEndOfCycle: "PT" + (use * 2).toString() + "S",
+    }),
+    [faker.random.alphaNumeric()]: new ToolUse({
+      toolUseDuringCycle: "PT" + (use + 5).toString() + "S",
+      totalToolUseAtEndOfCycle: "PT" + (use + 20).toString() + "S",
+      toolChangeOccurred: true,
+    }),
   };
 }
