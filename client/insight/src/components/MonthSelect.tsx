@@ -43,7 +43,7 @@ import LeftArrowIcon from "@material-ui/icons/KeyboardArrowLeft";
 import RightArrowIcon from "@material-ui/icons/KeyboardArrowRight";
 import { Button } from "@material-ui/core";
 import { Typography } from "@material-ui/core";
-import { LazySeq } from "../data/lazyseq";
+import { LazySeq } from "../util/lazyseq";
 
 export interface MonthSelectProps {
   curMonth: Date;

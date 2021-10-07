@@ -31,30 +31,59 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { CircularProgress } from "@material-ui/core";
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from "@material-ui/core";
+import ErrorIcon from "@material-ui/icons/Error";
 
-import { connect, Store } from "../store/store";
 import { Tooltip } from "@material-ui/core";
-import { websocketReconnecting } from "../store/websocket";
+import { errorLoadingLast30, websocketReconnecting } from "../network/websocket";
 import { useRecoilValue } from "recoil";
+import { errorLoadingBackupViewer, loadingBackupViewer } from "../network/backend-backupviewer";
+import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month";
 
-function LoadingIcon({ loading }: { loading: boolean }) {
+export const LoadingIcon = React.memo(function LoadingIcon() {
   const websocketLoading = useRecoilValue(websocketReconnecting);
-  if (loading || websocketLoading) {
-    return (
-      <Tooltip title="Loading">
-        <CircularProgress data-testid="loading-icon" color="secondary" />
-      </Tooltip>
-    );
-  } else {
-    return null;
-  }
-}
+  const backupLoading = useRecoilValue(loadingBackupViewer);
+  const specificMonthLoading = useRecoilValue(loadingSpecificMonthData);
 
-export default connect((st: Store) => ({
-  loading:
-    st.Events.loading_log_entries ||
-    st.Events.loading_job_history ||
-    st.Events.loading_analysis_month_log ||
-    st.Events.loading_analysis_month_jobs,
-}))(LoadingIcon);
+  const last30Error = useRecoilValue(errorLoadingLast30);
+  const backupViewerError = useRecoilValue(errorLoadingBackupViewer);
+  const specificMonthError = useRecoilValue(errorLoadingSpecificMonthData);
+
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
+  return (
+    <>
+      {last30Error != null || backupViewerError != null || specificMonthError != null ? (
+        <Tooltip title="Error">
+          <IconButton onClick={() => setDialogOpen(true)}>
+            <ErrorIcon />
+          </IconButton>
+        </Tooltip>
+      ) : undefined}
+      {websocketLoading || backupLoading || specificMonthLoading ? (
+        <Tooltip title="Loading">
+          <CircularProgress data-testid="loading-icon" color="secondary" />
+        </Tooltip>
+      ) : undefined}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <DialogTitle>Error</DialogTitle>
+        <DialogContent>
+          {last30Error !== null ? <p>{last30Error}</p> : undefined}
+          {backupViewerError !== null ? <p>{backupViewerError}</p> : undefined}
+          {specificMonthError !== null ? <p>{specificMonthError}</p> : undefined}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+});

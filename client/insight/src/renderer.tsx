@@ -51,9 +51,8 @@ import { enableMapSet } from "immer";
 enableMapSet();
 
 import App, { AppProps } from "./components/App";
-import { Store } from "./store/typed-redux";
 
-export function render<A, S>(store: Store<A, S>, appProps: AppProps | null, elem: HTMLElement | null): void {
+export function render(appProps: AppProps | null, elem: HTMLElement | null): void {
   const theme = createTheme({
     palette: {
       primary: green,
@@ -66,11 +65,9 @@ export function render<A, S>(store: Store<A, S>, appProps: AppProps | null, elem
       <CssBaseline />
       <Router>
         <RecoilRoot>
-          <store.Provider>
-            {/* <React.StrictMode> */}
-            <App {...appProps} />
-            {/* </React.StrictMode> */}
-          </store.Provider>
+          {/* <React.StrictMode> */}
+          <App {...appProps} />
+          {/* </React.StrictMode> */}
         </RecoilRoot>
       </Router>
     </ThemeProvider>,

@@ -33,10 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Button } from "@material-ui/core";
 
-import { connect } from "../store/store";
-import { requestOpenBackupFile } from "../data/backend-backupviewer";
+import { errorLoadingBackupViewer, useRequestOpenBackupFile } from "../network/backend-backupviewer";
+import { useRecoilValue } from "recoil";
 
-function BackupViewer(props: { loading_error: Error | undefined }) {
+export function BackupViewer(): JSX.Element {
+  const requestOpenBackupFile = useRequestOpenBackupFile();
+  const loading_error = useRecoilValue(errorLoadingBackupViewer);
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>
@@ -45,14 +47,10 @@ function BackupViewer(props: { loading_error: Error | undefined }) {
         <code>c:\ProgramData\SeedTactics\FMSInsight</code>). The database should be periodically backed up and can then
         be opened directly by this program to view the data.
       </p>
-      {props.loading_error ? <p>{props.loading_error.message || props.loading_error}</p> : undefined}
+      {loading_error ? <p>{loading_error}</p> : undefined}
       <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={requestOpenBackupFile}>
         Open File
       </Button>
     </div>
   );
 }
-
-export default connect((s) => ({
-  loading_error: s.Events.loading_error,
-}))(BackupViewer);

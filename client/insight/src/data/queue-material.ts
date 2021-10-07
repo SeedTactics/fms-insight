@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { LazySeq } from "./lazyseq";
+import * as api from "../network/api";
+import { LazySeq } from "../util/lazyseq";
 import { HashSet, HashMap } from "prelude-ts";
-import { LogBackend } from "./backend";
+import { LogBackend } from "../network/backend";
 import { differenceInSeconds } from "date-fns";
 
 export interface JobAndGroups {
@@ -238,15 +238,15 @@ export function selectQueueData(
   displayFree: boolean,
   queuesToCheck: ReadonlyArray<string>,
   curSt: Readonly<api.ICurrentStatus>,
-  initialRawMatQueues: HashSet<string>
+  initialRawMatQueues: ReadonlySet<string>
 ): ReadonlyArray<QueueData> {
   const queues: QueueData[] = [];
 
-  let rawMatQueues = initialRawMatQueues;
+  const rawMatQueues = new Set(initialRawMatQueues);
   for (const [, j] of LazySeq.ofObject(curSt.jobs)) {
     for (const path of j.procsAndPaths[0].paths) {
-      if (path.inputQueue && path.inputQueue !== "" && !rawMatQueues.contains(path.inputQueue)) {
-        rawMatQueues = rawMatQueues.add(path.inputQueue);
+      if (path.inputQueue && path.inputQueue !== "" && !rawMatQueues.has(path.inputQueue)) {
+        rawMatQueues.add(path.inputQueue);
       }
     }
   }
@@ -272,7 +272,7 @@ export function selectQueueData(
   const queueNames = [...queuesToCheck];
   queueNames.sort((a, b) => a.localeCompare(b));
   for (const queueName of queueNames) {
-    const isRawMat = rawMatQueues.contains(queueName);
+    const isRawMat = rawMatQueues.has(queueName);
 
     if (isRawMat) {
       const material: Readonly<api.IInProcessMaterial>[] = [];

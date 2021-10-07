@@ -31,11 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { HashMap } from "prelude-ts";
-import { JobsBackend } from "./backend";
-import { InProcessMaterial, ICurrentStatus, IInProcessMaterial, ILogEntry, LogType, LocType, ActiveJob } from "./api";
-import { atom, DefaultValue, selectorFamily } from "recoil";
+import { JobsBackend } from "../network/backend";
+import {
+  InProcessMaterial,
+  ICurrentStatus,
+  IInProcessMaterial,
+  ILogEntry,
+  LogType,
+  LocType,
+  ActiveJob,
+} from "../network/api";
+import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
+import { last30JobComment } from "./scheduled-jobs";
+import { conduit } from "../util/recoil-util";
+import type { ServerEventAndTime } from "./loading";
 
-export const currentStatus = atom<Readonly<ICurrentStatus>>({
+const currentStatusRW = atom<Readonly<ICurrentStatus>>({
   key: "current-status",
   default: {
     timeOfCurrentStatusUTC: new Date(),
@@ -46,6 +57,7 @@ export const currentStatus = atom<Readonly<ICurrentStatus>>({
     queues: {},
   },
 });
+export const currentStatus: RecoilValueReadOnly<ICurrentStatus> = currentStatusRW;
 
 export const currentStatusJobComment = selectorFamily<string | null, string>({
   key: "current-status-job-comment",
@@ -55,10 +67,10 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
       get(currentStatus).jobs[uniq]?.comment ?? null,
   set:
     (uniq) =>
-    async ({ set }, newVal) => {
+    ({ set }, newVal) => {
       const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
 
-      set(currentStatus, (st) => {
+      set(currentStatusRW, (st) => {
         const oldJob = st.jobs[uniq];
         if (oldJob) {
           const newJob = new ActiveJob(oldJob);
@@ -69,12 +81,28 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
         }
       });
 
-      await JobsBackend.setJobComment(uniq, newComment);
+      set(last30JobComment(uniq), newComment);
+
+      void JobsBackend.setJobComment(uniq, newComment);
     },
-  //cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
-export function processEventsIntoCurrentStatus(
+export const setCurrentStatus = conduit<Readonly<ICurrentStatus>>((t: TransactionInterface_UNSTABLE, st) =>
+  t.set(currentStatusRW, st)
+);
+
+export const updateCurrentStatus = conduit<ServerEventAndTime>(
+  (t: TransactionInterface_UNSTABLE, { evt }: ServerEventAndTime) => {
+    if (evt.logEntry) {
+      t.set(currentStatusRW, processEventsIntoCurrentStatus(evt.logEntry));
+    } else if (evt.newCurrentStatus) {
+      t.set(currentStatusRW, evt.newCurrentStatus);
+    }
+  }
+);
+
+function processEventsIntoCurrentStatus(
   entry: Readonly<ILogEntry>
 ): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
   return (curSt) => {
@@ -137,62 +165,66 @@ export function processEventsIntoCurrentStatus(
   };
 }
 
-export function reorder_queued_mat(
-  queue: string,
-  matId: number,
-  newIdx: number
-): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
-  return (curSt) => {
-    const oldMat = curSt.material.find((i) => i.materialID === matId);
-    if (!oldMat || oldMat.location.type !== LocType.InQueue) {
-      return curSt;
-    }
-    if (oldMat.location.currentQueue === queue && oldMat.location.queuePosition === newIdx) {
-      return curSt;
-    }
-
-    const oldQueue = oldMat.location.currentQueue;
-    const oldIdx = oldMat.location.queuePosition;
-    if (oldIdx === undefined || oldQueue === undefined) {
-      return curSt;
-    }
-
-    const newMats = curSt.material.map((m) => {
-      if (
-        m.location.type !== LocType.InQueue ||
-        m.location.queuePosition === undefined ||
-        m.location.currentQueue === undefined
-      ) {
-        return m;
-      }
-
-      if (m.materialID === matId) {
-        return new InProcessMaterial({
-          ...m,
-          location: { type: LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
-        } as IInProcessMaterial);
-      }
-
-      let idx = m.location.queuePosition;
-      // old queue material is moved down
-      if (m.location.currentQueue === oldQueue && m.location.queuePosition > oldIdx) {
-        idx -= 1;
-      }
-      // new queue material is moved up to make room
-      if (m.location.currentQueue === queue && idx >= newIdx) {
-        idx += 1;
-      }
-
-      if (idx !== m.location.queuePosition) {
-        return new InProcessMaterial({
-          ...m,
-          location: { ...m.location, queuePosition: idx },
-        } as IInProcessMaterial);
-      } else {
-        return m;
-      }
-    });
-
-    return { ...curSt, material: newMats };
-  };
+export interface QueueReordering {
+  readonly queue: string;
+  readonly matId: number;
+  readonly newIdx: number;
 }
+
+export const reorderQueuedMatInCurrentStatus = conduit<QueueReordering>(
+  (t: TransactionInterface_UNSTABLE, { queue, matId, newIdx }: QueueReordering) => {
+    t.set(currentStatusRW, (curSt) => {
+      const oldMat = curSt.material.find((i) => i.materialID === matId);
+      if (!oldMat || oldMat.location.type !== LocType.InQueue) {
+        return curSt;
+      }
+      if (oldMat.location.currentQueue === queue && oldMat.location.queuePosition === newIdx) {
+        return curSt;
+      }
+
+      const oldQueue = oldMat.location.currentQueue;
+      const oldIdx = oldMat.location.queuePosition;
+      if (oldIdx === undefined || oldQueue === undefined) {
+        return curSt;
+      }
+
+      const newMats = curSt.material.map((m) => {
+        if (
+          m.location.type !== LocType.InQueue ||
+          m.location.queuePosition === undefined ||
+          m.location.currentQueue === undefined
+        ) {
+          return m;
+        }
+
+        if (m.materialID === matId) {
+          return new InProcessMaterial({
+            ...m,
+            location: { type: LocType.InQueue, currentQueue: queue, queuePosition: newIdx },
+          } as IInProcessMaterial);
+        }
+
+        let idx = m.location.queuePosition;
+        // old queue material is moved down
+        if (m.location.currentQueue === oldQueue && m.location.queuePosition > oldIdx) {
+          idx -= 1;
+        }
+        // new queue material is moved up to make room
+        if (m.location.currentQueue === queue && idx >= newIdx) {
+          idx += 1;
+        }
+
+        if (idx !== m.location.queuePosition) {
+          return new InProcessMaterial({
+            ...m,
+            location: { ...m.location, queuePosition: idx },
+          } as IInProcessMaterial);
+        } else {
+          return m;
+        }
+      });
+
+      return { ...curSt, material: newMats };
+    });
+  }
+);

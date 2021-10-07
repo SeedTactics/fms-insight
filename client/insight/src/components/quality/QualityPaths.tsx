@@ -31,38 +31,38 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { connect } from "../../store/store";
 import { addDays, startOfToday } from "date-fns";
 import { InspectionSankey } from "../analysis/InspectionSankey";
-import { Last30Days } from "../../data/events";
-import { HashMap } from "prelude-ts";
-import { createSelector } from "reselect";
-import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
+import { useRecoilValue } from "recoil";
+import { last30Inspections } from "../../cell-status/inspections";
 
-const filterLogSelector = createSelector(
-  (last30: Last30Days, _t: Date) => last30.inspection.by_part,
-  (_: Last30Days, today: Date) => today,
-  (byPart: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>, today: Date) => {
+const SelectedInspections = React.memo(function SelectedInspections() {
+  const inspections = useRecoilValue(last30Inspections);
+  const filtered = React.useMemo(() => {
+    const today = startOfToday();
     const start = addDays(today, -6);
     const end = addDays(today, 1);
-    return byPart.mapValues((log) => log.filter((e) => e.time >= start && e.time <= end));
-  }
-);
+    return inspections.mapValues((log) => log.filter((e) => e.time >= start && e.time <= end));
+  }, [inspections]);
 
-const ConnectedInspection = connect((st) => ({
-  inspectionlogs: filterLogSelector(st.Events.last30, startOfToday()),
-  default_date_range: [addDays(startOfToday(), -6), addDays(startOfToday(), 1)],
-  defaultToTable: false,
-}))(InspectionSankey);
+  return (
+    <InspectionSankey
+      inspectionlogs={filtered}
+      default_date_range={[addDays(startOfToday(), -6), addDays(startOfToday(), 1)]}
+      defaultToTable={false}
+      subtitle="Paths from the last 7 days"
+    />
+  );
+});
 
-export function QualityPaths() {
+export function QualityPaths(): JSX.Element {
   React.useEffect(() => {
     document.title = "Paths - FMS Insight";
   }, []);
   return (
     <main style={{ padding: "24px" }}>
       <div data-testid="failed-parts">
-        <ConnectedInspection subtitle="Paths from the last 7 days" />
+        <SelectedInspections />
       </div>
     </main>
   );

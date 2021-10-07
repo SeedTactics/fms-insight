@@ -45,7 +45,7 @@ import {
 } from "react-vis";
 
 import { CompletedDataPoint, jobsToPoints } from "../../data/job-bullet";
-import { currentStatus } from "../../data/current-status";
+import { currentStatus } from "../../cell-status/current-status";
 import { useRecoilValue } from "recoil";
 
 // --------------------------------------------------------------------------------

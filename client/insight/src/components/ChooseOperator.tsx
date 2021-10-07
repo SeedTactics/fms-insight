@@ -47,9 +47,9 @@ import { Button } from "@material-ui/core";
 
 import { useRecoilState, useRecoilValue } from "recoil";
 import { allOperators, currentOperator } from "../data/operators";
-import { fmsInformation } from "../data/server-settings";
-import { LazySeq } from "../data/lazyseq";
-import { useRecoilStateDraft } from "../store/recoil-util";
+import { fmsInformation } from "../network/server-settings";
+import { LazySeq } from "../util/lazyseq";
+import { useRecoilStateDraft } from "../util/recoil-util";
 
 const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__" as const;
 

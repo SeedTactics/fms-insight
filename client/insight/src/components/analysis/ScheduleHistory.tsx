@@ -30,37 +30,27 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { addDays, addMonths } from "date-fns";
+import { addDays, addMonths, startOfToday } from "date-fns";
 import * as React from "react";
-import { AnalysisPeriod } from "../../data/events";
-import { connect } from "../../store/store";
+import { useRecoilValue } from "recoil";
+import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs";
 import { JobsTable } from "../operations/CompletedParts";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
 
-const ConnectedSchedules = connect((st) => ({
-  matIds:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.mat_summary.matsById
-      : st.Events.selected_month.mat_summary.matsById,
-  schJobs:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.scheduled_jobs.jobs
-      : st.Events.selected_month.scheduled_jobs.jobs,
-  showMaterial:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.scheduled_jobs.someJobHasCasting
-      : st.Events.selected_month.scheduled_jobs.someJobHasCasting,
-  start:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.thirty_days_ago
-      : st.Events.analysis_period_month,
-  end:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? addDays(st.Events.last30.thirty_days_ago, 31)
-      : addMonths(st.Events.analysis_period_month, 1),
-}))(JobsTable);
+function ConnectedSchedules() {
+  const period = useRecoilValue(selectedAnalysisPeriod);
 
-export function ScheduleHistory() {
+  const matIds = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const schJobs = useRecoilValue(period.type === "Last30" ? last30Jobs : specificMonthJobs);
+  const start = period.type === "Last30" ? addDays(startOfToday(), -29) : period.month;
+  const end = period.type === "Last30" ? addDays(startOfToday(), 1) : addMonths(period.month, 1);
+
+  return <JobsTable matIds={matIds.matsById} schJobs={schJobs} showInProcCnt={false} start={start} end={end} />;
+}
+
+export function ScheduleHistory(): JSX.Element {
   React.useEffect(() => {
     document.title = "Scheduled Jobs - FMS Insight";
   }, []);
@@ -68,7 +58,7 @@ export function ScheduleHistory() {
     <>
       <AnalysisSelectToolbar />
       <main style={{ padding: "24px" }}>
-        <ConnectedSchedules showInProcCnt={false} />
+        <ConnectedSchedules />
       </main>
     </>
   );

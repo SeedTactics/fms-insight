@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import * as api from "../../data/api";
+import * as api from "../../network/api";
 import { IconButton } from "@material-ui/core";
 import { Table } from "@material-ui/core";
 import { TableBody } from "@material-ui/core";
@@ -40,16 +40,16 @@ import { TableCell } from "@material-ui/core";
 import { TableHead } from "@material-ui/core";
 import { TableRow } from "@material-ui/core";
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import { durationToMinutes } from "../../data/parseISODuration";
+import { durationToMinutes } from "../../util/parseISODuration";
 import { format } from "date-fns";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
-import { LazySeq } from "../../data/lazyseq";
-import { useSelector } from "../../store/store";
-import { materialToShowInDialog } from "../../data/material-details";
+import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
+import { LazySeq } from "../../util/lazyseq";
+import { materialToShowInDialog } from "../../cell-status/material-details";
 import { HashMap, HashSet } from "prelude-ts";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { currentStatus } from "../../data/current-status";
-import { AnalysisPeriod } from "../../data/events";
+import { currentStatus } from "../../cell-status/current-status";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;
@@ -236,16 +236,10 @@ export interface JobDetailsProps {
   readonly checkAnalysisMonth: boolean;
 }
 
-export function JobDetails(props: JobDetailsProps) {
-  const matsFromEvents = useSelector((s) =>
-    props.checkAnalysisMonth && s.Events.analysis_period === AnalysisPeriod.SpecificMonth
-      ? s.Events.selected_month.mat_summary.matsById
-      : s.Events.last30.mat_summary.matsById
-  );
-  const matIdsForJob = useSelector((s) =>
-    props.checkAnalysisMonth && s.Events.analysis_period === AnalysisPeriod.SpecificMonth
-      ? s.Events.selected_month.mat_summary.matIdsForJob
-      : s.Events.last30.mat_summary.matIdsForJob
+export function JobDetails(props: JobDetailsProps): JSX.Element {
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const matsFromEvents = useRecoilValue(
+    props.checkAnalysisMonth && period.type === "SpecificMonth" ? specificMonthMaterialSummary : last30MaterialSummary
   );
 
   return (
@@ -256,8 +250,8 @@ export function JobDetails(props: JobDetailsProps) {
           <JobMaterial
             unique={props.job.unique}
             fullWidth={false}
-            matsFromEvents={matsFromEvents}
-            matIdsForJob={matIdsForJob}
+            matsFromEvents={matsFromEvents.matsById}
+            matIdsForJob={matsFromEvents.matIdsForJob}
           />
         </>
       ) : undefined}

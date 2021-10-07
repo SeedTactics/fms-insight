@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -32,7 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { RecoilState, useRecoilState, useSetRecoilState } from "recoil";
+import {
+  RecoilState,
+  Snapshot,
+  TransactionInterface_UNSTABLE,
+  useRecoilState,
+  useRecoilTransaction_UNSTABLE,
+  useSetRecoilState,
+} from "recoil";
 import produce, { Draft } from "immer";
 
 export function useRecoilStateDraft<T>(recoilState: RecoilState<T>): [T, (f: (d: Draft<T>) => void) => void] {
@@ -57,4 +64,29 @@ export function useSetRecoilStateDraft<T>(recoilState: RecoilState<T>): (f: (d: 
     [setState]
   );
   return setDraft;
+}
+
+export interface RecoilConduit<T> {
+  readonly transform: (trans: TransactionInterface_UNSTABLE, val: T) => void;
+}
+
+export function useRecoilConduit<T>({ transform }: RecoilConduit<T>): (val: T) => void {
+  return useRecoilTransaction_UNSTABLE((trans) => (val: T) => transform(trans, val));
+}
+
+export function conduit<T>(transform: (trans: TransactionInterface_UNSTABLE, val: T) => void): RecoilConduit<T> {
+  return { transform };
+}
+
+export function applyConduitToSnapshot<T>(snapshot: Snapshot, conduit: RecoilConduit<T>, val: T): Snapshot {
+  return snapshot.map((ms) =>
+    conduit.transform(
+      {
+        get: (s) => ms.getLoadable(s).valueOrThrow(),
+        set: ms.set,
+        reset: ms.reset,
+      },
+      val
+    )
+  );
 }

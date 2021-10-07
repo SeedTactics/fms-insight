@@ -31,24 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "./api";
-import { LazySeq } from "./lazyseq";
-import { Vector, HashMap, HashSet } from "prelude-ts";
-import { durationToMinutes } from "./parseISODuration";
+import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api";
+import { LazySeq } from "../util/lazyseq";
+import { Vector, HashMap, fieldsHashCode } from "prelude-ts";
+import { durationToMinutes } from "../util/parseISODuration";
 import { atom, selector, useRecoilCallback } from "recoil";
-import {
-  ToolUsage,
-  ProgramToolUseInSingleCycle,
-  StatisticalCycleTime,
-  PartAndStationOperation,
-  StationOperation,
-  EstimatedCycleTimes,
-  stat_name_and_num,
-} from "./events.cycles";
-import { reduxStore } from "../store/store";
-import { MachineBackend } from "./backend";
-import { currentStatus } from "./current-status";
+import { MachineBackend } from "../network/backend";
+import { currentStatus } from "../cell-status/current-status";
 import copy from "copy-to-clipboard";
+import { last30ToolUse, ProgramToolUseInSingleCycle, ToolUsage } from "../cell-status/tool-usage";
+import {
+  EstimatedCycleTimes,
+  last30EstimatedCycleTimes,
+  PartAndStationOperation,
+  StatisticalCycleTime,
+} from "../cell-status/estimated-cycle-times";
+import { stat_name_and_num } from "../cell-status/station-cycles";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -94,6 +92,19 @@ export interface ToolReport {
   readonly minRemainingMinutes: number;
   readonly minRemainingMachine: string;
   readonly parts: Vector<PartToolUsage>;
+}
+
+class StationOperation {
+  public constructor(public readonly statGroup: string, public readonly operation: string) {}
+  equals(other: PartAndStationOperation): boolean {
+    return this.statGroup === other.statGroup && this.operation === other.operation;
+  }
+  hashCode(): number {
+    return fieldsHashCode(this.statGroup, this.operation);
+  }
+  toString(): string {
+    return `{statGroup: ${this.statGroup}, operation: ${this.operation}}`;
+  }
 }
 
 export function calcToolReport(
@@ -251,15 +262,28 @@ const toolsInMachine = atom<ReadonlyArray<Readonly<IToolInMachine>> | null>({
   default: null,
 });
 
+export const machinesWithTools = selector<ReadonlyArray<string>>({
+  key: "machines-with-tools",
+  get: ({ get }) => {
+    const toolsInMach = get(toolsInMachine);
+    if (toolsInMach === null) return [];
+    const names = new Set<string>();
+    for (const t of toolsInMach) {
+      names.add(stat_name_and_num(t.machineGroupName, t.machineNum));
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
+
 export const currentToolReport = selector<Vector<ToolReport> | null>({
   key: "tool-report",
   get: ({ get }) => {
-    if (reduxStore === null) return null;
     const toolsInMach = get(toolsInMachine);
     if (toolsInMach === null) return null;
     const machineFilter = get(toolReportMachineFilter);
     const currentSt = get(currentStatus);
-    const usage = reduxStore.getState().Events.last30.cycles.tool_usage;
+    const usage = get(last30ToolUse);
     return calcToolReport(currentSt, toolsInMach, usage, machineFilter);
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
@@ -334,13 +358,12 @@ export interface ProgramReport {
 export function calcProgramReport(
   usage: ToolUsage,
   cycleTimes: EstimatedCycleTimes,
-  partOperations: HashSet<PartAndStationOperation>,
   progsInCellCtrl: ReadonlyArray<Readonly<IProgramInCellController>>,
   progsToShow: ReadonlySet<string> | null
 ): ProgramReport {
   const tools = averageToolUse(usage, true);
 
-  const progToPart = LazySeq.ofIterable(partOperations)
+  const progToPart = LazySeq.ofIterable(usage.keySet())
     .map((op) => ({
       program: op.operation,
       part: op,
@@ -399,7 +422,7 @@ export const currentProgramReport = selector<ProgramReport | null>({
   key: "cell-controller-programs",
   get: ({ get }) => {
     const time = get(programReportRefreshTime);
-    if (time === null || reduxStore === null) return null;
+    if (time === null) return null;
 
     const filter = get(programFilter);
     let progsToShow: ReadonlySet<string> | null = null;
@@ -424,13 +447,7 @@ export const currentProgramReport = selector<ProgramReport | null>({
     const progsInCell = get(programsInCellCtrl);
     if (progsInCell === null) return null;
 
-    return calcProgramReport(
-      reduxStore.getState().Events.last30.cycles.tool_usage,
-      reduxStore.getState().Events.last30.cycles.estimatedCycleTimes,
-      reduxStore.getState().Events.last30.cycles.part_and_operation_names,
-      progsInCell,
-      progsToShow
-    );
+    return calcProgramReport(get(last30ToolUse), get(last30EstimatedCycleTimes), progsInCell, progsToShow);
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });

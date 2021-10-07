@@ -39,7 +39,7 @@ import { DialogContent } from "@material-ui/core";
 import { DialogTitle } from "@material-ui/core";
 import SearchIcon from "@material-ui/icons/Search";
 import { TextField } from "@material-ui/core";
-import { materialToShowInDialog } from "../data/material-details";
+import { materialToShowInDialog } from "../cell-status/material-details";
 import { useSetRecoilState } from "recoil";
 import { Tooltip } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";

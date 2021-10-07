@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { atom, DefaultValue, selector } from "recoil";
-import { LazySeq } from "./lazyseq";
-import { fmsInformation } from "./server-settings";
+import { LazySeq } from "../util/lazyseq";
+import { fmsInformation } from "../network/server-settings";
 
 const selectedOperator = atom<string | null>({
   key: "selected-operator",

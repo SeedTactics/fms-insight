@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addSeconds } from "date-fns";
 import * as api from "./api";
 import { registerBackend } from "./backend";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 
 export type MockEvents = ReadonlyArray<object /* ILogEntry json */>;
 

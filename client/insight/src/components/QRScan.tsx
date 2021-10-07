@@ -39,7 +39,7 @@ import { DialogActions } from "@material-ui/core";
 import { DialogContent } from "@material-ui/core";
 import { DialogTitle } from "@material-ui/core";
 import CameraAlt from "@material-ui/icons/CameraAlt";
-import { materialToShowInDialog } from "../data/material-details";
+import { materialToShowInDialog } from "../cell-status/material-details";
 import { useSetRecoilState } from "recoil";
 import { Tooltip } from "@material-ui/core";
 import { IconButton } from "@material-ui/core";

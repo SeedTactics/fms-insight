@@ -41,10 +41,11 @@ import {
   InProcessMaterial,
   InProcessMaterialLocation,
   InProcessMaterialAction,
+  ToolUse,
   ActionType,
-} from "./api";
+} from "../src/network/api";
 import faker from "faker";
-import { durationToSeconds } from "./parseISODuration";
+import { durationToSeconds } from "../src/util/parseISODuration";
 import { addSeconds, addMinutes } from "date-fns";
 
 faker.seed(0x6f79);
@@ -185,18 +186,29 @@ export function fakeInspComplete(
   };
 }
 
-export function fakeCycle(
-  time: Date,
-  machineTime: number,
-  part?: string,
-  proc?: number,
-  pallet?: string,
-  noInspections?: boolean
-): ReadonlyArray<ILogEntry> {
+export function fakeCycle({
+  time,
+  machineTime,
+  part,
+  proc,
+  pallet,
+  noInspections,
+  includeTools,
+  counter,
+}: {
+  time: Date;
+  machineTime: number;
+  part?: string;
+  proc?: number;
+  pallet?: string;
+  noInspections?: boolean;
+  includeTools?: boolean;
+  counter?: number;
+}): ReadonlyArray<ILogEntry> {
   const pal = pallet || "pal" + faker.random.alphaNumeric();
   const material = [fakeMaterial(part, proc)];
 
-  let counter = 1;
+  counter = counter ?? 1;
   time = addMinutes(time, 5);
 
   const es: ILogEntry[] = [];
@@ -217,6 +229,24 @@ export function fakeCycle(
   });
 
   counter += 2;
+  time = addMinutes(time, 5);
+
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal,
+    type: LogType.PalletInStocker,
+    startofcycle: false,
+    loc: "Stocker",
+    locnum: 4,
+    endUTC: time,
+    result: "WaitForMachine",
+    program: "Arrive",
+    elapsed: "PT4M",
+    active: "PT0S",
+  });
+
+  counter += 2;
   time = addMinutes(time, machineTime + 3);
 
   const elapsed = "PT" + machineTime.toString() + "M";
@@ -234,6 +264,10 @@ export function fakeCycle(
     elapsed: elapsed,
     active: elapsed,
   });
+
+  if (includeTools) {
+    es[es.length - 1].tools = fakeToolUsage();
+  }
 
   counter += 2;
   time = addMinutes(time, 10);
@@ -377,5 +411,20 @@ export function fakeRemoveFromQueue(queue?: string, mat?: LogMaterial): ILogEntr
     program: "",
     elapsed: "PT0S",
     active: "PT0S",
+  };
+}
+
+export function fakeToolUsage(): { [tool: string]: ToolUse } {
+  const use = faker.datatype.number({ min: 5, max: 30 });
+  return {
+    [faker.random.alphaNumeric()]: new ToolUse({
+      toolUseDuringCycle: "PT" + use.toString() + "S",
+      totalToolUseAtEndOfCycle: "PT" + (use * 2).toString() + "S",
+    }),
+    [faker.random.alphaNumeric()]: new ToolUse({
+      toolUseDuringCycle: "PT" + (use + 5).toString() + "S",
+      totalToolUseAtEndOfCycle: "PT" + (use + 20).toString() + "S",
+      toolChangeOccurred: true,
+    }),
   };
 }

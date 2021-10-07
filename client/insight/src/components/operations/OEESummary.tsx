@@ -35,16 +35,14 @@ import { Grid } from "@material-ui/core";
 import { Tooltip } from "@material-ui/core";
 import TimeAgo from "react-timeago";
 
-import { connect } from "../../store/store";
-import * as api from "../../data/api";
+import * as api from "../../network/api";
 import { addSeconds, addDays } from "date-fns";
 import { PalletData, buildPallets } from "../../data/load-station";
-import { Vector } from "prelude-ts";
 import { stationMinutes } from "../../data/results.cycles";
-import { PartCycleData } from "../../data/events.cycles";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../data/current-status";
-import { durationToSeconds } from "../../data/parseISODuration";
+import { currentStatus } from "../../cell-status/current-status";
+import { durationToSeconds } from "../../util/parseISODuration";
+import { last30StationCycles } from "../../cell-status/station-cycles";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;
@@ -252,16 +250,13 @@ class StationOEE extends React.PureComponent<StationOEEProps> {
   }
 }
 
-interface Props {
-  readonly partCycles: Vector<PartCycleData>;
-}
-
-function StationOEEs(props: Props) {
+export default React.memo(function StationOEEs() {
   const currentSt = useRecoilValue(currentStatus);
   const pallets = React.useMemo(() => buildPallets(currentSt), [currentSt]);
+  const cycles = useRecoilValue(last30StationCycles);
   const stationMins = React.useMemo(
-    () => stationMinutes(props.partCycles, addDays(currentSt.timeOfCurrentStatusUTC, -7)),
-    [props.partCycles, currentSt.timeOfCurrentStatusUTC]
+    () => stationMinutes(cycles, addDays(currentSt.timeOfCurrentStatusUTC, -7)),
+    [cycles, currentSt.timeOfCurrentStatusUTC]
   );
 
   const stats = pallets
@@ -283,8 +278,4 @@ function StationOEEs(props: Props) {
       ))}
     </Grid>
   );
-}
-
-export default connect((s) => ({
-  partCycles: s.Events.last30.cycles.part_cycles,
-}))(StationOEEs);
+});

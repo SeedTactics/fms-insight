@@ -55,13 +55,13 @@ import { WithStyles } from "@material-ui/core";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import { DraggableProvided } from "react-beautiful-dnd";
 
-import * as api from "../../data/api";
-import * as matDetails from "../../data/material-details";
+import * as api from "../../network/api";
+import * as matDetails from "../../cell-status/material-details";
 import { LogEntries } from "../LogEntry";
-import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
-import { LazySeq } from "../../data/lazyseq";
+import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
+import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
-import { instructionUrl } from "../../data/backend";
+import { instructionUrl } from "../../network/backend";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 
 export class PartIdenticon extends React.PureComponent<{

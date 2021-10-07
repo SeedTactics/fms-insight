@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import WorkIcon from "@material-ui/icons/Work";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
-import { addMonths, addDays, startOfToday, startOfDay } from "date-fns";
+import { addMonths, addDays, startOfToday } from "date-fns";
 import ExtensionIcon from "@material-ui/icons/Extension";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
-import { HashMap, Vector } from "prelude-ts";
+import { HashMap } from "prelude-ts";
 import { Card } from "@material-ui/core";
 import { CardHeader } from "@material-ui/core";
 import { Select } from "@material-ui/core";
@@ -50,18 +50,11 @@ import DonutIcon from "@material-ui/icons/DonutSmall";
 import { Slider } from "@material-ui/core";
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart } from "./HeatChart";
-import { connect, useSelector } from "../../store/store";
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import { InspectionSankey } from "./InspectionSankey";
-import {
-  PartCycleData,
-  CycleData,
-  CycleState,
-  PartAndProcess,
-  PartAndStationOperation,
-} from "../../data/events.cycles";
 import {
   filterStationCycles,
   FilterAnyMachineKey,
@@ -72,11 +65,12 @@ import {
   loadOccupancyCycles,
   FilterAnyLoadKey,
   copyPalletCyclesToClipboard,
+  emptyStationCycles,
+  PartAndProcess,
 } from "../../data/results.cycles";
 import { PartIdenticon } from "../station-monitor/Material";
-import { LazySeq } from "../../data/lazyseq";
+import { LazySeq } from "../../util/lazyseq";
 import StationDataTable from "./StationDataTable";
-import { AnalysisPeriod } from "../../data/events";
 import {
   binSimStationUseByDayAndStat,
   copyOeeHeatmapToClipboard,
@@ -89,12 +83,25 @@ import {
   binSimProductionByDayAndPart,
   copyCompletedPartsHeatmapToClipboard,
 } from "../../data/results.completed-parts";
-import { SimUseState } from "../../data/events.simuse";
 import { DataTableActionZoomType } from "./DataTable";
 import { BufferChart } from "./BufferChart";
-import { useIsDemo } from "../../data/routes";
-import { useSetRecoilState } from "recoil";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { useIsDemo } from "../routes";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use";
+import { last30SimProduction, SimPartCompleted, specificMonthSimProduction } from "../../cell-status/sim-production";
+import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections";
+import {
+  last30MaterialSummary,
+  specificMonthMaterialSummary,
+  MaterialSummaryAndCompletedData,
+} from "../../cell-status/material-summary";
+import {
+  last30EstimatedCycleTimes,
+  PartAndStationOperation,
+  specificMonthEstimatedCycleTimes,
+} from "../../cell-status/estimated-cycle-times";
+import { last30PalletCycles, PalletCycleData, specificMonthPalletCycles } from "../../cell-status/pallet-cycles";
+import { last30StationCycles, PartCycleData, specificMonthStationCycles } from "../../cell-status/station-cycles";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -119,83 +126,33 @@ function PartMachineCycleChart() {
   );
 
   // values which user can select to be filtered on
-  const allParts = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.part_and_proc_names
-      : st.Events.selected_month.cycles.part_and_proc_names
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const estimatedCycleTimes = useRecoilValue(
+    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
   );
-  const machineGroups = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.machine_groups
-      : st.Events.selected_month.cycles.machine_groups
-  );
-  const machineNames = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.machine_names
-      : st.Events.selected_month.cycles.machine_names
-  );
-  const palletNames = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.pallet_names
-      : st.Events.selected_month.cycles.pallet_names
-  );
-  const estimatedCycleTimes = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.estimatedCycleTimes
-      : st.Events.selected_month.cycles.estimatedCycleTimes
-  );
-  const matsById = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.mat_summary.matsById
-      : s.Events.selected_month.mat_summary.matsById
-  );
+  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
   // filter/display state
   const demo = useIsDemo();
   const [showGraph, setShowGraph] = React.useState(true);
   const [selectedPart, setSelectedPart] = React.useState<PartAndProcess | undefined>(
-    demo ? new PartAndProcess("aaa", 2) : undefined
+    demo ? { part: "aaa", proc: 2 } : undefined
   );
   const [selectedMachine, setSelectedMachine] = React.useState<string>(FilterAnyMachineKey);
-  const [selectedOperation, setSelectedOperation] = React.useState<number>();
+  const [selectedOperation, setSelectedOperation] = React.useState<PartAndStationOperation>();
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
 
-  const operationNames = React.useMemo(
-    () =>
-      selectedPart
-        ? LazySeq.ofIterable(estimatedCycleTimes)
-            .filter(
-              ([k]) =>
-                selectedPart.part === k.part && selectedPart.proc === k.proc && machineGroups.contains(k.statGroup)
-            )
-            .map(([k]) => k)
-            .toVector()
-            .sortOn(
-              (k) => k.statGroup,
-              (k) => k.operation
-            )
-        : Vector.empty<PartAndStationOperation>(),
-    [selectedPart, estimatedCycleTimes, machineGroups]
-  );
-  const curOperation = selectedPart ? operationNames.get(selectedOperation ?? 0).getOrNull() : null;
-
   // calculate points
-  const analysisPeriod = useSelector((s) => s.Events.analysis_period);
-  const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
   const defaultDateRange =
-    analysisPeriod === AnalysisPeriod.Last30Days
+    period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [analysisPeriodMonth, addMonths(analysisPeriodMonth, 1)];
-  const cycles = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.cycles.part_cycles
-      : s.Events.selected_month.cycles.part_cycles
-  );
+      : [period.month, addMonths(period.month, 1)];
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const points = React.useMemo(() => {
     if (selectedPart) {
-      if (curOperation) {
-        return filterStationCycles(cycles, { operation: curOperation, pallet: selectedPallet });
+      if (selectedOperation) {
+        return filterStationCycles(cycles, { operation: selectedOperation, pallet: selectedPallet });
       } else {
         return filterStationCycles(cycles, {
           partAndProc: selectedPart,
@@ -207,21 +164,22 @@ function PartMachineCycleChart() {
       if (selectedPallet || selectedMachine !== FilterAnyMachineKey) {
         return filterStationCycles(cycles, { pallet: selectedPallet, station: selectedMachine });
       } else {
-        return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<PartCycleData>>() };
+        return emptyStationCycles(cycles);
       }
     }
-  }, [selectedPart, selectedPallet, selectedMachine, curOperation, cycles]);
+  }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
+  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
   const plannedSeries = React.useMemo(() => {
-    if (curOperation !== null) {
+    if (curOperation) {
       return plannedOperationSeries(points, false);
     } else {
       return undefined;
     }
   }, [points, curOperation]);
 
-  if (demo && selectedPart !== undefined && !allParts.isEmpty()) {
+  if (demo && selectedPart !== undefined && points.allPartAndProcNames.length !== 0) {
     // Select below compares object equality, but it takes time to load the demo data
-    const fromLst = allParts.findAny((p) => p.part === "aaa" && p.proc == 2).getOrUndefined();
+    const fromLst = points.allPartAndProcNames.find((p) => p.part === "aaa" && p.proc == 2);
     if (fromLst !== selectedPart) {
       setSelectedPart(fromLst);
     }
@@ -238,7 +196,7 @@ function PartMachineCycleChart() {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, matsById, zoomDateRange)}
+                  onClick={() => copyCyclesToClipboard(points, matSummary.matsById, zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -262,18 +220,26 @@ function PartMachineCycleChart() {
               name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={selectedPart || ""}
+              value={
+                selectedPart
+                  ? points.allPartAndProcNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    )
+                  : -1
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as PartAndProcess));
+                setSelectedPart(
+                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                );
                 setSelectedOperation(undefined);
               }}
             >
-              <MenuItem key={0} value="">
+              <MenuItem key={0} value={-1}>
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
-                <MenuItem key={idx} value={n as any}>
+              {points.allPartAndProcNames.map((n, idx) => (
+                <MenuItem key={idx} value={idx}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={n.part} size={20} />
                     <span style={{ marginRight: "1em" }}>
@@ -287,23 +253,29 @@ function PartMachineCycleChart() {
               name="Station-Cycles-cycle-chart-station-select"
               autoWidth
               displayEmpty
-              value={selectedPart ? selectedOperation ?? 0 : selectedMachine}
+              value={
+                selectedPart
+                  ? curOperation
+                    ? points.allMachineOperations.findIndex((o) => curOperation.equals(o))
+                    : -1
+                  : selectedMachine
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
                 if (selectedPart) {
-                  setSelectedOperation(e.target.value as number);
+                  setSelectedOperation(points.allMachineOperations[e.target.value as number]);
                 } else {
                   setSelectedMachine(e.target.value as string);
                 }
               }}
             >
               {selectedPart ? (
-                operationNames.length() === 0 ? (
-                  <MenuItem value={0}>
+                points.allMachineOperations.length === 0 ? (
+                  <MenuItem value={-1}>
                     <em>Any Operation</em>
                   </MenuItem>
                 ) : (
-                  LazySeq.ofIterable(operationNames).map((oper, idx) => (
+                  points.allMachineOperations.map((oper, idx) => (
                     <MenuItem key={idx} value={idx}>
                       {oper.statGroup} {oper.operation}
                     </MenuItem>
@@ -314,7 +286,7 @@ function PartMachineCycleChart() {
                   <MenuItem key={-1} value={FilterAnyMachineKey}>
                     <em>Any Machine</em>
                   </MenuItem>,
-                  machineNames.toArray({ sortOn: (x) => x }).map((n) => (
+                  points.allMachineNames.map((n) => (
                     <MenuItem key={n} value={n}>
                       <div style={{ display: "flex", alignItems: "center" }}>
                         <span style={{ marginRight: "1em" }}>{n}</span>
@@ -335,7 +307,7 @@ function PartMachineCycleChart() {
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {palletNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {points.allPalletNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -369,11 +341,11 @@ function PartMachineCycleChart() {
         ) : (
           <StationDataTable
             points={points.data}
-            matsById={matsById}
+            matsById={matSummary.matsById}
             default_date_range={defaultDateRange}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
+            last30_days={period.type === "Last30"}
             showWorkorderAndInspect={true}
           />
         )}
@@ -408,26 +380,12 @@ function PartLoadStationCycleChart() {
     [setMatToShow]
   );
 
-  const allParts = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.part_and_proc_names
-      : st.Events.selected_month.cycles.part_and_proc_names
-  );
-  const loadStationNames = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.loadstation_names
-      : st.Events.selected_month.cycles.loadstation_names
-  );
-  const palletNames = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.pallet_names
-      : st.Events.selected_month.cycles.pallet_names
-  );
+  const period = useRecoilValue(selectedAnalysisPeriod);
 
   const demo = useIsDemo();
   const [showGraph, setShowGraph] = React.useState(true);
   const [selectedPart, setSelectedPart] = React.useState<PartAndProcess | undefined>(
-    demo ? new PartAndProcess("aaa", 2) : undefined
+    demo ? { part: "aaa", proc: 2 } : undefined
   );
   const [selectedOperation, setSelectedOperation] = React.useState<LoadCycleFilter>(demo ? "LoadOp" : "LULOccupancy");
   const [selectedLoadStation, setSelectedLoadStation] = React.useState<string>(FilterAnyLoadKey);
@@ -440,26 +398,14 @@ function PartLoadStationCycleChart() {
       ? new PartAndStationOperation(selectedPart.part, selectedPart.proc, "L/U", "UNLOAD")
       : null;
 
-  const analysisPeriod = useSelector((s) => s.Events.analysis_period);
-  const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
   const defaultDateRange =
-    analysisPeriod === AnalysisPeriod.Last30Days
+    period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [analysisPeriodMonth, addMonths(analysisPeriodMonth, 1)];
-  const cycles = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.cycles.part_cycles
-      : s.Events.selected_month.cycles.part_cycles
-  );
-  const matsById = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.mat_summary.matsById
-      : s.Events.selected_month.mat_summary.matsById
-  );
-  const estimatedCycleTimes = useSelector((st) =>
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.cycles.estimatedCycleTimes
-      : st.Events.selected_month.cycles.estimatedCycleTimes
+      : [period.month, addMonths(period.month, 1)];
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const estimatedCycleTimes = useRecoilValue(
+    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
   );
   const points = React.useMemo(() => {
     if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
@@ -483,7 +429,7 @@ function PartLoadStationCycleChart() {
         });
       }
     } else {
-      return { seriesLabel: "Station", data: HashMap.empty<string, ReadonlyArray<LoadCycleData>>() };
+      return emptyStationCycles(cycles);
     }
   }, [selectedPart, selectedPallet, selectedOperation, selectedLoadStation, cycles, showGraph]);
   const plannedSeries = React.useMemo(() => {
@@ -494,9 +440,9 @@ function PartLoadStationCycleChart() {
     }
   }, [points, selectedOperation]);
 
-  if (demo && selectedPart !== undefined && !allParts.isEmpty()) {
+  if (demo && selectedPart !== undefined && points.allPartAndProcNames.length !== 0) {
     // Select below compares object equality, but it takes time to load the demo data
-    const fromLst = allParts.findAny((p) => p.part === "aaa" && p.proc == 2).getOrUndefined();
+    const fromLst = points.allPartAndProcNames.find((p) => p.part === "aaa" && p.proc == 2);
     if (fromLst !== selectedPart) {
       setSelectedPart(fromLst);
     }
@@ -514,7 +460,12 @@ function PartLoadStationCycleChart() {
               <Tooltip title="Copy to Clipboard">
                 <IconButton
                   onClick={() =>
-                    copyCyclesToClipboard(points, matsById, zoomDateRange, selectedOperation === "LULOccupancy")
+                    copyCyclesToClipboard(
+                      points,
+                      matSummary.matsById,
+                      zoomDateRange,
+                      selectedOperation === "LULOccupancy"
+                    )
                   }
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
@@ -536,25 +487,32 @@ function PartLoadStationCycleChart() {
               </MenuItem>
             </Select>
             <Select
-              name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={selectedPart || ""}
+              value={
+                selectedPart
+                  ? points.allPartAndProcNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    )
+                  : -1
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                if (e.target.value === "") {
+                if (e.target.value === -1) {
                   setSelectedPart(undefined);
                   setSelectedOperation("LULOccupancy");
                 } else {
-                  setSelectedPart(e.target.value as PartAndProcess);
+                  setSelectedPart(
+                    e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                  );
                 }
               }}
             >
-              <MenuItem key={0} value="">
+              <MenuItem key={0} value={-1}>
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
-                <MenuItem key={idx} value={n as any}>
+              {points.allPartAndProcNames.map((n, idx) => (
+                <MenuItem key={idx} value={idx}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={n.part} size={20} />
                     <span style={{ marginRight: "1em" }}>
@@ -589,7 +547,7 @@ function PartLoadStationCycleChart() {
               <MenuItem key={-1} value={FilterAnyLoadKey}>
                 <em>Any Station</em>
               </MenuItem>
-              {loadStationNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {points.allLoadStationNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -608,7 +566,7 @@ function PartLoadStationCycleChart() {
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {palletNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {points.allPalletNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -634,11 +592,11 @@ function PartLoadStationCycleChart() {
         ) : (
           <StationDataTable
             points={points.data}
-            matsById={matsById}
+            matsById={matSummary.matsById}
             default_date_range={defaultDateRange}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            last30_days={analysisPeriod === AnalysisPeriod.Last30Days}
+            last30_days={period.type === "Last30"}
             showWorkorderAndInspect={true}
             hideMedian={selectedOperation === "LULOccupancy"}
           />
@@ -652,29 +610,27 @@ function PartLoadStationCycleChart() {
 // Pallet Cycles
 // --------------------------------------------------------------------------------
 
-interface PalletCycleChartProps {
-  readonly points: HashMap<string, ReadonlyArray<CycleData>>;
-}
-
-function PalletCycleChart(props: PalletCycleChartProps) {
+function PalletCycleChart() {
   const demo = useIsDemo();
   const [selectedPallet, setSelectedPallet] = React.useState<string | undefined>(demo ? "3" : undefined);
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
 
-  const analysisPeriod = useSelector((s) => s.Events.analysis_period);
-  const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
+  const period = useRecoilValue(selectedAnalysisPeriod);
   const defaultDateRange =
-    analysisPeriod === AnalysisPeriod.Last30Days
+    period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [analysisPeriodMonth, addMonths(analysisPeriodMonth, 1)];
+      : [period.month, addMonths(period.month, 1)];
 
-  let points = HashMap.empty<string, ReadonlyArray<CycleData>>();
-  if (selectedPallet) {
-    const palData = props.points.get(selectedPallet);
-    if (palData.isSome()) {
-      points = HashMap.of([selectedPallet, palData.get()]);
+  const palletCycles = useRecoilValue(period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles);
+  const points = React.useMemo(() => {
+    if (selectedPallet) {
+      const palData = palletCycles.get(selectedPallet);
+      if (palData.isSome()) {
+        return HashMap.of([selectedPallet, palData.get().toArray()]);
+      }
     }
-  }
+    return HashMap.empty<string, ReadonlyArray<PalletCycleData>>();
+  }, [selectedPallet, palletCycles]);
   return (
     <Card raised>
       <CardHeader
@@ -685,7 +641,7 @@ function PalletCycleChart(props: PalletCycleChartProps) {
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
               <IconButton
-                onClick={() => copyPalletCyclesToClipboard(props.points)}
+                onClick={() => copyPalletCyclesToClipboard(palletCycles)}
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
               >
                 <ImportExport />
@@ -703,7 +659,7 @@ function PalletCycleChart(props: PalletCycleChartProps) {
                   <em>Select Pallet</em>
                 </MenuItem>
               )}
-              {props.points
+              {palletCycles
                 .keySet()
                 .toArray({ sortOn: (x) => x })
                 .map((n) => (
@@ -729,18 +685,6 @@ function PalletCycleChart(props: PalletCycleChartProps) {
     </Card>
   );
 }
-
-const ConnectedPalletCycleChart = connect((st) => {
-  if (st.Events.analysis_period === AnalysisPeriod.Last30Days) {
-    return {
-      points: st.Events.last30.cycles.by_pallet,
-    };
-  } else {
-    return {
-      points: st.Events.selected_month.cycles.by_pallet,
-    };
-  }
-})(PalletCycleChart);
 
 // --------------------------------------------------------------------------------
 // Buffer Chart
@@ -810,18 +754,18 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
 
 function StationOeeHeatmap() {
   const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
-  const data = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days ? s.Events.last30 : s.Events.selected_month
-  );
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const statUse = useRecoilValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
   const points = React.useMemo(() => {
     if (selected === "Standard OEE") {
-      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(data.cycles.part_cycles));
+      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles));
     } else if (selected === "Occupied") {
-      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(data.cycles.part_cycles));
+      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles));
     } else {
-      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(data.sim_use.station_use));
+      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse));
     }
-  }, [selected, data]);
+  }, [selected, cycles, statUse]);
 
   return (
     <SelectableHeatChart<StationOeeHeatmapTypes>
@@ -845,12 +789,12 @@ function StationOeeHeatmap() {
 type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
 function partsCompletedPoints(
-  cycles: CycleState,
+  partCycles: Iterable<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
   end: Date
 ) {
-  const pts = binCyclesByDayAndPart(cycles.part_cycles, matsById, start, end);
+  const pts = binCyclesByDayAndPart(partCycles, matsById, start, end);
   return LazySeq.ofIterable(pts)
     .map(([dayAndPart, val]) => {
       return {
@@ -873,8 +817,8 @@ function partsCompletedPoints(
     });
 }
 
-function partsPlannedPoints(simUse: SimUseState) {
-  const pts = binSimProductionByDayAndPart(simUse.production);
+function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
+  const pts = binSimProductionByDayAndPart(prod);
   return LazySeq.ofIterable(pts)
     .map(([dayAndPart, val]) => {
       return {
@@ -899,26 +843,20 @@ function partsPlannedPoints(simUse: SimUseState) {
 
 function CompletedCountHeatmap() {
   const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
-  const data = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? {
-          evts: s.Events.last30,
-          start: startOfDay(s.Events.last30.thirty_days_ago),
-          end: addDays(startOfDay(s.Events.last30.thirty_days_ago), 31),
-        }
-      : {
-          evts: s.Events.selected_month,
-          start: s.Events.analysis_period_month,
-          end: addMonths(s.Events.analysis_period_month, 1),
-        }
-  );
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const productionCounts = useRecoilValue(period.type === "Last30" ? last30SimProduction : specificMonthSimProduction);
+  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
   const points = React.useMemo(() => {
     if (selected === "Completed") {
-      return partsCompletedPoints(data.evts.cycles, data.evts.mat_summary.matsById, data.start, data.end);
+      const today = startOfToday();
+      const start = period.type === "Last30" ? addDays(today, -30) : period.month;
+      const endD = period.type === "Last30" ? addDays(today, 1) : addMonths(period.month, 1);
+      return partsCompletedPoints(cycles, matSummary.matsById, start, endD);
     } else {
-      return partsPlannedPoints(data.evts.sim_use);
+      return partsPlannedPoints(productionCounts);
     }
-  }, [selected, data.evts, data.start, data.end]);
+  }, [selected, cycles, matSummary, productionCounts]);
   return (
     <SelectableHeatChart
       card_label="Part Production"
@@ -938,21 +876,26 @@ function CompletedCountHeatmap() {
 // Inspection
 // --------------------------------------------------------------------------------
 
-const ConnectedInspection = connect((st) => ({
-  inspectionlogs:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? st.Events.last30.inspection.by_part
-      : st.Events.selected_month.inspection.by_part,
-  zoomType:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? DataTableActionZoomType.Last30Days
-      : DataTableActionZoomType.ZoomIntoRange,
-  default_date_range:
-    st.Events.analysis_period === AnalysisPeriod.Last30Days
+function ConnectedInspection() {
+  const period = useRecoilValue(selectedAnalysisPeriod);
+
+  const inspectionlogs = useRecoilValue(period.type === "Last30" ? last30Inspections : specificMonthInspections);
+  const zoomType =
+    period.type === "Last30" ? DataTableActionZoomType.Last30Days : DataTableActionZoomType.ZoomIntoRange;
+  const default_date_range =
+    period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [st.Events.analysis_period_month, addMonths(st.Events.analysis_period_month, 1)],
-  defaultToTable: false,
-}))(InspectionSankey);
+      : [period.month, addMonths(period.month, 1)];
+
+  return (
+    <InspectionSankey
+      inspectionlogs={inspectionlogs}
+      zoomType={zoomType}
+      default_date_range={default_date_range}
+      defaultToTable={false}
+    />
+  );
+}
 
 // --------------------------------------------------------------------------------
 // Efficiency
@@ -968,7 +911,7 @@ export function EfficiencyCards(): JSX.Element {
         <PartLoadStationCycleChart />
       </div>
       <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
-        <ConnectedPalletCycleChart />
+        <PalletCycleChart />
       </div>
       <div data-testid="buffer-chart" style={{ marginTop: "3em" }}>
         <BufferOccupancyChart />

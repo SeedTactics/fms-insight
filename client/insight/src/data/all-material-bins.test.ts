@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import curSt from "../../test/status-mock.json";
 import { selectAllMaterialIntoBins } from "./all-material-bins";
-import { CurrentStatus } from "./api";
+import { CurrentStatus } from "../network/api";
 
 it("creates all material", () => {
   const status = CurrentStatus.fromJS(curSt);

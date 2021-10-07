@@ -31,24 +31,76 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashMap, Vector, Option, HashSet } from "prelude-ts";
-import {
-  PartCycleData,
-  stat_name_and_num,
-  PartAndProcess,
-  isOutlier,
-  EstimatedCycleTimes,
-  splitElapsedLoadTimeAmongCycles,
-  PartAndStationOperation,
-  chunkCyclesWithSimilarEndTime,
-  splitElapsedTimeAmongChunk,
-} from "./events.cycles";
-import { LazySeq } from "./lazyseq";
-import * as api from "./api";
+import { HashMap, Option, HashSet } from "prelude-ts";
+import { LazySeq } from "../util/lazyseq";
+import * as api from "../network/api";
 import { format, differenceInSeconds } from "date-fns";
-import { durationToMinutes } from "./parseISODuration";
-import { MaterialSummaryAndCompletedData } from "./events.matsummary";
+import { durationToMinutes } from "../util/parseISODuration";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import copy from "copy-to-clipboard";
+import {
+  chunkCyclesWithSimilarEndTime,
+  EstimatedCycleTimes,
+  isOutlier,
+  PartAndStationOperation,
+  splitElapsedTimeAmongChunk,
+} from "../cell-status/estimated-cycle-times";
+import * as L from "list/methods";
+import { PartCycleData, splitElapsedLoadTimeAmongCycles, stat_name_and_num } from "../cell-status/station-cycles";
+
+export interface PartAndProcess {
+  readonly part: string;
+  readonly proc: number;
+}
+
+function cycleToPartAndOp(cycle: PartCycleData): PartAndStationOperation {
+  return new PartAndStationOperation(cycle.part, cycle.process, cycle.stationGroup, cycle.operation);
+}
+
+export interface CycleFilterOptions {
+  readonly allPartAndProcNames: ReadonlyArray<PartAndProcess>;
+  readonly allPalletNames: ReadonlyArray<string>;
+  readonly allLoadStationNames: ReadonlyArray<string>;
+  readonly allMachineNames: ReadonlyArray<string>;
+  readonly allMachineOperations: ReadonlyArray<PartAndStationOperation>;
+}
+
+function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: PartAndProcess): CycleFilterOptions {
+  const palNames = new Set<string>();
+  const lulNames = new Set<string>();
+  const mcNames = new Set<string>();
+  let partNames = HashMap.empty<string, HashSet<number>>();
+  let oper = HashSet.empty<PartAndStationOperation>();
+
+  for (const c of cycles) {
+    palNames.add(c.pallet);
+
+    if (c.isLabor) {
+      lulNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+    } else {
+      mcNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+
+      if (selectedPart && c.part == selectedPart.part && c.process == selectedPart.proc) {
+        oper = oper.add(new PartAndStationOperation(c.part, c.process, c.stationGroup, c.operation));
+      }
+    }
+
+    for (const m of c.material) {
+      partNames = partNames.putWithMerge(m.part, HashSet.of(m.proc), (a, b) => a.addAll(b));
+    }
+  }
+
+  return {
+    allPalletNames: Array.from(palNames).sort((a, b) => a.localeCompare(b)),
+    allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
+    allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
+    allPartAndProcNames: LazySeq.ofIterable(partNames)
+      .sortOn(([p, _]) => p)
+      .flatMap(([part, procs]) => procs.toArray({ sortOn: (n) => n }).map((proc) => ({ part: part, proc: proc })))
+      .toArray(),
+    allMachineOperations: oper.toArray({ sortOn: [(p) => p.statGroup, (p) => p.operation] }),
+  };
+}
 
 export interface FilteredStationCycles {
   readonly seriesLabel: string;
@@ -66,14 +118,23 @@ export interface StationCycleFilter {
   readonly operation?: PartAndStationOperation;
 }
 
+export function emptyStationCycles(allCycles: Iterable<PartCycleData>): FilteredStationCycles & CycleFilterOptions {
+  return {
+    ...extractFilterOptions(allCycles),
+    seriesLabel: "Station",
+    data: HashMap.empty<string, ReadonlyArray<PartCycleData>>(),
+  };
+}
+
 export function filterStationCycles(
-  allCycles: Vector<PartCycleData>,
+  allCycles: L.List<PartCycleData>,
   { zoom, partAndProc, pallet, station, operation }: StationCycleFilter
-): FilteredStationCycles {
+): FilteredStationCycles & CycleFilterOptions {
   const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
   const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
 
   return {
+    ...extractFilterOptions(allCycles, partAndProc),
     seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
     data: LazySeq.ofIterable(allCycles)
       .filter((e) => {
@@ -99,7 +160,7 @@ export function filterStationCycles(
           return false;
         }
 
-        if (operation && !operation.equals(PartAndStationOperation.ofPartCycle(e))) {
+        if (operation && !operation.equals(cycleToPartAndOp(e))) {
           return false;
         }
 
@@ -114,6 +175,7 @@ export function filterStationCycles(
           return stat_name_and_num(e.stationGroup, e.stationNumber);
         }
       })
+      .filter((_, e) => !e.isEmpty())
       .mapValues((e) => e.toArray()),
   };
 }
@@ -135,10 +197,11 @@ export interface LoadCycleFilter {
 }
 
 export function loadOccupancyCycles(
-  allCycles: Vector<PartCycleData>,
+  allCycles: L.List<PartCycleData>,
   { zoom, partAndProc, pallet, station }: LoadCycleFilter
-): FilteredLoadCycles {
+): FilteredLoadCycles & CycleFilterOptions {
   return {
+    ...extractFilterOptions(allCycles, partAndProc),
     seriesLabel: "Station",
     data: LazySeq.ofIterable(allCycles)
       .filter((e) => {
@@ -183,7 +246,8 @@ export function loadOccupancyCycles(
             }
           })
           .toArray()
-      ),
+      )
+      .filter((_, e) => e.length > 0),
   };
 }
 
@@ -195,10 +259,11 @@ export interface LoadOpFilters {
 }
 
 export function estimateLulOperations(
-  allCycles: Vector<PartCycleData>,
+  allCycles: L.List<PartCycleData>,
   { operation, pallet, zoom, station }: LoadOpFilters
-): FilteredLoadCycles {
+): FilteredLoadCycles & CycleFilterOptions {
   return {
+    ...extractFilterOptions(allCycles),
     seriesLabel: "Station",
     data: LazySeq.ofIterable(allCycles)
       .filter((e) => {
@@ -222,7 +287,7 @@ export function estimateLulOperations(
               if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
                 return false;
               }
-              if (!operation.equals(PartAndStationOperation.ofPartCycle(e.cycle))) {
+              if (!operation.equals(cycleToPartAndOp(e.cycle))) {
                 return false;
               }
               if (pallet && e.cycle.pallet !== pallet) {
@@ -249,12 +314,13 @@ export function estimateLulOperations(
             }
           })
           .toArray()
-      ),
+      )
+      .filter((_, e) => e.length > 0),
   };
 }
 
 export function outlierMachineCycles(
-  allCycles: Vector<PartCycleData>,
+  allCycles: L.List<PartCycleData>,
   start: Date,
   end: Date,
   estimated: EstimatedCycleTimes
@@ -265,7 +331,7 @@ export function outlierMachineCycles(
       .filter((e) => !e.isLabor && e.x >= start && e.x <= end)
       .filter((cycle) => {
         if (cycle.material.length === 0) return false;
-        const stats = estimated.get(PartAndStationOperation.ofPartCycle(cycle));
+        const stats = estimated.get(cycleToPartAndOp(cycle));
         return stats.isSome() && isOutlier(stats.get(), cycle.y / cycle.material.length);
       })
       .groupBy((e) => e.part + "-" + e.process.toString())
@@ -274,7 +340,7 @@ export function outlierMachineCycles(
 }
 
 export function outlierLoadCycles(
-  allCycles: Vector<PartCycleData>,
+  allCycles: L.List<PartCycleData>,
   start: Date,
   end: Date,
   estimated: EstimatedCycleTimes
@@ -295,7 +361,7 @@ export function outlierLoadCycles(
         // another cycle arrives it will be recaluclated.  Thus showing stale data isn't a huge problem.
         if (Math.abs(differenceInSeconds(now, e.cycle.x)) < 15) return false;
 
-        const stats = estimated.get(PartAndStationOperation.ofPartCycle(e.cycle));
+        const stats = estimated.get(cycleToPartAndOp(e.cycle));
         return stats.isSome() && isOutlier(stats.get(), e.elapsedForSingleMaterialMinutes);
       })
       .map((e) => e.cycle)
@@ -304,7 +370,7 @@ export function outlierLoadCycles(
   };
 }
 
-export function stationMinutes(partCycles: Vector<PartCycleData>, cutoff: Date): HashMap<string, number> {
+export function stationMinutes(partCycles: L.List<PartCycleData>, cutoff: Date): HashMap<string, number> {
   return LazySeq.ofIterable(partCycles)
     .filter((p) => p.x >= cutoff)
     .map((p) => ({
@@ -440,8 +506,8 @@ export function copyCyclesToClipboard(
 }
 
 export function buildPalletCycleTable(
-  points: HashMap<string, ReadonlyArray<{ readonly x: Date; readonly y: number }>>
-) {
+  points: HashMap<string, Iterable<{ readonly x: Date; readonly y: number }>>
+): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Pallet</th><th>Date</th><th>Elapsed (min)</th>";
   table += "</tr></thead>\n<tbody>\n";
@@ -462,8 +528,8 @@ export function buildPalletCycleTable(
 }
 
 export function copyPalletCyclesToClipboard(
-  points: HashMap<string, ReadonlyArray<{ readonly x: Date; readonly y: number }>>
-) {
+  points: HashMap<string, Iterable<{ readonly x: Date; readonly y: number }>>
+): void {
   copy(buildPalletCycleTable(points));
 }
 

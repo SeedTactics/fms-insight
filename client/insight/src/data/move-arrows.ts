@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
+import * as api from "../network/api";
 import { HashMap, fieldsHashCode, Vector, Option } from "prelude-ts";
 
 export class MoveMaterialIdentifier {

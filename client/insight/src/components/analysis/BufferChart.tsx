@@ -41,34 +41,27 @@ import {
   LineSeries,
   DiscreteColorLegend,
 } from "react-vis";
-import { useSelector } from "../../store/store";
-import { AnalysisPeriod } from "../../data/events";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import { buildBufferChart } from "../../data/results.bufferchart";
 import { seriesColor } from "./CycleChart";
 import { HashSet } from "prelude-ts";
+import { useRecoilValue } from "recoil";
+import { rawMaterialQueues } from "../../cell-status/names";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month";
+import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;
 }
 
 export const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
-  const analysisPeriod = useSelector((s) => s.Events.analysis_period);
-  const analysisPeriodMonth = useSelector((s) => s.Events.analysis_period_month);
+  const period = useRecoilValue(selectedAnalysisPeriod);
   const defaultDateRange =
-    analysisPeriod === AnalysisPeriod.Last30Days
+    period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [analysisPeriodMonth, addMonths(analysisPeriodMonth, 1)];
-  const entries = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.buffering.entries
-      : s.Events.selected_month.buffering.entries
-  );
-  const rawMatQueues = useSelector((s) =>
-    s.Events.analysis_period === AnalysisPeriod.Last30Days
-      ? s.Events.last30.sim_use.rawMaterialQueues
-      : s.Events.selected_month.sim_use.rawMaterialQueues
-  );
+      : [period.month, addMonths(period.month, 1)];
+  const entries = useRecoilValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
+  const rawMatQueues = useRecoilValue(rawMaterialQueues);
 
   const [disabledBuffers, setDisabledBuffers] = React.useState<HashSet<string>>(HashSet.empty());
 

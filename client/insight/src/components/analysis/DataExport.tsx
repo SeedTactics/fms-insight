@@ -35,17 +35,12 @@ import * as df from "date-fns";
 import { TextField } from "@material-ui/core";
 import { Button } from "@material-ui/core";
 import ExportIcon from "@material-ui/icons/ImportExport";
-import ViewIcon from "@material-ui/icons/ViewList";
 import { Card } from "@material-ui/core";
 import { CardContent } from "@material-ui/core";
 import { CardHeader } from "@material-ui/core";
 import { CardActions } from "@material-ui/core";
 import { Grid } from "@material-ui/core";
 import BasketIcon from "@material-ui/icons/ShoppingBasket";
-
-import * as api from "../../data/api";
-import { Store, connect } from "../../store/store";
-import { LogEntries } from "../LogEntry";
 
 interface CSVLogExportState {
   readonly exportDate: string;
@@ -164,33 +159,7 @@ class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState
   }
 }
 
-interface RecentEventsProps {
-  events: Iterable<Readonly<api.ILogEntry>>;
-}
-
-function RecentEvents(p: RecentEventsProps) {
-  return (
-    <Card style={{ margin: "2em" }}>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <ViewIcon />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Preview of Most Recent Events</div>
-          </div>
-        }
-      />
-      <CardContent>
-        <LogEntries entries={p.events} />
-      </CardContent>
-    </Card>
-  );
-}
-
-const ConnectedRecentEvents = connect((s: Store) => ({
-  events: s.Events.last30.most_recent_10_events,
-}))(RecentEvents);
-
-export default function DataExport() {
+export default function DataExport(): JSX.Element {
   React.useEffect(() => {
     document.title = "Data Export - FMS Insight";
   }, []);
@@ -198,7 +167,6 @@ export default function DataExport() {
     <main style={{ padding: "8px" }}>
       <CSVLogExport />
       <CSVWorkorderExport />
-      <ConnectedRecentEvents />
     </main>
   );
 }

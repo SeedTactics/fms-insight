@@ -48,7 +48,7 @@ import InfoIcon from "@material-ui/icons/Info";
 import OpacityIcon from "@material-ui/icons/Opacity";
 import MemoryIcon from "@material-ui/icons/Memory";
 
-import { RouteState, RouteLocation } from "../data/routes";
+import { RouteState, RouteLocation } from "./routes";
 
 export type ChooseModeItem =
   | { readonly type: "Subheader"; readonly caption: string }

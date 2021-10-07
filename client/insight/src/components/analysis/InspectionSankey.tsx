@@ -45,12 +45,12 @@ import ImportExport from "@material-ui/icons/ImportExport";
 import { PartIdenticon } from "../station-monitor/Material";
 import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
 
-import { PartAndInspType, InspectionLogEntry } from "../../data/events.inspection";
+import { PartAndInspType, InspectionLogEntry } from "../../cell-status/inspections";
 import { HashMap } from "prelude-ts";
 import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 import { DataTableActionZoomType } from "./DataTable";
-import { useIsDemo } from "../../data/routes";
+import { useIsDemo } from "../routes";
 
 interface InspectionSankeyDiagramProps {
   readonly sankey: SankeyDiagram;

@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { InspectionLogResultType, InspectionLogEntry } from "./events.inspection";
+import * as api from "../network/api";
+import { InspectionLogResultType, InspectionLogEntry } from "../cell-status/inspections";
 import { fieldsHashCode } from "prelude-ts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
 
 export interface SankeyNode {
   readonly unique: string; // full unique of node

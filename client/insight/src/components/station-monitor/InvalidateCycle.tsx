@@ -36,9 +36,9 @@ import { MenuItem } from "@material-ui/core";
 import { TextField } from "@material-ui/core";
 import { Vector } from "prelude-ts";
 import * as React from "react";
-import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../data/api";
-import { JobsBackend } from "../../data/backend";
-import { LazySeq } from "../../data/lazyseq";
+import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../network/api";
+import { JobsBackend } from "../../network/backend";
+import { LazySeq } from "../../util/lazyseq";
 
 interface InvalidateCycle {
   readonly process: number | null;

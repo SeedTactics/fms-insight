@@ -33,36 +33,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
 
-import { PledgeStatus } from "../store/middleware";
-import * as events from "./events";
-import { fakeCycle } from "./events.fake";
-import { ILogEntry } from "./api";
+import { fakeCycle } from "../../test/events.fake";
+import { ILogEntry } from "../network/api";
 import { binCyclesByDayAndPart, buildCompletedPartsHeatmapTable } from "./results.completed-parts";
-import { LazySeq } from "./lazyseq";
+import { LazySeq } from "../util/lazyseq";
+import { applyConduitToSnapshot } from "../util/recoil-util";
+import { snapshot_UNSTABLE } from "recoil";
+import { onLoadLast30Log } from "../cell-status/loading";
+import { last30StationCycles } from "../cell-status/station-cycles";
+import { last30MaterialSummary } from "../cell-status/material-summary";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle(now, 30),
-    fakeCycle(addHours(now, -3), 20),
-    fakeCycle(addHours(now, -15), 15)
+    fakeCycle({ time: now, machineTime: 30 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15 })
   );
-  const st = events.reducer(events.initial, {
-    type: events.ActionType.LoadRecentLogEntries,
-    now: addDays(now, 1),
-    pledge: {
-      status: PledgeStatus.Completed,
-      result: evts,
-    },
-  });
+  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
+  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+  const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
 
-  let byDayAndPart = binCyclesByDayAndPart(
-    st.last30.cycles.part_cycles,
-    st.last30.mat_summary.matsById,
-    addDays(now, -30),
-    now
-  );
+  let byDayAndPart = binCyclesByDayAndPart(cycles, matSummary.matsById, addDays(now, -30), now);
 
   const points = LazySeq.ofIterable(byDayAndPart)
     .map(([dayAndPart, val]) => ({

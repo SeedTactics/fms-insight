@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import curSt from "../../test/status-mock.json";
-import { CurrentStatus } from "./api";
+import { CurrentStatus } from "../network/api";
 import { selectLoadStationAndQueueProps } from "./load-station";
 
 describe("load station status", () => {

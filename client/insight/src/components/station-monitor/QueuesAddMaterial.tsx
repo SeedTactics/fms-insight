@@ -56,17 +56,17 @@ import ReactToPrint from "react-to-print";
 import clsx from "clsx";
 
 import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material";
-import * as api from "../../data/api";
-import { useSelector } from "../../store/store";
-import * as matDetails from "../../data/material-details";
-import { LazySeq } from "../../data/lazyseq";
+import * as api from "../../network/api";
+import * as matDetails from "../../cell-status/material-details";
+import { LazySeq } from "../../util/lazyseq";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
 import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../data/server-settings";
-import { currentStatus } from "../../data/current-status";
-import { useAddNewCastingToQueue } from "../../data/material-details";
+import { fmsInformation } from "../../network/server-settings";
+import { currentStatus } from "../../cell-status/current-status";
+import { useAddNewCastingToQueue } from "../../cell-status/material-details";
+import { castingNames } from "../../cell-status/names";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -677,18 +677,19 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
   const [qty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const [materialToPrint, setMaterialToPrint] =
-    React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(null);
+  const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<Readonly<api.IInProcessMaterial>> | null>(
+    null
+  );
   const printRef = React.useRef(null);
   const [adding, setAdding] = React.useState<boolean>(false);
-  const castingNames = useSelector((s) => s.Events.last30.sim_use.castingNames);
+  const castNames = useRecoilValue(castingNames);
   const castings: ReadonlyArray<[string, number]> = React.useMemo(
     () =>
       LazySeq.ofObject(currentSt.jobs)
         .flatMap(([, j]) => j.procsAndPaths[0].paths)
         .filter((p) => p.casting !== undefined && p.casting !== "")
         .map((p) => ({ casting: p.casting as string, cnt: 1 }))
-        .appendAll(LazySeq.ofIterable(castingNames).map((c) => ({ casting: c, cnt: 0 })))
+        .appendAll(LazySeq.ofIterable(castNames).map((c) => ({ casting: c, cnt: 0 })))
         .toMap(
           (c) => [c.casting, c.cnt],
           (q1, q2) => q1 + q2
@@ -704,7 +705,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
           }
         })
         .toArray(),
-    [currentSt.jobs, castingNames]
+    [currentSt.jobs, castNames]
   );
 
   function close() {

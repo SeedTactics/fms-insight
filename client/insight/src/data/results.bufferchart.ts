@@ -31,8 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BufferEntry } from "./events.buffering";
-import { Vector, fieldsHashCode, HashSet } from "prelude-ts";
+import { BufferEntry } from "../cell-status/buffers";
+import { fieldsHashCode } from "prelude-ts";
+import { LazySeq } from "../util/lazyseq";
 
 export interface BufferChartPoint {
   readonly x: Date;
@@ -156,15 +157,15 @@ export function buildBufferChart(
   start: Date,
   end: Date,
   movingAverageDistanceInHours: number,
-  rawMatQueues: HashSet<string>,
-  entries: Vector<BufferEntry>
+  rawMatQueues: ReadonlySet<string>,
+  entries: Iterable<BufferEntry>
 ): ReadonlyArray<BufferChartSeries> {
   const movingAverageDistanceInMilliseconds = movingAverageDistanceInHours * 60 * 60 * 1000;
-  return entries
+  return LazySeq.ofIterable(entries)
     .groupBy((v) => new BufferSeriesKey(v.buffer))
     .mapValues((es) => calcPoints(start, end, movingAverageDistanceInMilliseconds, es))
     .toArray()
-    .filter(([k]) => k.ty.type !== "Queue" || !rawMatQueues.contains(k.ty.queue))
+    .filter(([k]) => k.ty.type !== "Queue" || !rawMatQueues.has(k.ty.queue))
     .map(([k, points]) => ({
       label: k.toString(),
       points,

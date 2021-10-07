@@ -32,10 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "./api";
-import { loadLast30Days } from "./events";
-import { RouteLocation } from "./routes";
-import { reduxStore } from "../store/store";
+import { RouteLocation } from "../components/routes";
 import { registerBackend } from "./backend";
+import { onLoadLast30Jobs, onLoadLast30Log } from "../cell-status/loading";
+import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback } from "recoil";
+import { RecoilConduit } from "../util/recoil-util";
+import { addDays } from "date-fns";
 
 type Request = {
   name: string;
@@ -54,32 +56,65 @@ let lastId = 0;
 let port: MessagePort | null = null;
 let msgHandlerRegsitered = false;
 
-function onWindowMessage(evt: MessageEvent<unknown>) {
-  if (evt.source === window && evt.data === "insight-file-opened") {
-    port = evt.ports[0];
-    port.onmessage = (msg) => {
-      const response: Response = msg.data;
-      const handler = inFlight.get(response.id);
-      if (handler) {
-        handler(response);
-      }
-    };
-    window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
-    reduxStore?.dispatch(loadLast30Days() as any);
-    window.removeEventListener("message", onWindowMessage);
-  }
+const loadingBackupViewerRW = atom<boolean>({ key: "loading-backup-viewer-data", default: false });
+export const loadingBackupViewer: RecoilValueReadOnly<boolean> = loadingBackupViewerRW;
+
+const errorLoadingBackupViewerRW = atom<string | null>({ key: "error-backup-viewer-data", default: null });
+export const errorLoadingBackupViewer: RecoilValueReadOnly<string | null> = errorLoadingBackupViewerRW;
+
+function loadLast30(set: <T>(s: RecoilState<T>, t: T) => void, push: <T>(c: RecoilConduit<T>) => (t: T) => void): void {
+  set(loadingBackupViewerRW, true);
+  set(errorLoadingBackupViewerRW, null);
+
+  const now = new Date();
+  const thirtyDaysAgo = addDays(now, -30);
+
+  const jobsProm = JobsBackend.history(thirtyDaysAgo, now).then(push(onLoadLast30Jobs));
+  const logProm = LogBackend.get(thirtyDaysAgo, now).then(push(onLoadLast30Log));
+
+  Promise.all([jobsProm, logProm])
+    .catch((e: Record<string, string | undefined>) => set(errorLoadingBackupViewerRW, e.message ?? e.toString()))
+    .finally(() => set(loadingBackupViewerRW, false));
 }
 
-export function requestOpenBackupFile() {
-  if (msgHandlerRegsitered === false) {
-    window.addEventListener("message", onWindowMessage);
-    msgHandlerRegsitered = true;
-  }
+export function useRequestOpenBackupFile(): () => void {
+  return useRecoilCallback(
+    ({ set, transact_UNSTABLE }) =>
+      () => {
+        function push<T>(c: RecoilConduit<T>): (t: T) => void {
+          return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
+        }
 
-  window.postMessage("open-insight-file", "*");
+        function onWindowMessage(evt: MessageEvent<unknown>) {
+          if (evt.source === window && evt.data === "insight-file-opened") {
+            port = evt.ports[0];
+            port.onmessage = (msg) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              const response: Response = msg.data;
+              const handler = inFlight.get(response.id);
+              if (handler) {
+                handler(response);
+              }
+            };
+            window.removeEventListener("message", onWindowMessage);
+            window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
+
+            loadLast30(set, push);
+          }
+        }
+
+        if (msgHandlerRegsitered === false) {
+          window.addEventListener("message", onWindowMessage);
+          msgHandlerRegsitered = true;
+        }
+
+        window.postMessage("open-insight-file", "*");
+      },
+    []
+  );
 }
 
-export function registerBackupViewerBackend() {
+export function registerBackupViewerBackend(): void {
   registerBackend(LogBackend, JobsBackend, ServerBackend, MachineBackend);
 }
 

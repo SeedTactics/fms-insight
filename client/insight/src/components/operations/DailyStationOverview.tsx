@@ -35,8 +35,6 @@ import { Card } from "@material-ui/core";
 import { CardHeader } from "@material-ui/core";
 import { CardContent } from "@material-ui/core";
 import BugIcon from "@material-ui/icons/BugReport";
-import { createSelector } from "reselect";
-import { HashMap, Vector } from "prelude-ts";
 import { addDays, startOfToday } from "date-fns";
 import { Tooltip } from "@material-ui/core";
 import WorkIcon from "@material-ui/icons/Work";
@@ -47,29 +45,28 @@ import { MenuItem } from "@material-ui/core";
 import HourglassIcon from "@material-ui/icons/HourglassFull";
 
 import StationDataTable from "../analysis/StationDataTable";
-import { connect, Store, useSelector } from "../../store/store";
 import { PartIdenticon } from "../station-monitor/Material";
-import { PartCycleData, EstimatedCycleTimes, PartAndStationOperation, PartAndProcess } from "../../data/events.cycles";
 import {
   filterStationCycles,
   outlierMachineCycles,
   outlierLoadCycles,
-  FilteredStationCycles,
   FilterAnyMachineKey,
   copyCyclesToClipboard,
   plannedOperationSeries,
   loadOccupancyCycles,
   LoadCycleData,
   FilterAnyLoadKey,
+  PartAndProcess,
 } from "../../data/results.cycles";
-import * as events from "../../data/events";
-import * as matDetails from "../../data/material-details";
+import * as matDetails from "../../cell-status/material-details";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
-import { OEEProps, OEEChart, OEETable } from "./OEEChart";
-import { copyOeeToClipboard, buildOeeSeries, OEEBarSeries } from "../../data/results.oee";
-import { LazySeq } from "../../data/lazyseq";
-import { useSetRecoilState } from "recoil";
-import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
+import { OEEChart, OEETable } from "./OEEChart";
+import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { last30SimStationUse } from "../../cell-status/sim-station-use";
+import { last30MaterialSummary } from "../../cell-status/material-summary";
+import { last30EstimatedCycleTimes, PartAndStationOperation } from "../../cell-status/estimated-cycle-times";
+import { last30StationCycles } from "../../cell-status/station-cycles";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -77,12 +74,22 @@ import { MaterialSummaryAndCompletedData } from "../../data/events.matsummary";
 
 interface OutlierCycleProps {
   readonly showLabor: boolean;
-  readonly points: FilteredStationCycles;
-  readonly matsById: HashMap<number, MaterialSummaryAndCompletedData>;
-  readonly default_date_range: Date[];
 }
 
-function OutlierCycles(props: OutlierCycleProps) {
+const OutlierCycles = React.memo(function OutlierCycles(props: OutlierCycleProps) {
+  const matSummary = useRecoilValue(last30MaterialSummary);
+  const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
+  const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
+  const allCycles = useRecoilValue(last30StationCycles);
+  const points = React.useMemo(() => {
+    const today = startOfToday();
+    if (props.showLabor) {
+      return outlierLoadCycles(allCycles, addDays(today, -4), addDays(today, 1), estimatedCycleTimes);
+    } else {
+      return outlierMachineCycles(allCycles, addDays(today, -4), addDays(today, 1), estimatedCycleTimes);
+    }
+  }, [props.showLabor, estimatedCycleTimes, allCycles]);
+
   return (
     <Card raised>
       <CardHeader
@@ -94,7 +101,7 @@ function OutlierCycles(props: OutlierCycleProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyCyclesToClipboard(props.points, props.matsById, undefined)}
+                onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined)}
               >
                 <ImportExport />
               </IconButton>
@@ -108,10 +115,10 @@ function OutlierCycles(props: OutlierCycleProps) {
       />
       <CardContent>
         <StationDataTable
-          points={props.points.data}
-          matsById={props.matsById}
-          default_date_range={props.default_date_range}
-          current_date_zoom={{ start: props.default_date_range[0], end: props.default_date_range[1] }}
+          points={points.data}
+          matsById={matSummary.matsById}
+          default_date_range={default_date_range}
+          current_date_zoom={{ start: default_date_range[0], end: default_date_range[1] }}
           set_date_zoom_range={undefined}
           last30_days={true}
           showWorkorderAndInspect={false}
@@ -120,46 +127,25 @@ function OutlierCycles(props: OutlierCycleProps) {
       </CardContent>
     </Card>
   );
-}
-
-const outlierLaborPointsSelector = createSelector(
-  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.part_cycles,
-  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
-  (_: Store, _l: boolean, today: Date) => today,
-  (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
-    return outlierLoadCycles(cycles, addDays(today, -4), addDays(today, 1), estimated);
-  }
-);
-
-const outlierMachinePointsSelector = createSelector(
-  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.part_cycles,
-  (st: Store, _: boolean, _t: Date) => st.Events.last30.cycles.estimatedCycleTimes,
-  (_: Store, _l: boolean, today: Date) => today,
-  (cycles: Vector<PartCycleData>, estimated: EstimatedCycleTimes, today: Date) => {
-    return outlierMachineCycles(cycles, addDays(today, -4), addDays(today, 1), estimated);
-  }
-);
-
-const ConnectedOutlierLabor = connect((st) => ({
-  showLabor: true,
-  points: outlierLaborPointsSelector(st, true, startOfToday()),
-  matsById: st.Events.last30.mat_summary.matsById,
-  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
-}))(OutlierCycles);
-
-const ConnectedOutlierMachines = connect((st) => ({
-  showLabor: false,
-  points: outlierMachinePointsSelector(st, false, startOfToday()),
-  matsById: st.Events.last30.mat_summary.matsById,
-  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
-}))(OutlierCycles);
+});
 
 // -----------------------------------------------------------------------------------
 // OEE/Hours
 // -----------------------------------------------------------------------------------
 
-function StationOEEChart(p: OEEProps) {
+const StationOEEChart = React.memo(function StationOEEChart({ showLabor }: { readonly showLabor: boolean }) {
   const [showChart, setShowChart] = React.useState(true);
+
+  const start = addDays(startOfToday(), -6);
+  const end = addDays(startOfToday(), 1);
+
+  const cycles = useRecoilValue(last30StationCycles);
+  const statUse = useRecoilValue(last30SimStationUse);
+  const points = React.useMemo(
+    () => buildOeeSeries(start, end, showLabor, cycles, statUse),
+    [start, end, showLabor, cycles, statUse]
+  );
+
   return (
     <Card raised>
       <CardHeader
@@ -171,7 +157,7 @@ function StationOEEChart(p: OEEProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyOeeToClipboard(p.points)}
+                onClick={() => copyOeeToClipboard(points)}
               >
                 <ImportExport />
               </IconButton>
@@ -192,40 +178,16 @@ function StationOEEChart(p: OEEProps) {
           </div>
         }
       />
-      <CardContent>{showChart ? <OEEChart {...p} /> : <OEETable {...p} />}</CardContent>
+      <CardContent>
+        {showChart ? (
+          <OEEChart start={start} end={end} showLabor={showLabor} points={points} />
+        ) : (
+          <OEETable start={start} end={end} showLabor={showLabor} points={points} />
+        )}
+      </CardContent>
     </Card>
   );
-}
-
-const oeePointsSelector = createSelector(
-  (last30: events.Last30Days, _: boolean, _t: Date) => last30.cycles.part_cycles,
-  (last30: events.Last30Days, _: boolean, _t: Date) => last30.sim_use.station_use,
-  (_: events.Last30Days, showLabor: boolean, _t: Date) => showLabor,
-  (_: events.Last30Days, _l: boolean, today: Date) => today,
-  (cycles, statUse, showLabor, today): ReadonlyArray<OEEBarSeries> => {
-    const start = addDays(today, -6);
-    const end = addDays(today, 1);
-    return buildOeeSeries(start, end, showLabor, cycles, statUse);
-  }
-);
-
-const ConnectedLoadOEE = connect((st: Store) => {
-  return {
-    showLabor: true,
-    start: addDays(startOfToday(), -6),
-    end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, true, startOfToday()),
-  };
-})(StationOEEChart);
-
-const ConnectedMachineOEE = connect((st: Store) => {
-  return {
-    showLabor: false,
-    start: addDays(startOfToday(), -6),
-    end: addDays(startOfToday(), 1),
-    points: oeePointsSelector(st.Events.last30, false, startOfToday()),
-  };
-})(StationOEEChart);
+});
 
 // --------------------------------------------------------------------------------
 // Station Cycles
@@ -233,10 +195,9 @@ const ConnectedMachineOEE = connect((st: Store) => {
 
 interface PartStationCycleChartProps {
   readonly showLabor: boolean;
-  readonly default_date_range: Date[];
 }
 
-function PartStationCycleChart(props: PartStationCycleChartProps) {
+const PartStationCycleCart = React.memo(function PartStationCycleChart(props: PartStationCycleChartProps) {
   const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
@@ -267,41 +228,21 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
   const [showGraph, setShowGraph] = React.useState(true);
   const [chartZoom, setChartZoom] = React.useState<{ zoom?: { start: Date; end: Date } }>({});
   const [selectedPart, setSelectedPart] = React.useState<PartAndProcess>();
-  const [selectedOperation, setSelectedOperation] = React.useState<number>();
+  const [selectedOperation, setSelectedOperation] = React.useState<PartAndStationOperation>();
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
 
-  const allParts = useSelector((st) => st.Events.last30.cycles.part_and_proc_names);
-  const palletNames = useSelector((st) => st.Events.last30.cycles.pallet_names);
-  const machineGroups = useSelector((st) => st.Events.last30.cycles.machine_groups);
-  const estimatedCycleTimes = useSelector((st) => st.Events.last30.cycles.estimatedCycleTimes);
-  const operationNames = React.useMemo(
-    () =>
-      !props.showLabor && selectedPart
-        ? LazySeq.ofIterable(estimatedCycleTimes)
-            .filter(
-              ([k]) =>
-                selectedPart.part === k.part && selectedPart.proc === k.proc && machineGroups.contains(k.statGroup)
-            )
-            .map(([k]) => k)
-            .toVector()
-            .sortOn(
-              (k) => k.statGroup,
-              (k) => k.operation
-            )
-        : Vector.empty<PartAndStationOperation>(),
-    [props.showLabor, selectedPart, estimatedCycleTimes, machineGroups]
-  );
-  const curOperation = selectedPart ? operationNames.get(selectedOperation ?? 0).getOrNull() : null;
+  const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
+  const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
 
-  const cycles = useSelector((st) => st.Events.last30.cycles.part_cycles);
-  const matsById = useSelector((st) => st.Events.last30.mat_summary.matsById);
+  const cycles = useRecoilValue(last30StationCycles);
+  const matSummary = useRecoilValue(last30MaterialSummary);
   const points = React.useMemo(() => {
     const today = startOfToday();
-    if (curOperation) {
+    if (selectedOperation) {
       return filterStationCycles(cycles, {
         zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         pallet: selectedPallet,
-        operation: curOperation,
+        operation: selectedOperation,
       });
     } else if (props.showLabor && showGraph) {
       return loadOccupancyCycles(cycles, {
@@ -317,9 +258,10 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         station: props.showLabor ? FilterAnyLoadKey : FilterAnyMachineKey,
       });
     }
-  }, [cycles, props.showLabor, selectedPart, selectedPallet, showGraph]);
+  }, [cycles, props.showLabor, selectedPart, selectedPallet, selectedOperation, showGraph]);
+  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
   const plannedSeries = React.useMemo(() => {
-    if (curOperation !== null) {
+    if (curOperation) {
       return plannedOperationSeries(points, false);
     } else {
       return undefined;
@@ -339,7 +281,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
             {points.data.length() > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, matsById, undefined, props.showLabor)}
+                  onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, props.showLabor)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 >
                   <ImportExport />
@@ -360,21 +302,28 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               </MenuItem>
             </Select>
             <Select
-              name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={selectedPart || ""}
+              value={
+                selectedPart
+                  ? points.allPartAndProcNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    )
+                  : -1
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedPart(e.target.value === "" ? undefined : (e.target.value as PartAndProcess));
+                setSelectedPart(
+                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                );
                 setSelectedOperation(undefined);
               }}
             >
-              <MenuItem key={0} value="">
+              <MenuItem key={0} value={-1}>
                 <em>Any Part</em>
               </MenuItem>
-              {allParts.toArray({ sortOn: [(x) => x.part, (x) => x.proc] }).map((n, idx) => (
-                <MenuItem key={idx} value={n as any}>
+              {points.allPartAndProcNames.map((n, idx) => (
+                <MenuItem key={idx} value={idx}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <PartIdenticon part={n.part} size={20} />
                     <span style={{ marginRight: "1em" }}>
@@ -389,16 +338,16 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
                 name="Station-Cycles-cycle-chart-station-select"
                 autoWidth
                 displayEmpty
-                value={selectedOperation ?? 0}
+                value={curOperation ? points.allMachineOperations.findIndex((o) => curOperation.equals(o)) : -1}
                 style={{ marginLeft: "1em" }}
-                onChange={(e) => setSelectedOperation(e.target.value as number)}
+                onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
               >
-                {operationNames.length() === 0 ? (
-                  <MenuItem value={0}>
+                {points.allMachineOperations.length === 0 ? (
+                  <MenuItem value={-1}>
                     <em>Any Operation</em>
                   </MenuItem>
                 ) : (
-                  LazySeq.ofIterable(operationNames).map((oper, idx) => (
+                  points.allMachineOperations.map((oper, idx) => (
                     <MenuItem key={idx} value={idx}>
                       {oper.statGroup} {oper.operation}
                     </MenuItem>
@@ -417,7 +366,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
               </MenuItem>
-              {palletNames.toArray({ sortOn: (x) => x }).map((n) => (
+              {points.allPalletNames.map((n) => (
                 <MenuItem key={n} value={n}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ marginRight: "1em" }}>{n}</span>
@@ -433,7 +382,7 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
           <CycleChart
             points={points.data}
             series_label={points.seriesLabel}
-            default_date_range={props.default_date_range}
+            default_date_range={default_date_range}
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={chartZoom.zoom}
             set_date_zoom_range={setChartZoom}
@@ -451,8 +400,8 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
         ) : (
           <StationDataTable
             points={points.data}
-            matsById={matsById}
-            default_date_range={props.default_date_range}
+            matsById={matSummary.matsById}
+            default_date_range={default_date_range}
             current_date_zoom={undefined}
             set_date_zoom_range={undefined}
             last30_days={true}
@@ -463,39 +412,29 @@ function PartStationCycleChart(props: PartStationCycleChartProps) {
       </CardContent>
     </Card>
   );
-}
-
-const ConnectedLaborCycleChart = connect((st) => ({
-  showLabor: true,
-  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
-}))(PartStationCycleChart);
-
-const ConnectedMachineCycleChart = connect((st) => ({
-  showLabor: false,
-  default_date_range: [addDays(startOfToday(), -4), addDays(startOfToday(), 1)],
-}))(PartStationCycleChart);
+});
 
 // -----------------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------------
 
-export function LoadUnloadRecentOverview() {
+export function LoadUnloadRecentOverview(): JSX.Element {
   return (
     <>
       <div data-testid="outlier-cycles">
-        <ConnectedOutlierLabor />
+        <OutlierCycles showLabor={true} />
       </div>
       <div data-testid="oee-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedLoadOEE />
+        <StationOEEChart showLabor={true} />
       </div>
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedLaborCycleChart />
+        <PartStationCycleCart showLabor={true} />
       </div>
     </>
   );
 }
 
-export function OperationLoadUnload() {
+export function OperationLoadUnload(): JSX.Element {
   React.useEffect(() => {
     document.title = "Load/Unload Management - FMS Insight";
   }, []);
@@ -506,23 +445,23 @@ export function OperationLoadUnload() {
   );
 }
 
-export function MachinesRecentOverview() {
+export function MachinesRecentOverview(): JSX.Element {
   return (
     <>
       <div data-testid="outlier-cycles">
-        <ConnectedOutlierMachines />
+        <OutlierCycles showLabor={false} />
       </div>
       <div data-testid="oee-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedMachineOEE />
+        <StationOEEChart showLabor={false} />
       </div>
       <div data-testid="all-cycles" style={{ marginTop: "3em" }}>
-        <ConnectedMachineCycleChart />
+        <PartStationCycleCart showLabor={false} />
       </div>
     </>
   );
 }
 
-export function OperationMachines() {
+export function OperationMachines(): JSX.Element {
   React.useEffect(() => {
     document.title = "Machine Management - FMS Insight";
   }, []);

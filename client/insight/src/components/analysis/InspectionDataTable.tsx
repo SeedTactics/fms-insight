@@ -45,13 +45,13 @@ import {
   DataTableActionZoom,
   DataTableActionZoomType,
 } from "./DataTable";
-import { InspectionLogEntry } from "../../data/events.inspection";
+import { InspectionLogEntry } from "../../cell-status/inspections";
 import { Typography } from "@material-ui/core";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 import { addDays, addHours } from "date-fns";
 import { useSetRecoilState } from "recoil";
-import { materialToShowInDialog } from "../../data/material-details";
+import { materialToShowInDialog } from "../../cell-status/material-details";
 
 enum ColumnId {
   Date,

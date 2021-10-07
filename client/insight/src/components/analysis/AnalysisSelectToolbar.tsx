@@ -33,10 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Radio } from "@material-ui/core";
 import { FormControlLabel } from "@material-ui/core";
+import { useRecoilValue } from "recoil";
 
-import * as events from "../../data/events";
-import { Store, connect } from "../../store/store";
 import MonthSelect from "../MonthSelect";
+import {
+  selectedAnalysisPeriod,
+  selectedMonth,
+  useSetSpecificMonthWithoutLoading,
+  useLoadSpecificMonth,
+  useSetLast30,
+} from "../../network/load-specific-month";
 
 const toolbarStyle = {
   display: "flex",
@@ -44,67 +50,46 @@ const toolbarStyle = {
   paddingLeft: "24px",
   paddingRight: "24px",
   minHeight: "2.5em",
-  alignItems: "center" as "center",
-  justifyContent: "space-evenly" as "space-evenly",
+  alignItems: "center",
+  justifyContent: "space-evenly",
 };
 
-interface AnalysisSelectToolbarProps {
-  period: events.AnalysisPeriod;
-  period_month: Date;
-  analyzeLast30Days: () => void;
-  analyzeMonth: (month: Date) => void;
-  setMonth: (month: Date) => void;
-}
+export default React.memo(function AnalysisSelectToolbar() {
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const selMonth = useRecoilValue(selectedMonth);
+  const analyzeMonth = useLoadSpecificMonth();
+  const setMonthWithoutLoading = useSetSpecificMonthWithoutLoading();
+  const setLast30 = useSetLast30();
 
-class AnalysisSelectToolbar extends React.PureComponent<AnalysisSelectToolbarProps> {
-  render() {
-    return (
-      <nav style={toolbarStyle}>
+  return (
+    <nav style={toolbarStyle}>
+      <FormControlLabel
+        control={<Radio checked={period.type === "Last30"} onChange={(e, checked) => (checked ? setLast30() : null)} />}
+        label="Last 30 days"
+      />
+      <div style={{ display: "flex", alignItems: "center" }}>
         <FormControlLabel
           control={
             <Radio
-              checked={this.props.period === events.AnalysisPeriod.Last30Days}
-              onChange={(e, checked) => (checked ? this.props.analyzeLast30Days() : null)}
+              checked={period.type === "SpecificMonth"}
+              onChange={(e, checked) => (checked ? analyzeMonth(selMonth) : null)}
             />
           }
-          label="Last 30 days"
+          label="Select Month"
         />
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <FormControlLabel
-            control={
-              <Radio
-                checked={this.props.period === events.AnalysisPeriod.SpecificMonth}
-                onChange={(e, checked) => (checked ? this.props.analyzeMonth(this.props.period_month) : null)}
-              />
+        <MonthSelect
+          curMonth={selMonth}
+          onSelectMonth={(m) => {
+            if (period.type === "SpecificMonth") {
+              // if month type is selected, reload data
+              analyzeMonth(m);
+            } else {
+              // otherwise, just store month
+              setMonthWithoutLoading(m);
             }
-            label="Select Month"
-          />
-          <MonthSelect
-            curMonth={this.props.period_month}
-            onSelectMonth={(m) => {
-              if (this.props.period === events.AnalysisPeriod.SpecificMonth) {
-                // if month type is selected, reload data
-                this.props.analyzeMonth(m);
-              } else {
-                // otherwise, just store month
-                this.props.setMonth(m);
-              }
-            }}
-          />
-        </div>
-      </nav>
-    );
-  }
-}
-
-export default connect(
-  (s: Store) => ({
-    period: s.Events.analysis_period,
-    period_month: s.Events.analysis_period_month,
-  }),
-  {
-    analyzeLast30Days: events.analyzeLast30Days,
-    analyzeMonth: events.analyzeSpecificMonth,
-    setMonth: events.setAnalysisMonth,
-  }
-)(AnalysisSelectToolbar);
+          }}
+        />
+      </div>
+    </nav>
+  );
+});

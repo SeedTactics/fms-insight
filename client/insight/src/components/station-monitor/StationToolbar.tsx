@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2021, John Lenz
 
 All rights reserved.
 
@@ -36,10 +36,11 @@ import { MenuItem } from "@material-ui/core";
 import { Input } from "@material-ui/core";
 import { FormControl } from "@material-ui/core";
 
-import { useSelector } from "../../store/store";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../data/current-status";
-import { RouteLocation, useCurrentRoute } from "../../data/routes";
+import { currentStatus } from "../../cell-status/current-status";
+import { RouteLocation, useCurrentRoute } from "../routes";
+import { last30InspectionTypes } from "../../cell-status/names";
+import { LazySeq } from "../../util/lazyseq";
 
 const toolbarStyle = {
   display: "flex",
@@ -48,14 +49,14 @@ const toolbarStyle = {
   paddingRight: "24px",
   paddingBottom: "4px",
   height: "2.5em",
-  alignItems: "flex-end" as "flex-end",
+  alignItems: "flex-end",
 };
 
 const inHeaderStyle = {
   display: "flex",
   flexGrow: 1,
   alignSelf: "center",
-  alignItems: "flex-end" as "flex-end",
+  alignItems: "flex-end",
 };
 
 interface StationToolbarProps {
@@ -73,9 +74,9 @@ enum StationMonitorType {
   AllMaterial = "AllMaterial",
 }
 
-function StationToolbar(props: StationToolbarProps) {
+function StationToolbar(props: StationToolbarProps): JSX.Element {
   const [route, setRoute] = useCurrentRoute();
-  const inspTypes = useSelector((st) => st.Events.last30.mat_summary.inspTypes);
+  const inspTypes = useRecoilValue(last30InspectionTypes);
   const queueNames = Object.keys(useRecoilValue(currentStatus).queues).sort();
 
   function setLoadNumber(valStr: string) {
@@ -177,11 +178,13 @@ function StationToolbar(props: StationToolbarProps) {
           <MenuItem key={allInspSym} value={allInspSym}>
             <em>All</em>
           </MenuItem>
-          {inspTypes.toArray({ sortOn: (x) => x }).map((ty) => (
-            <MenuItem key={ty} value={ty}>
-              {ty}
-            </MenuItem>
-          ))}
+          {LazySeq.ofIterable(inspTypes)
+            .sortOn((x) => x)
+            .map((ty) => (
+              <MenuItem key={ty} value={ty}>
+                {ty}
+              </MenuItem>
+            ))}
         </Select>
       ) : undefined}
       {curType === StationMonitorType.LoadUnload ? (
