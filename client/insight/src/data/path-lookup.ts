@@ -82,6 +82,7 @@ const otherLogEntries = selector<PathLookupLogEntries>({
 
       parts = events
         .flatMap(convertLogToInspections)
+        .filter((e) => e.key.part === range.part)
         .reduce(
           (m, e) =>
             m.putWithMerge(e.key, [e.entry], (a, b) =>

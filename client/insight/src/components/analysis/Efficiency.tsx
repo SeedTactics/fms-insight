@@ -136,7 +136,7 @@ function PartMachineCycleChart() {
   const demo = useIsDemo();
   const [showGraph, setShowGraph] = React.useState(true);
   const [selectedPart, setSelectedPart] = React.useState<PartAndProcess | undefined>(
-    demo ? new PartAndProcess("aaa", 2) : undefined
+    demo ? { part: "aaa", proc: 2 } : undefined
   );
   const [selectedMachine, setSelectedMachine] = React.useState<string>(FilterAnyMachineKey);
   const [selectedOperation, setSelectedOperation] = React.useState<PartAndStationOperation>();
@@ -220,7 +220,13 @@ function PartMachineCycleChart() {
               name="Station-Cycles-cycle-chart-select"
               autoWidth
               displayEmpty
-              value={selectedPart ? points.allPartAndProcNames.findIndex((o) => selectedPart.equals(o)) : -1}
+              value={
+                selectedPart
+                  ? points.allPartAndProcNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    )
+                  : -1
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
                 setSelectedPart(
@@ -379,7 +385,7 @@ function PartLoadStationCycleChart() {
   const demo = useIsDemo();
   const [showGraph, setShowGraph] = React.useState(true);
   const [selectedPart, setSelectedPart] = React.useState<PartAndProcess | undefined>(
-    demo ? new PartAndProcess("aaa", 2) : undefined
+    demo ? { part: "aaa", proc: 2 } : undefined
   );
   const [selectedOperation, setSelectedOperation] = React.useState<LoadCycleFilter>(demo ? "LoadOp" : "LULOccupancy");
   const [selectedLoadStation, setSelectedLoadStation] = React.useState<string>(FilterAnyLoadKey);
@@ -483,7 +489,13 @@ function PartLoadStationCycleChart() {
             <Select
               autoWidth
               displayEmpty
-              value={selectedPart ? points.allPartAndProcNames.findIndex((o) => selectedPart.equals(o)) : -1}
+              value={
+                selectedPart
+                  ? points.allPartAndProcNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    )
+                  : -1
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
                 if (e.target.value === -1) {

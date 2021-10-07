@@ -67,7 +67,7 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
       get(currentStatus).jobs[uniq]?.comment ?? null,
   set:
     (uniq) =>
-    async ({ set }, newVal) => {
+    ({ set }, newVal) => {
       const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
 
       set(currentStatusRW, (st) => {
@@ -83,7 +83,7 @@ export const currentStatusJobComment = selectorFamily<string | null, string>({
 
       set(last30JobComment(uniq), newComment);
 
-      await JobsBackend.setJobComment(uniq, newComment);
+      void JobsBackend.setJobComment(uniq, newComment);
     },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });

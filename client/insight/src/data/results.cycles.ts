@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashMap, Option, HashSet, fieldsHashCode } from "prelude-ts";
+import { HashMap, Option, HashSet } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import * as api from "../network/api";
 import { format, differenceInSeconds } from "date-fns";
@@ -48,23 +48,9 @@ import {
 import * as L from "list/methods";
 import { PartCycleData, splitElapsedLoadTimeAmongCycles, stat_name_and_num } from "../cell-status/station-cycles";
 
-export class PartAndProcess {
-  public constructor(public readonly part: string, public readonly proc: number) {}
-  public static ofPartCycle(cy: PartCycleData): PartAndProcess {
-    return new PartAndProcess(cy.part, cy.process);
-  }
-  public static ofLogCycle(c: Readonly<api.ILogEntry>): PartAndProcess {
-    return new PartAndProcess(c.material[0].part, c.material[0].proc);
-  }
-  equals(other: PartAndProcess): boolean {
-    return this.part === other.part && this.proc === other.proc;
-  }
-  hashCode(): number {
-    return fieldsHashCode(this.part, this.proc);
-  }
-  toString(): string {
-    return this.part + "-" + this.proc.toString();
-  }
+export interface PartAndProcess {
+  readonly part: string;
+  readonly proc: number;
 }
 
 function cycleToPartAndOp(cycle: PartCycleData): PartAndStationOperation {
@@ -83,7 +69,7 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
   const palNames = new Set<string>();
   const lulNames = new Set<string>();
   const mcNames = new Set<string>();
-  let partNames = HashSet.empty<PartAndProcess>();
+  let partNames = HashMap.empty<string, HashSet<number>>();
   let oper = HashSet.empty<PartAndStationOperation>();
 
   for (const c of cycles) {
@@ -100,8 +86,7 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
     }
 
     for (const m of c.material) {
-      const p = new PartAndProcess(m.part, m.proc);
-      partNames = partNames.add(p);
+      partNames = partNames.putWithMerge(m.part, HashSet.of(m.proc), (a, b) => a.addAll(b));
     }
   }
 
@@ -109,7 +94,10 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
     allPalletNames: Array.from(palNames).sort((a, b) => a.localeCompare(b)),
     allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
     allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
-    allPartAndProcNames: partNames.toArray({ sortOn: [(p) => p.part, (p) => p.proc] }),
+    allPartAndProcNames: LazySeq.ofIterable(partNames)
+      .sortOn(([p, _]) => p)
+      .flatMap(([part, procs]) => procs.toArray({ sortOn: (n) => n }).map((proc) => ({ part: part, proc: proc })))
+      .toArray(),
     allMachineOperations: oper.toArray({ sortOn: [(p) => p.statGroup, (p) => p.operation] }),
   };
 }

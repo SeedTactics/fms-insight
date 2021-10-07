@@ -304,7 +304,13 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
             <Select
               autoWidth
               displayEmpty
-              value={selectedPart ? points.allPartAndProcNames.findIndex((o) => selectedPart.equals(o)) : -1}
+              value={
+                selectedPart
+                  ? points.allPartAndProcNames.findIndex(
+                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    )
+                  : -1
+              }
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
                 setSelectedPart(

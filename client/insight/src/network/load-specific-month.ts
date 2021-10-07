@@ -56,7 +56,10 @@ export const selectedAnalysisPeriod = selector<SelectedAnalysisPeriod>({
       return { type: "SpecificMonth", month: get(selectMonth) };
     }
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
+
+const loadedMonth = atom<Date | null>({ key: "specific-month-loaded", default: null });
 
 const loadingSpecificMonthRW = atom<boolean>({ key: "loading-specific-month-data", default: false });
 export const loadingSpecificMonthData: RecoilValueReadOnly<boolean> = loadingSpecificMonthRW;
@@ -78,6 +81,7 @@ function loadMonth(
   const logProm = LogBackend.get(month, startOfNextMonth).then(push(onLoadSpecificMonthLog));
 
   Promise.all([jobsProm, logProm])
+    .then(() => set(loadedMonth, month))
     .catch((e: Record<string, string | undefined>) => set(errorLoadingSpecificMonthRW, e.message ?? e.toString()))
     .finally(() => set(loadingSpecificMonthRW, false));
 }
@@ -91,8 +95,11 @@ export function useLoadSpecificMonth(): (m: Date) => void {
         }
 
         set(selectType, "SpecificMonth");
-        if (snapshot.getLoadable(selectMonth).valueMaybe() !== m) {
-          set(selectMonth, m);
+        set(selectMonth, m);
+        if (
+          snapshot.getLoadable(loadedMonth).valueMaybe() !== m &&
+          !snapshot.getLoadable(loadingSpecificMonthRW).valueMaybe()
+        ) {
           loadMonth(m, set, push);
         }
       },
