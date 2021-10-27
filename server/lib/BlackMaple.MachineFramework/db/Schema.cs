@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 24;
+    private const int Version = 25;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, FMSSettings settings)
@@ -161,7 +161,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = transaction;
 
-        cmd.CommandText = "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER)";
+        cmd.CommandText = "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, AllocateAlg TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX jobs_time_idx ON jobs(EndUTC, StartUTC)";
@@ -355,7 +355,10 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 24) Ver23ToVer24(trans, settings, oldJobDbFile, out detachOldJob);
 
-          //bool updateJobsTable = curVersion >= 24; // Ver23ToVer24 creates fresh job tables, so no updates needed
+          bool updateJobsTables = curVersion >= 24; // Ver23ToVer24 creates fresh job tables, so no updates needed if coming from before then
+
+          if (curVersion < 25) Ver24ToVer25(trans, updateJobsTables);
+
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -813,6 +816,17 @@ namespace BlackMaple.MachineFramework
       else
       {
         attachedOldJobDb = false;
+      }
+    }
+
+    private static void Ver24ToVer25(IDbTransaction transaction, bool updateJobsTables)
+    {
+      if (!updateJobsTables) return;
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+        cmd.CommandText = "ALTER TABLE jobs ADD AllocateAlg TEXT";
+        cmd.ExecuteNonQuery();
       }
     }
     #endregion

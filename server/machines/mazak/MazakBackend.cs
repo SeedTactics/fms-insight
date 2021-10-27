@@ -260,7 +260,7 @@ namespace MazakMachineInterface
         mazakCfg: mazakCfg
       );
 
-      MazakMachineControl = new MazakMachineControl(logDbConfig, _readDB, writeJobs);
+      MazakMachineControl = new MazakMachineControl(logDbConfig, _readDB, writeJobs, mazakCfg);
     }
 
     private bool _disposed = false;

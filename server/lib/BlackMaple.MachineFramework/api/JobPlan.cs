@@ -256,6 +256,9 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "Comment", IsRequired = false, EmitDefaultValue = false)]
     public string? Comment { get; init; }
 
+    [DataMember(Name = "AllocationAlgorithm", IsRequired = false, EmitDefaultValue = false)]
+    public string? AllocationAlgorithm { get; init; }
+
     [DataMember(Name = "Bookings", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? BookingIds { get; init; }
 

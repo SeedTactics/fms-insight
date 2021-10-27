@@ -3,6 +3,7 @@
 exports[`processes jobs in a specific month: jobs 1`] = `
 Map {
   "xxx-3offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -147,6 +148,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-10",
   },
   "xxx-3offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -244,6 +246,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-02",
   },
   "ccc-2offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -464,6 +467,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-04",
   },
   "ccc-2offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -692,6 +696,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-05",
   },
   "ccc-2offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -905,6 +910,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-08",
   },
   "ccc-2offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -1116,6 +1122,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-09",
   },
   "bbb-1offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -1353,6 +1360,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-09",
   },
   "ccc-2offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -1573,6 +1581,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-07",
   },
   "bbb-1offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -1860,6 +1869,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-08",
   },
   "ccc-2offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -2087,6 +2097,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-06",
   },
   "bbb-1offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -2365,6 +2376,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-05",
   },
   "zzz-5offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -2474,6 +2486,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-09",
   },
   "aaa-0offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -2710,6 +2723,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-07",
   },
   "ccc-2offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -2939,6 +2953,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-03",
   },
   "bbb-1offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -3233,6 +3248,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-04",
   },
   "zzz-5offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -3340,6 +3356,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-08",
   },
   "aaa-0offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -3599,6 +3616,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-06",
   },
   "ccc-2offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -3819,6 +3837,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-02",
   },
   "bbb-1offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -4098,6 +4117,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-03",
   },
   "zzz-5offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -4208,6 +4228,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-07",
   },
   "yyy-4offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -4312,6 +4333,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-09",
   },
   "ccc-2offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -4524,6 +4546,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-01",
   },
   "zzz-5offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -4629,6 +4652,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-06",
   },
   "yyy-4offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -4735,6 +4759,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-08",
   },
   "zzz-5offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -4841,6 +4866,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-05",
   },
   "yyy-4offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -4946,6 +4972,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-07",
   },
   "xxx-3offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -5066,6 +5093,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-09",
   },
   "ccc-2offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -5293,6 +5321,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-10",
   },
   "zzz-5offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -5399,6 +5428,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-04",
   },
   "aaa-0offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -5659,6 +5689,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-02",
   },
   "yyy-4offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -5767,6 +5798,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-06",
   },
   "xxx-3offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -5877,6 +5909,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-08",
   },
   "zzz-5offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -5984,6 +6017,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-03",
   },
   "aaa-0offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -6220,6 +6254,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-01",
   },
   "yyy-4offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -6325,6 +6360,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-05",
   },
   "xxx-3offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -6422,6 +6458,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-07",
   },
   "zzz-5offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -6532,6 +6569,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-02",
   },
   "yyy-4offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -6637,6 +6675,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-04",
   },
   "xxx-3offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -6733,6 +6772,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-06",
   },
   "zzz-5offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -6847,6 +6887,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-01",
   },
   "xxx-3offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -6952,6 +6993,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-05",
   },
   "yyy-4offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -7058,6 +7100,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-03",
   },
   "aaa-0offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -7333,6 +7376,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-10",
   },
   "yyy-4offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -7438,6 +7482,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-02",
   },
   "xxx-3offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -7543,6 +7588,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-04",
   },
   "zzz-5offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -7632,6 +7678,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-10",
   },
   "yyy-4offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -7745,6 +7792,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-01",
   },
   "xxx-3offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -7851,6 +7899,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-03",
   },
   "yyy-4offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -7959,6 +8008,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-10",
   },
   "xxx-3offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -23720,6 +23770,7 @@ Array [
 exports[`processes last 30 jobs: after second half - jobs 1`] = `
 Map {
   "xxx-3offline-2018-01-30" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-19",
@@ -23818,6 +23869,7 @@ Map {
     "unique": "xxx-3offline-2018-01-30",
   },
   "xxx-3offline-2018-01-20" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-11",
@@ -23930,6 +23982,7 @@ Map {
     "unique": "xxx-3offline-2018-01-20",
   },
   "xxx-3offline-2018-01-21" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-12",
@@ -24091,6 +24144,7 @@ Map {
     "unique": "xxx-3offline-2018-01-21",
   },
   "ccc-2offline-2018-01-19" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-11",
@@ -24317,6 +24371,7 @@ Map {
     "unique": "ccc-2offline-2018-01-19",
   },
   "ccc-2offline-2018-01-18" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-10",
@@ -24543,6 +24598,7 @@ Map {
     "unique": "ccc-2offline-2018-01-18",
   },
   "ccc-2offline-2018-01-29" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-19",
@@ -24791,6 +24847,7 @@ Map {
     "unique": "ccc-2offline-2018-01-29",
   },
   "bbb-1offline-2018-01-19" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-11",
@@ -24955,6 +25012,7 @@ Map {
     "unique": "bbb-1offline-2018-01-19",
   },
   "ccc-2offline-2018-01-17" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-18",
@@ -25182,6 +25240,7 @@ Map {
     "unique": "ccc-2offline-2018-01-17",
   },
   "ccc-2offline-2018-01-28" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-17",
@@ -25448,6 +25507,7 @@ Map {
     "unique": "ccc-2offline-2018-01-28",
   },
   "bbb-1offline-2018-01-18" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-10",
@@ -25620,6 +25680,7 @@ Map {
     "unique": "bbb-1offline-2018-01-18",
   },
   "bbb-1offline-2018-01-29" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-19",
@@ -25878,6 +25939,7 @@ Map {
     "unique": "bbb-1offline-2018-01-29",
   },
   "ccc-2offline-2018-01-27" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-17",
@@ -26127,6 +26189,7 @@ Map {
     "unique": "ccc-2offline-2018-01-27",
   },
   "bbb-1offline-2018-01-28" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-17",
@@ -26419,6 +26482,7 @@ Map {
     "unique": "bbb-1offline-2018-01-28",
   },
   "aaa-0offline-2018-01-19" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-11",
@@ -26685,6 +26749,7 @@ Map {
     "unique": "aaa-0offline-2018-01-19",
   },
   "ccc-2offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -26912,6 +26977,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-15",
   },
   "ccc-2offline-2018-01-26" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-16",
@@ -27193,6 +27259,7 @@ Map {
     "unique": "ccc-2offline-2018-01-26",
   },
   "bbb-1offline-2018-01-27" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-17",
@@ -27452,6 +27519,7 @@ Map {
     "unique": "bbb-1offline-2018-01-27",
   },
   "aaa-0offline-2018-01-18" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-10",
@@ -27670,6 +27738,7 @@ Map {
     "unique": "aaa-0offline-2018-01-18",
   },
   "aaa-0offline-2018-01-29" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-19",
@@ -27822,6 +27891,7 @@ Map {
     "unique": "aaa-0offline-2018-01-29",
   },
   "ccc-2offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -28041,6 +28111,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-14",
   },
   "ccc-2offline-2018-01-25" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-14",
@@ -28308,6 +28379,7 @@ Map {
     "unique": "ccc-2offline-2018-01-25",
   },
   "bbb-1offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -28585,6 +28657,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-15",
   },
   "aaa-0offline-2018-01-17" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-18",
@@ -28876,6 +28949,7 @@ Map {
     "unique": "aaa-0offline-2018-01-17",
   },
   "aaa-0offline-2018-01-28" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-17",
@@ -29046,6 +29120,7 @@ Map {
     "unique": "aaa-0offline-2018-01-28",
   },
   "ccc-2offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -29266,6 +29341,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-13",
   },
   "ccc-2offline-2018-01-24" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-14",
@@ -29515,6 +29591,7 @@ Map {
     "unique": "ccc-2offline-2018-01-24",
   },
   "zzz-5offline-2018-01-19" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-11",
@@ -29603,6 +29680,7 @@ Map {
     "unique": "zzz-5offline-2018-01-19",
   },
   "bbb-1offline-2018-01-26" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-16",
@@ -29822,6 +29900,7 @@ Map {
     "unique": "bbb-1offline-2018-01-26",
   },
   "bbb-1offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -29971,6 +30050,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-14",
   },
   "aaa-0offline-2018-01-27" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-17",
@@ -30148,6 +30228,7 @@ Map {
     "unique": "aaa-0offline-2018-01-27",
   },
   "ccc-2offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -30367,6 +30448,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-12",
   },
   "ccc-2offline-2018-01-23" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-13",
@@ -30625,6 +30707,7 @@ Map {
     "unique": "ccc-2offline-2018-01-23",
   },
   "zzz-5offline-2018-01-18" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-10",
@@ -30713,6 +30796,7 @@ Map {
     "unique": "zzz-5offline-2018-01-18",
   },
   "bbb-1offline-2018-01-25" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-14",
@@ -30870,6 +30954,7 @@ Map {
     "unique": "bbb-1offline-2018-01-25",
   },
   "bbb-1offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -31028,6 +31113,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-13",
   },
   "zzz-4offline-2018-01-29" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-19",
@@ -31130,6 +31216,7 @@ Map {
     "unique": "zzz-4offline-2018-01-29",
   },
   "ccc-2offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -31349,6 +31436,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-11",
   },
   "ccc-2offline-2018-01-22" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-12",
@@ -31608,6 +31696,7 @@ Map {
     "unique": "ccc-2offline-2018-01-22",
   },
   "yyy-4offline-2018-01-19" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-11",
@@ -31711,6 +31800,7 @@ Map {
     "unique": "yyy-4offline-2018-01-19",
   },
   "aaa-0offline-2018-01-26" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-16",
@@ -31928,6 +32018,7 @@ Map {
     "unique": "aaa-0offline-2018-01-26",
   },
   "zzz-5offline-2018-01-17" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-18",
@@ -32017,6 +32108,7 @@ Map {
     "unique": "zzz-5offline-2018-01-17",
   },
   "bbb-1offline-2018-01-24" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-14",
@@ -32284,6 +32376,7 @@ Map {
     "unique": "bbb-1offline-2018-01-24",
   },
   "bbb-1offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -32513,6 +32606,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-12",
   },
   "bbb-1offline-2018-01-23" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-13",
@@ -32837,6 +32931,7 @@ Map {
     "unique": "bbb-1offline-2018-01-23",
   },
   "aaa-0offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -33080,6 +33175,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-14",
   },
   "zzz-4offline-2018-01-28" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-17",
@@ -33172,6 +33268,7 @@ Map {
     "unique": "zzz-4offline-2018-01-28",
   },
   "ccc-2offline-2018-01-21" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-12",
@@ -33388,6 +33485,7 @@ Map {
     "unique": "ccc-2offline-2018-01-21",
   },
   "yyy-4offline-2018-01-18" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-10",
@@ -33491,6 +33589,7 @@ Map {
     "unique": "yyy-4offline-2018-01-18",
   },
   "aaa-0offline-2018-01-25" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-14",
@@ -33782,6 +33881,7 @@ Map {
     "unique": "aaa-0offline-2018-01-25",
   },
   "bbb-1offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -33995,6 +34095,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-11",
   },
   "aaa-0offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -34199,6 +34300,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-13",
   },
   "xxx-3offline-2018-01-19" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-11",
@@ -34346,6 +34448,7 @@ Map {
     "unique": "xxx-3offline-2018-01-19",
   },
   "zzz-4offline-2018-01-27" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-17",
@@ -34453,6 +34556,7 @@ Map {
     "unique": "zzz-4offline-2018-01-27",
   },
   "ccc-2offline-2018-01-20" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-11",
@@ -34672,6 +34776,7 @@ Map {
     "unique": "ccc-2offline-2018-01-20",
   },
   "yyy-4offline-2018-01-17" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-18",
@@ -34776,6 +34881,7 @@ Map {
     "unique": "yyy-4offline-2018-01-17",
   },
   "aaa-0offline-2018-01-24" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-14",
@@ -34937,6 +35043,7 @@ Map {
     "unique": "aaa-0offline-2018-01-24",
   },
   "zzz-5offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -35042,6 +35149,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-15",
   },
   "bbb-1offline-2018-01-22" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-12",
@@ -35183,6 +35291,7 @@ Map {
     "unique": "bbb-1offline-2018-01-22",
   },
   "xxx-3offline-2018-01-18" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-10",
@@ -35342,6 +35451,7 @@ Map {
     "unique": "xxx-3offline-2018-01-18",
   },
   "xxx-3offline-2018-01-29" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-19",
@@ -35475,6 +35585,7 @@ Map {
     "unique": "xxx-3offline-2018-01-29",
   },
   "zzz-4offline-2018-01-26" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-16",
@@ -35578,6 +35689,7 @@ Map {
     "unique": "zzz-4offline-2018-01-26",
   },
   "ccc-2offline-2018-01-30" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-19",
@@ -35835,6 +35947,7 @@ Map {
     "unique": "ccc-2offline-2018-01-30",
   },
   "zzz-5offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -35944,6 +36057,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-14",
   },
   "bbb-1offline-2018-01-21" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-12",
@@ -36154,6 +36268,7 @@ Map {
     "unique": "bbb-1offline-2018-01-21",
   },
   "aaa-0offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -36357,6 +36472,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-11",
   },
   "xxx-3offline-2018-01-17" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-18",
@@ -36505,6 +36621,7 @@ Map {
     "unique": "xxx-3offline-2018-01-17",
   },
   "xxx-3offline-2018-01-28" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-17",
@@ -36656,6 +36773,7 @@ Map {
     "unique": "xxx-3offline-2018-01-28",
   },
   "zzz-4offline-2018-01-25" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-14",
@@ -36753,6 +36871,7 @@ Map {
     "unique": "zzz-4offline-2018-01-25",
   },
   "yyy-4offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -36857,6 +36976,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-15",
   },
   "aaa-0offline-2018-01-22" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-12",
@@ -37148,6 +37268,7 @@ Map {
     "unique": "aaa-0offline-2018-01-22",
   },
   "zzz-5offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -37258,6 +37379,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-13",
   },
   "bbb-1offline-2018-01-20" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-11",
@@ -37527,6 +37649,7 @@ Map {
     "unique": "bbb-1offline-2018-01-20",
   },
   "zzz-5offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -37640,6 +37763,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-12",
   },
   "bbb-1offline-2018-01-30" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-19",
@@ -37867,6 +37991,7 @@ Map {
     "unique": "bbb-1offline-2018-01-30",
   },
   "xxx-3offline-2018-01-27" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-17",
@@ -37965,6 +38090,7 @@ Map {
     "unique": "xxx-3offline-2018-01-27",
   },
   "zzz-4offline-2018-01-24" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-14",
@@ -38060,6 +38186,7 @@ Map {
     "unique": "zzz-4offline-2018-01-24",
   },
   "yyy-4offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -38168,6 +38295,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-14",
   },
   "aaa-0offline-2018-01-21" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-12",
@@ -38344,6 +38472,7 @@ Map {
     "unique": "aaa-0offline-2018-01-21",
   },
   "zzz-5offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -38441,6 +38570,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-11",
   },
   "zzz-5offline-2018-01-22" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-12",
@@ -38550,6 +38680,7 @@ Map {
     "unique": "zzz-5offline-2018-01-22",
   },
   "yyy-4offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -38659,6 +38790,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-13",
   },
   "xxx-3offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -38763,6 +38895,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-15",
   },
   "xxx-3offline-2018-01-26" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-16",
@@ -38865,6 +38998,7 @@ Map {
     "unique": "xxx-3offline-2018-01-26",
   },
   "zzz-4offline-2018-01-23" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-13",
@@ -38957,6 +39091,7 @@ Map {
     "unique": "zzz-4offline-2018-01-23",
   },
   "zzz-5offline-2018-01-21" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-12",
@@ -39043,6 +39178,7 @@ Map {
     "unique": "zzz-5offline-2018-01-21",
   },
   "yyy-4offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -39151,6 +39287,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-12",
   },
   "aaa-0offline-2018-01-30" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-19",
@@ -39352,6 +39489,7 @@ Map {
     "unique": "aaa-0offline-2018-01-30",
   },
   "xxx-3offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -39448,6 +39586,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-14",
   },
   "xxx-3offline-2018-01-25" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-14",
@@ -39588,6 +39727,7 @@ Map {
     "unique": "xxx-3offline-2018-01-25",
   },
   "zzz-5offline-2018-01-20" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-11",
@@ -39693,6 +39833,7 @@ Map {
     "unique": "zzz-5offline-2018-01-20",
   },
   "yyy-4offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -39793,6 +39934,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-11",
   },
   "yyy-4offline-2018-01-22" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-12",
@@ -39865,6 +40007,7 @@ Map {
     "unique": "yyy-4offline-2018-01-22",
   },
   "xxx-3offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -39974,6 +40117,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-13",
   },
   "xxx-3offline-2018-01-24" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-14",
@@ -40112,6 +40256,7 @@ Map {
     "unique": "xxx-3offline-2018-01-24",
   },
   "yyy-4offline-2018-01-21" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-12",
@@ -40213,6 +40358,7 @@ Map {
     "unique": "yyy-4offline-2018-01-21",
   },
   "xxx-3offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -40313,6 +40459,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-12",
   },
   "xxx-3offline-2018-01-23" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-13",
@@ -40464,6 +40611,7 @@ Map {
     "unique": "xxx-3offline-2018-01-23",
   },
   "yyy-4offline-2018-01-20" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "bbb-11",
@@ -40568,6 +40716,7 @@ Map {
     "unique": "yyy-4offline-2018-01-20",
   },
   "xxx-3offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -40716,6 +40865,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-11",
   },
   "xxx-3offline-2018-01-22" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-12",
@@ -40832,6 +40982,7 @@ Map {
     "unique": "xxx-3offline-2018-01-22",
   },
   "zzz-4offline-2018-01-30" => Object {
+    "allocationAlgorithm": undefined,
     "archived": false,
     "bookings": Array [
       "aaa-19",
@@ -73759,6 +73910,7 @@ Array [
 exports[`processes last 30 jobs: first half - jobs 1`] = `
 Map {
   "xxx-3offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -73903,6 +74055,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-10",
   },
   "xxx-3offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -74051,6 +74204,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-11",
   },
   "ccc-2offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -74279,6 +74433,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-05",
   },
   "ccc-2offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -74492,6 +74647,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-08",
   },
   "ccc-2offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -74703,6 +74859,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-09",
   },
   "bbb-1offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -74940,6 +75097,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-09",
   },
   "ccc-2offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -75160,6 +75318,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-07",
   },
   "bbb-1offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -75447,6 +75606,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-08",
   },
   "ccc-2offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -75674,6 +75834,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-06",
   },
   "ccc-2offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -75894,6 +76055,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-04",
   },
   "ccc-2offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -76121,6 +76283,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-15",
   },
   "bbb-1offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -76399,6 +76562,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-05",
   },
   "zzz-5offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -76508,6 +76672,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-09",
   },
   "aaa-0offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -76744,6 +76909,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-07",
   },
   "ccc-2offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -76973,6 +77139,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-03",
   },
   "ccc-2offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -77192,6 +77359,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-14",
   },
   "bbb-1offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -77486,6 +77654,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-04",
   },
   "aaa-0offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -77745,6 +77914,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-06",
   },
   "ccc-2offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -77965,6 +78135,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-02",
   },
   "ccc-2offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -78185,6 +78356,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-13",
   },
   "zzz-5offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -78292,6 +78464,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-08",
   },
   "bbb-1offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -78569,6 +78742,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-15",
   },
   "bbb-1offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -78848,6 +79022,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-03",
   },
   "yyy-4offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -78952,6 +79127,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-09",
   },
   "ccc-2offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -79164,6 +79340,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-01",
   },
   "ccc-2offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -79383,6 +79560,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-12",
   },
   "zzz-5offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -79493,6 +79671,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-07",
   },
   "bbb-1offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -79642,6 +79821,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-14",
   },
   "yyy-4offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -79748,6 +79928,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-08",
   },
   "ccc-2offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -79967,6 +80148,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-11",
   },
   "zzz-5offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -80072,6 +80254,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-06",
   },
   "bbb-1offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -80230,6 +80413,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-13",
   },
   "xxx-3offline-2018-01-09" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-4",
@@ -80350,6 +80534,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-09",
   },
   "ccc-2offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -80577,6 +80762,7 @@ Map {
     "Unique": "ccc-2offline-2018-01-10",
   },
   "yyy-4offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -80682,6 +80868,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-07",
   },
   "aaa-0offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -80925,6 +81112,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-14",
   },
   "zzz-5offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -81031,6 +81219,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-05",
   },
   "bbb-1offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -81260,6 +81449,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-12",
   },
   "zzz-5offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -81365,6 +81555,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-15",
   },
   "aaa-0offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -81625,6 +81816,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-02",
   },
   "xxx-3offline-2018-01-08" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-3",
@@ -81735,6 +81927,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-08",
   },
   "yyy-4offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -81843,6 +82036,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-06",
   },
   "aaa-0offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -82047,6 +82241,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-13",
   },
   "zzz-5offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -82153,6 +82348,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-04",
   },
   "bbb-1offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -82366,6 +82562,7 @@ Map {
     "Unique": "bbb-1offline-2018-01-11",
   },
   "zzz-5offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -82473,6 +82670,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-03",
   },
   "zzz-5offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -82582,6 +82780,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-14",
   },
   "aaa-0offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -82818,6 +83017,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-01",
   },
   "yyy-4offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -82923,6 +83123,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-05",
   },
   "xxx-3offline-2018-01-07" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-3",
@@ -83020,6 +83221,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-07",
   },
   "zzz-5offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -83130,6 +83332,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-02",
   },
   "zzz-5offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -83240,6 +83443,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-13",
   },
   "yyy-4offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -83344,6 +83548,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-15",
   },
   "xxx-3offline-2018-01-06" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-2",
@@ -83440,6 +83645,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-06",
   },
   "yyy-4offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -83545,6 +83751,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-04",
   },
   "aaa-0offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -83748,6 +83955,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-11",
   },
   "zzz-5offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -83862,6 +84070,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-01",
   },
   "zzz-5offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -83975,6 +84184,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-12",
   },
   "yyy-4offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -84083,6 +84293,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-14",
   },
   "xxx-3offline-2018-01-05" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-2",
@@ -84188,6 +84399,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-05",
   },
   "yyy-4offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -84294,6 +84506,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-03",
   },
   "aaa-0offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -84569,6 +84782,7 @@ Map {
     "Unique": "aaa-0offline-2018-01-10",
   },
   "zzz-5offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -84666,6 +84880,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-11",
   },
   "yyy-4offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -84771,6 +84986,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-02",
   },
   "yyy-4offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -84880,6 +85096,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-13",
   },
   "xxx-3offline-2018-01-04" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-1",
@@ -84985,6 +85202,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-04",
   },
   "xxx-3offline-2018-01-15" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-8",
@@ -85089,6 +85307,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-15",
   },
   "zzz-5offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -85178,6 +85397,7 @@ Map {
     "Unique": "zzz-5offline-2018-01-10",
   },
   "yyy-4offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -85291,6 +85511,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-01",
   },
   "yyy-4offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
@@ -85399,6 +85620,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-12",
   },
   "xxx-3offline-2018-01-03" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-0",
@@ -85505,6 +85727,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-03",
   },
   "xxx-3offline-2018-01-14" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-8",
@@ -85601,6 +85824,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-14",
   },
   "yyy-4offline-2018-01-11" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-5",
@@ -85701,6 +85925,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-11",
   },
   "xxx-3offline-2018-01-02" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-0",
@@ -85798,6 +86023,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-02",
   },
   "xxx-3offline-2018-01-13" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-6",
@@ -85907,6 +86133,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-13",
   },
   "yyy-4offline-2018-01-10" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-4",
@@ -86015,6 +86242,7 @@ Map {
     "Unique": "yyy-4offline-2018-01-10",
   },
   "xxx-3offline-2018-01-01" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "aaa-1",
@@ -86116,6 +86344,7 @@ Map {
     "Unique": "xxx-3offline-2018-01-01",
   },
   "xxx-3offline-2018-01-12" => Object {
+    "AllocationAlgorithm": undefined,
     "Archived": false,
     "Bookings": Array [
       "bbb-6",
