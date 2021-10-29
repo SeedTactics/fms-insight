@@ -31,11 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Table } from "@material-ui/core";
-import { Accordion } from "@material-ui/core";
-import { AccordionDetails } from "@material-ui/core";
-import { AccordionSummary } from "@material-ui/core";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import { Table } from "@mui/material";
+import { Accordion } from "@mui/material";
+import { AccordionDetails } from "@mui/material";
+import { AccordionSummary } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import {
   Column,
@@ -46,7 +46,7 @@ import {
   DataTableActionZoomType,
 } from "./DataTable";
 import { InspectionLogEntry } from "../../cell-status/inspections";
-import { Typography } from "@material-ui/core";
+import { Typography } from "@mui/material";
 import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 import { addDays, addHours } from "date-fns";

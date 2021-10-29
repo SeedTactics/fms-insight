@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as api from "../../network/api";
-import { IconButton } from "@material-ui/core";
-import { Table } from "@material-ui/core";
-import { TableBody } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import MoreHoriz from "@material-ui/icons/MoreHoriz";
+import { IconButton } from "@mui/material";
+import { Table } from "@mui/material";
+import { TableBody } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableRow } from "@mui/material";
+import MoreHoriz from "@mui/icons-material/MoreHoriz";
 import { durationToMinutes } from "../../util/parseISODuration";
 import { format } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
@@ -184,50 +184,53 @@ function JobMaterial(props: JobMaterialProps) {
   );
 
   return (
-    <Table size="small" style={{ width: props.fullWidth ? "100%" : "auto" }}>
-      <TableHead>
-        <TableRow>
-          {anyWorkorder ? <TableCell>Workorder</TableCell> : undefined}
-          <TableCell>Serial</TableCell>
-          <TableCell>Status</TableCell>
-          <TableCell padding="checkbox" />
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {mats.map((mat) => (
-          <TableRow key={mat.materialID}>
-            {anyWorkorder ? <TableCell>{mat.workorderId ?? ""}</TableCell> : undefined}
-            <TableCell>{mat.serial ?? ""}</TableCell>
-            <TableCell>
-              <MaterialStatus
-                matSummary={props.matsFromEvents.get(mat.materialID).getOrNull()}
-                inProcMat={matsById.get(mat.materialID).getOrNull()}
-              />
-            </TableCell>
-            <TableCell padding="checkbox">
-              <IconButton
-                onClick={() =>
-                  setMatToShow({
-                    type: "MatSummary",
-                    summary: props.matsFromEvents.get(mat.materialID).getOrElse({
-                      materialID: mat.materialID,
-                      jobUnique: mat.jobUnique ?? "",
-                      partName: mat.partName ?? "",
-                      startedProcess1: false,
-                      serial: mat.serial,
-                      workorderId: mat.workorderId,
-                      signaledInspections: [],
-                    }),
-                  })
-                }
-              >
-                <MoreHoriz fontSize="inherit" />
-              </IconButton>
-            </TableCell>
+    <div>
+      <Table size="small" style={{ width: props.fullWidth ? "100%" : "auto" }}>
+        <TableHead>
+          <TableRow>
+            {anyWorkorder ? <TableCell>Workorder</TableCell> : undefined}
+            <TableCell>Serial</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell padding="checkbox" />
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {mats.map((mat) => (
+            <TableRow key={mat.materialID}>
+              {anyWorkorder ? <TableCell>{mat.workorderId ?? ""}</TableCell> : undefined}
+              <TableCell>{mat.serial ?? ""}</TableCell>
+              <TableCell>
+                <MaterialStatus
+                  matSummary={props.matsFromEvents.get(mat.materialID).getOrNull()}
+                  inProcMat={matsById.get(mat.materialID).getOrNull()}
+                />
+              </TableCell>
+              <TableCell padding="checkbox">
+                <IconButton
+                  onClick={() =>
+                    setMatToShow({
+                      type: "MatSummary",
+                      summary: props.matsFromEvents.get(mat.materialID).getOrElse({
+                        materialID: mat.materialID,
+                        jobUnique: mat.jobUnique ?? "",
+                        partName: mat.partName ?? "",
+                        startedProcess1: false,
+                        serial: mat.serial,
+                        workorderId: mat.workorderId,
+                        signaledInspections: [],
+                      }),
+                    })
+                  }
+                  size="large"
+                >
+                  <MoreHoriz fontSize="inherit" />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

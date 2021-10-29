@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Divider } from "@material-ui/core";
-import { withStyles } from "@material-ui/core";
-import { createStyles } from "@material-ui/core";
-import { WithStyles } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { Hidden } from "@material-ui/core";
-import FolderOpenIcon from "@material-ui/icons/FolderOpen";
+import { Divider } from "@mui/material";
+import withStyles from "@mui/styles/withStyles";
+import createStyles from "@mui/styles/createStyles";
+import { WithStyles } from "@mui/styles";
+import { Button } from "@mui/material";
+import { Hidden } from "@mui/material";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
 import { durationToSeconds } from "../../util/parseISODuration";
@@ -65,8 +65,8 @@ import { currentOperator } from "../../data/operators";
 import { PrintedLabel } from "./PrintedLabel";
 import ReactToPrint from "react-to-print";
 import { instructionUrl } from "../../network/backend";
-import { Tooltip } from "@material-ui/core";
-import { Fab } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
+import { Fab } from "@mui/material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
 import { currentStatus, reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status";
@@ -730,7 +730,7 @@ function LoadStationCheckWidth(props: LoadStationProps): JSX.Element {
   }, [props.loadNum]);
   return (
     <div>
-      <Hidden mdDown>
+      <Hidden lgDown>
         <LoadStation {...props} fillViewPort />
       </Hidden>
       <Hidden lgUp>

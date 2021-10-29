@@ -31,14 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card } from "@material-ui/core";
-import { CardHeader } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import ImportExport from "@material-ui/icons/ImportExport";
-import { Table } from "@material-ui/core";
-import BugIcon from "@material-ui/icons/BugReport";
+import { Card } from "@mui/material";
+import { CardHeader } from "@mui/material";
+import { CardContent } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import ImportExport from "@mui/icons-material/ImportExport";
+import { Table } from "@mui/material";
+import BugIcon from "@mui/icons-material/BugReport";
 import { Vector, ToOrderable } from "prelude-ts";
 import {
   extractFailedInspections,
@@ -189,6 +189,7 @@ function RecentFailedInspectionsTable() {
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 onClick={() => copyFailedInspectionsToClipboard(failed)}
+                size="large"
               >
                 <ImportExport />
               </IconButton>

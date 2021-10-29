@@ -32,20 +32,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import * as api from "../network/api";
-import { Table } from "@material-ui/core";
-import { TableBody } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
+import { Table } from "@mui/material";
+import { TableBody } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableRow } from "@mui/material";
 import DateTimeDisplay from "./DateTimeDisplay";
 import { LazySeq } from "../util/lazyseq";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import ChevronRightIcon from "@material-ui/icons/ChevronRight";
-import ImportExport from "@material-ui/icons/ImportExport";
-import { WithStyles } from "@material-ui/core";
-import { withStyles } from "@material-ui/core";
-import { createStyles } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ImportExport from "@mui/icons-material/ImportExport";
+import { WithStyles } from "@mui/styles";
+import withStyles from "@mui/styles/withStyles";
+import createStyles from "@mui/styles/createStyles";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
 import { durationToMinutes, durationToSeconds } from "../util/parseISODuration";
 import clsx from "clsx";
@@ -535,6 +535,7 @@ export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps
                 <IconButton
                   onClick={() => copyLogEntriesToClipboard(props.entries)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                  size="large"
                 >
                   <ImportExport />
                 </IconButton>

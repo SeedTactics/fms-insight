@@ -31,18 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card } from "@material-ui/core";
-import { CardHeader } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import BugIcon from "@material-ui/icons/BugReport";
+import { Card } from "@mui/material";
+import { CardHeader } from "@mui/material";
+import { CardContent } from "@mui/material";
+import BugIcon from "@mui/icons-material/BugReport";
 import { addDays, startOfToday } from "date-fns";
-import { Tooltip } from "@material-ui/core";
-import WorkIcon from "@material-ui/icons/Work";
-import { IconButton } from "@material-ui/core";
-import { Select } from "@material-ui/core";
-import ImportExport from "@material-ui/icons/ImportExport";
-import { MenuItem } from "@material-ui/core";
-import HourglassIcon from "@material-ui/icons/HourglassFull";
+import { Tooltip } from "@mui/material";
+import WorkIcon from "@mui/icons-material/Work";
+import { IconButton } from "@mui/material";
+import { Select } from "@mui/material";
+import ImportExport from "@mui/icons-material/ImportExport";
+import { MenuItem } from "@mui/material";
+import HourglassIcon from "@mui/icons-material/HourglassFull";
 
 import StationDataTable from "../analysis/StationDataTable";
 import { PartIdenticon } from "../station-monitor/Material";
@@ -102,6 +102,7 @@ const OutlierCycles = React.memo(function OutlierCycles(props: OutlierCycleProps
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined)}
+                size="large"
               >
                 <ImportExport />
               </IconButton>
@@ -158,6 +159,7 @@ const StationOEEChart = React.memo(function StationOEEChart({ showLabor }: { rea
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 onClick={() => copyOeeToClipboard(points)}
+                size="large"
               >
                 <ImportExport />
               </IconButton>
@@ -283,6 +285,7 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
                 <IconButton
                   onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, props.showLabor)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                  size="large"
                 >
                   <ImportExport />
                 </IconButton>

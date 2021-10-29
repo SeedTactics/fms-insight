@@ -33,32 +33,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import { makeStyles } from "@material-ui/core";
-import { withStyles } from "@material-ui/core";
-import { createStyles } from "@material-ui/core";
-import { WithStyles } from "@material-ui/core";
+import makeStyles from "@mui/styles/makeStyles";
+import withStyles from "@mui/styles/withStyles";
+import createStyles from "@mui/styles/createStyles";
+import { WithStyles } from "@mui/styles";
 import { SortEnd } from "react-sortable-hoc";
-import { Table } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TableBody } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import EditIcon from "@material-ui/icons/Edit";
-import { Dialog } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-import { TextField } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { Fab } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import AddIcon from "@material-ui/icons/Add";
-import AssignIcon from "@material-ui/icons/AssignmentReturn";
+import { Table } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TableBody } from "@mui/material";
+import { Button } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { Typography } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import { Dialog } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { TextField } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { Fab } from "@mui/material";
+import { IconButton } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import AssignIcon from "@mui/icons-material/AssignmentReturn";
 
 import {
   SortableInProcMaterial,
@@ -99,7 +99,7 @@ import {
   reorderQueuedMatInCurrentStatus,
 } from "../../cell-status/current-status";
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../cell-status/material-details";
-import { Collapse } from "@material-ui/core";
+import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { useRecoilConduit } from "../../util/recoil-util";
 
@@ -504,7 +504,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   const mat1 = props.material?.[0];
   return (
     <Dialog open={props.material !== null} onClose={close} maxWidth="md">
-      <DialogTitle disableTypography>
+      <DialogTitle>
         {mat1 && props.material && props.material.length > 0 ? (
           <MaterialDetailTitle
             partName={mat1.partName}

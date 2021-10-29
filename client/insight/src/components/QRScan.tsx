@@ -33,16 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import QrReader from "react-qr-reader";
-import { Dialog } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import CameraAlt from "@material-ui/icons/CameraAlt";
+import { Dialog } from "@mui/material";
+import { Button } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import CameraAlt from "@mui/icons-material/CameraAlt";
 import { materialToShowInDialog } from "../cell-status/material-details";
 import { useSetRecoilState } from "recoil";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
 
 export const SerialScannerButton = React.memo(function SerialScanner() {
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
@@ -79,7 +79,7 @@ export const SerialScannerButton = React.memo(function SerialScanner() {
         </DialogActions>
       </Dialog>
       <Tooltip title="Scan QR Code">
-        <IconButton onClick={() => setDialogOpen(true)}>
+        <IconButton onClick={() => setDialogOpen(true)} size="large">
           <CameraAlt />
         </IconButton>
       </Tooltip>

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import { CssBaseline } from "@material-ui/core";
+import { CssBaseline } from "@mui/material";
 import "react-vis/dist/style.css";
 import "highlight.js/styles/default.css";
 import "@fontsource/roboto/300.css";
@@ -41,16 +41,19 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
-import green from "@material-ui/core/colors/green";
-import brown from "@material-ui/core/colors/brown";
-import { ThemeProvider } from "@material-ui/core";
-import { createTheme } from "@material-ui/core/styles";
+import { green, brown } from "@mui/material/colors";
+import { Theme, ThemeProvider, createTheme } from "@mui/material/styles";
 import { RecoilRoot } from "recoil";
 import { Router } from "wouter";
 import { enableMapSet } from "immer";
 enableMapSet();
 
 import App, { AppProps } from "./components/App";
+
+declare module "@mui/styles" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
 
 export function render(appProps: AppProps | null, elem: HTMLElement | null): void {
   const theme = createTheme({

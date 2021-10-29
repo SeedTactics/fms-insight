@@ -33,25 +33,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as jdenticon from "jdenticon";
-import { Typography } from "@material-ui/core";
-import { ButtonBase } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import WarningIcon from "@material-ui/icons/Warning";
-import SearchIcon from "@material-ui/icons/Search";
-import { Avatar } from "@material-ui/core";
-import { Paper } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
+import { Typography } from "@mui/material";
+import { ButtonBase } from "@mui/material";
+import { Button } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import WarningIcon from "@mui/icons-material/Warning";
+import SearchIcon from "@mui/icons-material/Search";
+import { Avatar } from "@mui/material";
+import { Paper } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { TextField } from "@mui/material";
 import TimeAgo from "react-timeago";
-import { Dialog } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import DragIndicator from "@material-ui/icons/DragIndicator";
-import { withStyles } from "@material-ui/core";
-import { createStyles } from "@material-ui/core";
-import { WithStyles } from "@material-ui/core";
+import { Dialog } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import DragIndicator from "@mui/icons-material/DragIndicator";
+import withStyles from "@mui/styles/withStyles";
+import createStyles from "@mui/styles/createStyles";
+import { WithStyles } from "@mui/styles";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import { DraggableProvided } from "react-beautiful-dnd";
 
@@ -474,13 +474,14 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
 
   return (
     <>
-      <DialogTitle disableTypography>
+      <DialogTitle>
         <MaterialDetailTitle notes partName={props.mat.partName} serial={props.mat.serial} />
       </DialogTitle>
       <DialogContent>
         <TextField
+          sx={{ mt: "5px" }}
           multiline
-          label="Notes"
+          label="Note"
           autoFocus
           variant="outlined"
           value={curNote}
@@ -534,7 +535,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
     const mat = props.display_material;
     body = (
       <>
-        <DialogTitle disableTypography>
+        <DialogTitle>
           <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
         </DialogTitle>
         <DialogContent>

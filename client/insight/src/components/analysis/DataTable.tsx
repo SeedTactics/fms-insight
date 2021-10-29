@@ -31,28 +31,29 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Dialog, DialogActions, DialogContent, DialogTitle, TableBody, makeStyles } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TableSortLabel } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import FirstPageIcon from "@material-ui/icons/FirstPage";
-import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
-import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
-import LastPageIcon from "@material-ui/icons/LastPage";
-import { Toolbar } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import { Select } from "@material-ui/core";
-import ZoomOutIcon from "@material-ui/icons/ZoomOut";
-import ZoomInIcon from "@material-ui/icons/ZoomIn";
-import { InputBase } from "@material-ui/core";
-import SkipPrevIcon from "@material-ui/icons/SkipPrevious";
-import SkipNextIcon from "@material-ui/icons/SkipNext";
-import { MenuItem } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import MoreHoriz from "@material-ui/icons/MoreHoriz";
+import { Dialog, DialogActions, DialogContent, DialogTitle, TableBody } from "@mui/material";
+import makeStyles from "@mui/styles/makeStyles";
+import { TableCell } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TableSortLabel } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import { Toolbar } from "@mui/material";
+import { Typography } from "@mui/material";
+import { Select } from "@mui/material";
+import ZoomOutIcon from "@mui/icons-material/ZoomOut";
+import ZoomInIcon from "@mui/icons-material/ZoomIn";
+import { InputBase } from "@mui/material";
+import SkipPrevIcon from "@mui/icons-material/SkipPrevious";
+import SkipNextIcon from "@mui/icons-material/SkipNext";
+import { MenuItem } from "@mui/material";
+import { Button } from "@mui/material";
+import MoreHoriz from "@mui/icons-material/MoreHoriz";
 import Calendar from "react-calendar";
 
 import { addDays } from "date-fns";
@@ -196,12 +197,12 @@ function SelectDateRange(props: SelectDateRangeProps) {
         {dateFormat.format(props.zoom.current_date_zoom?.end ?? props.zoom.default_date_range[1])}
       </span>
       <Tooltip title="Zoom To Date Range">
-        <IconButton onClick={() => setOpen(true)}>
+        <IconButton onClick={() => setOpen(true)} size="large">
           <ZoomInIcon />
         </IconButton>
       </Tooltip>
       <Tooltip title="Reset Date Range">
-        <IconButton onClick={() => props.zoom.set_date_zoom_range(undefined)}>
+        <IconButton onClick={() => props.zoom.set_date_zoom_range(undefined)} size="large">
           <ZoomOutIcon />
         </IconButton>
       </Tooltip>
@@ -302,7 +303,7 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
     zoomCtrl = (
       <>
         <Tooltip title="Extend 1 day previous">
-          <IconButton onClick={() => zoom.extend(-1)}>
+          <IconButton onClick={() => zoom.extend(-1)} size="large">
             <SkipPrevIcon />
           </IconButton>
         </Tooltip>
@@ -310,7 +311,7 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
           {zoom.curStart.toLocaleDateString() + " to " + zoom.curEnd.toLocaleDateString()}
         </Typography>
         <Tooltip title="Extend 1 day">
-          <IconButton onClick={() => zoom.extend(1)}>
+          <IconButton onClick={() => zoom.extend(1)} size="large">
             <SkipNextIcon />
           </IconButton>
         </Tooltip>
@@ -349,16 +350,22 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
           (props.page + 1) * props.rowsPerPage
         )} of ${props.count}`}
       </Typography>
-      <IconButton onClick={() => props.setPage(0)} disabled={props.page === 0} aria-label="First Page">
+      <IconButton onClick={() => props.setPage(0)} disabled={props.page === 0} aria-label="First Page" size="large">
         <FirstPageIcon />
       </IconButton>
-      <IconButton onClick={() => props.setPage(props.page - 1)} disabled={props.page === 0} aria-label="Previous Page">
+      <IconButton
+        onClick={() => props.setPage(props.page - 1)}
+        disabled={props.page === 0}
+        aria-label="Previous Page"
+        size="large"
+      >
         <KeyboardArrowLeft />
       </IconButton>
       <IconButton
         onClick={() => props.setPage(props.page + 1)}
         disabled={props.page >= Math.ceil(props.count / props.rowsPerPage) - 1}
         aria-label="Next Page"
+        size="large"
       >
         <KeyboardArrowRight />
       </IconButton>
@@ -366,6 +373,7 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
         onClick={() => props.setPage(Math.max(0, Math.ceil(props.count / props.rowsPerPage) - 1))}
         disabled={props.page >= Math.ceil(props.count / props.rowsPerPage) - 1}
         aria-label="Last Page"
+        size="large"
       >
         <LastPageIcon />
       </IconButton>
@@ -399,7 +407,7 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
             ))}
             {onClickDetails ? (
               <TableCell padding="checkbox">
-                <IconButton onClick={(e) => onClickDetails(e, row)}>
+                <IconButton onClick={(e) => onClickDetails(e, row)} size="large">
                   <MoreHoriz />
                 </IconButton>
               </TableCell>

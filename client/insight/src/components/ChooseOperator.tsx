@@ -32,18 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
-import { ListItemText } from "@material-ui/core";
-import { ListItemSecondaryAction } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import DeleteIcon from "@material-ui/icons/Delete";
-import { Dialog } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { Button } from "@material-ui/core";
+import { Select, SelectChangeEvent } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { ListItemText } from "@mui/material";
+import { ListItemSecondaryAction } from "@mui/material";
+import { IconButton } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { Dialog } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import { TextField } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { Button } from "@mui/material";
 
 import { useRecoilState, useRecoilValue } from "recoil";
 import { allOperators, currentOperator } from "../data/operators";
@@ -61,11 +61,11 @@ export const OperatorSelect = React.memo(function OperatorSelectF() {
   const [newOperOpen, setNewOperOpen] = React.useState(false);
   const [newOperName, setNewOperName] = React.useState("");
 
-  function changeOper(evt: React.ChangeEvent<{ value: unknown }>) {
+  function changeOper(evt: SelectChangeEvent<string>) {
     if (evt.target.value === NewOper) {
       setNewOperOpen(true);
     } else {
-      setOperator(evt.target.value as string);
+      setOperator(evt.target.value);
     }
   }
 
@@ -87,15 +87,14 @@ export const OperatorSelect = React.memo(function OperatorSelectF() {
   }
   return (
     <>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Select value={operator || ""} onChange={changeOper} renderValue={((x: any) => x) as any}>
+      <Select value={operator || ""} onChange={changeOper} variant="standard" renderValue={(x) => x}>
         {LazySeq.ofIterable(allOpers)
           .sortOn((x) => x)
           .map((oper, idx) => (
             <MenuItem key={idx} value={oper}>
               <ListItemText primary={oper} />
               <ListItemSecondaryAction>
-                <IconButton edge="end" onClick={() => removeOperator(oper)}>
+                <IconButton edge="end" onClick={() => removeOperator(oper)} size="large">
                   <DeleteIcon />
                 </IconButton>
               </ListItemSecondaryAction>

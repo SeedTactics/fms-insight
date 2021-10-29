@@ -31,20 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Fab } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { Card } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
+import { Fab } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { Card } from "@mui/material";
+import { CardContent } from "@mui/material";
 import TimeAgo from "react-timeago";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import { CardHeader } from "@material-ui/core";
-import ToolIcon from "@material-ui/icons/Dns";
-import { Table } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TableSortLabel } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { CardHeader } from "@mui/material";
+import ToolIcon from "@mui/icons-material/Dns";
+import { Table } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TableSortLabel } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import {
   ToolReport,
   currentToolReport,
@@ -54,21 +54,21 @@ import {
   toolReportRefreshTime,
   machinesWithTools,
 } from "../../data/tools-programs";
-import { TableBody } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-import { Collapse } from "@material-ui/core";
+import { TableBody } from "@mui/material";
+import { IconButton } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { Collapse } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
-import { makeStyles } from "@material-ui/core";
+import makeStyles from "@mui/styles/makeStyles";
 import { PartIdenticon } from "../station-monitor/Material";
 import clsx from "clsx";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { useIsDemo } from "../routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
-import { Select } from "@material-ui/core";
-import ImportExport from "@material-ui/icons/ImportExport";
-import { MenuItem } from "@material-ui/core";
+import { Select } from "@mui/material";
+import ImportExport from "@mui/icons-material/ImportExport";
+import { MenuItem } from "@mui/material";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -161,56 +161,60 @@ function ToolRow(props: ToolRowProps) {
           <Collapse in={open} timeout="auto" unmountOnExit>
             <div className={classes.detailContainer}>
               {props.tool.parts.isEmpty() ? undefined : (
+                <div>
+                  <Table size="small" className={classes.detailTable}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Part</TableCell>
+                        <TableCell>Program</TableCell>
+                        <TableCell align="right">Quantity</TableCell>
+                        <TableCell align="right">Use/Cycle (min)</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>
+                            <div className={classes.partNameContainer}>
+                              <PartIdenticon part={p.partName} size={20} />
+                              <span>
+                                {p.partName}-{p.process}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{p.program}</TableCell>
+                          <TableCell align="right">{p.quantity}</TableCell>
+                          <TableCell align="right">{p.scheduledUseMinutes.toFixed(1)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              <div>
                 <Table size="small" className={classes.detailTable}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Part</TableCell>
-                      <TableCell>Program</TableCell>
-                      <TableCell align="right">Quantity</TableCell>
-                      <TableCell align="right">Use/Cycle (min)</TableCell>
+                      <TableCell>Machine</TableCell>
+                      <TableCell align="right">Pocket</TableCell>
+                      <TableCell align="right">Current Use (min)</TableCell>
+                      <TableCell align="right">Lifetime (min)</TableCell>
+                      <TableCell align="right">Remaining Use (min)</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
+                    {LazySeq.ofIterable(props.tool.machines).map((m, idx) => (
                       <TableRow key={idx}>
-                        <TableCell>
-                          <div className={classes.partNameContainer}>
-                            <PartIdenticon part={p.partName} size={20} />
-                            <span>
-                              {p.partName}-{p.process}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{p.program}</TableCell>
-                        <TableCell align="right">{p.quantity}</TableCell>
-                        <TableCell align="right">{p.scheduledUseMinutes.toFixed(1)}</TableCell>
+                        <TableCell>{m.machineName}</TableCell>
+                        <TableCell align="right">{m.pocket}</TableCell>
+                        <TableCell align="right">{m.currentUseMinutes.toFixed(1)}</TableCell>
+                        <TableCell align="right">{m.lifetimeMinutes.toFixed(1)}</TableCell>
+                        <TableCell align="right">{m.remainingMinutes.toFixed(1)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              )}
-              <Table size="small" className={classes.detailTable}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Machine</TableCell>
-                    <TableCell align="right">Pocket</TableCell>
-                    <TableCell align="right">Current Use (min)</TableCell>
-                    <TableCell align="right">Lifetime (min)</TableCell>
-                    <TableCell align="right">Remaining Use (min)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {LazySeq.ofIterable(props.tool.machines).map((m, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{m.machineName}</TableCell>
-                      <TableCell align="right">{m.pocket}</TableCell>
-                      <TableCell align="right">{m.currentUseMinutes.toFixed(1)}</TableCell>
-                      <TableCell align="right">{m.lifetimeMinutes.toFixed(1)}</TableCell>
-                      <TableCell align="right">{m.remainingMinutes.toFixed(1)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              </div>
             </div>
           </Collapse>
         </TableCell>
@@ -309,6 +313,7 @@ export function ToolSummaryTable(): JSX.Element {
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 onClick={() => copyToolReportToClipboard(tools, machineFilter !== null)}
+                size="large"
               >
                 <ImportExport />
               </IconButton>

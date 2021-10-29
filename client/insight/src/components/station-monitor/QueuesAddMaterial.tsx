@@ -32,26 +32,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { createStyles } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { List } from "@material-ui/core";
-import { ListItem } from "@material-ui/core";
-import { ListItemText } from "@material-ui/core";
-import { ListItemIcon } from "@material-ui/core";
-import { FormControl } from "@material-ui/core";
-import { InputLabel } from "@material-ui/core";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
-import { Dialog } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import { Collapse } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import { Tooltip } from "@material-ui/core";
+import createStyles from "@mui/styles/createStyles";
+import { Button } from "@mui/material";
+import { List } from "@mui/material";
+import { ListItem } from "@mui/material";
+import { ListItemText } from "@mui/material";
+import { ListItemIcon } from "@mui/material";
+import { FormControl } from "@mui/material";
+import { InputLabel } from "@mui/material";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { Dialog } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import { Collapse } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { TextField } from "@mui/material";
+import makeStyles from "@mui/styles/makeStyles";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Tooltip } from "@mui/material";
 import ReactToPrint from "react-to-print";
 import clsx from "clsx";
 
@@ -124,7 +124,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
   const matId = props.in_proc_material.materialID;
   return (
     <>
-      <DialogTitle disableTypography>
+      <DialogTitle>
         <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
       </DialogTitle>
       <DialogContent>
@@ -244,7 +244,7 @@ function AddSerialFound(props: AddSerialFoundProps) {
   }
   return (
     <>
-      <DialogTitle disableTypography>
+      <DialogTitle>
         <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
       </DialogTitle>
       <DialogContent>

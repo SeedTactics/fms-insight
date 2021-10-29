@@ -31,16 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import SearchIcon from "@material-ui/icons/Search";
-import { Card } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import { CardHeader } from "@material-ui/core";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
+import SearchIcon from "@mui/icons-material/Search";
+import { Card } from "@mui/material";
+import { CardContent } from "@mui/material";
+import { CardHeader } from "@mui/material";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
 import { Sankey, Hint } from "react-vis";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import ImportExport from "@material-ui/icons/ImportExport";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import ImportExport from "@mui/icons-material/ImportExport";
 
 import { PartIdenticon } from "../station-monitor/Material";
 import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
@@ -192,6 +192,7 @@ export function InspectionSankey(props: InspectionSankeyProps) {
                       : undefined
                   }
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                  size="large"
                 >
                   <ImportExport />
                 </IconButton>

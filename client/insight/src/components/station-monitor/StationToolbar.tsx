@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
-import { Input } from "@material-ui/core";
-import { FormControl } from "@material-ui/core";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { Input } from "@mui/material";
+import { FormControl } from "@mui/material";
 
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
@@ -172,7 +172,8 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
         <Select
           key="inspselect"
           value={curInspType || allInspSym}
-          onChange={(e) => setInspType(e.target.value as string)}
+          onChange={(e) => setInspType(e.target.value)}
+          variant="standard"
           style={{ marginLeft: "1em" }}
         >
           <MenuItem key={allInspSym} value={allInspSym}>
@@ -208,6 +209,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
             data-testid="station-monitor-queue-select"
             key="queueselect"
             displayEmpty
+            variant="standard"
             value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ minWidth: "10em", marginTop: "0" }}
@@ -245,6 +247,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
             data-testid="station-monitor-queue-select"
             key="queueselect"
             displayEmpty
+            variant="standard"
             value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ marginTop: "0" }}

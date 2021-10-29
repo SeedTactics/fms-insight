@@ -31,20 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { AppBar } from "@material-ui/core";
-import { Tabs } from "@material-ui/core";
-import { Tab } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import { Toolbar } from "@material-ui/core";
-import { Hidden } from "@material-ui/core";
-import HelpOutline from "@material-ui/icons/HelpOutline";
-import ExitToApp from "@material-ui/icons/ExitToApp";
-import { IconButton } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { Badge } from "@material-ui/core";
-import Notifications from "@material-ui/icons/Notifications";
+import { AppBar } from "@mui/material";
+import { Tabs } from "@mui/material";
+import { Tab } from "@mui/material";
+import { Typography } from "@mui/material";
+import { Toolbar } from "@mui/material";
+import HelpOutline from "@mui/icons-material/HelpOutline";
+import ExitToApp from "@mui/icons-material/ExitToApp";
+import { IconButton } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { Button } from "@mui/material";
+import { Badge } from "@mui/material";
+import Notifications from "@mui/icons-material/Notifications";
 import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 
 import OperationDashboard from "./operations/Dashboard";
@@ -102,6 +101,8 @@ function OperationsTabs(p: HeaderNavProps) {
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
       onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
+      textColor="inherit"
+      indicatorColor="secondary"
     >
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
@@ -121,6 +122,8 @@ function QualityTabs(p: HeaderNavProps) {
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
       onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
+      textColor="inherit"
+      indicatorColor="secondary"
     >
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
@@ -137,6 +140,8 @@ function ToolsTabs(p: HeaderNavProps) {
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
       onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
+      textColor="inherit"
+      indicatorColor="secondary"
     >
       <Tab label="Tools" value={routes.RouteLocation.Tools_Dashboard} />
       <Tab label="Programs" value={routes.RouteLocation.Tools_Programs} />
@@ -151,6 +156,8 @@ function AnalysisTabs(p: HeaderNavProps) {
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
       onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
+      textColor="inherit"
+      indicatorColor="secondary"
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
@@ -167,6 +174,8 @@ function BackupTabs(p: HeaderNavProps) {
       style={p.full ? {} : tabsStyle}
       value={p.routeState.route}
       onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
+      textColor="inherit"
+      indicatorColor="secondary"
     >
       <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
       <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
@@ -267,7 +276,7 @@ function Header(p: HeaderProps) {
 
   const HelpButton = () => (
     <Tooltip title="Help">
-      <IconButton aria-label="Help" href={helpUrl(p.routeState)} target="_help">
+      <IconButton aria-label="Help" href={helpUrl(p.routeState)} target="_help" size="large">
         <HelpOutline />
       </IconButton>
     </Tooltip>
@@ -275,7 +284,7 @@ function Header(p: HeaderProps) {
 
   const LogoutButton = () => (
     <Tooltip title="Logout">
-      <IconButton aria-label="Logout" onClick={serverSettings.logout}>
+      <IconButton aria-label="Logout" onClick={serverSettings.logout} size="large">
         <ExitToApp />
       </IconButton>
     </Tooltip>
@@ -297,56 +306,52 @@ function Header(p: HeaderProps) {
 
   return (
     <>
-      <Hidden smDown>
-        <AppBar position="static">
-          <Toolbar>
-            <Tooltip title={tooltip}>
-              <div>
-                <SeedtacticLogo />
-              </div>
-            </Tooltip>
-            <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
-              Insight
-            </Typography>
-            {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
-            {p.children ? (
-              p.children({ full: false, setRoute: p.setRoute, routeState: p.routeState })
-            ) : (
-              <div style={{ flexGrow: 1 }} />
-            )}
-            <LoadingIcon />
-            {p.showOperator ? <OperatorSelect /> : undefined}
-            {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
-            {p.showSearch ? <SearchButtons /> : undefined}
-            <HelpButton />
-            {p.showLogout ? <LogoutButton /> : undefined}
-            {p.showAlarms ? <Alarms /> : undefined}
-          </Toolbar>
-        </AppBar>
-      </Hidden>
-      <Hidden mdUp>
-        <AppBar position="static">
-          <Toolbar>
-            <Tooltip title={tooltip}>
-              <div>
-                <SeedtacticLogo />
-              </div>
-            </Tooltip>
-            <Typography variant="h6" style={{ marginLeft: "4px" }}>
-              Insight
-            </Typography>
-            {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
+      <AppBar position="static" sx={{ display: { xs: "none", md: "block" } }}>
+        <Toolbar>
+          <Tooltip title={tooltip}>
+            <div>
+              <SeedtacticLogo />
+            </div>
+          </Tooltip>
+          <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
+            Insight
+          </Typography>
+          {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
+          {p.children ? (
+            p.children({ full: false, setRoute: p.setRoute, routeState: p.routeState })
+          ) : (
             <div style={{ flexGrow: 1 }} />
-            <LoadingIcon />
-            {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
-            {p.showSearch ? <SearchButtons /> : undefined}
-            <HelpButton />
-            {p.showLogout ? <LogoutButton /> : undefined}
-            {p.showAlarms ? <Alarms /> : undefined}
-          </Toolbar>
-          {p.children ? p.children({ full: true, setRoute: p.setRoute, routeState: p.routeState }) : undefined}
-        </AppBar>
-      </Hidden>
+          )}
+          <LoadingIcon />
+          {p.showOperator ? <OperatorSelect /> : undefined}
+          {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
+          {p.showSearch ? <SearchButtons /> : undefined}
+          <HelpButton />
+          {p.showLogout ? <LogoutButton /> : undefined}
+          {p.showAlarms ? <Alarms /> : undefined}
+        </Toolbar>
+      </AppBar>
+      <AppBar position="static" sx={{ display: { xs: "block", md: "none" } }}>
+        <Toolbar>
+          <Tooltip title={tooltip}>
+            <div>
+              <SeedtacticLogo />
+            </div>
+          </Tooltip>
+          <Typography variant="h6" style={{ marginLeft: "4px" }}>
+            Insight
+          </Typography>
+          {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
+          <div style={{ flexGrow: 1 }} />
+          <LoadingIcon />
+          {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
+          {p.showSearch ? <SearchButtons /> : undefined}
+          <HelpButton />
+          {p.showLogout ? <LogoutButton /> : undefined}
+          {p.showAlarms ? <Alarms /> : undefined}
+        </Toolbar>
+        {p.children ? p.children({ full: true, setRoute: p.setRoute, routeState: p.routeState }) : undefined}
+      </AppBar>
     </>
   );
 }

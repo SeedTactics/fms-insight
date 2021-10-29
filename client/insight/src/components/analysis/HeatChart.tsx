@@ -33,14 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { format } from "date-fns";
 import { HeatmapSeries, XAxis, YAxis, Hint, FlexibleWidthXYPlot, LabelSeries } from "react-vis";
-import { Card } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import { CardHeader } from "@material-ui/core";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import ImportExport from "@material-ui/icons/ImportExport";
+import { Card } from "@mui/material";
+import { CardContent } from "@mui/material";
+import { CardHeader } from "@mui/material";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import ImportExport from "@mui/icons-material/ImportExport";
 
 import { LazySeq } from "../../util/lazyseq";
 
@@ -142,7 +142,11 @@ export function SelectableHeatChart<T extends string>(props: SelectableHeatChart
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
             <div style={{ flexGrow: 1 }} />
             <Tooltip title="Copy to Clipboard">
-              <IconButton onClick={props.onExport} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}>
+              <IconButton
+                onClick={props.onExport}
+                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                size="large"
+              >
                 <ImportExport />
               </IconButton>
             </Tooltip>

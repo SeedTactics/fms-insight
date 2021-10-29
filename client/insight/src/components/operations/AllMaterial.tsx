@@ -43,9 +43,9 @@ import {
 } from "../../data/all-material-bins";
 import * as matDetails from "../../cell-status/material-details";
 import * as currentSt from "../../cell-status/current-status";
-import { Paper } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import { Button } from "@material-ui/core";
+import { Paper } from "@mui/material";
+import { Typography } from "@mui/material";
+import { Button } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
 import { IInProcessMaterial, LocType, QueuePosition } from "../../network/api";

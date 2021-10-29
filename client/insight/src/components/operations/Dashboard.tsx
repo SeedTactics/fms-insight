@@ -31,10 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Grid } from "@material-ui/core";
-import { Card } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import { Hidden } from "@material-ui/core";
+import { Box, Grid } from "@mui/material";
+import { Card } from "@mui/material";
+import { CardContent } from "@mui/material";
 
 import StationOEEs from "./OEESummary";
 import { CurrentJobs } from "./CurrentJobs";
@@ -101,12 +100,12 @@ export default function Dashboard() {
   }, []);
   return (
     <div>
-      <Hidden mdDown>
+      <Box sx={{ display: { xs: "none", lg: "block" } }}>
         <FillViewportDashboard />
-      </Hidden>
-      <Hidden lgUp>
+      </Box>
+      <Box sx={{ display: { xs: "block", lg: "none" } }}>
         <ScrollableDashboard />
-      </Hidden>
+      </Box>
     </div>
   );
 }

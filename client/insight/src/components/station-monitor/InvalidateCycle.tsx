@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Button } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
+import { Button } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { TextField } from "@mui/material";
 import { Vector } from "prelude-ts";
 import * as React from "react";
 import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../network/api";

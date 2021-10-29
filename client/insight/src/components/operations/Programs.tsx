@@ -31,22 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Fab } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { Card } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
+import { Fab } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { Card } from "@mui/material";
+import { CardContent } from "@mui/material";
 import TimeAgo from "react-timeago";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import { CardHeader } from "@material-ui/core";
-import ProgramIcon from "@material-ui/icons/Receipt";
-import CodeIcon from "@material-ui/icons/Code";
-import { Table } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TableSortLabel } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { CardHeader } from "@mui/material";
+import ProgramIcon from "@mui/icons-material/Receipt";
+import CodeIcon from "@mui/icons-material/Code";
+import { Table } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TableSortLabel } from "@mui/material";
+import { Typography } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import {
   programReportRefreshTime,
   currentProgramReport,
@@ -57,31 +57,31 @@ import {
   programToShowHistory,
   programFilter,
 } from "../../data/tools-programs";
-import { TableBody } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-import FirstPageIcon from "@material-ui/icons/FirstPage";
-import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
-import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
-import HistoryIcon from "@material-ui/icons/History";
-import { Collapse } from "@material-ui/core";
+import { TableBody } from "@mui/material";
+import { IconButton } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import HistoryIcon from "@mui/icons-material/History";
+import { Collapse } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
-import { makeStyles } from "@material-ui/core";
+import makeStyles from "@mui/styles/makeStyles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { useSetRecoilState, useRecoilState, useRecoilValue } from "recoil";
-import { Dialog } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
+import { Dialog } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import { Button } from "@mui/material";
+import { DialogActions } from "@mui/material";
 import { useIsDemo } from "../routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import { Vector } from "prelude-ts";
 import { IProgramRevision } from "../../network/api";
 import { MachineBackend } from "../../network/backend";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -695,14 +695,14 @@ export function ProgramHistoryDialog(): JSX.Element {
             <>
               <Tooltip title="Latest Revisions">
                 <span>
-                  <IconButton onClick={() => setPage(0)} disabled={loading || page === 0}>
+                  <IconButton onClick={() => setPage(0)} disabled={loading || page === 0} size="large">
                     <FirstPageIcon />
                   </IconButton>
                 </span>
               </Tooltip>
               <Tooltip title="Previous Page">
                 <span>
-                  <IconButton onClick={() => setPage(page - 1)} disabled={loading || page === 0}>
+                  <IconButton onClick={() => setPage(page - 1)} disabled={loading || page === 0} size="large">
                     <KeyboardArrowLeft />
                   </IconButton>
                 </span>
@@ -712,6 +712,7 @@ export function ProgramHistoryDialog(): JSX.Element {
                   <IconButton
                     onClick={() => advancePage()}
                     disabled={loading || (page === lastLoadedPage.page && !lastLoadedPage.hasMore)}
+                    size="large"
                   >
                     <KeyboardArrowRight />
                   </IconButton>
