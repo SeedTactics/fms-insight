@@ -31,8 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Dialog, DialogActions, DialogContent, DialogTitle, TableBody } from "@mui/material";
-import makeStyles from "@mui/styles/makeStyles";
+import { Dialog, DialogActions, DialogContent, DialogTitle, styled, TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
@@ -136,41 +135,38 @@ interface SelectDateRangeProps {
 const dateFormat = new Intl.DateTimeFormat([], { year: "numeric", month: "short", day: "numeric" });
 const monthFormat = new Intl.DateTimeFormat([], { year: "numeric", month: "long" });
 
-const useDateRangeStyles = makeStyles((theme) => ({
-  calendar: {
-    width: "350px",
-    "& .react-calendar__month-view__weekdays": {
-      textAlign: "center",
-      textTransform: "uppercase",
-      fontWeight: "bold",
-    },
-    "& .react-calendar__tile": {
-      textAlign: "center",
-      padding: ".75em .5em",
-      margin: 0,
-      border: 0,
-      background: "none",
-      outline: "none",
-      cursor: "pointer",
-      "&:hover": {
-        backgroundColor: "rgb(230, 230, 230)",
-      },
-      "&--active": {
-        backgroundColor: theme.palette.primary.light,
-        "&:hover": {
-          backgroundColor: theme.palette.primary.dark,
-        },
-      },
-    },
-    // react-calendar__tile--hover is when selecting range of days.
-    "&.react-calendar--selectRange .react-calendar__tile--hover": {
+const StyledCalendar = styled(Calendar)(({ theme }) => ({
+  width: "350px",
+  "& .react-calendar__month-view__weekdays": {
+    textAlign: "center",
+    textTransform: "uppercase",
+    fontWeight: "bold",
+  },
+  "& .react-calendar__tile": {
+    textAlign: "center",
+    padding: ".75em .5em",
+    margin: 0,
+    border: 0,
+    background: "none",
+    outline: "none",
+    cursor: "pointer",
+    "&:hover": {
       backgroundColor: "rgb(230, 230, 230)",
     },
+    "&--active": {
+      backgroundColor: theme.palette.primary.light,
+      "&:hover": {
+        backgroundColor: theme.palette.primary.dark,
+      },
+    },
+  },
+  // react-calendar__tile--hover is when selecting range of days.
+  "&.react-calendar--selectRange .react-calendar__tile--hover": {
+    backgroundColor: "rgb(230, 230, 230)",
   },
 }));
 
 function SelectDateRange(props: SelectDateRangeProps) {
-  const classes = useDateRangeStyles();
   const [open, setOpen] = React.useState(false);
   const start = props.zoom.current_date_zoom ? props.zoom.current_date_zoom.start : props.zoom.default_date_range[0];
   const end = addDays(
@@ -209,8 +205,7 @@ function SelectDateRange(props: SelectDateRangeProps) {
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Select Date Range {monthFormat.format(props.zoom.default_date_range[0])}</DialogTitle>
         <DialogContent>
-          <Calendar
-            className={classes.calendar}
+          <StyledCalendar
             minDate={props.zoom.default_date_range[0]}
             maxDate={props.zoom.default_date_range[1]}
             calendarType="US"

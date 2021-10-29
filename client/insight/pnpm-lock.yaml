@@ -9,7 +9,6 @@ specifiers:
   '@fontsource/roboto': ^4.5.1
   '@mui/icons-material': ^5.0.5
   '@mui/material': ^5.0.6
-  '@mui/styles': ^5.0.2
   '@testing-library/jest-dom': ^5.14.1
   '@testing-library/react': ^12.1.2
   '@types/faker': ^5.5.9
@@ -65,7 +64,6 @@ dependencies:
   '@fontsource/roboto': 4.5.1
   '@mui/icons-material': 5.0.5_3565a0d376b0012dc08925ef5e505ec5
   '@mui/material': 5.0.6_548ab84a18f5953b71f8bdc6185934b5
-  '@mui/styles': 5.0.2_74cdfb704b70bfbe5b519e0c4564d995
   clsx: 1.1.1
   copy-to-clipboard: 3.3.1
   date-fns: 2.25.0
@@ -974,37 +972,6 @@ packages:
       react: 17.0.2
     dev: false
 
-  /@mui/styles/5.0.2_74cdfb704b70bfbe5b519e0c4564d995:
-    resolution: {integrity: sha512-ANYnMHpiWHcV0dMrzrdCzYm+kNU0f7Gc5nFLRDWF+8fWZ40K2Cg5eMRkOW/nmM5M0wtmDI+GFVsCXgZkNq89uw==}
-    engines: {node: '>=12.0.0'}
-    peerDependencies:
-      '@types/react': ^16.8.6 || ^17.0.0
-      react: ^17.0.2
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-    dependencies:
-      '@babel/runtime': 7.15.4
-      '@emotion/hash': 0.8.0
-      '@mui/private-theming': 5.0.1_74cdfb704b70bfbe5b519e0c4564d995
-      '@mui/types': 7.0.0_@types+react@17.0.33
-      '@mui/utils': 5.0.1_react@17.0.2
-      '@types/react': 17.0.33
-      clsx: 1.1.1
-      csstype: 3.0.9
-      hoist-non-react-statics: 3.3.2
-      jss: 10.8.2
-      jss-plugin-camel-case: 10.8.2
-      jss-plugin-default-unit: 10.8.2
-      jss-plugin-global: 10.8.2
-      jss-plugin-nested: 10.8.2
-      jss-plugin-props-sort: 10.8.2
-      jss-plugin-rule-value-function: 10.8.2
-      jss-plugin-vendor-prefixer: 10.8.2
-      prop-types: 15.7.2
-      react: 17.0.2
-    dev: false
-
   /@mui/system/5.0.6_cf5898e49d1a4165414473b0b693745c:
     resolution: {integrity: sha512-qZdgODiO82/r1bH9KV5bdqqx/q14i32OGUK/bO6phhXM/DX0TmWSUsnPqFX4F7/UKrvBHsGzIb8ohdRuihQD+Q==}
     engines: {node: '>=12.0.0'}
@@ -1906,13 +1873,6 @@ packages:
     resolution: {integrity: sha512-a7Vr4Q/kd/aw96bnJG332W9V9LkJO69JRcaCYDUqjp6/z0w6VcZjgAcTbgFxEPfBgdnAwlh3iwu+hLopa+flJw==}
     dependencies:
       tiny-invariant: 1.1.0
-    dev: false
-
-  /css-vendor/2.0.8:
-    resolution: {integrity: sha512-x9Aq0XTInxrkuFeHKbYC7zWY8ai7qJ04Kxd9MnvbC1uO5DagxoHQjm4JvG+vCdXOoFtCjbL2XSZfxmoYa9uQVQ==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      is-in-browser: 1.1.3
     dev: false
 
   /css.escape/1.5.1:
@@ -2902,10 +2862,6 @@ packages:
     engines: {node: '>=10.17.0'}
     dev: true
 
-  /hyphenate-style-name/1.0.4:
-    resolution: {integrity: sha512-ygGZLjmXfPHj+ZWh6LwbC37l43MhfztxetbFCoYTM2VjkIUpeHgSNn7QIyVFj7YQ1Wl9Cbw5sholVJPzWvC2MQ==}
-    dev: false
-
   /iconv-lite/0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
     engines: {node: '>=0.10.0'}
@@ -3046,10 +3002,6 @@ packages:
     dependencies:
       is-extglob: 2.1.1
     dev: true
-
-  /is-in-browser/1.1.3:
-    resolution: {integrity: sha1-Vv9NtoOgeMYILrldrX3GLh0E+DU=}
-    dev: false
 
   /is-negative-zero/2.0.1:
     resolution: {integrity: sha512-2z6JzQvZRa9A2Y7xC6dQQm4FSTSTNWjKIYYTt4246eMTJmIo0Q+ZyOsU66X8lxK1AbB92dFeglPLrhwpeRKO6w==}
@@ -3746,68 +3698,6 @@ packages:
 
   /jsqr/1.4.0:
     resolution: {integrity: sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==}
-    dev: false
-
-  /jss-plugin-camel-case/10.8.2:
-    resolution: {integrity: sha512-2INyxR+1UdNuKf4v9It3tNfPvf7IPrtkiwzofeKuMd5D58/dxDJVUQYRVg/n460rTlHUfsEQx43hDrcxi9dSPA==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      hyphenate-style-name: 1.0.4
-      jss: 10.8.2
-    dev: false
-
-  /jss-plugin-default-unit/10.8.2:
-    resolution: {integrity: sha512-UZ7cwT9NFYSG+SEy7noRU50s4zifulFdjkUNKE+u6mW7vFP960+RglWjTgMfh79G6OENZmaYnjHV/gcKV4nSxg==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      jss: 10.8.2
-    dev: false
-
-  /jss-plugin-global/10.8.2:
-    resolution: {integrity: sha512-UaYMSPsYZ7s/ECGoj4KoHC2jwQd5iQ7K+FFGnCAILdQrv7hPmvM2Ydg45ThT/sH46DqktCRV2SqjRuxeBH8nRA==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      jss: 10.8.2
-    dev: false
-
-  /jss-plugin-nested/10.8.2:
-    resolution: {integrity: sha512-acRvuPJOb930fuYmhkJaa994EADpt8TxI63Iyg96C8FJ9T2xRyU5T6R1IYKRwUiqZo+2Sr7fdGzRTDD4uBZaMA==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      jss: 10.8.2
-      tiny-warning: 1.0.3
-    dev: false
-
-  /jss-plugin-props-sort/10.8.2:
-    resolution: {integrity: sha512-wqdcjayKRWBZnNpLUrXvsWqh+5J5YToAQ+8HNBNw0kZxVvCDwzhK2Nx6AKs7p+5/MbAh2PLgNW5Ym/ysbVAuqQ==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      jss: 10.8.2
-    dev: false
-
-  /jss-plugin-rule-value-function/10.8.2:
-    resolution: {integrity: sha512-bW0EKAs+0HXpb6BKJhrn94IDdiWb0CnSluTkh0rGEgyzY/nmD1uV/Wf6KGlesGOZ9gmJzQy+9FFdxIUID1c9Ug==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      jss: 10.8.2
-      tiny-warning: 1.0.3
-    dev: false
-
-  /jss-plugin-vendor-prefixer/10.8.2:
-    resolution: {integrity: sha512-DeGv18QsSiYLSVIEB2+l0af6OToUe0JB+trpzUxyqD2QRC/5AzzDrCrYffO5AHZ81QbffYvSN/pkfZaTWpRXlg==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      css-vendor: 2.0.8
-      jss: 10.8.2
-    dev: false
-
-  /jss/10.8.2:
-    resolution: {integrity: sha512-FkoUNxI329CKQ9OQC8L72MBF9KPf5q8mIupAJ5twU7G7XREW7ahb+7jFfrjZ4iy1qvhx1HwIWUIvkZBDnKkEdQ==}
-    dependencies:
-      '@babel/runtime': 7.15.4
-      csstype: 3.0.9
-      is-in-browser: 1.1.3
-      tiny-warning: 1.0.3
     dev: false
 
   /jsx-ast-utils/3.2.1:
@@ -4922,10 +4812,6 @@ packages:
 
   /tiny-invariant/1.1.0:
     resolution: {integrity: sha512-ytxQvrb1cPc9WBEI/HSeYYoGD0kWnGEOR8RY6KomWLBVhqz0RgTwVO9dLrGz7dC+nN9llyI7OKAgRq8Vq4ZBSw==}
-    dev: false
-
-  /tiny-warning/1.0.3:
-    resolution: {integrity: sha512-lBN9zLN/oAf68o3zNXYrdCt1kP8WsiGW8Oo2ka41b2IM5JL/S1CTyX1rW0mb/zSuJun0ZUrDxx4sqvYS2FWzPA==}
     dev: false
 
   /tmpl/1.0.5:

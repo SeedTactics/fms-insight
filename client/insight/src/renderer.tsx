@@ -42,18 +42,13 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
 import { green, brown } from "@mui/material/colors";
-import { Theme, ThemeProvider, createTheme } from "@mui/material/styles";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { RecoilRoot } from "recoil";
 import { Router } from "wouter";
 import { enableMapSet } from "immer";
 enableMapSet();
 
 import App, { AppProps } from "./components/App";
-
-declare module "@mui/styles" {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface
-  interface DefaultTheme extends Theme {}
-}
 
 export function render(appProps: AppProps | null, elem: HTMLElement | null): void {
   const theme = createTheme({

@@ -32,10 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Divider } from "@mui/material";
-import withStyles from "@mui/styles/withStyles";
-import createStyles from "@mui/styles/createStyles";
-import { WithStyles } from "@mui/styles";
+import { Box, Divider } from "@mui/material";
 import { Button } from "@mui/material";
 import { Hidden } from "@mui/material";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -109,26 +106,17 @@ function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfC
   );
 }
 
-const stationStatusStyles = createStyles({
-  defList: {
-    color: "rgba(0,0,0,0.6)",
-  },
-  defItem: {
-    marginTop: "1em",
-  },
-});
-
-interface StationStatusProps extends WithStyles<typeof stationStatusStyles> {
+interface StationStatusProps {
   byStation: HashMap<string, { pal?: PalletData; queue?: PalletData }>;
   dateOfCurrentStatus: Date;
 }
 
-const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps) => {
+function StationStatus(props: StationStatusProps) {
   if (props.byStation.length() === 0) {
     return <div />;
   }
   return (
-    <dl className={props.classes.defList}>
+    <dl style={{ color: "rgba(0,0,0,0.6" }}>
       {props.byStation
         .toVector()
         .sortOn(([s, _]) => s)
@@ -136,7 +124,7 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
           <React.Fragment key={stat}>
             {pals.pal ? (
               <>
-                <dt className={props.classes.defItem}>
+                <dt style={{ marginTop: "1em" }}>
                   {stat} - Pallet {pals.pal.pallet.pallet} - worktable
                 </dt>
                 {pals.pal.material.map((mat, idx) => (
@@ -146,7 +134,7 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
             ) : undefined}
             {pals.queue ? (
               <>
-                <dt className={props.classes.defList}>
+                <dt style={{ marginTop: "1em" }}>
                   {stat} - Pallet {pals.queue.pallet.pallet} - queue
                 </dt>
                 {pals.queue.material.map((mat, idx) => (
@@ -158,7 +146,7 @@ const StationStatus = withStyles(stationStatusStyles)((props: StationStatusProps
         ))}
     </dl>
   );
-});
+}
 
 function MultiInstructionButton({
   loadData,
@@ -235,47 +223,6 @@ function MultiInstructionButton({
   );
 }
 
-const palletStyles = createStyles({
-  palletContainerFill: {
-    width: "100%",
-    position: "relative",
-    flexGrow: 1,
-  },
-  palletContainerScroll: {
-    width: "100%",
-    position: "relative",
-    minHeight: "12em",
-  },
-  statStatusFill: {
-    width: "100%",
-    flexGrow: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statStatusScroll: {
-    width: "100%",
-    minHeight: "12em",
-  },
-  labelContainer: {
-    position: "absolute",
-    top: "4px",
-    left: "4px",
-  },
-  label: {
-    color: "rgba(0,0,0,0.5)",
-    fontSize: "small",
-  },
-  labelPalletNum: {
-    color: "rgba(0,0,0,0.5)",
-    fontSize: "xx-large",
-  },
-  faceContainer: {
-    marginLeft: "4em",
-    marginRight: "4em",
-  },
-});
-
 function showArrow(m: Readonly<api.IInProcessMaterial>): boolean {
   if (
     m.action.type === api.ActionType.Loading &&
@@ -296,17 +243,7 @@ interface PalletColumnProps {
   readonly fillViewPort: boolean;
 }
 
-const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithStyles<typeof palletStyles>) => {
-  let palletClass: string;
-  let statStatusClass: string;
-  if (props.fillViewPort) {
-    palletClass = props.classes.palletContainerFill;
-    statStatusClass = props.classes.statStatusFill;
-  } else {
-    palletClass = props.classes.palletContainerScroll;
-    statStatusClass = props.classes.statStatusScroll;
-  }
-
+function PalletColumn(props: PalletColumnProps) {
   const maxFace = props.data.face
     .keySet()
     .maxOn((x) => x)
@@ -317,7 +254,7 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
   if (singleMat.isSome()) {
     const mat = singleMat.get()[1];
     palDetails = (
-      <div className={props.classes.faceContainer}>
+      <Box sx={{ ml: "4em", mr: "4em" }}>
         <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace}>
           <WhiteboardRegion label={""} spaceAround>
             {(mat || []).map((m, idx) => (
@@ -331,11 +268,11 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
             ))}
           </WhiteboardRegion>
         </MoveMaterialArrowNode>
-      </div>
+      </Box>
     );
   } else {
     palDetails = (
-      <div className={props.classes.faceContainer}>
+      <Box sx={{ ml: "4em", mr: "4em" }}>
         {props.data.face
           .toVector()
           .sortOn(([face, _]) => face)
@@ -357,7 +294,7 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
               {face === maxFace ? undefined : <Divider key={1} />}
             </div>
           ))}
-      </div>
+      </Box>
     );
   }
 
@@ -376,19 +313,30 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
         </>
       )}
       {props.data.stationStatus ? ( // stationStatus is defined only when no pallet
-        <div className={statStatusClass}>
+        <Box
+          sx={{
+            width: "100%",
+            flexGrow: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            display: props.fillViewPort ? "flex" : "block",
+            minHeight: props.fillViewPort ? undefined : "12em",
+          }}
+        >
           <StationStatus byStation={props.data.stationStatus} dateOfCurrentStatus={props.dateOfCurrentStatus} />
-        </div>
+        </Box>
       ) : (
-        <div className={palletClass}>
-          <div className={props.classes.labelContainer}>
-            <div className={props.classes.label}>Pallet</div>
+        <Box
+          sx={{ position: "relative", width: "100%", flexGrow: 1, minHeight: props.fillViewPort ? undefined : "12em" }}
+        >
+          <Box sx={{ position: "absolute", top: "4px", left: "4px" }}>
+            <Box sx={{ color: "rgba(0,0,0,0.5", fontSize: "small" }}>Pallet</Box>
             {props.data.pallet ? (
-              <div className={props.classes.labelPalletNum}>{props.data.pallet.pallet}</div>
+              <Box sx={{ color: "rgba(0,0,0,0.5)", fontSize: "xx-large" }}>{props.data.pallet.pallet}</Box>
             ) : undefined}
-          </div>
+          </Box>
           {palDetails}
-        </div>
+        </Box>
       )}
       <Divider />
       <MoveMaterialArrowNode type={MoveMaterialNodeKindType.CompletedMaterialZone}>
@@ -396,7 +344,7 @@ const PalletColumn = withStyles(palletStyles)((props: PalletColumnProps & WithSt
       </MoveMaterialArrowNode>
     </>
   );
-});
+}
 
 interface LoadMatDialogProps {
   readonly loadNum: number;
@@ -521,43 +469,6 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
   );
 });
 
-const loadStyles = createStyles({
-  mainFillViewport: {
-    height: "calc(100vh - 64px - 1em)",
-    display: "flex",
-    padding: "8px",
-    width: "100%",
-  },
-  mainScrollable: {
-    display: "flex",
-    padding: "8px",
-    width: "100%",
-  },
-  palCol: {
-    flexGrow: 1,
-    display: "flex",
-    flexDirection: "column",
-    position: "relative",
-  },
-  queueCol: {
-    width: "16em",
-    padding: "8px",
-    display: "flex",
-    flexDirection: "column",
-    borderLeft: "1px solid rgba(0, 0, 0, 0.12)",
-  },
-  fabFillViewport: {
-    position: "absolute",
-    bottom: "0px",
-    right: "5px",
-  },
-  fabScrollFixed: {
-    position: "fixed",
-    bottom: "5px",
-    right: "5px",
-  },
-});
-
 interface LoadStationProps {
   readonly loadNum: number;
   readonly showFree: boolean;
@@ -568,7 +479,7 @@ interface LoadStationDisplayProps extends LoadStationProps {
   readonly fillViewPort: boolean;
 }
 
-export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProps & WithStyles<typeof loadStyles>) => {
+export function LoadStation(props: LoadStationDisplayProps) {
   const operator = useRecoilValue(currentOperator);
   const currentSt = useRecoilValue(currentStatus);
   const reorderQueuedMat = useRecoilConduit(reorderQueuedMatInCurrentStatus);
@@ -602,24 +513,59 @@ export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProp
 
   return (
     <MoveMaterialArrowContainer>
-      <main
-        data-testid="stationmonitor-load"
-        className={props.fillViewPort ? props.classes.mainFillViewport : props.classes.mainScrollable}
+      <Box
+        component="main"
+        sx={
+          props.fillViewPort
+            ? {
+                height: "calc(100vh - 64px - 1em)",
+                display: "flex",
+                padding: "8px",
+                width: "100%",
+              }
+            : {
+                display: "flex",
+                padding: "8px",
+                width: "100%",
+              }
+        }
       >
-        <div className={props.classes.palCol}>
+        <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", position: "relative" }}>
           <PalletColumn
             fillViewPort={props.fillViewPort}
             data={data}
             dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
           />
           {isDemo ? undefined : (
-            <div className={props.fillViewPort ? props.classes.fabFillViewport : props.classes.fabScrollFixed}>
+            <Box
+              sx={
+                props.fillViewPort
+                  ? {
+                      position: "absolute",
+                      bottom: "0px",
+                      right: "5px",
+                    }
+                  : {
+                      position: "fixed",
+                      bottom: "5px",
+                      right: "5px",
+                    }
+              }
+            >
               <MultiInstructionButton loadData={data} operator={operator} />
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
         {col1.length() === 0 ? undefined : (
-          <div className={props.classes.queueCol}>
+          <Box
+            sx={{
+              width: "16em",
+              padding: "8px",
+              display: "flex",
+              flexDirection: "column",
+              borderLeft: "1px solid rgba(0, 0, 0, 0.12)",
+            }}
+          >
             {col1.zipWithIndex().map(([mat, idx]) => (
               <MoveMaterialArrowNode
                 key={idx}
@@ -665,10 +611,18 @@ export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProp
                 </SortableWhiteboardRegion>
               </MoveMaterialArrowNode>
             ))}
-          </div>
+          </Box>
         )}
         {col2.length() === 0 ? undefined : (
-          <div className={props.classes.queueCol}>
+          <Box
+            sx={{
+              width: "16em",
+              padding: "8px",
+              display: "flex",
+              flexDirection: "column",
+              borderLeft: "1px solid rgba(0, 0, 0, 0.12)",
+            }}
+          >
             {col2.zipWithIndex().map(([mat, idx]) => (
               <MoveMaterialArrowNode
                 key={idx}
@@ -714,15 +668,15 @@ export const LoadStation = withStyles(loadStyles)((props: LoadStationDisplayProp
                 </SortableWhiteboardRegion>
               </MoveMaterialArrowNode>
             ))}
-          </div>
+          </Box>
         )}
         <SelectWorkorderDialog />
         <SelectInspTypeDialog />
         <LoadMatDialog loadNum={data.loadNum} pallet={data.pallet?.pallet ?? null} />
-      </main>
+      </Box>
     </MoveMaterialArrowContainer>
   );
-});
+}
 
 function LoadStationCheckWidth(props: LoadStationProps): JSX.Element {
   React.useEffect(() => {

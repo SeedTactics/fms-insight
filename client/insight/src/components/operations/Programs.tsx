@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Fab } from "@mui/material";
+import { Box, Fab, styled } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
@@ -67,7 +67,6 @@ import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import HistoryIcon from "@mui/icons-material/History";
 import { Collapse } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
-import makeStyles from "@mui/styles/makeStyles";
 import { PartIdenticon } from "../station-monitor/Material";
 import { useSetRecoilState, useRecoilState, useRecoilValue } from "recoil";
 import { Dialog } from "@mui/material";
@@ -89,30 +88,11 @@ interface ProgramRowProps {
   readonly showRevCol: boolean;
 }
 
-const useRowStyles = makeStyles({
-  mainRow: {
-    "& > *": {
-      borderBottom: "unset",
-    },
+const ProgramTableRow = styled(TableRow)(() => ({
+  "& > *": {
+    borderBottom: "unset",
   },
-  collapseCell: {
-    paddingBottom: 0,
-    paddingTop: 0,
-  },
-  detailContainer: {
-    marginRight: "1em",
-    marginLeft: "3em",
-  },
-  detailTable: {
-    width: "auto",
-    marginLeft: "10em",
-    marginBottom: "1em",
-  },
-  partNameContainer: {
-    display: "flex",
-    alignItems: "center",
-  },
-});
+}));
 
 function programFilename(program: string): string {
   if (program.length === 0) return "";
@@ -127,7 +107,6 @@ function programFilename(program: string): string {
 
 function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
-  const classes = useRowStyles();
   const setProgramToShowContent = useSetRecoilState(programToShowContent);
   const setProgramToShowHistory = useSetRecoilState(programToShowHistory);
 
@@ -135,7 +114,7 @@ function ProgramRow(props: ProgramRowProps) {
 
   return (
     <>
-      <TableRow className={classes.mainRow}>
+      <ProgramTableRow>
         <TableCell>
           {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
             <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -147,12 +126,17 @@ function ProgramRow(props: ProgramRowProps) {
         {props.showCellCtrlCol ? <TableCell>{props.program.cellControllerProgramName}</TableCell> : undefined}
         <TableCell>
           {props.program.partName !== null ? (
-            <div className={classes.partNameContainer}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
               <PartIdenticon part={props.program.partName} size={20} />
               <span>
                 {props.program.partName}-{props.program.process}
               </span>
-            </div>
+            </Box>
           ) : undefined}
         </TableCell>
         <TableCell>{props.program.comment ?? ""}</TableCell>
@@ -188,13 +172,20 @@ function ProgramRow(props: ProgramRowProps) {
             </Tooltip>
           ) : undefined}
         </TableCell>
-      </TableRow>
+      </ProgramTableRow>
       <TableRow>
-        <TableCell className={classes.collapseCell} colSpan={numCols}>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={numCols}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <div className={classes.detailContainer}>
+            <Box sx={{ mr: "1em", ml: "3em" }}>
               {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
-                <Table size="small" className={classes.detailTable}>
+                <Table
+                  size="small"
+                  sx={{
+                    width: "auto",
+                    ml: "10em",
+                    mr: "1em",
+                  }}
+                >
                   <TableHead>
                     <TableRow>
                       <TableCell>Tool</TableCell>
@@ -211,7 +202,7 @@ function ProgramRow(props: ProgramRowProps) {
                   </TableBody>
                 </Table>
               )}
-            </div>
+            </Box>
           </Collapse>
         </TableCell>
       </TableRow>

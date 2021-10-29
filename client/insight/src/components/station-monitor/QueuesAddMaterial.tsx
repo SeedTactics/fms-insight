@@ -32,8 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import createStyles from "@mui/styles/createStyles";
-import { Button } from "@mui/material";
+import { Button, styled } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -49,11 +48,9 @@ import { DialogTitle } from "@mui/material";
 import { Collapse } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { TextField } from "@mui/material";
-import makeStyles from "@mui/styles/makeStyles";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Tooltip } from "@mui/material";
 import ReactToPrint from "react-to-print";
-import clsx from "clsx";
 
 import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material";
 import * as api from "../../network/api";
@@ -288,22 +285,12 @@ function AddSerialFound(props: AddSerialFoundProps) {
   );
 }
 
-const useSelectJobStyles = makeStyles((theme) =>
-  createStyles({
-    expand: {
-      transform: "rotate(-90deg)",
-      transition: theme.transitions.create("transform", {
-        duration: theme.transitions.duration.shortest,
-      }),
-    },
-    expandOpen: {
-      transform: "rotate(0deg)",
-    },
-    nested: {
-      paddingLeft: theme.spacing(4),
-    },
-  })
-);
+const ExpandMore = styled(ExpandMoreIcon)<{ expandedOpen?: boolean }>(({ theme, expandedOpen }) => ({
+  transform: expandedOpen ? "rotate(0deg)" : "rotate(-90deg)",
+  transition: theme.transitions.create("transform", {
+    duration: theme.transitions.duration.shortest,
+  }),
+}));
 
 interface SelectJobProps {
   readonly queue: string | undefined;
@@ -322,7 +309,6 @@ function SelectJob(props: SelectJobProps) {
         .toArray(),
     [currentSt.jobs]
   );
-  const classes = useSelectJobStyles();
 
   return (
     <List>
@@ -336,11 +322,7 @@ function SelectJob(props: SelectJobProps) {
             }}
           >
             <ListItemIcon>
-              <ExpandMoreIcon
-                className={clsx(classes.expand, {
-                  [classes.expandOpen]: selectedJob === j.job.unique,
-                })}
-              />
+              <ExpandMore expandedOpen={selectedJob === j.job.unique} />
             </ListItemIcon>
             <ListItemIcon>
               <PartIdenticon part={j.job.partName} />
@@ -359,7 +341,7 @@ function SelectJob(props: SelectJobProps) {
                 <div>
                   <ListItem
                     button
-                    className={classes.nested}
+                    sx={(theme) => ({ pl: theme.spacing(4) })}
                     disabled={props.queue !== undefined && !p.queues.contains(props.queue)}
                     selected={
                       props.selected_job?.job.unique === j.job.unique && props.selected_job?.last_proc === p.lastProc
@@ -764,7 +746,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
               style={{ minWidth: "15em" }}
               labelId="select-casting-label"
               value={selectedCasting || ""}
-              onChange={(e) => setSelectedCasting(e.target.value as string)}
+              onChange={(e) => setSelectedCasting(e.target.value)}
               renderValue={
                 selectedCasting === null
                   ? undefined

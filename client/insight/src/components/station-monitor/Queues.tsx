@@ -33,12 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import makeStyles from "@mui/styles/makeStyles";
-import withStyles from "@mui/styles/withStyles";
-import createStyles from "@mui/styles/createStyles";
-import { WithStyles } from "@mui/styles";
 import { SortEnd } from "react-sortable-hoc";
-import { Table } from "@mui/material";
+import { Table, Box, styled } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableRow } from "@mui/material";
@@ -103,33 +99,12 @@ import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { useRecoilConduit } from "../../util/recoil-util";
 
-const useTableStyles = makeStyles(() =>
-  createStyles({
-    mainRow: {
-      "& > *": {
-        borderBottom: "unset",
-      },
+const JobTableRow = styled(TableRow)<{ noBorderBottom?: boolean; highlightedRow?: boolean; noncompletedRow?: boolean }>(
+  ({ noBorderBottom, highlightedRow, noncompletedRow }) => ({
+    "& > *": {
+      borderBottom: noBorderBottom ? "unset" : undefined,
     },
-    labelContainer: {
-      display: "flex",
-      alignItems: "center",
-    },
-    identicon: {
-      marginRight: "0.2em",
-    },
-    pathDetails: {
-      maxWidth: "20em",
-    },
-    highlightedRow: {
-      backgroundColor: "#FF8A65",
-    },
-    noncompletedRow: {
-      backgroundColor: "#E0E0E0",
-    },
-    collapseCell: {
-      paddingBottom: 0,
-      paddingTop: 0,
-    },
+    backgroundColor: highlightedRow ? "#FF8A65" : noncompletedRow ? "#E0E0E0" : "unset",
   })
 );
 
@@ -148,50 +123,66 @@ export interface RawMaterialJobRowProps {
 }
 
 function RawMaterialJobRow(props: RawMaterialJobRowProps) {
-  const classes = useTableStyles();
   const allowEditQty = (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
   const [open, setOpen] = React.useState<boolean>(false);
 
   const j = props.job;
-  const bgClass = highlightRow(j.job)
-    ? classes.highlightedRow
-    : j.plannedQty - j.startedQty - j.assignedRaw > 0
-    ? classes.noncompletedRow
-    : undefined;
+  const highlRow = highlightRow(j.job);
 
   return (
     <>
-      <TableRow className={bgClass ? classes.mainRow + " " + bgClass : classes.mainRow}>
+      <JobTableRow
+        noBorderBottom
+        highlightedRow={highlRow}
+        noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}
+      >
         <TableCell>
-          <div className={classes.labelContainer}>
-            <div className={classes.identicon}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ mr: "0.2em" }}>
               <PartIdenticon part={j.job.partName} size={j.pathDetails === null ? 25 : 40} />
-            </div>
+            </Box>
             <div>
               <Typography variant="body2" component="span" display="block">
                 {j.job.unique}
               </Typography>
               {j.pathDetails !== null ? (
-                <Typography variant="body2" color="textSecondary" display="block" className={classes.pathDetails}>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  display="block"
+                  sx={{
+                    maxWidth: "20em",
+                  }}
+                >
                   {j.pathDetails}
                 </Typography>
               ) : undefined}
             </div>
-          </div>
+          </Box>
         </TableCell>
         <TableCell>{j.path.simulatedStartingUTC.toLocaleString()}</TableCell>
         <TableCell>
           {j.rawMatName === j.job.partName ? (
             j.rawMatName
           ) : (
-            <div className={classes.labelContainer}>
-              <div className={classes.identicon}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Box sx={{ mr: "0.2em" }}>
                 <PartIdenticon part={j.rawMatName} size={25} />
-              </div>
+              </Box>
               <Typography variant="body2" display="block">
                 {j.rawMatName}
               </Typography>
-            </div>
+            </Box>
           )}
         </TableCell>
         <TableCell>
@@ -230,14 +221,14 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
             </IconButton>
           </Tooltip>
         </TableCell>
-      </TableRow>
-      <TableRow className={bgClass}>
-        <TableCell className={classes.collapseCell} colSpan={10}>
+      </JobTableRow>
+      <JobTableRow highlightedRow={highlRow} noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails job={j.job} checkAnalysisMonth={false} />
           </Collapse>
         </TableCell>
-      </TableRow>
+      </JobTableRow>
     </>
   );
 }
@@ -657,19 +648,12 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
   }
 });
 
-const queueStyles = createStyles({
-  mainScrollable: {
-    padding: "8px",
-    width: "100%",
-  },
-});
-
 interface QueueProps {
   readonly queues: ReadonlyArray<string>;
   readonly showFree: boolean;
 }
 
-export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
+export const Queues = (props: QueueProps) => {
   const operator = useRecoilValue(currentOperator);
   const currentSt = useRecoilValue(currentStatus);
   const reorderQueuedMat = useRecoilConduit(reorderQueuedMatInCurrentStatus);
@@ -690,7 +674,12 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
   return (
-    <div data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
+    <Box
+      sx={{
+        padding: "8px",
+        width: "100%",
+      }}
+    >
       {data.map((region, idx) => (
         <div style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined} key={idx}>
           <SortableWhiteboardRegion
@@ -762,9 +751,9 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
       <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />
-    </div>
+    </Box>
   );
-});
+};
 
 export default function QueuesPage(props: QueueProps): JSX.Element {
   React.useEffect(() => {

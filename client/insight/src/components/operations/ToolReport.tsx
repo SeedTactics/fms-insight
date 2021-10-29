@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Fab } from "@mui/material";
+import { Fab, styled, Box } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
@@ -60,9 +60,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Collapse } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
-import makeStyles from "@mui/styles/makeStyles";
 import { PartIdenticon } from "../station-monitor/Material";
-import clsx from "clsx";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { useIsDemo } from "../routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
@@ -75,8 +73,8 @@ interface ToolRowProps {
   readonly showMachine: boolean;
 }
 
-const useRowStyles = makeStyles((theme) => ({
-  mainRow: {
+const ToolTableRow = styled(TableRow)<{ highlightedRow?: boolean; noticeRow?: boolean }>(
+  ({ theme, highlightedRow, noticeRow }) => ({
     "& > *": {
       borderBottom: "unset",
     },
@@ -88,50 +86,21 @@ const useRowStyles = makeStyles((theme) => ({
         width: "100%",
       },
     },
-  },
-  collapseCell: {
-    paddingBottom: 0,
-    paddingTop: 0,
-  },
-  detailContainer: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    marginLeft: "1em",
-    marginRight: "1em",
-  },
-  detailTable: {
-    width: "auto",
-    marginLeft: "10em",
-    marginBottom: "1em",
-  },
-  partNameContainer: {
-    display: "flex",
-    alignItems: "center",
-  },
-  highlightedRow: {
-    backgroundColor: "#BDBDBD",
-  },
-  noticeRow: {
-    backgroundColor: "#E0E0E0",
-  },
-}));
+    backgroundColor: highlightedRow ? "#BDBDBD" : noticeRow ? "#E0E0E0" : "unset",
+  })
+);
 
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
-  const classes = useRowStyles();
 
   const schUse = props.tool.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
   const totalLife = props.tool.machines.sumOn((m) => m.remainingMinutes);
 
   return (
     <>
-      <TableRow
-        className={clsx({
-          [classes.mainRow]: true,
-          [classes.highlightedRow]: schUse > totalLife,
-          [classes.noticeRow]: schUse <= totalLife && schUse > props.tool.minRemainingMinutes,
-        })}
+      <ToolTableRow
+        highlightedRow={schUse > totalLife}
+        noticeRow={schUse <= totalLife && schUse > props.tool.minRemainingMinutes}
       >
         <TableCell>
           <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -155,14 +124,29 @@ function ToolRow(props: ToolRowProps) {
           </TableCell>
         )}
         <TableCell />
-      </TableRow>
+      </ToolTableRow>
       <TableRow>
-        <TableCell className={classes.collapseCell} colSpan={props.showMachine ? 7 : 6}>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={props.showMachine ? 7 : 6}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <div className={classes.detailContainer}>
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "space-around",
+                ml: "1em",
+                mr: "1em",
+              }}
+            >
               {props.tool.parts.isEmpty() ? undefined : (
                 <div>
-                  <Table size="small" className={classes.detailTable}>
+                  <Table
+                    size="small"
+                    sx={{
+                      width: "auto",
+                      ml: "10em",
+                      mb: "1em",
+                    }}
+                  >
                     <TableHead>
                       <TableRow>
                         <TableCell>Part</TableCell>
@@ -175,12 +159,17 @@ function ToolRow(props: ToolRowProps) {
                       {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
                         <TableRow key={idx}>
                           <TableCell>
-                            <div className={classes.partNameContainer}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
                               <PartIdenticon part={p.partName} size={20} />
                               <span>
                                 {p.partName}-{p.process}
                               </span>
-                            </div>
+                            </Box>
                           </TableCell>
                           <TableCell>{p.program}</TableCell>
                           <TableCell align="right">{p.quantity}</TableCell>
@@ -192,7 +181,14 @@ function ToolRow(props: ToolRowProps) {
                 </div>
               )}
               <div>
-                <Table size="small" className={classes.detailTable}>
+                <Table
+                  size="small"
+                  sx={{
+                    width: "auto",
+                    ml: "10em",
+                    mb: "1em",
+                  }}
+                >
                   <TableHead>
                     <TableRow>
                       <TableCell>Machine</TableCell>
@@ -215,7 +211,7 @@ function ToolRow(props: ToolRowProps) {
                   </TableBody>
                 </Table>
               </div>
-            </div>
+            </Box>
           </Collapse>
         </TableCell>
       </TableRow>
@@ -233,7 +229,6 @@ export function ToolSummaryTable(): JSX.Element {
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
   const machineNames = useRecoilValue(machinesWithTools);
-  const tableRowStyles = useRowStyles();
 
   if (tools === null) {
     return <div />;
@@ -294,7 +289,7 @@ export function ToolSummaryTable(): JSX.Element {
                 if (e.target.value === FilterAnyMachineKey) {
                   setMachineFilter(null);
                 } else {
-                  setMachineFilter(e.target.value as string);
+                  setMachineFilter(e.target.value);
                 }
               }}
             >
@@ -323,7 +318,7 @@ export function ToolSummaryTable(): JSX.Element {
       />
       <CardContent>
         <Table>
-          <TableHead className={tableRowStyles.mainRow}>
+          <TableHead>
             <TableRow>
               <TableCell />
               <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>

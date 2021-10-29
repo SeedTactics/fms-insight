@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import * as api from "../network/api";
-import { Table } from "@mui/material";
+import { styled, Table } from "@mui/material";
 import { TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
@@ -43,41 +43,29 @@ import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ImportExport from "@mui/icons-material/ImportExport";
-import { WithStyles } from "@mui/styles";
-import withStyles from "@mui/styles/withStyles";
-import createStyles from "@mui/styles/createStyles";
 import { copyLogEntriesToClipboard } from "../data/results.cycles";
 import { durationToMinutes, durationToSeconds } from "../util/parseISODuration";
-import clsx from "clsx";
 
-const logStyles = createStyles({
-  machine: {
-    color: "#1565C0",
-  },
-  loadStation: {
-    color: "#795548",
-  },
-  pallet: {
-    color: "#00695C",
-  },
-  queue: {
-    color: "#6A1B9A",
-  },
-  inspectionNotSignaled: {
-    color: "#4527A0",
-  },
-  inspectionSignaled: {
-    color: "red",
-  },
-  highlightProcess: {
-    backgroundColor: "#eeeeee",
-  },
-  invalidCycle: {
-    textDecoration: "line-through",
-  },
+type ColoredSpanType = "machine" | "loadStation" | "pallet" | "queue" | "inspectionNotSignaled" | "inspectionSignaled";
+
+const ColoredSpan = styled("span")<{ type: ColoredSpanType }>(({ type }) => {
+  switch (type) {
+    case "machine":
+      return { backgroundColor: "#1565C0" };
+    case "loadStation":
+      return { backgroundColor: "#795548" };
+    case "pallet":
+      return { backgroundColor: "#00695C" };
+    case "queue":
+      return { backgroundColor: "#6A1B9A" };
+    case "inspectionNotSignaled":
+      return { backgroundColor: "#4527A0" };
+    case "inspectionSignaled":
+      return { backgroundColor: "red" };
+  }
 });
 
-export interface LogEntryProps extends WithStyles<typeof logStyles> {
+export interface LogEntryProps {
   entry: api.ILogEntry;
   detailLogCounter: number | null;
   setDetail: (counter: number | null) => void;
@@ -182,18 +170,18 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.LoadUnloadCycle:
       return (
         <span>
-          {displayMat(entry.material)} on <span className={props.classes.pallet}>pallet {entry.pal}</span> at{" "}
-          <span className={props.classes.loadStation}>station {entry.locnum.toString()}</span>
+          {displayMat(entry.material)} on <ColoredSpan type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
+          <ColoredSpan type="loadStation">station {entry.locnum.toString()}</ColoredSpan>
         </span>
       );
 
     case api.LogType.MachineCycle:
       return (
         <span>
-          {displayMat(entry.material)} on <span className={props.classes.pallet}>pallet {entry.pal}</span> at{" "}
-          <span className={props.classes.machine}>
+          {displayMat(entry.material)} on <ColoredSpan type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
+          <ColoredSpan type="machine">
             {entry.loc} {entry.locnum.toString()}
-          </span>
+          </ColoredSpan>
           {entry.program && entry.program !== "" ? <span> with program {entry.program}</span> : undefined}
         </span>
       );
@@ -222,14 +210,14 @@ function display(props: LogEntryProps): JSX.Element {
         return (
           <span>
             {displayMat(entry.material)} signaled for inspection{" "}
-            <span className={props.classes.inspectionSignaled}>{inspName}</span>
+            <ColoredSpan type="inspectionSignaled">{inspName}</ColoredSpan>
           </span>
         );
       } else {
         return (
           <span>
             {displayMat(entry.material)} skipped inspection{" "}
-            <span className={props.classes.inspectionNotSignaled}>{inspName}</span>
+            <ColoredSpan type="inspectionNotSignaled">{inspName}</ColoredSpan>
           </span>
         );
       }
@@ -242,14 +230,14 @@ function display(props: LogEntryProps): JSX.Element {
         return (
           <span>
             {displayMat(entry.material)} declared for inspection{" "}
-            <span className={props.classes.inspectionSignaled}>{forceInspName}</span>
+            <ColoredSpan type="inspectionSignaled">{forceInspName}</ColoredSpan>
           </span>
         );
       } else {
         return (
           <span>
             {displayMat(entry.material)} passed over for inspection{" "}
-            <span className={props.classes.inspectionNotSignaled}>{forceInspName}</span>
+            <ColoredSpan type="inspectionNotSignaled">{forceInspName}</ColoredSpan>
           </span>
         );
       }
@@ -260,9 +248,9 @@ function display(props: LogEntryProps): JSX.Element {
 
     case api.LogType.InspectionResult:
       if (entry.result.toLowerCase() === "false") {
-        return <span className={props.classes.inspectionSignaled}>{entry.program} Failed</span>;
+        return <ColoredSpan type="inspectionSignaled">{entry.program} Failed</ColoredSpan>;
       } else {
-        return <span className={props.classes.inspectionSignaled}>{entry.program} Succeeded</span>;
+        return <ColoredSpan type="inspectionSignaled">{entry.program} Succeeded</ColoredSpan>;
       }
 
     case api.LogType.Wash:
@@ -273,35 +261,34 @@ function display(props: LogEntryProps): JSX.Element {
         case "Unloaded":
           return (
             <span>
-              {displayQueueMat(entry.material)} unloaded into queue{" "}
-              <span className={props.classes.queue}>{entry.loc}</span>
+              {displayQueueMat(entry.material)} unloaded into queue <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         case "SetByOperator":
           return (
             <span>
               {displayQueueMat(entry.material)} set manually into queue{" "}
-              <span className={props.classes.queue}>{entry.loc}</span>
+              <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         case "SwapMaterial":
           return (
             <span>
               {displayQueueMat(entry.material)} swapped off pallet into queue{" "}
-              <span className={props.classes.queue}>{entry.loc}</span>
+              <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         case "MaterialMissingOnPallet":
           return (
             <span>
               {displayQueueMat(entry.material)} removed from cell controller, added to queue{" "}
-              <span className={props.classes.queue}>{entry.loc}</span>
+              <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         default:
           return (
             <span>
-              {displayQueueMat(entry.material)} added to queue <span className={props.classes.queue}>{entry.loc}</span>
+              {displayQueueMat(entry.material)} added to queue <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
               {entry.program && entry.program !== "" ? " (" + entry.program + ")" : undefined}
             </span>
           );
@@ -310,7 +297,7 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.RemoveFromQueue:
       return (
         <span>
-          {displayQueueMat(entry.material)} removed from queue <span className={props.classes.queue}>{entry.loc}</span>
+          {displayQueueMat(entry.material)} removed from queue <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
         </span>
       );
 
@@ -318,13 +305,13 @@ function display(props: LogEntryProps): JSX.Element {
       if (entry.startofcycle) {
         return (
           <span>
-            <span className={props.classes.pallet}>Pallet {entry.pal}</span> arrived at stocker {entry.locnum}
+            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at stocker {entry.locnum}
           </span>
         );
       } else {
         return (
           <span>
-            <span className={props.classes.pallet}>Pallet {entry.pal}</span> departed stocker {entry.locnum}
+            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> departed stocker {entry.locnum}
           </span>
         );
       }
@@ -333,29 +320,29 @@ function display(props: LogEntryProps): JSX.Element {
       if (entry.startofcycle) {
         return (
           <span>
-            <span className={props.classes.pallet}>Pallet {entry.pal}</span> arrived at{" "}
-            <span className={props.classes.machine}>
+            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at{" "}
+            <ColoredSpan type="machine">
               {entry.loc} {entry.locnum.toString()}
-            </span>
+            </ColoredSpan>
           </span>
         );
       } else if (entry.result == "RotateIntoWorktable") {
         return (
           <span>
-            <span className={props.classes.pallet}>Pallet {entry.pal}</span> rotated into{" "}
-            <span className={props.classes.machine}>
+            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> rotated into{" "}
+            <ColoredSpan type="machine">
               {entry.loc} {entry.locnum.toString()}
-            </span>{" "}
+            </ColoredSpan>{" "}
             worktable
           </span>
         );
       } else {
         return (
           <span>
-            <span className={props.classes.pallet}>Pallet {entry.pal}</span> left{" "}
-            <span className={props.classes.machine}>
+            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> left{" "}
+            <ColoredSpan type="machine">
               {entry.loc} {entry.locnum.toString()}
-            </span>
+            </ColoredSpan>
           </span>
         );
       }
@@ -429,64 +416,68 @@ const logTypesToHighlight = [
   api.LogType.MachineCycle,
 ];
 
-export const LogEntry = React.memo(
-  withStyles(logStyles)((props: LogEntryProps) => {
-    const details = detailsForEntry(props.entry);
-
-    return (
-      <>
-        <TableRow
-          className={clsx({
-            [props.classes.highlightProcess]:
-              props.highlightProcess !== undefined &&
-              props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0 &&
-              logTypesToHighlight.indexOf(props.entry.type) >= 0,
-            [props.classes.invalidCycle]: props.entry.details?.["PalletCycleInvalidated"] === "1",
-          })}
-        >
-          <TableCell size="small">
-            <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />
-          </TableCell>
-          <TableCell size="small">
-            <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm aa"} />
-          </TableCell>
-          <TableCell size="small">{logType(props.entry)}</TableCell>
-          <TableCell size="small">{display(props)}</TableCell>
-          <TableCell padding="checkbox">
-            {details.length > 0 ? (
-              <IconButton
-                style={{
-                  transition: "all ease 200ms",
-                  transform: props.entry.counter === props.detailLogCounter ? "rotate(90deg)" : "none",
-                }}
-                onClick={(event) => {
-                  props.setDetail(props.entry.counter === props.detailLogCounter ? null : props.entry.counter);
-                  event.stopPropagation();
-                }}
-                size="small"
-              >
-                <ChevronRightIcon fontSize="inherit" />
-              </IconButton>
-            ) : undefined}
-          </TableCell>
-        </TableRow>
-        {details.length > 0 && props.entry.counter === props.detailLogCounter ? (
-          <TableRow>
-            <TableCell colSpan={5}>
-              <ul>
-                {details.map((d, idx) => (
-                  <li key={idx}>
-                    {d.name}: {d.value}
-                  </li>
-                ))}
-              </ul>
-            </TableCell>
-          </TableRow>
-        ) : undefined}
-      </>
-    );
+const LogEntryTableRow = styled(TableRow)<{ highlightProc?: boolean; invalidCycle?: boolean }>(
+  ({ highlightProc, invalidCycle }) => ({
+    backgroundColor: highlightProc ? "#eeeeee" : "unset",
+    textDecoration: invalidCycle ? "line-through" : "unset",
   })
 );
+
+export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
+  const details = detailsForEntry(props.entry);
+
+  return (
+    <>
+      <LogEntryTableRow
+        highlightProc={
+          props.highlightProcess !== undefined &&
+          props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0 &&
+          logTypesToHighlight.indexOf(props.entry.type) >= 0
+        }
+        invalidCycle={props.entry.details?.["PalletCycleInvalidated"] === "1"}
+      >
+        <TableCell size="small">
+          <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />
+        </TableCell>
+        <TableCell size="small">
+          <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm aa"} />
+        </TableCell>
+        <TableCell size="small">{logType(props.entry)}</TableCell>
+        <TableCell size="small">{display(props)}</TableCell>
+        <TableCell padding="checkbox">
+          {details.length > 0 ? (
+            <IconButton
+              style={{
+                transition: "all ease 200ms",
+                transform: props.entry.counter === props.detailLogCounter ? "rotate(90deg)" : "none",
+              }}
+              onClick={(event) => {
+                props.setDetail(props.entry.counter === props.detailLogCounter ? null : props.entry.counter);
+                event.stopPropagation();
+              }}
+              size="small"
+            >
+              <ChevronRightIcon fontSize="inherit" />
+            </IconButton>
+          ) : undefined}
+        </TableCell>
+      </LogEntryTableRow>
+      {details.length > 0 && props.entry.counter === props.detailLogCounter ? (
+        <TableRow>
+          <TableCell colSpan={5}>
+            <ul>
+              {details.map((d, idx) => (
+                <li key={idx}>
+                  {d.name}: {d.value}
+                </li>
+              ))}
+            </ul>
+          </TableCell>
+        </TableRow>
+      ) : undefined}
+    </>
+  );
+});
 
 export function* filterRemoveAddQueue(entries: Iterable<Readonly<api.ILogEntry>>): Iterable<Readonly<api.ILogEntry>> {
   let prev: Readonly<api.ILogEntry> | null = null;

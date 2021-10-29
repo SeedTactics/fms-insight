@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card } from "@mui/material";
+import { Box, Card } from "@mui/material";
 import { CardHeader } from "@mui/material";
 import { CardContent } from "@mui/material";
 import { Table } from "@mui/material";
@@ -42,8 +42,6 @@ import { TableRow } from "@mui/material";
 import { TextField } from "@mui/material";
 import MoneyIcon from "@mui/icons-material/AttachMoney";
 import ImportExport from "@mui/icons-material/ImportExport";
-import createStyles from "@mui/styles/createStyles";
-import makeStyles from "@mui/styles/makeStyles";
 import BuildIcon from "@mui/icons-material/Build";
 import CallSplit from "@mui/icons-material/CallSplit";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
@@ -210,18 +208,6 @@ function StationCostInputs(props: StationCostInputProps) {
   );
 }
 
-const useTableStyles = makeStyles(() =>
-  createStyles({
-    labelContainer: {
-      display: "flex",
-      alignItems: "center",
-    },
-    identicon: {
-      marginRight: "0.2em",
-    },
-  })
-);
-
 const decimalFormat = Intl.NumberFormat(undefined, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -237,8 +223,6 @@ interface CostBreakdownProps {
 }
 
 function CostBreakdown(props: CostBreakdownProps) {
-  const classes = useTableStyles();
-
   return (
     <Card style={{ marginTop: "2em" }}>
       <CardHeader
@@ -281,16 +265,21 @@ function CostBreakdown(props: CostBreakdownProps) {
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
-                    <div className={classes.labelContainer}>
-                      <div className={classes.identicon}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box sx={{ mr: "0.2em" }}>
                         <PartIdenticon part={c.part} size={25} />
-                      </div>
+                      </Box>
                       <div>
                         <Typography variant="body2" component="span" display="block">
                           {c.part}
                         </Typography>
                       </div>
-                    </div>
+                    </Box>
                   </TableCell>
                   <TableCell align="right">{c.parts_completed}</TableCell>
                   {props.costs.machineCostGroups.map((m) => (
@@ -335,7 +324,6 @@ interface CostPerPieceOutputProps {
 }
 
 function CostOutputCard(props: CostPerPieceOutputProps) {
-  const classes = useTableStyles();
   return (
     <Card style={{ marginTop: "2em" }}>
       <CardHeader
@@ -375,16 +363,21 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
-                    <div className={classes.labelContainer}>
-                      <div className={classes.identicon}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box sx={{ mr: "0.2em" }}>
                         <PartIdenticon part={c.part} size={25} />
-                      </div>
+                      </Box>
                       <div>
                         <Typography variant="body2" component="span" display="block">
                           {c.part}
                         </Typography>
                       </div>
-                    </div>
+                    </Box>
                   </TableCell>
                   <TableCell align="right">{c.parts_completed}</TableCell>
                   <TableCell align="right">
