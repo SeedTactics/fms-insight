@@ -32,17 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button } from "@material-ui/core";
-import { List } from "@material-ui/core";
-import { ListItem } from "@material-ui/core";
-import { ListItemText } from "@material-ui/core";
-import { ListItemIcon } from "@material-ui/core";
-import { Dialog } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import SearchIcon from "@material-ui/icons/Search";
-import { TextField } from "@material-ui/core";
+import { Button } from "@mui/material";
+import { List } from "@mui/material";
+import { ListItem } from "@mui/material";
+import { ListItemText } from "@mui/material";
+import { ListItemIcon } from "@mui/material";
+import { Dialog } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import { TextField } from "@mui/material";
 
 import { MaterialDetailTitle } from "./Material";
 import * as matDetails from "../../cell-status/material-details";
@@ -60,6 +60,7 @@ function ManualInspTypeEntry(props: ManualInpTypeEntryProps) {
   const [forceInsp] = matDetails.useForceInspection();
   return (
     <TextField
+      sx={{ mt: "5px" }}
       label={inspType === "" || inspType === null ? "Inspection Type" : "Inspection Type (press enter)"}
       value={inspType ?? ""}
       onChange={(e) => setInspType(e.target.value)}
@@ -117,7 +118,7 @@ export const SelectInspTypeDialog = React.memo(function SelectInspTypeDialog() {
 
     body = (
       <>
-        <DialogTitle disableTypography>
+        <DialogTitle>
           <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
         </DialogTitle>
         <DialogContent>

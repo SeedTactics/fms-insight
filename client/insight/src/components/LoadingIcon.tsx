@@ -31,18 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import {
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-} from "@material-ui/core";
-import ErrorIcon from "@material-ui/icons/Error";
+import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import ErrorIcon from "@mui/icons-material/Error";
 
-import { Tooltip } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
 import { errorLoadingLast30, websocketReconnecting } from "../network/websocket";
 import { useRecoilValue } from "recoil";
 import { errorLoadingBackupViewer, loadingBackupViewer } from "../network/backend-backupviewer";
@@ -63,7 +55,7 @@ export const LoadingIcon = React.memo(function LoadingIcon() {
     <>
       {last30Error != null || backupViewerError != null || specificMonthError != null ? (
         <Tooltip title="Error">
-          <IconButton onClick={() => setDialogOpen(true)}>
+          <IconButton onClick={() => setDialogOpen(true)} size="large">
             <ErrorIcon />
           </IconButton>
         </Tooltip>

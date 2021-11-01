@@ -32,28 +32,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { createStyles } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { List } from "@material-ui/core";
-import { ListItem } from "@material-ui/core";
-import { ListItemText } from "@material-ui/core";
-import { ListItemIcon } from "@material-ui/core";
-import { FormControl } from "@material-ui/core";
-import { InputLabel } from "@material-ui/core";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
-import { Dialog } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import { Collapse } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import { Tooltip } from "@material-ui/core";
+import { Button, styled } from "@mui/material";
+import { List } from "@mui/material";
+import { ListItem } from "@mui/material";
+import { ListItemText } from "@mui/material";
+import { ListItemIcon } from "@mui/material";
+import { FormControl } from "@mui/material";
+import { InputLabel } from "@mui/material";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { Dialog } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import { Collapse } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { TextField } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Tooltip } from "@mui/material";
 import ReactToPrint from "react-to-print";
-import clsx from "clsx";
 
 import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material";
 import * as api from "../../network/api";
@@ -124,7 +121,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
   const matId = props.in_proc_material.materialID;
   return (
     <>
-      <DialogTitle disableTypography>
+      <DialogTitle>
         <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
       </DialogTitle>
       <DialogContent>
@@ -244,7 +241,7 @@ function AddSerialFound(props: AddSerialFoundProps) {
   }
   return (
     <>
-      <DialogTitle disableTypography>
+      <DialogTitle>
         <MaterialDetailTitle partName={props.display_material.partName} serial={props.display_material.serial} />
       </DialogTitle>
       <DialogContent>
@@ -288,22 +285,14 @@ function AddSerialFound(props: AddSerialFoundProps) {
   );
 }
 
-const useSelectJobStyles = makeStyles((theme) =>
-  createStyles({
-    expand: {
-      transform: "rotate(-90deg)",
-      transition: theme.transitions.create("transform", {
-        duration: theme.transitions.duration.shortest,
-      }),
-    },
-    expandOpen: {
-      transform: "rotate(0deg)",
-    },
-    nested: {
-      paddingLeft: theme.spacing(4),
-    },
-  })
-);
+const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $expandedOpen?: boolean;
+}>(({ theme, $expandedOpen }) => ({
+  transform: $expandedOpen ? "rotate(0deg)" : "rotate(-90deg)",
+  transition: theme.transitions.create("transform", {
+    duration: theme.transitions.duration.shortest,
+  }),
+}));
 
 interface SelectJobProps {
   readonly queue: string | undefined;
@@ -322,7 +311,6 @@ function SelectJob(props: SelectJobProps) {
         .toArray(),
     [currentSt.jobs]
   );
-  const classes = useSelectJobStyles();
 
   return (
     <List>
@@ -336,11 +324,7 @@ function SelectJob(props: SelectJobProps) {
             }}
           >
             <ListItemIcon>
-              <ExpandMoreIcon
-                className={clsx(classes.expand, {
-                  [classes.expandOpen]: selectedJob === j.job.unique,
-                })}
-              />
+              <ExpandMore $expandedOpen={selectedJob === j.job.unique} />
             </ListItemIcon>
             <ListItemIcon>
               <PartIdenticon part={j.job.partName} />
@@ -359,7 +343,7 @@ function SelectJob(props: SelectJobProps) {
                 <div>
                   <ListItem
                     button
-                    className={classes.nested}
+                    sx={(theme) => ({ pl: theme.spacing(4) })}
                     disabled={props.queue !== undefined && !p.queues.contains(props.queue)}
                     selected={
                       props.selected_job?.job.unique === j.job.unique && props.selected_job?.last_proc === p.lastProc
@@ -764,7 +748,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
               style={{ minWidth: "15em" }}
               labelId="select-casting-label"
               value={selectedCasting || ""}
-              onChange={(e) => setSelectedCasting(e.target.value as string)}
+              onChange={(e) => setSelectedCasting(e.target.value)}
               renderValue={
                 selectedCasting === null
                   ? undefined

@@ -32,17 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Dialog } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import SearchIcon from "@material-ui/icons/Search";
-import { TextField } from "@material-ui/core";
+import { Dialog } from "@mui/material";
+import { Button } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import { TextField } from "@mui/material";
 import { materialToShowInDialog } from "../cell-status/material-details";
 import { useSetRecoilState } from "recoil";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
 
 export const ManualScanButton = React.memo(function ManualScan() {
   const [serial, setSerial] = React.useState<string | null>(null);
@@ -65,7 +65,7 @@ export const ManualScanButton = React.memo(function ManualScan() {
   return (
     <>
       <Tooltip title="Enter Serial">
-        <IconButton onClick={() => setDialogOpen(true)}>
+        <IconButton onClick={() => setDialogOpen(true)} size="large">
           <SearchIcon />
         </IconButton>
       </Tooltip>
@@ -74,6 +74,7 @@ export const ManualScanButton = React.memo(function ManualScan() {
         <DialogContent>
           <div style={{ minWidth: "20em" }}>
             <TextField
+              sx={{ mt: "5px" }}
               label={serial === null || serial === "" ? "Serial" : "Serial (press enter)"}
               value={serial ?? ""}
               onChange={(e) => setSerial(e.target.value)}

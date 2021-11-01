@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { CircularProgress } from "@material-ui/core";
-import { Card } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
+import { CircularProgress } from "@mui/material";
+import { Card } from "@mui/material";
+import { CardContent } from "@mui/material";
 import { ErrorBoundary } from "react-error-boundary";
 
 export function Loading() {

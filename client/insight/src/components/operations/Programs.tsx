@@ -31,22 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Fab } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { Card } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
+import { Box, Fab, styled } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { Card } from "@mui/material";
+import { CardContent } from "@mui/material";
 import TimeAgo from "react-timeago";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import { CardHeader } from "@material-ui/core";
-import ProgramIcon from "@material-ui/icons/Receipt";
-import CodeIcon from "@material-ui/icons/Code";
-import { Table } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TableSortLabel } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { CardHeader } from "@mui/material";
+import ProgramIcon from "@mui/icons-material/Receipt";
+import CodeIcon from "@mui/icons-material/Code";
+import { Table } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TableSortLabel } from "@mui/material";
+import { Typography } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import {
   programReportRefreshTime,
   currentProgramReport,
@@ -57,31 +57,30 @@ import {
   programToShowHistory,
   programFilter,
 } from "../../data/tools-programs";
-import { TableBody } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-import FirstPageIcon from "@material-ui/icons/FirstPage";
-import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
-import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
-import HistoryIcon from "@material-ui/icons/History";
-import { Collapse } from "@material-ui/core";
+import { TableBody } from "@mui/material";
+import { IconButton } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import HistoryIcon from "@mui/icons-material/History";
+import { Collapse } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
-import { makeStyles } from "@material-ui/core";
 import { PartIdenticon } from "../station-monitor/Material";
 import { useSetRecoilState, useRecoilState, useRecoilValue } from "recoil";
-import { Dialog } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
+import { Dialog } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import { Button } from "@mui/material";
+import { DialogActions } from "@mui/material";
 import { useIsDemo } from "../routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
 import { Vector } from "prelude-ts";
 import { IProgramRevision } from "../../network/api";
 import { MachineBackend } from "../../network/backend";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -89,30 +88,11 @@ interface ProgramRowProps {
   readonly showRevCol: boolean;
 }
 
-const useRowStyles = makeStyles({
-  mainRow: {
-    "& > *": {
-      borderBottom: "unset",
-    },
+const ProgramTableRow = styled(TableRow)(() => ({
+  "& > *": {
+    borderBottom: "unset",
   },
-  collapseCell: {
-    paddingBottom: 0,
-    paddingTop: 0,
-  },
-  detailContainer: {
-    marginRight: "1em",
-    marginLeft: "3em",
-  },
-  detailTable: {
-    width: "auto",
-    marginLeft: "10em",
-    marginBottom: "1em",
-  },
-  partNameContainer: {
-    display: "flex",
-    alignItems: "center",
-  },
-});
+}));
 
 function programFilename(program: string): string {
   if (program.length === 0) return "";
@@ -127,7 +107,6 @@ function programFilename(program: string): string {
 
 function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
-  const classes = useRowStyles();
   const setProgramToShowContent = useSetRecoilState(programToShowContent);
   const setProgramToShowHistory = useSetRecoilState(programToShowHistory);
 
@@ -135,7 +114,7 @@ function ProgramRow(props: ProgramRowProps) {
 
   return (
     <>
-      <TableRow className={classes.mainRow}>
+      <ProgramTableRow>
         <TableCell>
           {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
             <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -147,12 +126,17 @@ function ProgramRow(props: ProgramRowProps) {
         {props.showCellCtrlCol ? <TableCell>{props.program.cellControllerProgramName}</TableCell> : undefined}
         <TableCell>
           {props.program.partName !== null ? (
-            <div className={classes.partNameContainer}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
               <PartIdenticon part={props.program.partName} size={20} />
               <span>
                 {props.program.partName}-{props.program.process}
               </span>
-            </div>
+            </Box>
           ) : undefined}
         </TableCell>
         <TableCell>{props.program.comment ?? ""}</TableCell>
@@ -188,13 +172,20 @@ function ProgramRow(props: ProgramRowProps) {
             </Tooltip>
           ) : undefined}
         </TableCell>
-      </TableRow>
+      </ProgramTableRow>
       <TableRow>
-        <TableCell className={classes.collapseCell} colSpan={numCols}>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={numCols}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <div className={classes.detailContainer}>
+            <Box sx={{ mr: "1em", ml: "3em" }}>
               {props.program.toolUse === null || props.program.toolUse.tools.length === 0 ? undefined : (
-                <Table size="small" className={classes.detailTable}>
+                <Table
+                  size="small"
+                  sx={{
+                    width: "auto",
+                    ml: "10em",
+                    mr: "1em",
+                  }}
+                >
                   <TableHead>
                     <TableRow>
                       <TableCell>Tool</TableCell>
@@ -211,7 +202,7 @@ function ProgramRow(props: ProgramRowProps) {
                   </TableBody>
                 </Table>
               )}
-            </div>
+            </Box>
           </Collapse>
         </TableCell>
       </TableRow>
@@ -695,14 +686,14 @@ export function ProgramHistoryDialog(): JSX.Element {
             <>
               <Tooltip title="Latest Revisions">
                 <span>
-                  <IconButton onClick={() => setPage(0)} disabled={loading || page === 0}>
+                  <IconButton onClick={() => setPage(0)} disabled={loading || page === 0} size="large">
                     <FirstPageIcon />
                   </IconButton>
                 </span>
               </Tooltip>
               <Tooltip title="Previous Page">
                 <span>
-                  <IconButton onClick={() => setPage(page - 1)} disabled={loading || page === 0}>
+                  <IconButton onClick={() => setPage(page - 1)} disabled={loading || page === 0} size="large">
                     <KeyboardArrowLeft />
                   </IconButton>
                 </span>
@@ -712,6 +703,7 @@ export function ProgramHistoryDialog(): JSX.Element {
                   <IconButton
                     onClick={() => advancePage()}
                     disabled={loading || (page === lastLoadedPage.page && !lastLoadedPage.hasMore)}
+                    size="large"
                   >
                     <KeyboardArrowRight />
                   </IconButton>

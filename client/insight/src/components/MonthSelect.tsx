@@ -32,17 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Input } from "@material-ui/core";
-import { InputAdornment } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import CalendarIcon from "@material-ui/icons/CalendarToday";
-import { Dialog } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
+import { Input } from "@mui/material";
+import { InputAdornment } from "@mui/material";
+import { IconButton } from "@mui/material";
+import CalendarIcon from "@mui/icons-material/CalendarToday";
+import { Dialog } from "@mui/material";
+import { DialogContent } from "@mui/material";
 import { format, startOfMonth, addYears } from "date-fns";
-import LeftArrowIcon from "@material-ui/icons/KeyboardArrowLeft";
-import RightArrowIcon from "@material-ui/icons/KeyboardArrowRight";
-import { Button } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
+import LeftArrowIcon from "@mui/icons-material/KeyboardArrowLeft";
+import RightArrowIcon from "@mui/icons-material/KeyboardArrowRight";
+import { Button } from "@mui/material";
+import { Typography } from "@mui/material";
 import { LazySeq } from "../util/lazyseq";
 
 export interface MonthSelectProps {
@@ -73,6 +73,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
                 setTempDialogCurMonth(startOfMonth(props.curMonth));
                 setDialogOpen(true);
               }}
+              size="large"
             >
               <CalendarIcon />
             </IconButton>
@@ -91,6 +92,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
             <IconButton
               data-testid="select-month-dialog-previous-year"
               onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, -1))}
+              size="large"
             >
               <LeftArrowIcon />
             </IconButton>
@@ -99,7 +101,10 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
                 {format(tempDialogCurMonth || props.curMonth, "yyyy")}
               </Typography>
             </div>
-            <IconButton onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, 1))}>
+            <IconButton
+              onClick={() => setTempDialogCurMonth(addYears(tempDialogCurMonth || props.curMonth, 1))}
+              size="large"
+            >
               <RightArrowIcon />
             </IconButton>
           </div>

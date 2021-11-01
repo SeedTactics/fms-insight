@@ -31,22 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Paper } from "@material-ui/core";
-import { List } from "@material-ui/core";
-import { ListItem } from "@material-ui/core";
-import { ListItemIcon } from "@material-ui/core";
-import { ListSubheader } from "@material-ui/core";
-import { ListItemText } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import BuildIcon from "@material-ui/icons/Build";
-import ShoppingBasket from "@material-ui/icons/ShoppingBasket";
-import DirectionsIcon from "@material-ui/icons/Directions";
-import StarIcon from "@material-ui/icons/StarRate";
-import ChartIcon from "@material-ui/icons/InsertChart";
-import ExtensionIcon from "@material-ui/icons/Extension";
-import InfoIcon from "@material-ui/icons/Info";
-import OpacityIcon from "@material-ui/icons/Opacity";
-import MemoryIcon from "@material-ui/icons/Memory";
+import { Paper } from "@mui/material";
+import { List } from "@mui/material";
+import { ListItem } from "@mui/material";
+import { ListItemIcon } from "@mui/material";
+import { ListSubheader } from "@mui/material";
+import { ListItemText } from "@mui/material";
+import { Typography } from "@mui/material";
+import BuildIcon from "@mui/icons-material/Build";
+import ShoppingBasket from "@mui/icons-material/ShoppingBasket";
+import DirectionsIcon from "@mui/icons-material/Directions";
+import StarIcon from "@mui/icons-material/StarRate";
+import ChartIcon from "@mui/icons-material/InsertChart";
+import ExtensionIcon from "@mui/icons-material/Extension";
+import InfoIcon from "@mui/icons-material/Info";
+import OpacityIcon from "@mui/icons-material/Opacity";
+import MemoryIcon from "@mui/icons-material/Memory";
 
 import { RouteState, RouteLocation } from "./routes";
 

@@ -33,25 +33,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import * as jdenticon from "jdenticon";
-import { Typography } from "@material-ui/core";
-import { ButtonBase } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import WarningIcon from "@material-ui/icons/Warning";
-import SearchIcon from "@material-ui/icons/Search";
-import { Avatar } from "@material-ui/core";
-import { Paper } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
+import { Typography } from "@mui/material";
+import { ButtonBase } from "@mui/material";
+import { Button } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import WarningIcon from "@mui/icons-material/Warning";
+import SearchIcon from "@mui/icons-material/Search";
+import { Avatar } from "@mui/material";
+import { Paper } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import { TextField } from "@mui/material";
 import TimeAgo from "react-timeago";
-import { Dialog } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import DragIndicator from "@material-ui/icons/DragIndicator";
-import { withStyles } from "@material-ui/core";
-import { createStyles } from "@material-ui/core";
-import { WithStyles } from "@material-ui/core";
+import { Dialog } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import DragIndicator from "@mui/icons-material/DragIndicator";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import { DraggableProvided } from "react-beautiful-dnd";
 
@@ -94,7 +91,10 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePall
         default:
           if (displaySinglePallet === undefined) {
             return (
-              "Load onto face " + (mat.action.loadOntoFace || 0).toString() + " of pal " + mat.action.loadOntoPallet
+              "Load onto face " +
+              (mat.action.loadOntoFace || 0).toString() +
+              " of pal " +
+              (mat.action.loadOntoPallet ?? "")
             );
           } else if (displaySinglePallet === mat.action.loadOntoPallet) {
             return "Load onto face " + (mat.action.loadOntoFace || 0).toString();
@@ -120,37 +120,6 @@ function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePall
   return undefined;
 }
 
-const matStyles = createStyles({
-  paper: {
-    minWidth: "10em",
-    padding: "8px",
-    margin: "8px",
-  },
-  container: {
-    display: "flex" as "flex",
-    textAlign: "left" as "left",
-  },
-  mainContent: {
-    marginLeft: "8px",
-    flexGrow: 1,
-  },
-  rightContent: {
-    marginLeft: "4px",
-    display: "flex",
-    "flex-direction": "column",
-    "justify-content": "space-between",
-    "align-items": "flex-end",
-  },
-  avatar: {
-    width: "30px",
-    height: "30px",
-  },
-  avatarCount: {
-    backgroundColor: "#757575",
-    width: "37px",
-  },
-});
-
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>; // TODO: deep readonly
   readonly action?: string;
@@ -163,7 +132,7 @@ export interface MaterialSummaryProps {
   readonly isDragging?: boolean;
 }
 
-const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps & WithStyles<typeof matStyles>) => {
+export const MatSummary = React.memo(function MatSummary(props: MaterialSummaryProps) {
   const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
 
   const inspections = props.mat.signaledInspections.join(", ");
@@ -199,10 +168,12 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
     <Paper
       ref={props.draggableProvided?.innerRef}
       elevation={4}
-      className={props.classes.paper}
       {...props.draggableProvided?.draggableProps}
       style={{
         display: "flex",
+        minWidth: "10em",
+        padding: "8px",
+        margin: "8px",
         ...props.draggableProvided?.draggableProps.style,
       }}
     >
@@ -212,9 +183,9 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
         </div>
       ) : undefined}
       <ButtonBase focusRipple onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}>
-        <div className={props.classes.container}>
+        <div style={{ display: "flex", textAlign: "left" }}>
           <PartIdenticon part={props.mat.partName} />
-          <div className={props.classes.mainContent}>
+          <div style={{ marginLeft: "8px", flexGrow: 1 }}>
             <Typography variant="h6">{props.mat.partName}</Typography>
             {props.displayJob ? (
               <div>
@@ -244,10 +215,18 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
             )}
             {completedMsg}
           </div>
-          <div className={props.classes.rightContent}>
+          <div
+            style={{
+              marginLeft: "4px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+            }}
+          >
             {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
               <div>
-                <Avatar className={props.classes.avatar}>
+                <Avatar style={{ width: "30px", height: "30px" }}>
                   {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
                 </Avatar>
               </div>
@@ -266,14 +245,6 @@ const MatSummaryWithStyles = withStyles(matStyles)((props: MaterialSummaryProps 
   );
 });
 
-// decorate doesn't work well with classes yet.
-// https://github.com/Microsoft/TypeScript/issues/4881
-export class MatSummary extends React.PureComponent<MaterialSummaryProps> {
-  render() {
-    return <MatSummaryWithStyles {...this.props} />;
-  }
-}
-
 export interface InProcMaterialProps {
   readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
   readonly displaySinglePallet?: string;
@@ -287,7 +258,7 @@ export interface InProcMaterialProps {
 export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
   render() {
     return (
-      <MatSummaryWithStyles
+      <MatSummary
         mat={inproc_mat_to_summary(this.props.mat)}
         action={materialAction(this.props.mat, this.props.displaySinglePallet)}
         draggableProvided={this.props.draggableProvided}
@@ -309,13 +280,13 @@ export interface MultiMaterialProps {
   onOpen: () => void;
 }
 
-const MultiMaterialWithStyles = withStyles(matStyles)((props: MultiMaterialProps & WithStyles<typeof matStyles>) => {
+export const MultiMaterial = React.memo(function MultiMaterial(props: MultiMaterialProps) {
   return (
-    <Paper elevation={4} className={props.classes.paper} style={{ display: "flex" }}>
+    <Paper elevation={4} style={{ display: "flex", minWidth: "10em", padding: "8px", margin: "8px" }}>
       <ButtonBase focusRipple onClick={() => props.onOpen()}>
-        <div className={props.classes.container}>
+        <div style={{ display: "flex", textAlign: "left" }}>
           <PartIdenticon part={props.partOrCasting} />
-          <div className={props.classes.mainContent}>
+          <div style={{ marginLeft: "8px", flexGrow: 1 }}>
             <Typography variant="h6">{props.partOrCasting}</Typography>
             <div>
               <small>
@@ -325,9 +296,17 @@ const MultiMaterialWithStyles = withStyles(matStyles)((props: MultiMaterialProps
               </small>
             </div>
           </div>
-          <div className={props.classes.rightContent}>
+          <div
+            style={{
+              marginLeft: "4px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+            }}
+          >
             <div>
-              <Avatar className={props.classes.avatar + " " + props.classes.avatarCount}>
+              <Avatar style={{ width: "37px", height: "30px", backgroundColor: "#757575" }}>
                 {props.material.length > 100
                   ? props.material.length.toString()
                   : "x" + props.material.length.toString()}
@@ -340,14 +319,6 @@ const MultiMaterialWithStyles = withStyles(matStyles)((props: MultiMaterialProps
   );
 });
 
-// decorate doesn't work well with classes yet.
-// https://github.com/Microsoft/TypeScript/issues/4881
-export class MultiMaterial extends React.PureComponent<MultiMaterialProps> {
-  render() {
-    return <MultiMaterialWithStyles {...this.props} />;
-  }
-}
-
 export class MaterialDetailTitle extends React.PureComponent<{
   partName: string;
   serial?: string;
@@ -359,7 +330,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
     if (this.props.partName === "" && (this.props.serial === undefined || this.props.serial === "")) {
       title = "Loading";
     } else if (this.props.partName === "") {
-      title = "Loading " + this.props.serial;
+      title = "Loading " + (this.props.serial ?? "");
     } else if (this.props.serial === undefined || this.props.serial === "") {
       if (this.props.notes) {
         title = "Add note for " + this.props.partName;
@@ -474,13 +445,14 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
 
   return (
     <>
-      <DialogTitle disableTypography>
+      <DialogTitle>
         <MaterialDetailTitle notes partName={props.mat.partName} serial={props.mat.serial} />
       </DialogTitle>
       <DialogContent>
         <TextField
+          sx={{ mt: "5px" }}
           multiline
-          label="Notes"
+          label="Note"
           autoFocus
           variant="outlined"
           value={curNote}
@@ -534,7 +506,7 @@ export function MaterialDialog(props: MaterialDialogProps) {
     const mat = props.display_material;
     body = (
       <>
-        <DialogTitle disableTypography>
+        <DialogTitle>
           <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
         </DialogTitle>
         <DialogContent>
@@ -579,36 +551,8 @@ export const BasicMaterialDialog = React.memo(function BasicMaterialDialog() {
   return <MaterialDialog display_material={mat} onClose={close} />;
 });
 
-const whiteboardRegionStyle = createStyles({
-  container: {
-    width: "100%",
-    minHeight: "70px",
-  },
-  labelContainer: {
-    display: "flex",
-  },
-  label: {
-    color: "rgba(0,0,0,0.5)",
-    fontSize: "small",
-    flexGrow: 1,
-  },
-  contentContainer: {
-    width: "100%",
-    display: "flex",
-    flexWrap: "wrap" as "wrap",
-  },
-  borderLeft: {
-    borderLeft: "1px solid rgba(0,0,0,0.12)",
-  },
-  borderBottom: {
-    borderBottom: "1px solid rgba(0,0,0,0.12)",
-  },
-  borderRight: {
-    borderRight: "1px solid rgba(0,0,0,0.12)",
-  },
-});
-
 export interface WhiteboardRegionProps {
+  readonly children?: React.ReactNode;
   readonly label: string;
   readonly spaceAround?: boolean;
   readonly flexStart?: boolean;
@@ -618,46 +562,40 @@ export interface WhiteboardRegionProps {
   readonly addMaterialButton?: JSX.Element;
 }
 
-const WhiteboardRegionWithStyle = withStyles(whiteboardRegionStyle)(
-  (props: WhiteboardRegionProps & WithStyles<typeof whiteboardRegionStyle> & { children?: React.ReactNode }) => {
-    let justifyContent = "space-between";
-    if (props.spaceAround) {
-      justifyContent = "space-around";
-    } else if (props.flexStart) {
-      justifyContent = "flex-start";
-    }
-    const mainClasses = [props.classes.container];
-    if (props.borderLeft) {
-      mainClasses.push(props.classes.borderLeft);
-    }
-    if (props.borderBottom) {
-      mainClasses.push(props.classes.borderBottom);
-    }
-    if (props.borderRight) {
-      mainClasses.push(props.classes.borderRight);
-    }
-    return (
-      <div className={mainClasses.join(" ")}>
-        {props.label !== "" || props.addMaterialButton ? (
-          <div className={props.classes.labelContainer}>
-            <span className={props.classes.label}>{props.label}</span>
-            {props.addMaterialButton}
-          </div>
-        ) : undefined}
-        <div className={props.classes.contentContainer} style={{ justifyContent }}>
-          {props.children}
+export const WhiteboardRegion = React.memo(function WhiteboardRegion(props: WhiteboardRegionProps) {
+  let justifyContent = "space-between";
+  if (props.spaceAround) {
+    justifyContent = "space-around";
+  } else if (props.flexStart) {
+    justifyContent = "flex-start";
+  }
+  return (
+    <div
+      style={{
+        width: "100%",
+        minHeight: "70px",
+        borderLeft: props.borderLeft ? "1px solid rgba(0,0,0,0.12)" : undefined,
+        borderBottom: props.borderBottom ? "1px solid rgba(0,0,0,0.12)" : undefined,
+        borderRight: props.borderRight ? "1px solid rgba(0,0,0,0.12)" : undefined,
+      }}
+    >
+      {props.label !== "" || props.addMaterialButton ? (
+        <div style={{ display: "flex" }}>
+          <span
+            style={{
+              color: "rgba(0,0,0,0.5)",
+              fontSize: "small",
+              flexGrow: 1,
+            }}
+          >
+            {props.label}
+          </span>
+          {props.addMaterialButton}
         </div>
-      </div>
-    );
-  }
-);
-
-// decorate doesn't work well with classes yet.
-// https://github.com/Microsoft/TypeScript/issues/4881
-export class WhiteboardRegion extends React.PureComponent<WhiteboardRegionProps> {
-  render() {
-    return <WhiteboardRegionWithStyle {...this.props} />;
-  }
-}
+      ) : undefined}
+      <div style={{ justifyContent, width: "100%", display: "flex", flexWrap: "wrap" }}>{props.children}</div>
+    </div>
+  );
+});
 
 export const SortableWhiteboardRegion = SortableContainer(WhiteboardRegion);

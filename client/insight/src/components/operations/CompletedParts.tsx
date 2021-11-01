@@ -31,32 +31,29 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card } from "@material-ui/core";
-import { CardHeader } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import ImportExport from "@material-ui/icons/ImportExport";
-import ExtensionIcon from "@material-ui/icons/Extension";
-import EditIcon from "@material-ui/icons/Edit";
-import { Typography } from "@material-ui/core";
-import { Table } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableBody } from "@material-ui/core";
+import { Box, Card, styled } from "@mui/material";
+import { CardHeader } from "@mui/material";
+import { CardContent } from "@mui/material";
+import { IconButton } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import ImportExport from "@mui/icons-material/ImportExport";
+import ExtensionIcon from "@mui/icons-material/Extension";
+import EditIcon from "@mui/icons-material/Edit";
+import { Typography } from "@mui/material";
+import { Table } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableBody } from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
 import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
 import { IHistoricJob } from "../../network/api";
 import { PartIdenticon } from "../station-monitor/Material";
-import { createStyles } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core";
 import { EditNoteDialog } from "../station-monitor/Queues";
-import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { JobDetails } from "../station-monitor/JobDetails";
-import { Collapse } from "@material-ui/core";
-import clsx from "clsx";
+import { Collapse } from "@mui/material";
 import { HashMap } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
@@ -71,33 +68,18 @@ export interface JobsTableProps {
   readonly end: Date;
 }
 
-const useTableStyles = makeStyles(() =>
-  createStyles({
-    mainRow: {
-      "& > *": {
-        borderBottom: "unset",
-      },
+const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
+  (props: { $darkRow?: boolean }) => ({
+    "& > *": {
+      borderBottom: "unset",
     },
-    labelContainer: {
-      display: "flex",
-      alignItems: "center",
-    },
-    identicon: {
-      marginRight: "0.2em",
-    },
-    pathDetails: {
-      maxWidth: "20em",
-    },
-    darkRow: {
-      backgroundColor: "#F5F5F5",
-    },
-    highlightedCell: {
-      backgroundColor: "#FF8A65",
-    },
-    collapseCell: {
-      paddingBottom: 0,
-      paddingTop: 0,
-    },
+    ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
+  })
+);
+
+const JobDetailRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
+  (props: { $darkRow?: boolean }) => ({
+    ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
   })
 );
 
@@ -109,7 +91,6 @@ interface JobsRowProps {
 }
 
 function JobsRow(props: JobsRowProps) {
-  const classes = useTableStyles();
   const [open, setOpen] = React.useState<boolean>(false);
 
   let colCnt = 6;
@@ -119,31 +100,41 @@ function JobsRow(props: JobsRowProps) {
   const job = props.job;
   return (
     <>
-      <TableRow className={clsx({ [classes.mainRow]: true, [classes.darkRow]: job.darkRow })}>
+      <JobTableRow $darkRow={job.darkRow}>
         <TableCell>{job.historicJob.routeStartUTC.toLocaleString()}</TableCell>
         <TableCell>
-          <div className={classes.labelContainer}>
-            <div className={classes.identicon}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ mr: "0.2em" }}>
               <PartIdenticon part={job.historicJob.partName} size={25} />
-            </div>
+            </Box>
             <div>
               <Typography variant="body2" component="span" display="block">
                 {job.historicJob.partName}
               </Typography>
             </div>
-          </div>
+          </Box>
         </TableCell>
         {props.showMaterial ? (
           <TableCell>
             {job.casting ? (
-              <div className={classes.labelContainer}>
-                <div className={classes.identicon}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Box sx={{ mr: "0.2em" }}>
                   <PartIdenticon part={job.casting} size={25} />
-                </div>
+                </Box>
                 <Typography variant="body2" display="block">
                   {job.casting}
                 </Typography>
-              </div>
+              </Box>
             ) : undefined}
           </TableCell>
         ) : undefined}
@@ -159,7 +150,7 @@ function JobsRow(props: JobsRowProps) {
           </TableCell>
         ) : undefined}
         <TableCell align="right">{job.scheduledQty}</TableCell>
-        <TableCell align="right" className={job.decrementedQty > 0 ? classes.highlightedCell : undefined}>
+        <TableCell align="right" sx={{ backgroundColor: job.decrementedQty > 0 ? "#FF8A65" : undefined }}>
           {job.decrementedQty}
         </TableCell>
         <TableCell align="right">{job.completedQty}</TableCell>
@@ -176,9 +167,9 @@ function JobsRow(props: JobsRowProps) {
             </IconButton>
           </Tooltip>
         </TableCell>
-      </TableRow>
-      <TableRow className={job.darkRow ? classes.darkRow : undefined}>
-        <TableCell className={classes.collapseCell} colSpan={colCnt}>
+      </JobTableRow>
+      <JobDetailRow $darkRow={job.darkRow}>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={colCnt}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails
               job={job.inProcJob ? job.inProcJob : job.historicJob}
@@ -186,7 +177,7 @@ function JobsRow(props: JobsRowProps) {
             />
           </Collapse>
         </TableCell>
-      </TableRow>
+      </JobDetailRow>
     </>
   );
 }
@@ -222,6 +213,7 @@ export function JobsTable(props: JobsTableProps): JSX.Element {
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 onClick={() => copyScheduledJobsToClipboard(jobs, showMaterial)}
+                size="large"
               >
                 <ImportExport />
               </IconButton>

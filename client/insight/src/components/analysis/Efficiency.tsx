@@ -31,23 +31,23 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import WorkIcon from "@material-ui/icons/Work";
-import BasketIcon from "@material-ui/icons/ShoppingBasket";
+import WorkIcon from "@mui/icons-material/Work";
+import BasketIcon from "@mui/icons-material/ShoppingBasket";
 import { addMonths, addDays, startOfToday } from "date-fns";
-import ExtensionIcon from "@material-ui/icons/Extension";
-import HourglassIcon from "@material-ui/icons/HourglassFull";
+import ExtensionIcon from "@mui/icons-material/Extension";
+import HourglassIcon from "@mui/icons-material/HourglassFull";
 import { HashMap } from "prelude-ts";
-import { Card } from "@material-ui/core";
-import { CardHeader } from "@material-ui/core";
-import { Select } from "@material-ui/core";
-import { MenuItem } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import ImportExport from "@material-ui/icons/ImportExport";
-import AccountIcon from "@material-ui/icons/AccountBox";
-import DonutIcon from "@material-ui/icons/DonutSmall";
-import { Slider } from "@material-ui/core";
+import { Card } from "@mui/material";
+import { CardHeader } from "@mui/material";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { CardContent } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import ImportExport from "@mui/icons-material/ImportExport";
+import AccountIcon from "@mui/icons-material/AccountBox";
+import DonutIcon from "@mui/icons-material/DonutSmall";
+import { Slider } from "@mui/material";
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
@@ -198,6 +198,7 @@ function PartMachineCycleChart() {
                 <IconButton
                   onClick={() => copyCyclesToClipboard(points, matSummary.matsById, zoomDateRange)}
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                  size="large"
                 >
                   <ImportExport />
                 </IconButton>
@@ -468,6 +469,7 @@ function PartLoadStationCycleChart() {
                     )
                   }
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                  size="large"
                 >
                   <ImportExport />
                 </IconButton>
@@ -643,6 +645,7 @@ function PalletCycleChart() {
               <IconButton
                 onClick={() => copyPalletCyclesToClipboard(palletCycles)}
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                size="large"
               >
                 <ImportExport />
               </IconButton>

@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Radio } from "@material-ui/core";
-import { FormControlLabel } from "@material-ui/core";
+import { Radio } from "@mui/material";
+import { FormControlLabel } from "@mui/material";
 import { useRecoilValue } from "recoil";
 
 import MonthSelect from "../MonthSelect";

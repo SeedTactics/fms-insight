@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { addHours } from "date-fns";
-import { Grid } from "@material-ui/core";
-import { Button } from "@material-ui/core";
+import { Grid } from "@mui/material";
+import { Button } from "@mui/material";
 
 import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material";
 import { SelectWorkorderDialog } from "./SelectWorkorder";
-import { Tooltip } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { fmsInformation } from "../../network/server-settings";

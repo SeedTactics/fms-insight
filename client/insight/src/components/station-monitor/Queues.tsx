@@ -33,32 +33,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import { makeStyles } from "@material-ui/core";
-import { withStyles } from "@material-ui/core";
-import { createStyles } from "@material-ui/core";
-import { WithStyles } from "@material-ui/core";
 import { SortEnd } from "react-sortable-hoc";
-import { Table } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TableBody } from "@material-ui/core";
-import { Button } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { Typography } from "@material-ui/core";
-import EditIcon from "@material-ui/icons/Edit";
-import { Dialog } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import KeyboardArrowDownIcon from "@material-ui/icons/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@material-ui/icons/KeyboardArrowUp";
-import { TextField } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { Fab } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import { CircularProgress } from "@material-ui/core";
-import AddIcon from "@material-ui/icons/Add";
-import AssignIcon from "@material-ui/icons/AssignmentReturn";
+import { Table, Box, styled } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TableBody } from "@mui/material";
+import { Button } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { Typography } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import { Dialog } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { TextField } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { Fab } from "@mui/material";
+import { IconButton } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import AssignIcon from "@mui/icons-material/AssignmentReturn";
 
 import {
   SortableInProcMaterial,
@@ -99,39 +95,22 @@ import {
   reorderQueuedMatInCurrentStatus,
 } from "../../cell-status/current-status";
 import { useAddExistingMaterialToQueue, usePrintLabel } from "../../cell-status/material-details";
-import { Collapse } from "@material-ui/core";
+import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { useRecoilConduit } from "../../util/recoil-util";
 
-const useTableStyles = makeStyles(() =>
-  createStyles({
-    mainRow: {
-      "& > *": {
-        borderBottom: "unset",
-      },
+const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $noBorderBottom?: boolean;
+  $highlightedRow?: boolean;
+  $noncompletedRow?: boolean;
+}>(({ $noBorderBottom, $highlightedRow, $noncompletedRow }) => ({
+  ...($noBorderBottom && {
+    "& > *": {
+      borderBottom: "unset",
     },
-    labelContainer: {
-      display: "flex",
-      alignItems: "center",
-    },
-    identicon: {
-      marginRight: "0.2em",
-    },
-    pathDetails: {
-      maxWidth: "20em",
-    },
-    highlightedRow: {
-      backgroundColor: "#FF8A65",
-    },
-    noncompletedRow: {
-      backgroundColor: "#E0E0E0",
-    },
-    collapseCell: {
-      paddingBottom: 0,
-      paddingTop: 0,
-    },
-  })
-);
+  }),
+  backgroundColor: $highlightedRow ? "#FF8A65" : $noncompletedRow ? "#E0E0E0" : undefined,
+}));
 
 const highlightedComments = [/\bhold\b/, /\bmissing\b/, /\bwait\b/, /\bwaiting\b/, /\bnone\b/];
 
@@ -148,50 +127,66 @@ export interface RawMaterialJobRowProps {
 }
 
 function RawMaterialJobRow(props: RawMaterialJobRowProps) {
-  const classes = useTableStyles();
   const allowEditQty = (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
   const [open, setOpen] = React.useState<boolean>(false);
 
   const j = props.job;
-  const bgClass = highlightRow(j.job)
-    ? classes.highlightedRow
-    : j.plannedQty - j.startedQty - j.assignedRaw > 0
-    ? classes.noncompletedRow
-    : undefined;
+  const highlRow = highlightRow(j.job);
 
   return (
     <>
-      <TableRow className={bgClass ? classes.mainRow + " " + bgClass : classes.mainRow}>
+      <JobTableRow
+        $noBorderBottom
+        $highlightedRow={highlRow}
+        $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}
+      >
         <TableCell>
-          <div className={classes.labelContainer}>
-            <div className={classes.identicon}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ mr: "0.2em" }}>
               <PartIdenticon part={j.job.partName} size={j.pathDetails === null ? 25 : 40} />
-            </div>
+            </Box>
             <div>
               <Typography variant="body2" component="span" display="block">
                 {j.job.unique}
               </Typography>
               {j.pathDetails !== null ? (
-                <Typography variant="body2" color="textSecondary" display="block" className={classes.pathDetails}>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  display="block"
+                  sx={{
+                    maxWidth: "20em",
+                  }}
+                >
                   {j.pathDetails}
                 </Typography>
               ) : undefined}
             </div>
-          </div>
+          </Box>
         </TableCell>
         <TableCell>{j.path.simulatedStartingUTC.toLocaleString()}</TableCell>
         <TableCell>
           {j.rawMatName === j.job.partName ? (
             j.rawMatName
           ) : (
-            <div className={classes.labelContainer}>
-              <div className={classes.identicon}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Box sx={{ mr: "0.2em" }}>
                 <PartIdenticon part={j.rawMatName} size={25} />
-              </div>
+              </Box>
               <Typography variant="body2" display="block">
                 {j.rawMatName}
               </Typography>
-            </div>
+            </Box>
           )}
         </TableCell>
         <TableCell>
@@ -230,14 +225,14 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
             </IconButton>
           </Tooltip>
         </TableCell>
-      </TableRow>
-      <TableRow className={bgClass}>
-        <TableCell className={classes.collapseCell} colSpan={10}>
+      </JobTableRow>
+      <JobTableRow $highlightedRow={highlRow} $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails job={j.job} checkAnalysisMonth={false} />
           </Collapse>
         </TableCell>
-      </TableRow>
+      </JobTableRow>
     </>
   );
 }
@@ -504,7 +499,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   const mat1 = props.material?.[0];
   return (
     <Dialog open={props.material !== null} onClose={close} maxWidth="md">
-      <DialogTitle disableTypography>
+      <DialogTitle>
         {mat1 && props.material && props.material.length > 0 ? (
           <MaterialDetailTitle
             partName={mat1.partName}
@@ -657,19 +652,12 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
   }
 });
 
-const queueStyles = createStyles({
-  mainScrollable: {
-    padding: "8px",
-    width: "100%",
-  },
-});
-
 interface QueueProps {
   readonly queues: ReadonlyArray<string>;
   readonly showFree: boolean;
 }
 
-export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<typeof queueStyles>) => {
+export const Queues = (props: QueueProps) => {
   const operator = useRecoilValue(currentOperator);
   const currentSt = useRecoilValue(currentStatus);
   const reorderQueuedMat = useRecoilConduit(reorderQueuedMatInCurrentStatus);
@@ -690,7 +678,12 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
   return (
-    <div data-testid="stationmonitor-queues" className={props.classes.mainScrollable}>
+    <Box
+      sx={{
+        padding: "8px",
+        width: "100%",
+      }}
+    >
       {data.map((region, idx) => (
         <div style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined} key={idx}>
           <SortableWhiteboardRegion
@@ -762,9 +755,9 @@ export const Queues = withStyles(queueStyles)((props: QueueProps & WithStyles<ty
       <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
       <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />
-    </div>
+    </Box>
   );
-});
+};
 
 export default function QueuesPage(props: QueueProps): JSX.Element {
   React.useEffect(() => {

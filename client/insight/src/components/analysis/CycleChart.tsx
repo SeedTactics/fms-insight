@@ -45,17 +45,14 @@ import {
   AreaSeries,
   LineSeries,
 } from "react-vis";
-import { Button } from "@material-ui/core";
-import { WithStyles } from "@material-ui/core";
-import { withStyles } from "@material-ui/core";
-import { createStyles } from "@material-ui/core";
+import { Button, styled } from "@mui/material";
 import { HashMap } from "prelude-ts";
-import { Dialog } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import ZoomIn from "@material-ui/icons/ZoomIn";
+import { Dialog } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { TextField } from "@mui/material";
+import { IconButton } from "@mui/material";
+import ZoomIn from "@mui/icons-material/ZoomIn";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times";
 
 interface YZoomRange {
@@ -170,13 +167,17 @@ function memoize<A, R>(f: (x: A) => R): (x: A) => R {
 }
 
 // https://github.com/uber/react-vis/issues/1067
-const cycleChartStyles = createStyles({
-  noSeriesPointerEvts: {
-    "& .rv-xy-plot__series.rv-xy-plot__series--mark": {
-      pointerEvents: "none",
-    },
-  },
-});
+const NoSeriesPointerEvents = styled("div", { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $noPtrEvents?: boolean;
+}>(({ $noPtrEvents }) =>
+  $noPtrEvents
+    ? {
+        "& .rv-xy-plot__series.rv-xy-plot__series--mark": {
+          pointerevents: "none",
+        },
+      }
+    : undefined
+);
 
 // https://personal.sron.nl/~pault/
 const paulTolQualitativeColors = [
@@ -284,272 +285,265 @@ export function seriesColor(idx: number, count: number): string {
   }
 }
 
-export const CycleChart = withStyles(cycleChartStyles)(
-  class CycleChartWithStyles extends React.PureComponent<
-    CycleChartProps & WithStyles<typeof cycleChartStyles>,
-    CycleChartState
-  > {
-    state = {
-      tooltip: undefined,
-      disabled_series: {},
-      current_y_zoom_range: null,
-      brushing: false,
-      zoom_dialog_open: false,
-      chart_height: 500,
-    } as CycleChartState;
+export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
+  state = {
+    tooltip: undefined,
+    disabled_series: {},
+    current_y_zoom_range: null,
+    brushing: false,
+    zoom_dialog_open: false,
+    chart_height: 500,
+  } as CycleChartState;
 
-    // memoize on the series name, since the function from CycleChartPoint => void is
-    // passed as a prop to the chart, and reusing the same function keeps the props
-    // unchanged so PureComponent can avoid a re-render
-    setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
-      if (this.state.tooltip === undefined) {
-        this.setState({
-          tooltip: { ...point, series: series, extra: this.props.extra_tooltip ? this.props.extra_tooltip(point) : [] },
-        });
-      } else {
-        this.setState({ tooltip: undefined });
-      }
-    });
-
-    clearTooltip = (evt: React.MouseEvent) => {
-      // onMouseLeave is triggered either when the mouse leaves the actual chart
-      // or when the mouse moves over an "a" element inside the tooltip.  When moving
-      // over an "a" element inside the tooltip, we do not want to clear it!
-      if ((evt.relatedTarget as Element).tagName !== "A") {
-        this.setState({ tooltip: undefined });
-      }
-    };
-
-    toggleSeries = (series: { title: string }) => {
-      const newState = !this.state.disabled_series[series.title];
+  // memoize on the series name, since the function from CycleChartPoint => void is
+  // passed as a prop to the chart, and reusing the same function keeps the props
+  // unchanged so PureComponent can avoid a re-render
+  setTooltip = memoize((series: string) => (point: CycleChartPoint) => {
+    if (this.state.tooltip === undefined) {
       this.setState({
-        disabled_series: {
-          ...this.state.disabled_series,
-          [series.title]: newState,
-        },
+        tooltip: { ...point, series: series, extra: this.props.extra_tooltip ? this.props.extra_tooltip(point) : [] },
       });
-    };
+    } else {
+      this.setState({ tooltip: undefined });
+    }
+  });
 
-    formatHint = (tip: CycleChartTooltip) => {
-      return [
-        { title: "Time", value: format(tip.x, "MMM d, yyyy, h:mm aaaa") },
-        { title: this.props.series_label, value: tip.series },
-        { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" },
-        ...tip.extra.map((e) => ({
-          title: e.title,
-          value: e.link ? (
-            <a
-              style={{ color: "white", pointerEvents: "auto", cursor: "pointer", borderBottom: "1px solid" }}
-              onClick={e.link}
-            >
-              {e.value}
-            </a>
-          ) : (
-            e.value
-          ),
-        })),
-      ];
-    };
+  clearTooltip = (evt: React.MouseEvent) => {
+    // onMouseLeave is triggered either when the mouse leaves the actual chart
+    // or when the mouse moves over an "a" element inside the tooltip.  When moving
+    // over an "a" element inside the tooltip, we do not want to clear it!
+    if ((evt.relatedTarget as Element).tagName !== "A") {
+      this.setState({ tooltip: undefined });
+    }
+  };
 
-    setLowZoom = (val: number) => {
-      let high: number | undefined = this.state.current_y_zoom_range?.y_high;
-      if (high === undefined) {
-        for (const [, points] of this.props.points) {
-          for (const point of points) {
-            if (!high || high < point.y) {
-              high = point.y;
-            }
+  toggleSeries = (series: { title: string }) => {
+    const newState = !this.state.disabled_series[series.title];
+    this.setState({
+      disabled_series: {
+        ...this.state.disabled_series,
+        [series.title]: newState,
+      },
+    });
+  };
+
+  formatHint = (tip: CycleChartTooltip) => {
+    return [
+      { title: "Time", value: format(tip.x, "MMM d, yyyy, h:mm aaaa") },
+      { title: this.props.series_label, value: tip.series },
+      { title: "Cycle Time", value: tip.y.toFixed(1) + " minutes" },
+      ...tip.extra.map((e) => ({
+        title: e.title,
+        value: e.link ? (
+          <a
+            style={{ color: "white", pointerEvents: "auto", cursor: "pointer", borderBottom: "1px solid" }}
+            onClick={e.link}
+          >
+            {e.value}
+          </a>
+        ) : (
+          e.value
+        ),
+      })),
+    ];
+  };
+
+  setLowZoom = (val: number) => {
+    let high: number | undefined = this.state.current_y_zoom_range?.y_high;
+    if (high === undefined) {
+      for (const [, points] of this.props.points) {
+        for (const point of points) {
+          if (!high || high < point.y) {
+            high = point.y;
           }
         }
       }
-      this.setState({
-        current_y_zoom_range: { y_low: val, y_high: high ?? 60 },
-      });
-    };
+    }
+    this.setState({
+      current_y_zoom_range: { y_low: val, y_high: high ?? 60 },
+    });
+  };
 
-    setHighZoom = (val: number) =>
-      this.setState({
-        current_y_zoom_range: { y_low: this.state.current_y_zoom_range?.y_low ?? 0, y_high: val },
-      });
+  setHighZoom = (val: number) =>
+    this.setState({
+      current_y_zoom_range: { y_low: this.state.current_y_zoom_range?.y_low ?? 0, y_high: val },
+    });
 
-    componentDidMount() {
-      this.setState({
-        chart_height: window.innerHeight - 200,
-      });
+  componentDidMount() {
+    this.setState({
+      chart_height: window.innerHeight - 200,
+    });
+  }
+
+  render() {
+    const seriesNames = this.props.points.keySet().toArray({ sortOn: (x) => x });
+    const dateRange = this.props.default_date_range;
+    const setZoom = this.props.set_date_zoom_range;
+
+    let statsSeries: JSX.Element | undefined;
+    let statZoom: JSX.Element | undefined;
+    if (this.props.stats) {
+      const low =
+        (this.props.partCntPerPoint ?? 1) *
+        (this.props.stats.medianMinutesForSingleMat - this.props.stats.MAD_belowMinutes);
+      const high =
+        (this.props.partCntPerPoint ?? 1) *
+        (this.props.stats.medianMinutesForSingleMat + this.props.stats.MAD_aboveMinutes);
+
+      statsSeries = (
+        <AreaSeries
+          color="gray"
+          opacity={0.2}
+          data={[
+            {
+              x: dateRange[0],
+              y0: low,
+              y: high,
+            },
+            {
+              x: dateRange[1],
+              y0: low,
+              y: high,
+            },
+          ]}
+        />
+      );
+
+      if (setZoom) {
+        const extra = 0.2 * (high - low);
+        statZoom = (
+          <>
+            <span> or </span>
+            <Button
+              size="small"
+              onClick={() => {
+                this.setState({ current_y_zoom_range: { y_low: low - extra, y_high: high + extra } });
+              }}
+            >
+              Zoom To Inliers
+            </Button>
+          </>
+        );
+      }
     }
 
-    render() {
-      const seriesNames = this.props.points.keySet().toArray({ sortOn: (x) => x });
-      const dateRange = this.props.default_date_range;
-      const setZoom = this.props.set_date_zoom_range;
+    let openZoom: JSX.Element | undefined;
+    if (setZoom) {
+      openZoom = (
+        <IconButton size="small" onClick={() => this.setState({ zoom_dialog_open: true })}>
+          <ZoomIn fontSize="inherit" />
+        </IconButton>
+      );
+    }
 
-      let statsSeries: JSX.Element | undefined;
-      let statZoom: JSX.Element | undefined;
-      if (this.props.stats) {
-        const low =
-          (this.props.partCntPerPoint ?? 1) *
-          (this.props.stats.medianMinutesForSingleMat - this.props.stats.MAD_belowMinutes);
-        const high =
-          (this.props.partCntPerPoint ?? 1) *
-          (this.props.stats.medianMinutesForSingleMat + this.props.stats.MAD_aboveMinutes);
+    return (
+      <NoSeriesPointerEvents $noPtrEvents={this.state.brushing}>
+        <FlexibleWidthXYPlot
+          height={this.state.chart_height}
+          animation
+          xType="time"
+          margin={{ bottom: 50 }}
+          onMouseLeave={this.clearTooltip}
+          dontCheckIfEmpty
+          xDomain={
+            this.props.current_date_zoom
+              ? [this.props.current_date_zoom.start, this.props.current_date_zoom.end]
+              : this.props.points.isEmpty()
+              ? dateRange
+              : undefined
+          }
+          yDomain={
+            this.state.current_y_zoom_range
+              ? [this.state.current_y_zoom_range.y_low, this.state.current_y_zoom_range.y_high]
+              : this.props.points.isEmpty()
+              ? [0, 60]
+              : undefined
+          }
+        >
+          <VerticalGridLines />
+          <HorizontalGridLines />
+          <XAxis tickLabelAngle={-45} />
+          <YAxis />
+          {statsSeries}
+          {this.props.plannedSeries ? (
+            <LineSeries data={this.props.plannedSeries} color="black" opacity={0.4} />
+          ) : undefined}
+          {setZoom ? (
+            <Highlight
+              onBrushStart={() => this.setState({ brushing: true })}
+              onBrushEnd={(area: { left: Date; right: Date; bottom: number; top: number }) => {
+                if (area) {
+                  setZoom({ zoom: { start: area.left, end: area.right } });
+                  this.setState({
+                    current_y_zoom_range: { y_low: area.bottom, y_high: area.top },
+                    brushing: false,
+                  });
+                } else {
+                  this.setState({
+                    brushing: false,
+                  });
+                }
+              }}
+            />
+          ) : undefined}
+          {seriesNames
+            .map((series, idx) => ({ series, color: seriesColor(idx, seriesNames.length) }))
+            .filter((s) => !this.state.disabled_series[s.series])
+            .map((s) => (
+              <MarkSeries
+                key={s.series}
+                color={s.color}
+                data={this.props.points.get(s.series).getOrElse([])}
+                onValueClick={this.setTooltip(s.series)}
+              />
+            ))}
+          {this.state.tooltip === undefined ? undefined : <Hint value={this.state.tooltip} format={this.formatHint} />}
+        </FlexibleWidthXYPlot>
 
-        statsSeries = (
-          <AreaSeries
-            color="gray"
-            opacity={0.2}
-            data={[
-              {
-                x: dateRange[0],
-                y0: low,
-                y: high,
-              },
-              {
-                x: dateRange[1],
-                y0: low,
-                y: high,
-              },
-            ]}
-          />
-        );
-
-        if (setZoom) {
-          const extra = 0.2 * (high - low);
-          statZoom = (
-            <>
-              <span> or </span>
+        <div style={{ position: "relative" }}>
+          <div style={{ textAlign: "center" }}>
+            {seriesNames.length > 1 ? (
+              <DiscreteColorLegend
+                orientation="horizontal"
+                items={seriesNames.map((s, idx) => ({
+                  title: s,
+                  color: seriesColor(idx, seriesNames.length),
+                  disabled: this.state.disabled_series[s],
+                }))}
+                onItemClick={this.toggleSeries}
+              />
+            ) : undefined}
+          </div>
+          {setZoom && (this.props.current_date_zoom || this.state.current_y_zoom_range) ? (
+            <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
               <Button
                 size="small"
                 onClick={() => {
-                  this.setState({ current_y_zoom_range: { y_low: low - extra, y_high: high + extra } });
+                  setZoom({ zoom: undefined });
+                  this.setState({ current_y_zoom_range: null });
                 }}
               >
-                Zoom To Inliers
+                Reset Zoom
               </Button>
-            </>
-          );
-        }
-      }
-
-      let openZoom: JSX.Element | undefined;
-      if (setZoom) {
-        openZoom = (
-          <IconButton size="small" onClick={() => this.setState({ zoom_dialog_open: true })}>
-            <ZoomIn fontSize="inherit" />
-          </IconButton>
-        );
-      }
-
-      return (
-        <div className={this.state.brushing ? this.props.classes.noSeriesPointerEvts : undefined}>
-          <FlexibleWidthXYPlot
-            height={this.state.chart_height}
-            animation
-            xType="time"
-            margin={{ bottom: 50 }}
-            onMouseLeave={this.clearTooltip}
-            dontCheckIfEmpty
-            xDomain={
-              this.props.current_date_zoom
-                ? [this.props.current_date_zoom.start, this.props.current_date_zoom.end]
-                : this.props.points.isEmpty()
-                ? dateRange
-                : undefined
-            }
-            yDomain={
-              this.state.current_y_zoom_range
-                ? [this.state.current_y_zoom_range.y_low, this.state.current_y_zoom_range.y_high]
-                : this.props.points.isEmpty()
-                ? [0, 60]
-                : undefined
-            }
-          >
-            <VerticalGridLines />
-            <HorizontalGridLines />
-            <XAxis tickLabelAngle={-45} />
-            <YAxis />
-            {statsSeries}
-            {this.props.plannedSeries ? (
-              <LineSeries data={this.props.plannedSeries} color="black" opacity={0.4} />
-            ) : undefined}
-            {setZoom ? (
-              <Highlight
-                onBrushStart={() => this.setState({ brushing: true })}
-                onBrushEnd={(area: { left: Date; right: Date; bottom: number; top: number }) => {
-                  if (area) {
-                    setZoom({ zoom: { start: area.left, end: area.right } });
-                    this.setState({
-                      current_y_zoom_range: { y_low: area.bottom, y_high: area.top },
-                      brushing: false,
-                    });
-                  } else {
-                    this.setState({
-                      brushing: false,
-                    });
-                  }
-                }}
-              />
-            ) : undefined}
-            {seriesNames
-              .map((series, idx) => ({ series, color: seriesColor(idx, seriesNames.length) }))
-              .filter((s) => !this.state.disabled_series[s.series])
-              .map((s) => (
-                <MarkSeries
-                  key={s.series}
-                  color={s.color}
-                  data={this.props.points.get(s.series).getOrElse([])}
-                  onValueClick={this.setTooltip(s.series)}
-                />
-              ))}
-            {this.state.tooltip === undefined ? undefined : (
-              <Hint value={this.state.tooltip} format={this.formatHint} />
-            )}
-          </FlexibleWidthXYPlot>
-
-          <div style={{ position: "relative" }}>
-            <div style={{ textAlign: "center" }}>
-              {seriesNames.length > 1 ? (
-                <DiscreteColorLegend
-                  orientation="horizontal"
-                  items={seriesNames.map((s, idx) => ({
-                    title: s,
-                    color: seriesColor(idx, seriesNames.length),
-                    disabled: this.state.disabled_series[s],
-                  }))}
-                  onItemClick={this.toggleSeries}
-                />
-              ) : undefined}
-            </div>
-            {setZoom && (this.props.current_date_zoom || this.state.current_y_zoom_range) ? (
-              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    setZoom({ zoom: undefined });
-                    this.setState({ current_y_zoom_range: null });
-                  }}
-                >
-                  Reset Zoom
-                </Button>
-                {openZoom}
-              </span>
-            ) : undefined}
-            {setZoom && !this.props.current_date_zoom && !this.state.current_y_zoom_range ? (
-              <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
-                Zoom via mouse drag
-                {statZoom}
-                {openZoom}
-              </span>
-            ) : undefined}
-          </div>
-          <SetZoomDialog
-            open={this.state.zoom_dialog_open}
-            curZoom={this.state.current_y_zoom_range}
-            close={() => this.setState({ zoom_dialog_open: false })}
-            setLow={this.setLowZoom}
-            setHigh={this.setHighZoom}
-          />
+              {openZoom}
+            </span>
+          ) : undefined}
+          {setZoom && !this.props.current_date_zoom && !this.state.current_y_zoom_range ? (
+            <span style={{ position: "absolute", right: 0, top: 0, color: "#6b6b76" }}>
+              Zoom via mouse drag
+              {statZoom}
+              {openZoom}
+            </span>
+          ) : undefined}
         </div>
-      );
-    }
+        <SetZoomDialog
+          open={this.state.zoom_dialog_open}
+          curZoom={this.state.current_y_zoom_range}
+          close={() => this.setState({ zoom_dialog_open: false })}
+          setLow={this.setLowZoom}
+          setHigh={this.setHighZoom}
+        />
+      </NoSeriesPointerEvents>
+    );
   }
-);
+}

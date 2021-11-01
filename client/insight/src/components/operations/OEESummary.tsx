@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Grid } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
+import { Grid } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import TimeAgo from "react-timeago";
 
 import * as api from "../../network/api";

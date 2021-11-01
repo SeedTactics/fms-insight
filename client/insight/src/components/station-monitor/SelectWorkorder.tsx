@@ -32,18 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button } from "@material-ui/core";
-import { List } from "@material-ui/core";
-import { ListItem } from "@material-ui/core";
-import { ListItemText } from "@material-ui/core";
-import { ListItemIcon } from "@material-ui/core";
-import { Dialog } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import CheckmarkIcon from "@material-ui/icons/Check";
-import ShoppingBasketIcon from "@material-ui/icons/ShoppingBasket";
-import { TextField } from "@material-ui/core";
+import { Button } from "@mui/material";
+import { List } from "@mui/material";
+import { ListItem } from "@mui/material";
+import { ListItemText } from "@mui/material";
+import { ListItemIcon } from "@mui/material";
+import { Dialog } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import CheckmarkIcon from "@mui/icons-material/Check";
+import ShoppingBasketIcon from "@mui/icons-material/ShoppingBasket";
+import { TextField } from "@mui/material";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
 import * as matDetails from "../../cell-status/material-details";
@@ -78,6 +78,7 @@ function ManualWorkorderEntry() {
   const setWorkDialogOpen = useSetRecoilState(matDetails.loadWorkordersForMaterialInDialog);
   return (
     <TextField
+      sx={{ mt: "5px" }}
       label={workorder === null || workorder === "" ? "Workorder" : "Workorder (press enter)"}
       value={workorder ?? ""}
       onChange={(e) => setWorkorder(e.target.value)}

@@ -31,27 +31,25 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card } from "@material-ui/core";
-import { CardHeader } from "@material-ui/core";
-import { CardContent } from "@material-ui/core";
-import { Table } from "@material-ui/core";
-import { TableBody } from "@material-ui/core";
-import { TableCell } from "@material-ui/core";
-import { TableHead } from "@material-ui/core";
-import { TableRow } from "@material-ui/core";
-import { TextField } from "@material-ui/core";
-import MoneyIcon from "@material-ui/icons/AttachMoney";
-import ImportExport from "@material-ui/icons/ImportExport";
-import { createStyles } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core";
-import BuildIcon from "@material-ui/icons/Build";
-import CallSplit from "@material-ui/icons/CallSplit";
+import { Box, Card } from "@mui/material";
+import { CardHeader } from "@mui/material";
+import { CardContent } from "@mui/material";
+import { Table } from "@mui/material";
+import { TableBody } from "@mui/material";
+import { TableCell } from "@mui/material";
+import { TableHead } from "@mui/material";
+import { TableRow } from "@mui/material";
+import { TextField } from "@mui/material";
+import MoneyIcon from "@mui/icons-material/AttachMoney";
+import ImportExport from "@mui/icons-material/ImportExport";
+import BuildIcon from "@mui/icons-material/Build";
+import CallSplit from "@mui/icons-material/CallSplit";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { Vector } from "prelude-ts";
 import { LazySeq } from "../../util/lazyseq";
 import * as localForage from "localforage";
-import { CircularProgress } from "@material-ui/core";
+import { CircularProgress } from "@mui/material";
 import {
   MachineCostPerYear,
   compute_monthly_cost,
@@ -61,10 +59,10 @@ import {
   copyCostBreakdownToClipboard,
 } from "../../data/cost-per-piece";
 import { format, startOfToday, addDays } from "date-fns";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { PartIdenticon } from "../station-monitor/Material";
-import { Typography } from "@material-ui/core";
+import { Typography } from "@mui/material";
 import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles";
@@ -210,18 +208,6 @@ function StationCostInputs(props: StationCostInputProps) {
   );
 }
 
-const useTableStyles = makeStyles(() =>
-  createStyles({
-    labelContainer: {
-      display: "flex",
-      alignItems: "center",
-    },
-    identicon: {
-      marginRight: "0.2em",
-    },
-  })
-);
-
 const decimalFormat = Intl.NumberFormat(undefined, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
@@ -237,8 +223,6 @@ interface CostBreakdownProps {
 }
 
 function CostBreakdown(props: CostBreakdownProps) {
-  const classes = useTableStyles();
-
   return (
     <Card style={{ marginTop: "2em" }}>
       <CardHeader
@@ -251,6 +235,7 @@ function CostBreakdown(props: CostBreakdownProps) {
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 onClick={() => copyCostBreakdownToClipboard(props.costs)}
+                size="large"
               >
                 <ImportExport />
               </IconButton>
@@ -280,16 +265,21 @@ function CostBreakdown(props: CostBreakdownProps) {
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
-                    <div className={classes.labelContainer}>
-                      <div className={classes.identicon}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box sx={{ mr: "0.2em" }}>
                         <PartIdenticon part={c.part} size={25} />
-                      </div>
+                      </Box>
                       <div>
                         <Typography variant="body2" component="span" display="block">
                           {c.part}
                         </Typography>
                       </div>
-                    </div>
+                    </Box>
                   </TableCell>
                   <TableCell align="right">{c.parts_completed}</TableCell>
                   {props.costs.machineCostGroups.map((m) => (
@@ -334,7 +324,6 @@ interface CostPerPieceOutputProps {
 }
 
 function CostOutputCard(props: CostPerPieceOutputProps) {
-  const classes = useTableStyles();
   return (
     <Card style={{ marginTop: "2em" }}>
       <CardHeader
@@ -347,6 +336,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                 onClick={() => copyCostPerPieceToClipboard(props.costs)}
+                size="large"
               >
                 <ImportExport />
               </IconButton>
@@ -373,16 +363,21 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
-                    <div className={classes.labelContainer}>
-                      <div className={classes.identicon}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box sx={{ mr: "0.2em" }}>
                         <PartIdenticon part={c.part} size={25} />
-                      </div>
+                      </Box>
                       <div>
                         <Typography variant="body2" component="span" display="block">
                           {c.part}
                         </Typography>
                       </div>
-                    </div>
+                    </Box>
                   </TableCell>
                   <TableCell align="right">{c.parts_completed}</TableCell>
                   <TableCell align="right">

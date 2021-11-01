@@ -32,16 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Dialog } from "@material-ui/core";
-import { DialogActions } from "@material-ui/core";
-import { DialogContent } from "@material-ui/core";
+import { Dialog } from "@mui/material";
+import { DialogActions } from "@mui/material";
+import { DialogContent } from "@mui/material";
 import { useRecoilValue } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
-import { Button } from "@material-ui/core";
-import { Tooltip } from "@material-ui/core";
-import { IconButton } from "@material-ui/core";
-import { DialogTitle } from "@material-ui/core";
-import SettingsIcon from "@material-ui/icons/Settings";
+import { Button } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
+import { DialogTitle } from "@mui/material";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 export const CustomStationMonitorDialog = React.memo(function CustomStationMonitorDialog(): JSX.Element | null {
   const url = useRecoilValue(fmsInformation)?.customStationMonitorDialogUrl;
@@ -58,7 +58,7 @@ export const CustomStationMonitorDialog = React.memo(function CustomStationMonit
   return (
     <>
       <Tooltip title={title}>
-        <IconButton onClick={() => setOpen(true)}>
+        <IconButton onClick={() => setOpen(true)} size="large">
           <SettingsIcon />
         </IconButton>
       </Tooltip>
