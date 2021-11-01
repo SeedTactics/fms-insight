@@ -99,16 +99,18 @@ import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { useRecoilConduit } from "../../util/recoil-util";
 
-const JobTableRow = styled(TableRow)<{ noBorderBottom?: boolean; highlightedRow?: boolean; noncompletedRow?: boolean }>(
-  ({ noBorderBottom, highlightedRow, noncompletedRow }) => ({
-    ...(noBorderBottom && {
-      "& > *": {
-        borderBottom: "unset",
-      },
-    }),
-    backgroundColor: highlightedRow ? "#FF8A65" : noncompletedRow ? "#E0E0E0" : undefined,
-  })
-);
+const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $noBorderBottom?: boolean;
+  $highlightedRow?: boolean;
+  $noncompletedRow?: boolean;
+}>(({ $noBorderBottom, $highlightedRow, $noncompletedRow }) => ({
+  ...($noBorderBottom && {
+    "& > *": {
+      borderBottom: "unset",
+    },
+  }),
+  backgroundColor: $highlightedRow ? "#FF8A65" : $noncompletedRow ? "#E0E0E0" : undefined,
+}));
 
 const highlightedComments = [/\bhold\b/, /\bmissing\b/, /\bwait\b/, /\bwaiting\b/, /\bnone\b/];
 
@@ -134,9 +136,9 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
   return (
     <>
       <JobTableRow
-        noBorderBottom
-        highlightedRow={highlRow}
-        noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}
+        $noBorderBottom
+        $highlightedRow={highlRow}
+        $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}
       >
         <TableCell>
           <Box
@@ -224,7 +226,7 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
           </Tooltip>
         </TableCell>
       </JobTableRow>
-      <JobTableRow highlightedRow={highlRow} noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}>
+      <JobTableRow $highlightedRow={highlRow} $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails job={j.job} checkAnalysisMonth={false} />

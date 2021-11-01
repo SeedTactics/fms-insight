@@ -22,7 +22,6 @@ specifiers:
   '@typescript-eslint/parser': ^5.2.0
   '@vitejs/plugin-legacy': ^1.6.2
   '@vitejs/plugin-react-refresh': ^1.3.6
-  clsx: ^1.1.1
   copy-to-clipboard: ^3.3.1
   date-fns: ^2.25.0
   eslint: ^8.1.0
@@ -64,7 +63,6 @@ dependencies:
   '@fontsource/roboto': 4.5.1
   '@mui/icons-material': 5.0.5_3565a0d376b0012dc08925ef5e505ec5
   '@mui/material': 5.0.6_548ab84a18f5953b71f8bdc6185934b5
-  clsx: 1.1.1
   copy-to-clipboard: 3.3.1
   date-fns: 2.25.0
   highlight.js: 11.3.1

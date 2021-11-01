@@ -73,22 +73,26 @@ interface ToolRowProps {
   readonly showMachine: boolean;
 }
 
-const ToolTableRow = styled(TableRow)<{ highlightedRow?: boolean; noticeRow?: boolean }>(
-  ({ theme, highlightedRow, noticeRow }) => ({
+const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $noBorderBottom?: boolean;
+  $highlightedRow?: boolean;
+  $noticeRow?: boolean;
+}>(({ theme, $noBorderBottom, $highlightedRow, $noticeRow }) => ({
+  ...($noBorderBottom && {
     "& > *": {
       borderBottom: "unset",
     },
-    [theme.breakpoints.up("lg")]: {
-      "& td:not(:last-child), & th:not(:last-child)": {
-        whiteSpace: "nowrap",
-      },
-      "& td:last-child, & th:last-child": {
-        width: "100%",
-      },
+  }),
+  [theme.breakpoints.up("lg")]: {
+    "& td:not(:last-child), & th:not(:last-child)": {
+      whiteSpace: "nowrap",
     },
-    backgroundColor: highlightedRow ? "#BDBDBD" : noticeRow ? "#E0E0E0" : undefined,
-  })
-);
+    "& td:last-child, & th:last-child": {
+      width: "100%",
+    },
+  },
+  backgroundColor: $highlightedRow ? "#BDBDBD" : $noticeRow ? "#E0E0E0" : undefined,
+}));
 
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
@@ -99,8 +103,9 @@ function ToolRow(props: ToolRowProps) {
   return (
     <>
       <ToolTableRow
-        highlightedRow={schUse > totalLife}
-        noticeRow={schUse <= totalLife && schUse > props.tool.minRemainingMinutes}
+        $noBorderBottom
+        $highlightedRow={schUse > totalLife}
+        $noticeRow={schUse <= totalLife && schUse > props.tool.minRemainingMinutes}
       >
         <TableCell>
           <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -319,7 +324,7 @@ export function ToolSummaryTable(): JSX.Element {
       <CardContent>
         <Table>
           <TableHead>
-            <TableRow>
+            <ToolTableRow>
               <TableCell />
               <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
                 <TableSortLabel
@@ -381,7 +386,7 @@ export function ToolSummaryTable(): JSX.Element {
                 <TableCell>Pockets</TableCell>
               )}
               <TableCell />
-            </TableRow>
+            </ToolTableRow>
           </TableHead>
           <TableBody>
             {rows.map((tool) => (

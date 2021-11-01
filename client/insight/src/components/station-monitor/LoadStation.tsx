@@ -344,7 +344,7 @@ function PalletColumn(props: PalletColumnProps) {
           }
         >
           <Box sx={{ position: "absolute", top: "4px", left: "4px" }}>
-            <Box sx={{ color: "rgba(0,0,0,0.5", fontSize: "small" }}>Pallet</Box>
+            <Box sx={{ color: "rgba(0,0,0,0.5)", fontSize: "small" }}>Pallet</Box>
             {props.data.pallet ? (
               <Box sx={{ color: "rgba(0,0,0,0.5)", fontSize: "xx-large" }}>{props.data.pallet.pallet}</Box>
             ) : undefined}

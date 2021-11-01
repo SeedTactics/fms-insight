@@ -19,7 +19,6 @@
     "@fontsource/roboto": "^4.5.1",
     "@mui/icons-material": "^5.0.5",
     "@mui/material": "^5.0.6",
-    "clsx": "^1.1.1",
     "copy-to-clipboard": "^3.3.1",
     "date-fns": "^2.25.0",
     "highlight.js": "^11.3.1",

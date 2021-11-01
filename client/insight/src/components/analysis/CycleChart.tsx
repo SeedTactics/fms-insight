@@ -167,8 +167,10 @@ function memoize<A, R>(f: (x: A) => R): (x: A) => R {
 }
 
 // https://github.com/uber/react-vis/issues/1067
-const NoSeriesPointerEvents = styled("div")<{ noPtrEvents?: boolean }>(({ noPtrEvents }) =>
-  noPtrEvents
+const NoSeriesPointerEvents = styled("div", { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $noPtrEvents?: boolean;
+}>(({ $noPtrEvents }) =>
+  $noPtrEvents
     ? {
         "& .rv-xy-plot__series.rv-xy-plot__series--mark": {
           pointerevents: "none",
@@ -435,7 +437,7 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
     }
 
     return (
-      <NoSeriesPointerEvents noPtrEvents={this.state.brushing}>
+      <NoSeriesPointerEvents $noPtrEvents={this.state.brushing}>
         <FlexibleWidthXYPlot
           height={this.state.chart_height}
           animation

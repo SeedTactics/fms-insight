@@ -285,8 +285,10 @@ function AddSerialFound(props: AddSerialFoundProps) {
   );
 }
 
-const ExpandMore = styled(ExpandMoreIcon)<{ expandedOpen?: boolean }>(({ theme, expandedOpen }) => ({
-  transform: expandedOpen ? "rotate(0deg)" : "rotate(-90deg)",
+const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $expandedOpen?: boolean;
+}>(({ theme, $expandedOpen }) => ({
+  transform: $expandedOpen ? "rotate(0deg)" : "rotate(-90deg)",
   transition: theme.transitions.create("transform", {
     duration: theme.transitions.duration.shortest,
   }),
@@ -322,7 +324,7 @@ function SelectJob(props: SelectJobProps) {
             }}
           >
             <ListItemIcon>
-              <ExpandMore expandedOpen={selectedJob === j.job.unique} />
+              <ExpandMore $expandedOpen={selectedJob === j.job.unique} />
             </ListItemIcon>
             <ListItemIcon>
               <PartIdenticon part={j.job.partName} />

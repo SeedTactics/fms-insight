@@ -48,20 +48,22 @@ import { durationToMinutes, durationToSeconds } from "../util/parseISODuration";
 
 type ColoredSpanType = "machine" | "loadStation" | "pallet" | "queue" | "inspectionNotSignaled" | "inspectionSignaled";
 
-const ColoredSpan = styled("span")<{ type: ColoredSpanType }>(({ type }) => {
-  switch (type) {
+const ColoredSpan = styled("span", { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $type: ColoredSpanType;
+}>(({ $type }) => {
+  switch ($type) {
     case "machine":
-      return { backgroundColor: "#1565C0" };
+      return { color: "#1565C0" };
     case "loadStation":
-      return { backgroundColor: "#795548" };
+      return { color: "#795548" };
     case "pallet":
-      return { backgroundColor: "#00695C" };
+      return { color: "#00695C" };
     case "queue":
-      return { backgroundColor: "#6A1B9A" };
+      return { color: "#6A1B9A" };
     case "inspectionNotSignaled":
-      return { backgroundColor: "#4527A0" };
+      return { color: "#4527A0" };
     case "inspectionSignaled":
-      return { backgroundColor: "red" };
+      return { color: "red" };
   }
 });
 
@@ -170,16 +172,16 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.LoadUnloadCycle:
       return (
         <span>
-          {displayMat(entry.material)} on <ColoredSpan type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
-          <ColoredSpan type="loadStation">station {entry.locnum.toString()}</ColoredSpan>
+          {displayMat(entry.material)} on <ColoredSpan $type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
+          <ColoredSpan $type="loadStation">station {entry.locnum.toString()}</ColoredSpan>
         </span>
       );
 
     case api.LogType.MachineCycle:
       return (
         <span>
-          {displayMat(entry.material)} on <ColoredSpan type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
-          <ColoredSpan type="machine">
+          {displayMat(entry.material)} on <ColoredSpan $type="pallet">pallet {entry.pal}</ColoredSpan> at{" "}
+          <ColoredSpan $type="machine">
             {entry.loc} {entry.locnum.toString()}
           </ColoredSpan>
           {entry.program && entry.program !== "" ? <span> with program {entry.program}</span> : undefined}
@@ -210,14 +212,14 @@ function display(props: LogEntryProps): JSX.Element {
         return (
           <span>
             {displayMat(entry.material)} signaled for inspection{" "}
-            <ColoredSpan type="inspectionSignaled">{inspName}</ColoredSpan>
+            <ColoredSpan $type="inspectionSignaled">{inspName}</ColoredSpan>
           </span>
         );
       } else {
         return (
           <span>
             {displayMat(entry.material)} skipped inspection{" "}
-            <ColoredSpan type="inspectionNotSignaled">{inspName}</ColoredSpan>
+            <ColoredSpan $type="inspectionNotSignaled">{inspName}</ColoredSpan>
           </span>
         );
       }
@@ -230,14 +232,14 @@ function display(props: LogEntryProps): JSX.Element {
         return (
           <span>
             {displayMat(entry.material)} declared for inspection{" "}
-            <ColoredSpan type="inspectionSignaled">{forceInspName}</ColoredSpan>
+            <ColoredSpan $type="inspectionSignaled">{forceInspName}</ColoredSpan>
           </span>
         );
       } else {
         return (
           <span>
             {displayMat(entry.material)} passed over for inspection{" "}
-            <ColoredSpan type="inspectionNotSignaled">{forceInspName}</ColoredSpan>
+            <ColoredSpan $type="inspectionNotSignaled">{forceInspName}</ColoredSpan>
           </span>
         );
       }
@@ -248,9 +250,9 @@ function display(props: LogEntryProps): JSX.Element {
 
     case api.LogType.InspectionResult:
       if (entry.result.toLowerCase() === "false") {
-        return <ColoredSpan type="inspectionSignaled">{entry.program} Failed</ColoredSpan>;
+        return <ColoredSpan $type="inspectionSignaled">{entry.program} Failed</ColoredSpan>;
       } else {
-        return <ColoredSpan type="inspectionSignaled">{entry.program} Succeeded</ColoredSpan>;
+        return <ColoredSpan $type="inspectionSignaled">{entry.program} Succeeded</ColoredSpan>;
       }
 
     case api.LogType.Wash:
@@ -261,34 +263,34 @@ function display(props: LogEntryProps): JSX.Element {
         case "Unloaded":
           return (
             <span>
-              {displayQueueMat(entry.material)} unloaded into queue <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
+              {displayQueueMat(entry.material)} unloaded into queue <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         case "SetByOperator":
           return (
             <span>
               {displayQueueMat(entry.material)} set manually into queue{" "}
-              <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
+              <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         case "SwapMaterial":
           return (
             <span>
               {displayQueueMat(entry.material)} swapped off pallet into queue{" "}
-              <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
+              <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         case "MaterialMissingOnPallet":
           return (
             <span>
               {displayQueueMat(entry.material)} removed from cell controller, added to queue{" "}
-              <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
+              <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         default:
           return (
             <span>
-              {displayQueueMat(entry.material)} added to queue <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
+              {displayQueueMat(entry.material)} added to queue <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
               {entry.program && entry.program !== "" ? " (" + entry.program + ")" : undefined}
             </span>
           );
@@ -297,7 +299,7 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.RemoveFromQueue:
       return (
         <span>
-          {displayQueueMat(entry.material)} removed from queue <ColoredSpan type="queue">{entry.loc}</ColoredSpan>
+          {displayQueueMat(entry.material)} removed from queue <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
         </span>
       );
 
@@ -305,13 +307,13 @@ function display(props: LogEntryProps): JSX.Element {
       if (entry.startofcycle) {
         return (
           <span>
-            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at stocker {entry.locnum}
+            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at stocker {entry.locnum}
           </span>
         );
       } else {
         return (
           <span>
-            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> departed stocker {entry.locnum}
+            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> departed stocker {entry.locnum}
           </span>
         );
       }
@@ -320,8 +322,8 @@ function display(props: LogEntryProps): JSX.Element {
       if (entry.startofcycle) {
         return (
           <span>
-            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at{" "}
-            <ColoredSpan type="machine">
+            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> arrived at{" "}
+            <ColoredSpan $type="machine">
               {entry.loc} {entry.locnum.toString()}
             </ColoredSpan>
           </span>
@@ -329,8 +331,8 @@ function display(props: LogEntryProps): JSX.Element {
       } else if (entry.result == "RotateIntoWorktable") {
         return (
           <span>
-            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> rotated into{" "}
-            <ColoredSpan type="machine">
+            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> rotated into{" "}
+            <ColoredSpan $type="machine">
               {entry.loc} {entry.locnum.toString()}
             </ColoredSpan>{" "}
             worktable
@@ -339,8 +341,8 @@ function display(props: LogEntryProps): JSX.Element {
       } else {
         return (
           <span>
-            <ColoredSpan type="pallet">Pallet {entry.pal}</ColoredSpan> left{" "}
-            <ColoredSpan type="machine">
+            <ColoredSpan $type="pallet">Pallet {entry.pal}</ColoredSpan> left{" "}
+            <ColoredSpan $type="machine">
               {entry.loc} {entry.locnum.toString()}
             </ColoredSpan>
           </span>
@@ -416,12 +418,13 @@ const logTypesToHighlight = [
   api.LogType.MachineCycle,
 ];
 
-const LogEntryTableRow = styled(TableRow)<{ highlightProc?: boolean; invalidCycle?: boolean }>(
-  ({ highlightProc, invalidCycle }) => ({
-    ...(highlightProc && { backgroundColor: "#eeeeee" }),
-    ...(invalidCycle && { textDecoration: "line-through" }),
-  })
-);
+const LogEntryTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $highlightProc?: boolean;
+  $invalidCycle?: boolean;
+}>(({ $highlightProc, $invalidCycle }) => ({
+  ...($highlightProc && { backgroundColor: "#eeeeee" }),
+  ...($invalidCycle && { textDecoration: "line-through" }),
+}));
 
 export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
   const details = detailsForEntry(props.entry);
@@ -429,12 +432,12 @@ export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
   return (
     <>
       <LogEntryTableRow
-        highlightProc={
+        $highlightProc={
           props.highlightProcess !== undefined &&
           props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0 &&
           logTypesToHighlight.indexOf(props.entry.type) >= 0
         }
-        invalidCycle={props.entry.details?.["PalletCycleInvalidated"] === "1"}
+        $invalidCycle={props.entry.details?.["PalletCycleInvalidated"] === "1"}
       >
         <TableCell size="small">
           <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />

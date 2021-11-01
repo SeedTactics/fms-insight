@@ -68,16 +68,20 @@ export interface JobsTableProps {
   readonly end: Date;
 }
 
-const JobTableRow = styled(TableRow)((props: { darkRow?: boolean }) => ({
-  "& > *": {
-    borderBottom: "unset",
-  },
-  ...(props.darkRow && { backgroundColor: "#F5F5F5" }),
-}));
+const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
+  (props: { $darkRow?: boolean }) => ({
+    "& > *": {
+      borderBottom: "unset",
+    },
+    ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
+  })
+);
 
-const JobDetailRow = styled(TableRow)((props: { darkRow?: boolean }) => ({
-  ...(props.darkRow && { backgroundColor: "#F5F5F5" }),
-}));
+const JobDetailRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
+  (props: { $darkRow?: boolean }) => ({
+    ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
+  })
+);
 
 interface JobsRowProps {
   readonly job: ScheduledJobDisplay;
@@ -96,7 +100,7 @@ function JobsRow(props: JobsRowProps) {
   const job = props.job;
   return (
     <>
-      <JobTableRow darkRow={job.darkRow}>
+      <JobTableRow $darkRow={job.darkRow}>
         <TableCell>{job.historicJob.routeStartUTC.toLocaleString()}</TableCell>
         <TableCell>
           <Box
@@ -164,7 +168,7 @@ function JobsRow(props: JobsRowProps) {
           </Tooltip>
         </TableCell>
       </JobTableRow>
-      <JobDetailRow darkRow={job.darkRow}>
+      <JobDetailRow $darkRow={job.darkRow}>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={colCnt}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails
