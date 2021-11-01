@@ -48,7 +48,7 @@ const castingNamesRW = atom<ReadonlySet<string>>({
 export const castingNames: RecoilValueReadOnly<ReadonlySet<string>> = castingNamesRW;
 
 const inspectionTypesRW = atom<ReadonlySet<string>>({
-  key: "inspectionTypes",
+  key: "last30-inspectionTypes",
   default: new Set(),
 });
 export const last30InspectionTypes: RecoilValueReadOnly<ReadonlySet<string>> = inspectionTypesRW;

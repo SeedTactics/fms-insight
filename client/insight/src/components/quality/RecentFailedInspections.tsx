@@ -49,7 +49,7 @@ import { LazySeq } from "../../util/lazyseq";
 import { addDays, startOfToday } from "date-fns";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
 import { materialToShowInDialog } from "../../cell-status/material-details";
-import { RouteLocation, useCurrentRoute } from "../routes";
+import { RouteLocation, useCurrentRoute, useIsDemo } from "../routes";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections";
 
@@ -100,6 +100,7 @@ const columns: ReadonlyArray<Column<ColumnId, FailedInspectionEntry>> = [
 ];
 
 function RecentFailedTable(props: RecentFailedInspectionsProps) {
+  const demo = useIsDemo();
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
   const [origCurPage, setPage] = React.useState<number>(0);
@@ -137,26 +138,30 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
           onRequestSort={handleRequestSort}
           orderBy={orderBy}
           order={order}
-          showDetailsCol
+          showDetailsCol={!demo}
         />
         <DataTableBody
           columns={columns}
           pageData={points.drop(curPage * rowsPerPage).take(rowsPerPage)}
-          onClickDetails={(_, row) => {
-            setMatToShow({
-              type: "MatSummary",
-              summary: {
-                materialID: row.materialID,
-                partName: row.part,
-                jobUnique: "",
-                serial: row.serial,
-                workorderId: row.workorder,
-                startedProcess1: true,
-                signaledInspections: [],
-              },
-            });
-            setRoute({ route: RouteLocation.Quality_Serials });
-          }}
+          onClickDetails={
+            demo
+              ? undefined
+              : (_, row) => {
+                  setMatToShow({
+                    type: "MatSummary",
+                    summary: {
+                      materialID: row.materialID,
+                      partName: row.part,
+                      jobUnique: "",
+                      serial: row.serial,
+                      workorderId: row.workorder,
+                      startedProcess1: true,
+                      signaledInspections: [],
+                    },
+                  });
+                  setRoute({ route: RouteLocation.Quality_Serials });
+                }
+          }
         />
       </Table>
       <DataTableActions
@@ -170,7 +175,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   );
 }
 
-function RecentFailedInspectionsTable() {
+export function RecentFailedInspectionsTable() {
   const inspections = useRecoilValue(last30Inspections);
   const failed = React.useMemo(() => {
     const today = startOfToday();

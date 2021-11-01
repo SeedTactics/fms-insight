@@ -177,14 +177,6 @@ function PartMachineCycleChart() {
     }
   }, [points, curOperation]);
 
-  if (demo && selectedPart !== undefined && points.allPartAndProcNames.length !== 0) {
-    // Select below compares object equality, but it takes time to load the demo data
-    const fromLst = points.allPartAndProcNames.find((p) => p.part === "aaa" && p.proc == 2);
-    if (fromLst !== selectedPart) {
-      setSelectedPart(fromLst);
-    }
-  }
-
   return (
     <Card raised>
       <CardHeader
@@ -303,7 +295,7 @@ function PartMachineCycleChart() {
               displayEmpty
               value={selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as string))}
+              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
@@ -441,14 +433,6 @@ function PartLoadStationCycleChart() {
     }
   }, [points, selectedOperation]);
 
-  if (demo && selectedPart !== undefined && points.allPartAndProcNames.length !== 0) {
-    // Select below compares object equality, but it takes time to load the demo data
-    const fromLst = points.allPartAndProcNames.find((p) => p.part === "aaa" && p.proc == 2);
-    if (fromLst !== selectedPart) {
-      setSelectedPart(fromLst);
-    }
-  }
-
   return (
     <Card raised>
       <CardHeader
@@ -543,7 +527,7 @@ function PartLoadStationCycleChart() {
               value={selectedLoadStation}
               style={{ marginLeft: "1em" }}
               onChange={(e) => {
-                setSelectedLoadStation(e.target.value as string);
+                setSelectedLoadStation(e.target.value);
               }}
             >
               <MenuItem key={-1} value={FilterAnyLoadKey}>
@@ -563,7 +547,7 @@ function PartLoadStationCycleChart() {
               displayEmpty
               value={selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as string))}
+              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
@@ -655,7 +639,7 @@ function PalletCycleChart() {
               autoWidth
               displayEmpty
               value={selectedPallet || ""}
-              onChange={(e) => setSelectedPallet(e.target.value as string)}
+              onChange={(e) => setSelectedPallet(e.target.value)}
             >
               {selectedPallet !== undefined ? undefined : (
                 <MenuItem key={0} value="">
