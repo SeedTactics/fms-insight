@@ -167,11 +167,15 @@ function memoize<A, R>(f: (x: A) => R): (x: A) => R {
 }
 
 // https://github.com/uber/react-vis/issues/1067
-const NoSeriesPointerEvents = styled("div")<{ noPtrEvents?: boolean }>(({ noPtrEvents }) => ({
-  "& .rv-xy-plot__series.rv-xy-plot__series--mark": {
-    pointerevents: noPtrEvents ? "none" : undefined,
-  },
-}));
+const NoSeriesPointerEvents = styled("div")<{ noPtrEvents?: boolean }>(({ noPtrEvents }) =>
+  noPtrEvents
+    ? {
+        "& .rv-xy-plot__series.rv-xy-plot__series--mark": {
+          pointerevents: "none",
+        },
+      }
+    : undefined
+);
 
 // https://personal.sron.nl/~pault/
 const paulTolQualitativeColors = [

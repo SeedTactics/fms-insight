@@ -314,20 +314,34 @@ function PalletColumn(props: PalletColumnProps) {
       )}
       {props.data.stationStatus ? ( // stationStatus is defined only when no pallet
         <Box
-          sx={{
-            width: "100%",
-            flexGrow: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            display: props.fillViewPort ? "flex" : "block",
-            minHeight: props.fillViewPort ? undefined : "12em",
-          }}
+          sx={
+            props.fillViewPort
+              ? {
+                  width: "100%",
+                  flexGrow: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }
+              : {
+                  width: "100%",
+                  minHeight: "12em",
+                }
+          }
         >
           <StationStatus byStation={props.data.stationStatus} dateOfCurrentStatus={props.dateOfCurrentStatus} />
         </Box>
       ) : (
         <Box
-          sx={{ position: "relative", width: "100%", flexGrow: 1, minHeight: props.fillViewPort ? undefined : "12em" }}
+          sx={
+            props.fillViewPort
+              ? { position: "relative", width: "100%", flexGrow: 1 }
+              : {
+                  position: "relative",
+                  width: "100%",
+                  minHeight: "12em",
+                }
+          }
         >
           <Box sx={{ position: "absolute", top: "4px", left: "4px" }}>
             <Box sx={{ color: "rgba(0,0,0,0.5", fontSize: "small" }}>Pallet</Box>

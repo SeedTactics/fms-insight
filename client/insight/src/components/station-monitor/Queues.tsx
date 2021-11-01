@@ -101,10 +101,12 @@ import { useRecoilConduit } from "../../util/recoil-util";
 
 const JobTableRow = styled(TableRow)<{ noBorderBottom?: boolean; highlightedRow?: boolean; noncompletedRow?: boolean }>(
   ({ noBorderBottom, highlightedRow, noncompletedRow }) => ({
-    "& > *": {
-      borderBottom: noBorderBottom ? "unset" : undefined,
-    },
-    backgroundColor: highlightedRow ? "#FF8A65" : noncompletedRow ? "#E0E0E0" : "unset",
+    ...(noBorderBottom && {
+      "& > *": {
+        borderBottom: "unset",
+      },
+    }),
+    backgroundColor: highlightedRow ? "#FF8A65" : noncompletedRow ? "#E0E0E0" : undefined,
   })
 );
 

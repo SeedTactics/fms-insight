@@ -86,7 +86,7 @@ const ToolTableRow = styled(TableRow)<{ highlightedRow?: boolean; noticeRow?: bo
         width: "100%",
       },
     },
-    backgroundColor: highlightedRow ? "#BDBDBD" : noticeRow ? "#E0E0E0" : "unset",
+    backgroundColor: highlightedRow ? "#BDBDBD" : noticeRow ? "#E0E0E0" : undefined,
   })
 );
 

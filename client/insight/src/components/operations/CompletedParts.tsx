@@ -72,11 +72,11 @@ const JobTableRow = styled(TableRow)((props: { darkRow?: boolean }) => ({
   "& > *": {
     borderBottom: "unset",
   },
-  backgroundColor: props.darkRow ? "#F5F5F5" : "unset",
+  ...(props.darkRow && { backgroundColor: "#F5F5F5" }),
 }));
 
 const JobDetailRow = styled(TableRow)((props: { darkRow?: boolean }) => ({
-  backgroundColor: props.darkRow ? "#F5F5F5" : "unset",
+  ...(props.darkRow && { backgroundColor: "#F5F5F5" }),
 }));
 
 interface JobsRowProps {

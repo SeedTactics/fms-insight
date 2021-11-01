@@ -418,8 +418,8 @@ const logTypesToHighlight = [
 
 const LogEntryTableRow = styled(TableRow)<{ highlightProc?: boolean; invalidCycle?: boolean }>(
   ({ highlightProc, invalidCycle }) => ({
-    backgroundColor: highlightProc ? "#eeeeee" : "unset",
-    textDecoration: invalidCycle ? "line-through" : "unset",
+    ...(highlightProc && { backgroundColor: "#eeeeee" }),
+    ...(invalidCycle && { textDecoration: "line-through" }),
   })
 );
 
