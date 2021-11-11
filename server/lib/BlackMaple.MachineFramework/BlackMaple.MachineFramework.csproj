@@ -52,7 +52,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.*"/>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.*" />
 
-    <PackageReference Include="NSwag.AspNetCore" Version="13.13.2"/>
+    <PackageReference Include="NSwag.AspNetCore" Version="13.14.0"/>
     <PackageReference Include="Serilog" Version="2.10.0"/>
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0"/>
     <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0"/>
@@ -65,7 +65,7 @@
 
     <PackageReference Include="Germinate" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
   </ItemGroup>
 
   <Choose>
