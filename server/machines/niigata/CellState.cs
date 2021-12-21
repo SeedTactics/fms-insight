@@ -1211,7 +1211,9 @@ namespace BlackMaple.FMSInsight.Niigata
         var stat = pallet.Status.Tracking.ExecutedStationNumber[ss.IccStepNum - 1];
         if (stat != null)
         {
-          if (stat.Location.Location != PalletLocationEnum.Machine || stat.Location.StationGroup != ss.JobStop.StationGroup)
+          if ((stat.Location.Location != PalletLocationEnum.Machine && stat.Location.Location != PalletLocationEnum.MachineQueue)
+              || stat.Location.StationGroup != ss.JobStop.StationGroup
+             )
           {
             Log.Warning("Mismatch between executed station number and job step for {@pal}", pallet);
           }
