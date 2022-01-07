@@ -1719,7 +1719,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private static IEnumerable<WorkorderProgram> WorkorderProgramsForPart(string part, IEnumerable<Workorder> works)
+    private static IEnumerable<ProgramForJobStep> WorkorderProgramsForPart(string part, IEnumerable<Workorder> works)
     {
       return works?.Where(w => w.Part == part).FirstOrDefault()?.Programs;
     }
@@ -1738,7 +1738,7 @@ namespace BlackMaple.FMSInsight.Niigata
         );
     }
 
-    public static IEnumerable<ProgramsForProcess> WorkorderProgramsForProcess(int proc, IEnumerable<WorkorderProgram> works)
+    public static IEnumerable<ProgramsForProcess> WorkorderProgramsForProcess(int proc, IEnumerable<ProgramForJobStep> works)
     {
       return works.Where(p => p.ProcessNumber == proc).Select(p => new ProgramsForProcess()
       {
@@ -1795,7 +1795,7 @@ namespace BlackMaple.FMSInsight.Niigata
         if (mat.Workorders != null)
         {
           var nextOrCurProc = mat.Mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet ? mat.Mat.Process : mat.Mat.Process + 1;
-          foreach (var workProg in mat.Workorders.SelectMany(w => w.Programs ?? Enumerable.Empty<WorkorderProgram>()))
+          foreach (var workProg in mat.Workorders.SelectMany(w => w.Programs ?? Enumerable.Empty<ProgramForJobStep>()))
           {
             if (workProg.Revision.HasValue && workProg.ProcessNumber >= nextOrCurProc)
             {

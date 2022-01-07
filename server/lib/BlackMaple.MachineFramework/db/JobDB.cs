@@ -523,7 +523,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
         ((IDbCommand)prgCmd).Transaction = trans;
 
-        var ret = new Dictionary<(string work, string part), (Workorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
+        var ret = new Dictionary<(string work, string part), (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
         cmd.CommandText = "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision " +
           " FROM unfilled_workorders w " +
           " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -544,15 +544,15 @@ namespace BlackMaple.MachineFramework
                 Quantity = reader.GetInt32(2),
                 DueDate = new DateTime(reader.GetInt64(3)),
                 Priority = reader.GetInt32(4),
-                Programs = ImmutableList<WorkorderProgram>.Empty
+                Programs = ImmutableList<ProgramForJobStep>.Empty
               };
-              ret.Add((work: workId, part: part), (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
+              ret.Add((work: workId, part: part), (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
             }
 
             if (reader.IsDBNull(5)) continue;
 
             // add the program
-            ret[(work: workId, part: part)].progs.Add(new WorkorderProgram()
+            ret[(work: workId, part: part)].progs.Add(new ProgramForJobStep()
             {
               ProcessNumber = reader.GetInt32(5),
               StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
@@ -741,7 +741,7 @@ namespace BlackMaple.MachineFramework
 
           var sid = LatestScheduleId(trans);
 
-          var ret = new Dictionary<string, (Workorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
+          var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
           cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -764,13 +764,13 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
+                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[workId].progs.Add(new WorkorderProgram()
+              ret[workId].progs.Add(new ProgramForJobStep()
               {
                 ProcessNumber = reader.GetInt32(4),
                 StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
@@ -792,7 +792,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          var ret = new Dictionary<string, (Workorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
+          var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
           cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -817,13 +817,13 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
+                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[part].progs.Add(new WorkorderProgram()
+              ret[part].progs.Add(new ProgramForJobStep()
               {
                 ProcessNumber = reader.GetInt32(4),
                 StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),

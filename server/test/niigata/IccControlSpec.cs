@@ -2173,12 +2173,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           },
           workorders: new[] {
             new Workorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = null },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = null },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
             )},
             new Workorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
             )}
           }
         )
@@ -2263,12 +2263,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ReplaceWorkorders(
           new[] {
             new Workorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 10 }, // this is the only one that changes
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 10 }, // this is the only one that changes
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
             )},
             new Workorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
             )}
           },
           new[] {
@@ -2449,12 +2449,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ReplaceWorkorders(
           new[] {
             new Workorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 11 }, // this is the only one that changes
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 11 }, // this is the only one that changes
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
             )},
             new Workorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
             )}
           },
           new[] {

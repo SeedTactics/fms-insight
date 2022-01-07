@@ -670,16 +670,16 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = null },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = null }
+    new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = null },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = null }
         });
       };
       initialWorks[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 6 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 6 }
         });
       };
 
@@ -727,9 +727,9 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+    new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
         });
       };
 
@@ -841,16 +841,16 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+    new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
         });
       };
       newWorkorders[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
         });
       };
 
@@ -860,7 +860,7 @@ namespace MachineWatchTest
         draft.Quantity = 10;
         draft.Programs.Clear();
         draft.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
         });
       }));
 
@@ -878,14 +878,14 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
         });
       };
       newWorkorders[newWorkorders.Count - 1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
         });
       };
 
@@ -1221,18 +1221,18 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = -2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = -1 }
+      new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = -2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = -1 }
           });
       };
       initialWorks[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = -2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = -2 }
+      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = -2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = -2 }
           });
       };
 
@@ -1330,18 +1330,18 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+      new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
           });
       };
       initialWorks[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 7 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = 3 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = 5 }
+      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 7 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = 3 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = 5 }
           });
       };
 

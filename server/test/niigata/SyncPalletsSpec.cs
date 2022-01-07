@@ -976,11 +976,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       WorkorderId = "work1",
       Part = "aaa",
       Programs = ImmutableList.Create(
-      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
+      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
     )
     },
     new Workorder()
@@ -988,11 +988,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       WorkorderId = "work2",
       Part = "aaa",
       Programs = ImmutableList.Create(
-      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
-      new WorkorderProgram() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
+      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
+      new ProgramForJobStep() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
     )
     }
         });

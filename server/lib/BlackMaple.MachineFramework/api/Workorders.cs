@@ -81,31 +81,6 @@ namespace BlackMaple.MachineFramework
   }
 
   [DataContract, Draftable]
-  public record WorkorderProgram
-  {
-    /// <summary>Identifies the process on the part that this program is for.</summary>
-    [DataMember(IsRequired = true)]
-    public int ProcessNumber { get; init; }
-
-    /// <summary>Identifies which machine stop on the part that this program is for (only needed if a process has multiple
-    /// machining stops before unload).  The stop numbers are zero-indexed.</summary>
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public int? StopIndex { get; init; }
-
-    /// <summary>The program name, used to find the program contents.</summary>
-    [DataMember(IsRequired = true)]
-    public string ProgramName { get; init; } = "";
-
-    ///<summary>The program revision to run.  Can be negative during download, is treated identically to how the revision
-    ///in JobMachiningStop works.</summary>
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public long? Revision { get; init; }
-
-    public static WorkorderProgram operator %(WorkorderProgram w, Action<IWorkorderProgramDraft> f)
-       => w.Produce(f);
-  }
-
-  [DataContract, Draftable]
   public record Workorder
   {
     [DataMember(IsRequired = true)] public string WorkorderId { get; init; } = "";
@@ -116,7 +91,7 @@ namespace BlackMaple.MachineFramework
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<WorkorderProgram>? Programs { get; init; } = ImmutableList<WorkorderProgram>.Empty;
+    public ImmutableList<ProgramForJobStep>? Programs { get; init; } = ImmutableList<ProgramForJobStep>.Empty;
 
     public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f)
        => w.Produce(f);
