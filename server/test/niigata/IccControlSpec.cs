@@ -2272,7 +2272,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             )}
           },
           new[] {
-            new MachineFramework.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
+            new MachineFramework.NewProgramContent() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
           }
         )
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
@@ -2458,7 +2458,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             )}
           },
           new[] {
-            new MachineFramework.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 11 ct", Revision = 11}
+            new MachineFramework.NewProgramContent() { ProgramName = "prog111", ProgramContent = "prog111 rev 11 ct", Revision = 11}
           }
         )
         .UpdateExpectedMaterial(queuedMat5.MaterialID, m =>

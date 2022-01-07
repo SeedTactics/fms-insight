@@ -270,7 +270,7 @@ namespace MazakMachineInterface
       _onCurStatusChange(st);
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<NewProgramContent> programs)
     {
       if (newWorkorders != null && newWorkorders.Any(w => w.Programs != null && w.Programs.Any()))
       {

@@ -1008,7 +1008,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void AddPrograms(IEnumerable<ProgramEntry> programs, DateTime startingUtc)
+    public void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc)
     {
       lock (_cfg)
       {
@@ -1744,7 +1744,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs, DateTime? nowUtc = null)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<NewProgramContent> programs, DateTime? nowUtc = null)
     {
       lock (_cfg)
       {
@@ -1972,7 +1972,7 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Programs
-    private Dictionary<(string prog, long rev), long> AddPrograms(IDbTransaction transaction, IEnumerable<ProgramEntry> programs, DateTime nowUtc)
+    private Dictionary<(string prog, long rev), long> AddPrograms(IDbTransaction transaction, IEnumerable<NewProgramContent> programs, DateTime nowUtc)
     {
       if (programs == null || !programs.Any()) return new Dictionary<(string prog, long rev), long>();
 

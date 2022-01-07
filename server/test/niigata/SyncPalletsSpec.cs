@@ -219,7 +219,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Jobs = jobs,
         Programs =
             progs.Select(p =>
-            new MachineFramework.ProgramEntry()
+            new MachineFramework.NewProgramContent()
             {
               ProgramName = p.prog,
               Revision = p.rev,
@@ -997,11 +997,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
         });
         j.Programs.AddRange(new[] {
-    new MachineFramework.ProgramEntry() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
-    new MachineFramework.ProgramEntry() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
-    new MachineFramework.ProgramEntry() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
-    new MachineFramework.ProgramEntry() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
-    new MachineFramework.ProgramEntry() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
+    new MachineFramework.NewProgramContent() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
+    new MachineFramework.NewProgramContent() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
+    new MachineFramework.NewProgramContent() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
+    new MachineFramework.NewProgramContent() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
+    new MachineFramework.NewProgramContent() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
         });
       };
 

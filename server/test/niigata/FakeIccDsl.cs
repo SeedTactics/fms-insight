@@ -806,7 +806,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Jobs = jobs.Select(MachineWatchTest.LegacyToNewJobConvert.ToHistoricJob).ToImmutableList<Job>(),
         Programs =
             progs.Select(p =>
-            new MachineFramework.ProgramEntry()
+            new MachineFramework.NewProgramContent()
             {
               ProgramName = p.prog,
               Revision = p.rev,
@@ -841,7 +841,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl ReplaceWorkorders(IEnumerable<PartWorkorder> workorders, IEnumerable<MachineFramework.ProgramEntry> programs)
+    public FakeIccDsl ReplaceWorkorders(IEnumerable<PartWorkorder> workorders, IEnumerable<MachineFramework.NewProgramContent> programs)
     {
       _logDB.ReplaceWorkordersForSchedule(_logDB.LoadMostRecentSchedule().LatestScheduleId, workorders, programs);
       return this;

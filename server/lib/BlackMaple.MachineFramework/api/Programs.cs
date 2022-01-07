@@ -70,8 +70,9 @@ namespace BlackMaple.MachineFramework
     public string? CellControllerProgramName { get; init; }
   }
 
+  /// Represents the content of a new program revision which is passed into FMS Insight as part of a new schedule.
   [DataContract]
-  public record ProgramEntry
+  public record NewProgramContent
   {
     [DataMember(IsRequired = true)] public string ProgramName { get; init; } = "";
     [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Comment { get; init; }

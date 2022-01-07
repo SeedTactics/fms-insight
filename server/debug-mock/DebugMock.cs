@@ -690,7 +690,7 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<NewProgramContent> programs)
     {
       LogDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
     }

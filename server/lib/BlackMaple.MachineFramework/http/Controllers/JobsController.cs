@@ -103,7 +103,7 @@ namespace BlackMaple.MachineFramework.Controllers
       [DataMember(IsRequired = true)]
       public IReadOnlyList<PartWorkorder> Workorders { get; init; }
       [DataMember(IsRequired = false, EmitDefaultValue = false)]
-      public IReadOnlyList<ProgramEntry> Programs { get; init; }
+      public IReadOnlyList<NewProgramContent> Programs { get; init; }
     }
 
     [HttpPut("unfilled-workorders/by-schid/{scheduleId}")]

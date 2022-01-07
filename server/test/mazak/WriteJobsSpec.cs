@@ -387,12 +387,12 @@ namespace MachineWatchTest
       );
 
       _jobDB.AddPrograms(new[] {
-        new ProgramEntry() {
+        new NewProgramContent() {
           ProgramName = "prog-aaa-1",
           Revision = 7,
           ProgramContent = "prog-aaa-1 content rev 7"
         },
-        new ProgramEntry() {
+        new NewProgramContent() {
           ProgramName = "prog-bbb-1",
           Revision = 3,
           ProgramContent = "prog-bbb-1 content rev 3"
