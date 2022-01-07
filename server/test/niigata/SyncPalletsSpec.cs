@@ -971,7 +971,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
         }
         j.CurrentUnfilledWorkorders.AddRange(new[] {
-    new PartWorkorder()
+    new Workorder()
     {
       WorkorderId = "work1",
       Part = "aaa",
@@ -983,7 +983,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       new WorkorderProgram() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
     )
     },
-    new PartWorkorder()
+    new Workorder()
     {
       WorkorderId = "work2",
       Part = "aaa",

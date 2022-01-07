@@ -124,7 +124,7 @@ namespace Makino
       //do nothing
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<NewProgramContent> programs)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
     {
       // do nothing
     }

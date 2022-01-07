@@ -54,7 +54,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     public InProcessMaterial Mat { get; set; }
     public Job Job { get; init; }
-    public ImmutableList<PartWorkorder> Workorders { get; init; }
+    public ImmutableList<Workorder> Workorders { get; init; }
   }
 
   public class PalletAndMaterial
@@ -1608,7 +1608,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public int QueuePosition { get; set; }
       public Dictionary<int, int> Paths { get; set; }
       public int NextProcess { get; set; }
-      public ImmutableList<PartWorkorder> Workorders { get; set; }
+      public ImmutableList<Workorder> Workorders { get; set; }
     }
 
     public static bool FilterMaterialAvailableToLoadOntoFace(QueuedMaterialWithDetails mat, PalletFace face, NiigataStationNames statNames)
@@ -1719,7 +1719,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private static IEnumerable<WorkorderProgram> WorkorderProgramsForPart(string part, IEnumerable<PartWorkorder> works)
+    private static IEnumerable<WorkorderProgram> WorkorderProgramsForPart(string part, IEnumerable<Workorder> works)
     {
       return works?.Where(w => w.Part == part).FirstOrDefault()?.Programs;
     }

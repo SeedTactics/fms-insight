@@ -828,7 +828,7 @@ namespace BlackMaple.FMSInsight.Niigata
       else
       {
         // search in workorders
-        foreach (var work in cellSt.QueuedMaterial.Concat(cellSt.Pallets.SelectMany(p => p.Material)).SelectMany(m => m.Workorders ?? Enumerable.Empty<PartWorkorder>()).Where(w => w.Programs != null))
+        foreach (var work in cellSt.QueuedMaterial.Concat(cellSt.Pallets.SelectMany(p => p.Material)).SelectMany(m => m.Workorders ?? Enumerable.Empty<Workorder>()).Where(w => w.Programs != null))
         {
           var workProg = work.Programs.FirstOrDefault(p => p.ProgramName == prog.ProgramName && p.Revision == prog.Revision);
           if (workProg != null)

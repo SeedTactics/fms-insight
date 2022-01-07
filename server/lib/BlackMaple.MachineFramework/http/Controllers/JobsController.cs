@@ -87,7 +87,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("unfilled-workorders/by-part/{part}")]
-    public IList<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
+    public IList<Workorder> MostRecentUnfilledWorkordersForPart(string part)
     {
       if (string.IsNullOrEmpty(part))
         throw new BadRequestException("Part must be non-empty");
@@ -101,7 +101,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public record WorkordersAndPrograms
     {
       [DataMember(IsRequired = true)]
-      public IReadOnlyList<PartWorkorder> Workorders { get; init; }
+      public IReadOnlyList<Workorder> Workorders { get; init; }
       [DataMember(IsRequired = false, EmitDefaultValue = false)]
       public IReadOnlyList<NewProgramContent> Programs { get; init; }
     }

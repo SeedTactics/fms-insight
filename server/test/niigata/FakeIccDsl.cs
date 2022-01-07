@@ -796,7 +796,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedStartedQty[unique] = cnt;
       return this;
     }
-    public FakeIccDsl AddJobs(IEnumerable<MachineWatchInterface.JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<PartWorkorder> workorders = null)
+    public FakeIccDsl AddJobs(IEnumerable<MachineWatchInterface.JobPlan> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<Workorder> workorders = null)
     {
       if (progs == null)
         progs = Enumerable.Empty<(string prog, long rev)>();
@@ -841,7 +841,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl ReplaceWorkorders(IEnumerable<PartWorkorder> workorders, IEnumerable<MachineFramework.NewProgramContent> programs)
+    public FakeIccDsl ReplaceWorkorders(IEnumerable<Workorder> workorders, IEnumerable<MachineFramework.NewProgramContent> programs)
     {
       _logDB.ReplaceWorkordersForSchedule(_logDB.LoadMostRecentSchedule().LatestScheduleId, workorders, programs);
       return this;

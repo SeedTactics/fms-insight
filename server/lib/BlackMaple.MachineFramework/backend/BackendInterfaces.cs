@@ -49,7 +49,7 @@ namespace BlackMaple.MachineFramework
 
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell);
-    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<NewProgramContent> programs);
+    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs);
 
     void SetJobComment(string jobUnique, string comment);
 

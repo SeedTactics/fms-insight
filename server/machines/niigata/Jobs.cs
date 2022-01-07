@@ -176,7 +176,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      foreach (var w in jobs.CurrentUnfilledWorkorders ?? Enumerable.Empty<PartWorkorder>())
+      foreach (var w in jobs.CurrentUnfilledWorkorders ?? Enumerable.Empty<Workorder>())
       {
         if (w.Programs != null)
         {
@@ -322,7 +322,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineFramework.NewProgramContent> programs)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<MachineFramework.NewProgramContent> programs)
     {
       var cellState = _sync.CurrentCellState();
       if (cellState == null) return;
@@ -330,7 +330,7 @@ namespace BlackMaple.FMSInsight.Niigata
       using (var jdb = _jobDbCfg.OpenConnection())
       {
         var errors = new List<string>();
-        foreach (var w in newWorkorders ?? Enumerable.Empty<PartWorkorder>())
+        foreach (var w in newWorkorders ?? Enumerable.Empty<Workorder>())
         {
           if (w.Programs != null)
           {

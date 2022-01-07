@@ -68,7 +68,7 @@ namespace MachineWatchTest
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
       var job1ExtraParts = _fixture.Create<Dictionary<string, int>>();
-      var job1UnfilledWorks = _fixture.Create<List<PartWorkorder>>();
+      var job1UnfilledWorks = _fixture.Create<List<Workorder>>();
       var job1StatUse = RandSimStationUse(schId, job1.RouteStartUTC);
       var addAsCopied = _fixture.Create<bool>();
 
@@ -129,8 +129,8 @@ namespace MachineWatchTest
       };
       var job2SimUse = RandSimStationUse(schId2, job2.RouteStartUTC);
       var job2ExtraParts = _fixture.Create<Dictionary<string, int>>();
-      var job2UnfilledWorks = _fixture.Create<List<PartWorkorder>>();
-      job2UnfilledWorks.Add(_fixture.Create<PartWorkorder>() with
+      var job2UnfilledWorks = _fixture.Create<List<Workorder>>();
+      job2UnfilledWorks.Add(_fixture.Create<Workorder>() with
       {
         Part = job1UnfilledWorks[0].Part
       });
@@ -665,7 +665,7 @@ namespace MachineWatchTest
         })
         ;
 
-      var initialWorks = _fixture.Create<List<PartWorkorder>>();
+      var initialWorks = _fixture.Create<List<Workorder>>();
       initialWorks[0] %= w =>
       {
         w.Programs.Clear();
@@ -836,7 +836,7 @@ namespace MachineWatchTest
       _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
 
       // replaces workorders
-      var newWorkorders = _fixture.Create<List<PartWorkorder>>();
+      var newWorkorders = _fixture.Create<List<Workorder>>();
       newWorkorders[0] %= w =>
       {
         w.Programs.Clear();
@@ -1216,7 +1216,7 @@ namespace MachineWatchTest
         })
         ;
 
-      var initialWorks = _fixture.Create<List<PartWorkorder>>();
+      var initialWorks = _fixture.Create<List<Workorder>>();
       initialWorks[0] %= w =>
       {
         w.Programs.Clear();

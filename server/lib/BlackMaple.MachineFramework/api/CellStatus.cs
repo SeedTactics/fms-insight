@@ -101,6 +101,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)] public ImmutableDictionary<string, int> ExtraParts { get; init; } = ImmutableDictionary<string, int>.Empty;
 
     [DataMember(IsRequired = false)]
-    public ImmutableList<PartWorkorder>? CurrentUnfilledWorkorders { get; init; }
+    public ImmutableList<Workorder>? CurrentUnfilledWorkorders { get; init; }
   }
 }

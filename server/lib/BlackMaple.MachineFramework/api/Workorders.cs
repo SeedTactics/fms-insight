@@ -106,7 +106,7 @@ namespace BlackMaple.MachineFramework
   }
 
   [DataContract, Draftable]
-  public record PartWorkorder
+  public record Workorder
   {
     [DataMember(IsRequired = true)] public string WorkorderId { get; init; } = "";
     [DataMember(IsRequired = true)] public string Part { get; init; } = "";
@@ -118,7 +118,7 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<WorkorderProgram>? Programs { get; init; } = ImmutableList<WorkorderProgram>.Empty;
 
-    public static PartWorkorder operator %(PartWorkorder w, Action<IPartWorkorderDraft> f)
+    public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f)
        => w.Produce(f);
   }
 
