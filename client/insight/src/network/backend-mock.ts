@@ -49,7 +49,7 @@ export interface MockData {
 interface TransformedMockData {
   readonly curSt: api.ICurrentStatus;
   readonly jobs: api.IHistoricData;
-  readonly workorders: Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>;
+  readonly workorders: Map<string, ReadonlyArray<Readonly<api.IWorkorder>>>;
   readonly tools: ReadonlyArray<Readonly<api.IToolInMachine>>;
   readonly programs: ReadonlyArray<Readonly<api.IProgramInCellController>>;
 }
@@ -110,7 +110,7 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
   return {
     curSt: status,
     jobs: historic,
-    workorders: new Map<string, ReadonlyArray<Readonly<api.IPartWorkorder>>>(),
+    workorders: new Map<string, ReadonlyArray<Readonly<api.IWorkorder>>>(),
     tools: mockD.tools.map(api.ToolInMachine.fromJS),
     programs: mockD.programs.map(api.ProgramInCellController.fromJS),
   };
@@ -183,7 +183,7 @@ export function registerMockBackend(
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
       return data.then((d) => d.curSt);
     },
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
+    mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IWorkorder>>> {
       return data.then((d) => d.workorders.get(part) || []);
     },
     setJobComment(_uniq: string, _comment: string): Promise<void> {

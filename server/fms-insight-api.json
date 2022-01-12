@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v13.13.2.0 (NJsonSchema v10.5.2.0 (Newtonsoft.Json v12.0.0.0))",
+  "x-generator": "NSwag v13.14.0.0 (NJsonSchema v10.5.2.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -361,7 +361,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PartWorkorder"
+                    "$ref": "#/components/schemas/Workorder"
                   }
                 }
               }
@@ -2455,14 +2455,14 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/PartWorkorder"
+              "$ref": "#/components/schemas/Workorder"
             }
           },
           "Programs": {
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/ProgramEntry"
+              "$ref": "#/components/schemas/NewProgramContent"
             }
           },
           "DebugMessage": {
@@ -2838,7 +2838,7 @@
           }
         }
       },
-      "PartWorkorder": {
+      "Workorder": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -2871,12 +2871,12 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/WorkorderProgram"
+              "$ref": "#/components/schemas/ProgramForJobStep"
             }
           }
         }
       },
-      "WorkorderProgram": {
+      "ProgramForJobStep": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -2903,7 +2903,7 @@
           }
         }
       },
-      "ProgramEntry": {
+      "NewProgramContent": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -3396,7 +3396,6 @@
           },
           "Extensions": {
             "type": "object",
-            "nullable": true,
             "additionalProperties": {}
           }
         }
@@ -3452,7 +3451,7 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/PartWorkorder"
+              "$ref": "#/components/schemas/Workorder"
             }
           }
         }
@@ -3468,14 +3467,14 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/PartWorkorder"
+              "$ref": "#/components/schemas/Workorder"
             }
           },
           "Programs": {
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/ProgramEntry"
+              "$ref": "#/components/schemas/NewProgramContent"
             }
           }
         }

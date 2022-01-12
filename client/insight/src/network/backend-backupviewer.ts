@@ -185,7 +185,7 @@ const JobsBackend = {
       timeOfCurrentStatusUTC: new Date(),
     });
   },
-  mostRecentUnfilledWorkordersForPart(): Promise<ReadonlyArray<Readonly<api.IPartWorkorder>>> {
+  mostRecentUnfilledWorkordersForPart(): Promise<ReadonlyArray<Readonly<api.IWorkorder>>> {
     return Promise.resolve([]);
   },
   setJobComment(): Promise<void> {
