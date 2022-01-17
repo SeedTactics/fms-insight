@@ -40,7 +40,7 @@ import {
   IInProcessMaterial,
   ILogEntry,
   ILogMaterial,
-  IPartWorkorder,
+  IWorkorder,
   IWorkorderPartSummary,
   IWorkorderSummary,
   LogType,
@@ -341,7 +341,7 @@ export function BarcodeListener(): null {
 //--------------------------------------------------------------------------------
 
 export interface WorkorderPlanAndSummary {
-  readonly plan: Readonly<IPartWorkorder>;
+  readonly plan: Readonly<IWorkorder>;
   readonly summary?: Readonly<IWorkorderPartSummary>;
 }
 

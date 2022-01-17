@@ -168,16 +168,16 @@ namespace BlackMaple.MachineFramework
     HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
     HistoricData LoadJobsAfterScheduleId(string schId);
     PlannedSchedule LoadMostRecentSchedule();
-    IReadOnlyList<PartWorkorder> MostRecentWorkorders();
-    List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part);
-    List<PartWorkorder> WorkordersById(string workorderId);
+    IReadOnlyList<Workorder> MostRecentWorkorders();
+    List<Workorder> MostRecentUnfilledWorkordersForPart(string part);
+    List<Workorder> WorkordersById(string workorderId);
 
 
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs
     // --------------------------------------------------------------------------------
     void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
-    void AddPrograms(IEnumerable<ProgramEntry> programs, DateTime startingUtc);
+    void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc);
     void ArchiveJob(string UniqueStr);
     void ArchiveJobs(IEnumerable<string> uniqueStrs, IEnumerable<NewDecrementQuantity> newDecrements = null, DateTime? nowUTC = null);
     void UnarchiveJob(string UniqueStr);
@@ -187,7 +187,7 @@ namespace BlackMaple.MachineFramework
     void UpdateJobHold(string unique, HoldPattern newHold);
     void UpdateJobLoadUnloadHold(string unique, int proc, int path, HoldPattern newHold);
     void UpdateJobMachiningHold(string unique, int proc, int path, HoldPattern newHold);
-    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs, DateTime? nowUtc = null);
+    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs, DateTime? nowUtc = null);
 
 
     // --------------------------------------------------------------------------------

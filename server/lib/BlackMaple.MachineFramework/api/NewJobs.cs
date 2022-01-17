@@ -71,10 +71,10 @@ namespace BlackMaple.MachineFramework
     public ImmutableDictionary<string, int>? ExtraParts { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<PartWorkorder>? CurrentUnfilledWorkorders { get; init; }
+    public ImmutableList<Workorder>? CurrentUnfilledWorkorders { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<ProgramEntry>? Programs { get; init; }
+    public ImmutableList<NewProgramContent>? Programs { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public byte[]? DebugMessage { get; init; }

@@ -2172,13 +2172,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             (prog: "prog333", rev: 7L),
           },
           workorders: new[] {
-            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = null },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+            new Workorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = null },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
             )},
-            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+            new Workorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
             )}
           }
         )
@@ -2262,17 +2262,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         /// update work1 process 1 to have a new program, old already running program should not be changed because part is loaded already
         .ReplaceWorkorders(
           new[] {
-            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 10 }, // this is the only one that changes
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+            new Workorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 10 }, // this is the only one that changes
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
             )},
-            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+            new Workorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
             )}
           },
           new[] {
-            new MachineFramework.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
+            new MachineFramework.NewProgramContent() { ProgramName = "prog111", ProgramContent = "prog111 rev 10 ct", Revision = 10}
           }
         )
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
@@ -2448,17 +2448,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // replace workorders again, just updating work1 process 1 program.  Everything else unchanged.
         .ReplaceWorkorders(
           new[] {
-            new PartWorkorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 11 }, // this is the only one that changes
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
+            new Workorder() { WorkorderId = "work1", Part = "part1", Programs = ImmutableList.Create(
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 11 }, // this is the only one that changes
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog222", Revision = 6 }
             )},
-            new PartWorkorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
-              new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
-              new WorkorderProgram() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
+            new Workorder() { WorkorderId = "work2", Part = "part1", Programs = ImmutableList.Create(
+              new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "prog111", Revision = 4 },
+              new ProgramForJobStep() { ProcessNumber = 2, ProgramName = "prog333", Revision = 7 }
             )}
           },
           new[] {
-            new MachineFramework.ProgramEntry() { ProgramName = "prog111", ProgramContent = "prog111 rev 11 ct", Revision = 11}
+            new MachineFramework.NewProgramContent() { ProgramName = "prog111", ProgramContent = "prog111 rev 11 ct", Revision = 11}
           }
         )
         .UpdateExpectedMaterial(queuedMat5.MaterialID, m =>

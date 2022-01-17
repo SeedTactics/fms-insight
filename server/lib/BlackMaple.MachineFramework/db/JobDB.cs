@@ -515,7 +515,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<PartWorkorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
+    private ImmutableList<Workorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
     {
       using (var cmd = _connection.CreateCommand())
       using (var prgCmd = _connection.CreateCommand())
@@ -523,7 +523,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
         ((IDbCommand)prgCmd).Transaction = trans;
 
-        var ret = new Dictionary<(string work, string part), (PartWorkorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
+        var ret = new Dictionary<(string work, string part), (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
         cmd.CommandText = "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision " +
           " FROM unfilled_workorders w " +
           " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -537,22 +537,22 @@ namespace BlackMaple.MachineFramework
             var part = reader.GetString(1);
             if (!ret.ContainsKey((work: workId, part: part)))
             {
-              var workorder = new PartWorkorder()
+              var workorder = new Workorder()
               {
                 WorkorderId = workId,
                 Part = part,
                 Quantity = reader.GetInt32(2),
                 DueDate = new DateTime(reader.GetInt64(3)),
                 Priority = reader.GetInt32(4),
-                Programs = ImmutableList<WorkorderProgram>.Empty
+                Programs = ImmutableList<ProgramForJobStep>.Empty
               };
-              ret.Add((work: workId, part: part), (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
+              ret.Add((work: workId, part: part), (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
             }
 
             if (reader.IsDBNull(5)) continue;
 
             // add the program
-            ret[(work: workId, part: part)].progs.Add(new WorkorderProgram()
+            ret[(work: workId, part: part)].progs.Add(new ProgramForJobStep()
             {
               ProcessNumber = reader.GetInt32(5),
               StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
@@ -718,7 +718,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IReadOnlyList<PartWorkorder> MostRecentWorkorders()
+    public IReadOnlyList<Workorder> MostRecentWorkorders()
     {
       lock (_cfg)
       {
@@ -730,7 +730,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<PartWorkorder> MostRecentUnfilledWorkordersForPart(string part)
+    public List<Workorder> MostRecentUnfilledWorkordersForPart(string part)
     {
       lock (_cfg)
       {
@@ -741,7 +741,7 @@ namespace BlackMaple.MachineFramework
 
           var sid = LatestScheduleId(trans);
 
-          var ret = new Dictionary<string, (PartWorkorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
+          var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
           cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -756,7 +756,7 @@ namespace BlackMaple.MachineFramework
               var workId = reader.GetString(0);
               if (!ret.ContainsKey(workId))
               {
-                var workorder = new PartWorkorder()
+                var workorder = new Workorder()
                 {
                   WorkorderId = workId,
                   Part = part,
@@ -764,13 +764,13 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
+                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[workId].progs.Add(new WorkorderProgram()
+              ret[workId].progs.Add(new ProgramForJobStep()
               {
                 ProcessNumber = reader.GetInt32(4),
                 StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
@@ -786,13 +786,13 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<PartWorkorder> WorkordersById(string workorderId)
+    public List<Workorder> WorkordersById(string workorderId)
     {
       lock (_cfg)
       {
         using (var cmd = _connection.CreateCommand())
         {
-          var ret = new Dictionary<string, (PartWorkorder work, ImmutableList<WorkorderProgram>.Builder progs)>();
+          var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
           cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
             " FROM unfilled_workorders w " +
             " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
@@ -809,7 +809,7 @@ namespace BlackMaple.MachineFramework
 
               if (!ret.ContainsKey(part))
               {
-                var workorder = new PartWorkorder()
+                var workorder = new Workorder()
                 {
                   WorkorderId = workorderId,
                   Part = part,
@@ -817,13 +817,13 @@ namespace BlackMaple.MachineFramework
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3)
                 };
-                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<WorkorderProgram>()));
+                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
 
               if (reader.IsDBNull(4)) continue;
 
               // add the program
-              ret[part].progs.Add(new WorkorderProgram()
+              ret[part].progs.Add(new ProgramForJobStep()
               {
                 ProcessNumber = reader.GetInt32(4),
                 StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
@@ -1008,7 +1008,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void AddPrograms(IEnumerable<ProgramEntry> programs, DateTime startingUtc)
+    public void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc)
     {
       lock (_cfg)
       {
@@ -1443,7 +1443,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddUnfilledWorkorders(IDbTransaction trans, string scheduleId, IEnumerable<PartWorkorder> workorders, Dictionary<(string prog, long rev), long> negativeRevisionMap)
+    private void AddUnfilledWorkorders(IDbTransaction trans, string scheduleId, IEnumerable<Workorder> workorders, Dictionary<(string prog, long rev), long> negativeRevisionMap)
     {
       using (var cmd = _connection.CreateCommand())
       using (var prgCmd = _connection.CreateCommand())
@@ -1744,7 +1744,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<ProgramEntry> programs, DateTime? nowUtc = null)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs, DateTime? nowUtc = null)
     {
       lock (_cfg)
       {
@@ -1972,7 +1972,7 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Programs
-    private Dictionary<(string prog, long rev), long> AddPrograms(IDbTransaction transaction, IEnumerable<ProgramEntry> programs, DateTime nowUtc)
+    private Dictionary<(string prog, long rev), long> AddPrograms(IDbTransaction transaction, IEnumerable<NewProgramContent> programs, DateTime nowUtc)
     {
       if (programs == null || !programs.Any()) return new Dictionary<(string prog, long rev), long>();
 

@@ -176,7 +176,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      foreach (var w in jobs.CurrentUnfilledWorkorders ?? Enumerable.Empty<PartWorkorder>())
+      foreach (var w in jobs.CurrentUnfilledWorkorders ?? Enumerable.Empty<Workorder>())
       {
         if (w.Programs != null)
         {
@@ -194,7 +194,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return errors;
     }
 
-    private void CheckProgram(string programName, long? rev, IEnumerable<MachineFramework.ProgramEntry> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
+    private void CheckProgram(string programName, long? rev, IEnumerable<MachineFramework.NewProgramContent> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
     {
       if (rev.HasValue && rev.Value > 0)
       {
@@ -322,7 +322,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<PartWorkorder> newWorkorders, IEnumerable<MachineFramework.ProgramEntry> programs)
+    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<MachineFramework.NewProgramContent> programs)
     {
       var cellState = _sync.CurrentCellState();
       if (cellState == null) return;
@@ -330,7 +330,7 @@ namespace BlackMaple.FMSInsight.Niigata
       using (var jdb = _jobDbCfg.OpenConnection())
       {
         var errors = new List<string>();
-        foreach (var w in newWorkorders ?? Enumerable.Empty<PartWorkorder>())
+        foreach (var w in newWorkorders ?? Enumerable.Empty<Workorder>())
         {
           if (w.Programs != null)
           {

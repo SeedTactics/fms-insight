@@ -26,7 +26,7 @@
     },
     {
       "label": "debug-mock:run",
-      "command": "dotnet run -p server/debug-mock",
+      "command": "dotnet run --project server/debug-mock",
       "type": "shell",
       "presentation": {
         "reveal": "silent",

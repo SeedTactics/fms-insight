@@ -103,6 +103,11 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "StationNums", IsRequired = true)]
     public ImmutableList<int> Stations { get; init; } = ImmutableList<int>.Empty;
 
+    // Programs can be specified in two possible ways: either here as part of the job or separately as part of
+    // the workorder.  If this value is non-null, it specifies the program name to use for this machining step.
+    // The program itself is found either by matching program name already existing in the cell controller or a program included
+    // as part of the download in a NewProgramEntry structure.  If this is null, it means that programs are instead
+    // specified in workorders, as part of the ProgramForJobStep record.
     [DataMember(Name = "Program", IsRequired = false)]
     public string? Program { get; init; }
 
@@ -111,8 +116,8 @@ namespace BlackMaple.MachineFramework
     //     or the most recent revision in the database.
     //   * A positive revision number will use this specified revision which must exist in the database or
     //     be included in the Programs field of the NewJobs structure accompaning the downloaded job.
-    //   * A negative revision number must match a ProgramEntry in the NewJobs structure accompaning the download.
-    //     The ProgramEntry will be assigned a (positive) revision during the download and then this stop will
+    //   * A negative revision number must match a NewProgramEntry in the NewJobs structure accompaning the download.
+    //     The NewProgramEntry will be assigned a (positive) revision during the download and then this stop will
     //     be updated to use that (positive) revision.
     // When loading Jobs,
     //   * A null revision means the program already exists in the cell controller and the DB is not managing programs.

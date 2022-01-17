@@ -10,7 +10,7 @@
     "start": "vite",
     "test": "jest --ci --runInBand",
     "test:watch": "jest --watch",
-    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:Net50 /input:../../server/fms-insight-api.json /output:src/network/api.ts"
+    "nswag": "./node_modules/nswag/bin/nswag.js swagger2tsclient /runtime:Net60 /input:../../server/fms-insight-api.json /output:src/network/api.ts"
   },
   "packageManager": "pnpm@6.14.7",
   "dependencies": {
@@ -63,7 +63,7 @@
     "eslint-plugin-react-hooks": "^4.2.0",
     "faker": "^5.5.3",
     "jest": "^27.3.1",
-    "nswag": "^13.13.2",
+    "nswag": "^13.15.5",
     "prettier": "^2.4.1",
     "ts-jest": "^27.0.7",
     "typescript": "^4.4.4",

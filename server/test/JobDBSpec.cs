@@ -68,7 +68,7 @@ namespace MachineWatchTest
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
       var job1ExtraParts = _fixture.Create<Dictionary<string, int>>();
-      var job1UnfilledWorks = _fixture.Create<List<PartWorkorder>>();
+      var job1UnfilledWorks = _fixture.Create<List<Workorder>>();
       var job1StatUse = RandSimStationUse(schId, job1.RouteStartUTC);
       var addAsCopied = _fixture.Create<bool>();
 
@@ -129,8 +129,8 @@ namespace MachineWatchTest
       };
       var job2SimUse = RandSimStationUse(schId2, job2.RouteStartUTC);
       var job2ExtraParts = _fixture.Create<Dictionary<string, int>>();
-      var job2UnfilledWorks = _fixture.Create<List<PartWorkorder>>();
-      job2UnfilledWorks.Add(_fixture.Create<PartWorkorder>() with
+      var job2UnfilledWorks = _fixture.Create<List<Workorder>>();
+      job2UnfilledWorks.Add(_fixture.Create<Workorder>() with
       {
         Part = job1UnfilledWorks[0].Part
       });
@@ -665,21 +665,21 @@ namespace MachineWatchTest
         })
         ;
 
-      var initialWorks = _fixture.Create<List<PartWorkorder>>();
+      var initialWorks = _fixture.Create<List<Workorder>>();
       initialWorks[0] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = null },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = null }
+    new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = null },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = null }
         });
       };
       initialWorks[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 6 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 6 }
         });
       };
 
@@ -689,14 +689,14 @@ namespace MachineWatchTest
         Jobs = ImmutableList.Create(job1),
         CurrentUnfilledWorkorders = initialWorks.ToImmutableList(),
         Programs = ImmutableList.Create(
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "aaa",
               Revision = 0, // auto assign
               Comment = "aaa comment",
               ProgramContent = "aaa program content"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = 6, // new revision
@@ -727,9 +727,9 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+    new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
         });
       };
 
@@ -785,14 +785,14 @@ namespace MachineWatchTest
       {
         Jobs = ImmutableList<Job>.Empty,
         Programs = ImmutableList.Create(
-        new ProgramEntry()
+        new NewProgramContent()
         {
           ProgramName = "aaa",
           Revision = 0, // auto assign
           Comment = "aaa comment rev 2",
           ProgramContent = "aaa program content rev 2"
         },
-        new ProgramEntry()
+        new NewProgramContent()
         {
           ProgramName = "bbb",
           Revision = 6, // existing revision
@@ -803,14 +803,14 @@ namespace MachineWatchTest
       }, null, addAsCopiedToSystem: true)
       ).Should().Throw<BadRequestException>().WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
 
-      _jobDB.Invoking(j => j.AddPrograms(new List<ProgramEntry> {
-        new ProgramEntry() {
+      _jobDB.Invoking(j => j.AddPrograms(new List<NewProgramContent> {
+        new NewProgramContent() {
     ProgramName = "aaa",
     Revision = 0, // auto assign
                 Comment = "aaa comment rev 2",
     ProgramContent = "aaa program content rev 2"
         },
-        new ProgramEntry() {
+        new NewProgramContent() {
     ProgramName = "bbb",
     Revision = 6, // existing revision
                 Comment = "bbb comment",
@@ -836,21 +836,21 @@ namespace MachineWatchTest
       _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
 
       // replaces workorders
-      var newWorkorders = _fixture.Create<List<PartWorkorder>>();
+      var newWorkorders = _fixture.Create<List<Workorder>>();
       newWorkorders[0] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
-    new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+    new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
+    new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
         });
       };
       newWorkorders[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
         });
       };
 
@@ -860,12 +860,12 @@ namespace MachineWatchTest
         draft.Quantity = 10;
         draft.Programs.Clear();
         draft.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 0 }
         });
       }));
 
       _jobDB.ReplaceWorkordersForSchedule(schId, newWorkorders, new[] {
-  new ProgramEntry() {
+  new NewProgramContent() {
     ProgramName = "ccc",
     Revision = 0,
     Comment = "the ccc comment",
@@ -878,14 +878,14 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
         });
       };
       newWorkorders[newWorkorders.Count - 1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-    new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
+    new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "ccc", Revision = 1 }
         });
       };
 
@@ -908,21 +908,21 @@ namespace MachineWatchTest
         ScheduleId = schId2,
         Jobs = ImmutableList<Job>.Empty,
         Programs = ImmutableList.Create(
-        new ProgramEntry()
+        new NewProgramContent()
         {
           ProgramName = "aaa",
           Revision = 0, // auto assign
           Comment = "aaa comment rev 2",
           ProgramContent = "aaa program content rev 2"
         },
-        new ProgramEntry()
+        new NewProgramContent()
         {
           ProgramName = "bbb",
           Revision = 6, // existing revision
           Comment = "bbb comment",
           ProgramContent = "bbb program content"
         },
-        new ProgramEntry()
+        new NewProgramContent()
         {
           ProgramName = "ccc",
           Revision = 0, // auto assign
@@ -1034,13 +1034,13 @@ namespace MachineWatchTest
         .Should().Throw<Exception>().WithMessage("Cell program name bbb-6 already in use");
 
       _jobDB.AddPrograms(new[] {
-  new ProgramEntry() {
+  new NewProgramContent() {
     ProgramName = "aaa",
     Revision = 0, // should be ignored because comment and content matches revision 1
           Comment = "aaa comment",
     ProgramContent = "aaa program content"
   },
-  new ProgramEntry() {
+  new NewProgramContent() {
     ProgramName = "bbb",
     Revision = 0, // allocate new
           Comment = "bbb comment rev7",
@@ -1064,7 +1064,7 @@ namespace MachineWatchTest
 
       // adds new when comment matches, but content does not
       _jobDB.AddPrograms(new[] {
-  new ProgramEntry() {
+  new NewProgramContent() {
     ProgramName = "aaa",
     Revision = 0, // allocate new
           Comment = "aaa comment", // comment matches
@@ -1132,21 +1132,21 @@ namespace MachineWatchTest
       {
         Jobs = ImmutableList<Job>.Empty,
         Programs = ImmutableList.Create(
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = 6,
               Comment = "bbb comment 6",
               ProgramContent = "bbb program content 6"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = 3,
               Comment = "ccc comment 3",
               ProgramContent = "ccc program content 3"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = 4,
@@ -1216,23 +1216,23 @@ namespace MachineWatchTest
         })
         ;
 
-      var initialWorks = _fixture.Create<List<PartWorkorder>>();
+      var initialWorks = _fixture.Create<List<Workorder>>();
       initialWorks[0] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = -2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = -1 }
+      new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = -2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = -1 }
           });
       };
       initialWorks[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = -2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = -1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = -2 }
+      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = -2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = -1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = -2 }
           });
       };
 
@@ -1242,42 +1242,42 @@ namespace MachineWatchTest
         Jobs = ImmutableList.Create(job1),
         CurrentUnfilledWorkorders = initialWorks.ToImmutableList(),
         Programs = ImmutableList.Create(
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "aaa",
               Revision = -1, // should be created to be revision 1
               Comment = "aaa comment 1",
               ProgramContent = "aaa program content for 1"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "aaa",
               Revision = -2, // should be created to be revision 2
               Comment = "aaa comment 2",
               ProgramContent = "aaa program content for 2"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = -1, // matches latest content so should be converted to 6
               Comment = "bbb other comment", // comment doesn't match but is ignored
               ProgramContent = "bbb program content 6"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = -2, // assigned a new val 7 since content differs
               Comment = "bbb comment 7",
               ProgramContent = "bbb program content 7"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = -1, // assigned to 3 (older than most recent) because comment and content match
               Comment = "ccc comment 3",
               ProgramContent = "ccc program content 3"
             },
-            new ProgramEntry()
+            new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = -2, // assigned a new val since doesn't match existing, even if comment matches
@@ -1330,18 +1330,18 @@ namespace MachineWatchTest
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
+      new ProgramForJobStep() { ProcessNumber = 1, ProgramName = "aaa", Revision = 1 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa", Revision = 2 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "bbb", Revision = 6 }
           });
       };
       initialWorks[1] %= w =>
       {
         w.Programs.Clear();
         w.Programs.AddRange(new[] {
-      new WorkorderProgram() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 7 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = 3 },
-      new WorkorderProgram() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = 5 }
+      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "bbb", Revision = 7 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "ccc", Revision = 3 },
+      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 2, ProgramName = "ccc", Revision = 5 }
           });
       };
 
