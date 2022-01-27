@@ -44,7 +44,7 @@ import {
   ToolUse,
   ActionType,
 } from "../src/network/api";
-import faker from "faker";
+import faker from "@faker-js/faker";
 import { durationToSeconds } from "../src/util/parseISODuration";
 import { addSeconds, addMinutes } from "date-fns";
 

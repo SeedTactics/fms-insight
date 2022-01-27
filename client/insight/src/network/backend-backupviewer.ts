@@ -39,14 +39,25 @@ import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback } from "recoi
 import { RecoilConduit } from "../util/recoil-util";
 import { addDays } from "date-fns";
 
+export function registerBackupViewerBackend(): void {
+  window.addEventListener("message", handleBackgroundCommPort);
+  registerBackend(LogBackend, JobsBackend, ServerBackend, MachineBackend);
+}
+
+// --------------------------------------------------------------------------------
+// IPC
+// --------------------------------------------------------------------------------
+
 type Request = {
   name: string;
   id: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: any;
 };
 
 type Response = {
   id: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   response?: any;
   error?: string;
 };
@@ -54,7 +65,49 @@ type Response = {
 const inFlight = new Map<number, (response: Response) => void>();
 let lastId = 0;
 let port: MessagePort | null = null;
-let msgHandlerRegsitered = false;
+
+function handleBackgroundCommPort(evt: MessageEvent): void {
+  if (evt.source === window && evt.data === "insight-background-communication-port") {
+    port = evt.ports[0];
+    port.onmessage = (msg) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const response: Response = msg.data;
+      const handler = inFlight.get(response.id);
+      if (handler) {
+        handler(response);
+      }
+    };
+    window.removeEventListener("message", handleBackgroundCommPort);
+  }
+}
+
+function sendIpc<P, R>(name: string, payload: P): Promise<R> {
+  if (port === null) throw "No background port";
+
+  const messageId = lastId;
+  lastId += 1;
+  const req: Request = {
+    name,
+    payload,
+    id: messageId,
+  };
+  return new Promise((resolve, reject) => {
+    inFlight.set(messageId, (response) => {
+      inFlight.delete(messageId);
+      if (response.error) {
+        reject(response.error);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        resolve(response.response);
+      }
+    });
+    port?.postMessage(req);
+  });
+}
+
+// --------------------------------------------------------------------------------
+// Opening a file
+// --------------------------------------------------------------------------------
 
 const loadingBackupViewerRW = atom<boolean>({ key: "loading-backup-viewer-data", default: false });
 export const loadingBackupViewer: RecoilValueReadOnly<boolean> = loadingBackupViewerRW;
@@ -77,69 +130,28 @@ function loadLast30(set: <T>(s: RecoilState<T>, t: T) => void, push: <T>(c: Reco
     .finally(() => set(loadingBackupViewerRW, false));
 }
 
-export function useRequestOpenBackupFile(): () => void {
+export function useRequestOpenBackupFile(): () => Promise<void> {
   return useRecoilCallback(
     ({ set, transact_UNSTABLE }) =>
-      () => {
+      async () => {
         function push<T>(c: RecoilConduit<T>): (t: T) => void {
           return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
         }
 
-        function onWindowMessage(evt: MessageEvent<unknown>) {
-          if (evt.source === window && evt.data === "insight-file-opened") {
-            port = evt.ports[0];
-            port.onmessage = (msg) => {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-              const response: Response = msg.data;
-              const handler = inFlight.get(response.id);
-              if (handler) {
-                handler(response);
-              }
-            };
-            window.removeEventListener("message", onWindowMessage);
-            window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
+        const opened = await sendIpc<null, boolean>("open-insight-file", null);
 
-            loadLast30(set, push);
-          }
+        if (opened) {
+          window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
+          loadLast30(set, push);
         }
-
-        if (msgHandlerRegsitered === false) {
-          window.addEventListener("message", onWindowMessage);
-          msgHandlerRegsitered = true;
-        }
-
-        window.postMessage("open-insight-file", "*");
       },
     []
   );
 }
 
-export function registerBackupViewerBackend(): void {
-  registerBackend(LogBackend, JobsBackend, ServerBackend, MachineBackend);
-}
-
-function sendIpc<P, R>(name: string, payload: P): Promise<R> {
-  if (port === null) throw "No background port";
-
-  const messageId = lastId;
-  lastId += 1;
-  const req: Request = {
-    name,
-    payload,
-    id: messageId,
-  };
-  return new Promise((resolve, reject) => {
-    inFlight.set(messageId, (response) => {
-      inFlight.delete(messageId);
-      if (response.error) {
-        reject(response.error);
-      } else {
-        resolve(response.response);
-      }
-    });
-    port?.postMessage(req);
-  });
-}
+// --------------------------------------------------------------------------------
+// Loading Data
+// --------------------------------------------------------------------------------
 
 const ServerBackend = {
   fMSInformation(): Promise<api.IFMSInfo> {

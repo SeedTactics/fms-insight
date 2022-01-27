@@ -31,13 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Database } from "sqlite";
+import type { Database } from "better-sqlite3";
 
-let dbP: Promise<Database> = Promise.reject("No opened file yet");
-export function setDatabase(p: Promise<Database>) {
-  dbP = p;
-}
-export const handlers: { [key: string]: (x: any) => Promise<any> } = {};
+export const handlers: {
+  [key: string]: (db: Database, x: any) => any;
+} = {};
 
 // 10000 ticks in a millisecond
 // 621355968000000000 ticks between unix epoch and Jan 1, 0001
@@ -98,314 +96,322 @@ function convertLogType(t: number): string {
   }
 }
 
-async function convertRowToLog(db: Database, row: any): Promise<any> {
-  const cmd =
+function convertRowsToLog(
+  db: Database,
+  rows: ReadonlyArray<any>
+): ReadonlyArray<any> {
+  const statCmd = db.prepare(
     "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face, Serial, Workorder " +
-    " FROM stations_mat " +
-    " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID " +
-    " WHERE stations_mat.Counter = $cntr " +
-    " ORDER BY stations_mat.Counter ASC";
-  const matRows = await db.all(cmd, { $cntr: row.Counter });
-  const details: { [key: string]: string } = {};
-  const tools: { [key: string]: Readonly<any> } = {};
-  await db.each(
-    "SELECT Key, Value FROM program_details WHERE Counter = $cntr",
-    { $cntr: row.Counter },
-    (_err: any, row: any) => {
-      if (row) {
-        details[row.Key] = row.Value;
-      }
-    }
-  );
-  await db.each(
-    "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tools WHERE Counter = $cntr",
-    { $cntr: row.Counter },
-    (_err: any, row: any) => {
-      if (row) {
-        tools[row.Tool] = {
-          ToolUseDuringCycle: parseTimespan(row.UseInCycle),
-          TotalToolUseAtEndOfCycle: parseTimespan(row.UseAtEndOfCycle),
-          ConfiguredToolLife: parseTimespan(row.ToolLife),
-        };
-      }
-    }
+      " FROM stations_mat " +
+      " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID " +
+      " WHERE stations_mat.Counter = $cntr " +
+      " ORDER BY stations_mat.Counter ASC"
   );
 
-  return {
-    counter: row.Counter,
-    material: matRows.map((m) => ({
-      id: m.MaterialID,
-      uniq: m.UniqueStr,
-      part: m.PartName,
-      proc: m.Process,
-      numproc: m.NumProcesses,
-      face: m.Face,
-      serial: m.Serial,
-      workorder: m.Workorder,
-    })),
-    type: convertLogType(row.StationLoc),
-    startofcycle: row.Start > 0,
-    endUTC: parseDateFromTicks(row.TimeUTC),
-    loc: row.StationName,
-    locnum: row.StationNum,
-    pal: row.Pallet,
-    program: row.Program,
-    result: row.Result,
-    elapsed: parseTimespan(row.Elapsed),
-    active: parseTimespan(row.ActiveTime),
-    details: details,
-    tools: tools,
-  };
+  const detailCmd = db.prepare(
+    "SELECT Key, Value FROM program_details WHERE Counter = $cntr"
+  );
+
+  const toolCmd = db.prepare(
+    "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tools WHERE Counter = $cntr"
+  );
+
+  const statRows = [];
+
+  for (const statRow of rows) {
+    const matRows = statCmd.all({ cntr: statRow.Counter });
+    const details: { [key: string]: string } = {};
+    const tools: { [key: string]: Readonly<any> } = {};
+    for (const detail of detailCmd.iterate({ cntr: statRow.Counter })) {
+      details[detail.Key] = detail.Value;
+    }
+    for (const tool of toolCmd.iterate({ cntr: statRow.Counter })) {
+      tools[tool.Tool] = {
+        ToolUseDuringCycle: parseTimespan(tool.UseInCycle),
+        TotalToolUseAtEndOfCycle: parseTimespan(tool.UseAtEndOfCycle),
+        ConfiguredToolLife: parseTimespan(tool.ToolLife),
+      };
+    }
+
+    statRows.push({
+      counter: statRow.Counter,
+      material: matRows.map((m) => ({
+        id: m.MaterialID,
+        uniq: m.UniqueStr,
+        part: m.PartName,
+        proc: m.Process,
+        numproc: m.NumProcesses,
+        face: m.Face,
+        serial: m.Serial,
+        workorder: m.Workorder,
+      })),
+      type: convertLogType(statRow.StationLoc),
+      startofcycle: statRow.Start > 0,
+      endUTC: parseDateFromTicks(statRow.TimeUTC),
+      loc: statRow.StationName,
+      locnum: statRow.StationNum,
+      pal: statRow.Pallet,
+      program: statRow.Program,
+      result: statRow.Result,
+      elapsed: parseTimespan(statRow.Elapsed),
+      active: parseTimespan(statRow.ActiveTime),
+      details: details,
+      tools: tools,
+    });
+  }
+
+  return statRows;
 }
 
-handlers["log-get"] = async (a: {
-  startUTC: Date;
-  endUTC: Date;
-}): Promise<ReadonlyArray<Readonly<any>>> => {
-  const db = await dbP;
-  const rows = await db.all(
-    "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-      " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC",
-    {
-      $start: dateToTicks(new Date(a.startUTC)),
-      $end: dateToTicks(new Date(a.endUTC)),
-    }
-  );
-  return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
+handlers["log-get"] = (
+  db: Database,
+  a: {
+    startUTC: Date;
+    endUTC: Date;
+  }
+): ReadonlyArray<Readonly<any>> => {
+  const rows = db
+    .prepare(
+      "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+        " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC"
+    )
+    .all({
+      start: dateToTicks(new Date(a.startUTC)),
+      end: dateToTicks(new Date(a.endUTC)),
+    });
+  return convertRowsToLog(db, rows);
 };
 
-handlers["log-for-material"] = async (a: {
-  materialID: number;
-}): Promise<ReadonlyArray<Readonly<any>>> => {
-  const db = await dbP;
-  const rows = await db.all(
-    "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-      " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC",
-    {
-      $mat: a.materialID,
-    }
-  );
-  return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
+handlers["log-for-material"] = (
+  db: Database,
+  a: {
+    materialID: number;
+  }
+): ReadonlyArray<Readonly<any>> => {
+  const rows = db
+    .prepare(
+      "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+        " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC"
+    )
+    .all({
+      mat: a.materialID,
+    });
+  return convertRowsToLog(db, rows);
 };
 
-handlers["log-for-materials"] = async (a: {
-  materialIDs: Iterable<number>;
-}): Promise<ReadonlyArray<Readonly<any>>> => {
-  const db = await dbP;
+handlers["log-for-materials"] = (
+  db: Database,
+  a: {
+    materialIDs: Iterable<number>;
+  }
+): ReadonlyArray<Readonly<any>> => {
   const rows: any[] = [];
+  const cmd = db.prepare(
+    "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+      " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC"
+  );
   for (const matId of a.materialIDs) {
     rows.push(
-      ...(await db.all(
-        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-          " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC",
-        {
-          $mat: matId,
-        }
-      ))
+      ...cmd.all({
+        mat: matId,
+      })
     );
   }
-  return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
+  return convertRowsToLog(db, rows);
 };
 
-handlers["log-for-serial"] = async (a: {
-  serial: string;
-}): Promise<ReadonlyArray<Readonly<any>>> => {
-  const db = await dbP;
-  const rows = await db.all(
-    "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-      " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC",
-    {
-      $ser: a.serial,
-    }
-  );
-  return await Promise.all(rows.map((r) => convertRowToLog(db, r)));
+handlers["log-for-serial"] = (
+  db: Database,
+  a: {
+    serial: string;
+  }
+): ReadonlyArray<Readonly<any>> => {
+  const rows = db
+    .prepare(
+      "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+        " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC"
+    )
+    .all({
+      ser: a.serial,
+    });
+  return convertRowsToLog(db, rows);
 };
 
-async function loadProcsAndPaths(
+function loadProcsAndPaths(
   db: Database,
   uniq: string
-): Promise<ReadonlyArray<{ paths: ReadonlyArray<any> }>> {
+): ReadonlyArray<{ paths: ReadonlyArray<any> }> {
   const procsAndPaths: Array<{ paths: Array<any> }> = [];
 
-  db.each(
-    "SELECT Process, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq ORDER BY Process,Path",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      let pathData: object = {
-        PathGroup: row.PathGroup,
-        Pallets: [],
-        Fixture: row.Fixture,
-        Face: row.Face,
-        Load: [],
-        ExpectedLoadTime: parseTimespan(row.LoadTime),
-        Unload: [],
-        ExpectedUnloadTime: parseTimespan(row.UnloadTime),
-        Stops: [],
-        SimulatedProduction: [],
-        SimulatedStartingUTC: parseDateFromTicks(row.StartingUTC),
-        SimulatedAverageFlowTime: parseTimespan(row.SimAverageFlowTime),
-        HoldMachining: undefined, // TODO: hold
-        HoldLoadUnload: undefined, // TODO: hold
-        PartsPerPallet: row.PartsPerPallet,
-        InputQueue: row.InputQueue,
-        OutputQueue: row.OutputQueue,
-        Inspections: [],
-        Casting: row.Casting,
-      };
-      if (proc > procsAndPaths.length) {
-        procsAndPaths.push({ paths: [pathData] });
+  const pathDataCmd = db.prepare(
+    "SELECT Process, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq ORDER BY Process,Path"
+  );
+  for (const row of pathDataCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    let pathData: object = {
+      PathGroup: row.PathGroup,
+      Pallets: [],
+      Fixture: row.Fixture,
+      Face: row.Face,
+      Load: [],
+      ExpectedLoadTime: parseTimespan(row.LoadTime),
+      Unload: [],
+      ExpectedUnloadTime: parseTimespan(row.UnloadTime),
+      Stops: [],
+      SimulatedProduction: [],
+      SimulatedStartingUTC: parseDateFromTicks(row.StartingUTC),
+      SimulatedAverageFlowTime: parseTimespan(row.SimAverageFlowTime),
+      HoldMachining: undefined, // TODO: hold
+      HoldLoadUnload: undefined, // TODO: hold
+      PartsPerPallet: row.PartsPerPallet,
+      InputQueue: row.InputQueue,
+      OutputQueue: row.OutputQueue,
+      Inspections: [],
+      Casting: row.Casting,
+    };
+    if (proc > procsAndPaths.length) {
+      procsAndPaths.push({ paths: [pathData] });
+    } else {
+      procsAndPaths[proc - 1].paths.push(pathData);
+    }
+  }
+
+  const palCmd = db.prepare(
+    "SELECT Process, Path, Pallet FROM pallets WHERE UniqueStr = $uniq"
+  );
+  for (const row of palCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    const path: number = row.Path;
+    if (
+      proc <= procsAndPaths.length &&
+      path <= procsAndPaths[proc - 1].paths.length
+    ) {
+      procsAndPaths[proc - 1].paths[path - 1].Pallets.push(row.Pallet);
+    }
+  }
+
+  const stopCmd = db.prepare(
+    "SELECT Process, Path, StatGroup, ExpectedCycleTime, Program, ProgramRevision FROM stops WHERE UniqueStr = $uniq ORDER BY RouteNum"
+  );
+  for (const row of stopCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    const path: number = row.Path;
+    if (
+      proc <= procsAndPaths.length &&
+      path <= procsAndPaths[proc - 1].paths.length
+    ) {
+      procsAndPaths[proc - 1].paths[path - 1].Stops.push({
+        StationGroup: row.StatGroup,
+        StationNums: [],
+        Tools: {},
+        ExpectedCycleTime: parseTimespan(row.ExpectedCycleTime),
+        Program: row.Program,
+        ProgramRevision: row.ProgramRevision,
+      });
+    }
+  }
+
+  const statCmd = db.prepare(
+    "SELECT Process, Path, RouteNum, StatNum FROM stops_stations WHERE UniqueStr = $uniq"
+  );
+  for (const row of statCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    const path: number = row.Path;
+    const route: number = row.RouteNum;
+    if (
+      proc <= procsAndPaths.length &&
+      path <= procsAndPaths[proc - 1].paths.length &&
+      route < procsAndPaths[proc - 1].paths[path - 1].Stops.length
+    ) {
+      procsAndPaths[proc - 1].paths[path - 1].Stops[route].StationNums.push(
+        row.StatNum
+      );
+    }
+  }
+
+  const toolCmd = db.prepare(
+    "SELECT Process, Path, RouteNum, Tool, ExpectedUse FROM tools WHERE UniqueStr = $uniq"
+  );
+  for (const row of toolCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    const path: number = row.Path;
+    const route: number = row.RouteNum;
+    if (
+      proc <= procsAndPaths.length &&
+      path <= procsAndPaths[proc - 1].paths.length &&
+      route <= procsAndPaths[proc - 1].paths[path - 1].Stops.length
+    ) {
+      procsAndPaths[proc - 1].paths[path - 1].Stops[route - 1].Tools[row.Tool] =
+        parseTimespan(row.ExpectedUse);
+    }
+  }
+
+  const loadUnloadCmd = db.prepare(
+    "SELECT Process, Path, StatNum, Load FROM loadunload WHERE UniqueStr = $uniq"
+  );
+  for (const row of loadUnloadCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    const path: number = row.Path;
+    if (
+      proc <= procsAndPaths.length &&
+      path <= procsAndPaths[proc - 1].paths.length
+    ) {
+      if (row.Load) {
+        procsAndPaths[proc - 1].paths[path - 1].Load.push(row.StatNum);
       } else {
-        procsAndPaths[proc - 1].paths.push(pathData);
+        procsAndPaths[proc - 1].paths[path - 1].Unload.push(row.StatNum);
       }
     }
-  );
+  }
 
-  db.each(
-    "SELECT Process, Path, Pallet FROM pallets WHERE UniqueStr = $uniq",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      const path: number = row.Path;
-      if (
-        proc <= procsAndPaths.length &&
-        path <= procsAndPaths[proc - 1].paths.length
-      ) {
-        procsAndPaths[proc - 1].paths[path - 1].Pallets.push(row.Pallet);
-      }
+  const prodCmd = db.prepare(
+    "SELECT Process, Path, TimeUTC, Quantity FROM simulated_production WHERE UniqueStr = $uniq ORDER BY Process,Path,TimeUTC"
+  );
+  for (const row of prodCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    const path: number = row.Path;
+    if (
+      proc <= procsAndPaths.length &&
+      path <= procsAndPaths[proc - 1].paths.length
+    ) {
+      procsAndPaths[proc - 1].paths[path - 1].SimulatedProduction.push({
+        TimeUTC: parseDateFromTicks(row.TimeUTC),
+        Quantity: row.Quantity,
+      });
     }
-  );
+  }
 
-  db.each(
-    "SELECT Process, Path, StatGroup, ExpectedCycleTime, Program, ProgramRevision FROM stops WHERE UniqueStr = $uniq ORDER BY RouteNum",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      const path: number = row.Path;
-      if (
-        proc <= procsAndPaths.length &&
-        path <= procsAndPaths[proc - 1].paths.length
-      ) {
-        procsAndPaths[proc - 1].paths[path - 1].Stops.push({
-          StationGroup: row.StatGroup,
-          StationNums: [],
-          Tools: {},
-          ExpectedCycleTime: parseTimespan(row.ExpectedCycleTime),
-          Program: row.Program,
-          ProgramRevision: row.ProgramRevision,
-        });
+  const inspCmd = db.prepare(
+    "SELECT Process, Path, InspType, Counter, MaxVal, TimeInterval, RandomFreq, ExpectedTime FROM path_inspections WHERE UniqueStr = $uniq"
+  );
+  for (const row of inspCmd.iterate({ uniq })) {
+    const proc: number = row.Process;
+    if (proc > procsAndPaths.length) continue;
+
+    const insp = {
+      InspectionType: row.InspType,
+      Counter: row.Counter,
+      MaxVal: row.MaxVal,
+      TimeInterval: parseTimespan(row.TimeInterval),
+      RandomFreq: row.RandomFreq,
+      ExpectedInspectionTime: parseTimespan(row.ExpectedInspectionTime),
+    };
+
+    const path: number = row.Path;
+    if (path < 1) {
+      // all paths
+      for (let i = 0; i < procsAndPaths[proc - 1].paths.length; i++) {
+        procsAndPaths[proc - 1].paths[i].Inspections.push(insp);
       }
+    } else if (path <= procsAndPaths[proc - 1].paths.length) {
+      procsAndPaths[proc - 1].paths[path - 1].Inspections.push(insp);
     }
-  );
-
-  db.each(
-    "SELECT Process, Path, RouteNum, StatNum FROM stops_stations WHERE UniqueStr = $uniq",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      const path: number = row.Path;
-      const route: number = row.RouteNum;
-      if (
-        proc <= procsAndPaths.length &&
-        path <= procsAndPaths[proc - 1].paths.length &&
-        route < procsAndPaths[proc - 1].paths[path - 1].Stops.length
-      ) {
-        procsAndPaths[proc - 1].paths[path - 1].Stops[route].StationNums.push(
-          row.StatNum
-        );
-      }
-    }
-  );
-
-  db.each(
-    "SELECT Process, Path, RouteNum, Tool, ExpectedUse FROM tools WHERE UniqueStr = $uniq",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      const path: number = row.Path;
-      const route: number = row.RouteNum;
-      if (
-        proc <= procsAndPaths.length &&
-        path <= procsAndPaths[proc - 1].paths.length &&
-        route <= procsAndPaths[proc - 1].paths[path - 1].Stops.length
-      ) {
-        procsAndPaths[proc - 1].paths[path - 1].Stops[route - 1].Tools[
-          row.Tool
-        ] = parseTimespan(row.ExpectedUse);
-      }
-    }
-  );
-
-  db.each(
-    "SELECT Process, Path, StatNum, Load FROM loadunload WHERE UniqueStr = $uniq",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      const path: number = row.Path;
-      if (
-        proc <= procsAndPaths.length &&
-        path <= procsAndPaths[proc - 1].paths.length
-      ) {
-        if (row.Load) {
-          procsAndPaths[proc - 1].paths[path - 1].Load.push(row.StatNum);
-        } else {
-          procsAndPaths[proc - 1].paths[path - 1].Unload.push(row.StatNum);
-        }
-      }
-    }
-  );
-
-  db.each(
-    "SELECT Process, Path, TimeUTC, Quantity FROM simulated_production WHERE UniqueStr = $uniq ORDER BY Process,Path,TimeUTC",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      const path: number = row.Path;
-      if (
-        proc <= procsAndPaths.length &&
-        path <= procsAndPaths[proc - 1].paths.length
-      ) {
-        procsAndPaths[proc - 1].paths[path - 1].SimulatedProduction.push({
-          TimeUTC: parseDateFromTicks(row.TimeUTC),
-          Quantity: row.Quantity,
-        });
-      }
-    }
-  );
-
-  db.each(
-    "SELECT Process, Path, InspType, Counter, MaxVal, TimeInterval, RandomFreq, ExpectedTime FROM path_inspections WHERE UniqueStr = $uniq",
-    { $uniq: uniq },
-    (_, row) => {
-      const proc: number = row.Process;
-      if (proc > procsAndPaths.length) return;
-
-      const insp = {
-        InspectionType: row.InspType,
-        Counter: row.Counter,
-        MaxVal: row.MaxVal,
-        TimeInterval: parseTimespan(row.TimeInterval),
-        RandomFreq: row.RandomFreq,
-        ExpectedInspectionTime: parseTimespan(row.ExpectedInspectionTime),
-      };
-
-      const path: number = row.Path;
-      if (path < 1) {
-        // all paths
-        for (let i = 0; i < procsAndPaths[proc - 1].paths.length; i++) {
-          procsAndPaths[proc - 1].paths[i].Inspections.push(insp);
-        }
-      } else if (path <= procsAndPaths[proc - 1].paths.length) {
-        procsAndPaths[proc - 1].paths[path - 1].Inspections.push(insp);
-      }
-    }
-  );
+  }
 
   return procsAndPaths;
 }
 
-async function loadJob(db: Database, row: any): Promise<any> {
-  var uniq = { $uniq: row.UniqueStr };
+function loadJob(db: Database, row: any): any {
   return {
     Unique: row.UniqueStr,
     PartName: row.Part,
@@ -416,31 +422,31 @@ async function loadJob(db: Database, row: any): Promise<any> {
     CopiedToSystem: row.CopiedToSystem,
     ScheduleId: row.ScheduleId,
     ManuallyCreated: row.Manual,
-    CyclesOnFirstProcess: (
-      await db.all(
-        "SELECT PlanQty FROM planqty WHERE UniqueStr = $uniq ORDER BY Path",
-        uniq
+    CyclesOnFirstProcess: db
+      .prepare(
+        "SELECT PlanQty FROM planqty WHERE UniqueStr = $uniq ORDER BY Path"
       )
-    ).map((r) => r.PlanQty),
-    Bookings: (
-      await db.all(
-        "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq",
-        uniq
+      .all({ uniq: row.UniqueStr })
+      .map((r) => r.PlanQty),
+    Bookings: db
+      .prepare(
+        "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq"
       )
-    ).map((r) => r.BookingId),
+      .all({ uniq: row.UniqueStr })
+      .map((r) => r.BookingId),
     HoldEntireJob: undefined, // TODO: hold
-    Decrements: (
-      await db.all(
-        "SELECT DecrementId,Proc1Path,TimeUTC,Quantity FROM job_decrements WHERE JobUnique = $uniq",
-        uniq
+    Decrements: db
+      .prepare(
+        "SELECT DecrementId,Proc1Path,TimeUTC,Quantity FROM job_decrements WHERE JobUnique = $uniq"
       )
-    ).map((r) => ({
-      DecrementId: r.DecrementId,
-      Proc1Path: r.Proc1Path,
-      TimeUTC: parseDateFromTicks(r.TimeUTC),
-      Quantity: r.Quantity,
-    })),
-    ProcsAndPaths: await loadProcsAndPaths(db, row.UniqueStr),
+      .all({ uniq: row.UniqueStr })
+      .map((r) => ({
+        DecrementId: r.DecrementId,
+        Proc1Path: r.Proc1Path,
+        TimeUTC: parseDateFromTicks(r.TimeUTC),
+        Quantity: r.Quantity,
+      })),
+    ProcsAndPaths: loadProcsAndPaths(db, row.UniqueStr),
   };
 }
 
@@ -456,37 +462,39 @@ function convertSimStatUse(row: any): any {
   };
 }
 
-handlers["job-history"] = async (a: {
-  startUTC: Date;
-  endUTC: Date;
-}): Promise<Readonly<any>> => {
-  const db = await dbP;
-
-  const jobRows = await db.all(
-    "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
-      " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start",
-    {
-      $start: dateToTicks(new Date(a.startUTC)),
-      $end: dateToTicks(new Date(a.endUTC)),
-    }
-  );
+handlers["job-history"] = (
+  db: Database,
+  a: {
+    startUTC: Date;
+    endUTC: Date;
+  }
+): Readonly<any> => {
+  const jobRows = db
+    .prepare(
+      "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual " +
+        " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start"
+    )
+    .all({
+      start: dateToTicks(new Date(a.startUTC)),
+      end: dateToTicks(new Date(a.endUTC)),
+    });
 
   const jobs: { [uniq: string]: any } = {};
   for (let i = 0; i < jobRows.length; i++) {
     const row = jobRows[i];
-    jobs[row.UniqueStr] = await loadJob(db, row);
+    jobs[row.UniqueStr] = loadJob(db, row);
   }
 
-  const stationUse = (
-    await db.all(
+  const stationUse = db
+    .prepare(
       "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
-        " WHERE EndUTC >= $start AND StartUTC <= $end",
-      {
-        $start: dateToTicks(new Date(a.startUTC)),
-        $end: dateToTicks(new Date(a.endUTC)),
-      }
+        " WHERE EndUTC >= $start AND StartUTC <= $end"
     )
-  ).map(convertSimStatUse);
+    .all({
+      start: dateToTicks(new Date(a.startUTC)),
+      end: dateToTicks(new Date(a.endUTC)),
+    })
+    .map(convertSimStatUse);
 
   return { jobs, stationUse };
 };

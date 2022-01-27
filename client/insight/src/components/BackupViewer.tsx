@@ -31,14 +31,23 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Button } from "@mui/material";
+import { Button, CircularProgress, Stack } from "@mui/material";
 
-import { errorLoadingBackupViewer, useRequestOpenBackupFile } from "../network/backend-backupviewer";
-import { useRecoilValue } from "recoil";
+import { useRequestOpenBackupFile } from "../network/backend-backupviewer";
 
 export function BackupViewer(): JSX.Element {
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const requestOpenBackupFile = useRequestOpenBackupFile();
-  const loading_error = useRecoilValue(errorLoadingBackupViewer);
+
+  function open() {
+    setLoading(true);
+    setError(null);
+    requestOpenBackupFile()
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }
+
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ marginTop: "2em" }}>FMS Insight Backup Viewer</h1>
@@ -47,9 +56,12 @@ export function BackupViewer(): JSX.Element {
         <code>c:\ProgramData\SeedTactics\FMSInsight</code>). The database should be periodically backed up and can then
         be opened directly by this program to view the data.
       </p>
-      {loading_error ? <p>{loading_error}</p> : undefined}
-      <Button style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={requestOpenBackupFile}>
-        Open File
+      {error ? <p>{error}</p> : undefined}
+      <Button disabled={loading} style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={open}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          {loading ? <CircularProgress size={24} /> : undefined}
+          Open File
+        </Stack>
       </Button>
     </div>
   );

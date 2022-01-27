@@ -11,6 +11,7 @@
     "sourceMap": true,
     "allowJs": true,
     "moduleResolution": "node",
+    "esModuleInterop": true,
 
     "downlevelIteration": true,
 
