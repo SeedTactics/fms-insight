@@ -67,7 +67,7 @@ jobs:
         run: pnpm --dir client/insight run build
 
       - name: Build Backup-Viewer
-        run: npm ci --no-optional && npm run build-background
+        run: npm ci && npm run build-background
         working-directory: client/backup-viewer
 
       - name: Cleanup pnpm cache
