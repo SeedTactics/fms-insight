@@ -52,6 +52,7 @@ let error: string | undefined = undefined;
 let port: MessagePort | undefined = undefined;
 
 async function openFile(): Promise<boolean> {
+  error = undefined;
   const path = await ipcRenderer.invoke("open-insight-file");
   if (path) {
     try {
