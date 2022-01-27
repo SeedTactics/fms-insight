@@ -12,8 +12,8 @@
   "scripts": {
     "build-background": "tsc --incremental --project src/background/tsconfig.json && cp src/background/background.html build/background",
     "build-insight": "rimraf build/insight && mkdir -p build/insight && cp -r ../insight/dist/* build/insight",
-    "build": "pnpm run build-background && pnpm run build-insight",
-    "start": "pnpm run build && electron ."
+    "build": "npm run build-background && npm run build-insight",
+    "start": "npm run build && electron ."
   },
   "dependencies": {
     "better-sqlite3": "^7.5.0"

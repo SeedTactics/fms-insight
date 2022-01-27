@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: "16.9"
+          node-version: "17"
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.9
@@ -71,7 +71,8 @@ jobs:
 
       - run: pnpm --dir client/insight run build
 
-      - run: cd client/backup-viewer && npm ci --no-optional && npm run build-background
+      - run: npm ci --no-optional && npm run build-background
+        working-directory: client/backup-viewer
 
       - name: Server TestSuite
         run: |

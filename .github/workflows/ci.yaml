@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: "16.9"
+          node-version: "17"
 
       - name: Enable corepack
         run: corepack enable
@@ -66,10 +66,9 @@ jobs:
       - name: Client Main Build
         run: pnpm --dir client/insight run build
 
-      - name: Install backup-viewer deps
-        run: pnpm --dir client/backup-viewer install --frozen-lockfile
-      - name: Backup-Viewer Build
-        run: pnpm --dir client/backup-viewer run build-background
+      - name: Build Backup-Viewer
+        run: npm ci --no-optional && npm run build-background
+        working-directory: client/backup-viewer
 
       - name: Cleanup pnpm cache
         run: pnpm store prune
