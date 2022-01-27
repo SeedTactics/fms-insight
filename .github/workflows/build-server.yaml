@@ -71,8 +71,7 @@ jobs:
 
       - run: pnpm --dir client/insight run build
 
-      - run: pnpm --dir client/backup-viewer install --frozen-lockfile
-      - run: pnpm --dir client/backup-viewer run build-background
+      - run: cd client/backup-viewer && npm ci --no-optional && npm run build-background
 
       - name: Server TestSuite
         run: |

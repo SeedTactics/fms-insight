@@ -203,7 +203,7 @@ namespace BlackMaple.MachineFramework
         context.Response.Headers.Add("Content-Security-Policy",
           "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; " +
           // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
-          "script-src 'self' 'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo=' 'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E='"
+          "script-src 'self' 'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo=' 'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E=' 'sha256-T9h4ixy0FtNsCwAyTfBtIY6uV5ZhMeNQIlL42GAKEME='"
         );
         context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
         context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");

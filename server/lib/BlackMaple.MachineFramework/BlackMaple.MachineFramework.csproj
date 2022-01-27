@@ -31,19 +31,19 @@
 
   <ItemGroup>
     <Content Include="..\..\..\client\insight\dist\**\*">
-      <PackagePath>contentFiles\any\net5.0\wwwroot</PackagePath>
+      <PackagePath>contentFiles\any\net6.0\wwwroot</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\..\..\client\insight\package.json">
-      <PackagePath>contentFiles\any\net5.0\insight-client\package.json</PackagePath>
+      <PackagePath>contentFiles\any\net6.0\insight-client\package.json</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\..\..\client\insight\src\**\*">
-      <PackagePath>contentFiles\any\net5.0\insight-client\src</PackagePath>
+      <PackagePath>contentFiles\any\net6.0\insight-client\src</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\..\..\client\backup-viewer\build\background\*">
-      <PackagePath>contentFiles\any\net5.0\background-viewer</PackagePath>
+      <PackagePath>contentFiles\any\net6.0\backup-viewer-background</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
   </ItemGroup>

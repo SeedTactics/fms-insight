@@ -133,7 +133,10 @@ export function WebsocketConnection(): null {
 
     const loc = window.location;
     let uri: string;
-    if (loc.protocol === "https:") {
+    if (loc.protocol === "backup:") {
+      // viewing page in backup viewer, no websocket connection
+      return;
+    } else if (loc.protocol === "https:") {
       uri = "wss:";
     } else {
       uri = "ws:";

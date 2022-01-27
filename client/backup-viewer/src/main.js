@@ -106,7 +106,9 @@ app.on("ready", () => {
         responseHeaders: {
           ...details.responseHeaders,
           "Content-Security-Policy": [
-            "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; form-action 'self'",
+            // will produce error because of plugin-legacy https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy,
+            // but don't care because running in electron
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; ",
           ],
         },
       });
@@ -125,6 +127,14 @@ app.on("ready", () => {
   });
   mainWindow.maximize();
 
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow.webContents.postMessage(
+      "insight-background-communication-port",
+      null,
+      [port1]
+    );
+  });
+
   mainWindow.webContents.on("before-input-event", (e, i) => {
     if (i.type === "keyDown" && i.key === "F12") {
       mainWindow.webContents.openDevTools({ mode: "detach" });
@@ -140,20 +150,16 @@ app.on("ready", () => {
     app.quit();
   });
 
-  ipcMain.on("open-insight-file", () => {
-    dialog
-      .showOpenDialog(mainWindow, {
-        title: "Open Backup Database File",
-        properties: ["openFile"],
-      })
-      .then((paths) => {
-        if (!paths.canceled && paths.filePaths.length > 0) {
-          background.webContents.send("open-file", paths.filePaths[0]);
-          mainWindow.webContents.postMessage("insight-file-opened", null, [
-            port1,
-          ]);
-        }
-      });
+  ipcMain.handle("open-insight-file", async (_) => {
+    const paths = await dialog.showOpenDialog(mainWindow, {
+      title: "Open Backup Database File",
+      properties: ["openFile"],
+    });
+    if (!paths.canceled && paths.filePaths.length > 0) {
+      return paths.filePaths[0];
+    } else {
+      return null;
+    }
   });
 
   mainWindow.loadURL(insightHost + "backup/open");

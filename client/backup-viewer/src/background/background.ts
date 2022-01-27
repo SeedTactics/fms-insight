@@ -31,10 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Database, open } from "sqlite";
-import { ipcRenderer, IpcRendererEvent } from "electron";
-import * as sqlite3 from "sqlite3";
-import { handlers, setDatabase } from "./handlers";
+import Database from "better-sqlite3";
+import { ipcRenderer } from "electron";
+import { handlers } from "./handlers";
 
 type Request = {
   name: string;
@@ -48,53 +47,77 @@ type Response = {
   error?: string;
 };
 
+let db: Database.Database | undefined = undefined;
+let error: string | undefined = undefined;
+let port: MessagePort | undefined = undefined;
+
+async function openFile(): Promise<boolean> {
+  const path = await ipcRenderer.invoke("open-insight-file");
+  if (path) {
+    try {
+      db = new Database(path, { readonly: true, fileMustExist: true });
+    } catch (e) {
+      console.log(e);
+      error = "The file is not a FMS Insight database";
+      throw error;
+    }
+    let verRow: any;
+    try {
+      verRow = db.prepare("SELECT ver from version").get();
+    } catch (e) {
+      console.log(e);
+      error = "The file is not a FMS Insight database";
+      throw error;
+    }
+    if (verRow.ver < 24) {
+      error =
+        "The FMS Insight database is from a newer version of FMS Insight.  Please update to the latest version.";
+      throw error;
+    }
+    try {
+      db.prepare("SELECT Counter from stations").get();
+    } catch (e) {
+      console.log(e);
+      error = "The file is not a FMS Insight Log database.";
+      throw error;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 ipcRenderer.once("communication-port", (evt) => {
-  let port = evt.ports[0];
+  port = evt.ports[0];
+  const portC = port;
+
   port.onmessage = (msg) => {
     const req: Request = msg.data;
-    const handler = handlers[req.name];
-    if (handler) {
-      Promise.resolve()
-        .then(() => handler(req.payload))
-        .then((r) => {
-          const resp: Response = { id: req.id, response: r };
-          port.postMessage(resp);
-        })
-        .catch((e) => {
-          const resp: Response = { id: req.id, error: e.toString() };
-          port.postMessage(resp);
-        });
+
+    if (req.name === "open-insight-file") {
+      openFile()
+        .then((opened) => portC.postMessage({ id: req.id, response: opened }))
+        .catch((e) => portC.postMessage({ id: req.id, error: e.toString() }));
     } else {
-      const resp: Response = { id: req.id, error: "No handler registered" };
-      port.postMessage(resp);
+      const handler = handlers[req.name];
+      if (error !== undefined) {
+        const resp: Response = { id: req.id, error };
+        portC.postMessage(resp);
+      }
+
+      if (db && handler) {
+        try {
+          const r = handler(db, req.payload);
+          const resp: Response = { id: req.id, response: r };
+          portC.postMessage(resp);
+        } catch (e: any) {
+          const resp: Response = { id: req.id, error: e.toString() };
+          portC.postMessage(resp);
+        }
+      } else {
+        const resp: Response = { id: req.id, error: "No handler registered" };
+        portC.postMessage(resp);
+      }
     }
   };
-});
-
-ipcRenderer.on("open-file", (_: IpcRendererEvent, path: string) => {
-  setDatabase(
-    (async function () {
-      let db: Database;
-      try {
-        db = await open({ filename: path, driver: sqlite3.Database });
-      } catch {
-        throw "The file is not a FMS Insight database";
-      }
-      let verRow: any;
-      try {
-        verRow = await db.get("SELECT ver from version");
-      } catch {
-        throw "The file is not a FMS Insight database.";
-      }
-      if (verRow.ver < 24) {
-        throw "The FMS Insight database is from a newer version of FMS Insight.  Please update to the latest version.";
-      }
-      try {
-        await db.get("SELECT Counter from stations");
-      } catch {
-        throw "The file is not a FMS Insight Log database.";
-      }
-      return db;
-    })()
-  );
 });
