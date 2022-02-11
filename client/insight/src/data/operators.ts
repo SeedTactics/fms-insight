@@ -38,7 +38,7 @@ import { fmsInformation } from "../network/server-settings";
 const selectedOperator = atom<string | null>({
   key: "selected-operator",
   default: typeof localStorage !== "undefined" ? localStorage.getItem("current-operator") || null : null,
-  effects_UNSTABLE: [
+  effects: [
     ({ onSet }) => {
       onSet((newVal) => {
         if (newVal === null) {
@@ -56,7 +56,7 @@ export const allOperators = atom<ReadonlySet<string>>({
   default: LazySeq.ofIterable<string>(
     JSON.parse(typeof localStorage !== "undefined" ? localStorage.getItem("operators") || "[]" : "[]")
   ).toRSet((x) => x),
-  effects_UNSTABLE: [
+  effects: [
     ({ onSet }) => {
       onSet((newVal) => {
         if (newVal instanceof DefaultValue) {

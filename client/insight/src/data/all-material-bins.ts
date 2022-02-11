@@ -50,7 +50,7 @@ export interface MaterialBinState {
 export const currentMaterialBinOrder = atom<ReadonlyArray<MaterialBinId>>({
   key: "current-material-bin-order",
   default: JSON.parse(localStorage.getItem("material-bins") || "[]"),
-  effects_UNSTABLE: [
+  effects: [
     ({ onSet }) => {
       onSet((newBins) => {
         localStorage.setItem("material-bins", JSON.stringify(newBins));
