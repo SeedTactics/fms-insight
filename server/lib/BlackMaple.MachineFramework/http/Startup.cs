@@ -65,9 +65,9 @@ namespace BlackMaple.MachineFramework
               new Controllers.WebsocketManager(fmsImpl.Backend)
           );
 
-      services
-        .AddResponseCompression()
-        .AddCors(options =>
+      services.AddResponseCompression();
+
+      services.AddCors(options =>
         {
           options.AddDefaultPolicy(builder =>
           {
@@ -88,7 +88,7 @@ namespace BlackMaple.MachineFramework
           });
         });
 
-      var mvcBuilder = services
+      services
           .AddControllers(options =>
           {
             options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
@@ -104,22 +104,6 @@ namespace BlackMaple.MachineFramework
           {
             NewtonsoftJsonSettings(options.SerializerSettings);
           });
-
-      services.AddOpenApiDocument(cfg =>
-      {
-        cfg.Title = "SeedTactic FMS Insight";
-        cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
-        cfg.Version = "1.14";
-        var settings = new Newtonsoft.Json.JsonSerializerSettings();
-        settings.Converters.Add(new StringEnumConverter());
-        settings.Converters.Add(new TimespanConverter());
-        settings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-        cfg.SerializerSettings = settings;
-        //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
-        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema.Generation.ReferenceTypeNullHandling.NotNull;
-        cfg.RequireParametersWithoutDefault = true;
-        cfg.IgnoreObsoleteProperties = true;
-      });
 
       if (serverSt.UseAuthentication)
       {
@@ -211,15 +195,6 @@ namespace BlackMaple.MachineFramework
       });
 
       app.UseWebSockets();
-
-      app.UseOpenApi(settings => settings.PostProcess = (doc, req) =>
-      {
-        doc.Host = null;
-        doc.BasePath = null;
-        doc.Schemes = null;
-        doc.Servers.Clear();
-      });
-      app.UseSwaggerUi3();
 
       app.UseEndpoints(endpoints =>
       {
