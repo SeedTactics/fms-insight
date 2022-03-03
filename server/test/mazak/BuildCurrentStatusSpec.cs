@@ -206,6 +206,7 @@ namespace MachineWatchTest
       finally
       {
         if (close) repository.Dispose();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         File.Delete(_tempLogFile);
       }
 

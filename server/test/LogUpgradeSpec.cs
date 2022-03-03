@@ -61,6 +61,7 @@ namespace MachineWatchTest
     public void Dispose()
     {
       _log.Dispose();
+      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
       if (!string.IsNullOrEmpty(_tempLogFile) && System.IO.File.Exists(_tempLogFile))
         System.IO.File.Delete(_tempLogFile);
       if (!string.IsNullOrEmpty(_tempJobFile) && System.IO.File.Exists(_tempJobFile))
