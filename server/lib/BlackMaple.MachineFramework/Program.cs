@@ -151,6 +151,7 @@ namespace BlackMaple.MachineFramework
     {
       return new HostBuilder()
           .UseContentRoot(ServerSettings.ContentRootDirectory)
+          .UseSerilog()
           .ConfigureWebHost(webBuilder =>
           {
             webBuilder
@@ -164,7 +165,6 @@ namespace BlackMaple.MachineFramework
             })
             .UseConfiguration(cfg)
             .SuppressStatusMessages(suppressStatusMessages: true)
-            .UseSerilog()
             .ConfigureServices(s =>
             {
               s.Configure<KestrelServerOptions>(cfg.GetSection("Kestrel"));
