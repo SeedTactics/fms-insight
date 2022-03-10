@@ -152,13 +152,18 @@ namespace MachineWatchTest
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 0, exeQty: 0);
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "thequeue");
-      j.SetInputQueue(2, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -198,21 +203,22 @@ namespace MachineWatchTest
       AddScheduleProcess(schRow, proc: 1, matQty: 1, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 2, exeQty: 0);
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+        )
+      };
       if (casting == null)
       {
         casting = "pppp";
       }
-      else
-      {
-        j.SetCasting(1, casting);
-      }
-      j.SetInputQueue(1, 1, "thequeue");
-      j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // add the material which matches the schedule
@@ -257,21 +263,22 @@ namespace MachineWatchTest
       AddScheduleProcess(schRow, proc: 1, matQty: 1, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 2, exeQty: 0);
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+        )
+      };
       if (casting == null)
       {
         casting = "pppp";
       }
-      else
-      {
-        j.SetCasting(1, casting);
-      }
-      j.SetInputQueue(1, 1, "thequeue");
-      j.SetInputQueue(2, 1, "thequeue");
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // add the material which matches the schedule
@@ -321,13 +328,18 @@ namespace MachineWatchTest
       AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 4, exeQty: 3);
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "castingQ");
-      j.SetInputQueue(2, 1, "transQ");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "castingQ" }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "transQ" }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // put 2 allocated casting in queue
@@ -374,13 +386,18 @@ namespace MachineWatchTest
       AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 4, exeQty: 3);
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "castingQ");
-      j.SetInputQueue(2, 1, "transQ");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "castingQ" }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "transQ" }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // put 2 allocated casting in queue
@@ -460,20 +477,21 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+        )
+      };
       if (casting == null)
       {
         casting = "pppp";
       }
-      else
-      {
-        j.SetCasting(1, casting);
-      }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // put a different casting
@@ -532,20 +550,21 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+        )
+      };
       if (casting == null)
       {
         casting = "pppp";
       }
-      else
-      {
-        j.SetCasting(1, casting);
-      }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
 
@@ -606,13 +625,17 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 3);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetCasting(1, "casting");
-      j.SetInputQueue(1, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "casting" }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -673,13 +696,17 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 45);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "thequeue");
-      j.SetCasting(1, "cccc");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "cccc" }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // put 3 unassigned castings in queue
@@ -724,11 +751,17 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 45, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 5, exeQty: 5);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -756,20 +789,21 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 46, complete: 43);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 3);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+        )
+      };
       if (casting == null)
       {
         casting = "pppp";
       }
-      else
-      {
-        j.SetCasting(1, casting);
-      }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // put 2 assigned castings in queue
@@ -807,40 +841,63 @@ namespace MachineWatchTest
 
     private void CreateMultiPathJobs(string casting = "mycasting", bool matchingPallets = false, bool matchingFixtures = false)
     {
-      var j1 = new JobPlan("uuuu1", 2, new[] { 1, 1 });
-      j1.PartName = "pppp";
+      var j1 = new Job()
+      {
+        UniqueStr = "uuuu1",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              InputQueue = "castingQ",
+              Casting = casting,
+              Pallets = matchingPallets ? ImmutableList.Create("1", "3") : ImmutableList.Create("1"),
+              Fixture = matchingFixtures ? "fixA" : null,
+              Face = matchingFixtures ? 10 : null,
+            })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              InputQueue = "transQ",
+              Pallets = ImmutableList.Create("2"),
+            })
+          }
+        )
+      };
 
-      j1.AddProcessOnPallet(1, 1, "1");
-      j1.AddProcessOnPallet(2, 1, "2");
-      if (matchingPallets)
+      var j2 = new Job()
       {
-        j1.AddProcessOnPallet(1, 1, "3");
-      }
-      if (matchingFixtures)
-      {
-        j1.SetFixtureFace(1, 1, "fixA", 10);
-      }
-      j1.SetInputQueue(1, 1, "castingQ");
-      j1.SetInputQueue(2, 1, "transQ");
-      if (!string.IsNullOrEmpty(casting))
-        j1.SetCasting(1, casting);
-
-      var j2 = new JobPlan("uuuu2", 2, new[] { 1, 1 });
-      j2.PartName = "pppp";
-      j2.AddProcessOnPallet(1, 1, "3");
-      j2.AddProcessOnPallet(2, 1, "4");
-      j2.SetInputQueue(1, 1, "castingQ");
-      j2.SetInputQueue(2, 1, "transQ");
-      if (matchingFixtures)
-      {
-        j2.SetFixtureFace(1, 1, "fixA", 10);
-      }
-      if (!string.IsNullOrEmpty(casting))
-        j2.SetCasting(1, casting);
+        UniqueStr = "uuuu2",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              InputQueue = "castingQ",
+              Casting = casting,
+              Pallets = ImmutableList.Create("3"),
+              Fixture = matchingFixtures ? "fixA" : null,
+              Face = matchingFixtures ? 10 : null,
+            })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              InputQueue = "transQ",
+              Pallets = ImmutableList.Create("4"),
+            })
+          }
+        )
+      };
 
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1.ToHistoricJob(), j2.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j1, j2)
       }, null, addAsCopiedToSystem: true);
     }
 
@@ -1329,12 +1386,17 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // put 1 castings in queue
@@ -1388,12 +1450,17 @@ namespace MachineWatchTest
       var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
-      var j = new JobPlan("uuuu", 1);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+        )
+      };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       }, null, addAsCopiedToSystem: true);
 
       // put 1 castings in queue
@@ -1455,26 +1522,31 @@ namespace MachineWatchTest
       var schRow2 = AddSchedule(read, schId: 11, unique: "uuu2", part: "pppp", numProc: 1, pri: 8, plan: 50, complete: 40);
       AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 5);
 
-      var j1 = new JobPlan("uuu1", 1);
-      j1.PartName = "pppp";
-      j1.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-2);
-      j1.SetInputQueue(1, 1, "thequeue");
-      var j2 = new JobPlan("uuu2", 1);
-      j2.PartName = "pppp";
-      j2.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-5);
-      j2.SetInputQueue(1, 1, "thequeue");
+      var j1 = new Job()
+      {
+        UniqueStr = "uuu1",
+        PartName = "pppp",
+        RouteStartUTC = DateTime.UtcNow.AddHours(-2),
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+        )
+      };
+      var j2 = new Job()
+      {
+        UniqueStr = "uuu2",
+        PartName = "pppp",
+        RouteStartUTC = DateTime.UtcNow.AddHours(-5),
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+        )
+      };
       if (casting == null)
       {
         casting = "pppp";
       }
-      else
-      {
-        j1.SetCasting(1, casting);
-        j2.SetCasting(1, casting);
-      }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1.ToHistoricJob(), j2.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j1, j2)
       }, null, addAsCopiedToSystem: true);
 
 
