@@ -198,12 +198,14 @@ namespace MachineWatchTest
     public void NextPiece()
     {
       DateTime now = DateTime.UtcNow;
-      var job = new JobPlan("job1", 1);
-      job.PartName = "part1";
 
-      //set up a program
-      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", MaxVal = 3, TimeInterval = TimeSpan.FromHours(11) };
-      job.PathInspections(1, 1).Add(inspProg);
+      var insps = ImmutableList.Create(new PathInspection()
+      {
+        InspectionType = "insp1",
+        Counter = "counter1",
+        MaxVal = 3,
+        TimeInterval = TimeSpan.FromHours(11)
+      });
 
       //set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount()
@@ -221,7 +223,7 @@ namespace MachineWatchTest
 
       CheckCount("counter1", 0);
 
-      _insp.MakeInspectionDecisions(1, 1, new[] { inspProg }, now);
+      _insp.MakeInspectionDecisions(1, 1, insps, now);
       CheckCount("counter1", 1);
       CheckDecision(1, "insp1", "counter1", true, now, true);
     }

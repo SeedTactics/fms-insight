@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using Xunit;
 using FluentAssertions;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Germinate;
 
 namespace MachineWatchTest
 {
@@ -231,9 +231,10 @@ namespace MachineWatchTest
     public void ConvertsJobFromV16()
     {
       var expected = CreateJob();
-      var actual = _log.LoadJob("Unique1")?.ToLegacyJob();
+      var actual = _log.LoadJob("Unique1");
 
-      JobEqualityChecks.CheckJobEqual(expected, actual, true);
+      actual.Processes[0].Should().BeEquivalentTo(expected.Processes[0]);
+      actual.Should().BeEquivalentTo(expected);
 
       _log.LoadDecrementsForJob("Unique1").Should().BeEquivalentTo(new[] {new DecrementQuantity()
       {
@@ -247,20 +248,22 @@ namespace MachineWatchTest
     public void CreatesNewJob()
     {
       var old = CreateJob();
-      var newJob = new JobPlan(old, "mynewunique");
-      newJob.PathInspections(1, 1).Clear();
-      newJob.PathInspections(1, 2).Clear();
-      newJob.PathInspections(2, 1).Clear();
-      newJob.PathInspections(2, 2).Clear();
-      newJob.PathInspections(2, 3).Clear();
+      var newJob = old with
+      {
+        UniqueStr = "mynewunique",
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
+        Processes = old.Processes.ConvertAll(p => p with { Paths = p.Paths.ConvertAll(path => path with { Inspections = null }) }),
+      };
 
       _log.AddJobs(new NewJobs()
       {
         ScheduleId = newJob.ScheduleId,
-        Jobs = ImmutableList.Create((Job)newJob.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(newJob)
       }, null, addAsCopiedToSystem: true);
 
-      JobEqualityChecks.CheckJobEqual(newJob, _log.LoadJob("mynewunique")?.ToLegacyJob(), true);
+      var actual = _log.LoadJob("mynewunique");
+
+      actual.Should().BeEquivalentTo(newJob);
 
       var now = DateTime.UtcNow;
       _log.AddNewDecrement(new[] {
@@ -280,206 +283,270 @@ namespace MachineWatchTest
       });
     }
 
-    private JobPlan CreateJob()
+    private HistoricJob CreateJob()
     {
-      var job1 = new JobPlan("Unique1", 2, new int[] { 2, 3 });
-      job1.PartName = "Job1";
-      job1.Cycles = 178;
-      job1.RouteStartingTimeUTC = DateTime.Parse("2019-10-22 20:24 GMT").ToUniversalTime();
-      job1.RouteEndingTimeUTC = job1.RouteStartingTimeUTC.AddHours(100);
-      job1.Archived = false;
-      job1.JobCopiedToSystem = true;
-      job1.ScheduleId = "Job1tag1245";
-      job1.HoldEntireJob.UserHold = true;
-      job1.HoldEntireJob.ReasonForUserHold = "test string";
-      job1.HoldEntireJob.HoldUnholdPatternStartUTC = job1.RouteStartingTimeUTC;
-      job1.HoldEntireJob.HoldUnholdPatternRepeats = true;
-      job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(10));
-      job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(18));
-      job1.HoldEntireJob.HoldUnholdPattern.Add(TimeSpan.FromMinutes(125));
-      job1.Comment = "Hello there";
-      job1.ScheduledBookingIds.Add("booking1");
-      job1.ScheduledBookingIds.Add("booking2");
-      job1.ScheduledBookingIds.Add("booking3");
+      var routeStart = DateTime.Parse("2019-10-22 20:24 GMT").ToUniversalTime();
+      return new HistoricJob()
+      {
+        UniqueStr = "Unique1",
+        PartName = "Job1",
+        Cycles = 178,
+        CopiedToSystem = true,
+        Decrements = ImmutableList.Create(
+          new DecrementQuantity()
+          {
+            DecrementId = 12,
+            TimeUTC = new DateTime(2020, 10, 22, 4, 5, 6, DateTimeKind.Utc),
+            Quantity = 123
+          }
+        ),
+        RouteStartUTC = routeStart,
+        RouteEndUTC = routeStart.AddHours(100),
+        Archived = false,
+        ScheduleId = "Job1tag1245",
+        Comment = "Hello there",
+        BookingIds = ImmutableList.Create("booking1", "booking2", "booking3"),
+        HoldJob = new HoldPattern()
+        {
+          UserHold = true,
+          ReasonForUserHold = "test string",
+          HoldUnholdPatternStartUTC = routeStart,
+          HoldUnholdPatternRepeats = true,
+          HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(18), TimeSpan.FromMinutes(125))
+        },
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+            new ProcPathInfo()
+            {
+              PartsPerPallet = 10,
+              InputQueue = "in11",
+              SimulatedStartingUTC = DateTime.Parse("1/5/2011 11:34 PM GMT").ToUniversalTime(),
+              SimulatedAverageFlowTime = TimeSpan.FromMinutes(0.5),
+              SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+              Pallets = ImmutableList.Create("Pal2", "Pal5"),
+              Fixture = "Fix1",
+              Face = 1,
+              Load = ImmutableList.Create(35, 64),
+              ExpectedLoadTime = TimeSpan.FromSeconds(100),
+              Unload = ImmutableList.Create(75, 234),
+              ExpectedUnloadTime = TimeSpan.FromSeconds(13),
+              Stops = ImmutableList.Create(new MachiningStop()
+              {
+                StationGroup = "Machine",
+                Stations = ImmutableList.Create(12, 23),
+                Program = "Emily",
+                ExpectedCycleTime = TimeSpan.FromHours(1.2),
+                Tools = ImmutableDictionary<string, TimeSpan>.Empty
+                  .Add("tool1", TimeSpan.FromMinutes(30))
+                  .Add("tool2", TimeSpan.FromMinutes(35)),
+              }),
+              Inspections = ImmutableList.Create(
+                new PathInspection() { InspectionType = "Insp1", Counter = "counter1", MaxVal = 53, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(100) },
+                new PathInspection() { InspectionType = "Insp3", Counter = "abcdef", MaxVal = 175, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(121) }
+              ),
+              HoldMachining = new HoldPattern()
+              {
+                UserHold = false,
+                ReasonForUserHold = "reason for user hold",
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/3 7:32 PM").ToUniversalTime(),
+                HoldUnholdPatternRepeats = false,
+                HoldUnholdPattern = ImmutableList.Create(
+                  TimeSpan.FromMinutes(5),
+                  TimeSpan.FromMinutes(53)
+                )
+              },
+              HoldLoadUnload = new HoldPattern()
+              {
+                UserHold = true,
+                ReasonForUserHold = "abcdef",
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/12/2 3:32 PM").ToUniversalTime(),
+                HoldUnholdPatternRepeats = true,
+                HoldUnholdPattern = ImmutableList.Create(
+                  TimeSpan.FromMinutes(63),
+                  TimeSpan.FromMinutes(7)
+                )
+              },
 
-      job1.SetPartsPerPallet(1, 1, 10);
-      job1.SetPartsPerPallet(1, 2, 15);
-      job1.SetPartsPerPallet(2, 1, 20);
-      job1.SetPartsPerPallet(2, 2, 22);
-      job1.SetPartsPerPallet(2, 3, 23);
-
-      job1.SetInputQueue(1, 1, "in11");
-      job1.SetOutputQueue(1, 2, "out12");
-      job1.SetInputQueue(2, 1, "in21");
-      job1.SetOutputQueue(2, 3, "out23");
-
-      job1.SetSimulatedStartingTimeUTC(1, 1, DateTime.Parse("1/5/2011 11:34 PM GMT").ToUniversalTime());
-      job1.SetSimulatedStartingTimeUTC(1, 2, DateTime.Parse("2/10/2011 12:45 AM GMT").ToUniversalTime());
-      job1.SetSimulatedStartingTimeUTC(2, 1, DateTime.Parse("3/14/2011 2:03 AM GMT").ToUniversalTime());
-      job1.SetSimulatedStartingTimeUTC(2, 2, DateTime.Parse("4/20/2011 3:22 PM GMT").ToUniversalTime());
-      job1.SetSimulatedStartingTimeUTC(2, 3, DateTime.Parse("5/22/2011 4:18 AM GMT").ToUniversalTime());
-
-      job1.SetSimulatedAverageFlowTime(1, 1, TimeSpan.FromMinutes(0.5));
-      job1.SetSimulatedAverageFlowTime(1, 2, TimeSpan.FromMinutes(1.5));
-      job1.SetSimulatedAverageFlowTime(2, 1, TimeSpan.FromMinutes(2.5));
-      job1.SetSimulatedAverageFlowTime(2, 2, TimeSpan.FromMinutes(3.5));
-      job1.SetSimulatedAverageFlowTime(2, 3, TimeSpan.FromMinutes(4.5));
-
-      job1.AddProcessOnPallet(1, 1, "Pal2");
-      job1.AddProcessOnPallet(1, 1, "Pal5");
-      job1.AddProcessOnPallet(1, 2, "Pal4");
-      job1.AddProcessOnPallet(1, 2, "Pal35");
-      job1.AddProcessOnPallet(2, 1, "Pal12");
-      job1.AddProcessOnPallet(2, 1, "Pal64");
-      job1.AddProcessOnPallet(2, 2, "Hi");
-      job1.AddProcessOnPallet(2, 2, "Pal2");
-      job1.AddProcessOnPallet(2, 3, "Pal5");
-      job1.AddProcessOnPallet(2, 3, "OMG");
-
-      job1.SetFixtureFace(1, 1, "Fix1", 1);
-      job1.SetFixtureFace(1, 2, "ABC", 4);
-      job1.SetFixtureFace(2, 1, "Fix123", 6);
-      // 2, 2 has non-integer face, so should be ignored
-      job1.SetFixtureFace(2, 3, "Fix17", 7);
-
-      job1.AddLoadStation(1, 1, 35);
-      job1.AddLoadStation(1, 1, 64);
-      job1.AddLoadStation(1, 2, 785);
-      job1.AddLoadStation(1, 2, 15);
-      job1.AddLoadStation(2, 1, 647);
-      job1.AddLoadStation(2, 1, 474);
-      job1.AddLoadStation(2, 2, 785);
-      job1.AddLoadStation(2, 2, 53);
-      job1.AddLoadStation(2, 3, 15);
-
-      job1.SetExpectedLoadTime(1, 1, TimeSpan.FromSeconds(100));
-      job1.SetExpectedLoadTime(1, 2, TimeSpan.FromMinutes(53));
-      job1.SetExpectedLoadTime(2, 1, TimeSpan.FromHours(52));
-      job1.SetExpectedLoadTime(2, 2, TimeSpan.FromSeconds(98));
-      job1.SetExpectedLoadTime(2, 3, TimeSpan.FromSeconds(35));
-
-      job1.AddUnloadStation(1, 1, 75);
-      job1.AddUnloadStation(1, 1, 234);
-      job1.AddUnloadStation(1, 2, 53);
-      job1.AddUnloadStation(2, 1, 563);
-      job1.AddUnloadStation(2, 2, 2);
-      job1.AddUnloadStation(2, 2, 12);
-      job1.AddUnloadStation(2, 3, 32);
-
-      job1.SetExpectedUnloadTime(1, 1, TimeSpan.FromSeconds(13));
-      job1.SetExpectedUnloadTime(1, 2, TimeSpan.FromMinutes(12));
-      job1.SetExpectedUnloadTime(2, 1, TimeSpan.FromHours(63));
-      job1.SetExpectedUnloadTime(2, 2, TimeSpan.FromSeconds(73));
-      job1.SetExpectedUnloadTime(2, 3, TimeSpan.FromSeconds(532));
-
-      var route = new JobMachiningStop("Machine");
-      route.Stations.Add(12);
-      route.Stations.Add(23);
-      route.ProgramName = "Emily";
-      route.ExpectedCycleTime = TimeSpan.FromHours(1.2);
-      route.Tools["tool1"] = TimeSpan.FromMinutes(30);
-      route.Tools["tool2"] = TimeSpan.FromMinutes(35);
-      job1.AddMachiningStop(1, 1, route);
-
-      route = new JobMachiningStop("Other Machine");
-      route.Stations.Add(23);
-      route.Stations.Add(12);
-      route.ProgramName = "awef";
-      route.ExpectedCycleTime = TimeSpan.FromHours(2.8);
-      route.Tools["tool1"] = TimeSpan.FromMinutes(9);
-      route.Tools["tool33"] = TimeSpan.FromMinutes(42);
-      job1.AddMachiningStop(1, 2, route);
-
-      route = new JobMachiningStop("Test");
-      route.Stations.Add(64);
-      route.Stations.Add(323);
-      route.ProgramName = "Goodbye";
-      route.ExpectedCycleTime = TimeSpan.FromHours(6.3);
-      route.Tools["tool2"] = TimeSpan.FromMinutes(12);
-      route.Tools["tool44"] = TimeSpan.FromMinutes(99);
-      job1.AddMachiningStop(2, 1, route);
-
-      route = new JobMachiningStop("Test");
-      route.Stations.Add(32);
-      route.Stations.Add(64);
-      route.ProgramName = "wefq";
-      job1.AddMachiningStop(2, 2, route);
-
-      route = new JobMachiningStop("Test");
-      route.Stations.Add(245);
-      route.Stations.Add(36);
-      route.ProgramName = "dduuude";
-      job1.AddMachiningStop(2, 1, route);
-
-      route = new JobMachiningStop("Test");
-      route.Stations.Add(23);
-      route.Stations.Add(53);
-      route.ProgramName = "so cool";
-      job1.AddMachiningStop(2, 2, route);
-
-      // insp1 is on process 1, all paths
-      var insp1 = new PathInspection() { InspectionType = "Insp1", Counter = "counter1", MaxVal = 53, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(100) };
-      for (int path = 1; path <= job1.GetNumPaths(1); path++) job1.PathInspections(1, path).Add(insp1);
-
-      // insp2 has no InspProc so is final process 2.
-      var insp2 = new PathInspection() { InspectionType = "Insp2", Counter = "counter1", MaxVal = 12, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(64) };
-      for (int path = 1; path <= job1.GetNumPaths(2); path++) job1.PathInspections(2, path).Add(insp2);
-
-      // insp3 on first process
-      var insp3 = new PathInspection() { InspectionType = "Insp3", Counter = "abcdef", MaxVal = 175, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(121) };
-      for (int path = 1; path <= job1.GetNumPaths(1); path++) job1.PathInspections(1, path).Add(insp3);
-
-      // insp4 on final proc
-      var insp4 = new PathInspection() { InspectionType = "Insp4", Counter = "counter2", RandomFreq = 16.12, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(33) };
-      for (int path = 1; path <= job1.GetNumPaths(2); path++) job1.PathInspections(2, path).Add(insp4);
-
-      // insp5 on final proc
-      var insp5 = new PathInspection() { InspectionType = "Insp5", Counter = "counter3", RandomFreq = 0.544, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(44) };
-      for (int path = 1; path <= job1.GetNumPaths(2); path++) job1.PathInspections(2, path).Add(insp5);
-
-      job1.HoldMachining(1, 1).UserHold = false;
-      job1.HoldMachining(1, 1).ReasonForUserHold = "reason for user hold";
-      job1.HoldMachining(1, 1).HoldUnholdPatternRepeats = false;
-      job1.HoldMachining(1, 1).HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/3 7:32 PM").ToUniversalTime();
-      job1.HoldMachining(1, 1).HoldUnholdPattern.Add(TimeSpan.FromMinutes(5));
-      job1.HoldMachining(1, 1).HoldUnholdPattern.Add(TimeSpan.FromMinutes(53));
-
-      job1.HoldMachining(1, 2).UserHold = true;
-      job1.HoldMachining(1, 2).ReasonForUserHold = "another reason for user hold";
-      job1.HoldMachining(1, 2).HoldUnholdPatternRepeats = true;
-      job1.HoldMachining(1, 2).HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/12 6:12 PM").ToUniversalTime();
-      job1.HoldMachining(1, 2).HoldUnholdPattern.Add(TimeSpan.FromMinutes(84));
-      job1.HoldMachining(1, 2).HoldUnholdPattern.Add(TimeSpan.FromMinutes(1));
-
-      job1.HoldMachining(2, 1).UserHold = false;
-      job1.HoldMachining(2, 1).ReasonForUserHold = "oh my reason for user hold";
-      job1.HoldMachining(2, 1).HoldUnholdPatternRepeats = true;
-      job1.HoldMachining(2, 1).HoldUnholdPatternStartUTC = DateTime.Parse("2010/9/1 1:30 PM").ToUniversalTime();
-      job1.HoldMachining(2, 1).HoldUnholdPattern.Add(TimeSpan.FromMinutes(532));
-      job1.HoldMachining(2, 1).HoldUnholdPattern.Add(TimeSpan.FromMinutes(64));
-
-      job1.HoldLoadUnload(1, 1).UserHold = true;
-      job1.HoldLoadUnload(1, 1).ReasonForUserHold = "abcdef";
-      job1.HoldLoadUnload(1, 1).HoldUnholdPatternRepeats = true;
-      job1.HoldLoadUnload(1, 1).HoldUnholdPatternStartUTC = DateTime.Parse("2010/12/2 3:32 PM").ToUniversalTime();
-      job1.HoldLoadUnload(1, 1).HoldUnholdPattern.Add(TimeSpan.FromMinutes(63));
-      job1.HoldLoadUnload(1, 1).HoldUnholdPattern.Add(TimeSpan.FromMinutes(7));
-
-      job1.HoldLoadUnload(1, 2).UserHold = false;
-      job1.HoldLoadUnload(1, 2).ReasonForUserHold = "agr";
-      job1.HoldLoadUnload(1, 2).HoldUnholdPatternRepeats = false;
-      job1.HoldLoadUnload(1, 2).HoldUnholdPatternStartUTC = DateTime.Parse("2010/6/1 3:12 PM").ToUniversalTime();
-      job1.HoldLoadUnload(1, 2).HoldUnholdPattern.Add(TimeSpan.FromMinutes(174));
-      job1.HoldLoadUnload(1, 2).HoldUnholdPattern.Add(TimeSpan.FromMinutes(83));
-
-      job1.HoldLoadUnload(2, 3).UserHold = true;
-      job1.HoldLoadUnload(2, 3).ReasonForUserHold = "erhagsad";
-      job1.HoldLoadUnload(2, 3).HoldUnholdPatternRepeats = false;
-      job1.HoldLoadUnload(2, 3).HoldUnholdPatternStartUTC = DateTime.Parse("2010/11/5 9:30 AM").ToUniversalTime();
-      job1.HoldLoadUnload(2, 3).HoldUnholdPattern.Add(TimeSpan.FromMinutes(32));
-      job1.HoldLoadUnload(2, 3).HoldUnholdPattern.Add(TimeSpan.FromMinutes(64));
-
-      return job1;
+            },
+            new ProcPathInfo()
+            {
+              PartsPerPallet = 15,
+              OutputQueue = "out12",
+              SimulatedStartingUTC = DateTime.Parse("2/10/2011 12:45 AM GMT").ToUniversalTime(),
+              SimulatedAverageFlowTime = TimeSpan.FromMinutes(1.5),
+              SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+              Pallets = ImmutableList.Create("Pal4", "Pal35"),
+              Fixture = "ABC",
+              Face = 4,
+              Load = ImmutableList.Create(785, 15),
+              ExpectedLoadTime = TimeSpan.FromMinutes(53),
+              Unload = ImmutableList.Create(53),
+              ExpectedUnloadTime = TimeSpan.FromMinutes(12),
+              Stops = ImmutableList.Create(new MachiningStop()
+              {
+                StationGroup = "Other Machine",
+                Stations = ImmutableList.Create(23, 12),
+                Program = "awef",
+                ExpectedCycleTime = TimeSpan.FromHours(2.8),
+                Tools = ImmutableDictionary<string, TimeSpan>.Empty
+                  .Add("tool1", TimeSpan.FromMinutes(9))
+                  .Add("tool33", TimeSpan.FromMinutes(42)),
+              }),
+              Inspections = ImmutableList.Create(
+                new PathInspection() { InspectionType = "Insp1", Counter = "counter1", MaxVal = 53, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(100) },
+                new PathInspection() { InspectionType = "Insp3", Counter = "abcdef", MaxVal = 175, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(121) }
+              ),
+              HoldMachining = new HoldPattern()
+              {
+                UserHold = true,
+                ReasonForUserHold = "another reason for user hold",
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/12 6:12 PM").ToUniversalTime(),
+                HoldUnholdPatternRepeats = true,
+                HoldUnholdPattern = ImmutableList.Create(
+                  TimeSpan.FromMinutes(84),
+                  TimeSpan.FromMinutes(1)
+                )
+              },
+              HoldLoadUnload = new HoldPattern()
+              {
+                UserHold = false,
+                ReasonForUserHold = "agr",
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/6/1 3:12 PM").ToUniversalTime(),
+                HoldUnholdPatternRepeats = false,
+                HoldUnholdPattern = ImmutableList.Create(
+                  TimeSpan.FromMinutes(174),
+                  TimeSpan.FromMinutes(83)
+                )
+              },
+            }
+          )
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+            new ProcPathInfo()
+            {
+              PartsPerPallet = 20,
+              InputQueue = "in21",
+              SimulatedStartingUTC = DateTime.Parse("3/14/2011 2:03 AM GMT").ToUniversalTime(),
+              SimulatedAverageFlowTime = TimeSpan.FromMinutes(2.5),
+              SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+              Pallets = ImmutableList.Create("Pal12", "Pal64"),
+              Fixture = "Fix123",
+              Face = 6,
+              Load = ImmutableList.Create(647, 474),
+              ExpectedLoadTime = TimeSpan.FromHours(52),
+              Unload = ImmutableList.Create(563),
+              ExpectedUnloadTime = TimeSpan.FromHours(63),
+              Stops = ImmutableList.Create(
+                new MachiningStop()
+                {
+                  StationGroup = "Test",
+                  Stations = ImmutableList.Create(64, 323),
+                  Program = "Goodbye",
+                  ExpectedCycleTime = TimeSpan.FromHours(6.3),
+                  Tools = ImmutableDictionary<string, TimeSpan>.Empty
+                    .Add("tool2", TimeSpan.FromMinutes(12))
+                    .Add("tool44", TimeSpan.FromMinutes(99)),
+                },
+                new MachiningStop()
+                {
+                  StationGroup = "Test",
+                  Stations = ImmutableList.Create(245, 36),
+                  Program = "dduuude",
+                }
+              ),
+              Inspections = ImmutableList.Create(
+                new PathInspection() { InspectionType = "Insp2", Counter = "counter1", MaxVal = 12, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(64) },
+                new PathInspection() { InspectionType = "Insp4", Counter = "counter2", RandomFreq = 16.12, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(33) },
+                new PathInspection() { InspectionType = "Insp5", Counter = "counter3", RandomFreq = 0.544, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(44) }
+              ),
+              HoldMachining = new HoldPattern()
+              {
+                UserHold = false,
+                ReasonForUserHold = "oh my reason for user hold",
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/9/1 1:30 PM").ToUniversalTime(),
+                HoldUnholdPatternRepeats = true,
+                HoldUnholdPattern = ImmutableList.Create(
+                  TimeSpan.FromMinutes(532),
+                  TimeSpan.FromMinutes(64)
+                )
+              },
+              HoldLoadUnload = new HoldPattern() { HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01") },
+            },
+            new ProcPathInfo()
+            {
+              PartsPerPallet = 22,
+              SimulatedStartingUTC = DateTime.Parse("4/20/2011 3:22 PM GMT").ToUniversalTime(),
+              SimulatedAverageFlowTime = TimeSpan.FromMinutes(3.5),
+              SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+              Pallets = ImmutableList.Create("Hi", "Pal2"),
+              // has non-integer face so should be ignored
+              Load = ImmutableList.Create(785, 53),
+              ExpectedLoadTime = TimeSpan.FromSeconds(98),
+              Unload = ImmutableList.Create(2, 12),
+              ExpectedUnloadTime = TimeSpan.FromSeconds(73),
+              Stops = ImmutableList.Create(
+                new MachiningStop()
+                {
+                  StationGroup = "Test",
+                  Stations = ImmutableList.Create(32, 64),
+                  Program = "wefq",
+                },
+                new MachiningStop()
+                {
+                  StationGroup = "Test",
+                  Stations = ImmutableList.Create(23, 53),
+                  Program = "so cool",
+                }
+              ),
+              Inspections = ImmutableList.Create(
+                new PathInspection() { InspectionType = "Insp2", Counter = "counter1", MaxVal = 12, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(64) },
+                new PathInspection() { InspectionType = "Insp4", Counter = "counter2", RandomFreq = 16.12, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(33) },
+                new PathInspection() { InspectionType = "Insp5", Counter = "counter3", RandomFreq = 0.544, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(44) }
+              ),
+              HoldMachining = new HoldPattern() { HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01") },
+              HoldLoadUnload = new HoldPattern() { HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01") },
+            },
+            new ProcPathInfo()
+            {
+              PartsPerPallet = 23,
+              OutputQueue = "out23",
+              SimulatedStartingUTC = DateTime.Parse("5/22/2011 4:18 AM GMT").ToUniversalTime(),
+              SimulatedAverageFlowTime = TimeSpan.FromMinutes(4.5),
+              SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+              Pallets = ImmutableList.Create("Pal5", "OMG"),
+              Fixture = "Fix17",
+              Face = 7,
+              Load = ImmutableList.Create(15),
+              ExpectedLoadTime = TimeSpan.FromSeconds(35),
+              Unload = ImmutableList.Create(32),
+              ExpectedUnloadTime = TimeSpan.FromSeconds(532),
+              Stops = ImmutableList<MachiningStop>.Empty,
+              Inspections = ImmutableList.Create(
+                new PathInspection() { InspectionType = "Insp2", Counter = "counter1", MaxVal = 12, RandomFreq = -1, TimeInterval = TimeSpan.FromMinutes(64) },
+                new PathInspection() { InspectionType = "Insp4", Counter = "counter2", RandomFreq = 16.12, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(33) },
+                new PathInspection() { InspectionType = "Insp5", Counter = "counter3", RandomFreq = 0.544, MaxVal = -1, TimeInterval = TimeSpan.FromMinutes(44) }
+              ),
+              HoldMachining = new HoldPattern() { HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01") },
+              HoldLoadUnload = new HoldPattern()
+              {
+                UserHold = true,
+                ReasonForUserHold = "erhagsad",
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/11/5 9:30 AM").ToUniversalTime(),
+                HoldUnholdPatternRepeats = false,
+                HoldUnholdPattern = ImmutableList.Create(
+                  TimeSpan.FromMinutes(32),
+                  TimeSpan.FromMinutes(64)
+                )
+              },
+            }
+          )
+          }
+        )
+      };
     }
 
 
@@ -559,95 +626,4 @@ namespace MachineWatchTest
 		*/
 
   }
-
-  public static class LegacyToNewJobConvert
-  {
-
-    private static HoldPattern ToInsightHold(JobHoldPattern h)
-    {
-      if (h == null) return null;
-
-      return new HoldPattern()
-      {
-        UserHold = h.UserHold,
-        ReasonForUserHold = h.ReasonForUserHold,
-        HoldUnholdPatternStartUTC = h.HoldUnholdPatternStartUTC,
-        HoldUnholdPattern = h.HoldUnholdPattern.ToImmutableList(),
-        HoldUnholdPatternRepeats = h.HoldUnholdPatternRepeats
-      };
-    }
-
-    public static HistoricJob ToHistoricJob(this JobPlan job)
-    {
-      return new HistoricJob()
-      {
-        Comment = job.Comment,
-        HoldJob = ToInsightHold(job.HoldEntireJob),
-        // ignoring obsolete job-level inspections
-        // ignoring Priority, CreateMarkingData
-        ManuallyCreated = job.ManuallyCreatedJob,
-        BookingIds = job.ScheduledBookingIds.ToImmutableList(),
-        ScheduleId = job.ScheduleId,
-        UniqueStr = job.UniqueStr,
-        PartName = job.PartName,
-        CopiedToSystem = job.JobCopiedToSystem,
-        Archived = job.Archived,
-        RouteStartUTC = job.RouteStartingTimeUTC,
-        RouteEndUTC = job.RouteEndingTimeUTC,
-        Cycles = job.Cycles,
-        Processes = Enumerable.Range(1, job.NumProcesses).Select(proc =>
-          new ProcessInfo()
-          {
-            Paths = Enumerable.Range(1, job.GetNumPaths(process: proc)).Select(path =>
-        new ProcPathInfo()
-        {
-          ExpectedUnloadTime = job.GetExpectedUnloadTime(proc, path),
-          OutputQueue = job.GetOutputQueue(proc, path),
-          InputQueue = job.GetInputQueue(proc, path),
-          PartsPerPallet = job.PartsPerPallet(proc, path),
-          HoldLoadUnload = ToInsightHold(job.HoldLoadUnload(proc, path)),
-          HoldMachining = ToInsightHold(job.HoldMachining(proc, path)),
-          SimulatedAverageFlowTime = job.GetSimulatedAverageFlowTime(proc, path),
-          SimulatedStartingUTC = job.GetSimulatedStartingTimeUTC(proc, path),
-          SimulatedProduction = job.GetSimulatedProduction(proc, path).Select(s => new SimulatedProduction()
-          {
-            TimeUTC = s.TimeUTC,
-            Quantity = s.Quantity
-          }).ToImmutableList(),
-          Stops = job.GetMachiningStop(proc, path).Select(stop => new MachiningStop()
-          {
-            Stations = stop.Stations.ToImmutableList(),
-            Program = stop.ProgramName,
-            ProgramRevision = stop.ProgramRevision,
-            Tools = stop.Tools.ToImmutableDictionary(k => k.Key, k => k.Value),
-            StationGroup = stop.StationGroup,
-            ExpectedCycleTime = stop.ExpectedCycleTime
-          }).ToImmutableList(),
-          Casting = proc == 1 ? job.GetCasting(path) : null,
-          Unload = job.UnloadStations(proc, path).ToImmutableList(),
-          ExpectedLoadTime = job.GetExpectedLoadTime(proc, path),
-          Load = job.LoadStations(proc, path).ToImmutableList(),
-          Face = job.PlannedFixture(proc, path).face,
-          Fixture = job.PlannedFixture(proc, path).fixture,
-          Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
-          Inspections =
-      job.PathInspections(proc, path).Select(i => new PathInspection()
-      {
-        InspectionType = i.InspectionType,
-        Counter = i.Counter,
-        MaxVal = i.MaxVal,
-        RandomFreq = i.RandomFreq,
-        TimeInterval = i.TimeInterval,
-        ExpectedInspectionTime = i.ExpectedInspectionTime
-      }
-      ).ToImmutableList()
-        }
-            ).ToImmutableList()
-          }
-        ).ToImmutableList()
-      };
-    }
-
-  }
-
 }
