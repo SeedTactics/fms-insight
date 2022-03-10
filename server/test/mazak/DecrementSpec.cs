@@ -411,12 +411,12 @@ namespace MachineWatchTest
 
       var uuuu = new JobPlan("uuuu", 1);
       uuuu.PartName = "pppp";
-      uuuu.SetPlannedCyclesOnFirstProcess(numCycles: 50);
+      uuuu.Cycles = 50;
       uuuu.RouteStartingTimeUTC = now.AddHours(-12);
       uuuu.RouteEndingTimeUTC = now.AddHours(12);
       var vvvv = new JobPlan("vvvv", 1, new[] { 2 });
       vvvv.PartName = "oooo";
-      vvvv.SetPlannedCyclesOnFirstProcess(numCycles: 4 + 7);
+      vvvv.Cycles = 4 + 7;
       vvvv.RouteStartingTimeUTC = now.AddHours(-12);
       vvvv.RouteEndingTimeUTC = now.AddHours(12);
       _jobDB.AddJobs(new NewJobs()

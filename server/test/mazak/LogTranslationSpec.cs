@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -122,13 +122,14 @@ namespace MachineWatchTest
     }
 
     #region Mazak Data Setup
-    protected int AddTestPart(string unique, string part, int numProc, int path)
+    protected int AddTestPart(string unique, string part, int numProc)
     {
+      var cnt = _schedules.Count(s => s.PartName.Substring(0, s.PartName.IndexOf(":")) == part);
       var sch = new MazakScheduleRow()
       {
         Id = 50 + _schedules.Count(),
-        PartName = part + ":4:" + path.ToString(),
-        Comment = MazakPart.CreateComment(unique, Enumerable.Repeat(path, numProc), false),
+        PartName = part + ":4:" + (cnt + 1).ToString(),
+        Comment = MazakPart.CreateComment(unique, Enumerable.Repeat(1, numProc), false),
       };
       for (int i = 0; i < numProc; i++)
       {
@@ -205,16 +206,16 @@ namespace MachineWatchTest
       public int Pallet { get; set; }
     }
 
-    protected TestMaterial BuildMaterial(DateTime t, int pal, string unique, string part, int proc, int numProc, string face, long matID, int path = 1)
+    protected TestMaterial BuildMaterial(DateTime t, int pal, string unique, string part, int proc, int numProc, string face, long matID, int partIdx = 1)
     {
       return new TestMaterial()
       {
         MaterialID = matID,
-        MazakPartName = part + ":4:" + path.ToString(),
+        MazakPartName = part + ":4:" + partIdx.ToString(),
         JobPartName = part,
         Unique = unique,
         Process = proc,
-        Path = path,
+        Path = 1,
         NumProcess = numProc,
         Face = face,
         EventStartTime = t,
@@ -222,17 +223,17 @@ namespace MachineWatchTest
       };
     }
 
-    protected IEnumerable<TestMaterial> BuildMaterial(DateTime t, int pal, string unique, string part, int proc, int numProc, string face, IEnumerable<long> matIDs, int path = 1)
+    protected IEnumerable<TestMaterial> BuildMaterial(DateTime t, int pal, string unique, string part, int proc, int numProc, string face, IEnumerable<long> matIDs, int partIdx = 1)
     {
       return matIDs.Select((matID, idx) =>
         new TestMaterial()
         {
           MaterialID = matID,
-          MazakPartName = part + ":4:" + path.ToString(),
+          MazakPartName = part + ":4:" + partIdx.ToString(),
           JobPartName = part,
           Unique = unique,
           Process = proc,
-          Path = path,
+          Path = 1,
           NumProcess = numProc,
           Face = face + "-" + (idx + 1).ToString(),
           EventStartTime = t,
@@ -1141,7 +1142,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
       var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
 
@@ -1183,8 +1184,8 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
       var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
       var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 2);
@@ -1242,9 +1243,9 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
-      AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
-      AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 2);
+      AddTestPart(unique: "unique", part: "part1", numProc: 2);
+      AddTestPart(unique: "unique", part: "part1", numProc: 2);
 
       var p1d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, face: "1", matID: 1);
       var p1d2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, face: "2", matID: 1);
@@ -1299,35 +1300,37 @@ namespace MachineWatchTest
     public void ActiveTime()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 2);
+      AddTestPart(unique: "uuuu1", part: "pppp", numProc: 2);
+      AddTestPart(unique: "uuuu2", part: "pppp", numProc: 2);
 
-      var proc1path1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
-      var proc2path1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
-      var proc1path2 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 2, face: "1", matID: 2);
-      var proc2path2 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2, face: "2", matID: 2);
+      var proc1path1 = BuildMaterial(t, pal: 2, unique: "uuuu1", part: "pppp", proc: 1, numProc: 2, partIdx: 1, face: "1", matID: 1);
+      var proc2path1 = BuildMaterial(t, pal: 2, unique: "uuuu1", part: "pppp", proc: 2, numProc: 2, partIdx: 1, face: "2", matID: 1);
+      var proc1path2 = BuildMaterial(t, pal: 4, unique: "uuuu2", part: "pppp", proc: 1, numProc: 2, partIdx: 2, face: "1", matID: 2);
+      var proc2path2 = BuildMaterial(t, pal: 4, unique: "uuuu2", part: "pppp", proc: 2, numProc: 2, partIdx: 2, face: "2", matID: 2);
 
-      var j = new JobPlan("uuuu", 2, new[] { 2, 2 });
-      j.PartName = "pppp";
-      j.SetExpectedLoadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(11));
-      j.SetExpectedLoadTime(process: 1, path: 2, t: TimeSpan.FromMinutes(12));
-      j.SetExpectedLoadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(21));
-      j.SetExpectedLoadTime(process: 2, path: 2, t: TimeSpan.FromMinutes(22));
-      j.SetExpectedUnloadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(711));
-      j.SetExpectedUnloadTime(process: 1, path: 2, t: TimeSpan.FromMinutes(712));
-      j.SetExpectedUnloadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(721));
-      j.SetExpectedUnloadTime(process: 2, path: 2, t: TimeSpan.FromMinutes(722));
+      var j1 = new JobPlan("uuuu1", 2, new[] { 1, 1 });
+      var j2 = new JobPlan("uuuu2", 2, new[] { 1, 1 });
+      j1.PartName = "pppp";
+      j2.PartName = "pppp";
+      j1.SetExpectedLoadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(11));
+      j2.SetExpectedLoadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(12));
+      j1.SetExpectedLoadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(21));
+      j2.SetExpectedLoadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(22));
+      j1.SetExpectedUnloadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(711));
+      j2.SetExpectedUnloadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(712));
+      j1.SetExpectedUnloadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(721));
+      j2.SetExpectedUnloadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(722));
       var stop1 = new JobMachiningStop("machinespec");
       stop1.ExpectedCycleTime = TimeSpan.FromMinutes(33);
-      j.AddMachiningStop(process: 1, path: 1, r: stop1);
-      j.AddMachiningStop(process: 1, path: 2, r: stop1);
+      j1.AddMachiningStop(process: 1, path: 1, r: stop1);
+      j2.AddMachiningStop(process: 1, path: 1, r: stop1);
       var stop2 = new JobMachiningStop("machinespec");
       stop2.ExpectedCycleTime = TimeSpan.FromMinutes(44);
-      j.AddMachiningStop(process: 2, path: 1, r: stop2);
-      j.AddMachiningStop(process: 2, path: 2, r: stop2);
+      j1.AddMachiningStop(process: 2, path: 1, r: stop2);
+      j2.AddMachiningStop(process: 2, path: 1, r: stop2);
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j1.ToHistoricJob(), j2.ToHistoricJob())
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1387,13 +1390,13 @@ namespace MachineWatchTest
       jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 1, 2, 3 });
-      var proc2 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 1, 2, 3 });
-      var proc1snd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 4, 5, 6 });
-      var proc2snd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 4, 5, 6 });
-      var proc1thrd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 7, 8, 9 });
+      var proc1 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matIDs: new long[] { 1, 2, 3 });
+      var proc2 = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, face: "2", matIDs: new long[] { 1, 2, 3 });
+      var proc1snd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matIDs: new long[] { 4, 5, 6 });
+      var proc2snd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, face: "2", matIDs: new long[] { 4, 5, 6 });
+      var proc1thrd = BuildMaterial(t, pal: 1, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matIDs: new long[] { 7, 8, 9 });
 
       LoadStart(proc1, offset: 0, load: 1);
       LoadEnd(proc1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5);
@@ -1443,7 +1446,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
       var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
 
@@ -1495,7 +1498,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
       var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 1);
       var p2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, face: "1", matID: 2);
@@ -1535,10 +1538,10 @@ namespace MachineWatchTest
     public void Inspections()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
-      var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
+      var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 1);
+      var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, face: "2", matID: 1);
 
       var j = new JobPlan("uuuu", 2);
       j.PartName = "pppp";
@@ -1619,9 +1622,9 @@ namespace MachineWatchTest
     [Fact]
     public void TranslatesProgramsFromJob()
     {
-      var j = new Job()
+      var j1 = new Job()
       {
-        UniqueStr = "unique",
+        UniqueStr = "unique1",
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo()
         {
@@ -1633,7 +1636,17 @@ namespace MachineWatchTest
                 Program = "the-log-prog",
                 ProgramRevision = 15
               })
-            },
+            }
+          )
+        }),
+      };
+      var j2 = new Job()
+      {
+        UniqueStr = "unique2",
+        PartName = "part1",
+        Processes = ImmutableList.Create(new ProcessInfo()
+        {
+          Paths = ImmutableList.Create(
             new ProcPathInfo()
             {
               Stops = ImmutableList.Create(new MachiningStop()
@@ -1645,16 +1658,16 @@ namespace MachineWatchTest
           )
         }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j1, j2) }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      var schIdPath1 = AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
-      var schIdPath2 = AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 2);
+      var schIdPath1 = AddTestPart(unique: "unique1", part: "part1", numProc: 1);
+      var schIdPath2 = AddTestPart(unique: "unique2", part: "part1", numProc: 1);
       AddTestPartPrograms(schIdPath1, insightPart: true, new[] { "is-ignored" });
       AddTestPartPrograms(schIdPath2, insightPart: true, new[] { "is-ignored2" });
 
-      var path1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, path: 1, face: "1", numProc: 1, matID: 1);
+      var path1 = BuildMaterial(t, pal: 3, unique: "unique1", part: "part1", proc: 1, partIdx: 1, face: "1", numProc: 1, matID: 1);
 
       LoadStart(path1, offset: 0, load: 5);
       LoadEnd(path1, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -1663,7 +1676,7 @@ namespace MachineWatchTest
       MachStart(path1, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
       MachEnd(path1, offset: 20, mach: 2, elapMin: 16, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
 
-      var path2 = BuildMaterial(t, pal: 4, unique: "unique", part: "part1", proc: 1, path: 2, face: "1", numProc: 1, matID: 2);
+      var path2 = BuildMaterial(t, pal: 4, unique: "unique2", part: "part1", proc: 1, partIdx: 2, face: "1", numProc: 1, matID: 2);
 
       LoadStart(path2, offset: 100, load: 5);
       LoadEnd(path2, offset: 102, load: 5, cycleOffset: 103, elapMin: 2);
@@ -1691,7 +1704,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
+      var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2);
       AddTestPartPrograms(schId, insightPart: false, new[] { "the-log-prog", "the-log-prog-proc2" });
 
       var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 2, matID: 1);
@@ -1710,12 +1723,12 @@ namespace MachineWatchTest
     public void Queues()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
-      var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 2);
+      var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 1);
+      var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 2);
 
-      var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matID: 1);
+      var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, face: "2", matID: 1);
 
       var j = new JobPlan("uuuu", 2);
       j.PartName = "pppp";
@@ -1762,35 +1775,33 @@ namespace MachineWatchTest
       // run multiple process 1s on multiple paths.  Also have multiple parts on a face.
 
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 2);
+      AddTestPart(unique: "uuuu1", part: "pppp", numProc: 2);
+      AddTestPart(unique: "uuuu2", part: "pppp", numProc: 2);
 
-      var proc1path1 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 1, 2, 3 });
-      var proc2path1 = BuildMaterial(t, pal: 5, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 1, 2, 3 });
+      var proc1path1 = BuildMaterial(t, pal: 4, unique: "uuuu1", part: "pppp", proc: 1, numProc: 2, partIdx: 1, face: "1", matIDs: new long[] { 1, 2, 3 });
+      var proc2path1 = BuildMaterial(t, pal: 5, unique: "uuuu1", part: "pppp", proc: 2, numProc: 2, partIdx: 1, face: "2", matIDs: new long[] { 1, 2, 3 });
 
-      var proc1path2 = BuildMaterial(t, pal: 6, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 2, face: "1", matIDs: new long[] { 4, 5, 6 });
-      var proc2path2 = BuildMaterial(t, pal: 7, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 2, face: "2", matIDs: new long[] { 4, 5, 6 });
+      var proc1path2 = BuildMaterial(t, pal: 6, unique: "uuuu2", part: "pppp", proc: 1, numProc: 2, partIdx: 2, face: "1", matIDs: new long[] { 4, 5, 6 });
+      var proc2path2 = BuildMaterial(t, pal: 7, unique: "uuuu2", part: "pppp", proc: 2, numProc: 2, partIdx: 2, face: "2", matIDs: new long[] { 4, 5, 6 });
 
-      var proc1path1snd = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 7, 8, 9 });
-      var proc2path1snd = BuildMaterial(t, pal: 5, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, path: 1, face: "2", matIDs: new long[] { 7, 8, 9 });
+      var proc1path1snd = BuildMaterial(t, pal: 4, unique: "uuuu1", part: "pppp", proc: 1, numProc: 2, partIdx: 1, face: "1", matIDs: new long[] { 7, 8, 9 });
+      var proc2path1snd = BuildMaterial(t, pal: 5, unique: "uuuu1", part: "pppp", proc: 2, numProc: 2, partIdx: 1, face: "2", matIDs: new long[] { 7, 8, 9 });
 
-      var proc1path1thrd = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matIDs: new long[] { 10, 11, 12 });
+      var proc1path1thrd = BuildMaterial(t, pal: 4, unique: "uuuu1", part: "pppp", proc: 1, numProc: 2, partIdx: 1, face: "1", matIDs: new long[] { 10, 11, 12 });
 
-      var j = new JobPlan("uuuu", 2, new[] { 2, 2 });
-      j.PartName = "pppp";
-      j.SetOutputQueue(1, 1, "thequeue");
-      j.SetOutputQueue(1, 2, "thequeue");
-      j.SetInputQueue(2, 1, "thequeue");
-      j.SetInputQueue(2, 2, "thequeue");
-      j.SetOutputQueue(2, 1, "externalq");
-      j.SetOutputQueue(2, 2, "externalq");
-      j.SetPathGroup(1, 1, 1);
-      j.SetPathGroup(2, 1, 1);
-      j.SetPathGroup(1, 2, 2);
-      j.SetPathGroup(2, 2, 2);
+      var j1 = new JobPlan("uuuu1", 2, new[] { 1, 1 });
+      var j2 = new JobPlan("uuuu2", 2, new[] { 1, 1 });
+      j1.PartName = "pppp";
+      j2.PartName = "pppp";
+      j1.SetOutputQueue(1, 1, "thequeue");
+      j2.SetOutputQueue(1, 1, "thequeue");
+      j1.SetInputQueue(2, 1, "thequeue");
+      j2.SetInputQueue(2, 1, "thequeue");
+      j1.SetOutputQueue(2, 1, "externalq");
+      j2.SetOutputQueue(2, 1, "externalq");
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j1.ToHistoricJob(), j2.ToHistoricJob())
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1830,14 +1841,14 @@ namespace MachineWatchTest
       MovePallet(t, offset: 34, pal: 4, load: 1, elapMin: 34 - 16);
 
       //queue now has 9 elements
-      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEquivalentTo(
+      jobLog.GetMaterialInAllQueues().Should().BeEquivalentTo(
         Enumerable.Range(1, 9).Select((i, idx) =>
           new QueuedMaterial()
           {
             MaterialID = i,
             Queue = "thequeue",
             Position = idx,
-            Unique = "uuuu",
+            Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
             PartNameOrCasting = "pppp",
             NumProcesses = 2,
             AddTimeUTC = t.AddMinutes(i <= 3 ? 15 : i <= 6 ? 27 : 33)
@@ -1852,14 +1863,14 @@ namespace MachineWatchTest
       MovePallet(t, offset: 45, pal: 5, load: 2, elapMin: 0);
       ExpectRemoveFromQueue(proc1path1, offset: 45, queue: "thequeue", startingPos: 0, elapMin: 45 - 15);
 
-      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEquivalentTo(
+      jobLog.GetMaterialInAllQueues().Should().BeEquivalentTo(
         (new[] { 4, 5, 6, 7, 8, 9 }).Select((i, idx) =>
             new QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
               Position = idx,
-              Unique = "uuuu",
+              Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
               PartNameOrCasting = "pppp",
               NumProcesses = 2,
               AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33)
@@ -1879,14 +1890,14 @@ namespace MachineWatchTest
       MovePallet(t, offset: 66, pal: 5, load: 1, elapMin: 66 - 45);
       ExpectRemoveFromQueue(proc1path1snd, offset: 66, queue: "thequeue", startingPos: 3, elapMin: 66 - 33);
 
-      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEquivalentTo(
+      jobLog.GetMaterialInAllQueues().Should().BeEquivalentTo(
         (new[] { 4, 5, 6 }).Select((i, idx) =>
             new QueuedMaterial()
             {
               MaterialID = i,
               Queue = "thequeue",
               Position = idx,
-              Unique = "uuuu",
+              Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
               PartNameOrCasting = "pppp",
               NumProcesses = 2,
               AddTimeUTC = t.AddMinutes(27)
@@ -1900,7 +1911,7 @@ namespace MachineWatchTest
       MovePallet(t, offset: 74, pal: 7, load: 2, elapMin: 0);
       ExpectRemoveFromQueue(proc1path2, offset: 74, queue: "thequeue", startingPos: 0, elapMin: 74 - 27);
 
-      jobLog.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().BeEmpty();
+      jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
 
@@ -1930,12 +1941,12 @@ namespace MachineWatchTest
     public void SwapsRawMaterial()
     {
       var t = DateTime.UtcNow.AddHours(-5);
-      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2, path: 1);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 1);
-      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 2);
-      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 3);
-      var mat4 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, path: 1, face: "1", matID: 4);
+      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 1);
+      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 2);
+      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 3);
+      var mat4 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 4);
 
 
       var j = new JobPlan("uuuu", 2);
@@ -2017,7 +2028,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow;
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
       var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
 
@@ -2080,7 +2091,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
       var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
 
@@ -2130,7 +2141,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      AddTestPart(unique: "unique", part: "part1", numProc: 1, path: 1);
+      AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
       var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, face: "1", numProc: 1, matID: 1);
 
@@ -2166,7 +2177,7 @@ namespace MachineWatchTest
 
       var t = DateTime.UtcNow.AddHours(-5);
 
-      var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2, path: 1);
+      var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2);
 
       var m1proc1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, face: "1", matID: 1);
       var m1proc2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, face: "2", matID: 1);

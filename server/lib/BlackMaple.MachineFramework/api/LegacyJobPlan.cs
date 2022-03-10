@@ -429,29 +429,6 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process number");
       }
     }
-    public int GetPathGroup(int process, int path)
-    {
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        return _procPath[process - 1][path - 1].PathGroup;
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-    public void SetPathGroup(int process, int path, int pgroup)
-    {
-      if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
-      {
-        _procPath[process - 1].Paths[path - 1].PathGroup = pgroup;
-      }
-      else
-      {
-        throw new IndexOutOfRangeException("Invalid process or path number");
-      }
-    }
-
 
     // Hold Status
     public JobHoldPattern HoldEntireJob
@@ -505,16 +482,16 @@ namespace BlackMaple.MachineWatchInterface
     }
 
     // Planned cycles
-    public int GetPlannedCyclesOnFirstProcess()
+    public int Cycles
     {
-      return _pCycles.Sum();
-    }
-    public void SetPlannedCyclesOnFirstProcess(int numCycles)
-    {
-      _pCycles[0] = numCycles;
-      for (int i = 1; i < _pCycles.Length; i++)
+      get { return _pCycles.Sum(); }
+      set
       {
-        _pCycles[i] = 0;
+        _pCycles[0] = value;
+        for (int i = 1; i < _pCycles.Length; i++)
+        {
+          _pCycles[i] = 0;
+        }
       }
     }
 
@@ -1122,9 +1099,6 @@ namespace BlackMaple.MachineWatchInterface
     private struct ProcPathInfo
     {
       [DataMember(IsRequired = true)]
-      public int PathGroup;
-
-      [DataMember(IsRequired = true)]
       public IList<string> Pallets;
 
       [DataMember(IsRequired = false, EmitDefaultValue = false), Obsolete]
@@ -1200,7 +1174,6 @@ namespace BlackMaple.MachineWatchInterface
       {
         if (other.Pallets == null)
         {
-          PathGroup = 0;
           Pallets = new List<string>();
           Fixture = null;
           Face = 0;
@@ -1222,7 +1195,6 @@ namespace BlackMaple.MachineWatchInterface
         }
         else
         {
-          PathGroup = other.PathGroup;
           Pallets = new List<string>(other.Pallets);
           Fixture = other.Fixture;
           Face = other.Face;
@@ -1295,7 +1267,7 @@ namespace BlackMaple.MachineWatchInterface
       dest.RouteStartingTimeUTC = source.RouteStartUTC;
       dest.RouteEndingTimeUTC = source.RouteEndUTC;
       if (source.HoldJob != null) dest.HoldEntireJob = ToLegacyHold(source.HoldJob);
-      dest.SetPlannedCyclesOnFirstProcess(source.Cycles);
+      dest.Cycles = source.Cycles;
 
       // Ignore obsolete job-level inspections
 
@@ -1346,9 +1318,6 @@ namespace BlackMaple.MachineWatchInterface
           if (p.Load != null) foreach (var s in p.Load) dest.AddLoadStation(proc, path, s);
           if (!string.IsNullOrEmpty(p.Fixture)) dest.SetFixtureFace(proc, path, p.Fixture, p.Face ?? 1);
           if (p.Pallets != null) foreach (var pal in p.Pallets) dest.AddProcessOnPallet(proc, path, pal);
-#pragma warning disable CS0612 // obsolete PathGroup
-          dest.SetPathGroup(proc, path, p.PathGroup);
-#pragma warning restore CS0612
           dest.PathInspections(proc, path); // always create the inspections to be non-null
           if (p.Inspections != null)
           {

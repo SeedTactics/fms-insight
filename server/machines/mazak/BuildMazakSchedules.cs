@@ -96,7 +96,7 @@ namespace MazakMachineInterface
       {
         // 1 path per job should have been already prevented by an earlier check
         if (part.GetNumPaths(1) > 1) continue;
-        if (part.GetPlannedCyclesOnFirstProcess() <= 0) continue;
+        if (part.Cycles <= 0) continue;
 
         //check if part exists downloaded
         int downloadUid = -1;
@@ -159,7 +159,7 @@ namespace MazakMachineInterface
         Command = MazakWriteCommand.Add,
         Id = SchID,
         PartName = mazakPartName,
-        PlanQuantity = part.GetPlannedCyclesOnFirstProcess(),
+        PlanQuantity = part.Cycles,
         CompleteQuantity = 0,
         FixForMachine = 0,
         MissingFixture = 0,

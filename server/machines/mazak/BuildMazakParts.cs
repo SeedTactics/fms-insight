@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -988,10 +988,10 @@ namespace MazakMachineInterface
       var sortedProcs =
         allParts
         .SelectMany(p => p.Processes)
-        .GroupBy(p => (uniq: p.Job.UniqueStr, pathGroup: p is MazakProcessFromTemplate ? 0 : p.Job.GetPathGroup(p.ProcessNumber, p.Path)))
-        .OrderBy(pathGroup =>
+        .GroupBy(p => p.Job.UniqueStr)
+        .OrderBy(paths =>
         {
-          var minProc = pathGroup.FirstOrDefault(p => p.ProcessNumber == 1);
+          var minProc = paths.FirstOrDefault(p => p.ProcessNumber == 1);
           if (minProc != null)
           {
             var start = minProc.Job.GetSimulatedStartingTimeUTC(minProc.ProcessNumber, minProc.Path);
@@ -1002,7 +1002,7 @@ namespace MazakMachineInterface
             return DateTime.MaxValue;
           }
         })
-        .SelectMany(pathGroup => pathGroup);
+        .SelectMany(paths => paths);
 
       foreach (var proc in sortedProcs)
       {

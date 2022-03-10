@@ -284,7 +284,7 @@ namespace MachineWatchTest
     {
       var job1 = new JobPlan("Unique1", 2, new int[] { 2, 3 });
       job1.PartName = "Job1";
-      job1.SetPlannedCyclesOnFirstProcess(178);
+      job1.Cycles = 178;
       job1.RouteStartingTimeUTC = DateTime.Parse("2019-10-22 20:24 GMT").ToUniversalTime();
       job1.RouteEndingTimeUTC = job1.RouteStartingTimeUTC.AddHours(100);
       job1.Archived = false;
@@ -307,12 +307,6 @@ namespace MachineWatchTest
       job1.SetPartsPerPallet(2, 1, 20);
       job1.SetPartsPerPallet(2, 2, 22);
       job1.SetPartsPerPallet(2, 3, 23);
-
-      job1.SetPathGroup(1, 1, 64);
-      job1.SetPathGroup(1, 2, 74);
-      job1.SetPathGroup(2, 1, 12);
-      job1.SetPathGroup(2, 2, 88);
-      job1.SetPathGroup(2, 3, 5);
 
       job1.SetInputQueue(1, 1, "in11");
       job1.SetOutputQueue(1, 2, "out12");
@@ -600,7 +594,7 @@ namespace MachineWatchTest
         Archived = job.Archived,
         RouteStartUTC = job.RouteStartingTimeUTC,
         RouteEndUTC = job.RouteEndingTimeUTC,
-        Cycles = job.GetPlannedCyclesOnFirstProcess(),
+        Cycles = job.Cycles,
         Processes = Enumerable.Range(1, job.NumProcesses).Select(proc =>
           new ProcessInfo()
           {
@@ -636,9 +630,6 @@ namespace MachineWatchTest
           Face = job.PlannedFixture(proc, path).face,
           Fixture = job.PlannedFixture(proc, path).fixture,
           Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
-#pragma warning disable CS0612 // obsolete PathGroup
-          PathGroup = job.GetPathGroup(proc, path),
-#pragma warning restore CS0612
           Inspections =
       job.PathInspections(proc, path).Select(i => new PathInspection()
       {

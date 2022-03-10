@@ -488,7 +488,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 1);
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(numCycles: 3);
+      j.Cycles = 3;
       SetPath(j,
         proc: 1,
         path: 1,
@@ -527,7 +527,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(numCycles: 7);
+      j.Cycles = 7;
 
       // path 1, group 0 on pallets 1, 2, 3, 4
       SetPath(j,
@@ -636,7 +636,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2, new[] { 2, 2 });
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(numCycles: 14);
+      j.Cycles = 14;
 
       // path 1, group 0 on pallets 1, 2
       SetPath(j,
@@ -749,7 +749,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2);
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(numCycles: 8);
+      j.Cycles = 8;
 
       // process 1 on 4 pallets with short times
       SetPath(j,
@@ -811,7 +811,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var j = new MachineWatchInterface.JobPlan("uniq1", 2);
       j.PartName = "part1";
-      j.SetPlannedCyclesOnFirstProcess(numCycles: 4);
+      j.Cycles = 4;
 
       // process 1 on 4 pallets with short times
       SetPath(j,

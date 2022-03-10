@@ -853,7 +853,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       j.PartName = part;
       j.ManuallyCreatedJob = manual;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
-      j.SetPlannedCyclesOnFirstProcess(numCycles: qty);
+      j.Cycles = qty;
       foreach (var i in luls)
       {
         j.AddLoadStation(1, 1, i);
@@ -892,7 +892,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j = new MachineWatchInterface.JobPlan(unique, 1);
       j.PartName = part;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
-      j.SetPlannedCyclesOnFirstProcess(numCycles: qty);
+      j.Cycles = qty;
       foreach (var i in luls)
       {
         j.AddLoadStation(1, 1, i);
@@ -950,7 +950,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j = new MachineWatchInterface.JobPlan(unique, 2);
       j.PartName = part;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
-      j.SetPlannedCyclesOnFirstProcess(numCycles: qty);
+      j.Cycles = qty;
       foreach (var i in luls)
       {
         j.AddLoadStation(1, 1, i);
@@ -997,7 +997,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var j = new MachineWatchInterface.JobPlan(unique, 2);
       j.PartName = part;
       j.RouteStartingTimeUTC = DateTime.UtcNow.AddHours(-priority);
-      j.SetPlannedCyclesOnFirstProcess(numCycles: qty);
+      j.Cycles = qty;
       foreach (var i in load1)
       {
         j.AddLoadStation(1, 1, i);

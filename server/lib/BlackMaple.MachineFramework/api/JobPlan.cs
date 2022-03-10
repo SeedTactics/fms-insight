@@ -233,10 +233,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Casting { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = true), Obsolete]
-    public int PathGroup { get; init; }
-
-
     public static ProcPathInfo operator %(ProcPathInfo v, Action<IProcPathInfoDraft> f) => v.Produce(f);
   }
 
@@ -276,23 +272,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "Cycles", IsRequired = false, EmitDefaultValue = true)]
     public int Cycles { get; init; }
 
-    [DataMember(Name = "CyclesOnFirstProcess", IsRequired = false, EmitDefaultValue = true), Obsolete]
-    private int[] CyclesOnFirstProcess
-    {
-      get
-      {
-        if (Processes.Count == 0) return new int[0];
-
-        var c = new int[Processes[0].Paths.Count];
-        c[0] = Cycles;
-        return c;
-      }
-      init
-      {
-        Cycles = value.Sum();
-      }
-    }
-
     [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
     public ImmutableList<ProcessInfo> Processes { get; init; } = ImmutableList<ProcessInfo>.Empty;
 
@@ -305,9 +284,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)] public long DecrementId { get; init; }
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
     [DataMember(IsRequired = true)] public int Quantity { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = true), System.ComponentModel.DefaultValue(1), Obsolete]
-    private int Proc1Path { get; init; } = 1;
   }
 
   [DataContract, Draftable]

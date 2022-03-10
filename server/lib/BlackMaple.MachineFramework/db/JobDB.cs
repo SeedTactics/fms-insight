@@ -81,7 +81,6 @@ namespace BlackMaple.MachineFramework
       public int Path { get; init; }
       public DateTime StartingUTC { get; init; }
       public int PartsPerPallet { get; init; }
-      public int PathGroup { get; init; }
       public TimeSpan SimAverageFlowTime { get; init; }
       public string InputQueue { get; init; }
       public string OutputQueue { get; init; }
@@ -139,7 +138,7 @@ namespace BlackMaple.MachineFramework
 
         //path data
         var pathDatRows = new Dictionary<(int proc, int path), PathDataRow>();
-        cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, PathGroup, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq";
+        cmd.CommandText = "SELECT Process, Path, StartingUTC, PartsPerPallet, SimAverageFlowTime, InputQueue, OutputQueue, LoadTime, UnloadTime, Fixture, Face, Casting FROM pathdata WHERE UniqueStr = $uniq";
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
@@ -149,21 +148,21 @@ namespace BlackMaple.MachineFramework
 
             string fixture = null;
             int? face = null;
-            if (!reader.IsDBNull(10) && !reader.IsDBNull(11))
+            if (!reader.IsDBNull(9) && !reader.IsDBNull(10))
             {
-              var faceTy = reader.GetFieldType(11);
+              var faceTy = reader.GetFieldType(10);
               if (faceTy == typeof(string))
               {
-                if (int.TryParse(reader.GetString(11), out int f))
+                if (int.TryParse(reader.GetString(10), out int f))
                 {
-                  fixture = reader.GetString(10);
+                  fixture = reader.GetString(9);
                   face = f;
                 }
               }
               else
               {
-                fixture = reader.GetString(10);
-                face = reader.GetInt32(11);
+                fixture = reader.GetString(9);
+                face = reader.GetInt32(10);
               }
             }
 
@@ -174,15 +173,14 @@ namespace BlackMaple.MachineFramework
               Path = path,
               StartingUTC = new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
               PartsPerPallet = reader.GetInt32(3),
-              PathGroup = reader.GetInt32(4),
-              SimAverageFlowTime = reader.IsDBNull(5) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(5)),
-              InputQueue = reader.IsDBNull(6) ? null : reader.GetString(6),
-              OutputQueue = reader.IsDBNull(7) ? null : reader.GetString(7),
-              LoadTime = reader.IsDBNull(8) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(8)),
-              UnloadTime = reader.IsDBNull(9) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(9)),
+              SimAverageFlowTime = reader.IsDBNull(4) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(4)),
+              InputQueue = reader.IsDBNull(5) ? null : reader.GetString(5),
+              OutputQueue = reader.IsDBNull(6) ? null : reader.GetString(6),
+              LoadTime = reader.IsDBNull(7) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(7)),
+              UnloadTime = reader.IsDBNull(8) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(8)),
               Fixture = fixture,
               Face = face,
-              Casting = reader.IsDBNull(12) ? null : reader.GetString(12)
+              Casting = reader.IsDBNull(11) ? null : reader.GetString(11)
             };
           }
         }
@@ -424,9 +422,6 @@ namespace BlackMaple.MachineFramework
                 .OrderBy(p => p.Path)
                 .Select(p => new ProcPathInfo()
                 {
-#pragma warning disable CS0612 // obsolete PathGroup
-                  PathGroup = p.PathGroup,
-#pragma warning restore CS0612
                   Pallets = p.Pals.ToImmutable(),
                   Fixture = p.Fixture,
                   Face = p.Face,
@@ -1126,15 +1121,14 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, PathGroup,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) " +
-      "VALUES ($uniq,$proc,$path,$start,$ppp,$group,$flow,$iq,$oq,$lt,$ul,$fix,$face,$casting)";
+        cmd.CommandText = "INSERT INTO pathdata(UniqueStr, Process, Path, StartingUTC, PartsPerPallet, SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) " +
+      "VALUES ($uniq,$proc,$path,$start,$ppp,$flow,$iq,$oq,$lt,$ul,$fix,$face,$casting)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("proc", SqliteType.Integer);
         cmd.Parameters.Add("path", SqliteType.Integer);
         cmd.Parameters.Add("start", SqliteType.Integer);
         cmd.Parameters.Add("ppp", SqliteType.Integer);
-        cmd.Parameters.Add("group", SqliteType.Integer);
         cmd.Parameters.Add("flow", SqliteType.Integer);
         cmd.Parameters.Add("iq", SqliteType.Text);
         cmd.Parameters.Add("oq", SqliteType.Text);
@@ -1153,33 +1147,30 @@ namespace BlackMaple.MachineFramework
             cmd.Parameters[2].Value = j;
             cmd.Parameters[3].Value = path.SimulatedStartingUTC.Ticks;
             cmd.Parameters[4].Value = path.PartsPerPallet;
-#pragma warning disable CS0612 // obsolete PathGroup
-            cmd.Parameters[5].Value = path.PathGroup;
-#pragma warning restore CS0612
-            cmd.Parameters[6].Value = path.SimulatedAverageFlowTime.Ticks;
+            cmd.Parameters[5].Value = path.SimulatedAverageFlowTime.Ticks;
             var iq = path.InputQueue;
             if (string.IsNullOrEmpty(iq))
-              cmd.Parameters[7].Value = DBNull.Value;
+              cmd.Parameters[6].Value = DBNull.Value;
             else
-              cmd.Parameters[7].Value = iq;
+              cmd.Parameters[6].Value = iq;
             var oq = path.OutputQueue;
             if (string.IsNullOrEmpty(oq))
-              cmd.Parameters[8].Value = DBNull.Value;
+              cmd.Parameters[7].Value = DBNull.Value;
             else
-              cmd.Parameters[8].Value = oq;
-            cmd.Parameters[9].Value = path.ExpectedLoadTime.Ticks;
-            cmd.Parameters[10].Value = path.ExpectedUnloadTime.Ticks;
+              cmd.Parameters[7].Value = oq;
+            cmd.Parameters[8].Value = path.ExpectedLoadTime.Ticks;
+            cmd.Parameters[9].Value = path.ExpectedUnloadTime.Ticks;
             var (fix, face) = (path.Fixture, path.Face);
-            cmd.Parameters[11].Value = string.IsNullOrEmpty(fix) ? DBNull.Value : (object)fix;
-            cmd.Parameters[12].Value = face ?? 0;
+            cmd.Parameters[10].Value = string.IsNullOrEmpty(fix) ? DBNull.Value : (object)fix;
+            cmd.Parameters[11].Value = face ?? 0;
             if (i == 1)
             {
               var casting = path.Casting;
-              cmd.Parameters[13].Value = string.IsNullOrEmpty(casting) ? DBNull.Value : (object)casting;
+              cmd.Parameters[12].Value = string.IsNullOrEmpty(casting) ? DBNull.Value : (object)casting;
             }
             else
             {
-              cmd.Parameters[13].Value = DBNull.Value;
+              cmd.Parameters[12].Value = DBNull.Value;
             }
             cmd.ExecuteNonQuery();
           }

@@ -82,8 +82,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
     [DataMember(IsRequired = true)] public string Part { get; init; } = "";
     [DataMember(IsRequired = true)] public int Quantity { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = true), System.ComponentModel.DefaultValue(1), Obsolete] private int Proc1Path { get; init; }
   }
 
   [DataContract]

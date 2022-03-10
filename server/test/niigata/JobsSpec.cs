@@ -410,10 +410,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       //add some existing jobs
       var completedJob = new JobPlan("old", 2);
       completedJob.PartName = "oldpart";
-      completedJob.SetPlannedCyclesOnFirstProcess(3);
+      completedJob.Cycles = 3;
       var toKeepJob = new JobPlan("tokeep", 1);
       toKeepJob.PartName = "tokeep";
-      toKeepJob.SetPlannedCyclesOnFirstProcess(10);
+      toKeepJob.Cycles = 10;
       toKeepJob.PathInspections(1, 1).Add(new PathInspection()
       {
         InspectionType = "insp",
@@ -435,7 +435,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       //some new jobs
       var newJob1 = new JobPlan("uu1", 2);
       newJob1.PartName = "p1";
-      newJob1.SetPlannedCyclesOnFirstProcess(10);
+      newJob1.Cycles = 10;
       newJob1.AddLoadStation(1, 1, 1);
       newJob1.AddLoadStation(2, 1, 1);
       newJob1.AddUnloadStation(1, 1, 2);

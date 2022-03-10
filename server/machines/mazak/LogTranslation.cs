@@ -548,7 +548,7 @@ namespace MazakMachineInterface
           Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
             job.GetInputQueue(proc, path), unique, proc);
 
-          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueueByUnique(job.GetInputQueue(proc, path), job.UniqueStr), proc, path, _log);
+          var qs = MazakQueues.QueuedMaterialForLoading(job.UniqueStr, _log.GetMaterialInQueueByUnique(job.GetInputQueue(proc, path), job.UniqueStr), proc, path, _log);
 
           for (int i = 1; i <= fixQty; i++)
           {

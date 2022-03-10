@@ -238,7 +238,7 @@ namespace MazakMachineInterface
         var schProc = sch.Procs[proc];
         if (string.IsNullOrEmpty(schProc.InputQueue)) continue;
 
-        var matInQueue = QueuedMaterialForLoading(jobPlan, logDb.GetMaterialInQueueByUnique(schProc.InputQueue, jobPlan.UniqueStr), proc, schProc.Path, logDb);
+        var matInQueue = QueuedMaterialForLoading(jobPlan.UniqueStr, logDb.GetMaterialInQueueByUnique(schProc.InputQueue, jobPlan.UniqueStr), proc, schProc.Path, logDb);
         var numMatInQueue = matInQueue.Count;
 
         if (proc == 1)
@@ -445,23 +445,13 @@ namespace MazakMachineInterface
       }
     }
 
-    public static List<QueuedMaterial> QueuedMaterialForLoading(JobPlan job, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
-    {
-      return QueuedMaterialForLoading(job.UniqueStr, job.GetNumPaths(proc), job.GetPathGroup, materialToSearch, proc, path, log);
-    }
-
-    public static List<QueuedMaterial> QueuedMaterialForLoading(string jobUniq, int numPathsForProc, Func<int, int, int> getPathGroup, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
+    public static List<QueuedMaterial> QueuedMaterialForLoading(string jobUniq, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
     {
       var mats = new List<QueuedMaterial>();
       foreach (var m in materialToSearch)
       {
         if (m.Unique != jobUniq) continue;
         if ((log.NextProcessForQueuedMaterial(m.MaterialID) ?? 1) != proc) continue;
-        if (numPathsForProc > 1)
-        {
-          if (FindPathGroup(log, getPathGroup, m.MaterialID) != getPathGroup(proc, path)) continue;
-        }
-
         mats.Add(m);
       }
       return mats;
