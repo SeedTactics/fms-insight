@@ -97,8 +97,6 @@ namespace Makino
           numProc = Math.Max(numProc, _procIDToProcNum[p.Key]);
         }
       }
-      var job = new JobPlan(unique, numProc);
-
       _byPartID.Add(partID, new BlackMaple.MachineFramework.Job()
       {
         UniqueStr = unique,
