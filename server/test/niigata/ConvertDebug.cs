@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

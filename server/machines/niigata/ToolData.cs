@@ -36,7 +36,6 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.IO;
-using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using System.Threading.Tasks;
 using System.Threading;

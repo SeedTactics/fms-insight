@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -38,7 +38,7 @@ using System.Runtime.Serialization;
 using System.Collections.Immutable;
 using Germinate;
 
-namespace BlackMaple.MachineWatchInterface
+namespace MazakMachineInterface
 {
 
   //stores information about a single "stop" of the pallet in a route
@@ -866,13 +866,13 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
-    public ICollection<MachineFramework.PathInspection> PathInspections(int process, int path)
+    public ICollection<BlackMaple.MachineFramework.PathInspection> PathInspections(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
         if (_procPath[process - 1].Paths[path - 1].Inspections == null)
         {
-          _procPath[process - 1].Paths[path - 1].Inspections = new List<MachineFramework.PathInspection>();
+          _procPath[process - 1].Paths[path - 1].Inspections = new List<BlackMaple.MachineFramework.PathInspection>();
         }
         return _procPath[process - 1].Paths[path - 1].Inspections;
       }
@@ -1165,7 +1165,7 @@ namespace BlackMaple.MachineWatchInterface
       public string OutputQueue;
 
       [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
-      public List<MachineFramework.PathInspection> Inspections;
+      public List<BlackMaple.MachineFramework.PathInspection> Inspections;
 
       [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public string Casting;
@@ -1230,19 +1230,19 @@ namespace BlackMaple.MachineWatchInterface
 
   public static class LegacyJobConversions
   {
-    public static JobPlan ToLegacyJob(this MachineFramework.Job job, bool copiedToSystem, string scheduleId)
+    public static JobPlan ToLegacyJob(this BlackMaple.MachineFramework.Job job, bool copiedToSystem, string scheduleId)
     {
       var newJob = new JobPlan(job.UniqueStr, job.Processes.Count, job.Processes.Select(p => p.Paths.Count).ToArray());
       ToLegacyJob(job, newJob, copiedToSystem, scheduleId);
       return newJob;
     }
 
-    public static JobPlan ToLegacyJob(this MachineFramework.HistoricJob job)
+    public static JobPlan ToLegacyJob(this BlackMaple.MachineFramework.HistoricJob job)
     {
       return ToLegacyJob(job, job.CopiedToSystem, job.ScheduleId);
     }
 
-    private static JobHoldPattern ToLegacyHold(MachineFramework.HoldPattern h)
+    private static JobHoldPattern ToLegacyHold(BlackMaple.MachineFramework.HoldPattern h)
     {
       var ret = new JobHoldPattern()
       {
@@ -1255,7 +1255,7 @@ namespace BlackMaple.MachineWatchInterface
       return ret;
     }
 
-    private static void ToLegacyJob(MachineFramework.Job source, JobPlan dest, bool copiedToSystem, string scheduleId)
+    private static void ToLegacyJob(BlackMaple.MachineFramework.Job source, JobPlan dest, bool copiedToSystem, string scheduleId)
     {
       dest.Comment = source.Comment;
       dest.ManuallyCreatedJob = source.ManuallyCreated;
@@ -1323,7 +1323,7 @@ namespace BlackMaple.MachineWatchInterface
           {
             foreach (var i in p.Inspections)
             {
-              dest.PathInspections(proc, path).Add(new MachineFramework.PathInspection()
+              dest.PathInspections(proc, path).Add(new BlackMaple.MachineFramework.PathInspection()
               {
                 InspectionType = i.InspectionType,
                 Counter = i.Counter,

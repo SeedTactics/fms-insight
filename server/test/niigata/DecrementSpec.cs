@@ -37,7 +37,6 @@ using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests

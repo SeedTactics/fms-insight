@@ -42,11 +42,11 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakPart>();
 
-    public readonly BlackMaple.MachineWatchInterface.JobPlan Job;
+    public readonly JobPlan Job;
     public readonly int DownloadID;
     public readonly List<MazakProcess> Processes;
 
-    public MazakPart(BlackMaple.MachineWatchInterface.JobPlan j, int downID, int partIdx)
+    public MazakPart(JobPlan j, int downID, int partIdx)
     {
       Job = j;
       DownloadID = downID;
@@ -228,7 +228,7 @@ namespace MazakMachineInterface
     public readonly int ProcessNumber;
     public readonly int Path;
 
-    public BlackMaple.MachineWatchInterface.JobPlan Job
+    public JobPlan Job
     {
       get { return Part.Job; }
     }
@@ -679,7 +679,7 @@ namespace MazakMachineInterface
       = (parent, process, pth, prog) => new MazakProcessFromJob(parent, process, pth, prog);
 
     public static MazakJobs JobsToMazak(
-      IEnumerable<BlackMaple.MachineWatchInterface.JobPlan> jobs,
+      IEnumerable<JobPlan> jobs,
       int downloadUID,
       MazakAllData mazakData,
       ISet<string> savedParts,
@@ -712,10 +712,10 @@ namespace MazakMachineInterface
 
     #region Validate
     private static void Validate(
-      IEnumerable<BlackMaple.MachineWatchInterface.JobPlan> jobs, BlackMaple.MachineFramework.FMSSettings fmsSettings, IList<string> errs)
+      IEnumerable<JobPlan> jobs, BlackMaple.MachineFramework.FMSSettings fmsSettings, IList<string> errs)
     {
       //only allow numeric pallets and check queues
-      foreach (BlackMaple.MachineWatchInterface.JobPlan part in jobs)
+      foreach (JobPlan part in jobs)
       {
         for (int proc = 1; proc <= part.NumProcesses; proc++)
         {
@@ -764,7 +764,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Parts
-    private static List<MazakPart> BuildMazakParts(IEnumerable<BlackMaple.MachineWatchInterface.JobPlan> jobs, int downloadID, MazakAllData mazakData, MazakDbType mazakTy,
+    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakAllData mazakData, MazakDbType mazakTy,
                                                   IList<string> log,
                                                   Func<string, long?, ProgramRevision> lookupProgram)
     {
@@ -825,7 +825,7 @@ namespace MazakMachineInterface
     //Func<int, int, bool> only introduced in .NET 3.5
     private delegate bool MatchFunc(int proc, int path);
 
-    private static void BuildProcFromJob(BlackMaple.MachineWatchInterface.JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
+    private static void BuildProcFromJob(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
                                          MazakAllData mazakData, Func<string, long?, ProgramRevision> lookupProgram)
     {
       ErrorDuringCreate = null;
@@ -904,7 +904,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void BuildProcFromJobWithOneProc(BlackMaple.MachineWatchInterface.JobPlan job, MazakPart mazak, MazakDbType mazakTy,
+    private static void BuildProcFromJobWithOneProc(JobPlan job, MazakPart mazak, MazakDbType mazakTy,
                                                     MazakAllData mazakData,
                                                     Func<string, long?, ProgramRevision> lookupProgram,
                                                     out string ErrorDuringCreate)

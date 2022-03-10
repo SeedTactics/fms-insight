@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 using Xunit;
 using FluentAssertions;
@@ -45,7 +44,7 @@ namespace MachineWatchTest
   public static class LegacyToNewJobConvert
   {
 
-    private static HoldPattern ToInsightHold(JobHoldPattern h)
+    private static HoldPattern ToInsightHold(MazakMachineInterface.JobHoldPattern h)
     {
       if (h == null) return null;
 
@@ -59,7 +58,7 @@ namespace MachineWatchTest
       };
     }
 
-    public static HistoricJob ToHistoricJob(this JobPlan job)
+    public static HistoricJob ToHistoricJob(this MazakMachineInterface.JobPlan job)
     {
       return new HistoricJob()
       {

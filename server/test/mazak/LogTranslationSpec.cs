@@ -38,7 +38,6 @@ using Xunit;
 using NSubstitute;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using MazakMachineInterface;
 using System.Collections.Immutable;
 

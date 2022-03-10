@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Linq;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Generic;
 using MWI = BlackMaple.MachineFramework;
 using BlackMaple.MachineFramework;

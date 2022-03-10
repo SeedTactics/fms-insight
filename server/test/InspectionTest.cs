@@ -36,7 +36,6 @@ using System.Collections.Generic;
 using Xunit;
 using Microsoft.Data.Sqlite;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
 using System.Collections.Immutable;
 

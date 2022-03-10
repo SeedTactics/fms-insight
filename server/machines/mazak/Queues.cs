@@ -35,7 +35,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Serilog;
-using BlackMaple.MachineWatchInterface;
 using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
