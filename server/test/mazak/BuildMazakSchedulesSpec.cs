@@ -246,7 +246,7 @@ namespace MachineWatchTest
         }
       };
 
-      var actions = BuildMazakSchedules.AddSchedules(curData, new[] { uniq1, uniq2, uniq3, uniq4, uniq5 }.Select(j => j.ToLegacyJob()), true);
+      var actions = BuildMazakSchedules.AddSchedules(curData, new[] { uniq1, uniq2, uniq3, uniq4, uniq5 }, true);
       actions.Parts.Should().BeEmpty();
       actions.Fixtures.Should().BeEmpty();
       actions.Pallets.Should().BeEmpty();

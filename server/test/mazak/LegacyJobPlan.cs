@@ -34,16 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Collections.Immutable;
 using Germinate;
 
-namespace MazakMachineInterface
+namespace MachineWatchTest
 {
 
   //stores information about a single "stop" of the pallet in a route
-  [DataContract]
-  public class JobMachiningStop
+  internal class JobMachiningStop
   {
     public string StationGroup
     {
@@ -95,10 +93,8 @@ namespace MazakMachineInterface
       _tools = new Dictionary<string, TimeSpan>(stop._tools);
     }
 
-    [DataMember(Name = "StationNums")]
     private List<int> _stations;
 
-    [DataMember(Name = "Program")]
     private string _program;
 
     // During Download:
@@ -113,22 +109,17 @@ namespace MazakMachineInterface
     //   * A null revision means the program already exists in the cell controller and the DB is not managing programs.
     //   * A positive revision means the program exists in the job DB with this specific revision.
     //   * Negative revisions are never returned (they get translated as part of the download)
-    [DataMember(Name = "ProgramRevision")]
     private long? _programRevision;
 
-    [DataMember(Name = "Tools", IsRequired = true)]
     private Dictionary<string, TimeSpan> _tools; //key is tool, value is expected cutting time
 
-    [DataMember(Name = "StationGroup", IsRequired = true)]
     private string _statGroup;
 
-    [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
     private TimeSpan _expectedCycleTime;
 
     private JobMachiningStop() { } //for json deserialization
 
     // include old stations format for backwards compatibility
-    [DataMember(Name = "Stations", IsRequired = false), Obsolete]
     private Dictionary<int, string> OldPrograms
     {
       get
@@ -155,10 +146,8 @@ namespace MazakMachineInterface
 
   // JobInspectionData is the old format before we added ability to control per-path
   // It is kept for backwards compatability, but new stuff should use PathInspection instead.
-  [DataContract]
-  public class JobInspectionData
+  internal class JobInspectionData
   {
-    [DataMember(IsRequired = true)]
     public readonly string InspectionType;
 
     //There are two possible ways of triggering an exception: counts and frequencies.
@@ -167,26 +156,21 @@ namespace MazakMachineInterface
     //   the frequency as a number between 0 and 1.
 
     //Every time a material completes, the counter string is expanded (see below).
-    [DataMember(IsRequired = true)]
     public readonly string Counter;
 
     //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
     //we signal an inspection and reset the counter to 0.
-    [DataMember(IsRequired = true)]
     public readonly int MaxVal;
 
     //The random frequency of inspection
-    [DataMember(IsRequired = true)]
     public readonly double RandomFreq;
 
     //If the last inspection signaled for this counter was longer than TimeInterval,
     //signal an inspection.  This can be disabled by using TimeSpan.Zero
-    [DataMember(IsRequired = true)]
     public readonly TimeSpan TimeInterval;
 
     //If set to -1, the entire job should be inspected once the job completes.
     //If set to a positive number, only that process should have the inspection triggered.
-    [DataMember(IsRequired = true)]
     public readonly int InspectSingleProcess;
 
     public JobInspectionData(string iType, string ctr, int max, TimeSpan interval, int inspSingleProc = -1)
@@ -220,27 +204,21 @@ namespace MazakMachineInterface
     private JobInspectionData() { } //for json deserialization
   }
 
-  [DataContract]
-  public class JobHoldPattern
+  internal class JobHoldPattern
   {
     // All of the following hold types are an OR, meaning if any one of them says a hold is in effect,
     // the job is on hold.
 
-    [DataMember(IsRequired = true)]
     public bool UserHold;
 
-    [DataMember(IsRequired = true)]
     public string ReasonForUserHold;
 
     //A list of timespans the job should be on hold/not on hold.
     //During the first timespan, the job is on hold.
-    [DataMember(IsRequired = true)]
     public readonly IList<TimeSpan> HoldUnholdPattern;
 
-    [DataMember(IsRequired = true)]
     public DateTime HoldUnholdPatternStartUTC;
 
-    [DataMember(IsRequired = true)]
     public bool HoldUnholdPatternRepeats;
 
     public bool IsJobOnHold
@@ -357,8 +335,7 @@ namespace MazakMachineInterface
     }
   }
 
-  [DataContract]
-  public partial class JobPlan
+  internal class JobPlan
   {
     public string UniqueStr
     {
@@ -1009,165 +986,88 @@ namespace MazakMachineInterface
       }
     }
 
-    [DataMember(Name = "RouteStartUTC", IsRequired = true)]
     private DateTime _routeStartUTC;
 
-    [DataMember(Name = "RouteEndUTC", IsRequired = true)]
     private DateTime _routeEndUTC;
 
-    [DataMember(Name = "Archived", IsRequired = true)]
     private bool _archived;
 
-    [DataMember(Name = "CopiedToSystem", IsRequired = true)]
     private bool _copiedToSystem;
 
-    [DataMember(Name = "PartName", IsRequired = true)]
     private string _partName;
 
-    [DataMember(Name = "Comment", IsRequired = false, EmitDefaultValue = false)]
     private string _comment;
 
-    [DataMember(Name = "Unique", IsRequired = true)]
     private string _uniqueStr;
 
 #pragma warning disable CS0169
     // priority and CreateMarkingData field is no longer used but this is kept for backwards network compatibility
-    [DataMember(Name = "Priority", IsRequired = false, EmitDefaultValue = false), Obsolete]
     private int _priority;
 
-    [DataMember(Name = "CreateMarkingData", IsRequired = false, EmitDefaultValue = true), Obsolete]
     private bool _createMarker;
 #pragma warning restore CS0169
 
-    [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
     private string _scheduleId;
 
-    [DataMember(Name = "Bookings", IsRequired = false, EmitDefaultValue = false)]
     private List<string> _scheduledIds;
 
-    [DataMember(Name = "ManuallyCreated", IsRequired = true)]
     private bool _manuallyCreated;
 
-    [DataMember(Name = "Inspections", IsRequired = false, EmitDefaultValue = false), Obsolete]
     private IList<JobInspectionData> _inspections;
 
-    [DataMember(Name = "HoldEntireJob", IsRequired = false, EmitDefaultValue = false)]
     private JobHoldPattern _holdJob;
 
-    [DataMember(Name = "CyclesOnFirstProcess", IsRequired = true)]
     private int[] _pCycles;
 
-    [DataContract]
-    private struct FixtureFace : IComparable<FixtureFace>
+    internal struct SimulatedProduction
     {
-#pragma warning disable CS0649
-      [DataMember(IsRequired = true)] public string Fixture;
-      [DataMember(IsRequired = true)] public string Face;
-#pragma warning restore CS0649
-
-      public int CompareTo(FixtureFace o)
-      {
-        var i = Fixture.CompareTo(o.Fixture);
-        if (i < 0) return -1;
-        if (i > 0) return 1;
-        return Face.CompareTo(o.Face);
-      }
-
-      public override string ToString()
-      {
-        return Fixture + ":" + Face;
-      }
+      public DateTime TimeUTC;
+      public int Quantity; //total quantity simulated to be completed at TimeUTC
     }
 
-    [DataContract]
-    public struct SimulatedProduction
-    {
-      [DataMember(IsRequired = true)] public DateTime TimeUTC;
-      [DataMember(IsRequired = true)] public int Quantity; //total quantity simulated to be completed at TimeUTC
-    }
-
-    [DataContract]
     private struct ProcessInfo
     {
-      [DataMember(Name = "paths", IsRequired = true)]
       public ProcPathInfo[] Paths;
       public ProcPathInfo this[int i] => Paths[i];
       public int NumPaths => Paths.Length;
     }
 
-    [DataContract]
     private struct ProcPathInfo
     {
-      [DataMember(IsRequired = true)]
       public IList<string> Pallets;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false), Obsolete]
-      private IList<FixtureFace> Fixtures
-      {
-        set
-        {
-          if (value.Count > 0)
-          {
-            var f = value[0];
-            Fixture = f.Fixture;
-            if (int.TryParse(f.Face, out var fNum))
-            {
-              Face = fNum;
-            }
-          }
-
-        }
-      }
-
-      [DataMember(IsRequired = false)]
       public string Fixture;
 
-      [DataMember(IsRequired = false)]
       public int? Face;
 
-      [DataMember(IsRequired = true)]
       public IList<int> Load;
 
-      [DataMember(IsRequired = false)]
       public TimeSpan ExpectedLoadTime;
 
-      [DataMember(IsRequired = true)]
       public IList<int> Unload;
 
-      [DataMember(IsRequired = false)]
       public TimeSpan ExpectedUnloadTime;
 
-      [DataMember(IsRequired = true)]
       public IList<JobMachiningStop> Stops;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false)]
       public IList<SimulatedProduction> SimulatedProduction;
 
-      [DataMember(IsRequired = true)]
       public DateTime SimulatedStartingUTC;
 
-      [DataMember(IsRequired = true)]
       public TimeSpan SimulatedAverageFlowTime; // average time a part takes to complete the entire sequence
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false)]
       public JobHoldPattern HoldMachining;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false)]
       public JobHoldPattern HoldLoadUnload;
 
-      [DataMember(IsRequired = true)]
       public int PartsPerPallet;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public string InputQueue;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public string OutputQueue;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public List<BlackMaple.MachineFramework.PathInspection> Inspections;
 
-      [DataMember(IsRequired = false, EmitDefaultValue = false), OptionalField]
       public string Casting;
 
       public ProcPathInfo(ProcPathInfo other)
@@ -1221,14 +1121,13 @@ namespace MazakMachineInterface
       }
     }
 
-    [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
     private ProcessInfo[] _procPath;
 
     protected JobPlan() { } //for json deserialization
   }
 
 
-  public static class LegacyJobConversions
+  internal static class LegacyJobConversions
   {
     public static JobPlan ToLegacyJob(this BlackMaple.MachineFramework.Job job, bool copiedToSystem, string scheduleId)
     {
@@ -1337,5 +1236,92 @@ namespace MazakMachineInterface
         }
       }
     }
+
+    private static BlackMaple.MachineFramework.HoldPattern ToInsightHold(JobHoldPattern h)
+    {
+      if (h == null) return null;
+
+      return new BlackMaple.MachineFramework.HoldPattern()
+      {
+        UserHold = h.UserHold,
+        ReasonForUserHold = h.ReasonForUserHold,
+        HoldUnholdPatternStartUTC = h.HoldUnholdPatternStartUTC,
+        HoldUnholdPattern = h.HoldUnholdPattern.ToImmutableList(),
+        HoldUnholdPatternRepeats = h.HoldUnholdPatternRepeats
+      };
+    }
+
+    public static BlackMaple.MachineFramework.HistoricJob ToHistoricJob(this JobPlan job)
+    {
+      return new BlackMaple.MachineFramework.HistoricJob()
+      {
+        Comment = job.Comment,
+        HoldJob = ToInsightHold(job.HoldEntireJob),
+        // ignoring obsolete job-level inspections
+        // ignoring Priority, CreateMarkingData
+        ManuallyCreated = job.ManuallyCreatedJob,
+        BookingIds = job.ScheduledBookingIds.ToImmutableList(),
+        ScheduleId = job.ScheduleId,
+        UniqueStr = job.UniqueStr,
+        PartName = job.PartName,
+        CopiedToSystem = job.JobCopiedToSystem,
+        Archived = job.Archived,
+        RouteStartUTC = job.RouteStartingTimeUTC,
+        RouteEndUTC = job.RouteEndingTimeUTC,
+        Cycles = job.Cycles,
+        Processes = Enumerable.Range(1, job.NumProcesses).Select(proc =>
+          new BlackMaple.MachineFramework.ProcessInfo()
+          {
+            Paths = Enumerable.Range(1, job.GetNumPaths(process: proc)).Select(path =>
+        new BlackMaple.MachineFramework.ProcPathInfo()
+        {
+          ExpectedUnloadTime = job.GetExpectedUnloadTime(proc, path),
+          OutputQueue = job.GetOutputQueue(proc, path),
+          InputQueue = job.GetInputQueue(proc, path),
+          PartsPerPallet = job.PartsPerPallet(proc, path),
+          HoldLoadUnload = ToInsightHold(job.HoldLoadUnload(proc, path)),
+          HoldMachining = ToInsightHold(job.HoldMachining(proc, path)),
+          SimulatedAverageFlowTime = job.GetSimulatedAverageFlowTime(proc, path),
+          SimulatedStartingUTC = job.GetSimulatedStartingTimeUTC(proc, path),
+          SimulatedProduction = job.GetSimulatedProduction(proc, path).Select(s => new BlackMaple.MachineFramework.SimulatedProduction()
+          {
+            TimeUTC = s.TimeUTC,
+            Quantity = s.Quantity
+          }).ToImmutableList(),
+          Stops = job.GetMachiningStop(proc, path).Select(stop => new BlackMaple.MachineFramework.MachiningStop()
+          {
+            Stations = stop.Stations.ToImmutableList(),
+            Program = stop.ProgramName,
+            ProgramRevision = stop.ProgramRevision,
+            Tools = stop.Tools.ToImmutableDictionary(k => k.Key, k => k.Value),
+            StationGroup = stop.StationGroup,
+            ExpectedCycleTime = stop.ExpectedCycleTime
+          }).ToImmutableList(),
+          Casting = proc == 1 ? job.GetCasting(path) : null,
+          Unload = job.UnloadStations(proc, path).ToImmutableList(),
+          ExpectedLoadTime = job.GetExpectedLoadTime(proc, path),
+          Load = job.LoadStations(proc, path).ToImmutableList(),
+          Face = job.PlannedFixture(proc, path).face,
+          Fixture = job.PlannedFixture(proc, path).fixture,
+          Pallets = job.PlannedPallets(proc, path).ToImmutableList(),
+          Inspections =
+      job.PathInspections(proc, path).Select(i => new BlackMaple.MachineFramework.PathInspection()
+      {
+        InspectionType = i.InspectionType,
+        Counter = i.Counter,
+        MaxVal = i.MaxVal,
+        RandomFreq = i.RandomFreq,
+        TimeInterval = i.TimeInterval,
+        ExpectedInspectionTime = i.ExpectedInspectionTime
+      }
+      ).ToImmutableList()
+        }
+            ).ToImmutableList()
+          }
+        ).ToImmutableList()
+      };
+    }
+
+
   }
 }

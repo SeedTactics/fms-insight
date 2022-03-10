@@ -86,7 +86,7 @@ namespace MachineWatchTest
       CreateFixture(dset, "unusedfixture");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3 },
+        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>(),
@@ -199,7 +199,7 @@ namespace MachineWatchTest
       savedParts.Add("oldpart2:2");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3 },
+        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
         3,
         dset,
         savedParts,
@@ -299,7 +299,7 @@ namespace MachineWatchTest
       CreateProgram(dset, "1234");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3 },
+        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>(),
@@ -396,7 +396,7 @@ namespace MachineWatchTest
       CreateProgram(dset, "1234");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3, job4 },
+        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob(), job4.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>(),
@@ -496,7 +496,7 @@ namespace MachineWatchTest
       CreateProgram(dset, "1234");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1, job2, job3 },
+        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>(),
@@ -594,7 +594,7 @@ namespace MachineWatchTest
 
       var log = new List<string>();
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1 },
+        new Job[] { job1.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>() { "part2:1:1" },
@@ -649,7 +649,7 @@ namespace MachineWatchTest
 
       var log = new List<string>();
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1 },
+        new Job[] { job1.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>(),
@@ -724,7 +724,7 @@ namespace MachineWatchTest
       });
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1 },
+        new Job[] { job1.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>(),
@@ -808,7 +808,7 @@ namespace MachineWatchTest
       lookupProgram("bbb", 7).Returns((ProgramRevision)null);
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new JobPlan[] { job1 },
+        new Job[] { job1.ToHistoricJob() },
         3,
         dset,
         new HashSet<string>(),

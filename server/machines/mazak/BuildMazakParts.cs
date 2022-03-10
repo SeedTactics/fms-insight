@@ -42,11 +42,11 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakPart>();
 
-    public readonly JobPlan Job;
+    internal readonly Job Job;
     public readonly int DownloadID;
     public readonly List<MazakProcess> Processes;
 
-    public MazakPart(JobPlan j, int downID, int partIdx)
+    public MazakPart(Job j, int downID, int partIdx)
     {
       Job = j;
       DownloadID = downID;
@@ -74,7 +74,7 @@ namespace MazakMachineInterface
     {
       get
       {
-        return CreateComment(Job.UniqueStr, Processes.Select(p => p.Path), Job.ManuallyCreatedJob);
+        return CreateComment(Job.UniqueStr, Processes.Select(p => p.Path), Job.ManuallyCreated);
       }
     }
 
@@ -228,9 +228,14 @@ namespace MazakMachineInterface
     public readonly int ProcessNumber;
     public readonly int Path;
 
-    public JobPlan Job
+    public Job Job
     {
       get { return Part.Job; }
+    }
+
+    public ProcPathInfo PathInfo
+    {
+      get { return Part.Job.Processes[ProcessNumber - 1].Paths[Path - 1]; }
     }
 
     protected MazakProcess(MazakPart parent, int proc, int path)
@@ -272,12 +277,12 @@ namespace MazakMachineInterface
 
     public override IEnumerable<string> Pallets()
     {
-      return Job.PlannedPallets(ProcessNumber, Path) ?? Enumerable.Empty<string>();
+      return PathInfo.Pallets ?? Enumerable.Empty<string>();
     }
 
     public override (string fixture, int face) FixtureFace()
     {
-      return Job.PlannedFixture(ProcessNumber, Path);
+      return (PathInfo.Fixture, PathInfo.Face ?? 1);
     }
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
@@ -286,7 +291,7 @@ namespace MazakMachineInterface
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] Cut = { '0', '0', '0', '0', '0', '0', '0', '0' };
 
-      foreach (var routeEntry in Job.GetMachiningStop(ProcessNumber, Path))
+      foreach (var routeEntry in PathInfo.Stops)
       {
         foreach (int statNum in routeEntry.Stations)
         {
@@ -294,10 +299,10 @@ namespace MazakMachineInterface
         }
       }
 
-      foreach (int statNum in Job.LoadStations(ProcessNumber, Path))
+      foreach (int statNum in PathInfo.Load)
         FixLDS[statNum - 1] = statNum.ToString()[0];
 
-      foreach (int statNum in Job.UnloadStations(ProcessNumber, Path))
+      foreach (int statNum in PathInfo.Unload)
         UnfixLDS[statNum - 1] = statNum.ToString()[0];
 
       var newPartProcRow = new MazakPartProcessRow()
@@ -305,7 +310,7 @@ namespace MazakMachineInterface
         PartName = Part.PartName,
         ProcessNumber = ProcessNumber,
         Fixture = fixture,
-        FixQuantity = Math.Max(1, Job.PartsPerPallet(ProcessNumber, Path)),
+        FixQuantity = Math.Max(1, PathInfo.PartsPerPallet),
 
         ContinueCut = 0,
         //newPartProcRow.FixPhoto = "";
@@ -353,7 +358,7 @@ namespace MazakMachineInterface
 
     public override IEnumerable<string> Pallets()
     {
-      return Job.PlannedPallets(1, Path);
+      return PathInfo.Pallets;
     }
 
     public override (string fixture, int face) FixtureFace() => (null, 0);
@@ -364,7 +369,7 @@ namespace MazakMachineInterface
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] Cut = { '0', '0', '0', '0', '0', '0', '0', '0' };
 
-      foreach (var routeEntry in Job.GetMachiningStop(1, Path))
+      foreach (var routeEntry in PathInfo.Stops)
       {
         foreach (int statNum in routeEntry.Stations)
         {
@@ -372,12 +377,12 @@ namespace MazakMachineInterface
         }
       }
 
-      foreach (int statNum in Job.LoadStations(1, Path))
+      foreach (int statNum in PathInfo.Load)
       {
         FixLDS[statNum - 1] = statNum.ToString()[0];
       }
 
-      foreach (int statNum in Job.UnloadStations(1, Path))
+      foreach (int statNum in PathInfo.Unload)
       {
         UnfixLDS[statNum - 1] = statNum.ToString()[0];
       }
@@ -679,7 +684,7 @@ namespace MazakMachineInterface
       = (parent, process, pth, prog) => new MazakProcessFromJob(parent, process, pth, prog);
 
     public static MazakJobs JobsToMazak(
-      IEnumerable<JobPlan> jobs,
+      IEnumerable<Job> jobs,
       int downloadUID,
       MazakAllData mazakData,
       ISet<string> savedParts,
@@ -712,16 +717,17 @@ namespace MazakMachineInterface
 
     #region Validate
     private static void Validate(
-      IEnumerable<JobPlan> jobs, BlackMaple.MachineFramework.FMSSettings fmsSettings, IList<string> errs)
+      IEnumerable<Job> jobs, BlackMaple.MachineFramework.FMSSettings fmsSettings, IList<string> errs)
     {
       //only allow numeric pallets and check queues
-      foreach (JobPlan part in jobs)
+      foreach (Job part in jobs)
       {
-        for (int proc = 1; proc <= part.NumProcesses; proc++)
+        for (int proc = 1; proc <= part.Processes.Count; proc++)
         {
-          for (int path = 1; path <= part.GetNumPaths(proc); path++)
+          for (int path = 1; path <= part.Processes[proc - 1].Paths.Count; path++)
           {
-            foreach (string palName in part.PlannedPallets(proc, path))
+            var info = part.Processes[proc - 1].Paths[path - 1];
+            foreach (string palName in info.Pallets)
             {
               int v;
               if (!int.TryParse(palName, out v))
@@ -730,7 +736,7 @@ namespace MazakMachineInterface
               }
             }
 
-            var inQueue = part.GetInputQueue(proc, path);
+            var inQueue = info.InputQueue;
             if (!string.IsNullOrEmpty(inQueue) && !fmsSettings.Queues.ContainsKey(inQueue))
             {
               errs.Add(
@@ -738,8 +744,8 @@ namespace MazakMachineInterface
                 " All input queues must be local queues, not an external queue.");
             }
 
-            var outQueue = part.GetOutputQueue(proc, path);
-            if (proc == part.NumProcesses)
+            var outQueue = info.OutputQueue;
+            if (proc == part.Processes.Count)
             {
               if (!string.IsNullOrEmpty(outQueue) && !fmsSettings.ExternalQueues.ContainsKey(outQueue))
               {
@@ -764,7 +770,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Parts
-    private static List<MazakPart> BuildMazakParts(IEnumerable<JobPlan> jobs, int downloadID, MazakAllData mazakData, MazakDbType mazakTy,
+    private static List<MazakPart> BuildMazakParts(IEnumerable<Job> jobs, int downloadID, MazakAllData mazakData, MazakDbType mazakTy,
                                                   IList<string> log,
                                                   Func<string, long?, ProgramRevision> lookupProgram)
     {
@@ -773,11 +779,9 @@ namespace MazakMachineInterface
 
       foreach (var job in jobs)
       {
-        if (job.NumProcesses == 1)
+        if (job.Processes.Count == 1)
         {
-
-          //each path gets a MazakPart
-          if (job.GetNumPaths(process: 1) != 1)
+          if (job.Processes[0].Paths.Count != 1)
           {
             log.Add("Part " + job.PartName + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller");
             goto skipPart;
@@ -795,9 +799,9 @@ namespace MazakMachineInterface
         }
         else
         {
-          for (int proc = 1; proc <= job.NumProcesses; proc++)
+          for (int proc = 1; proc <= job.Processes.Count; proc++)
           {
-            if (job.GetNumPaths(proc) != 1)
+            if (job.Processes[proc - 1].Paths.Count != 1)
             {
               log.Add("Part " + job.PartName + " must use separate jobs per path. Multiple paths in a single job is not supported by the Mazak Cell controller");
               goto skipPart;
@@ -825,20 +829,20 @@ namespace MazakMachineInterface
     //Func<int, int, bool> only introduced in .NET 3.5
     private delegate bool MatchFunc(int proc, int path);
 
-    private static void BuildProcFromJob(JobPlan job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
+    private static void BuildProcFromJob(Job job, MazakPart mazak, out string ErrorDuringCreate, MazakDbType mazakTy,
                                          MazakAllData mazakData, Func<string, long?, ProgramRevision> lookupProgram)
     {
       ErrorDuringCreate = null;
 
-      for (int proc = 1; proc <= job.NumProcesses; proc++)
+      for (int proc = 1; proc <= job.Processes.Count; proc++)
       {
         // checked above that only a single path
-        var path = 1;
+        var info = job.Processes[proc - 1].Paths[0];
 
         //Check this proc and path has a program
         bool has1Stop = false;
         ProgramRevision prog = null;
-        foreach (var stop in job.GetMachiningStop(proc, path))
+        foreach (var stop in info.Stops)
         {
           has1Stop = true;
           if (stop.Stations.Count == 0)
@@ -847,7 +851,7 @@ namespace MazakMachineInterface
             return;
           }
 
-          if (stop.ProgramName == null || stop.ProgramName == "")
+          if (stop.Program == null || stop.Program == "")
           {
             ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
             return;
@@ -855,26 +859,26 @@ namespace MazakMachineInterface
           if (mazakTy == MazakDbType.MazakVersionE)
           {
             int progNum;
-            if (!int.TryParse(stop.ProgramName, out progNum))
+            if (!int.TryParse(stop.Program, out progNum))
             {
-              ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+              ErrorDuringCreate = "Part " + job.PartName + " program " + stop.Program +
                   " is not an integer.";
               return;
             }
           }
-          if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.ProgramName))
+          if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.Program))
           {
             prog = new ProgramRevision()
             {
-              CellControllerProgramName = stop.ProgramName
+              CellControllerProgramName = stop.Program
             };
           }
           else
           {
-            prog = lookupProgram(stop.ProgramName, stop.ProgramRevision);
+            prog = lookupProgram(stop.Program, stop.ProgramRevision);
             if (prog == null)
             {
-              ErrorDuringCreate = "Part " + job.PartName + " program " + stop.ProgramName +
+              ErrorDuringCreate = "Part " + job.PartName + " program " + stop.Program +
                 (stop.ProgramRevision.HasValue ? " rev" + stop.ProgramRevision.Value.ToString() : "") +
                 " does not exist in the cell controller.";
               return;
@@ -900,11 +904,11 @@ namespace MazakMachineInterface
           return;
         }
 
-        mazak.Processes.Add(ProcessFromJob(mazak, proc, path, prog));
+        mazak.Processes.Add(ProcessFromJob(mazak, proc, 1, prog));
       }
     }
 
-    private static void BuildProcFromJobWithOneProc(JobPlan job, MazakPart mazak, MazakDbType mazakTy,
+    private static void BuildProcFromJobWithOneProc(Job job, MazakPart mazak, MazakDbType mazakTy,
                                                     MazakAllData mazakData,
                                                     Func<string, long?, ProgramRevision> lookupProgram,
                                                     out string ErrorDuringCreate)
@@ -994,7 +998,7 @@ namespace MazakMachineInterface
           var minProc = paths.FirstOrDefault(p => p.ProcessNumber == 1);
           if (minProc != null)
           {
-            var start = minProc.Job.GetSimulatedStartingTimeUTC(minProc.ProcessNumber, minProc.Path);
+            var start = minProc.PathInfo.SimulatedStartingUTC;
             return start == DateTime.MinValue ? DateTime.MaxValue : start;
           }
           else
