@@ -110,7 +110,7 @@ namespace DebugMachineWatchApiServer
     }
   }
 
-  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IOldJobDecrement, IDisposable
+  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IDisposable
   {
     public IRepository LogDB { get; private set; }
 
@@ -419,21 +419,9 @@ namespace DebugMachineWatchApiServer
       throw new NotImplementedException();
     }
 
-    public IOldJobDecrement OldJobDecrement { get => this; }
-
     protected void OnNewStatus(CurrentStatus s)
     {
       OnNewCurrentStatus?.Invoke(s);
-    }
-
-    public Dictionary<JobAndPath, int> OldDecrementJobQuantites()
-    {
-      throw new NotImplementedException();
-    }
-
-    public void OldFinalizeDecrement()
-    {
-      throw new NotImplementedException();
     }
 
     public List<ToolInMachine> CurrentToolsInMachines()

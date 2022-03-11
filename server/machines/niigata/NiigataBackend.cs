@@ -178,7 +178,6 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
     public IJobControl JobControl { get => _jobControl; }
-    public IOldJobDecrement OldJobDecrement { get => null; }
     public IMachineControl MachineControl => _machControl;
 
     public IRepository OpenRepository()

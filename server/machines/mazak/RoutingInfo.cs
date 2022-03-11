@@ -37,7 +37,7 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl, BlackMaple.MachineFramework.IOldJobDecrement
+  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
 
@@ -329,15 +329,6 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    Dictionary<JobAndPath, int> BlackMaple.MachineFramework.IOldJobDecrement.OldDecrementJobQuantites()
-    {
-      throw new NotImplementedException();
-    }
-
-    void BlackMaple.MachineFramework.IOldJobDecrement.OldFinalizeDecrement()
-    {
-      throw new NotImplementedException();
-    }
     #endregion
 
     #region Queues

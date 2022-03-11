@@ -123,13 +123,6 @@ namespace BlackMaple.MachineFramework
     string GetProgramContent(string programName, long? revision);
   }
 
-  public interface IOldJobDecrement
-  {
-    //The old method of decrementing, which stores only a single decrement until finalize is called.
-    Dictionary<JobAndPath, int> OldDecrementJobQuantites();
-    void OldFinalizeDecrement();
-  }
-
   public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
   public delegate void NewCurrentStatus(CurrentStatus status);
   public delegate void NewJobsDelegate(NewJobs j);
@@ -139,7 +132,6 @@ namespace BlackMaple.MachineFramework
   {
     IJobControl JobControl { get; }
     IMachineControl MachineControl { get; }
-    IOldJobDecrement OldJobDecrement { get; }
 
     IRepository OpenRepository();
 

@@ -152,8 +152,6 @@ namespace Makino
 
     public IJobControl JobControl { get => _jobs; }
 
-    public IOldJobDecrement OldJobDecrement { get => _jobs; }
-
     public IMachineControl MachineControl => null;
 
     public LogTimer LogTimer

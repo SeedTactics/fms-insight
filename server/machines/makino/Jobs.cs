@@ -39,7 +39,7 @@ using Germinate;
 
 namespace Makino
 {
-  public class Jobs : IJobControl, IOldJobDecrement
+  public class Jobs : IJobControl
   {
     private MakinoDB _db;
     private Func<IRepository> _openJobDB;
@@ -112,16 +112,6 @@ namespace Makino
     public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
       return new List<JobAndDecrementQuantity>();
-    }
-
-    public Dictionary<JobAndPath, int> OldDecrementJobQuantites()
-    {
-      return new Dictionary<JobAndPath, int>();
-    }
-
-    public void OldFinalizeDecrement()
-    {
-      //do nothing
     }
 
     public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
