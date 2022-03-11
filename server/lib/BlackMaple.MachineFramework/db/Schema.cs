@@ -176,7 +176,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, PathGroup INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, Casting TEXT, PRIMARY KEY(UniqueStr,Process,Path))";
+        cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, Casting TEXT, PRIMARY KEY(UniqueStr,Process,Path))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
@@ -781,7 +781,6 @@ namespace BlackMaple.MachineFramework
 
           var jobTableNames = new[] {
             "planqty",
-            "pathdata",
             "pallets",
             "stops",
             "stops_stations",
@@ -808,6 +807,10 @@ namespace BlackMaple.MachineFramework
           }
 
           cmd.CommandText = "INSERT INTO main.jobs(UniqueStr,Part,NumProcess,Comment,StartUTC,EndUTC,Archived,CopiedToSystem,ScheduleId,Manual) SELECT UniqueStr,Part,NumProcess,Comment,StartUTC,EndUTC,Archived,CopiedToSystem,ScheduleId,Manual FROM jobs.jobs";
+          cmd.ExecuteNonQuery();
+
+          // pathdata PathGroup column is removed
+          cmd.CommandText = "INSERT INTO main.pathdata(UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) SELECT UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting FROM jobs.pathdata";
           cmd.ExecuteNonQuery();
 
           attachedOldJobDb = true;

@@ -35,7 +35,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 
 namespace MazakMachineInterface
 {
@@ -70,13 +69,13 @@ namespace MazakMachineInterface
 
     public static MazakWriteData AddSchedules(
       MazakAllData mazakData,
-      IEnumerable<JobPlan> jobs,
+      IEnumerable<Job> jobs,
       bool UseStartingOffsetForDueDate)
     {
       if (!jobs.Any()) return new MazakWriteData();
 
       var schs = new List<MazakScheduleRow>();
-      var routeStartDate = jobs.First().RouteStartingTimeUTC.ToLocalTime().Date;
+      var routeStartDate = jobs.First().RouteStartUTC.ToLocalTime().Date;
 
       var usedScheduleIDs = new HashSet<int>();
       var scheduledParts = new HashSet<string>();
@@ -92,11 +91,11 @@ namespace MazakMachineInterface
       }
 
       //now add the new schedule
-      foreach (JobPlan part in jobs)
+      foreach (Job part in jobs)
       {
         // 1 path per job should have been already prevented by an earlier check
-        if (part.GetNumPaths(1) > 1) continue;
-        if (part.GetPlannedCyclesOnFirstProcess() <= 0) continue;
+        if (part.Processes[0].Paths.Count > 1) continue;
+        if (part.Cycles <= 0) continue;
 
         //check if part exists downloaded
         int downloadUid = -1;
@@ -130,7 +129,7 @@ namespace MazakMachineInterface
             SchID: schid,
             mazakPartName: mazakPartName,
             mazakComment: mazakComment,
-            numProcess: part.NumProcesses,
+            numProcess: part.Processes.Count,
             part: part,
             earlierConflicts: earlierConflicts,
             startingPriority: maxPriMatchingDate + 1,
@@ -147,19 +146,19 @@ namespace MazakMachineInterface
 
     private static MazakScheduleRow SchedulePart(
       int SchID, string mazakPartName, string mazakComment, int numProcess,
-      JobPlan part, int earlierConflicts, int startingPriority, DateTime routeStartDate, bool UseStartingOffsetForDueDate)
+      Job part, int earlierConflicts, int startingPriority, DateTime routeStartDate, bool UseStartingOffsetForDueDate)
     {
       bool entireHold = false;
-      if (part.HoldEntireJob != null) entireHold = part.HoldEntireJob.IsJobOnHold;
+      if (part.HoldJob != null) entireHold = HoldCalculations.IsOnHold(part.HoldJob);
       bool machiningHold = false;
-      if (part.HoldMachining(1, 1) != null) machiningHold = part.HoldMachining(1, 1).IsJobOnHold;
+      if (part.Processes[0].Paths[0].HoldMachining != null) machiningHold = HoldCalculations.IsOnHold(part.Processes[0].Paths[0].HoldMachining);
 
       var newSchRow = new MazakScheduleRow()
       {
         Command = MazakWriteCommand.Add,
         Id = SchID,
         PartName = mazakPartName,
-        PlanQuantity = part.GetPlannedCyclesOnFirstProcess(),
+        PlanQuantity = part.Cycles,
         CompleteQuantity = 0,
         FixForMachine = 0,
         MissingFixture = 0,
@@ -175,9 +174,9 @@ namespace MazakMachineInterface
 
       if (UseStartingOffsetForDueDate)
       {
-        if (part.GetSimulatedStartingTimeUTC(1, 1) != DateTime.MinValue)
+        if (part.Processes[0].Paths[0].SimulatedStartingUTC != DateTime.MinValue)
         {
-          var start = part.GetSimulatedStartingTimeUTC(1, 1);
+          var start = part.Processes[0].Paths[0].SimulatedStartingUTC;
           newSchRow = newSchRow with
           {
             DueDate = routeStartDate,
@@ -196,7 +195,7 @@ namespace MazakMachineInterface
 
       int matQty = newSchRow.PlanQuantity;
 
-      if (!string.IsNullOrEmpty(part.GetInputQueue(process: 1, path: 1)))
+      if (!string.IsNullOrEmpty(part.Processes[0].Paths[0].InputQueue))
       {
         matQty = 0;
       }
@@ -221,20 +220,21 @@ namespace MazakMachineInterface
     }
 
     /// Count up how many JobPaths have an earlier simulation start time and also share a fixture/face with the current job
-    private static int CountEarlierConflicts(JobPlan jobToCheck, IEnumerable<JobPlan> jobs)
+    private static int CountEarlierConflicts(Job jobToCheck, IEnumerable<Job> jobs)
     {
-      var startT = jobToCheck.GetSimulatedStartingTimeUTC(process: 1, path: 1);
+      var startT = jobToCheck.Processes[0].Paths[0].SimulatedStartingUTC;
       if (startT == DateTime.MinValue) return 0;
 
       // first, calculate the fixtures and faces used by the job to check
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
       var usedPallets = new HashSet<string>();
-      for (int proc = 1; proc <= jobToCheck.NumProcesses; proc++)
+      for (int proc = 1; proc <= jobToCheck.Processes.Count; proc++)
       {
-        var (plannedFix, plannedFace) = jobToCheck.PlannedFixture(proc, 1);
+        var plannedFix = jobToCheck.Processes[proc - 1].Paths[0].Fixture;
+        var plannedFace = jobToCheck.Processes[proc - 1].Paths[0].Face ?? 1;
         if (string.IsNullOrEmpty(plannedFix))
         {
-          foreach (var p in jobToCheck.PlannedPallets(proc, 1))
+          foreach (var p in jobToCheck.Processes[proc - 1].Paths[0].Pallets)
           {
             usedPallets.Add(p);
           }
@@ -252,22 +252,23 @@ namespace MazakMachineInterface
         if (otherJob.UniqueStr == jobToCheck.UniqueStr) continue;
 
         // see if the process 1 starting time is later and if so skip the remaining checks
-        var otherStart = otherJob.GetSimulatedStartingTimeUTC(process: 1, path: 1);
+        var otherStart = otherJob.Processes[0].Paths[0].SimulatedStartingUTC;
         if (otherStart == DateTime.MinValue) continue;
         if (otherStart >= startT) continue;
 
         //the job starts earlier than the jobToCheck, but need to see if it conflicts.
 
         // go through all processes and if a fixture face matches, count it as a conflict.
-        for (var otherProc = 1; otherProc <= otherJob.NumProcesses; otherProc++)
+        for (var otherProc = 1; otherProc <= otherJob.Processes.Count; otherProc++)
         {
-          var (otherFix, otherFace) = otherJob.PlannedFixture(otherProc, 1);
+          var otherFix = otherJob.Processes[otherProc - 1].Paths[0].Fixture;
+          var otherFace = otherJob.Processes[otherProc - 1].Paths[0].Face ?? 1;
           if (usedFixtureFaces.Contains((otherFix, otherFace.ToString())))
           {
             earlierConflicts += 1;
             goto checkNextPath;
           }
-          if (otherJob.PlannedPallets(otherProc, 1).Any(usedPallets.Contains))
+          if (otherJob.Processes[otherProc - 1].Paths[0].Pallets.Any(usedPallets.Contains))
           {
             earlierConflicts += 1;
             goto checkNextPath;

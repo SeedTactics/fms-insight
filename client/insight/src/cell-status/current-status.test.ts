@@ -45,6 +45,7 @@ import {
 import { Snapshot, snapshot_UNSTABLE } from "recoil";
 import { applyConduitToSnapshot } from "../util/recoil-util";
 import { onLoadCurrentSt, onServerEvent } from "./loading";
+import { it, expect } from "vitest";
 
 const statusWithMat: api.ICurrentStatus = {
   timeOfCurrentStatusUTC: new Date(),

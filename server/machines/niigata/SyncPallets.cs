@@ -34,7 +34,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using System.Threading;
 
 namespace BlackMaple.FMSInsight.Niigata

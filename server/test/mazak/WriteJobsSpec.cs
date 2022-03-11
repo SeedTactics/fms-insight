@@ -38,7 +38,6 @@ using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using MazakMachineInterface;
 using NSubstitute;
 using Newtonsoft.Json;

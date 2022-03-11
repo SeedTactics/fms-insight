@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
-using BlackMaple.MachineWatchInterface;
 using System.Linq;
 using System.Collections.Immutable;
 using BlackMaple.MachineFramework;
@@ -97,8 +96,6 @@ namespace Makino
           numProc = Math.Max(numProc, _procIDToProcNum[p.Key]);
         }
       }
-      var job = new JobPlan(unique, numProc);
-
       _byPartID.Add(partID, new BlackMaple.MachineFramework.Job()
       {
         UniqueStr = unique,

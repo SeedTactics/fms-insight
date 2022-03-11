@@ -38,7 +38,6 @@ using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using MazakMachineInterface;
 using Newtonsoft.Json;
 using NSubstitute;
@@ -206,6 +205,7 @@ namespace MachineWatchTest
       finally
       {
         if (close) repository.Dispose();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         File.Delete(_tempLogFile);
       }
 

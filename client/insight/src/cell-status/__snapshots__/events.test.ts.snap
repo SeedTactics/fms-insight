@@ -1,9 +1,9 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1
 
-exports[`processes events in a specific month: buffers 1`] = `
-Array [
-  Object {
-    "buffer": Object {
+exports[`processes events in a specific month > buffers 1`] = `
+[
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -11,8 +11,8 @@ Array [
     "endTime": 2018-01-06T09:14:05.000Z,
     "numMaterial": 1,
   },
-  Object {
-    "buffer": Object {
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -20,8 +20,8 @@ Array [
     "endTime": 2018-01-31T09:14:05.000Z,
     "numMaterial": 1,
   },
-  Object {
-    "buffer": Object {
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -32,102 +32,57 @@ Array [
 ]
 `;
 
-exports[`processes events in a specific month: estimated cycle times 1`] = `
+exports[`processes events in a specific month > estimated cycle times 1`] = `
 Map {
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"progk\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: MC, operation: progk}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 30,
     "medianMinutesForSingleMat": 30,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"prog6\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: MC, operation: prog6}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 24,
     "medianMinutesForSingleMat": 24,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"progc\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: MC, operation: progc}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 18,
     "medianMinutesForSingleMat": 18,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
@@ -136,31 +91,28 @@ Map {
 }
 `;
 
-exports[`processes events in a specific month: inspections 1`] = `
+exports[`processes events in a specific month > inspections 1`] = `
 Map {
-  "PartAndInspType {
-  \\"inspType\\": \\"Insp1\\",
-  \\"part\\": \\"part222\\",
-}" => Array [
-    Object {
+  "{part: part222}, inspType: Insp1}" => [
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 78875,
       "part": "part222",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 78875,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 78875,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -170,12 +122,12 @@ Map {
       "time": 2018-01-06T09:50:05.000Z,
       "workorder": "workk",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 78875,
       "part": "part222",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -183,12 +135,12 @@ Map {
       "time": 2018-01-06T09:57:05.000Z,
       "workorder": "workk",
     },
-    Object {
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 41194,
       "part": "part222",
-      "result": Object {
+      "result": {
         "toInspect": true,
         "type": 1,
       },
@@ -196,25 +148,25 @@ Map {
       "time": 2018-01-31T09:56:05.000Z,
       "workorder": "workk",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 41194,
       "part": "part222",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 41194,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 41194,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -224,12 +176,12 @@ Map {
       "time": 2018-01-31T09:56:10.000Z,
       "workorder": "workk",
     },
-    Object {
+    {
       "cntr": 10,
       "inspType": "Insp1",
       "materialID": 41194,
       "part": "part222",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -238,16 +190,13 @@ Map {
       "workorder": "workk",
     },
   ],
-  "PartAndInspType {
-  \\"inspType\\": \\"Insp1\\",
-  \\"part\\": \\"part111\\",
-}" => Array [
-    Object {
+  "{part: part111}, inspType: Insp1}" => [
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 62494,
       "part": "part111",
-      "result": Object {
+      "result": {
         "toInspect": true,
         "type": 1,
       },
@@ -255,25 +204,25 @@ Map {
       "time": 2018-02-02T10:02:05.000Z,
       "workorder": "workv",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 62494,
       "part": "part111",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 62494,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 62494,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -283,12 +232,12 @@ Map {
       "time": 2018-02-02T10:02:10.000Z,
       "workorder": "workv",
     },
-    Object {
+    {
       "cntr": 10,
       "inspType": "Insp1",
       "materialID": 62494,
       "part": "part111",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -300,23 +249,23 @@ Map {
 }
 `;
 
-exports[`processes events in a specific month: material summary 1`] = `
-Object {
+exports[`processes events in a specific month > material summary 1`] = `
+{
   "matIdsForJob": Map {
-    "uniqf" => Array [
+    "uniqf" => [
       78875,
     ],
-    "uniqn" => Array [
+    "uniqn" => [
       62494,
     ],
-    "uniqv" => Array [
+    "uniqv" => [
       41194,
     ],
   },
   "matsById": Map {
-    "41194" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "41194" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-01-31T10:03:10.000Z,
         },
@@ -328,18 +277,18 @@ Object {
       "materialID": 41194,
       "numProcesses": 2,
       "partName": "part222",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "1": 2018-01-31T09:51:05.000Z,
       },
     },
-    "78875" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "78875" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-01-06T09:57:05.000Z,
         },
@@ -351,17 +300,17 @@ Object {
       "materialID": 78875,
       "numProcesses": 3,
       "partName": "part222",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "2": 2018-01-06T09:45:05.000Z,
       },
     },
-    "62494" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "62494" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-02-02T10:09:10.000Z,
         },
@@ -373,12 +322,12 @@ Object {
       "materialID": 62494,
       "numProcesses": 3,
       "partName": "part111",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "1": 2018-02-02T09:57:05.000Z,
       },
     },
@@ -386,22 +335,22 @@ Object {
 }
 `;
 
-exports[`processes events in a specific month: pallet cycles 1`] = `
+exports[`processes events in a specific month > pallet cycles 1`] = `
 Map {
-  "palaa" => Array [
-    Object {
+  "palaa" => [
+    {
       "active": -1,
       "x": 2018-01-06T09:50:05.000Z,
       "y": 44,
     },
   ],
-  "palbb" => Array [
-    Object {
+  "palbb" => [
+    {
       "active": -1,
       "x": 2018-01-31T09:56:10.000Z,
       "y": 44,
     },
-    Object {
+    {
       "active": -1,
       "x": 2018-02-02T10:02:10.000Z,
       "y": 44,
@@ -410,15 +359,15 @@ Map {
 }
 `;
 
-exports[`processes events in a specific month: station cycles 1`] = `
-Array [
-  Object {
+exports[`processes events in a specific month > station cycles 1`] = `
+[
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face5",
         "id": 78875,
         "numproc": 3,
@@ -440,13 +389,13 @@ Array [
     "x": 2018-01-06T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 18,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face5",
         "id": 78875,
         "numproc": 3,
@@ -468,13 +417,13 @@ Array [
     "x": 2018-01-06T09:35:05.000Z,
     "y": 18,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face5",
         "id": 78875,
         "numproc": 3,
@@ -496,13 +445,13 @@ Array [
     "x": 2018-01-06T09:45:05.000Z,
     "y": 3,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "faceh",
         "id": 41194,
         "numproc": 2,
@@ -524,13 +473,13 @@ Array [
     "x": 2018-01-31T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "faceh",
         "id": 41194,
         "numproc": 2,
@@ -552,13 +501,13 @@ Array [
     "x": 2018-01-31T09:41:05.000Z,
     "y": 24,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "faceh",
         "id": 41194,
         "numproc": 2,
@@ -580,13 +529,13 @@ Array [
     "x": 2018-01-31T09:51:05.000Z,
     "y": 3,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facep",
         "id": 62494,
         "numproc": 3,
@@ -608,13 +557,13 @@ Array [
     "x": 2018-02-02T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facep",
         "id": 62494,
         "numproc": 3,
@@ -636,13 +585,13 @@ Array [
     "x": 2018-02-02T09:47:05.000Z,
     "y": 30,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facep",
         "id": 62494,
         "numproc": 3,
@@ -667,10 +616,10 @@ Array [
 ]
 `;
 
-exports[`processes last 30 events: after filter - buffers 1`] = `
-Array [
-  Object {
-    "buffer": Object {
+exports[`processes last 30 events > after filter - buffers 1`] = `
+[
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -678,8 +627,8 @@ Array [
     "endTime": 2018-01-31T09:14:05.000Z,
     "numMaterial": 1,
   },
-  Object {
-    "buffer": Object {
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -687,8 +636,8 @@ Array [
     "endTime": 2018-02-02T09:14:05.000Z,
     "numMaterial": 1,
   },
-  Object {
-    "buffer": Object {
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -699,102 +648,57 @@ Array [
 ]
 `;
 
-exports[`processes last 30 events: after filter - estimated cycle times 1`] = `
+exports[`processes last 30 events > after filter - estimated cycle times 1`] = `
 Map {
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"prog8\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 18,
     "medianMinutesForSingleMat": 18,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"progt\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 24,
     "medianMinutesForSingleMat": 24,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"progz\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 30,
     "medianMinutesForSingleMat": 30,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
@@ -803,33 +707,30 @@ Map {
 }
 `;
 
-exports[`processes last 30 events: after filter - event counter 1`] = `59`;
+exports[`processes last 30 events > after filter - event counter 1`] = `59`;
 
-exports[`processes last 30 events: after filter - inspections 1`] = `
+exports[`processes last 30 events > after filter - inspections 1`] = `
 Map {
-  "PartAndInspType {
-  \\"inspType\\": \\"Insp1\\",
-  \\"part\\": \\"part222\\",
-}" => Array [
-    Object {
+  "{part: part222}, inspType: Insp1}" => [
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 34857,
       "part": "part222",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 34857,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 34857,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -839,12 +740,12 @@ Map {
       "time": 2018-01-31T09:56:05.000Z,
       "workorder": "workw",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 34857,
       "part": "part222",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -853,29 +754,26 @@ Map {
       "workorder": "workw",
     },
   ],
-  "PartAndInspType {
-  \\"inspType\\": \\"Insp1\\",
-  \\"part\\": \\"part111\\",
-}" => Array [
-    Object {
+  "{part: part111}, inspType: Insp1}" => [
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 70329,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 70329,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -885,12 +783,12 @@ Map {
       "time": 2018-02-02T10:02:05.000Z,
       "workorder": "work7",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -898,12 +796,12 @@ Map {
       "time": 2018-02-02T10:09:05.000Z,
       "workorder": "work7",
     },
-    Object {
+    {
       "cntr": 57,
       "inspType": "Insp1",
       "materialID": 56538,
       "part": "part111",
-      "result": Object {
+      "result": {
         "toInspect": true,
         "type": 1,
       },
@@ -911,25 +809,25 @@ Map {
       "time": 2018-02-08T09:44:05.000Z,
       "workorder": "work6",
     },
-    Object {
+    {
       "cntr": 58,
       "inspType": "Insp1",
       "materialID": 56538,
       "part": "part111",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 56538,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 56538,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -939,12 +837,12 @@ Map {
       "time": 2018-02-08T09:44:10.000Z,
       "workorder": "work6",
     },
-    Object {
+    {
       "cntr": 59,
       "inspType": "Insp1",
       "materialID": 56538,
       "part": "part111",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -956,23 +854,23 @@ Map {
 }
 `;
 
-exports[`processes last 30 events: after filter - material summary 1`] = `
-Object {
+exports[`processes last 30 events > after filter - material summary 1`] = `
+{
   "matIdsForJob": Map {
-    "uniqi" => Array [
+    "uniqi" => [
       70329,
     ],
-    "uniqn" => Array [
+    "uniqn" => [
       56538,
     ],
-    "uniqv" => Array [
+    "uniqv" => [
       34857,
     ],
   },
   "matsById": Map {
-    "34857" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "34857" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-01-31T10:03:05.000Z,
         },
@@ -984,17 +882,17 @@ Object {
       "materialID": 34857,
       "numProcesses": 2,
       "partName": "part222",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "1": 2018-01-31T09:51:05.000Z,
       },
     },
-    "70329" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "70329" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-02-02T10:09:05.000Z,
         },
@@ -1006,17 +904,17 @@ Object {
       "materialID": 70329,
       "numProcesses": 4,
       "partName": "part111",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "1": 2018-02-02T09:57:05.000Z,
       },
     },
-    "56538" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "56538" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-02-08T09:51:10.000Z,
         },
@@ -1028,12 +926,12 @@ Object {
       "materialID": 56538,
       "numProcesses": 2,
       "partName": "part111",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "1": 2018-02-08T09:39:05.000Z,
       },
     },
@@ -1041,23 +939,23 @@ Object {
 }
 `;
 
-exports[`processes last 30 events: after filter - pallet cycles 1`] = `
+exports[`processes last 30 events > after filter - pallet cycles 1`] = `
 Map {
-  "palaa" => Array [],
-  "palbb" => Array [
-    Object {
+  "palaa" => [],
+  "palbb" => [
+    {
       "active": -1,
       "x": 2018-01-31T09:56:05.000Z,
       "y": 44,
     },
-    Object {
+    {
       "active": -1,
       "x": 2018-02-02T10:02:05.000Z,
       "y": 44,
     },
   ],
-  "palcc" => Array [
-    Object {
+  "palcc" => [
+    {
       "active": -1,
       "x": 2018-02-08T09:44:10.000Z,
       "y": 44,
@@ -1066,15 +964,15 @@ Map {
 }
 `;
 
-exports[`processes last 30 events: after filter - station cycles 1`] = `
-Array [
-  Object {
+exports[`processes last 30 events > after filter - station cycles 1`] = `
+[
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facem",
         "id": 34857,
         "numproc": 2,
@@ -1096,13 +994,13 @@ Array [
     "x": 2018-01-31T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facem",
         "id": 34857,
         "numproc": 2,
@@ -1124,13 +1022,13 @@ Array [
     "x": 2018-01-31T09:41:05.000Z,
     "y": 24,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facem",
         "id": 34857,
         "numproc": 2,
@@ -1152,13 +1050,13 @@ Array [
     "x": 2018-01-31T09:51:05.000Z,
     "y": 3,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face4",
         "id": 70329,
         "numproc": 4,
@@ -1180,13 +1078,13 @@ Array [
     "x": 2018-02-02T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face4",
         "id": 70329,
         "numproc": 4,
@@ -1208,13 +1106,13 @@ Array [
     "x": 2018-02-02T09:47:05.000Z,
     "y": 30,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face4",
         "id": 70329,
         "numproc": 4,
@@ -1236,13 +1134,13 @@ Array [
     "x": 2018-02-02T09:57:05.000Z,
     "y": 3,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 50,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facer",
         "id": 56538,
         "numproc": 2,
@@ -1264,13 +1162,13 @@ Array [
     "x": 2018-02-08T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0,
     "activeMinutes": 12,
     "cntr": 54,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facer",
         "id": 56538,
         "numproc": 2,
@@ -1292,13 +1190,13 @@ Array [
     "x": 2018-02-08T09:29:05.000Z,
     "y": 12,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 56,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facer",
         "id": 56538,
         "numproc": 2,
@@ -1323,22 +1221,17 @@ Array [
 ]
 `;
 
-exports[`processes last 30 events: after filter - tool use 1`] = `
+exports[`processes last 30 events > after filter - tool use 1`] = `
 Map {
-  "PartAndStationOperation {
-  \\"operation\\": \\"prog8\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"MC\\",
-}" => Array [
-    Object {
-      "tools": Array [
-        Object {
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => [
+    {
+      "tools": [
+        {
           "cycleUsageMinutes": 0.4666666666666667,
           "toolChanged": true,
           "toolName": "9",
         },
-        Object {
+        {
           "cycleUsageMinutes": 0.38333333333333336,
           "toolChanged": false,
           "toolName": "w",
@@ -1346,20 +1239,15 @@ Map {
       ],
     },
   ],
-  "PartAndStationOperation {
-  \\"operation\\": \\"progt\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Array [
-    Object {
-      "tools": Array [
-        Object {
+  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => [
+    {
+      "tools": [
+        {
           "cycleUsageMinutes": 0.26666666666666666,
           "toolChanged": false,
           "toolName": "v",
         },
-        Object {
+        {
           "cycleUsageMinutes": 0.35,
           "toolChanged": true,
           "toolName": "m",
@@ -1367,20 +1255,15 @@ Map {
       ],
     },
   ],
-  "PartAndStationOperation {
-  \\"operation\\": \\"progz\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Array [
-    Object {
-      "tools": Array [
-        Object {
+  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => [
+    {
+      "tools": [
+        {
           "cycleUsageMinutes": 0.43333333333333335,
           "toolChanged": false,
           "toolName": "5",
         },
-        Object {
+        {
           "cycleUsageMinutes": 0.5166666666666667,
           "toolChanged": true,
           "toolName": "v",
@@ -1391,10 +1274,10 @@ Map {
 }
 `;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - buffers 1`] = `
-Array [
-  Object {
-    "buffer": Object {
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - buffers 1`] = `
+[
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -1402,8 +1285,8 @@ Array [
     "endTime": 2018-01-06T09:14:05.000Z,
     "numMaterial": 1,
   },
-  Object {
-    "buffer": Object {
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -1411,8 +1294,8 @@ Array [
     "endTime": 2018-01-31T09:14:05.000Z,
     "numMaterial": 1,
   },
-  Object {
-    "buffer": Object {
+  {
+    "buffer": {
       "stockerNum": 4,
       "type": "StockerWaitForMC",
     },
@@ -1423,102 +1306,57 @@ Array [
 ]
 `;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - estimated cycle times 1`] = `
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - estimated cycle times 1`] = `
 Map {
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"prog8\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 18,
     "medianMinutesForSingleMat": 18,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"progt\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 24,
     "medianMinutesForSingleMat": 24,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"progz\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Object {
+  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 30,
     "medianMinutesForSingleMat": 30,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"LOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 2, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "PartAndStationOperation {
-  \\"operation\\": \\"UNLOAD\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"L/U\\",
-}" => Object {
+  "{part: part222}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
@@ -1527,33 +1365,30 @@ Map {
 }
 `;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - event counter 1`] = `9`;
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - event counter 1`] = `9`;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - inspections 1`] = `
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - inspections 1`] = `
 Map {
-  "PartAndInspType {
-  \\"inspType\\": \\"Insp1\\",
-  \\"part\\": \\"part222\\",
-}" => Array [
-    Object {
+  "{part: part222}, inspType: Insp1}" => [
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 52057,
       "part": "part222",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 52057,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 52057,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -1563,12 +1398,12 @@ Map {
       "time": 2018-01-06T09:50:05.000Z,
       "workorder": "worku",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 52057,
       "part": "part222",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -1576,25 +1411,25 @@ Map {
       "time": 2018-01-06T09:57:05.000Z,
       "workorder": "worku",
     },
-    Object {
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 34857,
       "part": "part222",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 34857,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 34857,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -1604,12 +1439,12 @@ Map {
       "time": 2018-01-31T09:56:05.000Z,
       "workorder": "workw",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 34857,
       "part": "part222",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -1618,29 +1453,26 @@ Map {
       "workorder": "workw",
     },
   ],
-  "PartAndInspType {
-  \\"inspType\\": \\"Insp1\\",
-  \\"part\\": \\"part111\\",
-}" => Array [
-    Object {
+  "{part: part111}, inspType: Insp1}" => [
+    {
       "cntr": 8,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
-      "result": Object {
-        "actualPath": Array [
-          Object {
-            "LoadStation": 1,
-            "MaterialID": 70329,
-            "Pallet": "6",
-            "Process": 1,
-            "Stops": Array [
-              Object {
-                "StationName": "MC",
-                "StationNum": 4,
+      "result": {
+        "actualPath": [
+          {
+            "loadStation": 1,
+            "materialID": 70329,
+            "pallet": "6",
+            "process": 1,
+            "stops": [
+              {
+                "stationName": "MC",
+                "stationNum": 4,
               },
             ],
-            "UnloadStation": 2,
+            "unloadStation": 2,
           },
         ],
         "toInspect": true,
@@ -1650,12 +1482,12 @@ Map {
       "time": 2018-02-02T10:02:05.000Z,
       "workorder": "work7",
     },
-    Object {
+    {
       "cntr": 9,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
-      "result": Object {
+      "result": {
         "success": true,
         "type": 2,
       },
@@ -1667,23 +1499,23 @@ Map {
 }
 `;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - material summary 1`] = `
-Object {
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - material summary 1`] = `
+{
   "matIdsForJob": Map {
-    "uniqi" => Array [
+    "uniqi" => [
       70329,
     ],
-    "uniqv" => Array [
+    "uniqv" => [
       34857,
     ],
-    "uniq7" => Array [
+    "uniq7" => [
       52057,
     ],
   },
   "matsById": Map {
-    "34857" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "34857" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-01-31T10:03:05.000Z,
         },
@@ -1695,17 +1527,17 @@ Object {
       "materialID": 34857,
       "numProcesses": 2,
       "partName": "part222",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "1": 2018-01-31T09:51:05.000Z,
       },
     },
-    "70329" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "70329" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-02-02T10:09:05.000Z,
         },
@@ -1717,17 +1549,17 @@ Object {
       "materialID": 70329,
       "numProcesses": 4,
       "partName": "part111",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "1": 2018-02-02T09:57:05.000Z,
       },
     },
-    "52057" => Object {
-      "completedInspections": Object {
-        "Insp1": Object {
+    "52057" => {
+      "completedInspections": {
+        "Insp1": {
           "success": true,
           "time": 2018-01-06T09:57:05.000Z,
         },
@@ -1739,11 +1571,11 @@ Object {
       "materialID": 52057,
       "numProcesses": 4,
       "partName": "part222",
-      "signaledInspections": Array [
+      "signaledInspections": [
         "Insp1",
       ],
       "startedProcess1": true,
-      "unloaded_processes": Object {
+      "unloaded_processes": {
         "2": 2018-01-06T09:45:05.000Z,
       },
     },
@@ -1751,22 +1583,22 @@ Object {
 }
 `;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - pallet cycles 1`] = `
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - pallet cycles 1`] = `
 Map {
-  "palaa" => Array [
-    Object {
+  "palaa" => [
+    {
       "active": -1,
       "x": 2018-01-06T09:50:05.000Z,
       "y": 44,
     },
   ],
-  "palbb" => Array [
-    Object {
+  "palbb" => [
+    {
       "active": -1,
       "x": 2018-01-31T09:56:05.000Z,
       "y": 44,
     },
-    Object {
+    {
       "active": -1,
       "x": 2018-02-02T10:02:05.000Z,
       "y": 44,
@@ -1775,15 +1607,15 @@ Map {
 }
 `;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - station cycles 1`] = `
-Array [
-  Object {
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - station cycles 1`] = `
+[
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facek",
         "id": 52057,
         "numproc": 4,
@@ -1805,13 +1637,13 @@ Array [
     "x": 2018-01-06T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 18,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facek",
         "id": 52057,
         "numproc": 4,
@@ -1833,13 +1665,13 @@ Array [
     "x": 2018-01-06T09:35:05.000Z,
     "y": 18,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facek",
         "id": 52057,
         "numproc": 4,
@@ -1861,13 +1693,13 @@ Array [
     "x": 2018-01-06T09:45:05.000Z,
     "y": 3,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facem",
         "id": 34857,
         "numproc": 2,
@@ -1889,13 +1721,13 @@ Array [
     "x": 2018-01-31T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facem",
         "id": 34857,
         "numproc": 2,
@@ -1917,13 +1749,13 @@ Array [
     "x": 2018-01-31T09:41:05.000Z,
     "y": 24,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "facem",
         "id": 34857,
         "numproc": 2,
@@ -1945,13 +1777,13 @@ Array [
     "x": 2018-01-31T09:51:05.000Z,
     "y": 3,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 1,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face4",
         "id": 70329,
         "numproc": 4,
@@ -1973,13 +1805,13 @@ Array [
     "x": 2018-02-02T09:09:05.000Z,
     "y": 6,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
     "cntr": 5,
     "isLabor": false,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face4",
         "id": 70329,
         "numproc": 4,
@@ -2001,13 +1833,13 @@ Array [
     "x": 2018-02-02T09:47:05.000Z,
     "y": 30,
   },
-  Object {
+  {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 7,
     "isLabor": true,
-    "material": Array [
-      Object {
+    "material": [
+      {
         "face": "face4",
         "id": 70329,
         "numproc": 4,
@@ -2032,22 +1864,17 @@ Array [
 ]
 `;
 
-exports[`processes last 30 events: initial 27 days ago, two days ago, and today - tool use 1`] = `
+exports[`processes last 30 events > initial 27 days ago, two days ago, and today - tool use 1`] = `
 Map {
-  "PartAndStationOperation {
-  \\"operation\\": \\"prog8\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 2,
-  \\"statGroup\\": \\"MC\\",
-}" => Array [
-    Object {
-      "tools": Array [
-        Object {
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => [
+    {
+      "tools": [
+        {
           "cycleUsageMinutes": 0.4666666666666667,
           "toolChanged": true,
           "toolName": "9",
         },
-        Object {
+        {
           "cycleUsageMinutes": 0.38333333333333336,
           "toolChanged": false,
           "toolName": "w",
@@ -2055,20 +1882,15 @@ Map {
       ],
     },
   ],
-  "PartAndStationOperation {
-  \\"operation\\": \\"progt\\",
-  \\"part\\": \\"part222\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Array [
-    Object {
-      "tools": Array [
-        Object {
+  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => [
+    {
+      "tools": [
+        {
           "cycleUsageMinutes": 0.26666666666666666,
           "toolChanged": false,
           "toolName": "v",
         },
-        Object {
+        {
           "cycleUsageMinutes": 0.35,
           "toolChanged": true,
           "toolName": "m",
@@ -2076,20 +1898,15 @@ Map {
       ],
     },
   ],
-  "PartAndStationOperation {
-  \\"operation\\": \\"progz\\",
-  \\"part\\": \\"part111\\",
-  \\"proc\\": 1,
-  \\"statGroup\\": \\"MC\\",
-}" => Array [
-    Object {
-      "tools": Array [
-        Object {
+  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => [
+    {
+      "tools": [
+        {
           "cycleUsageMinutes": 0.43333333333333335,
           "toolChanged": false,
           "toolName": "5",
         },
-        Object {
+        {
           "cycleUsageMinutes": 0.5166666666666667,
           "toolChanged": true,
           "toolName": "v",

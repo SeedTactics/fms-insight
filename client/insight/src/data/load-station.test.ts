@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2018, John Lenz
 
 All rights reserved.
 
@@ -31,39 +31,27 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { filterRemoveAddQueue } from "./LogEntry";
-import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake";
+import curSt from "../../test/status-mock.json";
+import { CurrentStatus } from "../network/api";
+import { selectLoadStationAndQueueProps } from "./load-station";
+import { describe, it, expect } from "vitest";
+import { ptsToJs } from "../../test/prelude-ts-snapshots";
 
-it("doesn't filter just a single add", () => {
-  const cycles = [...fakeCycle({ time: new Date(), machineTime: 100 }), fakeAddToQueue()];
-  expect(Array.from(filterRemoveAddQueue(cycles))).toEqual(cycles);
-});
+describe("load station status", () => {
+  it("load 1 with no queues", () => {
+    const status = CurrentStatus.fromJS(curSt);
+    expect(ptsToJs(selectLoadStationAndQueueProps(1, [], false, status))).toMatchSnapshot("load 1 with no queues");
+  });
 
-it("doesn't filter a single add and remove", () => {
-  const cycles = [
-    ...fakeCycle({ time: new Date(), machineTime: 100 }),
-    fakeAddToQueue("q1"),
-    fakeRemoveFromQueue("q1"),
-  ];
-  expect(Array.from(filterRemoveAddQueue(cycles))).toEqual(cycles);
-});
+  it("load 2 with queue", () => {
+    const status = CurrentStatus.fromJS(curSt);
+    expect(ptsToJs(selectLoadStationAndQueueProps(2, ["Queue1"], false, status))).toMatchSnapshot("load 2 with queue");
+  });
 
-it("filters out a single add and remove", () => {
-  const regCycle = fakeCycle({ time: new Date(), machineTime: 100 });
-  const a1 = fakeAddToQueue("q1");
-  const r1 = fakeRemoveFromQueue("q1");
-  const a2 = fakeAddToQueue("q1");
-  const r2 = fakeRemoveFromQueue("q1");
-
-  expect(Array.from(filterRemoveAddQueue([...regCycle, a1, r1, a2, r2]))).toEqual([...regCycle, a1, r2]);
-});
-
-it("doesn't filters when they are different queues", () => {
-  const regCycle = fakeCycle({ time: new Date(), machineTime: 100 });
-  const a1 = fakeAddToQueue("q1");
-  const r1 = fakeRemoveFromQueue("q1");
-  const a2 = fakeAddToQueue("q2");
-  const r2 = fakeRemoveFromQueue("q2");
-
-  expect(Array.from(filterRemoveAddQueue([...regCycle, a1, r1, a2, r2]))).toEqual([...regCycle, a1, r1, a2, r2]);
+  it("load 3 with empty pallet", () => {
+    const status = CurrentStatus.fromJS(curSt);
+    expect(ptsToJs(selectLoadStationAndQueueProps(3, ["Queue2"], false, status))).toMatchSnapshot(
+      "load 3 with empty pallet"
+    );
+  });
 });

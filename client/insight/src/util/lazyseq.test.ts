@@ -1,5 +1,6 @@
 import { LazySeq } from "./lazyseq";
 import { HashMap, Vector, Option, HashSet } from "prelude-ts";
+import { it, expect } from "vitest";
 
 const oddSeq = LazySeq.ofIterator(function* () {
   for (let x = 1; x <= 9; x += 2) {

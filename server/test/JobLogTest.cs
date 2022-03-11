@@ -36,7 +36,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using FluentAssertions;
 using AutoFixture;
 using System.Collections.Immutable;

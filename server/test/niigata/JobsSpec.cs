@@ -37,7 +37,6 @@ using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using System.Collections.Immutable;
 using Germinate;
@@ -408,71 +407,94 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public void AddsBasicJobs()
     {
       //add some existing jobs
-      var completedJob = new JobPlan("old", 2);
-      completedJob.PartName = "oldpart";
-      completedJob.SetPlannedCyclesOnFirstProcess(3);
-      var toKeepJob = new JobPlan("tokeep", 1);
-      toKeepJob.PartName = "tokeep";
-      toKeepJob.SetPlannedCyclesOnFirstProcess(10);
-      toKeepJob.PathInspections(1, 1).Add(new PathInspection()
-      {
-        InspectionType = "insp",
-        Counter = "cntr",
-        MaxVal = 10,
-      });
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create<Job>(completedJob.ToHistoricJob(), toKeepJob.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
+      var completedJob = FakeIccDsl.CreateMultiProcSamePalletJob(
+        unique: "old",
+        part: "oldpart",
+        qty: 3, // has quantity 3!
+        priority: 4,
+        partsPerPal: 1,
+        pals: new[] { 6000 },
+        luls: new[] { 1 },
+        machs: new[] { 1 },
+        prog1: "oldprog1",
+        prog1Rev: null,
+        prog2: "oldprog2",
+        prog2Rev: null,
+        loadMins1: 56,
+        machMins1: 53,
+        unloadMins1: 4,
+        loadMins2: 4,
+        machMins2: 2,
+        unloadMins2: 2566,
+        fixture: "oldfixture",
+        face1: 1,
+        face2: 2
+      );
+
+      var toKeepJob = completedJob with { UniqueStr = "tokeep", Cycles = 10 };
+
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create<Job>(completedJob, toKeepJob) }, null, addAsCopiedToSystem: true);
 
       _syncMock.CurrentCellState().Returns(new CellState()
       {
         Pallets = new List<PalletAndMaterial>(),
         QueuedMaterial = new List<InProcessMaterialAndJob>(),
         CyclesStartedOnProc1 = new Dictionary<string, int>() {
-          {"old", 3},
-          {"tokeep", 5}
+          {"old", 3}, // matches Cycles quantity
+          {"tokeep", 5} // Cycles quantity is 10 so this should be kept
         }
       });
 
       //some new jobs
-      var newJob1 = new JobPlan("uu1", 2);
-      newJob1.PartName = "p1";
-      newJob1.SetPlannedCyclesOnFirstProcess(10);
-      newJob1.AddLoadStation(1, 1, 1);
-      newJob1.AddLoadStation(2, 1, 1);
-      newJob1.AddUnloadStation(1, 1, 2);
-      newJob1.AddUnloadStation(2, 1, 1);
-      newJob1.AddProcessOnPallet(1, 1, "5");
-      newJob1.AddProcessOnPallet(2, 1, "6");
-      newJob1.SetFixtureFace(1, 1, "fix1", 2);
-      newJob1.SetFixtureFace(2, 1, "fix1", 2);
-      newJob1.PathInspections(1, 1).Add(new PathInspection()
-      {
-        InspectionType = "insp",
-        Counter = "cntr1",
-        MaxVal = 11,
-      });
-      newJob1.PathInspections(2, 1).Add(new PathInspection()
-      {
-        InspectionType = "insp",
-        Counter = "cntr2",
-        MaxVal = 22,
-      });
-      var newJob2 = new JobPlan("uu2", 1);
-      newJob2.PartName = "p2";
-      newJob2.AddProcessOnPallet(process: 1, path: 1, pallet: "4");
-      newJob2.AddLoadStation(1, 1, 1);
-      newJob2.AddUnloadStation(1, 1, 2);
-      newJob2.SetFixtureFace(1, 1, "fix1", 2);
-      newJob2.PathInspections(1, 1).Add(new PathInspection()
-      {
-        InspectionType = "insp",
-        Counter = "cntr3",
-        MaxVal = 33,
-      });
-
+      var newJob1 = FakeIccDsl.CreateOneProcOnePathJob(
+        unique: "uu1",
+        part: "p1",
+        qty: 12,
+        priority: 7,
+        partsPerPal: 1,
+        pals: new[] { 777 },
+        luls: new[] { 2 },
+        machs: new[] { 5 },
+        prog: "prog1",
+        progRev: null,
+        loadMins: 54,
+        machMins: 64,
+        unloadMins: 5,
+        fixture: "xxxx",
+        face: 1
+      );
+      var newJob2 = FakeIccDsl.CreateOneProcOnePathJob(
+        unique: "uu2",
+        part: "p2",
+        qty: 35,
+        priority: 7,
+        partsPerPal: 1,
+        pals: new[] { 87 },
+        luls: new[] { 2 },
+        machs: new[] { 5 },
+        prog: "prog2",
+        progRev: null,
+        loadMins: 632,
+        machMins: 676,
+        unloadMins: 5,
+        fixture: "fix",
+        face: 1
+      );
       var newJobs = new NewJobs()
       {
         ScheduleId = "abcd",
-        Jobs = ImmutableList.Create<Job>(newJob1.ToHistoricJob(), newJob2.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(newJob1, newJob2),
+        Programs = ImmutableList.Create(
+          new NewProgramContent()
+          {
+            ProgramName = "prog1",
+            ProgramContent = "content1"
+          },
+          new NewProgramContent()
+          {
+            ProgramName = "prog2",
+            ProgramContent = "content2"
+          })
       };
 
       ((IJobControl)_jobs).AddJobs(newJobs, null, false);
@@ -689,10 +711,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void QuarantinesMatOnPallet()
     {
+      var job = new Job()
+      {
+        UniqueStr = "uuu1",
+        PartName = "p1",
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
+      };
 
-      var job = new JobPlan("uuu1", 2, new[] { 2, 2 });
-      job.PartName = "p1";
-      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job.ToHistoricJob()) }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) }, null, addAsCopiedToSystem: true);
 
       _logDB.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
 

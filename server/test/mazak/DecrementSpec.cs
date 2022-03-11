@@ -37,7 +37,6 @@ using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using NSubstitute;
 using MazakMachineInterface;
 using System.Collections.Immutable;
@@ -409,19 +408,27 @@ namespace MachineWatchTest
 
       var now = DateTime.UtcNow;
 
-      var uuuu = new JobPlan("uuuu", 1);
-      uuuu.PartName = "pppp";
-      uuuu.SetPlannedCyclesOnFirstProcess(numCycles: 50);
-      uuuu.RouteStartingTimeUTC = now.AddHours(-12);
-      uuuu.RouteEndingTimeUTC = now.AddHours(12);
-      var vvvv = new JobPlan("vvvv", 1, new[] { 2 });
-      vvvv.PartName = "oooo";
-      vvvv.SetPlannedCyclesOnFirstProcess(numCycles: 4 + 7);
-      vvvv.RouteStartingTimeUTC = now.AddHours(-12);
-      vvvv.RouteEndingTimeUTC = now.AddHours(12);
+      var uuuu = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 50,
+        RouteStartUTC = now.AddHours(-12),
+        RouteEndUTC = now.AddHours(12),
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
+      };
+      var vvvv = new Job()
+      {
+        UniqueStr = "vvvv",
+        PartName = "oooo",
+        Cycles = 4 + 7,
+        RouteStartUTC = now.AddHours(-12),
+        RouteEndUTC = now.AddHours(12),
+        Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
+      };
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create((Job)uuuu.ToHistoricJob(), vvvv.ToHistoricJob())
+        Jobs = ImmutableList.Create(uuuu, vvvv)
       }, null, addAsCopiedToSystem: false);
       _jobDB.MarkJobCopiedToSystem("uuuu");
 

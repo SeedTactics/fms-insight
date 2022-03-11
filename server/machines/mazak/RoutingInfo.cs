@@ -37,7 +37,7 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl, BlackMaple.MachineFramework.IOldJobDecrement
+  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
 
@@ -175,7 +175,7 @@ namespace MazakMachineInterface
           //need to ignore the warning that palletPartMap is not used.
 #pragma warning disable 168, 219
           var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-            jobs: jobs.Select(j => BlackMaple.MachineWatchInterface.LegacyJobConversions.ToLegacyJob(j, copiedToSystem: false, scheduleId: null)).ToArray(),
+            jobs: jobs,
             downloadUID: 1,
             mazakData: mazakData,
             savedParts: new HashSet<string>(),
@@ -329,15 +329,6 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    Dictionary<JobAndPath, int> BlackMaple.MachineFramework.IOldJobDecrement.OldDecrementJobQuantites()
-    {
-      throw new NotImplementedException();
-    }
-
-    void BlackMaple.MachineFramework.IOldJobDecrement.OldFinalizeDecrement()
-    {
-      throw new NotImplementedException();
-    }
     #endregion
 
     #region Queues

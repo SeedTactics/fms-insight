@@ -97,7 +97,6 @@ namespace BlackMaple.FMSInsight.Niigata
 
       foreach (var j in jobs.Jobs)
       {
-        int? pathGroup = null;
         for (var proc = 1; proc <= j.Processes.Count; proc++)
         {
           for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
@@ -134,19 +133,6 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add(" Part " + j.PartName + " has an output queue " + pathData.OutputQueue + " which is not configured as a queue in FMS Insight.");
             }
-#pragma warning disable CS0612 // warning for obsolete PathGroup
-            if (pathGroup.HasValue)
-            {
-              if (pathData.PathGroup != pathGroup.Value)
-              {
-                errors.Add(" Part " + j.UniqueStr + " uses obsolete path groups");
-              }
-            }
-            else
-            {
-              pathGroup = pathData.PathGroup;
-            }
-#pragma warning restore CS0612
 
             foreach (var stop in pathData.Stops)
             {

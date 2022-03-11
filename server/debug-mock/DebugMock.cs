@@ -33,13 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using BlackMaple.MachineFramework;
-using Microsoft.Extensions.Configuration;
 using System.Reflection;
-using Microsoft.Extensions.DependencyModel;
 using System.IO;
 using System.Linq;
+using BlackMaple.MachineFramework;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
 using Germinate;
 using System.Collections.Immutable;
@@ -50,37 +51,66 @@ namespace DebugMachineWatchApiServer
   {
     public static string InsightBackupDbFile = null;
 
+    private static void AddOpenApiDoc(IServiceCollection services)
+    {
+      services.AddOpenApiDocument(cfg =>
+      {
+        cfg.Title = "SeedTactic FMS Insight";
+        cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
+        cfg.Version = "1.14";
+        var settings = new Newtonsoft.Json.JsonSerializerSettings();
+        BlackMaple.MachineFramework.Startup.NewtonsoftJsonSettings(settings);
+        cfg.SerializerSettings = settings;
+        //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
+        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema.Generation.ReferenceTypeNullHandling.NotNull;
+        cfg.RequireParametersWithoutDefault = true;
+        cfg.IgnoreObsoleteProperties = true;
+      });
+    }
+
     public static void Main()
     {
-      System.Environment.SetEnvironmentVariable("FMS__InstructionFilePath",
-      System.IO.Path.Combine(
+      var cfg =
+          new ConfigurationBuilder()
+          .AddEnvironmentVariables()
+          .Build();
+
+      var serverSettings = ServerSettings.Load(cfg);
+
+      var fmsSettings = new FMSSettings(cfg);
+      fmsSettings.RequireSerialWhenAddingMaterialToQueue = true;
+      fmsSettings.AddRawMaterialAsUnassigned = true;
+      fmsSettings.RequireExistingMaterialWhenAddingToQueue = false;
+      fmsSettings.InstructionFilePath = System.IO.Path.Combine(
           System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
           "../../../sample-instructions/"
-      ));
-      System.Environment.SetEnvironmentVariable("FMS__QuarantineQueue", "Initial Quarantine");
-      BlackMaple.MachineFramework.Program.Run(false, (cfg, st) =>
-      {
-        st.RequireSerialWhenAddingMaterialToQueue = true;
-        st.AddRawMaterialAsUnassigned = true;
-        st.RequireExistingMaterialWhenAddingToQueue = false;
-        var backend = new MockServerBackend();
-        return new FMSImplementation()
-        {
-          Backend = backend,
-          Name = "mock",
-          Version = "1.2.3.4",
-          UsingLabelPrinterForSerials = true,
-          PrintLabel = (matId, process, loadStation, queue) =>
-          {
-            Serilog.Log.Information("Print label for {matId} {process} {loadStation}", matId, process, loadStation);
-          }
-        };
+      );
+      fmsSettings.QuarantineQueue = "Initial Quarantine";
 
-      });
+      BlackMaple.MachineFramework.Program.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
+
+      var backend = new MockServerBackend();
+      var fmsImpl = new FMSImplementation()
+      {
+        Backend = backend,
+        Name = "mock",
+        Version = "1.2.3.4",
+        UsingLabelPrinterForSerials = true,
+        PrintLabel = (matId, process, loadStation, queue) =>
+        {
+          Serilog.Log.Information("Print label for {matId} {process} {loadStation}", matId, process, loadStation);
+        }
+      };
+
+      var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(cfg, serverSettings, fmsSettings, fmsImpl, useService: false);
+
+      hostB.ConfigureServices((_, services) => AddOpenApiDoc(services));
+
+      hostB.Build().Run();
     }
   }
 
-  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IOldJobDecrement, IDisposable
+  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IDisposable
   {
     public IRepository LogDB { get; private set; }
 
@@ -389,21 +419,9 @@ namespace DebugMachineWatchApiServer
       throw new NotImplementedException();
     }
 
-    public IOldJobDecrement OldJobDecrement { get => this; }
-
     protected void OnNewStatus(CurrentStatus s)
     {
       OnNewCurrentStatus?.Invoke(s);
-    }
-
-    public Dictionary<JobAndPath, int> OldDecrementJobQuantites()
-    {
-      throw new NotImplementedException();
-    }
-
-    public void OldFinalizeDecrement()
-    {
-      throw new NotImplementedException();
     }
 
     public List<ToolInMachine> CurrentToolsInMachines()

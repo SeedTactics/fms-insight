@@ -2,22 +2,8 @@
   "TimeOfCurrentStatusUTC": "2021-06-02T19:30:44.4523056Z",
   "Jobs": {
     "bbb-schId1234": {
-      "Completed": [
-        [
-          0
-        ],
-        [
-          0
-        ]
-      ],
-      "Precedence": [
-        [
-          2
-        ],
-        [
-          2
-        ]
-      ],
+      "Completed": [[0], [0]],
+      "Precedence": [[2], [2]],
       "ScheduleId": "schId1234",
       "CopiedToSystem": true,
       "Decrements": null,
@@ -27,45 +13,24 @@
       "Archived": false,
       "PartName": "bbb",
       "Comment": "",
-      "Bookings": [
-        "book1",
-        "book2"
-      ],
+      "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
-      "CyclesOnFirstProcess": [
-        40
-      ],
+      "Cycles": 40,
       "ProcsAndPaths": [
         {
           "paths": [
             {
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixture": null,
               "Face": null,
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "1001",
                   "Tools": {},
                   "ExpectedCycleTime": "PT4M"
@@ -243,33 +208,17 @@
         {
           "paths": [
             {
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixture": null,
               "Face": null,
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "1002",
                   "Tools": {},
                   "ExpectedCycleTime": "PT20M"
@@ -447,22 +396,8 @@
       ]
     },
     "aaa-schId1234": {
-      "Completed": [
-        [
-          4
-        ],
-        [
-          0
-        ]
-      ],
-      "Precedence": [
-        [
-          1
-        ],
-        [
-          1
-        ]
-      ],
+      "Completed": [[4], [0]],
+      "Precedence": [[1], [1]],
       "ScheduleId": "schId1234",
       "CopiedToSystem": true,
       "Decrements": null,
@@ -472,45 +407,24 @@
       "Archived": false,
       "PartName": "aaa",
       "Comment": "",
-      "Bookings": [
-        "book1",
-        "book2"
-      ],
+      "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
-      "CyclesOnFirstProcess": [
-        30
-      ],
+      "Cycles": 30,
       "ProcsAndPaths": [
         {
           "paths": [
             {
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixture": null,
               "Face": null,
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "1001",
                   "Tools": {},
                   "ExpectedCycleTime": "PT12M12S"
@@ -648,33 +562,17 @@
         {
           "paths": [
             {
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixture": null,
               "Face": null,
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "1002",
                   "Tools": {},
                   "ExpectedCycleTime": "PT9M18S"
@@ -812,22 +710,8 @@
       ]
     },
     "ccc-schId1234": {
-      "Completed": [
-        [
-          0
-        ],
-        [
-          0
-        ]
-      ],
-      "Precedence": [
-        [
-          3
-        ],
-        [
-          3
-        ]
-      ],
+      "Completed": [[0], [0]],
+      "Precedence": [[3], [3]],
       "ScheduleId": "schId1234",
       "CopiedToSystem": true,
       "Decrements": null,
@@ -837,45 +721,24 @@
       "Archived": false,
       "PartName": "ccc",
       "Comment": "",
-      "Bookings": [
-        "book1",
-        "book2"
-      ],
+      "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
-      "CyclesOnFirstProcess": [
-        22
-      ],
+      "Cycles": 22,
       "ProcsAndPaths": [
         {
           "paths": [
             {
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixture": null,
               "Face": null,
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "1003",
                   "Tools": {},
                   "ExpectedCycleTime": "PT40M"
@@ -981,33 +844,17 @@
         {
           "paths": [
             {
-              "Pallets": [
-                "1",
-                "2",
-                "3",
-                "4"
-              ],
+              "Pallets": ["1", "2", "3", "4"],
               "Fixture": null,
               "Face": null,
-              "Load": [
-                1,
-                2
-              ],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [
-                    1,
-                    2,
-                    3,
-                    4
-                  ],
+                  "StationNums": [1, 2, 3, 4],
                   "Program": "1004",
                   "Tools": {},
                   "ExpectedCycleTime": "PT15M30S"

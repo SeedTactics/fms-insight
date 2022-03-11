@@ -34,8 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import curSt from "../../test/status-mock.json";
 import { selectAllMaterialIntoBins } from "./all-material-bins";
 import { CurrentStatus } from "../network/api";
+import { it, expect } from "vitest";
+import { ptsToJs } from "../../test/prelude-ts-snapshots";
 
 it("creates all material", () => {
   const status = CurrentStatus.fromJS(curSt);
-  expect(selectAllMaterialIntoBins(status, [])).toMatchSnapshot("all material bins");
+  expect(ptsToJs(selectAllMaterialIntoBins(status, []))).toMatchSnapshot("all material bins");
 });

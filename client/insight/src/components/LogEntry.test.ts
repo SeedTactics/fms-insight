@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2020, John Lenz
 
 All rights reserved.
 
@@ -31,27 +31,40 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
+import { filterRemoveAddQueue } from "./LogEntry";
+import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake";
+import { it, expect } from "vitest";
 
-namespace BlackMaple.MachineFramework
-{
-  // The following is only used for old decrement for backwards compatibility,
-  // and shouldn't be used for anything else.
-  public class JobAndPath : IEquatable<JobAndPath>
-  {
-    public readonly string UniqueStr;
-    public readonly int Path;
+it("doesn't filter just a single add", () => {
+  const cycles = [...fakeCycle({ time: new Date(), machineTime: 100 }), fakeAddToQueue()];
+  expect(Array.from(filterRemoveAddQueue(cycles))).toEqual(cycles);
+});
 
-    public JobAndPath(string unique, int path)
-    {
-      UniqueStr = unique;
-      Path = path;
-    }
+it("doesn't filter a single add and remove", () => {
+  const cycles = [
+    ...fakeCycle({ time: new Date(), machineTime: 100 }),
+    fakeAddToQueue("q1"),
+    fakeRemoveFromQueue("q1"),
+  ];
+  expect(Array.from(filterRemoveAddQueue(cycles))).toEqual(cycles);
+});
 
-    public bool Equals(JobAndPath other)
-    {
-      return (UniqueStr == other.UniqueStr && Path == other.Path);
-    }
-  }
-}
+it("filters out a single add and remove", () => {
+  const regCycle = fakeCycle({ time: new Date(), machineTime: 100 });
+  const a1 = fakeAddToQueue("q1");
+  const r1 = fakeRemoveFromQueue("q1");
+  const a2 = fakeAddToQueue("q1");
+  const r2 = fakeRemoveFromQueue("q1");
+
+  expect(Array.from(filterRemoveAddQueue([...regCycle, a1, r1, a2, r2]))).toEqual([...regCycle, a1, r2]);
+});
+
+it("doesn't filters when they are different queues", () => {
+  const regCycle = fakeCycle({ time: new Date(), machineTime: 100 });
+  const a1 = fakeAddToQueue("q1");
+  const r1 = fakeRemoveFromQueue("q1");
+  const a2 = fakeAddToQueue("q2");
+  const r2 = fakeRemoveFromQueue("q2");
+
+  expect(Array.from(filterRemoveAddQueue([...regCycle, a1, r1, a2, r2]))).toEqual([...regCycle, a1, r1, a2, r2]);
+});

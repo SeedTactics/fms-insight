@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Linq;
-using BlackMaple.MachineWatchInterface;
 using System.Collections.Generic;
 using MWI = BlackMaple.MachineFramework;
 using BlackMaple.MachineFramework;
@@ -59,7 +58,7 @@ namespace MazakMachineInterface
     private IMachineGroupName _machGroupName;
     private Action<LogEntry> _onMazakLog;
     private MazakCurrentStatusAndTools _mazakSchedules;
-    private Dictionary<string, JobPlan> _jobs;
+    private Dictionary<string, Job> _jobs;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
@@ -76,16 +75,16 @@ namespace MazakMachineInterface
       _mazakSchedules = mazakSch;
       _settings = settings;
       _onMazakLog = onMazakLogMessage;
-      _jobs = new Dictionary<string, JobPlan>();
+      _jobs = new Dictionary<string, Job>();
     }
 
-    private JobPlan GetJob(string unique)
+    private Job GetJob(string unique)
     {
       if (_jobs.ContainsKey(unique))
         return _jobs[unique];
       else
       {
-        var j = _log.LoadJob(unique)?.ToLegacyJob();
+        var j = _log.LoadJob(unique);
         _jobs.Add(unique, j);
         return j;
       }
@@ -99,7 +98,6 @@ namespace MazakMachineInterface
       if (e.Pallet >= 1)
         cycle = _log.CurrentPalletLog(e.Pallet.ToString());
 
-      var jobs = new Dictionary<string, JobPlan>();
 
       Log.Debug("Handling mazak event {@event}", e);
 
@@ -534,7 +532,7 @@ namespace MazakMachineInterface
 
         _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
 
-        JobPlan job = GetJob(unique);
+        Job job = GetJob(unique);
         if (job == null)
         {
           unique = "";
@@ -542,13 +540,14 @@ namespace MazakMachineInterface
         }
 
         var mats = new List<EventLogMaterial>();
-        if (job != null && !string.IsNullOrEmpty(job.GetInputQueue(proc, path)))
+        var info = job.Processes[proc - 1].Paths[path - 1];
+        if (job != null && !string.IsNullOrEmpty(info.InputQueue))
         {
           // search input queue for material
           Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
-            job.GetInputQueue(proc, path), unique, proc);
+            info.InputQueue, unique, proc);
 
-          var qs = MazakQueues.QueuedMaterialForLoading(job, _log.GetMaterialInQueueByUnique(job.GetInputQueue(proc, path), job.UniqueStr), proc, path, _log);
+          var qs = MazakQueues.QueuedMaterialForLoading(job.UniqueStr, _log.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr), proc, path, _log);
 
           for (int i = 1; i <= fixQty; i++)
           {
@@ -570,7 +569,7 @@ namespace MazakMachineInterface
             {
               // not enough material in queue
               Log.Warning("Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
-                job.GetInputQueue(proc, path), fullPartName, proc, p);
+                info.InputQueue, fullPartName, proc, p);
               mats.Add(new EventLogMaterial()
               {
                 MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
@@ -670,10 +669,10 @@ namespace MazakMachineInterface
 
       foreach (var mat in mats)
       {
-        JobPlan job = GetJob(mat.Unique);
+        Job job = GetJob(mat.Unique);
         if (job != null)
         {
-          var q = job.GetOutputQueue(process: mat.Mat.Process, path: mat.Path);
+          var q = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].OutputQueue;
           if (!string.IsNullOrEmpty(q) && _settings.Queues.ContainsKey(q))
           {
             ret[mat.Mat.MaterialID] = q;
@@ -690,10 +689,10 @@ namespace MazakMachineInterface
 
       foreach (var mat in mats)
       {
-        JobPlan job = GetJob(mat.Unique);
+        Job job = GetJob(mat.Unique);
         if (job != null)
         {
-          var q = job.GetOutputQueue(process: mat.Mat.Process, path: mat.Path);
+          var q = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].OutputQueue;
           if (!string.IsNullOrEmpty(q) && _settings.ExternalQueues.ContainsKey(q))
           {
             ret.Add(new BlackMaple.MachineFramework.MaterialToSendToExternalQueue()
@@ -835,7 +834,7 @@ namespace MazakMachineInterface
       {
         var job = GetJob(proc.Unique);
         if (job == null) continue;
-        var stop = job.GetMachiningStop(proc.Process, 1).FirstOrDefault();
+        var stop = job.Processes[proc.Process - 1].Paths[0].Stops.FirstOrDefault();
         if (stop == null) continue;
         total += stop.ExpectedCycleTime;
       }
@@ -848,13 +847,18 @@ namespace MazakMachineInterface
       _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
       var job = GetJob(unique);
       if (job == null) return TimeSpan.Zero;
-      return TimeSpan.FromTicks(job.GetExpectedLoadTime(e.Process, path).Ticks * e.FixedQuantity);
+      return TimeSpan.FromTicks(job.Processes[e.Process - 1].Paths[path - 1].ExpectedLoadTime.Ticks * e.FixedQuantity);
     }
 
     private TimeSpan CalculateActiveUnloadTime(IEnumerable<LogMaterialAndPath> mats)
     {
       var ticks = mats
-        .Select(m => GetJob(m.Unique)?.GetExpectedUnloadTime(m.Mat.Process, m.Path) ?? TimeSpan.Zero)
+        .Select(m =>
+        {
+          var job = GetJob(m.Unique);
+          if (job == null) return TimeSpan.Zero;
+          return job.Processes[m.Mat.Process - 1].Paths[m.Path - 1].ExpectedUnloadTime;
+        })
         .Select(t => t.Ticks)
         .Sum();
       return TimeSpan.FromTicks(ticks);
@@ -906,10 +910,10 @@ namespace MazakMachineInterface
         }
       }
 
-      var stop = job.GetMachiningStop(firstMat.Mat.Process, path).FirstOrDefault();
-      if (stop != null && !string.IsNullOrEmpty(stop.ProgramName))
+      var stop = job.Processes[firstMat.Mat.Process - 1].Paths[path - 1].Stops.FirstOrDefault();
+      if (stop != null && !string.IsNullOrEmpty(stop.Program))
       {
-        progName = stop.ProgramName;
+        progName = stop.Program;
         rev = stop.ProgramRevision;
         return true;
       }
@@ -956,10 +960,14 @@ namespace MazakMachineInterface
           continue;
         }
 
-        _log.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, job.PathInspections(mat.Mat.Process, mat.Path));
-        Log.Debug("Making inspection decision for " + string.Join(",", job.PathInspections(mat.Mat.Process, mat.Path).Select(x => x.InspectionType)) + " material " + mat.Mat.MaterialID.ToString() +
-                  " proc " + mat.Mat.Process.ToString() + " path " + mat.Path.ToString() + " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                  " part " + mat.PartName);
+        var insps = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].Inspections;
+        if (insps != null && insps.Count > 0)
+        {
+          _log.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, insps);
+          Log.Debug("Making inspection decision for " + string.Join(",", insps.Select(x => x.InspectionType)) + " material " + mat.Mat.MaterialID.ToString() +
+                    " proc " + mat.Mat.Process.ToString() + " path " + mat.Path.ToString() + " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
+                    " part " + mat.PartName);
+        }
       }
     }
     #endregion

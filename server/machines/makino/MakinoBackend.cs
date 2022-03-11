@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using Microsoft.Extensions.Configuration;
 
 namespace Makino
@@ -152,8 +151,6 @@ namespace Makino
     }
 
     public IJobControl JobControl { get => _jobs; }
-
-    public IOldJobDecrement OldJobDecrement { get => _jobs; }
 
     public IMachineControl MachineControl => null;
 

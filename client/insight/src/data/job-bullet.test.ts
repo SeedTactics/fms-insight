@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { jobsToPoints } from "./job-bullet";
 import * as api from "../network/api";
+import { it, expect } from "vitest";
 
 it("converts events to points", () => {
   const dummyHold: api.IHoldPattern = {

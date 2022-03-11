@@ -35,7 +35,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using BlackMaple.MachineWatchInterface;
 using Xunit;
 using FluentAssertions;
 using System.Collections.Immutable;
@@ -1409,36 +1408,6 @@ namespace MachineWatchTest
       });
       _jobDB.LoadProgramContent("ccc", 5).Should().Be("ccc program content 5");
       _jobDB.LoadMostRecentProgram("ccc").Revision.Should().Be(5);
-    }
-
-    private static void AddObsoleteInspData(JobPlan job)
-    {
-      // check obsolete saves properly
-      job.GetType().GetField("_inspections", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(job,
-        new List<JobInspectionData>() {
-    new JobInspectionData("OldInsp1", "counter1", 53, TimeSpan.FromMinutes(22)),
-    new JobInspectionData("OldInsp2", "counter2", 12.8, TimeSpan.FromMinutes(33), 1)
-        }
-      );
-    }
-    private static void AddExpectedPathDataFromObsoleteInspections(JobPlan job)
-    {
-      // OldInsp1 is null InspProc so should be final process
-      var oldInsp1 = new PathInspection() { InspectionType = "OldInsp1", Counter = "counter1", MaxVal = 53, TimeInterval = TimeSpan.FromMinutes(22) };
-      for (int path = 1; path <= job.GetNumPaths(job.NumProcesses); path++)
-      {
-        job.PathInspections(job.NumProcesses, path).Add(oldInsp1);
-      }
-
-      // OldInsp2 is InspProc 1 so should be first process
-      var oldInsp2 = new PathInspection() { InspectionType = "OldInsp2", Counter = "counter2", RandomFreq = 12.8, TimeInterval = TimeSpan.FromMinutes(33) };
-      for (int path = 1; path <= job.GetNumPaths(1); path++)
-      {
-        job.PathInspections(1, path).Add(oldInsp2);
-      }
-
-      // clear old inspection data
-      job.GetType().GetField("_inspections", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(job, null);
     }
 
     private static ImmutableList<SimulatedStationUtilization> RandSimStationUse(string schId, DateTime start)

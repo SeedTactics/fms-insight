@@ -48,6 +48,8 @@ import { onLoadLast30Log } from "../cell-status/loading";
 import { last30StationCycles } from "../cell-status/station-cycles";
 import { last30MaterialSummary } from "../cell-status/material-summary";
 import { last30EstimatedCycleTimes } from "../cell-status/estimated-cycle-times";
+import { it, expect } from "vitest";
+import { ptsToJs } from "../../test/prelude-ts-snapshots";
 
 it("creates cycles clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -107,7 +109,7 @@ it("computes station oee", () => {
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
 
   const statMins = stationMinutes(cycles, addDays(now, -7));
-  expect(statMins).toMatchSnapshot("station minutes for last week");
+  expect(ptsToJs(statMins)).toMatchSnapshot("station minutes for last week");
 });
 
 it("creates log entries clipboard table", () => {

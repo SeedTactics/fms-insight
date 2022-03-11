@@ -1,12 +1,11 @@
-/**
- * @type {import('vite').UserConfig}
- */
-import reactRefresh from "@vitejs/plugin-react-refresh";
-import legacy from "@vitejs/plugin-legacy";
+/// <reference types="vitest" />
+/// <reference types="vite/client" />
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-export default {
+export default defineConfig({
   root: "src",
-  plugins: [reactRefresh(), legacy({ targets: ["defaults", "not IE 11", "edge 18"] })],
+  plugins: [react()],
   base: "/",
   server: {
     port: 1234,
@@ -16,4 +15,8 @@ export default {
     chunkSizeWarningLimit: 1800,
     emptyOutDir: true,
   },
-};
+  test: {
+    environment: "jsdom",
+    setupFiles: ["test/setup.ts"],
+  },
+});

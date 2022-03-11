@@ -276,8 +276,6 @@ namespace MazakMachineInterface
 
     public IJobControl JobControl { get => routing; }
 
-    public IOldJobDecrement OldJobDecrement { get => routing; }
-
     public IMachineControl MachineControl => MazakMachineControl;
 
     public IRepository OpenRepository()

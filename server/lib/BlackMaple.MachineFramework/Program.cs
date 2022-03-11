@@ -32,9 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -116,7 +114,7 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    private static void EnableSerilog(ServerSettings serverSt, bool enableEventLog)
+    public static void EnableSerilog(ServerSettings serverSt, bool enableEventLog)
     {
       var logConfig = new LoggerConfiguration()
           .MinimumLevel.Debug()
@@ -149,10 +147,11 @@ namespace BlackMaple.MachineFramework
       Log.Logger = logConfig.CreateLogger();
     }
 
-    public static IHost BuildWebHost(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl, bool useService)
+    public static IHostBuilder CreateHostBuilder(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl, bool useService)
     {
       return new HostBuilder()
           .UseContentRoot(ServerSettings.ContentRootDirectory)
+          .UseSerilog()
           .ConfigureWebHost(webBuilder =>
           {
             webBuilder
@@ -166,7 +165,6 @@ namespace BlackMaple.MachineFramework
             })
             .UseConfiguration(cfg)
             .SuppressStatusMessages(suppressStatusMessages: true)
-            .UseSerilog()
             .ConfigureServices(s =>
             {
               s.Configure<KestrelServerOptions>(cfg.GetSection("Kestrel"));
@@ -218,7 +216,7 @@ namespace BlackMaple.MachineFramework
             }
           })
 #endif
-          .Build();
+          ;
     }
 
     public static void Run(bool useService, Func<IConfiguration, FMSSettings, FMSImplementation> initalize, bool outputConfigToLog = true)
@@ -244,8 +242,7 @@ namespace BlackMaple.MachineFramework
         Serilog.Log.Error(ex, "Error initializing FMS Insight");
         return;
       }
-      var host = BuildWebHost(cfg, serverSt, fmsSt, fmsImpl, useService);
-
+      var host = CreateHostBuilder(cfg, serverSt, fmsSt, fmsImpl, useService).Build();
       host.Run();
     }
   }

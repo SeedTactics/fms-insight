@@ -41,6 +41,8 @@ import { snapshot_UNSTABLE } from "recoil";
 import { applyConduitToSnapshot } from "../util/recoil-util";
 import { onLoadLast30Log } from "../cell-status/loading";
 import { last30StationCycles } from "../cell-status/station-cycles";
+import { it, expect } from "vitest";
+import { ptsToJs } from "../../test/prelude-ts-snapshots";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -84,12 +86,12 @@ it("bins actual cycles by day", () => {
   // comparing with the snapshot
   byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
-  expect(byDayAndStat).toMatchSnapshot("cycles binned by day and station");
+  expect(ptsToJs(byDayAndStat)).toMatchSnapshot("cycles binned by day and station");
 
   byDayAndStat = binOccupiedCyclesByDayAndStat(cycles);
   byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
-  expect(byDayAndStat).toMatchSnapshot("occupied cycles binned by day and station");
+  expect(ptsToJs(byDayAndStat)).toMatchSnapshot("occupied cycles binned by day and station");
 });
 
 it("creates points clipboard table", () => {

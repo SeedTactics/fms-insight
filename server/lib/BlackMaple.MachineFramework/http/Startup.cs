@@ -65,9 +65,9 @@ namespace BlackMaple.MachineFramework
               new Controllers.WebsocketManager(fmsImpl.Backend)
           );
 
-      services
-        .AddResponseCompression()
-        .AddCors(options =>
+      services.AddResponseCompression();
+
+      services.AddCors(options =>
         {
           options.AddDefaultPolicy(builder =>
           {
@@ -88,7 +88,7 @@ namespace BlackMaple.MachineFramework
           });
         });
 
-      var mvcBuilder = services
+      services
           .AddControllers(options =>
           {
             options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
@@ -104,22 +104,6 @@ namespace BlackMaple.MachineFramework
           {
             NewtonsoftJsonSettings(options.SerializerSettings);
           });
-
-      services.AddOpenApiDocument(cfg =>
-      {
-        cfg.Title = "SeedTactic FMS Insight";
-        cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
-        cfg.Version = "1.14";
-        var settings = new Newtonsoft.Json.JsonSerializerSettings();
-        settings.Converters.Add(new StringEnumConverter());
-        settings.Converters.Add(new TimespanConverter());
-        settings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-        cfg.SerializerSettings = settings;
-        //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
-        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema.Generation.ReferenceTypeNullHandling.NotNull;
-        cfg.RequireParametersWithoutDefault = true;
-        cfg.IgnoreObsoleteProperties = true;
-      });
 
       if (serverSt.UseAuthentication)
       {
@@ -203,7 +187,7 @@ namespace BlackMaple.MachineFramework
         context.Response.Headers.Add("Content-Security-Policy",
           "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; " +
           // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
-          "script-src 'self' 'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo=' 'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E=' 'sha256-T9h4ixy0FtNsCwAyTfBtIY6uV5ZhMeNQIlL42GAKEME='"
+          "script-src 'self';"
         );
         context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
         context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
@@ -211,15 +195,6 @@ namespace BlackMaple.MachineFramework
       });
 
       app.UseWebSockets();
-
-      app.UseOpenApi(settings => settings.PostProcess = (doc, req) =>
-      {
-        doc.Host = null;
-        doc.BasePath = null;
-        doc.Schemes = null;
-        doc.Servers.Clear();
-      });
-      app.UseSwaggerUi3();
 
       app.UseEndpoints(endpoints =>
       {
