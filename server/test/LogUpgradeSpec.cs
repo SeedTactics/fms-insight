@@ -350,7 +350,7 @@ namespace MachineWatchTest
               {
                 UserHold = false,
                 ReasonForUserHold = "reason for user hold",
-                HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/3 7:32 PM").ToUniversalTime(),
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/4 12:32 AM GMT").ToUniversalTime(),
                 HoldUnholdPatternRepeats = false,
                 HoldUnholdPattern = ImmutableList.Create(
                   TimeSpan.FromMinutes(5),
@@ -361,7 +361,7 @@ namespace MachineWatchTest
               {
                 UserHold = true,
                 ReasonForUserHold = "abcdef",
-                HoldUnholdPatternStartUTC = DateTime.Parse("2010/12/2 3:32 PM").ToUniversalTime(),
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/12/2 9:32 PM GMT").ToUniversalTime(),
                 HoldUnholdPatternRepeats = true,
                 HoldUnholdPattern = ImmutableList.Create(
                   TimeSpan.FromMinutes(63),
@@ -402,7 +402,7 @@ namespace MachineWatchTest
               {
                 UserHold = true,
                 ReasonForUserHold = "another reason for user hold",
-                HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/12 6:12 PM").ToUniversalTime(),
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/12 11:12 PM GMT").ToUniversalTime(),
                 HoldUnholdPatternRepeats = true,
                 HoldUnholdPattern = ImmutableList.Create(
                   TimeSpan.FromMinutes(84),
@@ -413,7 +413,7 @@ namespace MachineWatchTest
               {
                 UserHold = false,
                 ReasonForUserHold = "agr",
-                HoldUnholdPatternStartUTC = DateTime.Parse("2010/6/1 3:12 PM").ToUniversalTime(),
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/6/1 8:12 PM GMT").ToUniversalTime(),
                 HoldUnholdPatternRepeats = false,
                 HoldUnholdPattern = ImmutableList.Create(
                   TimeSpan.FromMinutes(174),
@@ -467,7 +467,7 @@ namespace MachineWatchTest
               {
                 UserHold = false,
                 ReasonForUserHold = "oh my reason for user hold",
-                HoldUnholdPatternStartUTC = DateTime.Parse("2010/9/1 1:30 PM").ToUniversalTime(),
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/9/1 6:30 PM GMT").ToUniversalTime(),
                 HoldUnholdPatternRepeats = true,
                 HoldUnholdPattern = ImmutableList.Create(
                   TimeSpan.FromMinutes(532),
@@ -535,7 +535,7 @@ namespace MachineWatchTest
               {
                 UserHold = true,
                 ReasonForUserHold = "erhagsad",
-                HoldUnholdPatternStartUTC = DateTime.Parse("2010/11/5 9:30 AM").ToUniversalTime(),
+                HoldUnholdPatternStartUTC = DateTime.Parse("2010/11/5 2:30 PM GMT").ToUniversalTime(),
                 HoldUnholdPatternRepeats = false,
                 HoldUnholdPattern = ImmutableList.Create(
                   TimeSpan.FromMinutes(32),
