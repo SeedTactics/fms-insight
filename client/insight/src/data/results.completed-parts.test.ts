@@ -42,6 +42,8 @@ import { snapshot_UNSTABLE } from "recoil";
 import { onLoadLast30Log } from "../cell-status/loading";
 import { last30StationCycles } from "../cell-status/station-cycles";
 import { last30MaterialSummary } from "../cell-status/material-summary";
+import { it, expect } from "vitest";
+import { ptsToJs } from "../../test/prelude-ts-snapshots";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -76,5 +78,5 @@ it("bins actual cycles by day", () => {
   const minOffset = differenceInMinutes(nowChicago, now);
   byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
-  expect(byDayAndPart).toMatchSnapshot("cycles binned by day and part");
+  expect(ptsToJs(byDayAndPart)).toMatchSnapshot("cycles binned by day and part");
 });

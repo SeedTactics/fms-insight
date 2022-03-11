@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1
 
-exports[`computes station oee: station minutes for last week 1`] = `
+exports[`computes station oee > station minutes for last week 1`] = `
 Map {
   "MC #1" => 50,
   "L/U #1" => 12,
@@ -8,7 +8,7 @@ Map {
 }
 `;
 
-exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
+exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
 <div>
   <table>
     
@@ -395,7 +395,7 @@ exports[`creates cycles clipboard table: cycle clipboard table 1`] = `
 </div>
 `;
 
-exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
+exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
 <div>
   <table>
     
@@ -560,7 +560,7 @@ exports[`creates cycles clipboard table: cycle filtered clipboard table 1`] = `
 </div>
 `;
 
-exports[`creates log entries clipboard table: events clipboard table 1`] = `
+exports[`creates log entries clipboard table > events clipboard table 1`] = `
 <div>
   <table>
     

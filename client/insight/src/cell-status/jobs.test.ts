@@ -41,12 +41,14 @@ import { last30SimStationUse, specificMonthSimStationUse } from "./sim-station-u
 import { last30Jobs, specificMonthJobs } from "./scheduled-jobs";
 import newJobsJson from "../../test/newjobs.json";
 import { LazySeq } from "../util/lazyseq";
+import { it, expect } from "vitest";
+import { ptsToJs } from "../../test/prelude-ts-snapshots";
 const newJobs = newJobsJson.map((j) => NewJobs.fromJS(j));
 
 function checkLast30(snapshot: Snapshot, msg: string) {
-  expect(snapshot.getLoadable(last30SimProduction).valueOrThrow()).toMatchSnapshot(msg + " - sim production");
-  expect(snapshot.getLoadable(last30SimStationUse).valueOrThrow()).toMatchSnapshot(msg + " - sim stations");
-  expect(snapshot.getLoadable(last30Jobs).valueOrThrow()).toMatchSnapshot(msg + " - jobs");
+  expect(ptsToJs(snapshot.getLoadable(last30SimProduction).valueOrThrow())).toMatchSnapshot(msg + " - sim production");
+  expect(ptsToJs(snapshot.getLoadable(last30SimStationUse).valueOrThrow())).toMatchSnapshot(msg + " - sim stations");
+  expect(ptsToJs(snapshot.getLoadable(last30Jobs).valueOrThrow())).toMatchSnapshot(msg + " - jobs");
 }
 
 function jobsToHistory(newJs: Iterable<NewJobs>): IHistoricData {
@@ -96,7 +98,7 @@ it("processes jobs in a specific month", () => {
   // only the first 10 just to keep the size of the snapshots down
   snapshot = applyConduitToSnapshot(snapshot, onLoadSpecificMonthJobs, jobsToHistory(newJobs.slice(0, 10)));
 
-  expect(snapshot.getLoadable(specificMonthSimProduction).valueOrThrow()).toMatchSnapshot("sim production");
-  expect(snapshot.getLoadable(specificMonthSimStationUse).valueOrThrow()).toMatchSnapshot("sim stations");
-  expect(snapshot.getLoadable(specificMonthJobs).valueOrThrow()).toMatchSnapshot("jobs");
+  expect(ptsToJs(snapshot.getLoadable(specificMonthSimProduction).valueOrThrow())).toMatchSnapshot("sim production");
+  expect(ptsToJs(snapshot.getLoadable(specificMonthSimStationUse).valueOrThrow())).toMatchSnapshot("sim stations");
+  expect(ptsToJs(snapshot.getLoadable(specificMonthJobs).valueOrThrow())).toMatchSnapshot("jobs");
 });

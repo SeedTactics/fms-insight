@@ -44,18 +44,23 @@ import { last30PalletCycles, specificMonthPalletCycles } from "./pallet-cycles";
 import { last30StationCycles, specificMonthStationCycles } from "./station-cycles";
 import { last30ToolUse } from "./tool-usage";
 import { LogEntry } from "../network/api";
+import { it, expect } from "vitest";
+
+import { ptsToJs } from "../../test/prelude-ts-snapshots";
 
 function checkLast30(snapshot: Snapshot, msg: string) {
-  expect(snapshot.getLoadable(last30BufferEntries).valueOrThrow()).toMatchSnapshot(msg + " - buffers");
-  expect(snapshot.getLoadable(last30EstimatedCycleTimes).valueOrThrow()).toMatchSnapshot(
+  expect(ptsToJs(snapshot.getLoadable(last30BufferEntries).valueOrThrow())).toMatchSnapshot(msg + " - buffers");
+  expect(ptsToJs(snapshot.getLoadable(last30EstimatedCycleTimes).valueOrThrow())).toMatchSnapshot(
     msg + " - estimated cycle times"
   );
-  expect(snapshot.getLoadable(last30Inspections).valueOrThrow()).toMatchSnapshot(msg + " - inspections");
-  expect(snapshot.getLoadable(last30MaterialSummary).valueOrThrow()).toMatchSnapshot(msg + " - material summary");
-  expect(snapshot.getLoadable(last30PalletCycles).valueOrThrow()).toMatchSnapshot(msg + " - pallet cycles");
-  expect(snapshot.getLoadable(last30StationCycles).valueOrThrow()).toMatchSnapshot(msg + " - station cycles");
-  expect(snapshot.getLoadable(last30ToolUse).valueOrThrow()).toMatchSnapshot(msg + " - tool use");
-  expect(snapshot.getLoadable(lastEventCounter).valueOrThrow()).toMatchSnapshot(msg + " - event counter");
+  expect(ptsToJs(snapshot.getLoadable(last30Inspections).valueOrThrow())).toMatchSnapshot(msg + " - inspections");
+  expect(ptsToJs(snapshot.getLoadable(last30MaterialSummary).valueOrThrow())).toMatchSnapshot(
+    msg + " - material summary"
+  );
+  expect(ptsToJs(snapshot.getLoadable(last30PalletCycles).valueOrThrow())).toMatchSnapshot(msg + " - pallet cycles");
+  expect(ptsToJs(snapshot.getLoadable(last30StationCycles).valueOrThrow())).toMatchSnapshot(msg + " - station cycles");
+  expect(ptsToJs(snapshot.getLoadable(last30ToolUse).valueOrThrow())).toMatchSnapshot(msg + " - tool use");
+  expect(ptsToJs(snapshot.getLoadable(lastEventCounter).valueOrThrow())).toMatchSnapshot(msg + " - event counter");
 }
 
 function twentySevenTwoAndTodayCycles(now: Date) {
@@ -143,12 +148,14 @@ it("processes events in a specific month", () => {
     ...todayCycle,
   ]);
 
-  expect(snapshot.getLoadable(specificMonthBufferEntries).valueOrThrow()).toMatchSnapshot("buffers");
-  expect(snapshot.getLoadable(specificMonthEstimatedCycleTimes).valueOrThrow()).toMatchSnapshot(
+  expect(ptsToJs(snapshot.getLoadable(specificMonthBufferEntries).valueOrThrow())).toMatchSnapshot("buffers");
+  expect(ptsToJs(snapshot.getLoadable(specificMonthEstimatedCycleTimes).valueOrThrow())).toMatchSnapshot(
     "estimated cycle times"
   );
-  expect(snapshot.getLoadable(specificMonthInspections).valueOrThrow()).toMatchSnapshot("inspections");
-  expect(snapshot.getLoadable(specificMonthMaterialSummary).valueOrThrow()).toMatchSnapshot("material summary");
-  expect(snapshot.getLoadable(specificMonthPalletCycles).valueOrThrow()).toMatchSnapshot("pallet cycles");
-  expect(snapshot.getLoadable(specificMonthStationCycles).valueOrThrow()).toMatchSnapshot("station cycles");
+  expect(ptsToJs(snapshot.getLoadable(specificMonthInspections).valueOrThrow())).toMatchSnapshot("inspections");
+  expect(ptsToJs(snapshot.getLoadable(specificMonthMaterialSummary).valueOrThrow())).toMatchSnapshot(
+    "material summary"
+  );
+  expect(ptsToJs(snapshot.getLoadable(specificMonthPalletCycles).valueOrThrow())).toMatchSnapshot("pallet cycles");
+  expect(ptsToJs(snapshot.getLoadable(specificMonthStationCycles).valueOrThrow())).toMatchSnapshot("station cycles");
 });

@@ -1,25 +1,19 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1
 
-exports[`bins actual cycles by day: cycles binned by day and part 1`] = `
+exports[`bins actual cycles by day > cycles binned by day and part 1`] = `
 Map {
-  "DayAndPart {
-  \\"day\\": 2018-03-04T06:00:00.000Z,
-  \\"part\\": \\"partk-3\\",
-}" => Object {
+  "{day: 2018-03-04T06:00:00.000Z}, part: partk-3}" => {
     "activeMachineMins": 15,
     "count": 1,
   },
-  "DayAndPart {
-  \\"day\\": 2018-03-04T06:00:00.000Z,
-  \\"part\\": \\"partm-2\\",
-}" => Object {
+  "{day: 2018-03-04T06:00:00.000Z}, part: partm-2}" => {
     "activeMachineMins": 20,
     "count": 1,
   },
 }
 `;
 
-exports[`bins actual cycles by day: heatmap clipboard table 1`] = `
+exports[`bins actual cycles by day > heatmap clipboard table 1`] = `
 <div>
   <table>
     
