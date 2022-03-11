@@ -246,7 +246,7 @@ namespace MazakMachineInterface
     }
 
     public abstract IEnumerable<string> Pallets();
-    public abstract (string fixture, int face) FixtureFace();
+    public abstract (string fixture, int? face) FixtureFace();
     public abstract ProgramRevision PartProgram { get; set; }
 
     public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
@@ -280,9 +280,9 @@ namespace MazakMachineInterface
       return PathInfo.Pallets ?? Enumerable.Empty<string>();
     }
 
-    public override (string fixture, int face) FixtureFace()
+    public override (string fixture, int? face) FixtureFace()
     {
-      return (PathInfo.Fixture, PathInfo.Face ?? 1);
+      return (PathInfo.Fixture, PathInfo.Face);
     }
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
@@ -361,7 +361,7 @@ namespace MazakMachineInterface
       return PathInfo.Pallets;
     }
 
-    public override (string fixture, int face) FixtureFace() => (null, 0);
+    public override (string fixture, int? face) FixtureFace() => (null, null);
 
     public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
     {
@@ -1010,9 +1010,9 @@ namespace MazakMachineInterface
 
       foreach (var proc in sortedProcs)
       {
-        var (jobFixtureName, face) = proc.FixtureFace();
+        var (jobFixtureName, faceN) = proc.FixtureFace();
         var pallets = new HashSet<string>(proc.Pallets());
-        if (face <= 0) face = proc.ProcessNumber;
+        var face = !faceN.HasValue || faceN.Value <= 0 ? proc.ProcessNumber : faceN.Value;
         if (jobFixtureName == "") jobFixtureName = null;
 
         // search for previous fixture to reuse

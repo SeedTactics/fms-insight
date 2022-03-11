@@ -39,6 +39,7 @@ using MazakMachineInterface;
 using Xunit;
 using NSubstitute;
 using FluentAssertions;
+using System.Collections.Immutable;
 
 namespace MachineWatchTest
 {
@@ -49,34 +50,27 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void BasicFromJob(bool useStartingOffset)
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
-      job1.PartName = "Part1";
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } }
+      );
 
-      //proc 1 and proc 2 on same pallets
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(2, 1, "4");
-      job1.AddProcessOnPallet(2, 1, "5");
+      var job2 = CreateBasicStopsWithProg(
+        uniq: "Job2",
+        part: "Part2",
+        numProc: 2,
+        //process groups on the same pallet.
+        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } }
+      );
 
-      AddBasicStopsWithProg(job1);
-
-      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
-      job2.PartName = "Part2";
-
-      //process groups on the same pallet.
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(2, 1, "4");
-      job2.AddProcessOnPallet(2, 1, "5");
-
-      AddBasicStopsWithProg(job2);
-
-      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
-      job3.PartName = "Part3";
-      job3.AddProcessOnPallet(1, 1, "20");
-      job3.AddProcessOnPallet(1, 1, "21");
-
-      AddBasicStopsWithProg(job3);
+      var job3 = CreateBasicStopsWithProg(
+        uniq: "Job3",
+        part: "Part3",
+        numProc: 1,
+        pals: new[] { new[] { "20", "21" } }
+      );
 
       var log = new List<string>();
 
@@ -86,7 +80,7 @@ namespace MachineWatchTest
       CreateFixture(dset, "unusedfixture");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
+        new Job[] { job1, job2, job3 },
         3,
         dset,
         new HashSet<string>(),
@@ -135,38 +129,27 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void FromJobReuseOrIgnoreFixtures(bool useStartingOffset)
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
-      job1.PartName = "Part1";
-
       //proc 1 and proc 2 on same pallets
-      job1.AddProcessOnPallet(1, 1, "10");
-      job1.AddProcessOnPallet(1, 1, "11");
-      job1.AddProcessOnPallet(1, 1, "12");
-      job1.AddProcessOnPallet(2, 1, "10");
-      job1.AddProcessOnPallet(2, 1, "11");
-      job1.AddProcessOnPallet(2, 1, "12");
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "10", "11", "12" }, new[] { "10", "11", "12" } }
+      );
 
-      AddBasicStopsWithProg(job1);
+      var job2 = CreateBasicStopsWithProg(
+        uniq: "Job2",
+        part: "Part2",
+        numProc: 2,
+        pals: new[] { new[] { "10", "11", "12" }, new[] { "10", "11", "12" } }
+      );
 
-      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
-      job2.PartName = "Part2";
-
-      //process groups on the same pallet.
-      job2.AddProcessOnPallet(1, 1, "10");
-      job2.AddProcessOnPallet(1, 1, "11");
-      job2.AddProcessOnPallet(1, 1, "12");
-      job2.AddProcessOnPallet(2, 1, "10");
-      job2.AddProcessOnPallet(2, 1, "11");
-      job2.AddProcessOnPallet(2, 1, "12");
-
-      AddBasicStopsWithProg(job2);
-
-      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
-      job3.PartName = "Part3";
-      job3.AddProcessOnPallet(1, 1, "30");
-      job3.AddProcessOnPallet(1, 1, "31");
-
-      AddBasicStopsWithProg(job3);
+      var job3 = CreateBasicStopsWithProg(
+        uniq: "Job3",
+        part: "Part3",
+        numProc: 1,
+        pals: new[] { new[] { "30", "31" } }
+      );
 
       var log = new List<string>();
 
@@ -199,7 +182,7 @@ namespace MachineWatchTest
       savedParts.Add("oldpart2:2");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
+        new Job[] { job1, job2, job3 },
         3,
         dset,
         savedParts,
@@ -262,36 +245,26 @@ namespace MachineWatchTest
     public void DifferentPallets(bool useStartingOffset)
     {
       //Test when processes have different pallet lists
-      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
-      job1.PartName = "Part1";
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "40", "50" } }
+      );
 
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(2, 1, "40");
-      job1.AddProcessOnPallet(2, 1, "50");
+      var job2 = CreateBasicStopsWithProg(
+        uniq: "Job2",
+        part: "Part2",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "40", "50" } }
+      );
 
-      AddBasicStopsWithProg(job1);
-
-      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
-      job2.PartName = "Part2";
-
-      //process groups on the same pallet.
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(2, 1, "40");
-      job2.AddProcessOnPallet(2, 1, "50");
-
-      AddBasicStopsWithProg(job2);
-
-      var job3 = new JobPlan("Job3", 2, new int[] { 1, 1 });
-      job3.PartName = "Part3";
-
-      job3.AddProcessOnPallet(1, 1, "4");
-      job3.AddProcessOnPallet(1, 1, "5");
-      job3.AddProcessOnPallet(2, 1, "30");
-      job3.AddProcessOnPallet(2, 1, "31");
-
-      AddBasicStopsWithProg(job3);
+      var job3 = CreateBasicStopsWithProg(
+        uniq: "Job3",
+        part: "Part3",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "30", "31" } }
+      );
 
       var log = new List<string>();
 
@@ -299,7 +272,7 @@ namespace MachineWatchTest
       CreateProgram(dset, "1234");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
+        new Job[] { job1, job2, job3 },
         3,
         dset,
         new HashSet<string>(),
@@ -341,62 +314,47 @@ namespace MachineWatchTest
     [Fact]
     public void ManualFixtureAssignment()
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
-      job1.PartName = "Part1";
-
-      //proc 1 and proc 2 on same pallets
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(2, 1, "4");
-      job1.AddProcessOnPallet(2, 1, "5");
-
       //each process uses different faces
-      job1.SetFixtureFace(1, 1, "fixAA", 1);
-      job1.SetFixtureFace(2, 1, "fixAA", 2);
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        fixtures: new[] { ("fixAA", 1), ("fixAA", 2) }
+      );
 
-      AddBasicStopsWithProg(job1);
-
-      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
-      job2.PartName = "Part2";
-
-      //process groups on the same pallet.
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(2, 1, "4");
-      job2.AddProcessOnPallet(2, 1, "5");
-
-      //each process uses different faces
-      job2.SetFixtureFace(1, 1, "fixAA", 1);
-      job2.SetFixtureFace(2, 1, "fixAA", 2);
-
-      AddBasicStopsWithProg(job2);
-
-      var job3 = new JobPlan("Job3", 1, new int[] { 1 });
-      job3.PartName = "Part3";
-      job3.AddProcessOnPallet(1, 1, "20");
-      job3.AddProcessOnPallet(1, 1, "21");
-
-      //job3 uses separate fixture than job 4, but same fixture and face for both procs
-      job3.SetFixtureFace(1, 1, "fix3", 1);
-
-      AddBasicStopsWithProg(job3);
-
-      var job4 = new JobPlan("Job4", 1, new int[] { 1 });
-      job4.PartName = "Part3";
-      job4.AddProcessOnPallet(1, 1, "20");
-      job4.AddProcessOnPallet(1, 1, "21");
+      var job2 = CreateBasicStopsWithProg(
+        uniq: "Job2",
+        part: "Part2",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        fixtures: new[] { ("fixAA", 1), ("fixAA", 2) }
+      );
 
       //job3 uses separate fixture than job 4
-      job4.SetFixtureFace(1, 1, "fix4", 1);
+      var job3 = CreateBasicStopsWithProg(
+        uniq: "Job3",
+        part: "Part3",
+        numProc: 1,
+        pals: new[] { new[] { "20", "21" } },
+        fixtures: new[] { ("fix3", 1) }
+      );
 
-      AddBasicStopsWithProg(job4);
+      var job4 = CreateBasicStopsWithProg(
+        uniq: "Job4",
+        part: "Part3",
+        numProc: 1,
+        pals: new[] { new[] { "20", "21" } },
+        fixtures: new[] { ("fix4", 1) } // different than job3
+      );
+
 
       var log = new List<string>();
       var dset = CreateReadSet();
       CreateProgram(dset, "1234");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob(), job4.ToHistoricJob() },
+        new Job[] { job1, job2, job3, job4 },
         3,
         dset,
         new HashSet<string>(),
@@ -445,50 +403,32 @@ namespace MachineWatchTest
     [InlineData(true, true)]
     public void SortsFixtureGroupsBySimStartingTime(bool useStartingOffset, bool sharePallets)
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
-      job1.PartName = "Part1";
-      job1.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 08, 20, 3, 4, 5, DateTimeKind.Utc));
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        simStart: new DateTime(2020, 08, 20, 3, 4, 5, DateTimeKind.Utc)
+      );
 
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(2, 1, "4");
-      job1.AddProcessOnPallet(2, 1, "5");
+      var job2 = CreateBasicStopsWithProg(
+        uniq: "Job2",
+        part: "Part2",
+        numProc: 2,
+        //process groups on the same pallet.
+        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        simStart: new DateTime(2020, 08, 10, 3, 4, 5, DateTimeKind.Utc)
+      );
 
-      AddBasicStopsWithProg(job1);
-
-      var job2 = new JobPlan("Job2", 2, new int[] { 1, 1 });
-      job2.PartName = "Part2";
-      job2.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 08, 10, 3, 4, 5, DateTimeKind.Utc));
-
-      job2.AddProcessOnPallet(1, 1, "4");
-      job2.AddProcessOnPallet(1, 1, "5");
-      job2.AddProcessOnPallet(2, 1, "4");
-      job2.AddProcessOnPallet(2, 1, "5");
-
-      AddBasicStopsWithProg(job2);
-
-      var job3 = new JobPlan("Job3", 2, new int[] { 1, 1 });
-      job3.PartName = "Part3";
-      job3.SetSimulatedStartingTimeUTC(1, 1, new DateTime(2020, 08, 15, 3, 4, 5, DateTimeKind.Utc));
-
-      if (sharePallets)
-      {
-        job3.AddProcessOnPallet(1, 1, "4");
-        job3.AddProcessOnPallet(1, 1, "5");
-        job3.AddProcessOnPallet(1, 1, "6");
-        job3.AddProcessOnPallet(2, 1, "4");
-        job3.AddProcessOnPallet(2, 1, "5");
-        job3.AddProcessOnPallet(2, 1, "6");
-      }
-      else
-      {
-        job3.AddProcessOnPallet(1, 1, "10");
-        job3.AddProcessOnPallet(1, 1, "11");
-        job3.AddProcessOnPallet(2, 1, "10");
-        job3.AddProcessOnPallet(2, 1, "11");
-      }
-
-      AddBasicStopsWithProg(job3);
+      var job3 = CreateBasicStopsWithProg(
+        uniq: "Job3",
+        part: "Part3",
+        numProc: 2,
+        simStart: new DateTime(2020, 08, 15, 3, 4, 5, DateTimeKind.Utc),
+        pals: sharePallets
+          ? new[] { new[] { "4", "5", "6" }, new[] { "4", "5", "6" } }
+          : new[] { new[] { "10", "11" }, new[] { "10", "11" } }
+      );
 
       // job3 is between job2 and job1 in simulated starting time, and if sharePallets is true also has an extra pallet 6
       var log = new List<string>();
@@ -496,7 +436,7 @@ namespace MachineWatchTest
       CreateProgram(dset, "1234");
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob(), job2.ToHistoricJob(), job3.ToHistoricJob() },
+        new Job[] { job1, job2, job3 },
         3,
         dset,
         new HashSet<string>(),
@@ -574,15 +514,12 @@ namespace MachineWatchTest
     [Fact]
     public void DeleteUnusedPartsPals()
     {
-      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
-      job1.PartName = "Part1";
-
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(1, 1, "5");
-      job1.AddProcessOnPallet(2, 1, "40");
-      job1.AddProcessOnPallet(2, 1, "50");
-
-      AddBasicStopsWithProg(job1);
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "4", "5" }, new[] { "40", "50" } }
+      );
 
       var dset = CreateReadSet();
       CreateFixture(dset, "aaaa:1");
@@ -594,7 +531,7 @@ namespace MachineWatchTest
 
       var log = new List<string>();
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob() },
+        new Job[] { job1 },
         3,
         dset,
         new HashSet<string>() { "part2:1:1" },
@@ -637,19 +574,18 @@ namespace MachineWatchTest
     public void ErrorsOnMissingProgram()
     {
       //Test when processes have different pallet lists
-      var job1 = new JobPlan("Job1", 2, new int[] { 1, 1 });
-      job1.PartName = "Part1";
-
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(2, 1, "40");
-
-      AddBasicStopsWithProg(job1);
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "4" }, new[] { "40" } }
+      );
 
       var dset = CreateReadSet();
 
       var log = new List<string>();
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob() },
+        new Job[] { job1 },
         3,
         dset,
         new HashSet<string>(),
@@ -679,22 +615,14 @@ namespace MachineWatchTest
     [Fact]
     public void CreatesPrograms()
     {
-      var job1 = new JobPlan("Job1", 4);
-      job1.PartName = "Part1";
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(2, 1, "10");
-      job1.AddProcessOnPallet(3, 1, "10");
-      job1.AddProcessOnPallet(4, 1, "3");
-
-      AddBasicStopsWithProg(job1);
-      job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
-      job1.GetMachiningStop(1, 1).First().ProgramRevision = null;
-      job1.GetMachiningStop(2, 1).First().ProgramName = "bbb";
-      job1.GetMachiningStop(2, 1).First().ProgramRevision = 7;
-      job1.GetMachiningStop(3, 1).First().ProgramName = "ccc";
-      job1.GetMachiningStop(3, 1).First().ProgramRevision = 9;
-      job1.GetMachiningStop(4, 1).First().ProgramName = "aaa"; // repeat program to check if only adds once
-      job1.GetMachiningStop(4, 1).First().ProgramRevision = null;
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 4,
+        pals: new[] { new[] { "4" }, new[] { "10" }, new[] { "10" }, new[] { "3" } },
+        // repeat program to check if only adds once
+        progs: new[] { ("aaa", (int?)null), ("bbb", 7), ("ccc", 9), ("aaa", null) }
+      );
 
       var log = new List<string>();
       var dset = new MazakTestData();
@@ -724,7 +652,7 @@ namespace MachineWatchTest
       });
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob() },
+        new Job[] { job1 },
         3,
         dset,
         new HashSet<string>(),
@@ -782,16 +710,13 @@ namespace MachineWatchTest
     [Fact]
     public void ErrorsOnMissingManagedProgram()
     {
-      var job1 = new JobPlan("Job1", 2);
-      job1.PartName = "Part1";
-      job1.AddProcessOnPallet(1, 1, "4");
-      job1.AddProcessOnPallet(2, 1, "10");
-
-      AddBasicStopsWithProg(job1);
-      job1.GetMachiningStop(1, 1).First().ProgramName = "aaa";
-      job1.GetMachiningStop(1, 1).First().ProgramRevision = null;
-      job1.GetMachiningStop(2, 1).First().ProgramName = "bbb";
-      job1.GetMachiningStop(2, 1).First().ProgramRevision = 7;
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 2,
+        pals: new[] { new[] { "4" }, new[] { "10" } },
+        progs: new[] { ("aaa", (int?)null), ("bbb", 7) }
+      );
 
       var log = new List<string>();
       var dset = new MazakTestData();
@@ -808,7 +733,7 @@ namespace MachineWatchTest
       lookupProgram("bbb", 7).Returns((ProgramRevision)null);
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
-        new Job[] { job1.ToHistoricJob() },
+        new Job[] { job1 },
         3,
         dset,
         new HashSet<string>(),
@@ -885,20 +810,40 @@ namespace MachineWatchTest
       dset.TestPrograms.Add(new MazakProgramRow() { MainProgram = program, Comment = comment });
     }
 
-    private void AddBasicStopsWithProg(JobPlan job)
+    private Job CreateBasicStopsWithProg(string uniq, string part, int numProc,
+                                         string[][] pals,
+                                         (string fix, int face)[] fixtures = null,
+                                         DateTime? simStart = null,
+                                         (string prog, int? rev)[] progs = null)
     {
-      for (int proc = 1; proc <= job.NumProcesses; proc++)
+      return new Job()
       {
-        for (int path = 1; path <= job.GetNumPaths(proc); path++)
+        UniqueStr = uniq,
+        PartName = part,
+        Processes = Enumerable.Range(1, numProc).Select(p => new ProcessInfo()
         {
-          job.AddLoadStation(proc, path, 1);
-          job.AddUnloadStation(proc, path, 1);
-          var stop = new JobMachiningStop("machine");
-          stop.Stations.Add(1);
-          stop.ProgramName = "1234";
-          job.AddMachiningStop(proc, path, stop);
-        }
-      }
+          Paths = ImmutableList.Create(
+          new ProcPathInfo()
+          {
+            Pallets = ImmutableList.CreateRange(pals[p - 1]),
+            SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
+            Load = ImmutableList.Create(1),
+            Unload = ImmutableList.Create(1),
+            Stops = ImmutableList.Create(
+              new MachiningStop()
+              {
+                StationGroup = "machine",
+                Stations = ImmutableList.Create(1),
+                Program = progs?[p - 1].prog ?? "1234",
+                ProgramRevision = progs?[p - 1].rev
+              }
+            ),
+            Fixture = fixtures?[p - 1].fix,
+            Face = fixtures?[p - 1].face
+          }
+        )
+        }).ToImmutableList(),
+      };
     }
 
     private void CheckNewFixtures(MazakJobs map, ICollection<string> newFix, ICollection<string> delFix = null)

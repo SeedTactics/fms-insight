@@ -1307,29 +1307,69 @@ namespace MachineWatchTest
       var proc1path2 = BuildMaterial(t, pal: 4, unique: "uuuu2", part: "pppp", proc: 1, numProc: 2, partIdx: 2, face: "1", matID: 2);
       var proc2path2 = BuildMaterial(t, pal: 4, unique: "uuuu2", part: "pppp", proc: 2, numProc: 2, partIdx: 2, face: "2", matID: 2);
 
-      var j1 = new JobPlan("uuuu1", 2, new[] { 1, 1 });
-      var j2 = new JobPlan("uuuu2", 2, new[] { 1, 1 });
-      j1.PartName = "pppp";
-      j2.PartName = "pppp";
-      j1.SetExpectedLoadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(11));
-      j2.SetExpectedLoadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(12));
-      j1.SetExpectedLoadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(21));
-      j2.SetExpectedLoadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(22));
-      j1.SetExpectedUnloadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(711));
-      j2.SetExpectedUnloadTime(process: 1, path: 1, t: TimeSpan.FromMinutes(712));
-      j1.SetExpectedUnloadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(721));
-      j2.SetExpectedUnloadTime(process: 2, path: 1, t: TimeSpan.FromMinutes(722));
-      var stop1 = new JobMachiningStop("machinespec");
-      stop1.ExpectedCycleTime = TimeSpan.FromMinutes(33);
-      j1.AddMachiningStop(process: 1, path: 1, r: stop1);
-      j2.AddMachiningStop(process: 1, path: 1, r: stop1);
-      var stop2 = new JobMachiningStop("machinespec");
-      stop2.ExpectedCycleTime = TimeSpan.FromMinutes(44);
-      j1.AddMachiningStop(process: 2, path: 1, r: stop2);
-      j2.AddMachiningStop(process: 2, path: 1, r: stop2);
+      var j1 = new Job()
+      {
+        UniqueStr = "uuuu1",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              ExpectedLoadTime = TimeSpan.FromMinutes(11),
+              ExpectedUnloadTime = TimeSpan.FromMinutes(711),
+              Stops = ImmutableList.Create(
+              new MachiningStop() { StationGroup = "machinespec", ExpectedCycleTime = TimeSpan.FromMinutes(33) }
+            )
+            })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              ExpectedLoadTime = TimeSpan.FromMinutes(21),
+              ExpectedUnloadTime = TimeSpan.FromMinutes(721),
+              Stops = ImmutableList.Create(
+              new MachiningStop() { StationGroup = "machinespec", ExpectedCycleTime = TimeSpan.FromMinutes(44) }
+            )
+
+            })
+          }
+        )
+      };
+      var j2 = new Job()
+      {
+        UniqueStr = "uuuu2",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              ExpectedLoadTime = TimeSpan.FromMinutes(12),
+              ExpectedUnloadTime = TimeSpan.FromMinutes(712),
+              Stops = ImmutableList.Create(
+              new MachiningStop() { StationGroup = "machinespec", ExpectedCycleTime = TimeSpan.FromMinutes(33) }
+            )
+            })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              ExpectedLoadTime = TimeSpan.FromMinutes(22),
+              ExpectedUnloadTime = TimeSpan.FromMinutes(722),
+              Stops = ImmutableList.Create(
+              new MachiningStop() { StationGroup = "machinespec", ExpectedCycleTime = TimeSpan.FromMinutes(44) }
+            )
+
+            })
+          }
+        )
+      };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1.ToHistoricJob(), j2.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j1, j2)
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1542,16 +1582,34 @@ namespace MachineWatchTest
       var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 1);
       var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, face: "2", matID: 1);
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
-      j.PathInspections(1, 1).Add(
-        new PathInspection() { InspectionType = "insp_proc1", Counter = "counter1", MaxVal = 10, TimeInterval = TimeSpan.FromMinutes(1000) });
-      j.PathInspections(j.NumProcesses, 1).Add(
-        new PathInspection() { InspectionType = "insp_whole", Counter = "counter2", MaxVal = 15, TimeInterval = TimeSpan.FromMinutes(1500) }
-      );
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              Inspections = ImmutableList.Create(
+            new PathInspection() { InspectionType = "insp_proc1", Counter = "counter1", MaxVal = 10, TimeInterval = TimeSpan.FromMinutes(1000) }
+          )
+            })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo()
+            {
+              Inspections = ImmutableList.Create(
+            new PathInspection() { InspectionType = "insp_whole", Counter = "counter2", MaxVal = 15, TimeInterval = TimeSpan.FromMinutes(1500) }
+          )
+            })
+          }
+        )
+      };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
+        Jobs = ImmutableList.Create(j)
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1729,13 +1787,18 @@ namespace MachineWatchTest
 
       var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, face: "2", matID: 1);
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
-      j.SetOutputQueue(1, 1, "thequeue");
-      j.SetInputQueue(2, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { OutputQueue = "thequeue" }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+        )
+      };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create((Job)j.ToHistoricJob())
+        Jobs = ImmutableList.Create(j)
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1788,19 +1851,27 @@ namespace MachineWatchTest
 
       var proc1path1thrd = BuildMaterial(t, pal: 4, unique: "uuuu1", part: "pppp", proc: 1, numProc: 2, partIdx: 1, face: "1", matIDs: new long[] { 10, 11, 12 });
 
-      var j1 = new JobPlan("uuuu1", 2, new[] { 1, 1 });
-      var j2 = new JobPlan("uuuu2", 2, new[] { 1, 1 });
-      j1.PartName = "pppp";
-      j2.PartName = "pppp";
-      j1.SetOutputQueue(1, 1, "thequeue");
-      j2.SetOutputQueue(1, 1, "thequeue");
-      j1.SetInputQueue(2, 1, "thequeue");
-      j2.SetInputQueue(2, 1, "thequeue");
-      j1.SetOutputQueue(2, 1, "externalq");
-      j2.SetOutputQueue(2, 1, "externalq");
+      var j1 = new Job()
+      {
+        UniqueStr = "uuuu1",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { OutputQueue = "thequeue" }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", OutputQueue = "externalq" }) }
+        )
+      };
+      var j2 = new Job()
+      {
+        UniqueStr = "uuuu2",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { OutputQueue = "thequeue" }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", OutputQueue = "externalq" }) }
+        )
+      };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1.ToHistoricJob(), j2.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j1, j2)
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1948,14 +2019,18 @@ namespace MachineWatchTest
       var mat4 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, face: "1", matID: 4);
 
 
-      var j = new JobPlan("uuuu", 2);
-      j.PartName = "pppp";
-      j.SetInputQueue(1, 1, "rawmat");
-      j.SetOutputQueue(1, 1, "thequeue");
-      j.SetInputQueue(2, 1, "thequeue");
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Processes = ImmutableList.Create(
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "rawmat", OutputQueue = "thequeue" }) },
+          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+        )
+      };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j.ToHistoricJob())
+        Jobs = ImmutableList.Create<Job>(j)
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
