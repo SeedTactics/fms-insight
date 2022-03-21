@@ -196,7 +196,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          throw;
+          logMessages.Add(ex.ToString());
         }
       }
 

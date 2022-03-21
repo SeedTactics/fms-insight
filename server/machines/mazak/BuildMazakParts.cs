@@ -42,7 +42,7 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakPart>();
 
-    internal readonly Job Job;
+    public readonly Job Job;
     public readonly int DownloadID;
     public readonly List<MazakProcess> Processes;
 
