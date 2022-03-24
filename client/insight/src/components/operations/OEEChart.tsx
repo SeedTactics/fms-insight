@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -34,11 +34,11 @@ import * as React from "react";
 import { Grid } from "@mui/material";
 import { Table } from "@mui/material";
 
-import { FlexibleWidthXYPlot, XAxis, YAxis, VerticalBarSeries, DiscreteColorLegend, Hint } from "react-vis";
 import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";
 import { LazySeq } from "../../util/lazyseq";
 import { ToOrderable } from "prelude-ts";
 import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee";
+import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
 
 export interface OEEProps {
   readonly showLabor: boolean;
@@ -47,20 +47,10 @@ export interface OEEProps {
   readonly points: ReadonlyArray<OEEBarSeries>;
 }
 
-function format_oee_hint(p: OEEBarPoint): ReadonlyArray<{ title: string; value: string }> {
-  return [
-    { title: "Day", value: p.x },
-    { title: "Actual Hours", value: p.y.toFixed(1) },
-    { title: "Planned Hours", value: p.planned.toFixed(1) },
-  ];
-}
-
 const actualOeeColor = "#6200EE";
 const plannedOeeColor = "#03DAC5";
 
 export function OEEChart(props: OEEProps) {
-  const [hoveredSeries, setHoveredSeries] = React.useState<{ station: string; day: string } | undefined>(undefined);
-
   const [chartHeight, setChartHeight] = React.useState(300);
   React.useEffect(() => {
     setChartHeight(window.innerHeight / 2 - 200);
@@ -71,45 +61,45 @@ export function OEEChart(props: OEEProps) {
       {props.points.map((series, idx) => (
         <Grid item xs={12} md={6} key={idx}>
           <div>
-            <FlexibleWidthXYPlot
-              xType="ordinal"
-              height={chartHeight}
-              animation
-              yDomain={[0, 24]}
-              onMouseLeave={() => setHoveredSeries(undefined)}
-            >
-              <XAxis />
-              <YAxis />
-              <VerticalBarSeries
-                data={series.points}
-                onValueMouseOver={(p: OEEBarPoint) => setHoveredSeries({ station: series.station, day: p.x })}
-                onValueMouseOut={() => setHoveredSeries(undefined)}
-                color={actualOeeColor}
-              />
-              <VerticalBarSeries
-                data={series.points}
-                getY={(p: OEEBarPoint) => p.planned}
-                color={plannedOeeColor}
-                onValueMouseOver={(p: OEEBarPoint) => setHoveredSeries({ station: series.station, day: p.x })}
-                onValueMouseOut={() => setHoveredSeries(undefined)}
-              />
-              {hoveredSeries === undefined || hoveredSeries.station !== series.station ? undefined : (
-                <Hint
-                  value={series.points.find((p: OEEBarPoint) => p.x === hoveredSeries.day)}
-                  format={format_oee_hint}
+            <XYChart height={chartHeight} xScale={{ type: "band" }} yScale={{ type: "linear", domain: [0, 24] }}>
+              <AnimatedAxis orientation="bottom" />
+              <AnimatedAxis orientation="left" tickValues={[0, 8, 16, 24]} />
+              <AnimatedBarGroup>
+                <AnimatedBarSeries
+                  data={series.points as OEEBarPoint[]}
+                  dataKey="Actual"
+                  xAccessor={(p) => p.x}
+                  yAccessor={(p) => p.y}
+                  colorAccessor={() => actualOeeColor}
                 />
-              )}
-            </FlexibleWidthXYPlot>
-            <div style={{ textAlign: "center" }}>
-              {props.points.length > 1 ? (
-                <DiscreteColorLegend
-                  orientation="horizontal"
-                  items={[
-                    { title: series.station + " Actual", color: actualOeeColor },
-                    { title: series.station + " Planned", color: plannedOeeColor },
-                  ]}
+                <AnimatedBarSeries
+                  data={series.points as OEEBarPoint[]}
+                  dataKey="Planned"
+                  xAccessor={(p) => p.x}
+                  yAccessor={(p) => p.planned}
+                  colorAccessor={() => plannedOeeColor}
                 />
-              ) : undefined}
+              </AnimatedBarGroup>
+              <Tooltip<OEEBarPoint>
+                snapTooltipToDatumX
+                renderTooltip={({ tooltipData }) => (
+                  <div>
+                    <div>{tooltipData?.nearestDatum?.datum?.x}</div>
+                    <div>Actual Hours: {tooltipData?.nearestDatum?.datum?.y?.toFixed(1)}</div>
+                    <div>Planned Hours: {tooltipData?.nearestDatum?.datum?.planned?.toFixed(1)}</div>
+                  </div>
+                )}
+              />
+            </XYChart>
+            <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-evenly" }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ width: "14px", height: "14px", backgroundColor: actualOeeColor }} />
+                <div style={{ marginLeft: "1em" }}>{series.station} Actual</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ width: "14px", height: "14px", backgroundColor: plannedOeeColor }} />
+                <div style={{ marginLeft: "1em" }}>{series.station} Planned</div>
+              </div>
             </div>
           </div>
         </Grid>
