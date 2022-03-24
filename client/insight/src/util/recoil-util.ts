@@ -90,3 +90,15 @@ export function applyConduitToSnapshot<T>(snapshot: Snapshot, conduit: RecoilCon
     )
   );
 }
+
+export function useImmer<T>(initial: T): [T, (f: (d: Draft<T>) => void) => void] {
+  const [state, setState] = React.useState(initial);
+  const setDraft = React.useCallback(
+    function setDraft(f: (d: Draft<T>) => void) {
+      const mapper = produce((d) => void f(d));
+      setState(mapper);
+    },
+    [setState]
+  );
+  return [state, setDraft];
+}

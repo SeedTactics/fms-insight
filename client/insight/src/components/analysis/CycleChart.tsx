@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -45,7 +45,7 @@ import {
   AreaSeries,
   LineSeries,
 } from "react-vis";
-import { Button, styled } from "@mui/material";
+import { Button, styled, ToggleButton } from "@mui/material";
 import { HashMap } from "prelude-ts";
 import { Dialog } from "@mui/material";
 import { DialogContent } from "@mui/material";
@@ -54,6 +54,17 @@ import { TextField } from "@mui/material";
 import { IconButton } from "@mui/material";
 import ZoomIn from "@mui/icons-material/ZoomIn";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times";
+import {
+  AnimatedAreaSeries,
+  AnimatedAxis,
+  AnimatedGlyphSeries,
+  AnimatedGrid,
+  AnimatedLineSeries,
+  XYChart,
+} from "@visx/xychart";
+import { chartTheme, seriesColor } from "../../util/chart-colors";
+import { grey } from "@mui/material/colors";
+import { useImmer } from "../../util/recoil-util";
 
 interface YZoomRange {
   readonly y_low: number;
@@ -138,6 +149,175 @@ export interface CycleChartProps {
   readonly plannedSeries?: ReadonlyArray<CycleChartPoint>;
 }
 
+export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps) {
+  const [chartHeight, setChartHeight] = React.useState(500);
+  React.useEffect(() => {
+    setChartHeight(window.innerHeight - 200);
+  }, []);
+
+  const [zoomDialogOpen, setZoomDialogOpen] = React.useState(false);
+  const [yZoom, setYZoom] = React.useState<YZoomRange | null>(null);
+  const [disabledSeries, adjustDisabled] = useImmer<ReadonlySet<string>>(new Set());
+
+  const medianData = React.useMemo(() => {
+    if (props.stats) {
+      const low = (props.partCntPerPoint ?? 1) * (props.stats.medianMinutesForSingleMat - props.stats.MAD_belowMinutes);
+      const high =
+        (props.partCntPerPoint ?? 1) * (props.stats.medianMinutesForSingleMat + props.stats.MAD_aboveMinutes);
+
+      return [
+        { x: props.default_date_range[0], low, high },
+        { x: props.default_date_range[1], low, high },
+      ];
+    } else {
+      return null;
+    }
+  }, [props.stats, props.partCntPerPoint, props.default_date_range]);
+
+  const seriesNames = props.points.keySet().toArray({ sortOn: (x) => x });
+
+  return (
+    <div>
+      <XYChart
+        height={chartHeight}
+        xScale={
+          props.current_date_zoom
+            ? {
+                type: "time",
+                domain: [props.current_date_zoom.start, props.current_date_zoom.end],
+              }
+            : { type: "time" }
+        }
+        yScale={
+          yZoom
+            ? {
+                type: "linear",
+                domain: [yZoom.y_low, yZoom.y_high],
+                zero: false,
+              }
+            : { type: "linear" }
+        }
+        theme={chartTheme}
+      >
+        <AnimatedAxis orientation="bottom" />
+        <AnimatedAxis orientation="left" label="Minutes" />
+        <AnimatedGrid stroke="#e6e6e9" />
+        {medianData ? (
+          <AnimatedAreaSeries
+            dataKey="__medianSeries"
+            data={medianData}
+            xAccessor={(p) => p.x}
+            yAccessor={(p) => p.high}
+            y0Accessor={(p) => p.low}
+            fill={grey[700]}
+            opacity={0.2}
+          />
+        ) : undefined}
+        {props.plannedSeries ? (
+          <AnimatedLineSeries
+            dataKey="___plannedSeries"
+            data={props.plannedSeries as CycleChartPoint[]}
+            xAccessor={(p) => p.x}
+            yAccessor={(p) => p.y}
+            stroke="black"
+            opacity={0.4}
+          />
+        ) : undefined}
+        {seriesNames
+          .map((series, idx) => ({ series, color: seriesColor(idx, seriesNames.length) }))
+          .filter((s) => !disabledSeries.has(s.series))
+          .map((s) => (
+            <AnimatedGlyphSeries
+              key={s.series}
+              dataKey={s.series}
+              colorAccessor={() => s.color}
+              data={props.points.get(s.series).getOrElse([]) as CycleChartPoint[]}
+              xAccessor={(p) => p.x}
+              yAccessor={(p) => p.y}
+            />
+          ))}
+        {props.points.isEmpty() ? (
+          <AnimatedLineSeries
+            dataKey="__emptyInvisibleSeries"
+            stroke="transparent"
+            data={props.default_date_range}
+            xAccessor={(p) => p}
+            yAccessor={(_) => 60}
+          />
+        ) : undefined}
+      </XYChart>
+      <div style={{ display: "flex", flexWrap: "wrap", marginTop: "-30px" }}>
+        <div style={{ color: "#6b6b76" }}>Click on a point for details</div>
+        <div style={{ flexGrow: 1 }} />
+        <div>
+          {props.set_date_zoom_range && (props.current_date_zoom || yZoom) ? (
+            <>
+              <Button
+                size="small"
+                onClick={() => {
+                  props.set_date_zoom_range?.({ zoom: undefined });
+                  setYZoom(null);
+                }}
+              >
+                Reset Zoom
+              </Button>
+              <IconButton size="small" onClick={() => setZoomDialogOpen(true)}>
+                <ZoomIn fontSize="inherit" />
+              </IconButton>
+            </>
+          ) : undefined}
+          {props.set_date_zoom_range && !props.current_date_zoom && !yZoom ? (
+            <span style={{ color: "#6b6b76" }}>
+              Zoom via mouse drag
+              {medianData ? (
+                <>
+                  <span> or </span>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      const high = medianData[0].high;
+                      const low = medianData[0].low;
+                      const extra = 0.2 * (high - low);
+                      setYZoom({ y_low: low - extra, y_high: high + extra });
+                    }}
+                  >
+                    Zoom To Inliers
+                  </Button>
+                </>
+              ) : undefined}
+              <IconButton size="small" onClick={() => setZoomDialogOpen(true)}>
+                <ZoomIn fontSize="inherit" />
+              </IconButton>
+            </span>
+          ) : undefined}
+        </div>
+      </div>
+      <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-around" }}>
+        {seriesNames.map((s, idx) => (
+          <ToggleButton
+            key={s}
+            selected={!disabledSeries.has(s)}
+            value={s}
+            onChange={() => adjustDisabled((b) => (b.has(s) ? b.delete(s) : b.add(s)))}
+          >
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ width: "14px", height: "14px", backgroundColor: seriesColor(idx, seriesNames.length) }} />
+              <div style={{ marginLeft: "1em" }}>{s}</div>
+            </div>
+          </ToggleButton>
+        ))}
+      </div>
+      <SetZoomDialog
+        open={zoomDialogOpen}
+        curZoom={yZoom}
+        close={() => setZoomDialogOpen(false)}
+        setLow={(v) => setYZoom((z) => (z ? { ...z, y_low: v } : { y_low: v, y_high: 60 }))}
+        setHigh={(v) => setYZoom((z) => (z ? { ...z, y_high: v } : { y_high: v, y_low: 0 }))}
+      />
+    </div>
+  );
+});
+
 interface CycleChartTooltip {
   readonly x: Date;
   readonly y: number;
@@ -178,112 +358,6 @@ const NoSeriesPointerEvents = styled("div", { shouldForwardProp: (prop) => prop.
       }
     : undefined
 );
-
-// https://personal.sron.nl/~pault/
-const paulTolQualitativeColors = [
-  ["4477aa"],
-  ["4477aa", "cc6677"],
-  ["4477aa", "ddcc77", "cc6677"],
-  ["4477aa", "117733", "ddcc77", "cc6677"],
-  ["332288", "88ccee", "117733", "ddcc77", "cc6677"],
-  ["332288", "88ccee", "117733", "ddcc77", "cc6677", "aa4499"],
-  ["332288", "88ccee", "44aa99", "117733", "ddcc77", "cc6677", "aa4499"],
-  ["332288", "88ccee", "44aa99", "117733", "999933", "ddcc77", "cc6677", "aa4499"],
-  ["332288", "88ccee", "44aa99", "117733", "999933", "ddcc77", "cc6677", "882255", "aa4499"],
-  ["332288", "88ccee", "44aa99", "117733", "999933", "ddcc77", "661100", "cc6677", "882255", "aa4499"],
-  ["332288", "6699cc", "88ccee", "44aa99", "117733", "999933", "ddcc77", "661100", "cc6677", "882255", "aa4499"],
-  [
-    "332288",
-    "6699cc",
-    "88ccee",
-    "44aa99",
-    "117733",
-    "999933",
-    "ddcc77",
-    "661100",
-    "cc6677",
-    "aa4466",
-    "882255",
-    "aa4499",
-  ],
-];
-
-// https://github.com/google/palette.js/blob/master/palette.js
-const mpn65Colors = [
-  "ff0029",
-  "377eb8",
-  "66a61e",
-  "984ea3",
-  "00d2d5",
-  "ff7f00",
-  "af8d00",
-  "7f80cd",
-  "b3e900",
-  "c42e60",
-  "a65628",
-  "f781bf",
-  "8dd3c7",
-  "bebada",
-  "fb8072",
-  "80b1d3",
-  "fdb462",
-  "fccde5",
-  "bc80bd",
-  "ffed6f",
-  "c4eaff",
-  "cf8c00",
-  "1b9e77",
-  "d95f02",
-  "e7298a",
-  "e6ab02",
-  "a6761d",
-  "0097ff",
-  "00d067",
-  "000000",
-  "252525",
-  "525252",
-  "737373",
-  "969696",
-  "bdbdbd",
-  "f43600",
-  "4ba93b",
-  "5779bb",
-  "927acc",
-  "97ee3f",
-  "bf3947",
-  "9f5b00",
-  "f48758",
-  "8caed6",
-  "f2b94f",
-  "eff26e",
-  "e43872",
-  "d9b100",
-  "9d7a00",
-  "698cff",
-  "d9d9d9",
-  "00d27e",
-  "d06800",
-  "009f82",
-  "c49200",
-  "cbe8ff",
-  "fecddf",
-  "c27eb6",
-  "8cd2ce",
-  "c4b8d9",
-  "f883b0",
-  "a49100",
-  "f48800",
-  "27d0df",
-  "a04a9b",
-];
-
-export function seriesColor(idx: number, count: number): string {
-  if (count <= paulTolQualitativeColors.length) {
-    return "#" + paulTolQualitativeColors[count - 1][idx];
-  } else {
-    return "#" + mpn65Colors[idx % mpn65Colors.length];
-  }
-}
 
 export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartState> {
   state = {

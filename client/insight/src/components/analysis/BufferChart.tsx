@@ -36,7 +36,7 @@ import { addDays, startOfToday, addMonths } from "date-fns";
 import { curveCatmullRom } from "@visx/curve";
 import { XYChart, AnimatedAxis, AnimatedLineSeries, Grid } from "@visx/xychart";
 import { BufferChartPoint, buildBufferChart } from "../../data/results.bufferchart";
-import { seriesColor } from "./CycleChart";
+import { chartTheme, seriesColor } from "../../util/chart-colors";
 import { HashSet } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names";
@@ -80,7 +80,7 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
 
   return (
     <div>
-      <XYChart height={chartHeight} xScale={{ type: "time" }} yScale={{ type: "linear" }}>
+      <XYChart height={chartHeight} xScale={{ type: "time" }} yScale={{ type: "linear" }} theme={chartTheme}>
         <AnimatedAxis orientation="bottom" />
         <AnimatedAxis orientation="left" label="Buffer Size" />
         <Grid />

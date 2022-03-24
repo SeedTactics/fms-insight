@@ -39,6 +39,7 @@ import { LazySeq } from "../../util/lazyseq";
 import { ToOrderable } from "prelude-ts";
 import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee";
 import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
+import { seriesColor, chartTheme } from "../../util/chart-colors";
 
 export interface OEEProps {
   readonly showLabor: boolean;
@@ -47,8 +48,8 @@ export interface OEEProps {
   readonly points: ReadonlyArray<OEEBarSeries>;
 }
 
-const actualOeeColor = "#6200EE";
-const plannedOeeColor = "#03DAC5";
+const actualOeeColor = seriesColor(0, 2);
+const plannedOeeColor = seriesColor(1, 2);
 
 export function OEEChart(props: OEEProps) {
   const [chartHeight, setChartHeight] = React.useState(300);
@@ -61,7 +62,12 @@ export function OEEChart(props: OEEProps) {
       {props.points.map((series, idx) => (
         <Grid item xs={12} md={6} key={idx}>
           <div>
-            <XYChart height={chartHeight} xScale={{ type: "band" }} yScale={{ type: "linear", domain: [0, 24] }}>
+            <XYChart
+              height={chartHeight}
+              xScale={{ type: "band" }}
+              yScale={{ type: "linear", domain: [0, 24] }}
+              theme={chartTheme}
+            >
               <AnimatedAxis orientation="bottom" />
               <AnimatedAxis orientation="left" tickValues={[0, 8, 16, 24]} />
               <AnimatedBarGroup>
