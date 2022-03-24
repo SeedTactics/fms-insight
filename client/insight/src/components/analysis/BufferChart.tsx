@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -32,23 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import {
-  FlexibleWidthXYPlot,
-  VerticalGridLines,
-  HorizontalGridLines,
-  XAxis,
-  YAxis,
-  LineSeries,
-  DiscreteColorLegend,
-} from "react-vis";
 import { addDays, startOfToday, addMonths } from "date-fns";
-import { buildBufferChart } from "../../data/results.bufferchart";
+import { curveCatmullRom } from "@visx/curve";
+import { XYChart, AnimatedAxis, AnimatedLineSeries, Grid } from "@visx/xychart";
+import { BufferChartPoint, buildBufferChart } from "../../data/results.bufferchart";
 import { seriesColor } from "./CycleChart";
 import { HashSet } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers";
+import { ToggleButton } from "@mui/material";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;
@@ -86,39 +80,51 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
 
   return (
     <div>
-      <FlexibleWidthXYPlot
-        height={chartHeight}
-        animation
-        xType="time"
-        margin={{ bottom: 50 }}
-        dontCheckIfEmpty
-        xDomain={defaultDateRange}
-        yDomain={emptySeries ? [0, 10] : undefined}
-      >
-        <VerticalGridLines />
-        <HorizontalGridLines />
-        <XAxis tickLabelAngle={-45} />
-        <YAxis />
+      <XYChart height={chartHeight} xScale={{ type: "time" }} yScale={{ type: "linear" }}>
+        <AnimatedAxis orientation="bottom" />
+        <AnimatedAxis orientation="left" label="Buffer Size" />
+        <Grid />
         {series.map((s, idx) =>
           disabledBuffers.contains(s.label) ? undefined : (
-            <LineSeries key={s.label} data={s.points} curve="curveCatmullRom" color={seriesColor(idx, series.length)} />
+            <AnimatedLineSeries
+              key={s.label}
+              dataKey={s.label}
+              data={s.points as BufferChartPoint[]}
+              stroke={seriesColor(idx, series.length)}
+              curve={curveCatmullRom}
+              xAccessor={(p) => p.x}
+              yAccessor={(p) => p.y}
+            />
           )
         )}
-      </FlexibleWidthXYPlot>
-      <div style={{ textAlign: "center" }}>
-        <DiscreteColorLegend
-          orientation="horizontal"
-          items={series.map((s, idx) => ({
-            title: s.label,
-            color: seriesColor(idx, series.length),
-            disabled: disabledBuffers.contains(s.label),
-          }))}
-          onItemClick={({ title }: { title: string }) =>
-            disabledBuffers.contains(title)
-              ? setDisabledBuffers(disabledBuffers.remove(title))
-              : setDisabledBuffers(disabledBuffers.add(title))
-          }
-        />
+        {emptySeries ? (
+          <AnimatedLineSeries
+            dataKey="__emptyInvisibleSeries"
+            stroke="transparent"
+            data={defaultDateRange}
+            xAccessor={(p) => p}
+            yAccessor={(_) => 1}
+          />
+        ) : undefined}
+      </XYChart>
+      <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-around" }}>
+        {series.map((s, idx) => (
+          <ToggleButton
+            key={s.label}
+            selected={!disabledBuffers.contains(s.label)}
+            value={s.label}
+            onChange={() =>
+              disabledBuffers.contains(s.label)
+                ? setDisabledBuffers(disabledBuffers.remove(s.label))
+                : setDisabledBuffers(disabledBuffers.add(s.label))
+            }
+          >
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ width: "14px", height: "14px", backgroundColor: seriesColor(idx, series.length) }} />
+              <div style={{ marginLeft: "1em" }}>{s.label}</div>
+            </div>
+          </ToggleButton>
+        ))}
       </div>
     </div>
   );
