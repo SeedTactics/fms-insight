@@ -60,11 +60,17 @@ import {
   AnimatedGlyphSeries,
   AnimatedGrid,
   AnimatedLineSeries,
+  DataContext,
+  GlyphProps,
+  Tooltip,
+  TooltipContext,
+  TooltipContextType,
   XYChart,
 } from "@visx/xychart";
 import { chartTheme, seriesColor } from "../../util/chart-colors";
 import { grey } from "@mui/material/colors";
 import { useImmer } from "../../util/recoil-util";
+import { localPoint } from "@visx/event";
 
 interface YZoomRange {
   readonly y_low: number;
@@ -124,6 +130,51 @@ function SetZoomDialog(props: SetZoomDialogProps) {
       </DialogActions>
     </Dialog>
   );
+}
+
+function RenderChartPoint(props: GlyphProps<CycleChartPoint>) {
+  const { showTooltip } = React.useContext(TooltipContext as React.Context<TooltipContextType<CycleChartPoint>>) ?? {};
+  const show = React.useCallback(
+    (event: React.PointerEvent<SVGCircleElement>) =>
+      showTooltip({
+        key: props.key,
+        index: props.index,
+        datum: props.datum,
+        svgPoint: localPoint(event) ?? undefined,
+        event,
+      }),
+    [props.key, props.index, props.datum, props.x, props.y, showTooltip]
+  );
+  return (
+    <circle
+      className="visx-circle-glyph"
+      key={props.key}
+      tabIndex={props.onBlur || props.onFocus ? 0 : undefined}
+      fill={props.color}
+      r={props.size / 2}
+      cx={props.x}
+      cy={props.y}
+      onClick={show}
+    />
+  );
+}
+
+function ChartMouseEvents() {
+  const { hideTooltip } = React.useContext(TooltipContext as React.Context<TooltipContextType<CycleChartPoint>>) ?? {};
+  const { height, width } = React.useContext(DataContext);
+
+  // onMouseLeave triggers when mousing over something else such as an axis line or another point since this rect
+  // is at the bottom.  Should instead put onMouseLeave on the <svg> element but to do so need to use a manaully
+  // created TooltipProvider
+  return (
+    <>
+      <rect x={0} y={0} width={width} height={height} fill="transparent" onMouseLeave={hideTooltip} />
+    </>
+  );
+}
+
+function ChartTooltip() {
+  return <Tooltip renderTooltip={(data) => <div>{JSON.stringify(data)}</div>} />;
 }
 
 export interface CycleChartPoint {
@@ -197,8 +248,10 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
               }
             : { type: "linear" }
         }
+        captureEvents={false}
         theme={chartTheme}
       >
+        <ChartMouseEvents />
         <AnimatedAxis orientation="bottom" />
         <AnimatedAxis orientation="left" label="Minutes" />
         <AnimatedGrid stroke="#e6e6e9" />
@@ -211,6 +264,7 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
             y0Accessor={(p) => p.low}
             fill={grey[700]}
             opacity={0.2}
+            enableEvents={false}
           />
         ) : undefined}
         {props.plannedSeries ? (
@@ -221,6 +275,7 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
             yAccessor={(p) => p.y}
             stroke="black"
             opacity={0.4}
+            enableEvents={false}
           />
         ) : undefined}
         {seriesNames
@@ -234,6 +289,8 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
               data={props.points.get(s.series).getOrElse([]) as CycleChartPoint[]}
               xAccessor={(p) => p.x}
               yAccessor={(p) => p.y}
+              renderGlyph={RenderChartPoint}
+              enableEvents={false}
             />
           ))}
         {props.points.isEmpty() ? (
@@ -243,8 +300,10 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
             data={props.default_date_range}
             xAccessor={(p) => p}
             yAccessor={(_) => 60}
+            enableEvents={false}
           />
         ) : undefined}
+        <ChartTooltip />
       </XYChart>
       <div style={{ display: "flex", flexWrap: "wrap", marginTop: "-30px" }}>
         <div style={{ color: "#6b6b76" }}>Click on a point for details</div>
