@@ -51,7 +51,7 @@ import { Slider } from "@mui/material";
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { CycleChart, CycleChart2, CycleChartPoint, ExtraTooltip } from "./CycleChart";
+import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart } from "./HeatChart";
 import * as matDetails from "../../cell-status/material-details";
 import { InspectionSankey } from "./InspectionSankey";
@@ -313,7 +313,7 @@ function PartMachineCycleChart() {
       />
       <CardContent>
         {showGraph ? (
-          <CycleChart2
+          <CycleChart
             points={points.data}
             series_label={points.seriesLabel}
             default_date_range={defaultDateRange}
