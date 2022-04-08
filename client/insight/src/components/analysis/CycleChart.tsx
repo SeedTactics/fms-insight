@@ -32,13 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { format } from "date-fns";
-import { Button, styled, ToggleButton } from "@mui/material";
 import { HashMap } from "prelude-ts";
-import { Dialog } from "@mui/material";
-import { DialogContent } from "@mui/material";
-import { DialogActions } from "@mui/material";
-import { TextField } from "@mui/material";
-import { IconButton } from "@mui/material";
+import {
+  Dialog,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  Button,
+  styled,
+  ToggleButton,
+  Stack,
+} from "@mui/material";
 import ZoomIn from "@mui/icons-material/ZoomIn";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times";
 import { chartTheme, seriesColor } from "../../util/chart-colors";
@@ -650,28 +655,30 @@ const ChartTooltip = React.memo(function ChartTooltip({
       top={tooltipTop}
       style={{ ...defaultTooltipStyles, backgroundColor: grey[800], color: "white" }}
     >
-      <div>Time: {format(tooltipData.pt.x, "MMM d, yyyy, h:mm aaaa")}</div>
-      <div>
-        {seriesLabel}: {tooltipData.seriesName}
-      </div>
-      <div>Cycle Time: {tooltipData.pt.y.toFixed(1)} minutes</div>
-      {extraTooltip
-        ? extraTooltip(tooltipData.pt).map((e, idx) => (
-            <div key={idx}>
-              {e.title}:{" "}
-              {e.link ? (
-                <a
-                  style={{ color: "white", pointerEvents: "auto", cursor: "pointer", borderBottom: "1px solid" }}
-                  onClick={e.link}
-                >
-                  {e.value}
-                </a>
-              ) : (
-                <span>e.value</span>
-              )}
-            </div>
-          ))
-        : undefined}
+      <Stack direction="column" spacing={0.6}>
+        <div>Time: {format(tooltipData.pt.x, "MMM d, yyyy, h:mm aaaa")}</div>
+        <div>
+          {seriesLabel}: {tooltipData.seriesName}
+        </div>
+        <div>Cycle Time: {tooltipData.pt.y.toFixed(1)} minutes</div>
+        {extraTooltip
+          ? extraTooltip(tooltipData.pt).map((e, idx) => (
+              <div key={idx}>
+                {e.title}:{" "}
+                {e.link ? (
+                  <a
+                    style={{ color: "white", pointerEvents: "auto", cursor: "pointer", borderBottom: "1px solid" }}
+                    onClick={e.link}
+                  >
+                    {e.value}
+                  </a>
+                ) : (
+                  <span>e.value</span>
+                )}
+              </div>
+            ))
+          : undefined}
+      </Stack>
     </VisxTooltip>
   );
 });
