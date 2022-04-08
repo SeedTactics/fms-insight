@@ -43,7 +43,6 @@ import {
   HorizontalGridLines,
   DiscreteColorLegend,
   AreaSeries,
-  LineSeries,
 } from "react-vis";
 import { Button, styled, ToggleButton } from "@mui/material";
 import { HashMap } from "prelude-ts";
@@ -61,9 +60,7 @@ import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { Group } from "@visx/group";
 import { useTooltip, TooltipWithBounds as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
-import { LinePath } from "@visx/shape";
 import useMeasure from "react-use-measure";
-import { curveStepAfter } from "@visx/curve";
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
 import { useSpring, animated, useTransition, TransitionFn } from "react-spring";
 
@@ -83,7 +80,7 @@ export interface DataToPlotProps {
   readonly points: HashMap<string, ReadonlyArray<CycleChartPoint>>;
   readonly stats?: StatisticalCycleTime;
   readonly partCntPerPoint?: number;
-  readonly plannedSeries?: ReadonlyArray<CycleChartPoint>;
+  readonly plannedTimeMinutes?: number;
 }
 
 export interface ScaleZoomProps {
@@ -105,10 +102,9 @@ interface DataToPlot {
     readonly points: ReadonlyArray<CycleChartPoint>;
   }>;
   readonly median: { readonly low: number; readonly high: number } | null;
-  readonly planned: ReadonlyArray<CycleChartPoint> | null;
 }
 
-function useDataToPlot({ points, stats, partCntPerPoint, plannedSeries }: DataToPlotProps): DataToPlot {
+function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): DataToPlot {
   const series = React.useMemo(() => {
     const seriesNames = points.keySet().toArray({ sortOn: (x) => x });
 
@@ -130,7 +126,7 @@ function useDataToPlot({ points, stats, partCntPerPoint, plannedSeries }: DataTo
     }
   }, [stats, partCntPerPoint]);
 
-  return { series, median, planned: plannedSeries ?? null };
+  return { series, median };
 }
 
 const marginLeft = 50;
@@ -310,12 +306,12 @@ const SetYZoomButton = React.memo(function SetYZoomButton(props: {
 
 const StatsSeries = React.memo(function StatsSeries({
   median,
-  planned,
+  plannedMinutes,
   xScale,
   yScale,
 }: CycleChartScales & {
   readonly median: { readonly low: number; readonly high: number } | null;
-  readonly planned: ReadonlyArray<CycleChartPoint> | null;
+  readonly plannedMinutes: number | null | undefined;
 }) {
   const medianSpring = useSpring({
     to: {
@@ -331,6 +327,10 @@ const StatsSeries = React.memo(function StatsSeries({
       height: 0,
     },
   });
+  const plannedSpring = useSpring({
+    to: { y: plannedMinutes ? yScale(plannedMinutes) : yScale.range()[0] },
+    from: { y: yScale.range()[0] },
+  });
   return (
     <g>
       {median ? (
@@ -344,13 +344,13 @@ const StatsSeries = React.memo(function StatsSeries({
           pointerEvents="none"
         />
       ) : undefined}
-      {planned ? (
-        <LinePath
-          data={planned as CycleChartPoint[]}
+      {plannedMinutes ? (
+        <animated.line
           stroke="black"
-          curve={curveStepAfter}
-          x={(p) => xScale(p.x)}
-          y={(p) => yScale(p.y)}
+          x1={xScale.range()[0]}
+          x2={xScale.range()[1]}
+          y1={plannedSpring.y}
+          y2={plannedSpring.y}
         />
       ) : undefined}
     </g>
@@ -398,11 +398,11 @@ const SingleSeries = React.memo(function SingleSeries({
   );
 
   const fromLeave = React.useCallback(
-    ({ x }: CycleChartPoint) => ({ x: xScale(x), y: yScale.range()[0] }),
+    ({ x }: CycleChartPoint) => ({ x: xScale(x), y: yScale.range()[0] + 15, opacity: 0 }),
     [xScale, yScale]
   );
   const enterUpdate = React.useCallback(
-    ({ x, y }: CycleChartPoint) => ({ x: xScale(x), y: yScale(y) }),
+    ({ x, y }: CycleChartPoint) => ({ x: xScale(x), y: yScale(y), opacity: 1 }),
     [xScale, yScale]
   );
   const transition = useTransition(points, {
@@ -411,16 +411,17 @@ const SingleSeries = React.memo(function SingleSeries({
     enter: enterUpdate,
     update: enterUpdate,
     keys: getCycleChartKey,
-  }) as unknown as TransitionFn<CycleChartPoint, { x: number; y: number }>; // react-spring does not correctly infer the type of the returned object
+  }) as unknown as TransitionFn<CycleChartPoint, { x: number; y: number; opacity: number }>; // react-spring does not correctly infer the type of the returned object
   return (
     <g>
-      {transition(({ x, y }, _item, _t, idx) => (
+      {transition(({ x, y, opacity }, _item, _t, idx) => (
         <animated.circle
           className="bms-cycle-chart-pt"
           fill={color}
           r={5}
           cx={x}
           cy={y}
+          opacity={opacity}
           data-idx={idx}
           onClick={show}
         />
@@ -720,11 +721,10 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
     set_date_zoom_range: props.set_date_zoom_range,
     containerWidth: bounds?.width,
   });
-  const { series, median, planned } = useDataToPlot({
+  const { series, median } = useDataToPlot({
     points: props.points,
     stats: props.stats,
     partCntPerPoint: props.partCntPerPoint,
-    plannedSeries: props.plannedSeries,
   });
 
   const pointerLeave = React.useCallback(() => {
@@ -737,7 +737,7 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
       <svg width={width} height={height}>
         <Group left={marginLeft} top={marginTop}>
           <AxisAndGrid xScale={xScale} yScale={yScale} />
-          <StatsSeries median={median} planned={planned} xScale={xScale} yScale={yScale} />
+          <StatsSeries median={median} plannedMinutes={props.plannedTimeMinutes} xScale={xScale} yScale={yScale} />
           <ChartMouseEvents
             setYZoom={setYZoom}
             setXZoom={props.set_date_zoom_range}
@@ -1064,9 +1064,6 @@ export class CycleChart extends React.PureComponent<CycleChartProps, CycleChartS
           <XAxis tickLabelAngle={-45} />
           <YAxis />
           {statsSeries}
-          {this.props.plannedSeries ? (
-            <LineSeries data={this.props.plannedSeries} color="black" opacity={0.4} />
-          ) : undefined}
           {setZoom ? (
             <Highlight
               onBrushStart={() => this.setState({ brushing: true })}

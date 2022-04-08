@@ -51,7 +51,7 @@ import { Slider } from "@mui/material";
 
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
+import { CycleChart, CycleChart2, CycleChartPoint, ExtraTooltip } from "./CycleChart";
 import { SelectableHeatChart } from "./HeatChart";
 import * as matDetails from "../../cell-status/material-details";
 import { InspectionSankey } from "./InspectionSankey";
@@ -60,7 +60,7 @@ import {
   FilterAnyMachineKey,
   copyCyclesToClipboard,
   estimateLulOperations,
-  plannedOperationSeries,
+  plannedOperationMinutes,
   LoadCycleData,
   loadOccupancyCycles,
   FilterAnyLoadKey,
@@ -169,9 +169,9 @@ function PartMachineCycleChart() {
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
   const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
-  const plannedSeries = React.useMemo(() => {
+  const plannedMinutes = React.useMemo(() => {
     if (curOperation) {
-      return plannedOperationSeries(points, false);
+      return plannedOperationMinutes(points, false);
     } else {
       return undefined;
     }
@@ -313,7 +313,7 @@ function PartMachineCycleChart() {
       />
       <CardContent>
         {showGraph ? (
-          <CycleChart
+          <CycleChart2
             points={points.data}
             series_label={points.seriesLabel}
             default_date_range={defaultDateRange}
@@ -329,7 +329,7 @@ function PartMachineCycleChart() {
                     .getOrUndefined()
                 : undefined
             }
-            plannedSeries={plannedSeries}
+            plannedTimeMinutes={plannedMinutes}
           />
         ) : (
           <StationDataTable
@@ -425,9 +425,9 @@ function PartLoadStationCycleChart() {
       return emptyStationCycles(cycles);
     }
   }, [selectedPart, selectedPallet, selectedOperation, selectedLoadStation, cycles, showGraph]);
-  const plannedSeries = React.useMemo(() => {
+  const plannedMinutes = React.useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
-      return plannedOperationSeries(points, true);
+      return plannedOperationMinutes(points, true);
     } else {
       return undefined;
     }
@@ -573,7 +573,7 @@ function PartLoadStationCycleChart() {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
-            plannedSeries={plannedSeries}
+            plannedTimeMinutes={plannedMinutes}
           />
         ) : (
           <StationDataTable
