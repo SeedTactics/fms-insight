@@ -50,7 +50,7 @@ import { Group } from "@visx/group";
 import { useTooltip, TooltipWithBounds as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
 import useMeasure from "react-use-measure";
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
-import { useSpring, animated, useTransition, TransitionFn } from "react-spring";
+import { useSpring, useSprings, animated } from "react-spring";
 
 export interface CycleChartPoint {
   readonly cntr: number;
@@ -352,10 +352,6 @@ type ShowTooltipFunc = (a: {
   readonly tooltipData?: { readonly pt: CycleChartPoint; readonly seriesName: string };
 }) => void;
 
-function getCycleChartKey(c: CycleChartPoint) {
-  return c.cntr;
-}
-
 const SingleSeries = React.memo(function SingleSeries({
   seriesName,
   points,
@@ -385,31 +381,24 @@ const SingleSeries = React.memo(function SingleSeries({
     [showTooltip, points, seriesName]
   );
 
-  const fromLeave = React.useCallback(
-    ({ x }: CycleChartPoint) => ({ x: xScale(x), y: yScale.range()[0] + 15, opacity: 0 }),
-    [xScale, yScale]
+  const springs = useSprings(
+    points.length,
+    points.map((pt) => ({
+      from: { x: xScale(pt.x), y: yScale.range()[0] + 15 },
+      to: { x: xScale(pt.x), y: yScale(pt.y) },
+    }))
   );
-  const enterUpdate = React.useCallback(
-    ({ x, y }: CycleChartPoint) => ({ x: xScale(x), y: yScale(y), opacity: 1 }),
-    [xScale, yScale]
-  );
-  const transition = useTransition(points, {
-    from: fromLeave,
-    leave: fromLeave,
-    enter: enterUpdate,
-    update: enterUpdate,
-    keys: getCycleChartKey,
-  }) as unknown as TransitionFn<CycleChartPoint, { x: number; y: number; opacity: number }>; // react-spring does not correctly infer the type of the returned object
+
   return (
     <g>
-      {transition(({ x, y, opacity }, _item, _t, idx) => (
+      {springs.map((pt, idx) => (
         <animated.circle
+          key={idx}
           className="bms-cycle-chart-pt"
           fill={color}
           r={5}
-          cx={x}
-          cy={y}
-          opacity={opacity}
+          cx={pt.x}
+          cy={pt.y}
           data-idx={idx}
           onClick={show}
         />
