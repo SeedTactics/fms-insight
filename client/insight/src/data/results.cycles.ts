@@ -386,11 +386,11 @@ export function stationMinutes(partCycles: L.List<PartCycleData>, cutoff: Date):
 export function plannedOperationSeries(
   s: FilteredStationCycles,
   forSingleMat: boolean
-): ReadonlyArray<{ readonly x: Date; readonly y: number }> {
+): ReadonlyArray<{ readonly x: Date; readonly y: number; readonly cntr: number }> {
   const arr = LazySeq.ofIterable(s.data)
     .flatMap(([, d]) => d)
     .filter((c) => c.material.length > 0)
-    .map((c) => ({ x: c.x, y: forSingleMat ? c.activeMinutes / c.material.length : c.activeMinutes }))
+    .map((c, idx) => ({ x: c.x, y: forSingleMat ? c.activeMinutes / c.material.length : c.activeMinutes, cntr: idx }))
     .toArray();
 
   arr.sort((a, b) => a.x.getTime() - b.x.getTime());

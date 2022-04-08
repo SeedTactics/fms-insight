@@ -65,9 +65,10 @@ import { LinePath } from "@visx/shape";
 import useMeasure from "react-use-measure";
 import { curveStepAfter } from "@visx/curve";
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
-import { useSpring, animated } from "react-spring";
+import { useSpring, animated, useTransition, TransitionFn } from "react-spring";
 
 export interface CycleChartPoint {
+  readonly cntr: number;
   readonly x: Date;
   readonly y: number;
 }
@@ -363,6 +364,10 @@ type ShowTooltipFunc = (a: {
   readonly tooltipData?: { readonly pt: CycleChartPoint; readonly seriesName: string };
 }) => void;
 
+function getCycleChartKey(c: CycleChartPoint) {
+  return c.cntr;
+}
+
 const SingleSeries = React.memo(function SingleSeries({
   seriesName,
   points,
@@ -391,16 +396,31 @@ const SingleSeries = React.memo(function SingleSeries({
     },
     [showTooltip, points, seriesName]
   );
+
+  const fromLeave = React.useCallback(
+    ({ x }: CycleChartPoint) => ({ x: xScale(x), y: yScale.range()[0] }),
+    [xScale, yScale]
+  );
+  const enterUpdate = React.useCallback(
+    ({ x, y }: CycleChartPoint) => ({ x: xScale(x), y: yScale(y) }),
+    [xScale, yScale]
+  );
+  const transition = useTransition(points, {
+    from: fromLeave,
+    leave: fromLeave,
+    enter: enterUpdate,
+    update: enterUpdate,
+    keys: getCycleChartKey,
+  }) as unknown as TransitionFn<CycleChartPoint, { x: number; y: number }>; // react-spring does not correctly infer the type of the returned object
   return (
     <g>
-      {points.map((s, idx) => (
-        <circle
-          key={idx}
+      {transition(({ x, y }, _item, _t, idx) => (
+        <animated.circle
           className="bms-cycle-chart-pt"
           fill={color}
           r={5}
-          cx={xScale(s.x)}
-          cy={yScale(s.y)}
+          cx={x}
+          cy={y}
           data-idx={idx}
           onClick={show}
         />
