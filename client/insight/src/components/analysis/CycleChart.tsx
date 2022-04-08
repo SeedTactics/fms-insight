@@ -65,6 +65,7 @@ import { LinePath } from "@visx/shape";
 import useMeasure from "react-use-measure";
 import { curveStepAfter } from "@visx/curve";
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
+import { useSpring, animated } from "react-spring";
 
 export interface CycleChartPoint {
   readonly x: Date;
@@ -315,14 +316,28 @@ const StatsSeries = React.memo(function StatsSeries({
   readonly median: { readonly low: number; readonly high: number } | null;
   readonly planned: ReadonlyArray<CycleChartPoint> | null;
 }) {
+  const medianSpring = useSpring({
+    to: {
+      x: xScale.range()[0],
+      y: median ? yScale(median.high) : yScale.range()[0],
+      width: xScale.range()[1] - xScale.range()[0],
+      height: median ? yScale(median.low) - yScale(median.high) : 0,
+    },
+    from: {
+      x: xScale.range()[0],
+      y: yScale.range()[0],
+      width: xScale.range()[1] - xScale.range()[0],
+      height: 0,
+    },
+  });
   return (
     <g>
       {median ? (
-        <rect
-          x={xScale.range()[0]}
-          y={yScale(median.high)}
-          width={xScale.range()[1] - xScale.range()[0]}
-          height={yScale(median.low) - yScale(median.high)}
+        <animated.rect
+          x={medianSpring.x}
+          y={medianSpring.y}
+          width={medianSpring.width}
+          height={medianSpring.height}
           fill={grey[700]}
           opacity={0.2}
           pointerEvents="none"
@@ -476,8 +491,8 @@ interface ChartMouseEventProps {
   readonly setYZoom: (r: YZoomRange) => void;
   readonly setXZoom: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly hideTooltip: () => void;
-  readonly highlightStart: { readonly x: number; readonly y: number } | null;
-  readonly setHighlightStart: (p: { readonly x: number; readonly y: number } | null) => void;
+  readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
+  readonly setHighlightStart: (p: { readonly x: number; readonly y: number; readonly nowMS: number } | null) => void;
 }
 
 const ChartMouseEvents = React.memo(function ChartMouseEvents({
@@ -497,7 +512,7 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
       const p = localPoint(e);
       if (p === null) return;
       setCurrent(null);
-      setHighlightStart({ x: p.x - marginLeft, y: p.y - marginTop });
+      setHighlightStart({ x: p.x - marginLeft, y: p.y - marginTop, nowMS: Date.now() });
       hideTooltip();
     },
     [setHighlightStart, hideTooltip]
@@ -515,15 +530,20 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
   const pointerUp = React.useCallback(
     (e: React.PointerEvent) => {
       if (highlightStart === null) return;
-      const p = localPoint(e);
-      if (p === null) return;
-      const timeStart = xScale.invert(highlightStart.x);
-      const timeEnd = xScale.invert(p.x - marginLeft);
-      const yStart = yScale.invert(highlightStart.y);
-      const yEnd = yScale.invert(p.y - marginTop);
+      if (Date.now() - highlightStart.nowMS > 500) {
+        const p = localPoint(e);
+        if (p !== null) {
+          const time1 = xScale.invert(highlightStart.x);
+          const time2 = xScale.invert(p.x - marginLeft);
+          const y1 = yScale.invert(highlightStart.y);
+          const y2 = yScale.invert(p.y - marginTop);
 
-      setYZoom({ y_low: yStart, y_high: yEnd });
-      setXZoom?.({ zoom: { start: timeStart, end: timeEnd } });
+          setYZoom(y1 < y2 ? { y_low: y1, y_high: y2 } : { y_low: y2, y_high: y1 });
+          setXZoom?.({
+            zoom: time1.getTime() < time2.getTime() ? { start: time1, end: time2 } : { start: time2, end: time1 },
+          });
+        }
+      }
 
       setHighlightStart(null);
       setCurrent(null);
@@ -664,7 +684,11 @@ export const CycleChart2 = React.memo(function CycleChart(props: CycleChartProps
     useTooltip<{ readonly pt: CycleChartPoint; readonly seriesName: string }>();
   const [yZoom, setYZoom] = React.useState<YZoomRange | null>(null);
   const [disabledSeries, adjustDisabled] = useImmer<ReadonlySet<string>>(new Set());
-  const [highlightStart, setHighlightStart] = React.useState<{ readonly x: number; readonly y: number } | null>(null);
+  const [highlightStart, setHighlightStart] = React.useState<{
+    readonly x: number;
+    readonly y: number;
+    readonly nowMS: number;
+  } | null>(null);
 
   // computed scales and values
   const [measureRef, bounds] = useMeasure();
