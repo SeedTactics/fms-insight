@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -31,19 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
+import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import { Card } from "@mui/material";
-import { CardContent } from "@mui/material";
-import { CardHeader } from "@mui/material";
-import { Select } from "@mui/material";
-import { MenuItem } from "@mui/material";
-import { Sankey, Hint } from "react-vis";
-import { Tooltip } from "@mui/material";
-import { IconButton } from "@mui/material";
 import ImportExport from "@mui/icons-material/ImportExport";
+import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
 
 import { PartIdenticon } from "../station-monitor/Material";
-import { SankeyNode, SankeyDiagram, inspectionDataToSankey } from "../../data/inspection-sankey";
+import { SankeyNode, inspectionDataToSankey, SankeyLink } from "../../data/inspection-sankey";
 
 import { PartAndInspType, InspectionLogEntry } from "../../cell-status/inspections";
 import { HashMap } from "prelude-ts";
@@ -51,93 +45,169 @@ import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 import { DataTableActionZoomType } from "./DataTable";
 import { useIsDemo } from "../routes";
+import useMeasure from "react-use-measure";
+import { Group } from "@visx/group";
+import { green, grey } from "@mui/material/colors";
+import { useTooltip, Tooltip as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
+import { localPoint } from "@visx/event";
 
-interface InspectionSankeyDiagramProps {
-  readonly sankey: SankeyDiagram;
-}
-
-// d3 adds some properties to each node
-interface D3SankeyNode extends SankeyNode {
-  readonly x0: number;
-  readonly y0: number;
-  readonly x1: number;
-  readonly y1: number;
-}
-
-// d3 adds some properties to each link
-interface D3Link {
-  readonly source: D3SankeyNode;
-  readonly target: D3SankeyNode;
+type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
+type LinkWithData = {
+  readonly source: NodeWithData;
+  readonly target: NodeWithData;
   readonly value: number;
+  readonly width: number;
+};
 
-  readonly index: number;
-  readonly x0: number;
-  readonly y0: number;
-  readonly x1: number;
-  readonly y1: number;
+const marginLeft = 20;
+const marginTop = 20;
+const marginRight = 120;
+const marginBottom = 20;
+
+type ShowTooltipFunc = (a: {
+  readonly tooltipLeft?: number;
+  readonly tooltipTop?: number;
+  readonly tooltipData?: LinkWithData;
+}) => void;
+
+function LinkDisplay({
+  link,
+  path,
+  strokeWidth,
+  showTooltip,
+  hideTooltip,
+}: {
+  readonly link: LinkWithData;
+  readonly path: string | null;
+  readonly strokeWidth: number;
+  readonly showTooltip: ShowTooltipFunc;
+  readonly hideTooltip: () => void;
+}) {
+  const [over, setOver] = React.useState(false);
+  if (path === null) return null;
+  function pointerOver(e: React.PointerEvent) {
+    const pt = localPoint(e);
+    if (pt === null) return;
+    showTooltip({ tooltipLeft: pt.x, tooltipTop: pt.y, tooltipData: link });
+    setOver(true);
+  }
+  function pointerOut() {
+    setOver(false);
+    hideTooltip();
+  }
+  return (
+    <path
+      d={path}
+      stroke={over ? green[600] : green[300]}
+      strokeWidth={strokeWidth}
+      opacity={0.2}
+      fill="none"
+      onPointerOver={pointerOver}
+      onPointerOut={pointerOut}
+    />
+  );
 }
 
-interface InspectionSankeyDiagramState {
-  readonly activeLink?: D3Link;
-  readonly chartHeight: number;
-  readonly chartWidth: number;
+function NodeDisplay({ node }: { readonly node: NodeWithData }) {
+  if (node.x1 === undefined || node.x0 === undefined || node.y1 === undefined || node.y0 === undefined) return null;
+  return (
+    <Group top={node.y0} left={node.x0}>
+      <rect width={node.x1 - node.x0} height={node.y1 - node.y0} fill={green[800]} opacity={0.8} stroke="none" />
+
+      <text x={18} y={(node.y1 - node.y0) / 2}>
+        {node.name}
+      </text>
+    </Group>
+  );
 }
 
-class InspectionSankeyDiagram extends React.PureComponent<InspectionSankeyDiagramProps, InspectionSankeyDiagramState> {
-  state: InspectionSankeyDiagramState = { chartHeight: 500, chartWidth: 600 };
+const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
+  data,
+  showTooltip,
+  hideTooltip,
+}: {
+  readonly data: ReadonlyArray<InspectionLogEntry>;
+  readonly showTooltip: ShowTooltipFunc;
+  readonly hideTooltip: () => void;
+}) {
+  const [measureRef, bounds] = useMeasure();
 
-  renderHint() {
-    const { activeLink } = this.state;
-    if (!activeLink) {
-      return;
-    }
+  const { nodes, links } = React.useMemo(() => {
+    const { nodes, links } = inspectionDataToSankey(data);
+    const generator = sankey<SankeyNode, SankeyLink>()
+      .nodeWidth(10)
+      .nodePadding(10)
+      .nodeAlign(sankeyJustify)
+      .extent([
+        [marginLeft, marginTop],
+        [bounds.width - marginRight, bounds.height - marginBottom - marginTop],
+      ]);
+    generator({ nodes, links });
+    return { nodes: nodes as NodeWithData[], links: links as unknown as LinkWithData[] };
+  }, [data, bounds]);
 
-    // calculate center x,y position of link for positioning of hint
-    const x = activeLink.source.x1 + (activeLink.target.x0 - activeLink.source.x1) / 2;
-    const y = activeLink.y0 - (activeLink.y0 - activeLink.y1) / 2;
+  const path = sankeyLinkHorizontal();
 
-    const hintValue = {
-      [`${activeLink.source.name} ➞ ${activeLink.target.name}`]: activeLink.value.toString() + " parts",
-    };
+  return (
+    <div ref={measureRef} style={{ height: "calc(100vh - 100px)", width: "100%" }}>
+      <svg width={bounds.width} height={bounds.height}>
+        <g>
+          {nodes.map((node, i) => (
+            <NodeDisplay key={i} node={node} />
+          ))}
+        </g>
+        <g>
+          {links.map((link, i) => (
+            <LinkDisplay
+              key={i}
+              link={link}
+              path={path(link)}
+              strokeWidth={Math.max(link.width ?? 1, 1)}
+              showTooltip={showTooltip}
+              hideTooltip={hideTooltip}
+            />
+          ))}
+        </g>
+      </svg>
+    </div>
+  );
+});
 
-    return <Hint x={x} y={y} value={hintValue} />;
-  }
+const LinkTooltip = React.memo(function LinkTooltip({
+  tooltipData,
+  tooltipTop,
+  tooltipLeft,
+}: {
+  readonly tooltipData: LinkWithData;
+  readonly tooltipTop: number | undefined;
+  readonly tooltipLeft: number | undefined;
+}) {
+  return (
+    <VisxTooltip
+      left={tooltipLeft}
+      top={tooltipTop}
+      style={{ ...defaultTooltipStyles, backgroundColor: grey[800], color: "white" }}
+    >
+      {tooltipData.source.name} ➞ {tooltipData.target.name}: {tooltipData.value} parts
+    </VisxTooltip>
+  );
+});
 
-  componentDidMount() {
-    this.setState({
-      chartHeight: window.innerHeight - 200,
-      chartWidth: window.innerWidth - 300,
-    });
-  }
-
-  render() {
-    // d3-sankey mutates nodes and links array, so create copy
-    return (
-      <Sankey
-        nodes={this.props.sankey.nodes.map((d) => ({ ...d }))}
-        links={this.props.sankey.links.map((l, idx) => ({
-          ...l,
-          opacity: this.state.activeLink && this.state.activeLink.index === idx ? 0.6 : 0.3,
-        }))}
-        width={this.state.chartWidth}
-        height={this.state.chartHeight}
-        onLinkMouseOver={(link: D3Link) => this.setState({ activeLink: link })}
-        onLinkMouseOut={() => this.setState({ activeLink: undefined })}
-      >
-        {this.state.activeLink ? this.renderHint() : undefined}
-      </Sankey>
-    );
-  }
-}
-
-// use purecomponent to only recalculate the SankeyDiagram when the InspectionData changes.
-class ConvertInspectionDataToSankey extends React.PureComponent<{
-  data: ReadonlyArray<InspectionLogEntry>;
-}> {
-  render() {
-    return <InspectionSankeyDiagram sankey={inspectionDataToSankey(this.props.data)} />;
-  }
-}
+const InspectionDiagram = React.memo(function InspectionDiagram({
+  data,
+}: {
+  readonly data: ReadonlyArray<InspectionLogEntry>;
+}) {
+  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<LinkWithData>();
+  return (
+    <div style={{ position: "relative" }}>
+      <SankeyDisplay data={data} showTooltip={showTooltip} hideTooltip={hideTooltip} />
+      {tooltipData ? (
+        <LinkTooltip tooltipData={tooltipData} tooltipLeft={tooltipLeft} tooltipTop={tooltipTop} />
+      ) : undefined}
+    </div>
+  );
+});
 
 export interface InspectionSankeyProps {
   readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
@@ -216,7 +286,7 @@ export function InspectionSankey(props: InspectionSankeyProps) {
               displayEmpty
               style={{ marginRight: "1em", marginLeft: "1em" }}
               value={selectedInspectType || ""}
-              onChange={(e) => setSelectedInspectType(e.target.value as string)}
+              onChange={(e) => setSelectedInspectType(e.target.value)}
             >
               {selectedInspectType ? undefined : (
                 <MenuItem key={0} value="">
@@ -235,7 +305,7 @@ export function InspectionSankey(props: InspectionSankeyProps) {
                 autoWidth
                 displayEmpty
                 value={selectedPart || ""}
-                onChange={(e) => setSelectedPart(e.target.value as string)}
+                onChange={(e) => setSelectedPart(e.target.value)}
               >
                 {selectedPart ? undefined : (
                   <MenuItem key={0} value="">
@@ -257,21 +327,19 @@ export function InspectionSankey(props: InspectionSankeyProps) {
         subheader={props.subtitle}
       />
       <CardContent>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          {curData ? (
-            showTable ? (
-              <InspectionDataTable
-                zoomType={props.zoomType}
-                points={curData}
-                default_date_range={props.default_date_range}
-                extendDateRange={props.extendDateRange}
-                hideOpenDetailColumn={props.hideOpenDetailColumn}
-              />
-            ) : (
-              <ConvertInspectionDataToSankey data={curData} />
-            )
-          ) : undefined}
-        </div>
+        {curData ? (
+          showTable ? (
+            <InspectionDataTable
+              zoomType={props.zoomType}
+              points={curData}
+              default_date_range={props.default_date_range}
+              extendDateRange={props.extendDateRange}
+              hideOpenDetailColumn={props.hideOpenDetailColumn}
+            />
+          ) : (
+            <InspectionDiagram data={curData} />
+          )
+        ) : undefined}
       </CardContent>
     </Card>
   );

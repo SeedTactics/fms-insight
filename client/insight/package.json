@@ -30,6 +30,7 @@
     "@visx/tooltip": "^2.8.0",
     "@visx/xychart": "^2.9.0",
     "copy-to-clipboard": "^3.3.1",
+    "d3-sankey": "^0.12.3",
     "date-fns": "^2.28.0",
     "highlight.js": "^11.4.0",
     "immer": "^9.0.12",
@@ -57,6 +58,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^6.0.0-beta.0",
+    "@types/d3-sankey": "^0.11.2",
     "@types/node": "^17.0.21",
     "@types/react": "^17.0.40",
     "@types/react-beautiful-dnd": "^13.1.2",
