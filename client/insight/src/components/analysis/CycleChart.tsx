@@ -351,7 +351,6 @@ const StatsSeries = React.memo(function StatsSeries({
 });
 
 type ShowTooltipFunc = (a: {
-  readonly tooltipOpen: boolean;
   readonly tooltipLeft?: number;
   readonly tooltipTop?: number;
   readonly tooltipData?: { readonly pt: CycleChartPoint; readonly seriesName: string };
@@ -377,7 +376,6 @@ const SingleSeries = React.memo(function SingleSeries({
       const idxS = (e.target as SVGCircleElement).dataset.idx;
       if (idxS === undefined) return;
       showTooltip({
-        tooltipOpen: true,
         tooltipLeft: p.x,
         tooltipTop: p.y,
         tooltipData: { pt: points[parseInt(idxS)], seriesName },

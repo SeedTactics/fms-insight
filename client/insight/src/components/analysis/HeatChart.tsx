@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -31,18 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { format } from "date-fns";
-import { HeatmapSeries, XAxis, YAxis, Hint, FlexibleWidthXYPlot, LabelSeries } from "react-vis";
-import { Card } from "@mui/material";
-import { CardContent } from "@mui/material";
-import { CardHeader } from "@mui/material";
-import { Select } from "@mui/material";
-import { MenuItem } from "@mui/material";
-import { Tooltip } from "@mui/material";
-import { IconButton } from "@mui/material";
+import { addDays, format } from "date-fns";
+import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Stack } from "@mui/material";
 import ImportExport from "@mui/icons-material/ImportExport";
+import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
 
 import { LazySeq } from "../../util/lazyseq";
+import { chartTheme } from "../../util/chart-colors";
+import { Axis } from "@visx/axis";
+import useMeasure from "react-use-measure";
+import { Group } from "@visx/group";
+import { useTooltip, Tooltip as VisxTooltip } from "@visx/tooltip";
+import { localPoint } from "@visx/event";
+
+export type HeatChartYType = "Station" | "Part";
 
 export interface HeatChartPoint {
   readonly x: Date;
@@ -51,131 +53,341 @@ export interface HeatChartPoint {
   readonly label: string;
 }
 
-interface HeatChartProps {
+export interface HeatChartProps {
   readonly points: ReadonlyArray<HeatChartPoint>;
-  readonly y_title: string;
-  readonly row_count: number;
+  readonly y_title: HeatChartYType;
+  readonly dateRange: [Date, Date];
   readonly label_title: string;
 }
 
-interface HeatChartState {
-  readonly selected_point?: HeatChartPoint;
+interface HeatChartDimensions {
+  readonly height: number;
+  readonly width: number;
 }
 
-const formatHint = (yTitle: string, labelTitle: string) => (p: HeatChartPoint) => {
-  return [
-    { title: yTitle, value: p.y },
-    { title: "Day", value: p.x.toDateString() },
-    { title: labelTitle, value: p.label },
-  ];
-};
-
-function tick_format(d: Date | string): string {
-  if (typeof d === "string") {
-    const ddd = new Date(d);
-    return format(ddd, "iii MMM d");
-  } else {
-    return format(d, "iii MMM d");
-  }
+interface HeatChartScales {
+  readonly xScale: PickD3Scale<"band", number, Date>;
+  readonly yScale: PickD3Scale<"band", number, string>;
+  readonly colorScale: PickD3Scale<"linear", string, string>;
 }
 
-class HeatChart extends React.PureComponent<HeatChartProps, HeatChartState> {
-  state: HeatChartState = {};
+const marginLeft = 50;
+const marginBottom = 20;
+const marginTop = 10;
+const marginRight = 2;
+const color1 = "#E8F5E9";
+const color2 = "#1B5E20";
 
-  render() {
-    return (
-      <FlexibleWidthXYPlot
-        height={this.props.row_count * 75}
-        xType="ordinal"
-        yType="ordinal"
-        colorRange={["#E8F5E9", "#1B5E20"]}
-        margin={{ bottom: 60, left: 100 }}
-      >
-        <XAxis tickFormat={tick_format} tickLabelAngle={-45} />
-        <YAxis />
-        <HeatmapSeries
-          data={this.props.points}
-          onValueMouseOver={(pt: HeatChartPoint) => this.setState({ selected_point: pt })}
-          onValueMouseOut={() => this.setState({ selected_point: undefined })}
-          style={{
-            stroke: "white",
-            strokeWidth: "2px",
-            rectStyle: {
-              rx: 10,
-              ry: 10,
-            },
-          }}
+function useScales({
+  yType,
+  dateRange,
+  containerWidth,
+  points,
+}: {
+  readonly yType: HeatChartYType;
+  readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly dateRange: [Date, Date];
+  readonly containerWidth: number | null | undefined;
+}): HeatChartDimensions & HeatChartScales {
+  const width = containerWidth === null || containerWidth === undefined || containerWidth === 0 ? 400 : containerWidth;
+
+  const xMax = width - marginLeft - marginRight;
+
+  const xScale = React.useMemo(() => {
+    const xValues: Array<Date> = [];
+    if (dateRange[1] < dateRange[0]) {
+      // should never happen, just do something in case
+      xValues.push(dateRange[0]);
+    } else {
+      let d = dateRange[0];
+      while (d < dateRange[1]) {
+        xValues.push(d);
+        d = addDays(d, 1);
+      }
+    }
+    return scaleBand({
+      domain: xValues,
+      range: [0, xMax],
+      align: 0,
+      padding: 0.05,
+    });
+  }, [dateRange[0], dateRange[1], xMax]);
+
+  const { yScale, height, colorScale } = React.useMemo(() => {
+    const yValues = new Set<string>();
+    for (const pt of points) {
+      yValues.add(pt.y);
+    }
+
+    const yMax = 60 * yValues.size;
+    const height = yMax + marginTop + marginBottom;
+    const yScale = scaleBand({
+      domain: Array.from(yValues).sort((a, b) => a.localeCompare(b)),
+      range: [0, yMax],
+      align: 0,
+      padding: 0.05,
+    });
+
+    let colorScale: PickD3Scale<"linear", string, string>;
+    if (yType === "Station") {
+      colorScale = scaleLinear({
+        domain: [0, 1],
+        range: [color1, color2],
+      });
+    } else {
+      const maxCnt = LazySeq.ofIterable(points)
+        .maxOn((pt) => pt.color)
+        .map((x) => x.color)
+        .getOrElse(1);
+      colorScale = scaleLinear({
+        domain: [0, maxCnt],
+        range: [color1, color2],
+      });
+    }
+
+    return { yScale, height, colorScale };
+  }, [points]);
+
+  return { height, width, xScale, yScale, colorScale };
+}
+
+const HeatAxis = React.memo(function HeatAxis({ xScale, yScale }: HeatChartScales) {
+  return (
+    <>
+      <Axis
+        scale={xScale}
+        top={yScale.range()[1]}
+        orientation="bottom"
+        numTicks={15}
+        tickFormat={(d) => format(d, "MMM d")}
+        labelProps={chartTheme.axisStyles.y.left.axisLabel}
+        stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
+        strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}
+        tickLength={chartTheme.axisStyles.x.bottom.tickLength}
+        tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
+        tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
+      />
+      <Axis
+        scale={yScale}
+        orientation="left"
+        left={xScale.range()[0]}
+        tickValues={yScale.domain()}
+        labelProps={chartTheme.axisStyles.y.left.axisLabel}
+        stroke={chartTheme.axisStyles.y.left.axisLine.stroke}
+        strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
+        tickLength={chartTheme.axisStyles.y.left.tickLength}
+        tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
+        tickLabelProps={() => ({ ...chartTheme.axisStyles.y.left.tickLabel, width: marginLeft })}
+      />
+    </>
+  );
+});
+
+type ShowTooltipFunc = (a: {
+  readonly tooltipLeft?: number;
+  readonly tooltipTop?: number;
+  readonly tooltipData?: HeatChartPoint;
+}) => void;
+
+const HeatSeries = React.memo(function HeatSeries({
+  points,
+  xScale,
+  yScale,
+  colorScale,
+  showTooltip,
+  hideTooltip,
+}: {
+  readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly showTooltip: ShowTooltipFunc;
+  readonly hideTooltip: () => void;
+} & HeatChartScales) {
+  const hideRef = React.useRef<number | null>(null);
+  const pointerEnter = React.useCallback(
+    (e: React.PointerEvent<SVGRectElement>) => {
+      const pt = localPoint(e);
+      if (pt === null) return;
+      if (hideRef.current !== null) {
+        clearTimeout(hideRef.current);
+        hideRef.current = null;
+      }
+      const idxS = (e.target as SVGRectElement).dataset.idx;
+      if (idxS === undefined) return;
+      const heatPoint = points[parseInt(idxS)];
+      showTooltip({ tooltipLeft: pt.x, tooltipTop: pt.y, tooltipData: heatPoint });
+    },
+    [points, showTooltip]
+  );
+
+  const pointerLeave = React.useCallback(() => {
+    if (hideRef.current === null) {
+      hideRef.current = window.setTimeout(() => {
+        hideRef.current = null;
+        hideTooltip();
+      }, 100);
+    }
+  }, [showTooltip]);
+
+  return (
+    <g>
+      {points.map((pt, idx) => {
+        return (
+          <rect
+            key={idx}
+            data-idx={idx}
+            x={xScale(pt.x) ?? 0}
+            width={xScale.bandwidth()}
+            y={yScale(pt.y) ?? 0}
+            height={yScale.bandwidth()}
+            rx={6}
+            fill={colorScale(pt.color)}
+            onPointerEnter={pointerEnter}
+            onPointerLeave={pointerLeave}
+          />
+        );
+      })}
+    </g>
+  );
+});
+
+const HeatTooltip = React.memo(function HeatTooltip({
+  yType,
+  seriesLabel,
+  tooltipData,
+  tooltipLeft,
+  tooltipTop,
+}: {
+  yType: HeatChartYType;
+  seriesLabel: string;
+  tooltipData: HeatChartPoint;
+  tooltipLeft: number | undefined;
+  tooltipTop: number | undefined;
+}) {
+  return (
+    <VisxTooltip left={tooltipLeft} top={tooltipTop}>
+      <Stack direction="column" spacing={0.6}>
+        <div>
+          {yType}: {tooltipData.y}
+        </div>
+        <div>Day: {tooltipData.x.toDateString()}</div>
+        <div>
+          {seriesLabel}: {tooltipData.label}
+        </div>
+      </Stack>
+    </VisxTooltip>
+  );
+});
+
+const HeatChart = React.memo(function HeatChart(props: HeatChartProps) {
+  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<HeatChartPoint>();
+
+  const [measureRef, bounds] = useMeasure();
+  const { width, height, xScale, yScale, colorScale } = useScales({
+    yType: props.y_title,
+    points: props.points,
+    dateRange: props.dateRange,
+    containerWidth: bounds?.width,
+  });
+
+  const pointerLeave = React.useCallback(() => {
+    hideTooltip();
+  }, [hideTooltip]);
+
+  return (
+    <div style={{ position: "relative" }} ref={measureRef} onPointerLeave={pointerLeave}>
+      <svg width={width} height={height}>
+        <Group left={marginLeft} top={marginTop}>
+          <HeatSeries
+            points={props.points}
+            xScale={xScale}
+            yScale={yScale}
+            colorScale={colorScale}
+            showTooltip={showTooltip}
+            hideTooltip={hideTooltip}
+          />
+          <HeatAxis xScale={xScale} yScale={yScale} colorScale={colorScale} />
+        </Group>
+      </svg>
+      {tooltipData ? (
+        <HeatTooltip
+          yType={props.y_title}
+          seriesLabel={props.label_title}
+          tooltipData={tooltipData}
+          tooltipLeft={tooltipLeft}
+          tooltipTop={tooltipTop}
         />
-        {this.state.selected_point === undefined ? undefined : (
-          <Hint value={this.state.selected_point} format={formatHint(this.props.y_title, this.props.label_title)} />
-        )}
-      </FlexibleWidthXYPlot>
-    );
-  }
-}
+      ) : undefined}
+    </div>
+  );
+});
 
-export interface SelectableHeatChartProps<T extends string> {
+//--------------------------------------------------------------------------------
+// Selection and Card
+//--------------------------------------------------------------------------------
+
+export interface SelectableHeatCardProps<T extends string> {
   readonly icon: JSX.Element;
   readonly card_label: string;
-  readonly y_title: string;
-  readonly label_title: string;
-  readonly cur_selected: T;
-  readonly options: ReadonlyArray<T>;
-  readonly setSelected?: (p: T) => void;
   readonly onExport: () => void;
 
-  readonly points: ReadonlyArray<HeatChartPoint>;
+  readonly cur_selected: T;
+  readonly setSelected?: (p: T) => void;
+  readonly options: ReadonlyArray<T>;
 }
 
-// https://github.com/uber/react-vis/issues/1092
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(LabelSeries as any).propTypes = {};
+function CardTitle<T extends string>(props: SelectableHeatCardProps<T>) {
+  const setSelected = props.setSelected;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+      {props.icon}
+      <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
+      <div style={{ flexGrow: 1 }} />
+      <Tooltip title="Copy to Clipboard">
+        <IconButton onClick={props.onExport} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }} size="large">
+          <ImportExport />
+        </IconButton>
+      </Tooltip>
+      {setSelected ? (
+        <Select
+          name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
+          autoWidth
+          displayEmpty
+          value={props.cur_selected}
+          onChange={(e) => setSelected(e.target.value as T)}
+        >
+          {props.options.map((v, idx) => (
+            <MenuItem key={idx} value={v}>
+              {v}
+            </MenuItem>
+          ))}
+        </Select>
+      ) : undefined}
+    </div>
+  );
+}
+
+export type SelectableHeatChartProps<T extends string> = HeatChartProps & SelectableHeatCardProps<T>;
 
 export function SelectableHeatChart<T extends string>(props: SelectableHeatChartProps<T>) {
-  const setSelected = props.setSelected;
   return (
     <Card raised>
       <CardHeader
         title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            {props.icon}
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
-            <div style={{ flexGrow: 1 }} />
-            <Tooltip title="Copy to Clipboard">
-              <IconButton
-                onClick={props.onExport}
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                size="large"
-              >
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-            {setSelected ? (
-              <Select
-                name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
-                autoWidth
-                displayEmpty
-                value={props.cur_selected}
-                onChange={(e) => setSelected(e.target.value as T)}
-              >
-                {props.options.map((v, idx) => (
-                  <MenuItem key={idx} value={v}>
-                    {v}
-                  </MenuItem>
-                ))}
-              </Select>
-            ) : undefined}
-          </div>
+          <CardTitle
+            icon={props.icon}
+            card_label={props.card_label}
+            setSelected={props.setSelected}
+            cur_selected={props.cur_selected}
+            onExport={props.onExport}
+            options={props.options}
+          />
         }
       />
       <CardContent>
         <HeatChart
           points={props.points}
           y_title={props.y_title}
+          dateRange={props.dateRange}
           label_title={props.label_title}
-          row_count={LazySeq.ofIterable(props.points)
-            .toSet((p) => p.y)
-            .length()}
         />
       </CardContent>
     </Card>
