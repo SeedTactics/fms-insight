@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Grid } from "@mui/material";
+import { Box, Grid } from "@mui/material";
 import { Table } from "@mui/material";
 
 import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";
@@ -52,51 +52,43 @@ const actualOeeColor = seriesColor(0, 2);
 const plannedOeeColor = seriesColor(1, 2);
 
 export function OEEChart(props: OEEProps) {
-  const [chartHeight, setChartHeight] = React.useState(300);
-  React.useEffect(() => {
-    setChartHeight(window.innerHeight / 2 - 200);
-  }, []);
-
   return (
     <Grid container>
       {props.points.map((series, idx) => (
         <Grid item xs={12} md={6} key={idx}>
           <div>
-            <XYChart
-              height={chartHeight}
-              xScale={{ type: "band" }}
-              yScale={{ type: "linear", domain: [0, 24] }}
-              theme={chartTheme}
-            >
-              <AnimatedAxis orientation="bottom" />
-              <AnimatedAxis orientation="left" tickValues={[0, 8, 16, 24]} />
-              <AnimatedBarGroup>
-                <AnimatedBarSeries
-                  data={series.points as OEEBarPoint[]}
-                  dataKey="Actual"
-                  xAccessor={(p) => p.x}
-                  yAccessor={(p) => p.y}
-                  colorAccessor={() => actualOeeColor}
+            <Box sx={{ height: "calc(100vh / 2 - 200px)" }}>
+              <XYChart xScale={{ type: "band" }} yScale={{ type: "linear", domain: [0, 24] }} theme={chartTheme}>
+                <AnimatedAxis orientation="bottom" />
+                <AnimatedAxis orientation="left" tickValues={[0, 8, 16, 24]} />
+                <AnimatedBarGroup>
+                  <AnimatedBarSeries
+                    data={series.points as OEEBarPoint[]}
+                    dataKey="Actual"
+                    xAccessor={(p) => p.x}
+                    yAccessor={(p) => p.y}
+                    colorAccessor={() => actualOeeColor}
+                  />
+                  <AnimatedBarSeries
+                    data={series.points as OEEBarPoint[]}
+                    dataKey="Planned"
+                    xAccessor={(p) => p.x}
+                    yAccessor={(p) => p.planned}
+                    colorAccessor={() => plannedOeeColor}
+                  />
+                </AnimatedBarGroup>
+                <Tooltip<OEEBarPoint>
+                  snapTooltipToDatumX
+                  renderTooltip={({ tooltipData }) => (
+                    <div>
+                      <div>{tooltipData?.nearestDatum?.datum?.x}</div>
+                      <div>Actual Hours: {tooltipData?.nearestDatum?.datum?.y?.toFixed(1)}</div>
+                      <div>Planned Hours: {tooltipData?.nearestDatum?.datum?.planned?.toFixed(1)}</div>
+                    </div>
+                  )}
                 />
-                <AnimatedBarSeries
-                  data={series.points as OEEBarPoint[]}
-                  dataKey="Planned"
-                  xAccessor={(p) => p.x}
-                  yAccessor={(p) => p.planned}
-                  colorAccessor={() => plannedOeeColor}
-                />
-              </AnimatedBarGroup>
-              <Tooltip<OEEBarPoint>
-                snapTooltipToDatumX
-                renderTooltip={({ tooltipData }) => (
-                  <div>
-                    <div>{tooltipData?.nearestDatum?.datum?.x}</div>
-                    <div>Actual Hours: {tooltipData?.nearestDatum?.datum?.y?.toFixed(1)}</div>
-                    <div>Planned Hours: {tooltipData?.nearestDatum?.datum?.planned?.toFixed(1)}</div>
-                  </div>
-                )}
-              />
-            </XYChart>
+              </XYChart>
+            </Box>
             <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-evenly" }}>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <div style={{ width: "14px", height: "14px", backgroundColor: actualOeeColor }} />

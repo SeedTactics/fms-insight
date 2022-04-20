@@ -35,11 +35,11 @@ import { addDays, format } from "date-fns";
 import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Stack } from "@mui/material";
 import ImportExport from "@mui/icons-material/ImportExport";
 import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
+import { ParentSize } from "@visx/responsive";
 
 import { LazySeq } from "../../util/lazyseq";
 import { chartTheme } from "../../util/chart-colors";
 import { Axis } from "@visx/axis";
-import useMeasure from "react-use-measure";
 import { Group } from "@visx/group";
 import { useTooltip, Tooltip as VisxTooltip } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
@@ -277,15 +277,14 @@ const HeatTooltip = React.memo(function HeatTooltip({
   );
 });
 
-const HeatChart = React.memo(function HeatChart(props: HeatChartProps) {
+const HeatChart = React.memo(function HeatChart(props: HeatChartProps & { readonly parentWidth: number }) {
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<HeatChartPoint>();
 
-  const [measureRef, bounds] = useMeasure();
   const { width, height, xScale, yScale, colorScale } = useScales({
     yType: props.y_title,
     points: props.points,
     dateRange: props.dateRange,
-    containerWidth: bounds?.width,
+    containerWidth: props.parentWidth,
   });
 
   const pointerLeave = React.useCallback(() => {
@@ -293,7 +292,7 @@ const HeatChart = React.memo(function HeatChart(props: HeatChartProps) {
   }, [hideTooltip]);
 
   return (
-    <div style={{ position: "relative" }} ref={measureRef} onPointerLeave={pointerLeave}>
+    <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
       <svg width={width} height={height}>
         <Group left={marginLeft} top={marginTop}>
           <HeatSeries
@@ -383,12 +382,17 @@ export function SelectableHeatChart<T extends string>(props: SelectableHeatChart
         }
       />
       <CardContent>
-        <HeatChart
-          points={props.points}
-          y_title={props.y_title}
-          dateRange={props.dateRange}
-          label_title={props.label_title}
-        />
+        <ParentSize>
+          {(parent) => (
+            <HeatChart
+              points={props.points}
+              y_title={props.y_title}
+              dateRange={props.dateRange}
+              label_title={props.label_title}
+              parentWidth={parent.width}
+            />
+          )}
+        </ParentSize>
       </CardContent>
     </Card>
   );

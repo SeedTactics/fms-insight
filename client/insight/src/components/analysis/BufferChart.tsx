@@ -42,7 +42,7 @@ import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers";
-import { ToggleButton } from "@mui/material";
+import { Box, ToggleButton } from "@mui/material";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;
@@ -71,42 +71,39 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
     [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours]
   );
 
-  const [chartHeight, setChartHeight] = React.useState(500);
-  React.useEffect(() => {
-    setChartHeight(window.innerHeight - 200);
-  }, []);
-
   const emptySeries = series.findIndex((s) => !disabledBuffers.contains(s.label)) < 0;
 
   return (
     <div>
-      <XYChart height={chartHeight} xScale={{ type: "time" }} yScale={{ type: "linear" }} theme={chartTheme}>
-        <AnimatedAxis orientation="bottom" />
-        <AnimatedAxis orientation="left" label="Buffer Size" />
-        <Grid />
-        {series.map((s, idx) =>
-          disabledBuffers.contains(s.label) ? undefined : (
+      <Box sx={{ height: "calc(100vh - 220px)" }}>
+        <XYChart xScale={{ type: "time" }} yScale={{ type: "linear" }} theme={chartTheme}>
+          <AnimatedAxis orientation="bottom" />
+          <AnimatedAxis orientation="left" label="Buffer Size" />
+          <Grid />
+          {series.map((s, idx) =>
+            disabledBuffers.contains(s.label) ? undefined : (
+              <AnimatedLineSeries
+                key={s.label}
+                dataKey={s.label}
+                data={s.points as BufferChartPoint[]}
+                stroke={seriesColor(idx, series.length)}
+                curve={curveCatmullRom}
+                xAccessor={(p) => p.x}
+                yAccessor={(p) => p.y}
+              />
+            )
+          )}
+          {emptySeries ? (
             <AnimatedLineSeries
-              key={s.label}
-              dataKey={s.label}
-              data={s.points as BufferChartPoint[]}
-              stroke={seriesColor(idx, series.length)}
-              curve={curveCatmullRom}
-              xAccessor={(p) => p.x}
-              yAccessor={(p) => p.y}
+              dataKey="__emptyInvisibleSeries"
+              stroke="transparent"
+              data={defaultDateRange}
+              xAccessor={(p) => p}
+              yAccessor={(_) => 1}
             />
-          )
-        )}
-        {emptySeries ? (
-          <AnimatedLineSeries
-            dataKey="__emptyInvisibleSeries"
-            stroke="transparent"
-            data={defaultDateRange}
-            xAccessor={(p) => p}
-            yAccessor={(_) => 1}
-          />
-        ) : undefined}
-      </XYChart>
+          ) : undefined}
+        </XYChart>
+      </Box>
       <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-around" }}>
         {series.map((s, idx) => (
           <ToggleButton

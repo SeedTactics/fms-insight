@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton } from "@mui/material";
+import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Box } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ImportExport from "@mui/icons-material/ImportExport";
 import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
@@ -45,11 +45,11 @@ import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 import { DataTableActionZoomType } from "./DataTable";
 import { useIsDemo } from "../routes";
-import useMeasure from "react-use-measure";
 import { Group } from "@visx/group";
 import { green, grey } from "@mui/material/colors";
 import { useTooltip, Tooltip as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
+import { ParentSize } from "@visx/responsive";
 
 type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
 type LinkWithData = {
@@ -125,13 +125,15 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
   data,
   showTooltip,
   hideTooltip,
+  parentHeight,
+  parentWidth,
 }: {
   readonly data: ReadonlyArray<InspectionLogEntry>;
+  readonly parentHeight: number;
+  readonly parentWidth: number;
   readonly showTooltip: ShowTooltipFunc;
   readonly hideTooltip: () => void;
 }) {
-  const [measureRef, bounds] = useMeasure();
-
   const { nodes, links } = React.useMemo(() => {
     const { nodes, links } = inspectionDataToSankey(data);
     const generator = sankey<SankeyNode, SankeyLink>()
@@ -140,36 +142,34 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
       .nodeAlign(sankeyJustify)
       .extent([
         [marginLeft, marginTop],
-        [bounds.width - marginRight, bounds.height - marginBottom - marginTop],
+        [parentWidth - marginRight, parentHeight - marginBottom - marginTop],
       ]);
     generator({ nodes, links });
     return { nodes: nodes as NodeWithData[], links: links as unknown as LinkWithData[] };
-  }, [data, bounds]);
+  }, [data, parentWidth, parentHeight]);
 
   const path = sankeyLinkHorizontal();
 
   return (
-    <div ref={measureRef} style={{ height: "calc(100vh - 100px)", width: "100%" }}>
-      <svg width={bounds.width} height={bounds.height}>
-        <g>
-          {nodes.map((node, i) => (
-            <NodeDisplay key={i} node={node} />
-          ))}
-        </g>
-        <g>
-          {links.map((link, i) => (
-            <LinkDisplay
-              key={i}
-              link={link}
-              path={path(link)}
-              strokeWidth={Math.max(link.width ?? 1, 1)}
-              showTooltip={showTooltip}
-              hideTooltip={hideTooltip}
-            />
-          ))}
-        </g>
-      </svg>
-    </div>
+    <svg width={parentWidth} height={parentHeight}>
+      <g>
+        {nodes.map((node, i) => (
+          <NodeDisplay key={i} node={node} />
+        ))}
+      </g>
+      <g>
+        {links.map((link, i) => (
+          <LinkDisplay
+            key={i}
+            link={link}
+            path={path(link)}
+            strokeWidth={Math.max(link.width ?? 1, 1)}
+            showTooltip={showTooltip}
+            hideTooltip={hideTooltip}
+          />
+        ))}
+      </g>
+    </svg>
   );
 });
 
@@ -201,7 +201,19 @@ const InspectionDiagram = React.memo(function InspectionDiagram({
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<LinkWithData>();
   return (
     <div style={{ position: "relative" }}>
-      <SankeyDisplay data={data} showTooltip={showTooltip} hideTooltip={hideTooltip} />
+      <Box sx={{ height: "calc(100vh - 100px)", width: "100%" }}>
+        <ParentSize>
+          {(parent) => (
+            <SankeyDisplay
+              data={data}
+              showTooltip={showTooltip}
+              hideTooltip={hideTooltip}
+              parentHeight={parent.height}
+              parentWidth={parent.width}
+            />
+          )}
+        </ParentSize>
+      </Box>
       {tooltipData ? (
         <LinkTooltip tooltipData={tooltipData} tooltipLeft={tooltipLeft} tooltipTop={tooltipTop} />
       ) : undefined}

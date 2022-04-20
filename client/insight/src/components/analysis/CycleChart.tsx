@@ -43,6 +43,7 @@ import {
   styled,
   ToggleButton,
   Stack,
+  Box,
 } from "@mui/material";
 import ZoomIn from "@mui/icons-material/ZoomIn";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times";
@@ -53,9 +54,9 @@ import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { Group } from "@visx/group";
 import { useTooltip, TooltipWithBounds as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
-import useMeasure from "react-use-measure";
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
 import { useSpring, useSprings, animated } from "react-spring";
+import { ParentSize } from "@visx/responsive";
 
 export interface CycleChartPoint {
   readonly cntr: number;
@@ -143,17 +144,15 @@ function useScales({
   default_date_range,
   current_date_zoom,
   containerWidth,
+  containerHeight,
 }: {
   readonly points: HashMap<string, ReadonlyArray<CycleChartPoint>>;
   readonly yZoom: YZoomRange | null;
-  readonly containerWidth: number | null | undefined;
+  readonly containerWidth: number;
+  readonly containerHeight: number;
 } & ScaleZoomProps): CycleChartDimensions & CycleChartScales {
-  const [height, setChartHeight] = React.useState(window.innerHeight - 250);
-  React.useEffect(() => {
-    setChartHeight(window.innerHeight - 250);
-  }, []);
-
-  const width = containerWidth === null || containerWidth === undefined || containerWidth === 0 ? 400 : containerWidth;
+  const width = containerWidth === 0 ? 400 : containerWidth;
+  const height = containerHeight === 0 ? 400 : containerHeight;
 
   const xMax = width - marginLeft - marginRight;
   const yMax = height - marginTop - marginBottom;
@@ -681,6 +680,61 @@ const ChartTooltip = React.memo(function ChartTooltip({
   );
 });
 
+function CycleChartSvg(
+  props: CycleChartProps &
+    DataToPlot & {
+      readonly containerHeight: number;
+      readonly containerWidth: number;
+      readonly yZoom: YZoomRange | null;
+      readonly setYZoom: (a: React.SetStateAction<YZoomRange | null>) => void;
+      readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
+      readonly setHighlightStart: (
+        p: { readonly x: number; readonly y: number; readonly nowMS: number } | null
+      ) => void;
+      readonly showTooltip: ShowTooltipFunc;
+      readonly hideTooltip: () => void;
+      readonly disabledSeries: ReadonlySet<string>;
+    }
+) {
+  // computed scales and values
+  const { width, height, xScale, yScale } = useScales({
+    points: props.points,
+    yZoom: props.yZoom,
+    default_date_range: props.default_date_range,
+    current_date_zoom: props.current_date_zoom,
+    set_date_zoom_range: props.set_date_zoom_range,
+    containerWidth: props.containerWidth,
+    containerHeight: props.containerHeight,
+  });
+
+  return (
+    <svg width={width} height={height}>
+      <Group left={marginLeft} top={marginTop}>
+        <AxisAndGrid xScale={xScale} yScale={yScale} />
+        <StatsSeries median={props.median} plannedMinutes={props.plannedTimeMinutes} xScale={xScale} yScale={yScale} />
+        <ChartMouseEvents
+          setYZoom={props.setYZoom}
+          setXZoom={props.set_date_zoom_range}
+          hideTooltip={props.hideTooltip}
+          xScale={xScale}
+          yScale={yScale}
+          highlightStart={props.highlightStart}
+          setHighlightStart={props.setHighlightStart}
+        />
+        <NoPointerEvents $noPtrEvents={props.highlightStart !== null}>
+          <AllPointsSeries
+            series={props.series}
+            disabledSeries={props.disabledSeries}
+            xScale={xScale}
+            yScale={yScale}
+            showTooltip={props.showTooltip}
+          />
+        </NoPointerEvents>
+      </Group>
+    </svg>
+  );
+}
+
 export const CycleChart = React.memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } =
@@ -693,16 +747,6 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
     readonly nowMS: number;
   } | null>(null);
 
-  // computed scales and values
-  const [measureRef, bounds] = useMeasure();
-  const { width, height, xScale, yScale } = useScales({
-    points: props.points,
-    yZoom,
-    default_date_range: props.default_date_range,
-    current_date_zoom: props.current_date_zoom,
-    set_date_zoom_range: props.set_date_zoom_range,
-    containerWidth: bounds?.width,
-  });
   const { series, median } = useDataToPlot({
     points: props.points,
     stats: props.stats,
@@ -715,32 +759,27 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
   }, [hideTooltip, setHighlightStart]);
 
   return (
-    <div style={{ position: "relative" }} ref={measureRef} onPointerLeave={pointerLeave}>
-      <svg width={width} height={height}>
-        <Group left={marginLeft} top={marginTop}>
-          <AxisAndGrid xScale={xScale} yScale={yScale} />
-          <StatsSeries median={median} plannedMinutes={props.plannedTimeMinutes} xScale={xScale} yScale={yScale} />
-          <ChartMouseEvents
-            setYZoom={setYZoom}
-            setXZoom={props.set_date_zoom_range}
-            hideTooltip={hideTooltip}
-            xScale={xScale}
-            yScale={yScale}
-            highlightStart={highlightStart}
-            setHighlightStart={setHighlightStart}
-          />
-          <NoPointerEvents $noPtrEvents={highlightStart !== null}>
-            <AllPointsSeries
+    <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
+      <Box sx={{ height: "calc(100vh - 250px)" }}>
+        <ParentSize>
+          {(parent) => (
+            <CycleChartSvg
+              {...props}
+              containerHeight={parent.height}
+              containerWidth={parent.width}
               series={series}
-              disabledSeries={disabledSeries}
-              xScale={xScale}
-              yScale={yScale}
+              median={median}
+              yZoom={yZoom}
+              setYZoom={setYZoom}
+              hideTooltip={hideTooltip}
+              highlightStart={highlightStart}
+              setHighlightStart={setHighlightStart}
               showTooltip={showTooltip}
+              disabledSeries={disabledSeries}
             />
-          </NoPointerEvents>
-        </Group>
-      </svg>
-
+          )}
+        </ParentSize>
+      </Box>
       <div style={{ display: "flex", flexWrap: "wrap" }}>
         <div style={{ color: "#6b6b76" }}>Click on a point for details</div>
         <div style={{ flexGrow: 1 }} />
