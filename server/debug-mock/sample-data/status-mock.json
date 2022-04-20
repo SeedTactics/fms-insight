@@ -10,13 +10,7 @@
       "Unique": "aaa-offline-2018-01-01",
       "Priority": 100,
       "ScheduleId": "offline-2018-01-01",
-      "Bookings": [
-        "aaa-0",
-        "bbb-0",
-        "ccc-1",
-        "yyy-0",
-        "zzz-2"
-      ],
+      "Bookings": ["aaa-0", "bbb-0", "ccc-1", "yyy-0", "zzz-2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [
@@ -37,38 +31,24 @@
           "InspectSingleProcess": -1
         }
       ],
-      "CyclesOnFirstProcess": [
-        16
-      ],
+      "Cycles": 16,
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "1",
-                "2"
-              ],
-              "Load": [
-                1,
-                2
-              ],
+              "Pallets": ["1", "2"],
+              "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
-              "Unload": [
-                1,
-                2
-              ],
+              "Unload": [1, 2],
               "Stops": [
                 {
                   "Tools": {},
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT12M12S",
                   "Program": "100",
-                  "StationNums": [
-                    1,
-                    2
-                  ]
+                  "StationNums": [1, 2]
                 }
               ],
               "SimulatedProduction": [
@@ -149,18 +129,9 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "1",
-                "2"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["1", "2"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -169,10 +140,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT9M18S",
                   "Program": "200",
-                  "StationNums": [
-                    1,
-                    2
-                  ]
+                  "StationNums": [1, 2]
                 }
               ],
               "SimulatedProduction": [
@@ -250,14 +218,7 @@
           ]
         }
       ],
-      "Completed": [
-        [
-          5
-        ],
-        [
-          2
-        ]
-      ]
+      "Completed": [[5], [2]]
     },
     "bbb-offline-2018-01-01": {
       "RouteStartUTC": "2018-01-01T00:00:00Z",
@@ -268,13 +229,7 @@
       "Unique": "bbb-offline-2018-01-01",
       "Priority": 100,
       "ScheduleId": "offline-2018-01-01",
-      "Bookings": [
-        "aaa-0",
-        "bbb-0",
-        "ccc-1",
-        "yyy-0",
-        "zzz-2"
-      ],
+      "Bookings": ["aaa-0", "bbb-0", "ccc-1", "yyy-0", "zzz-2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [
@@ -295,27 +250,15 @@
           "InspectSingleProcess": -1
         }
       ],
-      "CyclesOnFirstProcess": [
-        10
-      ],
+      "Cycles": 10,
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "1",
-                "2",
-                "3"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["1", "2", "3"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -324,10 +267,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT4M",
                   "Program": "300",
-                  "StationNums": [
-                    2,
-                    3
-                  ]
+                  "StationNums": [2, 3]
                 }
               ],
               "SimulatedProduction": [
@@ -384,19 +324,9 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "1",
-                "2",
-                "3"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["1", "2", "3"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -405,10 +335,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT20M",
                   "Program": "400",
-                  "StationNums": [
-                    2,
-                    3
-                  ]
+                  "StationNums": [2, 3]
                 }
               ],
               "SimulatedProduction": [
@@ -462,14 +389,7 @@
           ]
         }
       ],
-      "Completed": [
-        [
-          8
-        ],
-        [
-          0
-        ]
-      ]
+      "Completed": [[8], [0]]
     },
     "ccc-offline-2018-01-01": {
       "RouteStartUTC": "2018-01-01T00:00:00Z",
@@ -480,13 +400,7 @@
       "Unique": "ccc-offline-2018-01-01",
       "Priority": 100,
       "ScheduleId": "offline-2018-01-01",
-      "Bookings": [
-        "aaa-0",
-        "bbb-0",
-        "ccc-1",
-        "yyy-0",
-        "zzz-2"
-      ],
+      "Bookings": ["aaa-0", "bbb-0", "ccc-1", "yyy-0", "zzz-2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [
@@ -507,26 +421,15 @@
           "InspectSingleProcess": -1
         }
       ],
-      "CyclesOnFirstProcess": [
-        17
-      ],
+      "Cycles": 17,
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "3",
-                "4"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["3", "4"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -535,10 +438,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT40M",
                   "Program": "300",
-                  "StationNums": [
-                    3,
-                    4
-                  ]
+                  "StationNums": [3, 4]
                 }
               ],
               "SimulatedProduction": [
@@ -623,18 +523,9 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "3",
-                "4"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["3", "4"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -643,10 +534,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT15M30S",
                   "Program": "400",
-                  "StationNums": [
-                    3,
-                    4
-                  ]
+                  "StationNums": [3, 4]
                 }
               ],
               "SimulatedProduction": [
@@ -728,14 +616,7 @@
           ]
         }
       ],
-      "Completed": [
-        [
-          0
-        ],
-        [
-          0
-        ]
-      ]
+      "Completed": [[0], [0]]
     },
     "xxx-offline-2018-01-01": {
       "RouteStartUTC": "2018-01-02T00:00:00Z",
@@ -746,36 +627,19 @@
       "Unique": "xxx-offline-2018-01-02",
       "Priority": 100,
       "ScheduleId": "offline-2018-01-02",
-      "Bookings": [
-        "aaa-1",
-        "bbb-1",
-        "ccc-4",
-        "yyy-13",
-        "zzz-0"
-      ],
+      "Bookings": ["aaa-1", "bbb-1", "ccc-4", "yyy-13", "zzz-0"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
-      "CyclesOnFirstProcess": [
-        3
-      ],
+      "Cycles": 3,
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "6",
-                "7"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["6", "7"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -784,10 +648,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT17M30S",
                   "Program": "100",
-                  "StationNums": [
-                    1,
-                    2
-                  ]
+                  "StationNums": [1, 2]
                 }
               ],
               "SimulatedProduction": [
@@ -813,11 +674,7 @@
           ]
         }
       ],
-      "Completed": [
-        [
-          1
-        ]
-      ]
+      "Completed": [[1]]
     },
     "yyy-offline-2018-01-01": {
       "RouteStartUTC": "2018-01-01T00:00:00Z",
@@ -828,36 +685,19 @@
       "Unique": "yyy-offline-2018-01-01",
       "Priority": 100,
       "ScheduleId": "offline-2018-01-01",
-      "Bookings": [
-        "aaa-0",
-        "bbb-0",
-        "ccc-1",
-        "yyy-0",
-        "zzz-2"
-      ],
+      "Bookings": ["aaa-0", "bbb-0", "ccc-1", "yyy-0", "zzz-2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
-      "CyclesOnFirstProcess": [
-        28
-      ],
+      "Cycles": 28,
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "8",
-                "9"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["8", "9"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -866,10 +706,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT50M",
                   "Program": "500",
-                  "StationNums": [
-                    3,
-                    4
-                  ]
+                  "StationNums": [3, 4]
                 }
               ],
               "SimulatedProduction": [
@@ -939,11 +776,7 @@
           ]
         }
       ],
-      "Completed": [
-        [
-          10
-        ]
-      ]
+      "Completed": [[10]]
     },
     "zzz-offline-2018-01-01": {
       "RouteStartUTC": "2018-01-01T00:00:00Z",
@@ -954,37 +787,19 @@
       "Unique": "zzz-offline-2018-01-01",
       "Priority": 100,
       "ScheduleId": "offline-2018-01-01",
-      "Bookings": [
-        "aaa-0",
-        "bbb-0",
-        "ccc-1",
-        "yyy-0",
-        "zzz-2"
-      ],
+      "Bookings": ["aaa-0", "bbb-0", "ccc-1", "yyy-0", "zzz-2"],
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Inspections": [],
-      "CyclesOnFirstProcess": [
-        22
-      ],
+      "Cycles": 22,
       "ProcsAndPaths": [
         {
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": [
-                "5",
-                "6",
-                "7"
-              ],
-              "Load": [
-                1,
-                2
-              ],
-              "Unload": [
-                1,
-                2
-              ],
+              "Pallets": ["5", "6", "7"],
+              "Load": [1, 2],
+              "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -993,11 +808,7 @@
                   "StationGroup": "Machine",
                   "ExpectedCycleTime": "PT1H17M",
                   "Program": "500",
-                  "StationNums": [
-                    1,
-                    2,
-                    3
-                  ]
+                  "StationNums": [1, 2, 3]
                 }
               ],
               "SimulatedProduction": [
@@ -1099,11 +910,7 @@
           ]
         }
       ],
-      "Completed": [
-        [
-          17
-        ]
-      ]
+      "Completed": [[17]]
     }
   },
   "Pallets": {

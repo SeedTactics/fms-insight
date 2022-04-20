@@ -51,7 +51,6 @@
     "react-spring": "^9.4.4",
     "react-timeago": "^6.2.1",
     "react-to-print": "^2.14.4",
-    "react-vis": "^1.11.7",
     "recoil": "0.6.1",
     "reconnecting-websocket": "^4.4.0",
     "wouter": "^2.7.5"

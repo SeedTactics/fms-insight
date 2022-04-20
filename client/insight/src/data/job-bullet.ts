@@ -64,14 +64,12 @@ function displayJob(job: api.IActiveJob, proc: number): DataPoint {
   };
 }
 
-export interface CompletedDataPoint extends DataPoint {
-  readonly x: number;
-  readonly y: number;
+export interface IndexedDataPoint extends DataPoint {
+  readonly idx: number;
 }
 
 export interface DataPoints {
-  readonly completedData: ReadonlyArray<CompletedDataPoint>;
-  readonly planData: ReadonlyArray<{ x: number; y: number }>;
+  readonly jobs: ReadonlyArray<IndexedDataPoint>;
   readonly longestPartName: number;
 }
 
@@ -90,17 +88,13 @@ export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IActiveJob>>): Dat
     )
     .flatMap((j) => vectorRange(0, j.procsAndPaths.length).map((proc) => displayJob(j, proc)))
     .reverse();
-  const completedData = points
+  const jobPoints = points
     .zipWithIndex()
-    .map(([pt, i]) => ({ ...pt, x: pt.completed, y: i }))
-    .toArray();
-  const planData = points
-    .zipWithIndex()
-    .map(([pt, i]) => ({ x: pt.totalPlan, y: i }))
+    .map(([pt, i]) => ({ ...pt, idx: i }))
     .toArray();
   const longestPartName = points
     .maxOn((p) => p.part.length)
     .map((p) => p.part.length)
     .getOrElse(1);
-  return { completedData, planData, longestPartName };
+  return { jobs: jobPoints, longestPartName };
 }

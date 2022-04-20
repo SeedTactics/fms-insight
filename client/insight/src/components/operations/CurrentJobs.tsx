@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -31,125 +31,97 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-
-import {
-  FlexibleWidthXYPlot,
-  FlexibleXYPlot,
-  HorizontalBarSeries,
-  XAxis,
-  YAxis,
-  CustomSVGSeries,
-  VerticalGridLines,
-  HorizontalGridLines,
-  Hint,
-} from "react-vis";
-
-import { CompletedDataPoint, jobsToPoints } from "../../data/job-bullet";
-import { currentStatus } from "../../cell-status/current-status";
+import { grey } from "@mui/material/colors";
 import { useRecoilValue } from "recoil";
+import {
+  AnimatedAxis,
+  Grid,
+  XYChart,
+  Tooltip as VisxTooltip,
+  AnimatedBarSeries,
+  AnimatedGlyphSeries,
+} from "@visx/xychart";
+import { Stack } from "@mui/material";
+import { defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
 
-// --------------------------------------------------------------------------------
-// Data
-// --------------------------------------------------------------------------------
+import { chartTheme } from "../../util/chart-colors";
+import { IndexedDataPoint, jobsToPoints } from "../../data/job-bullet";
+import { currentStatus } from "../../cell-status/current-status";
 
-// --------------------------------------------------------------------------------
-// Plot
-// --------------------------------------------------------------------------------
-
-interface PlotProps {
-  readonly cnt: number;
-  readonly longestPartName: number;
-  readonly children: (JSX.Element | undefined)[];
-}
-
-function FillViewportPlot({ longestPartName, children }: PlotProps) {
-  const margin = Math.min(100, longestPartName > 6 ? (longestPartName - 6) * 6 + 60 : 60);
-  return (
-    <div style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-      <div style={{ flexGrow: 1, position: "relative" }}>
-        <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}>
-          <FlexibleXYPlot margin={{ left: margin, right: 10, top: 10, bottom: 40 }} yType="ordinal">
-            {children}
-          </FlexibleXYPlot>
-        </div>
-      </div>
-      <div style={{ textAlign: "center", marginBottom: "8px", color: "#6b6b76" }}>Machine Hours</div>
-    </div>
-  );
-}
-
-function ScrollablePlot({ children, cnt, longestPartName }: PlotProps) {
-  const margin = Math.min(100, longestPartName > 6 ? (longestPartName - 6) * 6 + 60 : 60);
-  return (
-    <div>
-      <FlexibleWidthXYPlot height={cnt * 40} margin={{ left: margin, right: 10, top: 10, bottom: 40 }} yType="ordinal">
-        {children}
-      </FlexibleWidthXYPlot>
-      <div style={{ textAlign: "center" }}>Machine Hours</div>
-    </div>
-  );
-}
-
-const targetMark = () => <rect x="-2" y="-5" width="4" height="10" fill="black" />;
-
-interface CurrentJobsProps {
+export interface CurrentJobsProps {
   readonly fillViewport: boolean;
 }
 
-function format_hint(
-  j: CompletedDataPoint
-): ReadonlyArray<{ readonly title: string; readonly value: string | number }> {
-  const vals = [
-    { title: "Part", value: j.part },
-    { title: "Completed", value: j.completedCount },
-    { title: "Planned", value: j.totalCount },
-    {
-      title: "Remaining Time",
-      value: (j.totalPlan - j.completed).toFixed(1) + " hours",
-    },
-  ];
-  if (j.workorders !== "") {
-    vals.push({ title: "Workorders", value: j.workorders });
-  }
-  return vals;
+function JobTooltip({ job }: { readonly job: IndexedDataPoint | undefined }) {
+  if (job === undefined) return null;
+  return (
+    <Stack direction="column" spacing={0.6}>
+      <div>Part: {job.part}</div>
+      <div>Completed: {job.completedCount}</div>
+      <div>Planned: {job.totalCount}</div>
+      <div>Remaining Time: {(job.totalPlan - job.completed).toFixed(1)} hours</div>
+      {job.workorders !== "" ? <div>Workorders: {job.workorders}</div> : undefined}
+    </Stack>
+  );
 }
 
-function format_tick(p: CompletedDataPoint) {
+function JobsChart({ fixedHeight }: { readonly fixedHeight?: boolean | undefined }) {
+  const st = useRecoilValue(currentStatus);
+  const points = React.useMemo(() => jobsToPoints(Object.values(st.jobs)), [st.jobs]);
+  const marginLeft = Math.min(100, points.longestPartName > 6 ? (points.longestPartName - 6) * 6 + 60 : 60);
   return (
-    <tspan>
-      <tspan>{p.part}</tspan>
-      <tspan x={0} dy="1.2em">
-        {p.totalCount > 100 ? `${p.completedCount}/${p.totalCount}` : `${p.completedCount} / ${p.totalCount}`}
-      </tspan>
-    </tspan>
+    <XYChart
+      height={fixedHeight ? points.jobs.length * 40 : undefined}
+      xScale={{ type: "linear" }}
+      yScale={{ type: "band", padding: 0.2 }}
+      horizontal
+      margin={{ left: marginLeft, top: 50, right: 50, bottom: 50 }}
+      theme={chartTheme}
+    >
+      <AnimatedAxis orientation="bottom" label="Machine Hours" />
+      <AnimatedAxis orientation="left" tickFormat={(idx: number) => points.jobs[idx]?.part} />
+      <Grid />
+
+      <AnimatedBarSeries
+        enableEvents
+        dataKey="jobs"
+        data={points.jobs as IndexedDataPoint[]}
+        xAccessor={(p) => p.completed}
+        yAccessor={(p) => p.idx}
+        colorAccessor={() => "#795548"}
+      />
+
+      <AnimatedGlyphSeries
+        data={points.jobs as IndexedDataPoint[]}
+        dataKey="jobsCompleted"
+        xAccessor={(p) => p.totalPlan}
+        yAccessor={(p) => p.idx}
+      />
+
+      <VisxTooltip<IndexedDataPoint>
+        renderTooltip={({ tooltipData }) => <JobTooltip job={tooltipData?.nearestDatum?.datum} />}
+        style={{ ...defaultTooltipStyles, backgroundColor: grey[800], color: "white" }}
+      />
+    </XYChart>
   );
 }
 
 export const CurrentJobs = React.memo(function CurrentJobs(props: CurrentJobsProps) {
-  const [hoveredJob, setHoveredJob] = React.useState<CompletedDataPoint | null>(null);
-  const st = useRecoilValue(currentStatus);
-  const points = React.useMemo(() => jobsToPoints(Object.values(st.jobs)), [st.jobs]);
-
-  const Plot = props.fillViewport ? FillViewportPlot : ScrollablePlot;
-  return (
-    <Plot cnt={points.completedData.length} longestPartName={points.longestPartName}>
-      <XAxis />
-      <YAxis tickFormat={(y: number, i: number) => format_tick(points.completedData[i])} />
-      <HorizontalGridLines />
-      <VerticalGridLines />
-      <HorizontalBarSeries
-        data={points.completedData}
-        color="#795548"
-        onValueMouseOver={setHoveredJob}
-        onValueMouseOut={() => setHoveredJob(null)}
-      />
-      <CustomSVGSeries
-        data={points.planData}
-        customComponent={targetMark}
-        onValueMouseOver={(p: { x: number; y: number }) => setHoveredJob({ ...points.completedData[p.y], x: p.x })}
-        onValueMouseOut={() => setHoveredJob(null)}
-      />
-      {hoveredJob === null ? undefined : <Hint value={hoveredJob} format={format_hint} />}
-    </Plot>
-  );
+  if (props.fillViewport) {
+    return (
+      <div style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ flexGrow: 1, position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}>
+            <JobsChart />
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <div>
+        <JobsChart fixedHeight />
+      </div>
+    );
+  }
 });
