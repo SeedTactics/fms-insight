@@ -34,7 +34,6 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 
 import { CssBaseline } from "@mui/material";
-import "react-vis/dist/style.css";
 import "highlight.js/styles/default.css";
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";

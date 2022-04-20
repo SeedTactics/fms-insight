@@ -5,12 +5,6 @@ declare module "*.svg" {
   export default empty;
 }
 
-declare module "react-qr-reader" {
-  import * as React from "react";
-
-  export default class QrReader extends React.Component<any> {}
-}
-
 declare module "react-timeago" {
   import * as React from "react";
 
