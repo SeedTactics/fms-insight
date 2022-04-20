@@ -2,38 +2,26 @@
 
 exports[`converts events to points > points for sample jobs 1`] = `
 {
-  "completedData": [
+  "jobs": [
     {
       "completed": 16.5,
       "completedCount": 22,
+      "idx": 0,
       "part": "part1-2",
       "totalCount": 82,
       "totalPlan": 61.5,
       "workorders": "",
-      "x": 16.5,
-      "y": 0,
     },
     {
       "completed": 51.25,
       "completedCount": 41,
+      "idx": 1,
       "part": "part1-1",
       "totalCount": 82,
       "totalPlan": 102.5,
       "workorders": "",
-      "x": 51.25,
-      "y": 1,
     },
   ],
   "longestPartName": 7,
-  "planData": [
-    {
-      "x": 61.5,
-      "y": 0,
-    },
-    {
-      "x": 102.5,
-      "y": 1,
-    },
-  ],
 }
 `;
