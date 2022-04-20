@@ -275,6 +275,7 @@ export function BarcodeListener(): null {
     let timeout: number | undefined;
     let scanActive = false;
     let scannedTxt = "";
+    let lastBangTime: number | null = null;
 
     function cancelDetection() {
       scannedTxt = "";
@@ -284,7 +285,7 @@ export function BarcodeListener(): null {
     function startDetection() {
       scannedTxt = "";
       scanActive = true;
-      timeout = window.setTimeout(cancelDetection, 10 * 1000);
+      timeout = window.setTimeout(cancelDetection, 3 * 1000);
     }
 
     function success() {
@@ -309,13 +310,17 @@ export function BarcodeListener(): null {
     }
 
     function onKeyDown(k: KeyboardEvent) {
-      if (k.keyCode === 112) {
-        // F1
+      if (k.key === "!") {
+        lastBangTime = Date.now();
+      } else if (k.code === "F1" && !scanActive) {
         startDetection();
         k.stopPropagation();
         k.preventDefault();
-      } else if (scanActive && k.keyCode === 13) {
-        // Enter
+      } else if (k.key === "*" && !scanActive && lastBangTime !== null && Date.now() - lastBangTime < 1000) {
+        startDetection();
+        k.stopPropagation();
+        k.preventDefault();
+      } else if (scanActive && k.code === "Enter") {
         success();
         k.stopPropagation();
         k.preventDefault();

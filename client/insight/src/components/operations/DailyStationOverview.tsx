@@ -52,7 +52,7 @@ import {
   outlierLoadCycles,
   FilterAnyMachineKey,
   copyCyclesToClipboard,
-  plannedOperationSeries,
+  plannedOperationMinutes,
   loadOccupancyCycles,
   LoadCycleData,
   FilterAnyLoadKey,
@@ -262,9 +262,9 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
     }
   }, [cycles, props.showLabor, selectedPart, selectedPallet, selectedOperation, showGraph]);
   const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
-  const plannedSeries = React.useMemo(() => {
+  const plannedMinutes = React.useMemo(() => {
     if (curOperation) {
-      return plannedOperationSeries(points, false);
+      return plannedOperationMinutes(points, false);
     } else {
       return undefined;
     }
@@ -364,7 +364,7 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
               displayEmpty
               value={selectedPallet || ""}
               style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as string))}
+              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
             >
               <MenuItem key={0} value="">
                 <em>Any Pallet</em>
@@ -398,7 +398,7 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
                     .getOrUndefined()
                 : undefined
             }
-            plannedSeries={plannedSeries}
+            plannedTimeMinutes={plannedMinutes}
           />
         ) : (
           <StationDataTable

@@ -48,8 +48,8 @@ export interface SankeyLink {
 }
 
 export interface SankeyDiagram {
-  readonly nodes: ReadonlyArray<SankeyNode>;
-  readonly links: ReadonlyArray<SankeyLink>;
+  readonly nodes: Array<SankeyNode>;
+  readonly links: Array<SankeyLink>;
 }
 
 class NodeR {
@@ -88,7 +88,7 @@ function edgesForPath(
   const edges: Edge[] = [];
   for (const proc of actualPath) {
     for (const stop of proc.stops) {
-      const cur = "P" + proc.pallet + ",M" + stop.stationNum;
+      const cur = "P" + proc.pallet + ",M" + stop.stationNum.toString();
       path += "->" + cur;
       const nextNode = new NodeR(path, cur);
       edges.push(new Edge(prevNode, nextNode));

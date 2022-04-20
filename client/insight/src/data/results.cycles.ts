@@ -383,26 +383,20 @@ export function stationMinutes(partCycles: L.List<PartCycleData>, cutoff: Date):
     );
 }
 
-export function plannedOperationSeries(
-  s: FilteredStationCycles,
-  forSingleMat: boolean
-): ReadonlyArray<{ readonly x: Date; readonly y: number }> {
-  const arr = LazySeq.ofIterable(s.data)
-    .flatMap(([, d]) => d)
-    .filter((c) => c.material.length > 0)
-    .map((c) => ({ x: c.x, y: forSingleMat ? c.activeMinutes / c.material.length : c.activeMinutes }))
-    .toArray();
+export function plannedOperationMinutes(s: FilteredStationCycles, forSingleMat: boolean): number | undefined {
+  let planned: { time: Date; mins: number } | null = null;
 
-  arr.sort((a, b) => a.x.getTime() - b.x.getTime());
-
-  const toRemove = new Set<number>();
-  for (let i = 1; i < arr.length - 1; i++) {
-    if (arr[i - 1].y === arr[i].y && arr[i].y === arr[i + 1].y) {
-      toRemove.add(i);
+  for (const [, cycles] of s.data) {
+    for (const pt of cycles) {
+      if (pt.material.length > 0) {
+        if (planned === null || planned.time < pt.x) {
+          const mins = forSingleMat ? pt.activeMinutes / pt.material.length : pt.activeMinutes;
+          planned = { time: pt.x, mins };
+        }
+      }
     }
   }
-
-  return arr.filter((_, idx) => !toRemove.has(idx));
+  return planned?.mins;
 }
 
 // --------------------------------------------------------------------------------

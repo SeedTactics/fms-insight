@@ -60,7 +60,7 @@ import {
   FilterAnyMachineKey,
   copyCyclesToClipboard,
   estimateLulOperations,
-  plannedOperationSeries,
+  plannedOperationMinutes,
   LoadCycleData,
   loadOccupancyCycles,
   FilterAnyLoadKey,
@@ -169,9 +169,9 @@ function PartMachineCycleChart() {
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
   const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
-  const plannedSeries = React.useMemo(() => {
+  const plannedMinutes = React.useMemo(() => {
     if (curOperation) {
-      return plannedOperationSeries(points, false);
+      return plannedOperationMinutes(points, false);
     } else {
       return undefined;
     }
@@ -329,7 +329,7 @@ function PartMachineCycleChart() {
                     .getOrUndefined()
                 : undefined
             }
-            plannedSeries={plannedSeries}
+            plannedTimeMinutes={plannedMinutes}
           />
         ) : (
           <StationDataTable
@@ -425,9 +425,9 @@ function PartLoadStationCycleChart() {
       return emptyStationCycles(cycles);
     }
   }, [selectedPart, selectedPallet, selectedOperation, selectedLoadStation, cycles, showGraph]);
-  const plannedSeries = React.useMemo(() => {
+  const plannedMinutes = React.useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
-      return plannedOperationSeries(points, true);
+      return plannedOperationMinutes(points, true);
     } else {
       return undefined;
     }
@@ -573,7 +573,7 @@ function PartLoadStationCycleChart() {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
-            plannedSeries={plannedSeries}
+            plannedTimeMinutes={plannedMinutes}
           />
         ) : (
           <StationDataTable
@@ -741,7 +741,13 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
 
 function StationOeeHeatmap() {
   const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
+
   const period = useRecoilValue(selectedAnalysisPeriod);
+  const dateRange: [Date, Date] =
+    period.type === "Last30"
+      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+      : [period.month, addMonths(period.month, 1)];
+
   const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const statUse = useRecoilValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
   const points = React.useMemo(() => {
@@ -759,6 +765,7 @@ function StationOeeHeatmap() {
       card_label="Station Use"
       y_title="Station"
       label_title={selected === "Occupied" ? "Occupied" : "OEE"}
+      dateRange={dateRange}
       icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
       cur_selected={selected}
       options={["Standard OEE", "Occupied", "Planned OEE"]}
@@ -830,7 +837,13 @@ function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
 
 function CompletedCountHeatmap() {
   const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
+
   const period = useRecoilValue(selectedAnalysisPeriod);
+  const dateRange: [Date, Date] =
+    period.type === "Last30"
+      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
+      : [period.month, addMonths(period.month, 1)];
+
   const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const productionCounts = useRecoilValue(period.type === "Last30" ? last30SimProduction : specificMonthSimProduction);
   const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
@@ -849,6 +862,7 @@ function CompletedCountHeatmap() {
       card_label="Part Production"
       y_title="Part"
       label_title={selected}
+      dateRange={dateRange}
       icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
       cur_selected={selected}
       options={["Completed", "Planned"]}

@@ -41,6 +41,7 @@ import * as L from "list/methods";
 import type { ServerEventAndTime } from "./loading";
 
 export interface PalletCycleData {
+  readonly cntr: number;
   readonly x: Date;
   readonly y: number; // cycle time in minutes
   readonly active: number;
@@ -62,6 +63,7 @@ export const specificMonthPalletCycles: RecoilValueReadOnly<PalletCyclesByPallet
 
 function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
   return {
+    cntr: c.counter,
     x: c.endUTC,
     y: durationToMinutes(c.elapsed),
     active: durationToMinutes(c.active),

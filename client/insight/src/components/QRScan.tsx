@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import QrReader from "react-qr-reader";
+import { OnResultFunction, QrReader } from "react-qr-reader";
 import { Dialog } from "@mui/material";
 import { Button } from "@mui/material";
 import { DialogActions } from "@mui/material";
@@ -48,10 +48,11 @@ export const SerialScannerButton = React.memo(function SerialScanner() {
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
   const setMatToShowDialog = useSetRecoilState(materialToShowInDialog);
 
-  function onScan(serial: string | undefined | null): void {
-    if (serial === undefined || serial == null) {
+  const onScan: OnResultFunction = (result) => {
+    if (result === undefined || result == null) {
       return;
     }
+    let serial = result.getText();
     const commaIdx = serial.indexOf(",");
     if (commaIdx >= 0) {
       serial = serial.substring(0, commaIdx);
@@ -62,14 +63,14 @@ export const SerialScannerButton = React.memo(function SerialScanner() {
     }
     setMatToShowDialog({ type: "Serial", serial });
     setDialogOpen(false);
-  }
+  };
   return (
     <>
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md">
         <DialogTitle>Scan a part&apos;s serial</DialogTitle>
         <DialogContent>
           <div style={{ minWidth: "20em" }}>
-            {dialogOpen ? <QrReader onScan={onScan} onError={() => 0} /> : undefined}
+            {dialogOpen ? <QrReader onResult={onScan} constraints={{}} /> : undefined}
           </div>
         </DialogContent>
         <DialogActions>
