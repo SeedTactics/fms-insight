@@ -47,11 +47,12 @@ import {
 } from "./DataTable";
 import { InspectionLogEntry } from "../../cell-status/inspections";
 import { Typography } from "@mui/material";
-import { HashMap, ToOrderable } from "prelude-ts";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
 import { addDays, addHours } from "date-fns";
 import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details";
+import { LazySeq, SortByProperty } from "../../util/lazyseq";
+import { emptyIMap, IMap } from "../../util/imap";
 
 enum ColumnId {
   Date,
@@ -96,7 +97,7 @@ const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
 ];
 
 export interface InspectionDataTableProps {
-  readonly points: ReadonlyArray<InspectionLogEntry>;
+  readonly points: Iterable<InspectionLogEntry>;
   readonly default_date_range: Date[];
   readonly zoomType?: DataTableActionZoomType;
   readonly extendDateRange?: (numDays: number) => void;
@@ -107,7 +108,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
+  const [pages, setPages] = React.useState<IMap<string, number>>(emptyIMap());
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [curPath, setCurPathOpen] = React.useState<string | undefined>(undefined);
   const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
@@ -121,18 +122,17 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
     }
   }
 
-  let sortOn: ToOrderable<TriggeredInspectionEntry> | { desc: ToOrderable<TriggeredInspectionEntry> } =
-    columns[0].getForSort || columns[0].getDisplay;
+  let sortOn: SortByProperty<TriggeredInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
   for (const col of columns) {
     if (col.id === orderBy && order === "asc") {
-      sortOn = col.getForSort || col.getDisplay;
+      sortOn = { asc: col.getForSort ?? col.getDisplay };
     } else if (col.id === orderBy) {
-      sortOn = { desc: col.getForSort || col.getDisplay };
+      sortOn = { desc: col.getForSort ?? col.getDisplay };
     }
   }
 
   const groups = groupInspectionsByPath(props.points, curZoom, sortOn);
-  const paths = groups.keySet().toArray({ sortOn: (x) => x });
+  const paths = LazySeq.ofIterable(groups).toSortedArray(([x]) => x);
 
   let zoom: DataTableActionZoom | undefined;
   if (props.zoomType && props.zoomType === DataTableActionZoomType.Last30Days) {
@@ -165,9 +165,8 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
 
   return (
     <div style={{ width: "100%" }}>
-      {paths.map((path) => {
-        const points = groups.get(path).getOrThrow();
-        const page = Math.min(pages.get(path).getOrElse(0), Math.ceil(points.material.length() / rowsPerPage));
+      {paths.map(([path, points]) => {
+        const page = Math.min(pages.get(path) ?? 0, Math.ceil(points.material.length / rowsPerPage));
         return (
           <Accordion
             expanded={path === curPath}
@@ -179,7 +178,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                 {path}
               </Typography>
               <Typography variant="caption">
-                {points.material.length()} total parts, {points.failedCnt} failed
+                {points.material.length} total parts, {points.failedCnt} failed
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -194,7 +193,10 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   />
                   <DataTableBody
                     columns={columns}
-                    pageData={points.material.drop(page * rowsPerPage).take(rowsPerPage)}
+                    pageData={points.material
+                      .toLazySeq()
+                      .drop(page * rowsPerPage)
+                      .take(rowsPerPage)}
                     onClickDetails={
                       props.hideOpenDetailColumn
                         ? undefined
@@ -216,9 +218,9 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                 </Table>
                 <DataTableActions
                   page={page}
-                  count={points.material.length()}
+                  count={points.material.length}
                   rowsPerPage={rowsPerPage}
-                  setPage={(p) => setPages(pages.put(path, p))}
+                  setPage={(p) => setPages(pages.set(path, p))}
                   setRowsPerPage={setRowsPerPage}
                   zoom={zoom}
                 />

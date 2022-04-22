@@ -32,10 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { Table } from "@mui/material";
-import { HashMap, ToOrderable } from "prelude-ts";
 
 import { format_cycle_inspection } from "../../data/results.cycles";
-import { LazySeq } from "../../util/lazyseq";
+import { LazySeq, ToPrimitiveOrd } from "../../util/lazyseq";
 import {
   Column,
   DataTableHead,
@@ -52,6 +51,7 @@ import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
 import { PartCycleData } from "../../cell-status/station-cycles";
+import { IMap } from "../../util/imap";
 
 enum ColumnId {
   Date,
@@ -68,7 +68,7 @@ enum ColumnId {
 }
 
 function buildColumns(
-  matIds: HashMap<number, MaterialSummaryAndCompletedData>
+  matIds: IMap<number, MaterialSummaryAndCompletedData>
 ): ReadonlyArray<Column<ColumnId, PartCycleData>> {
   return [
     {
@@ -118,10 +118,10 @@ function buildColumns(
       getDisplay: (c) => format_cycle_inspection(c, matIds),
       getForSort: (c) => {
         return LazySeq.ofIterable(c.material)
-          .mapOption((m) => matIds.get(m.id))
+          .collect((m) => matIds.get(m.id))
           .flatMap((m) => m.signaledInspections)
-          .toSet((x) => x)
-          .toArray({ sortOn: (x) => x })
+          .distinct()
+          .toSortedArray((x) => x)
           .join(",");
       },
     },
@@ -153,8 +153,8 @@ function buildColumns(
 }
 
 interface StationDataTableProps {
-  readonly points: HashMap<string, ReadonlyArray<PartCycleData>>;
-  readonly matsById: HashMap<number, MaterialSummaryAndCompletedData>;
+  readonly points: ReadonlyMap<string, ReadonlyArray<PartCycleData>>;
+  readonly matsById: IMap<number, MaterialSummaryAndCompletedData>;
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
@@ -165,13 +165,13 @@ interface StationDataTableProps {
 }
 
 function extractData(
-  points: HashMap<string, ReadonlyArray<PartCycleData>>,
+  points: ReadonlyMap<string, ReadonlyArray<PartCycleData>>,
   columns: ReadonlyArray<Column<ColumnId, PartCycleData>>,
   currentZoom: { start: Date; end: Date } | undefined,
   orderBy: ColumnId,
   order: "asc" | "desc"
 ): ReadonlyArray<PartCycleData> {
-  let getData: ToOrderable<PartCycleData> | undefined;
+  let getData: ToPrimitiveOrd<PartCycleData> | undefined;
   for (const col of columns) {
     if (col.id === orderBy) {
       getData = col.getForSort || col.getDisplay;
@@ -182,10 +182,10 @@ function extractData(
   }
   const getDataC = getData;
 
-  const data = LazySeq.ofIterable(points.valueIterable()).flatMap((x) => x);
+  const data = LazySeq.ofIterable(points.values()).flatMap((x) => x);
   const arr = currentZoom
-    ? data.filter((p) => p.x >= currentZoom.start && p.x <= currentZoom.end).toArray()
-    : data.toArray();
+    ? data.filter((p) => p.x >= currentZoom.start && p.x <= currentZoom.end).toMutableArray()
+    : data.toMutableArray();
   return arr.sort((a, b) => {
     const aVal = getDataC(a);
     const bVal = getDataC(b);

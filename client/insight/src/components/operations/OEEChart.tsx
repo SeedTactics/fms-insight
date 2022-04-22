@@ -35,8 +35,7 @@ import { Box, Grid } from "@mui/material";
 import { Table } from "@mui/material";
 
 import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";
-import { LazySeq } from "../../util/lazyseq";
-import { ToOrderable } from "prelude-ts";
+import { LazySeq, ToPrimitiveOrd } from "../../util/lazyseq";
 import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee";
 import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
 import { seriesColor, chartTheme } from "../../util/chart-colors";
@@ -164,7 +163,7 @@ function dataForTable(
   orderBy: ColumnId,
   order: "asc" | "desc"
 ): ReadonlyArray<OEEBarPoint> {
-  let getData: ToOrderable<OEEBarPoint> | undefined;
+  let getData: ToPrimitiveOrd<OEEBarPoint> | undefined;
   for (const col of columns) {
     if (col.id === orderBy) {
       getData = col.getForSort || col.getDisplay;
@@ -177,7 +176,7 @@ function dataForTable(
 
   const arr = LazySeq.ofIterable(series)
     .flatMap((e) => e.points)
-    .toArray();
+    .toMutableArray();
   return arr.sort((a, b) => {
     const aVal = getDataC(a);
     const bVal = getDataC(b);

@@ -31,13 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
-import { HashMap } from "prelude-ts";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api";
+import { emptyIMap, IMap } from "../util/imap";
 import { LazySeq } from "../util/lazyseq";
 import { durationToMinutes } from "../util/parseISODuration";
 import { conduit } from "../util/recoil-util";
-import * as L from "list/methods";
 import type { ServerEventAndTime } from "./loading";
 
 export interface PalletCycleData {
@@ -47,17 +46,18 @@ export interface PalletCycleData {
   readonly active: number;
 }
 
-export type PalletCyclesByPallet = HashMap<string, L.List<PalletCycleData>>;
+export type PalletCyclesByCntr = IMap<number, PalletCycleData>;
+export type PalletCyclesByPallet = IMap<string, PalletCyclesByCntr>;
 
 const last30PalletCyclesRW = atom<PalletCyclesByPallet>({
   key: "last30PalletCycles",
-  default: HashMap.empty(),
+  default: emptyIMap(),
 });
 export const last30PalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> = last30PalletCyclesRW;
 
 const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>({
   key: "specificMonthPalletCycles",
-  default: HashMap.empty(),
+  default: emptyIMap(),
 });
 export const specificMonthPalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> = specificMonthPalletCyclesRW;
 
@@ -73,11 +73,11 @@ function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
 export const setLast30PalletCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30PalletCyclesRW, (oldCycles) => {
-      const newPalCycles = LazySeq.ofIterable(log)
+      return LazySeq.ofIterable(log)
         .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
-        .groupBy((c) => c.pal)
-        .mapValues((cyclesForPal) => L.from(LazySeq.ofIterable(cyclesForPal).map(logToPalletCycle)));
-      return oldCycles.mergeWith(newPalCycles, (oldCs, newCs) => oldCs.concat(newCs));
+        .foldLeft(oldCycles, (cycles, c) =>
+          cycles.modify(c.pal, (oldByCntr) => (oldByCntr ?? emptyIMap()).set(c.counter, logToPalletCycle(c)))
+        );
     });
   }
 );
@@ -95,10 +95,13 @@ export const updateLast30PalletCycles = conduit<ServerEventAndTime>(
       t.set(last30PalletCyclesRW, (oldCycles) => {
         if (expire) {
           const thirtyDaysAgo = addDays(now, -30);
-          oldCycles = oldCycles.mapValues((es) => es.filter((e) => e.x >= thirtyDaysAgo)).filter((es) => es.length > 0);
+          oldCycles = oldCycles.collectValues((es) => {
+            const newEs = es.bulkDelete((_, e) => e.x < thirtyDaysAgo);
+            return newEs.size > 0 ? newEs : null;
+          });
         }
 
-        return oldCycles.putWithMerge(log.pal, L.of(logToPalletCycle(log)), (a, b) => a.concat(b));
+        return oldCycles.modify(log.pal, (old) => (old ?? emptyIMap()).set(log.counter, logToPalletCycle(log)));
       });
     }
   }
@@ -110,8 +113,10 @@ export const setSpecificMonthPalletCycles = conduit<ReadonlyArray<Readonly<ILogE
       specificMonthPalletCyclesRW,
       LazySeq.ofIterable(log)
         .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
-        .groupBy((c) => c.pal)
-        .mapValues((cyclesForPal) => L.from(LazySeq.ofIterable(cyclesForPal).map(logToPalletCycle)))
+        .toIMap(
+          (c) => [c.pal, emptyIMap<number, PalletCycleData>().set(c.counter, logToPalletCycle(c))],
+          (a, b) => a.append(b, (_, snd) => snd)
+        )
     );
   }
 );

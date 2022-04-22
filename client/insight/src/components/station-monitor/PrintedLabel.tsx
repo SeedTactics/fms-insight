@@ -43,9 +43,9 @@ interface BarcodeProps {
 }
 
 function Barcode(props: BarcodeProps) {
-  const ref = React.useRef(null);
+  const ref = React.useRef<SVGSVGElement | null>(null);
   const setRef = React.useCallback(
-    (node) => {
+    (node: SVGSVGElement) => {
       if (node) {
         JsBarcode(node, props.text, {
           format: "CODE128",
@@ -135,10 +135,6 @@ function SinglePage(props: SinglePageProps) {
   );
 }
 
-function tuple<T extends any[]>(...data: T) {
-  return data;
-}
-
 function OneJobPerPage(props: PrintedLabelProps) {
   const allJobs = useRecoilValue(currentStatus).jobs;
 
@@ -147,18 +143,20 @@ function OneJobPerPage(props: PrintedLabelProps) {
       LazySeq.ofIterable(props.material || [])
         .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
         .groupBy((m) => m.jobUnique)
-        .map((uniq: string, mats) =>
-          tuple(uniq, {
-            length: mats.length(),
-            part: mats.head().getOrThrow().partName,
-            comment: allJobs[uniq]?.comment,
-            serial1: mats.head().getOrNull()?.serial,
-            serial2: mats.last().getOrNull()?.serial,
-          })
+        .map(
+          ([uniq, mats]) =>
+            [
+              uniq,
+              {
+                length: mats.length,
+                part: mats[0]?.partName ?? "",
+                comment: allJobs[uniq]?.comment,
+                serial1: mats[0]?.serial,
+                serial2: mats[mats.length - 1]?.serial,
+              },
+            ] as const
         )
-        .toVector()
-        .sortOn(([_, p]) => p.part)
-        .toArray(),
+        .toSortedArray(([_, p]) => p.part),
     [props.material, allJobs]
   );
 
@@ -206,10 +204,8 @@ function CombinedToOnePage(props: PrintedLabelProps) {
       LazySeq.ofIterable(props.material || [])
         .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
         .groupBy((m) => m.jobUnique)
-        .mapValues((mats) => ({ length: mats.length(), part: mats.head().getOrThrow().partName }))
-        .toVector()
-        .sortOn(([_, p]) => p.part)
-        .toArray(),
+        .map(([k, mats]) => [k, { length: mats.length, part: mats[0]?.partName ?? "" }] as const)
+        .toSortedArray(([_, p]) => p.part),
     [props.material]
   );
 
@@ -218,10 +214,9 @@ function CombinedToOnePage(props: PrintedLabelProps) {
   const notes = React.useMemo(
     () =>
       LazySeq.ofIterable(props.material || [])
-        .map((m) => (m.jobUnique ? allJobs[m.jobUnique] : undefined))
-        .toSet((j) => j?.comment ?? "")
-        .filter((n) => n !== "")
-        .toArray({ sortOn: (n) => n }),
+        .collect((m) => (m.jobUnique ? allJobs[m.jobUnique]?.comment : undefined))
+        .distinct()
+        .toSortedArray((n) => n),
     [props.material, allJobs]
   );
 

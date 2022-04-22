@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { durationToMinutes } from "../util/parseISODuration";
 import { LazySeq } from "../util/lazyseq";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import * as L from "list/methods";
 import { addDays } from "date-fns";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
@@ -46,49 +45,47 @@ export interface SimPartCompleted {
   readonly expectedMachineMins: number; // expected machine minutes to entirely produce quantity
 }
 
-const last30SimProductionRW = atom<L.List<SimPartCompleted>>({
+const last30SimProductionRW = atom<ReadonlyArray<SimPartCompleted>>({
   key: "last30SimProduction",
-  default: L.empty(),
+  default: [],
 });
-export const last30SimProduction: RecoilValueReadOnly<L.List<SimPartCompleted>> = last30SimProductionRW;
+export const last30SimProduction: RecoilValueReadOnly<ReadonlyArray<SimPartCompleted>> = last30SimProductionRW;
 
-const specificMonthSimProductionRW = atom<L.List<SimPartCompleted>>({
+const specificMonthSimProductionRW = atom<ReadonlyArray<SimPartCompleted>>({
   key: "specificMonthSimProduction",
-  default: L.empty(),
+  default: [],
 });
-export const specificMonthSimProduction: RecoilValueReadOnly<L.List<SimPartCompleted>> = specificMonthSimProductionRW;
+export const specificMonthSimProduction: RecoilValueReadOnly<ReadonlyArray<SimPartCompleted>> =
+  specificMonthSimProductionRW;
 
-function jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): L.List<SimPartCompleted> {
-  return L.from(
-    LazySeq.ofIterable(jobs).flatMap(function* (jParam) {
-      const j = jParam;
-      for (let proc = 0; proc < j.procsAndPaths.length; proc++) {
-        const procInfo = j.procsAndPaths[proc];
-        for (let path = 0; path < procInfo.paths.length; path++) {
-          const pathInfo = procInfo.paths[path];
-          let machTime = 0;
-          for (const stop of pathInfo.stops) {
-            machTime += durationToMinutes(stop.expectedCycleTime);
-          }
-          let prevQty = 0;
-          for (const prod of pathInfo.simulatedProduction || []) {
-            yield {
-              part: j.partName + "-" + (proc + 1).toString(),
-              completeTime: prod.timeUTC,
-              quantity: prod.quantity - prevQty,
-              expectedMachineMins: machTime,
-            };
-            prevQty = prod.quantity;
-          }
+function* jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): Iterable<SimPartCompleted> {
+  for (const j of jobs) {
+    for (let proc = 0; proc < j.procsAndPaths.length; proc++) {
+      const procInfo = j.procsAndPaths[proc];
+      for (let path = 0; path < procInfo.paths.length; path++) {
+        const pathInfo = procInfo.paths[path];
+        let machTime = 0;
+        for (const stop of pathInfo.stops) {
+          machTime += durationToMinutes(stop.expectedCycleTime);
+        }
+        let prevQty = 0;
+        for (const prod of pathInfo.simulatedProduction || []) {
+          yield {
+            part: j.partName + "-" + (proc + 1).toString(),
+            completeTime: prod.timeUTC,
+            quantity: prod.quantity - prevQty,
+            expectedMachineMins: machTime,
+          };
+          prevQty = prod.quantity;
         }
       }
-    })
-  );
+    }
+  }
 }
 
 export const setLast30JobProduction = conduit<Readonly<IHistoricData>>(
   (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    t.set(last30SimProductionRW, (oldProd) => oldProd.concat(jobToPartCompleted(Object.values(history.jobs))));
+    t.set(last30SimProductionRW, (oldProd) => [...oldProd, ...jobToPartCompleted(Object.values(history.jobs))]);
   }
 );
 
@@ -101,14 +98,14 @@ export const updateLast30JobProduction = conduit<ServerEventAndTime>(
           const expire = addDays(now, -30);
           // check if nothing to expire and no new data
           const minProd = LazySeq.ofIterable(simProd).minOn((e) => e.completeTime.getTime());
-          if ((minProd.isNone() || minProd.get().completeTime >= expire) && apiNewJobs.length === 0) {
+          if ((minProd === undefined || minProd.completeTime >= expire) && apiNewJobs.length === 0) {
             return simProd;
           }
 
           simProd = simProd.filter((e) => e.completeTime >= expire);
         }
 
-        return simProd.concat(jobToPartCompleted(apiNewJobs));
+        return [...simProd, ...jobToPartCompleted(apiNewJobs)];
       });
     }
   }
@@ -116,6 +113,6 @@ export const updateLast30JobProduction = conduit<ServerEventAndTime>(
 
 export const setSpecificMonthJobProduction = conduit<Readonly<IHistoricData>>(
   (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    t.set(specificMonthSimProductionRW, jobToPartCompleted(Object.values(history.jobs)));
+    t.set(specificMonthSimProductionRW, Array.from(jobToPartCompleted(Object.values(history.jobs))));
   }
 );

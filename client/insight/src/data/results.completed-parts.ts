@@ -32,12 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { startOfDay } from "date-fns";
-import { HashMap, fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import copy from "copy-to-clipboard";
 import { SimPartCompleted } from "../cell-status/sim-production";
 import { PartCycleData } from "../cell-status/station-cycles";
+import { IMap } from "../util/imap";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -48,8 +48,8 @@ class DayAndPart {
   equals(other: DayAndPart): boolean {
     return this.day.getTime() === other.day.getTime() && this.part === other.part;
   }
-  hashCode(): number {
-    return fieldsHashCode(this.day.getTime(), this.part);
+  hashPrimitives(): readonly [Date, string] {
+    return [this.day, this.part];
   }
   toString(): string {
     return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
@@ -69,8 +69,8 @@ class MatIdAndProcess {
   equals(other: MatIdAndProcess): boolean {
     return this.matId === other.matId && this.proc === other.proc;
   }
-  hashCode(): number {
-    return fieldsHashCode(this.matId, this.proc);
+  hashPrimitives(): readonly [number, number] {
+    return [this.matId, this.proc];
   }
   toString(): string {
     return this.matId.toString() + "-" + this.proc.toString();
@@ -79,10 +79,10 @@ class MatIdAndProcess {
 
 export function binCyclesByDayAndPart(
   cycles: Iterable<PartCycleData>,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
+  matsById: IMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
   end: Date
-): HashMap<DayAndPart, PartsCompletedSummary> {
+): IMap<DayAndPart, PartsCompletedSummary> {
   const activeTimeByMatId = LazySeq.ofIterable(cycles)
     .filter(
       (cycle) =>
@@ -95,7 +95,7 @@ export function binCyclesByDayAndPart(
         active: cycle.activeMinutes / cycle.material.length,
       }))
     )
-    .toMap(
+    .toIMap(
       (p) => [new MatIdAndProcess(p.matId, p.proc), p.active],
       (a1, a2) => a1 + a2
     );
@@ -109,11 +109,11 @@ export function binCyclesByDayAndPart(
           part: details.partName + "-" + proc.toString(),
           value: {
             count: 1,
-            activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))).getOrElse(0),
+            activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))) ?? 0,
           },
         }))
     )
-    .toMap(
+    .toIMap(
       (p) => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
       (v1, v2) => ({
         count: v1.count + v2.count,
@@ -128,8 +128,8 @@ export function binCyclesByDayAndPart(
 
 export function binSimProductionByDayAndPart(
   prod: Iterable<SimPartCompleted>
-): HashMap<DayAndPart, PartsCompletedSummary> {
-  return LazySeq.ofIterable(prod).toMap(
+): IMap<DayAndPart, PartsCompletedSummary> {
+  return LazySeq.ofIterable(prod).toIMap(
     (p) =>
       [
         new DayAndPart(startOfDay(p.completeTime), p.part),
@@ -156,8 +156,8 @@ class HeatmapClipboardCell {
   equals(other: HeatmapClipboardCell): boolean {
     return this.x === other.x && this.y === other.y;
   }
-  hashCode(): number {
-    return fieldsHashCode(this.x, this.y);
+  hashPrimitives(): readonly [number, string] {
+    return [this.x, this.y];
   }
   toString(): string {
     return `{x: ${new Date(this.x).toISOString()}, y: ${this.y}}`;
@@ -167,20 +167,21 @@ class HeatmapClipboardCell {
 export function buildCompletedPartsHeatmapTable(
   points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
 ): string {
-  const cells = LazySeq.ofIterable(points).toMap(
+  const cells = LazySeq.ofIterable(points).toIMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );
   const days = LazySeq.ofIterable(points)
-    .toSet((p) => p.x.getTime())
-    .toArray({ sortOn: (x) => x });
+    .map((p) => p.x.getTime())
+    .distinct()
+    .toSortedArray((x) => x);
   const rows = LazySeq.ofIterable(points)
-    .toMap(
-      (p) => [p.y, p.activeMachineMins / p.count],
+    .aggregate(
+      (p) => p.y,
+      (p) => p.activeMachineMins / p.count,
       (first, snd) => (isNaN(first) ? snd : first)
     )
-    .toVector()
-    .sortOn(([name, _cycleMins]) => name);
+    .sort(([name, _cycleMins]) => name);
 
   let table = "<table>\n<thead><tr><th>Part</th><th>Expected Cycle Mins</th>";
   for (const x of days) {
@@ -192,9 +193,9 @@ export function buildCompletedPartsHeatmapTable(
     table += "<tr><th>" + partName + "</th><th>" + cycleMins.toFixed(1) + "</th>";
     for (const x of days) {
       const cell = cells.get(new HeatmapClipboardCell(x, partName));
-      if (cell.isSome()) {
-        table += "<td>" + cell.get().count.toFixed(0) + "</td>";
-        table += "<td>" + (cell.get().activeMachineMins / 60).toFixed(1) + "</td>";
+      if (cell !== undefined) {
+        table += "<td>" + cell.count.toFixed(0) + "</td>";
+        table += "<td>" + (cell.activeMachineMins / 60).toFixed(1) + "</td>";
       } else {
         table += "<td></td>";
         table += "<td></td>";

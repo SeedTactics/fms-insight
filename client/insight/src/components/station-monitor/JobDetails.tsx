@@ -45,11 +45,12 @@ import { format } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
 import { LazySeq } from "../../util/lazyseq";
 import { materialToShowInDialog } from "../../cell-status/material-details";
-import { HashMap, HashSet } from "prelude-ts";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
+import { IMap } from "../../util/imap";
+import { ISet } from "../../util/iset";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;
@@ -157,8 +158,8 @@ function MaterialStatus(props: MaterialStatusProps) {
 
 interface JobMaterialProps {
   readonly unique: string;
-  readonly matsFromEvents: HashMap<number, MaterialSummaryAndCompletedData>;
-  readonly matIdsForJob: HashMap<string, HashSet<number>>;
+  readonly matsFromEvents: IMap<number, MaterialSummaryAndCompletedData>;
+  readonly matIdsForJob: IMap<string, ISet<number>>;
   readonly fullWidth: boolean;
 }
 
@@ -166,15 +167,15 @@ function JobMaterial(props: JobMaterialProps) {
   const currentMaterial = useRecoilValue(currentStatus).material;
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
-  const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique).getOrElse(HashSet.empty<number>()))
-    .mapOption((matId) => props.matsFromEvents.get(matId))
-    .toArray();
+  const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique) ?? ISet.empty<number>())
+    .collect((matId) => props.matsFromEvents.get(matId))
+    .toRArray();
 
   if (mats === null || mats.length === 0) {
     return <div />;
   }
 
-  const matsById = LazySeq.ofIterable(currentMaterial).toMap(
+  const matsById = LazySeq.ofIterable(currentMaterial).toIMap(
     (m) => [m.materialID, m],
     (m1, _m2) => m1
   );
@@ -201,8 +202,8 @@ function JobMaterial(props: JobMaterialProps) {
               <TableCell>{mat.serial ?? ""}</TableCell>
               <TableCell>
                 <MaterialStatus
-                  matSummary={props.matsFromEvents.get(mat.materialID).getOrNull()}
-                  inProcMat={matsById.get(mat.materialID).getOrNull()}
+                  matSummary={props.matsFromEvents.get(mat.materialID) ?? null}
+                  inProcMat={matsById.get(mat.materialID) ?? null}
                 />
               </TableCell>
               <TableCell padding="checkbox">
@@ -210,7 +211,7 @@ function JobMaterial(props: JobMaterialProps) {
                   onClick={() =>
                     setMatToShow({
                       type: "MatSummary",
-                      summary: props.matsFromEvents.get(mat.materialID).getOrElse({
+                      summary: props.matsFromEvents.get(mat.materialID) ?? {
                         materialID: mat.materialID,
                         jobUnique: mat.jobUnique ?? "",
                         partName: mat.partName ?? "",
@@ -218,7 +219,7 @@ function JobMaterial(props: JobMaterialProps) {
                         serial: mat.serial,
                         workorderId: mat.workorderId,
                         signaledInspections: [],
-                      }),
+                      },
                     })
                   }
                   size="large"

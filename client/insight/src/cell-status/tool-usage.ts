@@ -30,21 +30,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { HashMap, Option } from "prelude-ts";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api";
 import { LazySeq } from "../util/lazyseq";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
-import * as L from "list/methods";
 import { durationToMinutes } from "../util/parseISODuration";
 import {
   EstimatedCycleTimes,
   isOutlier,
   last30EstimatedCycleTimes,
   PartAndStationOperation,
-  StatisticalCycleTime,
 } from "./estimated-cycle-times";
+import { emptyIMap, IMap } from "../util/imap";
 
 export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
@@ -54,11 +52,11 @@ export interface ProgramToolUseInSingleCycle {
   }>;
 }
 
-export type ToolUsage = HashMap<PartAndStationOperation, L.List<ProgramToolUseInSingleCycle>>;
+export type ToolUsage = IMap<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>;
 
 const last30ToolUseRW = atom<ToolUsage>({
   key: "last30ToolUse",
-  default: HashMap.empty(),
+  default: emptyIMap(),
 });
 export const last30ToolUse: RecoilValueReadOnly<ToolUsage> = last30ToolUseRW;
 
@@ -72,11 +70,9 @@ function process_tools(
   }
 
   const stats =
-    cycle.material.length > 0
-      ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
-      : Option.none<StatisticalCycleTime>();
+    cycle.material.length > 0 ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle)) : undefined;
   const elapsed = durationToMinutes(cycle.elapsed);
-  if (stats.isNone() || isOutlier(stats.get(), elapsed)) {
+  if (stats === undefined || isOutlier(stats, elapsed)) {
     return toolUsage;
   }
 
@@ -87,17 +83,21 @@ function process_tools(
       cycleUsageMinutes: use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle),
       toolChanged: use.toolChangeOccurred === true,
     }))
-    .toArray();
+    .toRArray();
 
-  if (toolsUsedInCycle.length === 0 && toolUsage.containsKey(key)) {
+  if (toolsUsedInCycle.length === 0 && toolUsage.has(key)) {
     return toolUsage;
   }
 
-  return toolUsage.putWithMerge(
-    key,
-    toolsUsedInCycle.length === 0 ? L.empty() : L.of({ tools: toolsUsedInCycle }),
-    (oldV, newV) => oldV.drop(Math.max(0, oldV.length - 4)).concat(newV)
-  );
+  return toolUsage.modify(key, (old) => {
+    if (old) {
+      const n = old.slice(-4);
+      n.push({ tools: toolsUsedInCycle });
+      return n;
+    } else {
+      return [{ tools: toolsUsedInCycle }];
+    }
+  });
 }
 
 export const setLast30ToolUse = conduit<ReadonlyArray<Readonly<ILogEntry>>>(

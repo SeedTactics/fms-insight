@@ -42,7 +42,7 @@ const SelectedInspections = React.memo(function SelectedInspections() {
     const today = startOfToday();
     const start = addDays(today, -6);
     const end = addDays(today, 1);
-    return inspections.mapValues((log) => log.filter((e) => e.time >= start && e.time <= end));
+    return inspections.mapValues((log) => log.bulkDelete((_, e) => e.time < start || e.time > end));
   }, [inspections]);
 
   return (

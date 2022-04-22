@@ -97,8 +97,8 @@ const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStri
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
 
-  const schUse = props.tool.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
-  const totalLife = props.tool.machines.sumOn((m) => m.remainingMinutes);
+  const schUse = LazySeq.ofIterable(props.tool.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity);
+  const totalLife = LazySeq.ofIterable(props.tool.machines).sumOn((m) => m.remainingMinutes);
 
   return (
     <>
@@ -121,12 +121,7 @@ function ToolRow(props: ToolRowProps) {
             <TableCell>{props.tool.minRemainingMachine}</TableCell>
           </>
         ) : (
-          <TableCell>
-            {props.tool.machines
-              .map((m) => m.pocket.toString())
-              .toArray()
-              .join(", ")}
-          </TableCell>
+          <TableCell>{props.tool.machines.map((m) => m.pocket.toString()).join(", ")}</TableCell>
         )}
         <TableCell />
       </ToolTableRow>
@@ -142,7 +137,7 @@ function ToolRow(props: ToolRowProps) {
                 mr: "1em",
               }}
             >
-              {props.tool.parts.isEmpty() ? undefined : (
+              {props.tool.parts.length === 0 ? undefined : (
                 <div>
                   <Table
                     size="small"
@@ -239,7 +234,7 @@ export function ToolSummaryTable(): JSX.Element {
     return <div />;
   }
 
-  const rows = tools.sortBy((a: ToolReport, b: ToolReport) => {
+  const rows = tools.toLazySeq().sortWith((a: ToolReport, b: ToolReport) => {
     let c = 0;
     switch (sortCol) {
       case "ToolName":
@@ -247,11 +242,13 @@ export function ToolSummaryTable(): JSX.Element {
         break;
       case "ScheduledUse":
         c =
-          a.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity) -
-          b.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
+          LazySeq.ofIterable(a.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity) -
+          LazySeq.ofIterable(b.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity);
         break;
       case "RemainingTotalLife":
-        c = a.machines.sumOn((m) => m.remainingMinutes) - b.machines.sumOn((m) => m.remainingMinutes);
+        c =
+          LazySeq.ofIterable(a.machines).sumOn((m) => m.remainingMinutes) -
+          LazySeq.ofIterable(b.machines).sumOn((m) => m.remainingMinutes);
         break;
       case "MinRemainingLife":
         c = a.minRemainingMinutes - b.minRemainingMinutes;

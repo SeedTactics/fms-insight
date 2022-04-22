@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { format } from "date-fns";
-import { HashMap } from "prelude-ts";
 import {
   Dialog,
   DialogContent,
@@ -71,7 +70,7 @@ export interface ExtraTooltip {
 }
 
 export interface DataToPlotProps {
-  readonly points: HashMap<string, ReadonlyArray<CycleChartPoint>>;
+  readonly points: ReadonlyMap<string, ReadonlyArray<CycleChartPoint>>;
   readonly stats?: StatisticalCycleTime;
   readonly partCntPerPoint?: number;
   readonly plannedTimeMinutes?: number;
@@ -100,13 +99,17 @@ interface DataToPlot {
 
 function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): DataToPlot {
   const series = React.useMemo(() => {
-    const seriesNames = points.keySet().toArray({ sortOn: (x) => x });
-
-    return seriesNames.map((name, idx) => ({
-      name,
-      color: seriesColor(idx, seriesNames.length),
-      points: points.get(name).getOrElse([]),
-    }));
+    return (
+      points
+        .toLazySeq()
+        // need to sort first so the color indices are correct
+        .toSortedArray(([k]) => k)
+        .map(([seriesName, seriesPoints], idx) => ({
+          name: seriesName,
+          color: seriesColor(idx, points.size),
+          points: seriesPoints ?? [],
+        }))
+    );
   }, [points]);
 
   const median = React.useMemo(() => {
@@ -146,7 +149,7 @@ function useScales({
   containerWidth,
   containerHeight,
 }: {
-  readonly points: HashMap<string, ReadonlyArray<CycleChartPoint>>;
+  readonly points: ReadonlyMap<string, ReadonlyArray<CycleChartPoint>>;
   readonly yZoom: YZoomRange | null;
   readonly containerWidth: number;
   readonly containerHeight: number;
@@ -172,8 +175,12 @@ function useScales({
   }, [current_date_zoom, default_date_range, xMax]);
 
   const maxYVal = React.useMemo(() => {
-    if (points.isEmpty()) return 60;
-    const m = points.foldLeft(0, (v, [, pts]) => pts.reduce((w, p) => Math.max(w, p.y), v));
+    if (points.size === 0) return 60;
+    const m =
+      points
+        .toLazySeq()
+        .flatMap(([, pts]) => pts.map((p) => p.y))
+        .maxOn((y) => y) ?? 1;
     // round up to nearest 5
     return Math.ceil(m / 5) * 5;
   }, [points]);
@@ -737,8 +744,10 @@ function CycleChartSvg(
 
 export const CycleChart = React.memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
-  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } =
-    useTooltip<{ readonly pt: CycleChartPoint; readonly seriesName: string }>();
+  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<{
+    readonly pt: CycleChartPoint;
+    readonly seriesName: string;
+  }>();
   const [yZoom, setYZoom] = React.useState<YZoomRange | null>(null);
   const [disabledSeries, adjustDisabled] = useImmer<ReadonlySet<string>>(new Set());
   const [highlightStart, setHighlightStart] = React.useState<{

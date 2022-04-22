@@ -35,9 +35,9 @@ import curSt from "../../test/status-mock.json";
 import { selectAllMaterialIntoBins } from "./all-material-bins";
 import { CurrentStatus } from "../network/api";
 import { it, expect } from "vitest";
-import { ptsToJs } from "../../test/prelude-ts-snapshots";
+import { toRawJs } from "../../test/to-raw-js";
 
 it("creates all material", () => {
   const status = CurrentStatus.fromJS(curSt);
-  expect(ptsToJs(selectAllMaterialIntoBins(status, []))).toMatchSnapshot("all material bins");
+  expect(toRawJs(selectAllMaterialIntoBins(status, []))).toMatchSnapshot("all material bins");
 });

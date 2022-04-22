@@ -76,7 +76,6 @@ import { Button } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { useIsDemo } from "../routes";
 import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
-import { Vector } from "prelude-ts";
 import { IProgramRevision } from "../../network/api";
 import { MachineBackend } from "../../network/backend";
 import { Select } from "@mui/material";
@@ -230,7 +229,7 @@ export function ProgramSummaryTable(): JSX.Element {
     return <div />;
   }
 
-  const rows = report.programs.sortBy((a: CellControllerProgram, b: CellControllerProgram) => {
+  const rows = report.programs.toLazySeq().sortWith((a: CellControllerProgram, b: CellControllerProgram) => {
     let c = 0;
     switch (sortCol) {
       case "ProgramName":
@@ -529,7 +528,7 @@ export function ProgramContentDialog(): JSX.Element {
 interface ProgramRevisionTableProps {
   readonly page: number;
   readonly loading: boolean;
-  readonly revisions: Vector<Readonly<IProgramRevision>>;
+  readonly revisions: Iterable<Readonly<IProgramRevision>>;
 }
 
 const revisionsPerPage = 10;
@@ -563,7 +562,7 @@ function ProgramRevisionTable(props: ProgramRevisionTableProps) {
             ))}
           </>
         ) : (
-          props.revisions
+          LazySeq.ofIterable(props.revisions)
             .drop(props.page * revisionsPerPage)
             .take(revisionsPerPage)
             .map((rev) => (
@@ -604,7 +603,7 @@ export function ProgramHistoryDialog(): JSX.Element {
   const [program, setProgram] = useRecoilState(programToShowHistory);
   const [programForContent, setProgramForContent] = useRecoilState(programToShowContent);
 
-  const [revisions, setRevisions] = React.useState<Vector<Readonly<IProgramRevision>> | null>(null);
+  const [revisions, setRevisions] = React.useState<ReadonlyArray<Readonly<IProgramRevision>> | null>(null);
   const [lastLoadedPage, setLastLoadedPage] = React.useState<LastPage>({ page: 0, hasMore: false });
   const [page, setPage] = React.useState<number>(0);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -621,7 +620,7 @@ export function ProgramHistoryDialog(): JSX.Element {
       setError(null);
       MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(program.programName, revisionsPerPage, undefined)
         .then((revs) => {
-          setRevisions(Vector.ofIterable(revs));
+          setRevisions(revs);
           setLastLoadedPage({ page: 0, hasMore: revs.length === revisionsPerPage });
         })
         .catch(setError)
@@ -632,16 +631,17 @@ export function ProgramHistoryDialog(): JSX.Element {
   function advancePage() {
     if (page < lastLoadedPage.page) {
       setPage(page + 1);
-    } else if (lastLoadedPage.hasMore && program !== null && revisions !== null && !revisions.isEmpty()) {
+    } else if (lastLoadedPage.hasMore && program !== null && revisions !== null && revisions.length > 0) {
       setLoading(true);
       setError(null);
+      const rev = revisions[revisions.length - 1];
       MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
         program.programName,
         revisionsPerPage,
-        revisions.last().getOrThrow().revision - 1
+        rev ? rev.revision - 1 : undefined
       )
         .then((revs) => {
-          setRevisions(revisions.appendAll(revs));
+          setRevisions((oldRevs) => (oldRevs === null ? revs : oldRevs.concat(revs)));
           setLastLoadedPage({ page: page + 1, hasMore: revs.length === revisionsPerPage });
           setPage(page + 1);
         })

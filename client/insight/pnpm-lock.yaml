@@ -36,16 +36,15 @@ specifiers:
   eslint-config-prettier: ^8.5.0
   eslint-plugin-react: ^7.29.4
   eslint-plugin-react-hooks: ^4.4.0
+  hamt_plus: ^1.0.2
   highlight.js: ^11.5.1
   immer: ^9.0.12
   jdenticon: ^3.1.1
   jsbarcode: ^3.11.5
   jsdom: ^19.0.0
-  list: ^2.0.19
   localforage: ^1.10.0
   nswag: ^13.15.10
   oidc-client: ^1.11.5
-  prelude-ts: ^1.0.3
   prettier: ^2.6.2
   react: ^17.0.2
   react-beautiful-dnd: ^13.1.0
@@ -83,14 +82,13 @@ dependencies:
   copy-to-clipboard: 3.3.1
   d3-sankey: 0.12.3
   date-fns: 2.28.0
+  hamt_plus: 1.0.2
   highlight.js: 11.5.1
   immer: 9.0.12
   jdenticon: 3.1.1
   jsbarcode: 3.11.5
-  list: 2.0.19
   localforage: 1.10.0
   oidc-client: 1.11.5
-  prelude-ts: 1.0.3
   react: 17.0.2
   react-beautiful-dnd: 13.1.0_react-dom@17.0.2+react@17.0.2
   react-calendar: 3.7.0_react-dom@17.0.2+react@17.0.2
@@ -2921,10 +2919,6 @@ packages:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
     dev: false
 
-  /list/2.0.19:
-    resolution: {integrity: sha512-nnVaRp4RaMAQkCpypTThsdxKqgPMiSwJq93eAm2/IbpUa8sd04XKBhkKu+bMk63HmdjK8b8Cuh4xARHWX2ye/Q==}
-    dev: false
-
   /local-pkg/0.4.1:
     resolution: {integrity: sha512-lL87ytIGP2FU5PWwNDo0w3WhIo2gopIAxPg9RxDYF7m4rr5ahuZxP22xnJHIvaLTe4Z9P6uKKY2UHiwyB4pcrw==}
     engines: {node: '>=14'}
@@ -3207,13 +3201,6 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
     dev: true
-
-  /prelude-ts/1.0.3:
-    resolution: {integrity: sha512-emZC/dMJmxUDQj4rDONVxEgNBca3WvCRQzXgCVkk9CnWDNfWPYsc6LoVdSqVI5puSesDh5yoauI2oi65ueAUAw==}
-    dependencies:
-      hamt_plus: 1.0.2
-      list: 2.0.19
-    dev: false
 
   /prettier/2.6.2:
     resolution: {integrity: sha512-PkUpF+qoXTqhOeWL9fu7As8LXsIUZ1WYaJiY/a7McAQzxjk82OF0tibkFXVCDImZtWxbvojFjerkiLb0/q8mew==}

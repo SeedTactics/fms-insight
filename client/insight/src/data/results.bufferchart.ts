@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { BufferEntry } from "../cell-status/buffers";
-import { fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 
 export interface BufferChartPoint {
@@ -51,47 +50,16 @@ type BufferSeriesType =
   | { readonly type: "StockerWaitForUnload" }
   | { readonly type: "Queue"; readonly queue: string };
 
-class BufferSeriesKey {
-  public constructor(public readonly ty: BufferSeriesType) {}
-  equals(other: BufferSeriesKey): boolean {
-    switch (this.ty.type) {
-      case "Queue":
-        return other.ty.type === "Queue" && this.ty.queue === other.ty.queue;
-      case "Rotary":
-        return (
-          other.ty.type === "Rotary" &&
-          this.ty.machineGroup === other.ty.machineGroup &&
-          this.ty.machineNum === other.ty.machineNum
-        );
-      case "StockerWaitForMC":
-        return other.ty.type === "StockerWaitForMC";
-      case "StockerWaitForUnload":
-        return other.ty.type === "StockerWaitForUnload";
-    }
-  }
-  hashCode(): number {
-    switch (this.ty.type) {
-      case "Queue":
-        return fieldsHashCode("Queue", this.ty.queue, 0);
-      case "Rotary":
-        return fieldsHashCode("Rotary", this.ty.machineGroup, this.ty.machineNum);
-      case "StockerWaitForMC":
-        return fieldsHashCode("StockerWaitForMC", "", 0);
-      case "StockerWaitForUnload":
-        return fieldsHashCode("StockerWaitForUnload", "", 0);
-    }
-  }
-  toString(): string {
-    switch (this.ty.type) {
-      case "Queue":
-        return this.ty.queue;
-      case "Rotary":
-        return "Rotary " + this.ty.machineGroup + " #" + this.ty.machineNum.toString();
-      case "StockerWaitForMC":
-        return "Stocker[Waiting For Machining]";
-      case "StockerWaitForUnload":
-        return "Stocker[Waiting For Unload]";
-    }
+function bufferSeriesLabel(ty: BufferSeriesType): string {
+  switch (ty.type) {
+    case "Queue":
+      return ty.queue;
+    case "Rotary":
+      return "Rotary " + ty.machineGroup + " #" + ty.machineNum.toString();
+    case "StockerWaitForMC":
+      return "Stocker[Waiting For Machining]";
+    case "StockerWaitForUnload":
+      return "Stocker[Waiting For Unload]";
   }
 }
 
@@ -162,13 +130,11 @@ export function buildBufferChart(
 ): ReadonlyArray<BufferChartSeries> {
   const movingAverageDistanceInMilliseconds = movingAverageDistanceInHours * 60 * 60 * 1000;
   return LazySeq.ofIterable(entries)
-    .groupBy((v) => new BufferSeriesKey(v.buffer))
-    .mapValues((es) => calcPoints(start, end, movingAverageDistanceInMilliseconds, es))
-    .toArray()
-    .filter(([k]) => k.ty.type !== "Queue" || !rawMatQueues.has(k.ty.queue))
+    .filter((e) => e.buffer.type !== "Queue" || !rawMatQueues.has(e.buffer.queue))
+    .groupBy((v) => bufferSeriesLabel(v.buffer))
     .map(([k, points]) => ({
-      label: k.toString(),
-      points,
+      label: k,
+      points: calcPoints(start, end, movingAverageDistanceInMilliseconds, points),
     }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .toSortedArray((a) => a.label);
 }

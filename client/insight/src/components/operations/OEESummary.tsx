@@ -255,14 +255,18 @@ export default React.memo(function StationOEEs() {
   const pallets = React.useMemo(() => buildPallets(currentSt), [currentSt]);
   const cycles = useRecoilValue(last30StationCycles);
   const stationMins = React.useMemo(
-    () => stationMinutes(cycles, addDays(currentSt.timeOfCurrentStatusUTC, -7)),
+    () => stationMinutes(cycles.valuesToLazySeq(), addDays(currentSt.timeOfCurrentStatusUTC, -7)),
     [cycles, currentSt.timeOfCurrentStatusUTC]
   );
 
   const stats = pallets
-    .keySet()
-    .addAll(stationMins.keySet())
-    .toArray({ sortOn: [(s) => s.startsWith("L/U"), (s) => s] }); // put machines first
+    .toLazySeq()
+    .map((p) => p[0])
+    .concat(stationMins.toLazySeq().map((s) => s[0]))
+    .toSortedArray(
+      (s) => s.startsWith("L/U"),
+      (s) => s
+    );
   return (
     <Grid data-testid="stationoee-container" container justifyContent="space-around">
       {stats.map((stat, idx) => (
@@ -270,9 +274,9 @@ export default React.memo(function StationOEEs() {
           <StationOEE
             dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
             station={stat}
-            oee={stationMins.get(stat).getOrElse(0) / (60 * 24 * 7)}
-            pallet={pallets.get(stat).getOrElse({ pal: undefined }).pal}
-            queuedPallet={pallets.get(stat).getOrElse({ queued: undefined }).queued}
+            oee={(stationMins.get(stat) ?? 0) / (60 * 24 * 7)}
+            pallet={pallets.get(stat)?.pal}
+            queuedPallet={pallets.get(stat)?.queued}
           />
         </Grid>
       ))}

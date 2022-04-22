@@ -49,7 +49,6 @@ import { Button } from "@mui/material";
 import { LazySeq } from "../../util/lazyseq";
 import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
 import { IInProcessMaterial, LocType, QueuePosition } from "../../network/api";
-import { HashMap, Ordering } from "prelude-ts";
 import {
   InvalidateCycleDialogButtons,
   InvalidateCycleDialogContent,
@@ -133,9 +132,9 @@ interface SystemMaterialProps<T> {
   readonly name: string;
   readonly draggableId: string;
   readonly idx: number;
-  readonly material: HashMap<T, ReadonlyArray<Readonly<IInProcessMaterial>>>;
+  readonly material: ReadonlyMap<T, ReadonlyArray<Readonly<IInProcessMaterial>>>;
   readonly renderLabel: (label: T) => string;
-  readonly compareLabel: (l1: T, l2: T) => Ordering;
+  readonly compareLabel: (l1: T, l2: T) => number;
 }
 
 function renderLul(lul: number) {
@@ -189,7 +188,7 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
             </div>
             <div style={getQueueStyle(false, undefined)}>
               {LazySeq.ofIterable(this.props.material)
-                .sortBy(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
+                .sortWith(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
                 .map(([label, material], idx) => (
                   <div key={idx}>
                     <Typography variant="caption">{this.props.renderLabel(label)}</Typography>

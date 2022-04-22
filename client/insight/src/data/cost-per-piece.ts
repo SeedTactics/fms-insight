@@ -32,12 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { addMonths, getDaysInMonth, addDays } from "date-fns";
-import { Vector, HasEquals, HashMap } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
-import * as L from "list/methods";
 import copy from "copy-to-clipboard";
 import { PartCycleData } from "../cell-status/station-cycles";
+import { IMap } from "../util/imap";
 
 export interface PartCost {
   readonly part: string;
@@ -75,8 +74,8 @@ export function compute_monthly_cost(
   machineCostPerYear: MachineCostPerYear,
   automationCostPerYear: number | null,
   totalLaborCostForPeriod: number,
-  cycles: L.List<PartCycleData>,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
+  cycles: Iterable<PartCycleData>,
+  matsById: IMap<number, MaterialSummaryAndCompletedData>,
   type: { month: Date } | { thirtyDaysAgo: Date }
 ): CostData {
   const days = isMonthType(type) ? getDaysInMonth(type.month) : 30;
@@ -113,62 +112,54 @@ export function compute_monthly_cost(
       const unload = details.unloaded_processes?.[details.numProcesses];
       return !!unload && unload >= start && unload <= end;
     })
-    .toMap(
+    .toRMap(
       ([, details]) => [details.partName, 1],
       (v1, v2) => v1 + v2
     );
 
-  const parts = Array.from(
-    LazySeq.ofIterable(cycles)
-      .filter((c) => c.x >= start && c.x <= end)
-      .groupBy((c) => c.part)
-      .map((partName, forPart) => [
-        partName as string & HasEquals,
-        {
-          part: partName,
-          parts_completed: completed.get(partName).getOrElse(0),
-          machine: LazySeq.ofIterable(forPart)
-            .filter((c) => !c.isLabor)
-            .toMap(
-              (c) => [c.stationGroup, c.activeMinutes],
-              (a1, a2) => a1 + a2
-            )
-            .foldLeft(
-              { cost: 0, pctPerStat: new Map<string, number>() },
-              (x, [statGroup, minutes]: [string, number]) => {
-                const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
-                const totalMachineCost = stationCostForPeriod.get(statGroup) ?? 0;
-                x.pctPerStat.set(statGroup, minutes / totalUse + (x.pctPerStat.get(statGroup) ?? 0));
-                return { cost: x.cost + (minutes / totalUse) * totalMachineCost, pctPerStat: x.pctPerStat };
-              }
-            ),
-          labor: LazySeq.ofIterable(forPart)
-            .filter((c) => c.isLabor)
-            .toMap(
-              (c) => [c.stationGroup, c.activeMinutes],
-              (a1, a2) => a1 + a2
-            )
-            .foldLeft({ cost: 0, percent: 0 }, (x, [statGroup, minutes]: [string, number]) => {
-              const total = totalStatUseMinutes.get(statGroup) ?? 1;
-              return {
-                cost: x.cost + (minutes / total) * totalLaborCostForPeriod,
-                percent: x.percent + minutes / total,
-              };
-            }),
-          automation_pct: automationCostPerYear
-            ? forPart.sumOn((v) => (isUnloadCycle(v) ? 1 : 0)) / totalPalletCycles
-            : 0,
-        },
-      ])
-      .valueIterable()
-  );
+  const parts = LazySeq.ofIterable(cycles)
+    .filter((c) => c.x >= start && c.x <= end)
+    .groupBy((c) => c.part)
+    .map(([partName, forPart]) => ({
+      part: partName,
+      parts_completed: completed.get(partName) ?? 0,
+      machine: LazySeq.ofIterable(forPart)
+        .filter((c) => !c.isLabor)
+        .aggregate(
+          (c) => c.stationGroup,
+          (c) => c.activeMinutes,
+          (a1, a2) => a1 + a2
+        )
+        .foldLeft({ cost: 0, pctPerStat: new Map<string, number>() }, (x, [statGroup, minutes]) => {
+          const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
+          const totalMachineCost = stationCostForPeriod.get(statGroup) ?? 0;
+          x.pctPerStat.set(statGroup, minutes / totalUse + (x.pctPerStat.get(statGroup) ?? 0));
+          return { cost: x.cost + (minutes / totalUse) * totalMachineCost, pctPerStat: x.pctPerStat };
+        }),
+      labor: LazySeq.ofIterable(forPart)
+        .filter((c) => c.isLabor)
+        .aggregate(
+          (c) => c.stationGroup,
+          (c) => c.activeMinutes,
+          (a1, a2) => a1 + a2
+        )
+        .foldLeft({ cost: 0, percent: 0 }, (x, [statGroup, minutes]) => {
+          const total = totalStatUseMinutes.get(statGroup) ?? 1;
+          return {
+            cost: x.cost + (minutes / total) * totalLaborCostForPeriod,
+            percent: x.percent + minutes / total,
+          };
+        }),
+      automation_pct: automationCostPerYear
+        ? forPart.reduce((acc, v) => (isUnloadCycle(v) ? acc + 1 : acc), 0) / totalPalletCycles
+        : 0,
+    }))
+    .toRArray();
 
-  const machineCostGroups = Array.from(
-    LazySeq.ofIterable(parts)
-      .flatMap((p) => p.machine.pctPerStat.keys())
-      .toRSet((s) => s)
-  );
-  machineCostGroups.sort((a, b) => a.localeCompare(b));
+  const machineCostGroups = LazySeq.ofIterable(parts)
+    .flatMap((p) => p.machine.pctPerStat.keys())
+    .distinct()
+    .toSortedArray((a) => a);
 
   return {
     parts,
@@ -189,7 +180,7 @@ export function buildCostPerPieceTable(costs: CostData): string {
   table += "<th>Total</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const rows = Vector.ofIterable(costs.parts).sortOn((c) => c.part);
+  const rows = LazySeq.ofIterable(costs.parts).sort((c) => c.part);
   const format = Intl.NumberFormat(undefined, {
     maximumFractionDigits: 1,
   });
@@ -237,7 +228,7 @@ export function buildCostBreakdownTable(costs: CostData): string {
   table += "<th>Automation Cost %</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const rows = Vector.ofIterable(costs.parts).sortOn((c) => c.part);
+  const rows = LazySeq.ofIterable(costs.parts).sort((c) => c.part);
   const pctFormat = new Intl.NumberFormat(undefined, {
     style: "percent",
     minimumFractionDigits: 1,

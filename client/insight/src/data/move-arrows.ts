@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api";
-import { HashMap, fieldsHashCode, Vector, Option } from "prelude-ts";
+import { IMap } from "../util/imap";
+import {} from "../util/lazyseq";
 
 export class MoveMaterialIdentifier {
   public static allocateNodeId: () => MoveMaterialIdentifier = (function () {
@@ -46,8 +47,8 @@ export class MoveMaterialIdentifier {
   equals(other: MoveMaterialIdentifier): boolean {
     return this.cntr === other.cntr;
   }
-  hashCode(): number {
-    return fieldsHashCode(this.cntr);
+  hashPrimitives(): readonly [number] {
+    return [this.cntr];
   }
   toString(): string {
     return "MoveMaterialId-" + this.cntr.toString();
@@ -81,8 +82,8 @@ export type MoveMaterialNodeKind =
 
 export interface MoveMaterialArrowData<T> {
   readonly container: T | null;
-  readonly nodes: HashMap<MoveMaterialIdentifier, T>;
-  readonly node_type: HashMap<MoveMaterialIdentifier, MoveMaterialNodeKind>;
+  readonly nodes: IMap<MoveMaterialIdentifier, T>;
+  readonly node_type: IMap<MoveMaterialIdentifier, MoveMaterialNodeKind>;
 }
 
 export interface MoveMaterialArrow {
@@ -105,43 +106,46 @@ export interface MoveArrowElemRect {
 interface MoveMaterialByKind {
   readonly freeMaterial?: MoveArrowElemRect;
   readonly completedMaterial?: MoveArrowElemRect;
-  readonly faces: HashMap<number, MoveArrowElemRect>;
-  readonly queues: HashMap<string, MoveArrowElemRect>;
+  readonly faces: ReadonlyMap<number, MoveArrowElemRect>;
+  readonly queues: ReadonlyMap<string, MoveArrowElemRect>;
 
-  readonly material: Vector<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>;
+  readonly material: ReadonlyArray<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>;
 }
 
 function buildMatByKind(data: MoveMaterialArrowData<MoveArrowElemRect>): MoveMaterialByKind {
-  return data.node_type.foldLeft(
-    {
-      faces: HashMap.empty<number, MoveArrowElemRect>(),
-      queues: HashMap.empty<string, MoveArrowElemRect>(),
-      material: Vector.empty<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>(),
-    } as MoveMaterialByKind,
-    (acc, [key, kind]) => {
-      const nodeM = data.nodes.get(key);
-      if (nodeM.isNone()) {
-        return acc;
-      }
-      const node = nodeM.get();
-      switch (kind.type) {
-        case MoveMaterialNodeKindType.FreeMaterialZone:
-          return { ...acc, freeMaterial: node };
-        case MoveMaterialNodeKindType.CompletedMaterialZone:
-          return { ...acc, completedMaterial: node };
-        case MoveMaterialNodeKindType.PalletFaceZone:
-          return { ...acc, faces: acc.faces.put(kind.face, node) };
-        case MoveMaterialNodeKindType.QueueZone:
-          return { ...acc, queues: acc.queues.put(kind.queue, node) };
-        case MoveMaterialNodeKindType.Material:
-          if (kind.material) {
-            return { ...acc, material: acc.material.append([node, kind.material]) };
-          } else {
-            return acc;
-          }
-      }
+  let freeMaterial: MoveArrowElemRect | undefined;
+  let completedMaterial: MoveArrowElemRect | undefined;
+  const faces = new Map<number, MoveArrowElemRect>();
+  const queues = new Map<string, MoveArrowElemRect>();
+  const material = new Array<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>();
+
+  for (const [key, kind] of data.node_type) {
+    const node = data.nodes.get(key);
+    if (node === undefined) {
+      continue;
     }
-  );
+    switch (kind.type) {
+      case MoveMaterialNodeKindType.FreeMaterialZone:
+        freeMaterial = node;
+        break;
+      case MoveMaterialNodeKindType.CompletedMaterialZone:
+        completedMaterial = node;
+        break;
+      case MoveMaterialNodeKindType.PalletFaceZone:
+        faces.set(kind.face, node);
+        break;
+      case MoveMaterialNodeKindType.QueueZone:
+        queues.set(kind.queue, node);
+        break;
+      case MoveMaterialNodeKindType.Material:
+        if (kind.material) {
+          material.push([node, kind.material]);
+        }
+        break;
+    }
+  }
+
+  return { freeMaterial, completedMaterial, faces, queues, material };
 }
 
 export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): ReadonlyArray<MoveMaterialArrow> {
@@ -160,7 +164,7 @@ export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): R
   const queueDestUsed = new Map<string, number>();
   let lastFreeUsed = 0;
 
-  for (const [rect, mat] of byKind.material.sortOn(
+  for (const [rect, mat] of byKind.material.toLazySeq().sort(
     ([rect]) => rect.left,
     ([rect]) => rect.top
   )) {
@@ -177,22 +181,22 @@ export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): R
         });
         break;
       case api.ActionType.UnloadToInProcess: {
-        let dest: Option<MoveArrowElemRect>;
+        let dest: MoveArrowElemRect | undefined;
         let lastSlotUsed: number;
         if (mat.action.unloadIntoQueue) {
           dest = byKind.queues.get(mat.action.unloadIntoQueue);
           lastSlotUsed = queueDestUsed.get(mat.action.unloadIntoQueue) ?? 0;
           queueDestUsed.set(mat.action.unloadIntoQueue, lastSlotUsed + 1);
         } else {
-          dest = Option.ofNullable(byKind.freeMaterial);
+          dest = byKind.freeMaterial;
           lastSlotUsed = lastFreeUsed;
           lastFreeUsed += 1;
         }
         arrows.push({
           fromX: rect.right,
           fromY: rect.top + rect.height / 2,
-          toX: dest.isSome() ? dest.get().left - 5 : container.right - 2,
-          toY: dest.isSome() ? dest.get().top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
+          toX: dest !== undefined ? dest.left - 5 : container.right - 2,
+          toY: dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
           curveDirection: 1,
         });
         break;
@@ -200,16 +204,16 @@ export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): R
       case api.ActionType.Loading:
         if (mat.action.loadOntoFace) {
           const face = byKind.faces.get(mat.action.loadOntoFace);
-          if (face.isSome()) {
-            const fromQueue = rect.left > face.get().right;
+          if (face !== undefined) {
+            const fromQueue = rect.left > face.right;
             if (fromQueue) {
               const faceSpotsUsed = faceDestUsed.get(mat.action.loadOntoFace) ?? 0;
               faceDestUsed.set(mat.action.loadOntoFace, faceSpotsUsed + 1);
               arrows.push({
                 fromX: rect.left,
                 fromY: rect.top + rect.height / 2,
-                toX: face.get().right - 10,
-                toY: face.get().top + 20 * (faceSpotsUsed + 1),
+                toX: face.right - 10,
+                toY: face.top + 20 * (faceSpotsUsed + 1),
                 curveDirection: 1,
               });
             } else {
@@ -217,7 +221,7 @@ export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): R
                 fromX: rect.left,
                 fromY: rect.top + rect.height / 2,
                 toX: rect.left,
-                toY: face.get().top + 10,
+                toY: face.top + 10,
                 curveDirection: 1,
               });
             }

@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { Button } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
-import { Vector } from "prelude-ts";
 import * as React from "react";
 import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../network/api";
 import { JobsBackend } from "../../network/backend";
@@ -48,7 +47,7 @@ interface InvalidateCycle {
 export type InvalidateCycleState = InvalidateCycle | null;
 
 export interface InvalidateDialogContentProps {
-  readonly events: Vector<Readonly<ILogEntry>>;
+  readonly events: Iterable<Readonly<ILogEntry>>;
   readonly st: InvalidateCycleState;
   readonly setState: (s: InvalidateCycleState) => void;
 }
@@ -56,11 +55,10 @@ export interface InvalidateDialogContentProps {
 export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps) {
   if (props.st === null) return <div />;
 
-  const maxProc = LazySeq.ofIterable(props.events)
-    .flatMap((e) => e.material)
-    .maxOn((m) => m.proc)
-    .map((m) => m.proc)
-    .getOrElse(1);
+  const maxProc =
+    LazySeq.ofIterable(props.events)
+      .flatMap((e) => e.material)
+      .maxOn((m) => m.proc)?.proc ?? 1;
 
   return (
     <div style={{ margin: "2em" }}>
@@ -213,7 +211,7 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
           }
           style={{ width: "20em" }}
           variant="outlined"
-          label={"Select serial to swap with " + curMat.serial}
+          label={"Select serial to swap with " + (curMat.serial ?? "")}
         >
           {availMats.map((m) => (
             <MenuItem key={m.materialID} value={m.serial}>
@@ -254,7 +252,9 @@ export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
       ) : undefined}
       {props.curMat && props.st !== null && props.curMat.location.type === LocType.OnPallet ? (
         <Button color="primary" onClick={swapMats} disabled={props.st.selectedMatToSwap === null || props.st.updating}>
-          {props.st.selectedMatToSwap === null ? "Swap Serial" : "Swap with " + props.st.selectedMatToSwap.serial}
+          {props.st.selectedMatToSwap === null
+            ? "Swap Serial"
+            : "Swap with " + (props.st.selectedMatToSwap.serial ?? "")}
         </Button>
       ) : undefined}
     </>

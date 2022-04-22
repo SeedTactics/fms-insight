@@ -84,9 +84,14 @@ const OutlierCycles = React.memo(function OutlierCycles(props: OutlierCycleProps
   const points = React.useMemo(() => {
     const today = startOfToday();
     if (props.showLabor) {
-      return outlierLoadCycles(allCycles, addDays(today, -4), addDays(today, 1), estimatedCycleTimes);
+      return outlierLoadCycles(allCycles.valuesToLazySeq(), addDays(today, -4), addDays(today, 1), estimatedCycleTimes);
     } else {
-      return outlierMachineCycles(allCycles, addDays(today, -4), addDays(today, 1), estimatedCycleTimes);
+      return outlierMachineCycles(
+        allCycles.valuesToLazySeq(),
+        addDays(today, -4),
+        addDays(today, 1),
+        estimatedCycleTimes
+      );
     }
   }, [props.showLabor, estimatedCycleTimes, allCycles]);
 
@@ -143,7 +148,7 @@ const StationOEEChart = React.memo(function StationOEEChart({ showLabor }: { rea
   const cycles = useRecoilValue(last30StationCycles);
   const statUse = useRecoilValue(last30SimStationUse);
   const points = React.useMemo(
-    () => buildOeeSeries(start, end, showLabor, cycles, statUse),
+    () => buildOeeSeries(start, end, showLabor, cycles.valuesToLazySeq(), statUse),
     [start, end, showLabor, cycles, statUse]
   );
 
@@ -241,19 +246,19 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
   const points = React.useMemo(() => {
     const today = startOfToday();
     if (selectedOperation) {
-      return filterStationCycles(cycles, {
+      return filterStationCycles(cycles.valuesToLazySeq(), {
         zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         pallet: selectedPallet,
         operation: selectedOperation,
       });
     } else if (props.showLabor && showGraph) {
-      return loadOccupancyCycles(cycles, {
+      return loadOccupancyCycles(cycles.valuesToLazySeq(), {
         zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         partAndProc: selectedPart,
         pallet: selectedPallet,
       });
     } else {
-      return filterStationCycles(cycles, {
+      return filterStationCycles(cycles.valuesToLazySeq(), {
         zoom: { start: addDays(today, -4), end: addDays(today, 1) },
         partAndProc: selectedPart,
         pallet: selectedPallet,
@@ -280,7 +285,7 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
               Recent {props.showLabor ? "Load/Unload Occupancy" : "Machine Cycles"}
             </div>
             <div style={{ flexGrow: 1 }} />
-            {points.data.length() > 0 ? (
+            {points.data.size > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
                   onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, props.showLabor)}
@@ -389,15 +394,8 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={chartZoom.zoom}
             set_date_zoom_range={setChartZoom}
-            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
-            partCntPerPoint={
-              curOperation
-                ? points.data
-                    .findAny(() => true)
-                    .map(([, cs]) => cs[0]?.material.length)
-                    .getOrUndefined()
-                : undefined
-            }
+            stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
+            partCntPerPoint={curOperation ? points.data.toLazySeq().head()?.[1]?.[0]?.material?.length : undefined}
             plannedTimeMinutes={plannedMinutes}
           />
         ) : (

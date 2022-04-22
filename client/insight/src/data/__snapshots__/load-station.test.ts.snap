@@ -4,7 +4,7 @@ exports[`load station status > load 1 with no queues > load 1 with no queues 1`]
 {
   "allJobsHaveRawMatQueue": false,
   "face": Map {
-    "1" => [],
+    1 => [],
   },
   "free": undefined,
   "freeLoadingMaterial": [
@@ -63,7 +63,7 @@ exports[`load station status > load 2 with queue > load 2 with queue 1`] = `
 {
   "allJobsHaveRawMatQueue": false,
   "face": Map {
-    "1" => [],
+    1 => [],
   },
   "free": undefined,
   "freeLoadingMaterial": [],
@@ -253,6 +253,25 @@ exports[`load station status > load 3 with empty pallet > load 3 with empty pall
     ],
   },
   "stationStatus": Map {
+    "L/U #1" => {
+      "pal": {
+        "material": [],
+        "pallet": {
+          "currentPalletLocation": {
+            "group": "L/U",
+            "loc": "LoadUnload",
+            "num": 1,
+          },
+          "fixtureOnPallet": "fix1",
+          "newFixture": undefined,
+          "numFaces": 2,
+          "onHold": false,
+          "pallet": "1",
+          "percentMoveCompleted": undefined,
+          "targetLocation": undefined,
+        },
+      },
+    },
     "Machine #1" => {
       "pal": {
         "material": [],
@@ -267,6 +286,25 @@ exports[`load station status > load 3 with empty pallet > load 3 with empty pall
           "numFaces": 2,
           "onHold": false,
           "pallet": "4",
+          "percentMoveCompleted": undefined,
+          "targetLocation": undefined,
+        },
+      },
+    },
+    "L/U #2" => {
+      "pal": {
+        "material": [],
+        "pallet": {
+          "currentPalletLocation": {
+            "group": "L/U",
+            "loc": "LoadUnload",
+            "num": 2,
+          },
+          "fixtureOnPallet": "fix5",
+          "newFixture": undefined,
+          "numFaces": 1,
+          "onHold": false,
+          "pallet": "5",
           "percentMoveCompleted": undefined,
           "targetLocation": undefined,
         },
@@ -322,44 +360,6 @@ exports[`load station status > load 3 with empty pallet > load 3 with empty pall
           "numFaces": 1,
           "onHold": false,
           "pallet": "8",
-          "percentMoveCompleted": undefined,
-          "targetLocation": undefined,
-        },
-      },
-    },
-    "L/U #1" => {
-      "pal": {
-        "material": [],
-        "pallet": {
-          "currentPalletLocation": {
-            "group": "L/U",
-            "loc": "LoadUnload",
-            "num": 1,
-          },
-          "fixtureOnPallet": "fix1",
-          "newFixture": undefined,
-          "numFaces": 2,
-          "onHold": false,
-          "pallet": "1",
-          "percentMoveCompleted": undefined,
-          "targetLocation": undefined,
-        },
-      },
-    },
-    "L/U #2" => {
-      "pal": {
-        "material": [],
-        "pallet": {
-          "currentPalletLocation": {
-            "group": "L/U",
-            "loc": "LoadUnload",
-            "num": 2,
-          },
-          "fixtureOnPallet": "fix5",
-          "newFixture": undefined,
-          "numFaces": 1,
-          "onHold": false,
-          "pallet": "5",
           "percentMoveCompleted": undefined,
           "targetLocation": undefined,
         },

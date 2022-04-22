@@ -36,7 +36,6 @@ import BasketIcon from "@mui/icons-material/ShoppingBasket";
 import { addMonths, addDays, startOfToday } from "date-fns";
 import ExtensionIcon from "@mui/icons-material/Extension";
 import HourglassIcon from "@mui/icons-material/HourglassFull";
-import { HashMap } from "prelude-ts";
 import { Card } from "@mui/material";
 import { CardHeader } from "@mui/material";
 import { Select } from "@mui/material";
@@ -100,8 +99,9 @@ import {
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
 } from "../../cell-status/estimated-cycle-times";
-import { last30PalletCycles, PalletCycleData, specificMonthPalletCycles } from "../../cell-status/pallet-cycles";
+import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles";
 import { last30StationCycles, PartCycleData, specificMonthStationCycles } from "../../cell-status/station-cycles";
+import { IMap } from "../../util/imap";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -152,9 +152,9 @@ function PartMachineCycleChart() {
   const points = React.useMemo(() => {
     if (selectedPart) {
       if (selectedOperation) {
-        return filterStationCycles(cycles, { operation: selectedOperation, pallet: selectedPallet });
+        return filterStationCycles(cycles.valuesToLazySeq(), { operation: selectedOperation, pallet: selectedPallet });
       } else {
-        return filterStationCycles(cycles, {
+        return filterStationCycles(cycles.valuesToLazySeq(), {
           partAndProc: selectedPart,
           pallet: selectedPallet,
           station: FilterAnyMachineKey,
@@ -162,9 +162,9 @@ function PartMachineCycleChart() {
       }
     } else {
       if (selectedPallet || selectedMachine !== FilterAnyMachineKey) {
-        return filterStationCycles(cycles, { pallet: selectedPallet, station: selectedMachine });
+        return filterStationCycles(cycles.valuesToLazySeq(), { pallet: selectedPallet, station: selectedMachine });
       } else {
-        return emptyStationCycles(cycles);
+        return emptyStationCycles(cycles.valuesToLazySeq());
       }
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
@@ -185,7 +185,7 @@ function PartMachineCycleChart() {
             <WorkIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Machine Cycles</div>
             <div style={{ flexGrow: 1 }} />
-            {points.data.length() > 0 ? (
+            {points.data.size > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
                   onClick={() => copyCyclesToClipboard(points, matSummary.matsById, zoomDateRange)}
@@ -320,15 +320,8 @@ function PartMachineCycleChart() {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
-            partCntPerPoint={
-              curOperation
-                ? points.data
-                    .findAny(() => true)
-                    .map(([, cs]) => cs[0]?.material.length)
-                    .getOrUndefined()
-                : undefined
-            }
+            stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
+            partCntPerPoint={curOperation ? points.data.toLazySeq().head()?.[1]?.[0]?.material.length : undefined}
             plannedTimeMinutes={plannedMinutes}
           />
         ) : (
@@ -403,26 +396,26 @@ function PartLoadStationCycleChart() {
   const points = React.useMemo(() => {
     if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
       if (curOperation) {
-        return estimateLulOperations(cycles, {
+        return estimateLulOperations(cycles.valuesToLazySeq(), {
           operation: curOperation,
           pallet: selectedPallet,
           station: selectedLoadStation,
         });
       } else if (showGraph) {
-        return loadOccupancyCycles(cycles, {
+        return loadOccupancyCycles(cycles.valuesToLazySeq(), {
           partAndProc: selectedPart,
           pallet: selectedPallet,
           station: selectedLoadStation,
         });
       } else {
-        return filterStationCycles(cycles, {
+        return filterStationCycles(cycles.valuesToLazySeq(), {
           partAndProc: selectedPart,
           pallet: selectedPallet,
           station: selectedLoadStation,
         });
       }
     } else {
-      return emptyStationCycles(cycles);
+      return emptyStationCycles(cycles.valuesToLazySeq());
     }
   }, [selectedPart, selectedPallet, selectedOperation, selectedLoadStation, cycles, showGraph]);
   const plannedMinutes = React.useMemo(() => {
@@ -441,7 +434,7 @@ function PartLoadStationCycleChart() {
             <AccountIcon style={{ color: "#6D4C41" }} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>Load/Unload Cycles</div>
             <div style={{ flexGrow: 1 }} />
-            {points.data.length() > 0 ? (
+            {points.data.size > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
                   onClick={() =>
@@ -572,7 +565,7 @@ function PartLoadStationCycleChart() {
             extra_tooltip={extraLoadCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            stats={curOperation ? estimatedCycleTimes.get(curOperation).getOrUndefined() : undefined}
+            stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
             plannedTimeMinutes={plannedMinutes}
           />
         ) : (
@@ -611,11 +604,13 @@ function PalletCycleChart() {
   const points = React.useMemo(() => {
     if (selectedPallet) {
       const palData = palletCycles.get(selectedPallet);
-      if (palData.isSome()) {
-        return HashMap.of([selectedPallet, palData.get().toArray()]);
+      if (palData !== undefined) {
+        return new Map<string, ReadonlyArray<CycleChartPoint>>([
+          [selectedPallet, Array.from(palData.valuesToLazySeq())],
+        ]);
       }
     }
-    return HashMap.empty<string, ReadonlyArray<PalletCycleData>>();
+    return new Map<string, ReadonlyArray<CycleChartPoint>>();
   }, [selectedPallet, palletCycles]);
   return (
     <Card raised>
@@ -647,8 +642,8 @@ function PalletCycleChart() {
                 </MenuItem>
               )}
               {palletCycles
-                .keySet()
-                .toArray({ sortOn: (x) => x })
+                .keysToLazySeq()
+                .sort((x) => x)
                 .map((n) => (
                   <MenuItem key={n} value={n}>
                     <div style={{ display: "flex", alignItems: "center" }}>
@@ -717,7 +712,7 @@ function BufferOccupancyChart() {
 
 type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
 
-function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
+function dayAndStatToHeatmapPoints(pts: IMap<DayAndStation, number>) {
   return LazySeq.ofIterable(pts)
     .map(([dayAndStat, val]) => {
       const pct = val / (24 * 60);
@@ -728,15 +723,7 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
         label: (pct * 100).toFixed(1) + "%",
       };
     })
-    .toArray()
-    .sort((p1, p2) => {
-      const cmp = p1.x.getTime() - p2.x.getTime();
-      if (cmp === 0) {
-        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-      } else {
-        return cmp;
-      }
-    });
+    .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
 }
 
 function StationOeeHeatmap() {
@@ -752,9 +739,9 @@ function StationOeeHeatmap() {
   const statUse = useRecoilValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
   const points = React.useMemo(() => {
     if (selected === "Standard OEE") {
-      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles));
+      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()));
     } else if (selected === "Occupied") {
-      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles));
+      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq()));
     } else {
       return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse));
     }
@@ -784,7 +771,7 @@ type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
 function partsCompletedPoints(
   partCycles: Iterable<PartCycleData>,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
+  matsById: IMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
   end: Date
 ) {
@@ -800,15 +787,7 @@ function partsCompletedPoints(
         activeMachineMins: val.activeMachineMins,
       };
     })
-    .toArray()
-    .sort((p1, p2) => {
-      const cmp = p1.x.getTime() - p2.x.getTime();
-      if (cmp === 0) {
-        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-      } else {
-        return cmp;
-      }
-    });
+    .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
 }
 
 function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
@@ -824,15 +803,7 @@ function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
         activeMachineMins: val.activeMachineMins,
       };
     })
-    .toArray()
-    .sort((p1, p2) => {
-      const cmp = p1.x.getTime() - p2.x.getTime();
-      if (cmp === 0) {
-        return p2.y.localeCompare(p1.y); // descending, compare p2 to p1
-      } else {
-        return cmp;
-      }
-    });
+    .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
 }
 
 function CompletedCountHeatmap() {
@@ -852,7 +823,7 @@ function CompletedCountHeatmap() {
       const today = startOfToday();
       const start = period.type === "Last30" ? addDays(today, -30) : period.month;
       const endD = period.type === "Last30" ? addDays(today, 1) : addMonths(period.month, 1);
-      return partsCompletedPoints(cycles, matSummary.matsById, start, endD);
+      return partsCompletedPoints(cycles.valuesToLazySeq(), matSummary.matsById, start, endD);
     } else {
       return partsPlannedPoints(productionCounts);
     }

@@ -39,8 +39,7 @@ import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode
 import { PartIdenticon } from "../station-monitor/Material";
 import { SankeyNode, inspectionDataToSankey, SankeyLink } from "../../data/inspection-sankey";
 
-import { PartAndInspType, InspectionLogEntry } from "../../cell-status/inspections";
-import { HashMap } from "prelude-ts";
+import { PartAndInspType, InspectionLogEntry, InspectionsByPartAndType } from "../../cell-status/inspections";
 import InspectionDataTable from "./InspectionDataTable";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
 import { DataTableActionZoomType } from "./DataTable";
@@ -128,7 +127,7 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
   parentHeight,
   parentWidth,
 }: {
-  readonly data: ReadonlyArray<InspectionLogEntry>;
+  readonly data: Iterable<InspectionLogEntry>;
   readonly parentHeight: number;
   readonly parentWidth: number;
   readonly showTooltip: ShowTooltipFunc;
@@ -196,7 +195,7 @@ const LinkTooltip = React.memo(function LinkTooltip({
 const InspectionDiagram = React.memo(function InspectionDiagram({
   data,
 }: {
-  readonly data: ReadonlyArray<InspectionLogEntry>;
+  readonly data: Iterable<InspectionLogEntry>;
 }) {
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<LinkWithData>();
   return (
@@ -222,7 +221,7 @@ const InspectionDiagram = React.memo(function InspectionDiagram({
 });
 
 export interface InspectionSankeyProps {
-  readonly inspectionlogs: HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+  readonly inspectionlogs: InspectionsByPartAndType;
   readonly default_date_range: Date[];
   readonly zoomType?: DataTableActionZoomType;
   readonly subtitle?: string;
@@ -238,19 +237,19 @@ export function InspectionSankey(props: InspectionSankeyProps) {
   const [selectedInspectType, setSelectedInspectType] = React.useState<string | undefined>(demo ? "CMM" : undefined);
   const [showTable, setShowTable] = React.useState<boolean>(props.defaultToTable);
 
-  let curData: ReadonlyArray<InspectionLogEntry> | undefined;
+  let curData: Iterable<InspectionLogEntry> | undefined;
   const selectedPart = props.restrictToPart || curPart;
   if (selectedPart && selectedInspectType) {
-    curData = props.inspectionlogs.get(new PartAndInspType(selectedPart, selectedInspectType)).getOrElse([]);
+    curData = props.inspectionlogs.get(new PartAndInspType(selectedPart, selectedInspectType))?.valuesToLazySeq() ?? [];
   }
   const parts = props.inspectionlogs
-    .keySet()
+    .keysToLazySeq()
     .map((x) => x.part)
-    .toArray({ sortOn: (x) => x });
+    .toSortedArray((x) => x);
   const inspTypes = props.inspectionlogs
-    .keySet()
+    .keysToLazySeq()
     .map((e) => e.inspType)
-    .toArray({ sortOn: (x) => x });
+    .toSortedArray((x) => x);
   return (
     <Card raised>
       <CardHeader

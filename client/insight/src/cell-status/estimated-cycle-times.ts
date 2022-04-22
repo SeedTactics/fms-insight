@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { differenceInSeconds } from "date-fns";
-import { fieldsHashCode, HashMap, Vector } from "prelude-ts";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api";
-import { LazySeq } from "../util/lazyseq";
+import { emptyIMap, IMap } from "../util/imap";
+import { LazySeq, PrimitiveOrd } from "../util/lazyseq";
 import { durationToMinutes } from "../util/parseISODuration";
 import { conduit } from "../util/recoil-util";
 
@@ -60,6 +60,9 @@ export class PartAndStationOperation {
       c.type === LogType.LoadUnloadCycle ? c.result : c.program
     );
   }
+  public static ofTuple(t: readonly [string, number, string, string]): PartAndStationOperation {
+    return new PartAndStationOperation(t[0], t[1], t[2], t[3]);
+  }
   equals(other: PartAndStationOperation): boolean {
     return (
       this.part === other.part &&
@@ -68,25 +71,28 @@ export class PartAndStationOperation {
       this.operation === other.operation
     );
   }
-  hashCode(): number {
-    return fieldsHashCode(this.part, this.proc, this.statGroup, this.operation);
+  toTuple(): readonly [string, number, string, string] {
+    return [this.part, this.proc, this.statGroup, this.operation];
+  }
+  hashPrimitives(): readonly [string, number, string, string] {
+    return this.toTuple();
   }
   toString(): string {
     return `{part: ${this.part}}, proc: ${this.proc}, statGroup: ${this.statGroup}, operation: ${this.operation}}`;
   }
 }
 
-export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCycleTime>;
+export type EstimatedCycleTimes = IMap<PartAndStationOperation, StatisticalCycleTime>;
 
 const last30EstimatedTimesRW = atom<EstimatedCycleTimes>({
   key: "last30Estimatedcycletimes",
-  default: HashMap.empty(),
+  default: emptyIMap(),
 });
 export const last30EstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> = last30EstimatedTimesRW;
 
 const specificMonthEstimatedTimesRW = atom<EstimatedCycleTimes>({
   key: "specificMonthEstimatedcycleTimes",
-  default: HashMap.empty(),
+  default: emptyIMap(),
 });
 export const specificMonthEstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> = specificMonthEstimatedTimesRW;
 
@@ -110,7 +116,7 @@ export function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
 }
 
 function median(vals: LazySeq<number>): number {
-  const sorted = vals.toArray().sort();
+  const sorted = vals.toMutableArray().sort();
   const cnt = sorted.length;
   if (cnt === 0) {
     return 0;
@@ -167,33 +173,36 @@ function estimateCycleTimes(cycles: Iterable<number>): StatisticalCycleTime {
   // filter to only inliers
   const inliers = LazySeq.ofIterable(cycles)
     .filter((x) => !isOutlier(statCycleTime, x))
-    .toArray();
+    .toRArray();
   // compute average of inliers
   const expectedCycleMinutesForSingleMat = inliers.reduce((sum, x) => sum + x, 0) / inliers.length;
 
   return { ...statCycleTime, expectedCycleMinutesForSingleMat };
 }
 
-export function chunkCyclesWithSimilarEndTime<T>(cycles: Vector<T>, getTime: (c: T) => Date): Vector<ReadonlyArray<T>> {
-  const sorted = cycles.sortOn((c) => getTime(c).getTime());
-  return Vector.ofIterable(
-    LazySeq.ofIterator(function* () {
-      let chunk: Array<T> = [];
-      for (const c of sorted) {
-        if (chunk.length === 0) {
-          chunk = [c];
-        } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {
-          chunk.push(c);
-        } else {
-          yield chunk;
-          chunk = [c];
-        }
+export function chunkCyclesWithSimilarEndTime<T, K>(
+  allCycles: LazySeq<T>,
+  getKey: (x: T) => K & PrimitiveOrd,
+  getTime: (c: T) => Date
+): LazySeq<[K, ReadonlyArray<ReadonlyArray<T>>]> {
+  return allCycles.groupBy(getKey, { asc: (c) => getTime(c).getTime() }).map(([k, cycles]) => {
+    const ret: Array<ReadonlyArray<T>> = [];
+    let chunk: Array<T> = [];
+    for (const c of cycles) {
+      if (chunk.length === 0) {
+        chunk = [c];
+      } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {
+        chunk.push(c);
+      } else {
+        ret.push(chunk);
+        chunk = [c];
       }
-      if (chunk.length > 0) {
-        yield chunk;
-      }
-    })
-  );
+    }
+    if (chunk.length > 0) {
+      ret.push(chunk);
+    }
+    return [k, ret];
+  });
 }
 
 export interface LogEntryWithSplitElapsed<T> {
@@ -249,15 +258,13 @@ export function splitElapsedLoadTime<T extends { material: ReadonlyArray<unknown
   getElapsedMins: (c: T) => number,
   getActiveMins: (c: T) => number
 ): LazySeq<LogEntryWithSplitElapsed<T>> {
-  const loadEventsByLUL = cycles.groupBy(getLuL).mapValues((cs) => chunkCyclesWithSimilarEndTime(cs, getTime));
-
-  return LazySeq.ofIterable(loadEventsByLUL.valueIterable())
-    .flatMap((cycles) => cycles)
+  return chunkCyclesWithSimilarEndTime(cycles, getLuL, (c) => getTime(c))
+    .flatMap(([_, cycles]) => cycles)
     .map((cs) => splitElapsedTimeAmongChunk(cs, getElapsedMins, getActiveMins))
     .flatMap((chunk) => chunk);
 }
 
-export function activeMinutes(cycle: Readonly<ILogEntry>, stats: StatisticalCycleTime | null): number {
+export function activeMinutes(cycle: Readonly<ILogEntry>, stats: StatisticalCycleTime | null | undefined): number {
   const aMins = durationToMinutes(cycle.active);
   if (cycle.active === "" || aMins <= 0 || cycle.material.length === 0) {
     return (stats?.expectedCycleMinutesForSingleMat ?? 0) * cycle.material.length;
@@ -269,10 +276,11 @@ export function activeMinutes(cycle: Readonly<ILogEntry>, stats: StatisticalCycl
 function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): EstimatedCycleTimes {
   const machines = LazySeq.ofIterable(cycles)
     .filter((c) => c.type === LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
-    .groupBy((c) => PartAndStationOperation.ofLogCycle(c))
-    .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length))
-    );
+    .groupByTuple((c) => PartAndStationOperation.ofLogCycle(c).toTuple())
+    .toIMap(([partAndStat, cyclesForPartAndStat]) => [
+      PartAndStationOperation.ofTuple(partAndStat),
+      estimateCycleTimes(cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length)),
+    ]);
 
   const loads = splitElapsedLoadTime(
     LazySeq.ofIterable(cycles).filter(
@@ -283,12 +291,13 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): Estim
     (c) => durationToMinutes(c.elapsed),
     (c) => (c.active === "" ? -1 : durationToMinutes(c.active))
   )
-    .groupBy((c) => PartAndStationOperation.ofLogCycle(c.cycle))
-    .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(cyclesForPartAndStat.map((c) => c.elapsedForSingleMaterialMinutes))
-    );
+    .groupByTuple((c) => PartAndStationOperation.ofLogCycle(c.cycle).toTuple())
+    .toIMap(([partAndStat, cyclesForPartAndStat]) => [
+      PartAndStationOperation.ofTuple(partAndStat),
+      estimateCycleTimes(cyclesForPartAndStat.map((c) => c.elapsedForSingleMaterialMinutes)),
+    ]);
 
-  return machines.mergeWith(loads, (s1, _) => s1);
+  return machines.append(loads, (s1, _) => s1);
 }
 
 export const setLast30EstimatedCycleTimes = conduit<ReadonlyArray<Readonly<ILogEntry>>>(

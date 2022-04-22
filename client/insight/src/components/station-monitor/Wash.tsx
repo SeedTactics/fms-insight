@@ -150,12 +150,12 @@ export function Wash(): JSX.Element {
   const matSummary = useRecoilValue(last30MaterialSummary);
   const recentCompleted = React.useMemo(() => {
     const cutoff = addHours(new Date(), -36);
-    const recent = LazySeq.ofIterable(matSummary.matsById.valueIterable())
+    const recent = LazySeq.ofIterable(matSummary.matsById.valuesToLazySeq())
       .filter(
         (e) =>
           e.completed_last_proc_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff
       )
-      .toArray();
+      .toMutableArray();
     // sort decending
     recent.sort((e1, e2) =>
       e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0

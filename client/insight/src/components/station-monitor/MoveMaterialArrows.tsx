@@ -40,7 +40,7 @@ import {
   MoveMaterialNodeKind,
   MoveArrowElemRect,
 } from "../../data/move-arrows";
-import { HashMap } from "prelude-ts";
+import { emptyIMap } from "../../util/imap";
 
 class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
   static elementToRect(e: Element): MoveArrowElemRect {
@@ -73,7 +73,7 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
   render() {
     const data: MoveMaterialArrowData<MoveArrowElemRect> = {
       container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
-      nodes: this.props.nodes.mapValues(MoveMaterialArrows.elementToRect),
+      nodes: this.props.nodes.toLazySeq().toIMap(([k, e]) => [k, MoveMaterialArrows.elementToRect(e)]),
       node_type: this.props.node_type,
     };
     const arrows = computeArrows(data);
@@ -105,8 +105,8 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
 > {
   state = {
     container: null,
-    nodes: HashMap.empty<MoveMaterialIdentifier, Element>(),
-    node_type: HashMap.empty<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
+    nodes: emptyIMap<MoveMaterialIdentifier, Element>(),
+    node_type: emptyIMap<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
   } as MoveMaterialArrowData<Element>;
 
   readonly ctx: MoveMaterialArrowContext | undefined = undefined;
@@ -122,11 +122,11 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
   registerNode(id: MoveMaterialIdentifier) {
     return (ref: Element | null): void => {
       if (ref) {
-        this.setState((s) => ({ nodes: s.nodes.put(id, ref) }));
+        this.setState((s) => ({ nodes: s.nodes.set(id, ref) }));
       } else {
         this.setState((s) => ({
-          nodes: s.nodes.remove(id),
-          node_type: s.node_type.remove(id),
+          nodes: s.nodes.delete(id),
+          node_type: s.node_type.delete(id),
         }));
       }
     };
@@ -134,9 +134,9 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
 
   registerNodeKind(id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null): void {
     if (kind) {
-      this.setState((s) => ({ node_type: s.node_type.put(id, kind) }));
+      this.setState((s) => ({ node_type: s.node_type.set(id, kind) }));
     } else {
-      this.setState((s) => ({ node_type: s.node_type.remove(id) }));
+      this.setState((s) => ({ node_type: s.node_type.delete(id) }));
     }
   }
 
@@ -180,7 +180,9 @@ interface MoveMaterialArrowNodeHelperProps {
   readonly ctx: MoveMaterialArrowContext;
 }
 
-class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowNodeHelperProps> {
+class MoveMaterialArrowNodeHelper extends React.PureComponent<
+  MoveMaterialArrowNodeHelperProps & { children?: JSX.Element }
+> {
   readonly ident = MoveMaterialIdentifier.allocateNodeId();
 
   constructor(props: MoveMaterialArrowNodeHelperProps) {
@@ -199,7 +201,7 @@ class MoveMaterialArrowNodeHelper extends React.PureComponent<MoveMaterialArrowN
   }
 }
 
-export class MoveMaterialArrowNode extends React.PureComponent<MoveMaterialNodeKind> {
+export class MoveMaterialArrowNode extends React.PureComponent<MoveMaterialNodeKind & { children?: JSX.Element }> {
   render(): JSX.Element {
     const { children, ...kind } = this.props;
     return (

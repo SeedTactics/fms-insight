@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api";
 import { LazySeq } from "../util/lazyseq";
-import { Vector, HashMap, fieldsHashCode } from "prelude-ts";
 import { durationToMinutes } from "../util/parseISODuration";
 import { atom, selector, useRecoilCallback } from "recoil";
 import { MachineBackend } from "../network/backend";
@@ -47,22 +46,20 @@ import {
   StatisticalCycleTime,
 } from "../cell-status/estimated-cycle-times";
 import { stat_name_and_num } from "../cell-status/station-cycles";
+import { emptyIMap, IMap } from "../util/imap";
 
-function averageToolUse(
-  usage: ToolUsage,
-  sort: boolean
-): HashMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
+function averageToolUse(usage: ToolUsage, sort: boolean): IMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
   return usage.mapValues((cycles) => {
     const tools = LazySeq.ofIterable(cycles)
       .flatMap((c) => c.tools)
       .filter((c) => c.toolChanged !== true)
       .groupBy((t) => t.toolName)
-      .toArray()
       .map(([toolName, usageInCycles]) => ({
         toolName: toolName,
-        cycleUsageMinutes: usageInCycles.sumOn((c) => c.cycleUsageMinutes) / usageInCycles.length(),
+        cycleUsageMinutes: LazySeq.ofIterable(usageInCycles).sumOn((c) => c.cycleUsageMinutes) / usageInCycles.length,
         toolChanged: false,
-      }));
+      }))
+      .toMutableArray();
     if (sort) {
       tools.sort((a, b) => a.toolName.localeCompare(b.toolName));
     }
@@ -88,10 +85,10 @@ export interface PartToolUsage {
 
 export interface ToolReport {
   readonly toolName: string;
-  readonly machines: Vector<ToolInMachine>;
+  readonly machines: ReadonlyArray<ToolInMachine>;
   readonly minRemainingMinutes: number;
   readonly minRemainingMachine: string;
-  readonly parts: Vector<PartToolUsage>;
+  readonly parts: ReadonlyArray<PartToolUsage>;
 }
 
 class StationOperation {
@@ -99,8 +96,8 @@ class StationOperation {
   equals(other: PartAndStationOperation): boolean {
     return this.statGroup === other.statGroup && this.operation === other.operation;
   }
-  hashCode(): number {
-    return fieldsHashCode(this.statGroup, this.operation);
+  hashPrimitives(): readonly [string, string] {
+    return [this.statGroup, this.operation];
   }
   toString(): string {
     return `{statGroup: ${this.statGroup}, operation: ${this.operation}}`;
@@ -112,13 +109,13 @@ export function calcToolReport(
   toolsInMach: ReadonlyArray<Readonly<IToolInMachine>>,
   usage: ToolUsage,
   machineFilter: string | null
-): Vector<ToolReport> {
-  let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
+): ReadonlyArray<ToolReport> {
+  let partPlannedQtys = emptyIMap<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
     const planQty = job.cycles ?? 0;
     for (let procIdx = 0; procIdx < job.procsAndPaths.length; procIdx++) {
       let completed = 0;
-      let programsToAfterInProc = HashMap.empty<StationOperation, number>();
+      let programsToAfterInProc = emptyIMap<StationOperation, number>();
       for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
         completed += job.completed?.[procIdx]?.[pathIdx] ?? 0;
         const path = job.procsAndPaths[procIdx].paths[pathIdx];
@@ -137,19 +134,17 @@ export function calcToolReport(
             )
             .length();
           if (stop.program !== undefined && stop.program !== "") {
-            programsToAfterInProc = programsToAfterInProc.putWithMerge(
+            programsToAfterInProc = programsToAfterInProc.modify(
               new StationOperation(stop.stationGroup, stop.program),
-              inProcAfter,
-              (a, b) => a + b
+              (old) => (old ?? 0) + inProcAfter
             );
           }
         }
       }
       for (const [op, afterInProc] of programsToAfterInProc) {
-        partPlannedQtys = partPlannedQtys.putWithMerge(
+        partPlannedQtys = partPlannedQtys.modify(
           new PartAndStationOperation(job.partName, procIdx + 1, op.statGroup, op.operation),
-          planQty - completed - afterInProc,
-          (a, b) => a + b
+          (old) => (old ?? 0) + planQty - completed - afterInProc
         );
       }
     }
@@ -158,14 +153,14 @@ export function calcToolReport(
   const parts = LazySeq.ofIterable(averageToolUse(usage, false))
     .flatMap(([partAndProg, tools]) => {
       const qty = partPlannedQtys.get(partAndProg);
-      if (qty.isSome() && qty.get() > 0) {
+      if (qty !== undefined && qty > 0) {
         return tools.tools.map((tool) => ({
           toolName: tool.toolName,
           part: {
             partName: partAndProg.part,
             process: partAndProg.proc,
             program: partAndProg.operation,
-            quantity: qty.get(),
+            quantity: qty,
             scheduledUseMinutes: tool.cycleUsageMinutes,
           },
         }));
@@ -173,23 +168,22 @@ export function calcToolReport(
         return [];
       }
     })
-    .groupBy((t) => t.toolName)
-    .mapValues((v) =>
-      v
-        .map((t) => t.part)
-        .sortOn(
-          (p) => p.partName,
-          (p) => p.process
-        )
+    .sort(
+      (p) => p.part.partName,
+      (p) => p.part.process
+    )
+    .toLookup(
+      (t) => t.toolName,
+      (t) => t.part
     );
 
   return LazySeq.ofIterable(toolsInMach)
     .filter((t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum))
     .groupBy((t) => t.toolName)
-    .toVector()
     .map(([toolName, tools]) => {
       const toolsInMachine = tools
-        .sortOn(
+        .toLazySeq()
+        .sort(
           (t) => t.machineGroupName,
           (t) => t.machineNum,
           (t) => t.pocket
@@ -204,25 +198,26 @@ export function calcToolReport(
             lifetimeMinutes,
             remainingMinutes: Math.max(0, lifetimeMinutes - currentUseMinutes),
           };
-        });
+        })
+        .toRArray();
 
-      const minMachine = toolsInMachine
+      const minMachine = LazySeq.ofIterable(toolsInMachine)
         .groupBy((m) => m.machineName)
-        .toVector()
         .map(([machineName, toolsForMachine]) => ({
           machineName,
-          remaining: toolsForMachine.sumOn((m) => m.remainingMinutes),
+          remaining: LazySeq.ofIterable(toolsForMachine).sumOn((m) => m.remainingMinutes),
         }))
         .minOn((m) => m.remaining);
 
       return {
         toolName,
         machines: toolsInMachine,
-        minRemainingMachine: minMachine.map((m) => m.machineName).getOrElse(""),
-        minRemainingMinutes: minMachine.map((m) => m.remaining).getOrElse(0),
-        parts: parts.get(toolName).getOrElse(Vector.empty()),
+        minRemainingMachine: minMachine?.machineName ?? "",
+        minRemainingMinutes: minMachine?.remaining ?? 0,
+        parts: parts.get(toolName) ?? [],
       };
-    });
+    })
+    .toRArray();
 }
 
 export const toolReportMachineFilter = atom<string | null>({
@@ -239,7 +234,7 @@ export const toolReportRefreshTime = atom<Date | null>({
 This code is the way when we can use react concurrent mode and useTransition,
 otherwise the table flashes each time the currentStatus changes.
 
-export const currentToolReport = selector<Vector<ToolReport> | null>({
+export const currentToolReport = selector<L.List<ToolReport> | null>({
   key: "tool-report",
   get: async ({ get }) => {
     const t = get(toolReportRefreshTime);
@@ -276,7 +271,7 @@ export const machinesWithTools = selector<ReadonlyArray<string>>({
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
-export const currentToolReport = selector<Vector<ToolReport> | null>({
+export const currentToolReport = selector<ReadonlyArray<ToolReport> | null>({
   key: "tool-report",
   get: ({ get }) => {
     const toolsInMach = get(toolsInMachine);
@@ -296,7 +291,7 @@ export function useRefreshToolReport(): () => Promise<void> {
   });
 }
 
-export function buildToolReportHTML(tools: Vector<ToolReport>, singleMachine: boolean): string {
+export function buildToolReportHTML(tools: Iterable<ToolReport>, singleMachine: boolean): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Tool</th>";
   table += "<th>Scheduled Use (min)</th>";
@@ -312,14 +307,14 @@ export function buildToolReportHTML(tools: Vector<ToolReport>, singleMachine: bo
   for (const tool of tools) {
     table += "<tr><td>" + tool.toolName + "</td>";
 
-    const schUse = tool.parts.sumOn((p) => p.scheduledUseMinutes * p.quantity);
+    const schUse = LazySeq.ofIterable(tool.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity);
     table += "<td>" + schUse.toFixed(1) + "</td>";
 
-    const totalLife = tool.machines.sumOn((m) => m.remainingMinutes);
+    const totalLife = LazySeq.ofIterable(tool.machines).sumOn((m) => m.remainingMinutes);
     table += "<td>" + totalLife.toFixed(1) + "</td>";
 
     if (singleMachine) {
-      const pockets = tool.machines.map((m) => m.pocket.toString()).toArray();
+      const pockets = tool.machines.map((m) => m.pocket.toString());
       table += "<td>" + pockets.join(", ") + "</td>";
     } else {
       table += "<td>" + tool.minRemainingMinutes.toFixed(1) + "</td>";
@@ -332,7 +327,7 @@ export function buildToolReportHTML(tools: Vector<ToolReport>, singleMachine: bo
   return table;
 }
 
-export function copyToolReportToClipboard(tools: Vector<ToolReport>, singleMachine: boolean): void {
+export function copyToolReportToClipboard(tools: Iterable<ToolReport>, singleMachine: boolean): void {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   copy(buildToolReportHTML(tools, singleMachine));
 }
@@ -350,7 +345,7 @@ export interface CellControllerProgram {
 
 export interface ProgramReport {
   readonly time: Date;
-  readonly programs: Vector<CellControllerProgram>;
+  readonly programs: ReadonlyArray<CellControllerProgram>;
   readonly hasRevisions: boolean;
   readonly cellNameDifferentFromProgName: boolean;
 }
@@ -363,15 +358,10 @@ export function calcProgramReport(
 ): ProgramReport {
   const tools = averageToolUse(usage, true);
 
-  const progToPart = LazySeq.ofIterable(usage.keySet())
-    .map((op) => ({
-      program: op.operation,
-      part: op,
-    }))
-    .toMap(
-      (x) => [x.program, x.part],
-      (_, x) => x
-    );
+  const progToPart = usage.keysToLazySeq().toRMap(
+    (op) => [op.operation, op],
+    (_, x) => x
+  );
 
   let allPrograms = LazySeq.ofIterable(progsInCellCtrl);
 
@@ -381,7 +371,7 @@ export function calcProgramReport(
 
   const programs = allPrograms
     .map((prog) => {
-      const part = progToPart.get(prog.programName).getOrNull();
+      const part = progToPart.get(prog.programName);
       return {
         programName: prog.programName,
         cellControllerProgramName: prog.cellControllerProgramName,
@@ -389,17 +379,17 @@ export function calcProgramReport(
         revision: prog.revision ?? null,
         partName: part?.part ?? null,
         process: part?.proc ?? null,
-        statisticalCycleTime: part ? cycleTimes.get(part).getOrNull() : null,
-        toolUse: part ? tools.get(part).getOrNull() : null,
+        statisticalCycleTime: part ? cycleTimes.get(part) ?? null : null,
+        toolUse: part ? tools.get(part) ?? null : null,
       };
     })
-    .toVector();
+    .toRArray();
 
   return {
     time: new Date(),
     programs,
-    hasRevisions: programs.find((p) => p.revision !== null).isSome(),
-    cellNameDifferentFromProgName: programs.find((p) => p.cellControllerProgramName !== p.programName).isSome(),
+    hasRevisions: programs.some((p) => p.revision !== null),
+    cellNameDifferentFromProgName: programs.some((p) => p.cellControllerProgramName !== p.programName),
   };
 }
 

@@ -31,11 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashMap, Option } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import { ICurrentStatus, IHistoricJob, IActiveJob } from "../network/api";
 import copy from "copy-to-clipboard";
+import { emptyIMap, IMap } from "../util/imap";
 
 export interface ScheduledJobDisplay {
   readonly historicJob: Readonly<IHistoricJob>;
@@ -54,8 +54,8 @@ type WritableScheduledJob = { -readonly [K in keyof ScheduledJobDisplay]: Schedu
 export function buildScheduledJobs(
   start: Date,
   end: Date,
-  matIds: HashMap<number, MaterialSummaryAndCompletedData>,
-  schJobs: HashMap<string, Readonly<IHistoricJob>>,
+  matIds: IMap<number, MaterialSummaryAndCompletedData>,
+  schJobs: IMap<string, Readonly<IHistoricJob>>,
   currentSt: Readonly<ICurrentStatus>
 ): ReadonlyArray<ScheduledJobDisplay> {
   const completedMats = LazySeq.ofIterable(matIds)
@@ -66,12 +66,9 @@ export function buildScheduledJobs(
         uniq: summary.jobUnique,
       }))
     )
-    .groupBy((m) => m.uniq)
-    .mapValues((mats) =>
-      LazySeq.ofIterable(mats).toMap(
-        (m) => [m.proc, 1],
-        (c1, c2) => c1 + c2
-      )
+    .toRMap(
+      (m) => [m.uniq, emptyIMap<number, number>().set(m.proc, 1)],
+      (h1, h2) => h1.append(h2, (v1, v2) => v1 + v2)
     );
 
   const result = new Map<string, WritableScheduledJob>();
@@ -79,13 +76,8 @@ export function buildScheduledJobs(
   for (const [uniq, job] of schJobs) {
     if (job.routeStartUTC >= start && job.routeStartUTC <= end) {
       const casting = LazySeq.ofIterable(job.procsAndPaths[0]?.paths ?? [])
-        .mapOption((p) =>
-          p.casting !== null && p.casting !== undefined && p.casting !== ""
-            ? Option.some<string>(p.casting)
-            : Option.none<string>()
-        )
-        .head()
-        .getOrNull();
+        .collect((p) => (p.casting === "" ? null : p.casting))
+        .head();
 
       result.set(uniq, {
         ...job,
@@ -94,7 +86,7 @@ export function buildScheduledJobs(
         casting: casting ?? "",
         scheduledQty: job.cycles ?? 0,
         decrementedQty: LazySeq.ofIterable(job.decrements || []).sumOn((d) => d.quantity),
-        completedQty: completedMats.get(uniq).getOrNull()?.get(job.procsAndPaths.length).getOrNull() ?? 0,
+        completedQty: completedMats.get(uniq)?.get(job.procsAndPaths.length) ?? 0,
         inProcessQty: 0,
         darkRow: false,
         remainingQty: 0,
