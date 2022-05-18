@@ -64,7 +64,6 @@ it("creates cycles clipboard table", () => {
   const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
 
   const data = filterStationCycles(cycles.valuesToLazySeq(), {});
-  expect(data).toMatchSnapshot("filtered cycles");
 
   const table = document.createElement("div");
   table.innerHTML = buildCycleTable(data, matSummary.matsById, undefined, undefined);
