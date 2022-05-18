@@ -214,7 +214,7 @@ export function selectAllMaterialIntoBins(
             mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
             return [queueName, mat] as const;
           },
-          (ms1, ms2) => ms1.concat(ms2)
+          (ms1, ms2) => ms1.concat(ms2) // TODO: rework to use toLookup
         ),
       };
     } else {

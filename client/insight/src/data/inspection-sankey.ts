@@ -111,10 +111,7 @@ function edgesForPath(
 export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyDiagram {
   const matIdToInspResult = LazySeq.ofIterable(d)
     .filter((e) => e.result.type === InspectionLogResultType.Completed)
-    .toRMap(
-      (e) => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false],
-      (_, v2) => v2 // take the later value
-    );
+    .toRMap((e) => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false]);
 
   // create all the edges, likely with duplicate edges between nodes
   const edges = LazySeq.ofIterable(d).flatMap((c) => {
