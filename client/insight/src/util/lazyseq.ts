@@ -286,31 +286,6 @@ export class LazySeq<T> {
     return LazySeq.ofIterable(m);
   }
 
-  groupByTuple<K1, K2>(
-    f: (x: T) => readonly [K1 & PrimitiveOrd, K2 & PrimitiveOrd]
-  ): LazySeq<readonly [readonly [K1, K2], ReadonlyArray<T>]>;
-  groupByTuple<K1, K2, K3>(
-    f: (x: T) => readonly [K1 & PrimitiveOrd, K2 & PrimitiveOrd, K3 & PrimitiveOrd]
-  ): LazySeq<readonly [readonly [K1, K2, K3], ReadonlyArray<T>]>;
-  groupByTuple<K1, K2, K3, K4>(
-    f: (x: T) => readonly [K1 & PrimitiveOrd, K2 & PrimitiveOrd, K3 & PrimitiveOrd, K4 & PrimitiveOrd]
-  ): LazySeq<readonly [readonly [K1, K2, K3, K4], ReadonlyArray<T>]>;
-  groupByTuple<K>(f: (x: T) => K): LazySeq<readonly [K, ReadonlyArray<T>]> {
-    // this can be removed once https://github.com/tc39/proposal-record-tuple is implemented
-    const m = new Map<string, readonly [K, Array<T>]>();
-    for (const x of this.iter) {
-      const k = f(x);
-      const kStr = JSON.stringify(k);
-      let v = m.get(kStr);
-      if (v === undefined) {
-        v = [k, []];
-        m.set(kStr, v);
-      }
-      v[1].push(x);
-    }
-    return LazySeq.ofIterable(m.values());
-  }
-
   head(): T | undefined {
     const first = this.iter[Symbol.iterator]().next();
     if (first.done) {

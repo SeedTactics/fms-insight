@@ -276,11 +276,10 @@ export function activeMinutes(cycle: Readonly<ILogEntry>, stats: StatisticalCycl
 function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): EstimatedCycleTimes {
   const machines = LazySeq.ofIterable(cycles)
     .filter((c) => c.type === LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
-    .groupByTuple((c) => PartAndStationOperation.ofLogCycle(c).toTuple())
-    .toIMap(([partAndStat, cyclesForPartAndStat]) => [
-      PartAndStationOperation.ofTuple(partAndStat),
-      estimateCycleTimes(cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length)),
-    ]);
+    .toLookup((c) => PartAndStationOperation.ofLogCycle(c))
+    .mapValues((cyclesForPartAndStat) =>
+      estimateCycleTimes(cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length))
+    );
 
   const loads = splitElapsedLoadTime(
     LazySeq.ofIterable(cycles).filter(
@@ -291,13 +290,12 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): Estim
     (c) => durationToMinutes(c.elapsed),
     (c) => (c.active === "" ? -1 : durationToMinutes(c.active))
   )
-    .groupByTuple((c) => PartAndStationOperation.ofLogCycle(c.cycle).toTuple())
-    .toIMap(([partAndStat, cyclesForPartAndStat]) => [
-      PartAndStationOperation.ofTuple(partAndStat),
-      estimateCycleTimes(cyclesForPartAndStat.map((c) => c.elapsedForSingleMaterialMinutes)),
-    ]);
+    .toLookup((c) => PartAndStationOperation.ofLogCycle(c.cycle))
+    .mapValues((cyclesForPartAndStat) =>
+      estimateCycleTimes(cyclesForPartAndStat.map((c) => c.elapsedForSingleMaterialMinutes))
+    );
 
-  return machines.append(loads, (s1, _) => s1);
+  return machines.append(loads);
 }
 
 export const setLast30EstimatedCycleTimes = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
