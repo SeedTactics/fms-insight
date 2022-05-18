@@ -129,7 +129,11 @@ function convertEntry(e: Readonly<ILogEntry>): [number, BufferEntry] | null {
 export const setLast30Buffer = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30BufferEntriesRW, (oldEntries) =>
-      oldEntries.append(LazySeq.ofIterable(log).collect(convertEntry), (_, b) => b)
+      oldEntries.union(
+        LazySeq.ofIterable(log)
+          .collect(convertEntry)
+          .toIMap((x) => x)
+      )
     );
   }
 );

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, IMaterialProcessActualPath, LogType, MaterialProcessActualPath } from "../network/api";
-import { emptyIMap, IMap } from "../util/imap";
+import { emptyIMap, IMap, unionMaps } from "../util/imap";
 import { LazySeq } from "../util/lazyseq";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
@@ -193,20 +193,16 @@ export function convertLogToInspections(
 export const setLast30Inspections = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30InspectionsRW, (oldEntries) =>
-      oldEntries.size === 0
-        ? LazySeq.ofIterable(log)
-            .flatMap(convertLogToInspections)
-            .toLookupMap(
-              (e) => e.key,
-              (e) => e.entry.cntr,
-              (e) => e.entry
-            )
-        : // if the network is interrupted, we will get all the events that were missed here
-          oldEntries.extend(
-            log.flatMap(convertLogToInspections),
+      oldEntries.union(
+        LazySeq.ofIterable(log)
+          .flatMap(convertLogToInspections)
+          .toLookupMap(
             (e) => e.key,
-            (old, e) => (old ?? emptyIMap()).set(e.entry.cntr, e.entry)
-          )
+            (e) => e.entry.cntr,
+            (e) => e.entry
+          ),
+        (e1, e2) => unionMaps((_, s) => s, e1, e2)
+      )
     );
   }
 );
@@ -236,7 +232,7 @@ export const updateLast30Inspections = conduit<ServerEventAndTime>(
       const changedByCntr = evt.editMaterialInLog.editedEvents;
 
       t.set(last30InspectionsRW, (parts) =>
-        parts.mapValues((entries) => {
+        parts.collectValues((entries) => {
           for (const changed of changedByCntr) {
             // inspection logs have only a single material
             const mat = changed?.material[0];

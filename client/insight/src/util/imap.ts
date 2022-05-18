@@ -29,9 +29,7 @@ export interface IMap<K, V> {
   modify(k: K & HashKey, f: (v: V | undefined) => V): IMap<K, V>;
   delete(k: K & HashKey): IMap<K, V>;
   append(items: Iterable<readonly [K & HashKey, V]>, merge?: (v1: V, v2: V) => V): IMap<K, V>;
-
-  extend(items: Iterable<V>, key: (v: V) => K): IMap<K, V>;
-  extend<T>(items: Iterable<T>, key: (v: T) => K, val: (old: V | undefined, t: T) => V): IMap<K, V>;
+  union(other: IMap<K, V>, merge?: (v1: V, v2: V) => V): IMap<K, V>;
 
   bulkDelete(shouldDelete: (k: K, v: V) => boolean): IMap<K, V>; // TODO: remove once collectValues is efficient
   mapValues<U>(f: (v: V, k: K) => U): IMap<K, U>;
@@ -290,31 +288,35 @@ function mapValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V): IMap<K
 }
 
 function collectValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V | null | undefined): IMap<K, V> {
-  const m = makeWithDynamicConfig<K, V>().beginMutation();
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  let m = this;
   for (const [k, v] of this) {
     const newV = f(v);
-    if (newV !== undefined && newV !== null) {
-      m.set(k, newV);
+    if (newV === undefined || newV === null) {
+      m = m.delete(k);
+    } else if (newV !== v) {
+      m = m.set(k, newV);
     }
   }
-  return m.endMutation();
+  return m;
 }
 
-function extendIMap<K, V, T>(
-  this: IMap<K & HashKey, V>,
-  items: Iterable<T>,
-  key: (t: T) => K & HashKey,
-  val?: (old: V | undefined, t: T) => V
-): IMap<K, V> {
-  // eslint-disable-next-line @typescript-eslint/no-this-alias
-  let imap = this;
-
-  for (const t of items) {
-    const k = key(t);
-    imap = imap.modify(k, val === undefined ? () => t as unknown as V : (old) => val(old, t));
+export function unionMaps<K, V>(merge: (v1: V, v2: V) => V, ...maps: readonly IMap<K & HashKey, V>[]): IMap<K, V> {
+  const nonEmpty = maps.filter((m) => m.size > 0).sort((m1, m2) => m2.size - m1.size); // sort by largest fist
+  if (nonEmpty.length === 0) {
+    return emptyIMap();
+  } else if (nonEmpty.length === 1) {
+    return nonEmpty[0];
   }
+  let m = nonEmpty[0];
+  for (let i = 1; i < nonEmpty.length; i++) {
+    m = m.append(nonEmpty[i], merge);
+  }
+  return m;
+}
 
-  return imap;
+function unionOneMap<K, V>(this: IMap<K, V>, other: IMap<K, V>, merge?: (v1: V, v2: V) => V) {
+  return unionMaps(merge ?? ((_, snd) => snd), this as IMap<K & HashKey, V>, other as IMap<K & HashKey, V>);
 }
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -329,17 +331,6 @@ if (hamtProto.toLazySeq === undefined) {
   hamtProto.bulkDelete = bulkDeleteIMap;
   hamtProto.mapValues = mapValuesIMap;
   hamtProto.collectValues = collectValuesIMap;
-  hamtProto.extend = extendIMap;
+  hamtProto.union = unionOneMap;
   hamtProto["@@__IMMUTABLE_KEYED__@@"] = true;
-}
-
-export function unionMaps<K, V>(merge: (v1: V, v2: V) => V, ...maps: readonly IMap<K & HashKey, V>[]): IMap<K, V> {
-  let m = maps[0];
-  for (let i = 1; i < maps.length; i++) {
-    m = maps[i].fold(
-      (leftVals, rightVals, k) => leftVals.modify(k, (old) => (old === undefined ? rightVals : merge(old, rightVals))),
-      m
-    );
-  }
-  return m;
 }

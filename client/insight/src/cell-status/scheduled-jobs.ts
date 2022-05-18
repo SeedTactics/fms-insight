@@ -51,9 +51,7 @@ const specificMonthJobsRW = atom<IMap<string, Readonly<IHistoricJob>>>({
 export const specificMonthJobs: RecoilValueReadOnly<IMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
 
 export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-  t.set(last30JobsRW, (oldJobs) =>
-    oldJobs.size === 0 ? iterableToIMap(LazySeq.ofObject(history.jobs)) : oldJobs.append(LazySeq.ofObject(history.jobs))
-  );
+  t.set(last30JobsRW, (oldJobs) => oldJobs.union(iterableToIMap(LazySeq.ofObject(history.jobs))));
 });
 
 export const updateLast30Jobs = conduit<ServerEventAndTime>(
@@ -66,10 +64,7 @@ export const updateLast30Jobs = conduit<ServerEventAndTime>(
           oldJobs = oldJobs.bulkDelete((_, j) => j.routeStartUTC < expire);
         }
 
-        return oldJobs.append(
-          newJobs.map((j) => [j.unique, { ...j, copiedToSystem: true }]),
-          (_, j) => j
-        );
+        return oldJobs.union(newJobs.toIMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
       });
     }
   }

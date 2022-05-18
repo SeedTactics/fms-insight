@@ -35,7 +35,7 @@ import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import { ICurrentStatus, IHistoricJob, IActiveJob } from "../network/api";
 import copy from "copy-to-clipboard";
-import { emptyIMap, IMap } from "../util/imap";
+import { IMap } from "../util/imap";
 
 export interface ScheduledJobDisplay {
   readonly historicJob: Readonly<IHistoricJob>;
@@ -66,9 +66,11 @@ export function buildScheduledJobs(
         uniq: summary.jobUnique,
       }))
     )
-    .toRMap(
-      (m) => [m.uniq, emptyIMap<number, number>().set(m.proc, 1)],
-      (h1, h2) => h1.append(h2, (v1, v2) => v1 + v2)
+    .toLookupMap(
+      (m) => m.uniq,
+      (m) => m.proc,
+      () => 1,
+      (a, b) => a + b
     );
 
   const result = new Map<string, WritableScheduledJob>();

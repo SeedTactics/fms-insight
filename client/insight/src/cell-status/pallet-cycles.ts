@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api";
-import { emptyIMap, IMap } from "../util/imap";
+import { emptyIMap, IMap, unionMaps } from "../util/imap";
 import { LazySeq } from "../util/lazyseq";
 import { durationToMinutes } from "../util/parseISODuration";
 import { conduit } from "../util/recoil-util";
@@ -73,19 +73,16 @@ function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
 export const setLast30PalletCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30PalletCyclesRW, (oldCycles) =>
-      oldCycles.size === 0
-        ? LazySeq.ofIterable(log)
-            .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
-            .toLookupMap(
-              (c) => c.pal,
-              (c) => c.counter,
-              logToPalletCycle
-            )
-        : oldCycles.extend(
-            LazySeq.ofIterable(log).filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== ""),
+      oldCycles.union(
+        LazySeq.ofIterable(log)
+          .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
+          .toLookupMap(
             (c) => c.pal,
-            (oldByCntr, c) => (oldByCntr ?? emptyIMap()).set(c.counter, logToPalletCycle(c))
-          )
+            (c) => c.counter,
+            logToPalletCycle
+          ),
+        (e1, e2) => unionMaps((_, s) => s, e1, e2)
+      )
     );
   }
 );
