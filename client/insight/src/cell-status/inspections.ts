@@ -193,9 +193,20 @@ export function convertLogToInspections(
 export const setLast30Inspections = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30InspectionsRW, (oldEntries) =>
-      log
-        .flatMap(convertLogToInspections)
-        .reduce((m, e) => m.modify(e.key, (old) => (old ?? emptyIMap()).set(e.entry.cntr, e.entry)), oldEntries)
+      oldEntries.size === 0
+        ? LazySeq.ofIterable(log)
+            .flatMap(convertLogToInspections)
+            .toLookupMap(
+              (e) => e.key,
+              (e) => e.entry.cntr,
+              (e) => e.entry
+            )
+        : // if the network is interrupted, we will get all the events that were missed here
+          oldEntries.extend(
+            log.flatMap(convertLogToInspections),
+            (e) => e.key,
+            (old, e) => (old ?? emptyIMap()).set(e.entry.cntr, e.entry)
+          )
     );
   }
 );

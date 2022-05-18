@@ -48,7 +48,7 @@ export interface SimStationUse {
 
 const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>({
   key: "last30SimStationUse",
-  default: [],
+  default: [], // TODO: switch to persistent list
 });
 export const last30SimStationUse: RecoilValueReadOnly<ReadonlyArray<SimStationUse>> = last30SimStationUseRW;
 

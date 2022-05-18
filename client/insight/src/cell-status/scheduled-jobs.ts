@@ -36,7 +36,7 @@ import { addDays } from "date-fns";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
 import { IHistoricData, IHistoricJob } from "../network/api";
-import { emptyIMap, IMap } from "../util/imap";
+import { emptyIMap, IMap, iterableToIMap } from "../util/imap";
 
 const last30JobsRW = atom<IMap<string, Readonly<IHistoricJob>>>({
   key: "last30Jobs",
@@ -51,7 +51,9 @@ const specificMonthJobsRW = atom<IMap<string, Readonly<IHistoricJob>>>({
 export const specificMonthJobs: RecoilValueReadOnly<IMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
 
 export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-  t.set(last30JobsRW, (oldJobs) => LazySeq.ofObject(history.jobs).foldLeft(oldJobs, (m, [_, j]) => m.set(j.unique, j)));
+  t.set(last30JobsRW, (oldJobs) =>
+    oldJobs.size === 0 ? iterableToIMap(LazySeq.ofObject(history.jobs)) : oldJobs.append(LazySeq.ofObject(history.jobs))
+  );
 });
 
 export const updateLast30Jobs = conduit<ServerEventAndTime>(
@@ -61,13 +63,6 @@ export const updateLast30Jobs = conduit<ServerEventAndTime>(
       t.set(last30JobsRW, (oldJobs) => {
         if (expire) {
           const expire = addDays(now, -30);
-
-          const minStat = LazySeq.ofIterable(oldJobs).minOn(([, e]) => e.routeStartUTC.getTime());
-
-          if ((minStat === undefined || minStat[1].routeStartUTC >= expire) && newJobs.isEmpty()) {
-            return oldJobs;
-          }
-
           oldJobs = oldJobs.bulkDelete((_, j) => j.routeStartUTC < expire);
         }
 

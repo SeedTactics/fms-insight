@@ -29,6 +29,10 @@ export interface IMap<K, V> {
   modify(k: K & HashKey, f: (v: V | undefined) => V): IMap<K, V>;
   delete(k: K & HashKey): IMap<K, V>;
   append(items: Iterable<readonly [K & HashKey, V]>, merge?: (v1: V, v2: V) => V): IMap<K, V>;
+
+  extend(items: Iterable<V>, key: (v: V) => K): IMap<K, V>;
+  extend<T>(items: Iterable<T>, key: (v: T) => K, val: (old: V | undefined, t: T) => V): IMap<K, V>;
+
   bulkDelete(shouldDelete: (k: K, v: V) => boolean): IMap<K, V>; // TODO: remove once collectValues is efficient
   mapValues<U>(f: (v: V, k: K) => U): IMap<K, U>;
   collectValues(f: (v: V, k: K) => V | null | undefined): IMap<K, V>;
@@ -296,6 +300,23 @@ function collectValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V | nu
   return m.endMutation();
 }
 
+function extendIMap<K, V, T>(
+  this: IMap<K & HashKey, V>,
+  items: Iterable<T>,
+  key: (t: T) => K & HashKey,
+  val?: (old: V | undefined, t: T) => V
+): IMap<K, V> {
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  let imap = this;
+
+  for (const t of items) {
+    const k = key(t);
+    imap = imap.modify(k, val === undefined ? () => t as unknown as V : (old) => val(old, t));
+  }
+
+  return imap;
+}
+
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -308,6 +329,7 @@ if (hamtProto.toLazySeq === undefined) {
   hamtProto.bulkDelete = bulkDeleteIMap;
   hamtProto.mapValues = mapValuesIMap;
   hamtProto.collectValues = collectValuesIMap;
+  hamtProto.extend = extendIMap;
   hamtProto["@@__IMMUTABLE_KEYED__@@"] = true;
 }
 

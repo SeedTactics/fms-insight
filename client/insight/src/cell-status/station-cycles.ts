@@ -150,10 +150,14 @@ export const setLast30StationCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     const estimatedCycleTimes = t.get(last30EstimatedCycleTimes);
     t.set(last30StationCyclesRW, (oldCycles) =>
-      oldCycles.append(
-        LazySeq.ofIterable(log).collect((c) => convertLogToCycle(estimatedCycleTimes, c)),
-        (_, b) => b
-      )
+      oldCycles.size === 0
+        ? LazySeq.ofIterable(log)
+            .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
+            .toIMap((x) => x)
+        : oldCycles.append(
+            LazySeq.ofIterable(log).collect((c) => convertLogToCycle(estimatedCycleTimes, c)),
+            (_, b) => b
+          )
     );
   }
 );

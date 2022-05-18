@@ -47,7 +47,7 @@ export interface SimPartCompleted {
 
 const last30SimProductionRW = atom<ReadonlyArray<SimPartCompleted>>({
   key: "last30SimProduction",
-  default: [],
+  default: [], // TODO: switch to persistent list
 });
 export const last30SimProduction: RecoilValueReadOnly<ReadonlyArray<SimPartCompleted>> = last30SimProductionRW;
 

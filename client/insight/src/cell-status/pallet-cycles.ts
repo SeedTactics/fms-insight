@@ -72,13 +72,21 @@ function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
 
 export const setLast30PalletCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30PalletCyclesRW, (oldCycles) => {
-      return LazySeq.ofIterable(log)
-        .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
-        .foldLeft(oldCycles, (cycles, c) =>
-          cycles.modify(c.pal, (oldByCntr) => (oldByCntr ?? emptyIMap()).set(c.counter, logToPalletCycle(c)))
-        );
-    });
+    t.set(last30PalletCyclesRW, (oldCycles) =>
+      oldCycles.size === 0
+        ? LazySeq.ofIterable(log)
+            .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
+            .toLookupMap(
+              (c) => c.pal,
+              (c) => c.counter,
+              logToPalletCycle
+            )
+        : oldCycles.extend(
+            LazySeq.ofIterable(log).filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== ""),
+            (c) => c.pal,
+            (oldByCntr, c) => (oldByCntr ?? emptyIMap()).set(c.counter, logToPalletCycle(c))
+          )
+    );
   }
 );
 
@@ -113,9 +121,10 @@ export const setSpecificMonthPalletCycles = conduit<ReadonlyArray<Readonly<ILogE
       specificMonthPalletCyclesRW,
       LazySeq.ofIterable(log)
         .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
-        .toIMap(
-          (c) => [c.pal, emptyIMap<number, PalletCycleData>().set(c.counter, logToPalletCycle(c))],
-          (a, b) => a.append(b, (_, snd) => snd)
+        .toLookupMap(
+          (c) => c.pal,
+          (c) => c.counter,
+          logToPalletCycle
         )
     );
   }
