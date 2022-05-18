@@ -73,7 +73,7 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
   render() {
     const data: MoveMaterialArrowData<MoveArrowElemRect> = {
       container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
-      nodes: this.props.nodes.toLazySeq().toIMap(([k, e]) => [k, MoveMaterialArrows.elementToRect(e)]),
+      nodes: this.props.nodes.mapValues(MoveMaterialArrows.elementToRect),
       node_type: this.props.node_type,
     };
     const arrows = computeArrows(data);

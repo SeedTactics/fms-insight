@@ -603,6 +603,7 @@ export function ProgramHistoryDialog(): JSX.Element {
   const [program, setProgram] = useRecoilState(programToShowHistory);
   const [programForContent, setProgramForContent] = useRecoilState(programToShowContent);
 
+  // TODO: switch to persistent list
   const [revisions, setRevisions] = React.useState<ReadonlyArray<Readonly<IProgramRevision>> | null>(null);
   const [lastLoadedPage, setLastLoadedPage] = React.useState<LastPage>({ page: 0, hasMore: false });
   const [page, setPage] = React.useState<number>(0);

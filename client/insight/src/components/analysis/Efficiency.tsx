@@ -321,7 +321,7 @@ function PartMachineCycleChart() {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
-            partCntPerPoint={curOperation ? points.data.toLazySeq().head()?.[1]?.[0]?.material.length : undefined}
+            partCntPerPoint={curOperation ? points.data.toLazySeq().head()?.[1]?.[0]?.material?.length : undefined}
             plannedTimeMinutes={plannedMinutes}
           />
         ) : (

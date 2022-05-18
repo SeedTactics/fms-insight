@@ -150,7 +150,8 @@ export function Wash(): JSX.Element {
   const matSummary = useRecoilValue(last30MaterialSummary);
   const recentCompleted = React.useMemo(() => {
     const cutoff = addHours(new Date(), -36);
-    const recent = LazySeq.ofIterable(matSummary.matsById.valuesToLazySeq())
+    const recent = matSummary.matsById
+      .valuesToLazySeq()
       .filter(
         (e) =>
           e.completed_last_proc_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff

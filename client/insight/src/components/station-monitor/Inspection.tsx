@@ -41,7 +41,6 @@ import { DialogActions } from "@mui/material";
 import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary";
-import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
@@ -217,20 +216,24 @@ function extractRecentInspections(
 
   const uninspected = Array.from(
     inspType === null
-      ? LazySeq.ofIterable(mats.valuesToLazySeq()).filter(
-          (m) =>
-            m.last_unload_time !== undefined &&
-            m.last_unload_time >= uninspectedCutoff &&
-            m.signaledInspections.length > 0 &&
-            !checkAllCompleted(m)
-        )
-      : LazySeq.ofIterable(mats.valuesToLazySeq()).filter(
-          (m) =>
-            m.last_unload_time !== undefined &&
-            m.last_unload_time >= uninspectedCutoff &&
-            m.signaledInspections.includes(inspType) &&
-            (m.completedInspections || {})[inspType] === undefined
-        )
+      ? mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.last_unload_time !== undefined &&
+              m.last_unload_time >= uninspectedCutoff &&
+              m.signaledInspections.length > 0 &&
+              !checkAllCompleted(m)
+          )
+      : mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.last_unload_time !== undefined &&
+              m.last_unload_time >= uninspectedCutoff &&
+              m.signaledInspections.includes(inspType) &&
+              (m.completedInspections || {})[inspType] === undefined
+          )
   );
   // sort descending
   uninspected.sort((e1, e2) =>
@@ -239,20 +242,24 @@ function extractRecentInspections(
 
   const inspected = Array.from(
     inspType === null
-      ? LazySeq.ofIterable(mats.valuesToLazySeq()).filter(
-          (m) =>
-            m.completed_inspect_time !== undefined &&
-            m.completed_inspect_time >= inspectedCutoff &&
-            m.signaledInspections.length > 0 &&
-            checkAllCompleted(m)
-        )
-      : LazySeq.ofIterable(mats.valuesToLazySeq()).filter(
-          (m) =>
-            m.completed_inspect_time !== undefined &&
-            m.completed_inspect_time >= inspectedCutoff &&
-            m.signaledInspections.includes(inspType) &&
-            (m.completedInspections || {})[inspType] !== undefined
-        )
+      ? mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.completed_inspect_time !== undefined &&
+              m.completed_inspect_time >= inspectedCutoff &&
+              m.signaledInspections.length > 0 &&
+              checkAllCompleted(m)
+          )
+      : mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.completed_inspect_time !== undefined &&
+              m.completed_inspect_time >= inspectedCutoff &&
+              m.signaledInspections.includes(inspType) &&
+              (m.completedInspections || {})[inspType] !== undefined
+          )
   );
   // sort descending
   inspected.sort((e1, e2) =>
