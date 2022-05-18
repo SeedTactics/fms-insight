@@ -302,7 +302,7 @@ function collectValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V | nu
 }
 
 export function unionMaps<K, V>(merge: (v1: V, v2: V) => V, ...maps: readonly IMap<K & HashKey, V>[]): IMap<K, V> {
-  const nonEmpty = maps.filter((m) => m.size > 0).sort((m1, m2) => m2.size - m1.size); // sort by largest fist
+  const nonEmpty = maps.filter((m) => m.size > 0);
   if (nonEmpty.length === 0) {
     return emptyIMap();
   } else if (nonEmpty.length === 1) {
