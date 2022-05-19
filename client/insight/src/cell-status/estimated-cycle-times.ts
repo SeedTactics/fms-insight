@@ -60,9 +60,6 @@ export class PartAndStationOperation {
       c.type === LogType.LoadUnloadCycle ? c.result : c.program
     );
   }
-  public static ofTuple(t: readonly [string, number, string, string]): PartAndStationOperation {
-    return new PartAndStationOperation(t[0], t[1], t[2], t[3]);
-  }
   equals(other: PartAndStationOperation): boolean {
     return (
       this.part === other.part &&
@@ -71,11 +68,8 @@ export class PartAndStationOperation {
       this.operation === other.operation
     );
   }
-  toTuple(): readonly [string, number, string, string] {
-    return [this.part, this.proc, this.statGroup, this.operation];
-  }
   hashPrimitives(): readonly [string, number, string, string] {
-    return this.toTuple();
+    return [this.part, this.proc, this.statGroup, this.operation];
   }
   toString(): string {
     return `{part: ${this.part}}, proc: ${this.proc}, statGroup: ${this.statGroup}, operation: ${this.operation}}`;
