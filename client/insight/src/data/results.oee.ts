@@ -178,8 +178,8 @@ export function buildOeeSeries(
   const statNames = actualBins
     .keysToLazySeq()
     .concat(plannedBins.keysToLazySeq())
-    .distinct()
     .map((e) => e.station)
+    .distinct()
     .toSortedArray((x) => x);
 
   for (const stat of statNames) {

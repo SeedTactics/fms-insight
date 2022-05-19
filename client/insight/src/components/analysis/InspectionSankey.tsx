@@ -245,10 +245,12 @@ export function InspectionSankey(props: InspectionSankeyProps) {
   const parts = props.inspectionlogs
     .keysToLazySeq()
     .map((x) => x.part)
+    .distinct()
     .toSortedArray((x) => x);
   const inspTypes = props.inspectionlogs
     .keysToLazySeq()
     .map((e) => e.inspType)
+    .distinct()
     .toSortedArray((x) => x);
   return (
     <Card raised>

@@ -263,6 +263,7 @@ export default React.memo(function StationOEEs() {
     .toLazySeq()
     .map((p) => p[0])
     .concat(stationMins.toLazySeq().map((s) => s[0]))
+    .distinct()
     .toSortedArray(
       (s) => s.startsWith("L/U"),
       (s) => s

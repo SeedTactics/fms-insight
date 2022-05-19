@@ -1,6 +1,5 @@
 import { LazySeq } from "./lazyseq";
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-var-requires
-const hamt: any = require("hamt_plus");
+import hamt from "hamt_plus";
 
 export type HashKeyObj = {
   equals(other: unknown): boolean;

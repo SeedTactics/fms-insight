@@ -2,18 +2,18 @@ import { emptyIMap, HashKey, IMap, iterableToIMap } from "./imap";
 import { LazySeq } from "./lazyseq";
 
 export class ISet<T> {
-  #imap: IMap<T, undefined>;
+  #imap: IMap<T, number>;
 
-  private constructor(imap: IMap<T, undefined>) {
+  private constructor(imap: IMap<T, number>) {
     this.#imap = imap;
   }
 
   public static empty<T>(): ISet<T> {
-    return new ISet<T>(emptyIMap<T, undefined>());
+    return new ISet<T>(emptyIMap<T, number>());
   }
 
   public static fromIterable<T>(items: Iterable<T & HashKey>): ISet<T> {
-    return new ISet<T>(iterableToIMap(LazySeq.ofIterable(items).map((i) => [i, undefined])));
+    return new ISet<T>(iterableToIMap(LazySeq.ofIterable(items).map((i) => [i, 1])));
   }
 
   public has(item: T & HashKey): boolean {
@@ -25,7 +25,7 @@ export class ISet<T> {
   }
 
   public add(item: T & HashKey): ISet<T> {
-    return new ISet<T>(this.#imap.set(item, undefined));
+    return new ISet<T>(this.#imap.set(item, 1));
   }
 
   public delete(item: T & HashKey): ISet<T> {
