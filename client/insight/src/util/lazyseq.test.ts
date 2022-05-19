@@ -208,43 +208,6 @@ it("zip", () => {
   ]);
 });
 
-it("appendsIMap", () => {
-  let m = emptyIMap<number, string>();
-  m = m.set(1, "a");
-  m = m.set(2, "b");
-  m = m.set(3, "c");
-  m = m.set(4, "d");
-
-  const m2 = m.append([
-    [4, "e"],
-    [5, "f"],
-  ]);
-
-  expect(m2.toLazySeq().toRArray()).toEqual([
-    [1, "a"],
-    [2, "b"],
-    [3, "c"],
-    [4, "e"],
-    [5, "f"],
-  ]);
-
-  const m3 = m.append(
-    [
-      [4, "e"],
-      [5, "f"],
-    ],
-    (a, b) => a + b
-  );
-
-  expect(m3.toLazySeq().toRArray()).toEqual([
-    [1, "a"],
-    [2, "b"],
-    [3, "c"],
-    [4, "de"],
-    [5, "f"],
-  ]);
-});
-
 it("bulkDeletes IMap", () => {
   let m = emptyIMap<number, string>();
   m = m.set(1, "a");

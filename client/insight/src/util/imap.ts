@@ -28,7 +28,6 @@ export interface IMap<K, V> {
   set(k: K & HashKey, v: V): IMap<K, V>;
   modify(k: K & HashKey, f: (v: V | undefined) => V): IMap<K, V>;
   delete(k: K & HashKey): IMap<K, V>;
-  append(items: Iterable<readonly [K & HashKey, V]>, merge?: (v1: V, v2: V) => V): IMap<K, V>;
   union(other: IMap<K, V>, merge?: (v1: V, v2: V) => V): IMap<K, V>;
 
   bulkDelete(shouldDelete: (k: K, v: V) => boolean): IMap<K, V>; // TODO: remove once collectValues is efficient
@@ -255,19 +254,6 @@ function imapToValuesLazySeq<K, V>(this: IMap<K, V>): LazySeq<V> {
   });
 }
 
-function appendIMap<K, V>(
-  this: IMap<K, V>,
-  items: Iterable<readonly [K & HashKey, V]>,
-  merge?: (v1: V, v2: V) => V
-): IMap<K, V> {
-  // eslint-disable-next-line @typescript-eslint/no-this-alias
-  let imap = this;
-  for (const [k, v] of items) {
-    imap = imap.modify(k, (old) => (old === undefined || merge === undefined ? v : merge(old, v)));
-  }
-  return imap;
-}
-
 function bulkDeleteIMap<K, V>(this: IMap<K & HashKey, V>, shouldRemove: (k: K, v: V) => boolean): IMap<K, V> {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   let m = this;
@@ -310,7 +296,9 @@ export function unionMaps<K, V>(merge: (v1: V, v2: V) => V, ...maps: readonly IM
   }
   let m = nonEmpty[0];
   for (let i = 1; i < nonEmpty.length; i++) {
-    m = m.append(nonEmpty[i], merge);
+    for (const [k, v] of nonEmpty[i]) {
+      m = m.modify(k, (old) => (old === undefined || merge === undefined ? v : merge(old, v)));
+    }
   }
   return m;
 }
@@ -327,7 +315,6 @@ if (hamtProto.toLazySeq === undefined) {
   hamtProto.toLazySeq = imapToLazySeq;
   hamtProto.keysToLazySeq = imapToKeysLazySeq;
   hamtProto.valuesToLazySeq = imapToValuesLazySeq;
-  hamtProto.append = appendIMap;
   hamtProto.bulkDelete = bulkDeleteIMap;
   hamtProto.mapValues = mapValuesIMap;
   hamtProto.collectValues = collectValuesIMap;
