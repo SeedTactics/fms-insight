@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "../network/api";
 import { durationToSeconds } from "../util/parseISODuration";
-import { Vector, Option } from "prelude-ts";
+import { LazySeq } from "../util/lazyseq";
 
 export interface DataPoint {
   readonly part: string;
@@ -73,28 +73,22 @@ export interface DataPoints {
   readonly longestPartName: number;
 }
 
-function vectorRange(start: number, count: number): Vector<number> {
-  return Vector.unfoldRight(start, (x) =>
-    x - start < count ? Option.of([x, x + 1] as [number, number]) : Option.none<[number, number]>()
-  );
-}
-
 export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IActiveJob>>): DataPoints {
-  const points = Vector.ofIterable(jobs)
-    .sortOn(
+  const points = jobs
+    .toLazySeq()
+    .sort(
       (j) => j.routeStartUTC.getTime(),
       (j) => j.scheduleId ?? "",
       (j) => j.partName
     )
-    .flatMap((j) => vectorRange(0, j.procsAndPaths.length).map((proc) => displayJob(j, proc)))
-    .reverse();
-  const jobPoints = points
-    .zipWithIndex()
-    .map(([pt, i]) => ({ ...pt, idx: i }))
-    .toArray();
-  const longestPartName = points
-    .maxOn((p) => p.part.length)
-    .map((p) => p.part.length)
-    .getOrElse(1);
+    .flatMap((j) => LazySeq.ofRange(0, j.procsAndPaths.length).map((proc) => displayJob(j, proc)))
+    .toRArray();
+  const jobPoints = points.map((pt, i) => ({ ...pt, idx: points.length - i - 1 }));
+  let longestPartName = 1;
+  for (const p of jobPoints) {
+    if (p.part.length > longestPartName) {
+      longestPartName = p.part.length;
+    }
+  }
   return { jobs: jobPoints, longestPartName };
 }

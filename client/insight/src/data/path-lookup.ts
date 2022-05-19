@@ -32,13 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { LogBackend, OtherLogBackends } from "../network/backend";
-import { HashMap } from "prelude-ts";
 import { addDays } from "date-fns";
 import { atom, selector, waitForAny } from "recoil";
-import { convertLogToInspections, PartAndInspType, InspectionLogEntry } from "../cell-status/inspections";
+import { convertLogToInspections, PartAndInspType, InspectionLogsByCntr } from "../cell-status/inspections";
 import { LazySeq } from "../util/lazyseq";
+import { ILogEntry } from "../network/api";
+import { emptyIMap, IMap, unionMaps } from "../util/imap";
 
-export type PathLookupLogEntries = HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>;
+export type PathLookupLogEntries = IMap<PartAndInspType, InspectionLogsByCntr>;
 
 export interface PathLookupRange {
   readonly part: string;
@@ -55,16 +56,17 @@ const localLogEntries = selector<PathLookupLogEntries>({
   key: "path-lookup-local",
   get: async ({ get }) => {
     const range = get(pathLookupRange);
-    if (range == null) return HashMap.empty();
+    if (range == null) return emptyIMap();
 
     const events = await LogBackend.get(range.curStart, range.curEnd);
-    return HashMap.ofIterable(
-      LazySeq.ofIterable(events)
-        .flatMap(convertLogToInspections)
-        .filter((e) => e.key.part === range.part)
-        .groupBy((e) => e.key)
-        .map((k, es) => [k, es.map((e) => e.entry).toArray()])
-    );
+    return LazySeq.ofIterable(events)
+      .flatMap(convertLogToInspections)
+      .filter((e) => e.key.part === range.part)
+      .toLookupMap(
+        (e) => e.key,
+        (e) => e.entry.cntr,
+        (e) => e.entry
+      );
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -73,26 +75,24 @@ const otherLogEntries = selector<PathLookupLogEntries>({
   key: "path-lookup-other",
   get: async ({ get }) => {
     const range = get(pathLookupRange);
-    if (range == null) return HashMap.empty();
+    if (range == null) return emptyIMap();
 
-    let parts: PathLookupLogEntries = HashMap.empty();
+    const allEvts: Array<ReadonlyArray<Readonly<ILogEntry>>> = [];
 
     for (const b of OtherLogBackends) {
-      const events = await b.get(range.curStart, range.curEnd);
-
-      parts = events
-        .flatMap(convertLogToInspections)
-        .filter((e) => e.key.part === range.part)
-        .reduce(
-          (m, e) =>
-            m.putWithMerge(e.key, [e.entry], (a, b) =>
-              a.concat(b).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
-            ),
-          parts
-        );
+      allEvts.push(await b.get(range.curStart, range.curEnd));
     }
 
-    return parts;
+    return allEvts
+      .toLazySeq()
+      .flatMap((es) => es)
+      .flatMap(convertLogToInspections)
+      .filter((e) => e.key.part === range.part)
+      .toLookupMap(
+        (e) => e.key,
+        (e) => e.entry.cntr,
+        (e) => e.entry
+      );
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -107,17 +107,11 @@ export const inspectionLogEntries = selector<PathLookupLogEntries>({
       .map((e) => e.valueOrThrow())
       .filter((e) => !e.isEmpty());
     if (vals.length === 0) {
-      return HashMap.empty();
+      return emptyIMap();
     } else if (vals.length === 1) {
       return vals[0];
     } else {
-      let m = vals[0];
-      for (let i = 1; i < vals.length; i++) {
-        m = m.mergeWith(vals[i], (oldEntries, newEntries) =>
-          oldEntries.concat(newEntries).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
-        );
-      }
-      return m;
+      return unionMaps((inspsByCntr1, inspsByCntr2) => unionMaps((_, snd) => snd, inspsByCntr1, inspsByCntr2), ...vals);
     }
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },

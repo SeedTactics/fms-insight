@@ -180,7 +180,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
             <em>All</em>
           </MenuItem>
           {LazySeq.ofIterable(inspTypes)
-            .sortOn((x) => x)
+            .sort((x) => x)
             .map((ty) => (
               <MenuItem key={ty} value={ty}>
                 {ty}

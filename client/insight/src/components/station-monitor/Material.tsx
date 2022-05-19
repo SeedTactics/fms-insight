@@ -413,19 +413,19 @@ export function InstructionButton({
   readonly operator: string | null;
   readonly pallet: string | null;
 }) {
-  const maxProc = LazySeq.ofIterable(material.events)
-    .filter(
-      (e) =>
-        e.details?.["PalletCycleInvalidated"] !== "1" &&
-        (e.type === api.LogType.LoadUnloadCycle ||
-          e.type === api.LogType.MachineCycle ||
-          e.type === api.LogType.AddToQueue)
-    )
-    .flatMap((e) => e.material)
-    .filter((e) => e.id === material.materialID)
-    .maxOn((e) => e.proc)
-    .map((e) => e.proc);
-  const url = instructionUrl(material.partName, type, material.materialID, pallet, maxProc.getOrNull(), operator);
+  const maxProc =
+    LazySeq.ofIterable(material.events)
+      .filter(
+        (e) =>
+          e.details?.["PalletCycleInvalidated"] !== "1" &&
+          (e.type === api.LogType.LoadUnloadCycle ||
+            e.type === api.LogType.MachineCycle ||
+            e.type === api.LogType.AddToQueue)
+      )
+      .flatMap((e) => e.material)
+      .filter((e) => e.id === material.materialID)
+      .maxOn((e) => e.proc)?.proc ?? null;
+  const url = instructionUrl(material.partName, type, material.materialID, pallet, maxProc, operator);
   return (
     <Button href={url} target="bms-instructions" color="primary">
       Instructions

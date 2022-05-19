@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "../network/api";
 import { InspectionLogResultType, InspectionLogEntry } from "../cell-status/inspections";
-import { fieldsHashCode } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 
 export interface SankeyNode {
@@ -57,8 +56,8 @@ class NodeR {
   equals(other: NodeR): boolean {
     return this.unique === other.unique && this.name === other.name;
   }
-  hashCode(): number {
-    return fieldsHashCode(this.unique, this.name);
+  hashPrimitives(): readonly [string, string] {
+    return [this.unique, this.name];
   }
   toString(): string {
     return `{unique: ${this.unique}}, name: ${this.name}}`;
@@ -70,8 +69,8 @@ class Edge {
   equals(other: Edge): boolean {
     return this.from.equals(other.from) && this.to.equals(other.to);
   }
-  hashCode(): number {
-    return fieldsHashCode(this.from.hashCode(), this.to.hashCode());
+  hashPrimitives(): readonly [NodeR, NodeR] {
+    return [this.from, this.to];
   }
   toString(): string {
     return `{from: ${this.from.toString()}}, to: ${this.to.toString()}}`;
@@ -109,22 +108,15 @@ function edgesForPath(
   return edges;
 }
 
-export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): SankeyDiagram {
+export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyDiagram {
   const matIdToInspResult = LazySeq.ofIterable(d)
     .filter((e) => e.result.type === InspectionLogResultType.Completed)
-    .toMap(
-      (e) => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false],
-      (v1, v2) => v2 // take the later value
-    );
+    .toRMap((e) => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false]);
 
   // create all the edges, likely with duplicate edges between nodes
   const edges = LazySeq.ofIterable(d).flatMap((c) => {
     if (c.result.type === InspectionLogResultType.Triggered) {
-      return edgesForPath(
-        c.result.actualPath,
-        c.result.toInspect,
-        matIdToInspResult.get(c.materialID).getOrElse(false)
-      );
+      return edgesForPath(c.result.actualPath, c.result.toInspect, matIdToInspResult.get(c.materialID) ?? false);
     } else {
       return [];
     }
@@ -133,8 +125,7 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
   // extract the nodes and assign an index
   const nodes = edges
     .flatMap((e) => [e.from, e.to])
-    .toSet((x) => x)
-    .transform((s) => LazySeq.ofIterable(s))
+    .distinct()
     .map((node, idx) => ({ idx, node }));
 
   // create the sankey nodes to return
@@ -143,27 +134,29 @@ export function inspectionDataToSankey(d: ReadonlyArray<InspectionLogEntry>): Sa
       unique: s.node.unique,
       name: s.node.name,
     }))
-    .toArray();
+    .toMutableArray();
 
   // create a map from NodeR to index
-  const nodesToIdx = nodes.toMap(
+  const nodesToIdx = nodes.toIMap(
     (n) => [n.node, n.idx],
     (i1, _) => i1
   );
 
   // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
-    .toMap(
+    .toIMap(
       (e) => [e, 1],
       (c1, c2) => c1 + c2
     )
-    .transform(LazySeq.ofIterable)
+    .toLazySeq()
     .map(([link, value]) => ({
-      source: nodesToIdx.get(link.from).getOrThrow(),
-      target: nodesToIdx.get(link.to).getOrThrow(),
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      source: nodesToIdx.get(link.from)!,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      target: nodesToIdx.get(link.to)!,
       value,
     }))
-    .toArray();
+    .toMutableArray();
 
   return {
     nodes: sankeyNodes,

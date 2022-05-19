@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { HashMap, Option, HashSet } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import * as api from "../network/api";
 import { format, differenceInSeconds } from "date-fns";
@@ -45,8 +44,10 @@ import {
   PartAndStationOperation,
   splitElapsedTimeAmongChunk,
 } from "../cell-status/estimated-cycle-times";
-import * as L from "list/methods";
 import { PartCycleData, splitElapsedLoadTimeAmongCycles, stat_name_and_num } from "../cell-status/station-cycles";
+import { PalletCyclesByPallet } from "../cell-status/pallet-cycles";
+import { emptyIMap, IMap } from "../util/imap";
+import { ISet } from "../util/iset";
 
 export interface PartAndProcess {
   readonly part: string;
@@ -69,8 +70,8 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
   const palNames = new Set<string>();
   const lulNames = new Set<string>();
   const mcNames = new Set<string>();
-  let partNames = HashMap.empty<string, HashSet<number>>();
-  let oper = HashSet.empty<PartAndStationOperation>();
+  let partNames = emptyIMap<string, ISet<number>>();
+  let oper = ISet.empty<PartAndStationOperation>();
 
   for (const c of cycles) {
     palNames.add(c.pallet);
@@ -86,7 +87,7 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
     }
 
     for (const m of c.material) {
-      partNames = partNames.putWithMerge(m.part, HashSet.of(m.proc), (a, b) => a.addAll(b));
+      partNames = partNames.modify(m.part, (old) => (old ?? ISet.empty()).add(m.proc));
     }
   }
 
@@ -95,16 +96,22 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
     allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
     allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
     allPartAndProcNames: LazySeq.ofIterable(partNames)
-      .sortOn(([p, _]) => p)
-      .flatMap(([part, procs]) => procs.toArray({ sortOn: (n) => n }).map((proc) => ({ part: part, proc: proc })))
-      .toArray(),
-    allMachineOperations: oper.toArray({ sortOn: [(p) => p.statGroup, (p) => p.operation] }),
+      .sort(([p, _]) => p)
+      .flatMap(([part, procs]) => procs.toLazySeq().map((proc) => ({ part: part, proc: proc })))
+      .toSortedArray(
+        (n) => n.part,
+        (n) => n.proc
+      ),
+    allMachineOperations: oper.toLazySeq().toSortedArray(
+      (p) => p.statGroup,
+      (p) => p.operation
+    ),
   };
 }
 
 export interface FilteredStationCycles {
   readonly seriesLabel: string;
-  readonly data: HashMap<string, ReadonlyArray<PartCycleData>>;
+  readonly data: ReadonlyMap<string, ReadonlyArray<PartCycleData>>;
 }
 
 export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
@@ -122,12 +129,12 @@ export function emptyStationCycles(allCycles: Iterable<PartCycleData>): Filtered
   return {
     ...extractFilterOptions(allCycles),
     seriesLabel: "Station",
-    data: HashMap.empty<string, ReadonlyArray<PartCycleData>>(),
+    data: new Map<string, ReadonlyArray<PartCycleData>>(),
   };
 }
 
 export function filterStationCycles(
-  allCycles: L.List<PartCycleData>,
+  allCycles: Iterable<PartCycleData>,
   { zoom, partAndProc, pallet, station, operation }: StationCycleFilter
 ): FilteredStationCycles & CycleFilterOptions {
   const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
@@ -166,7 +173,7 @@ export function filterStationCycles(
 
         return true;
       })
-      .groupBy((e) => {
+      .toRLookup((e) => {
         if (groupByPal) {
           return e.pallet;
         } else if (groupByPart) {
@@ -174,9 +181,7 @@ export function filterStationCycles(
         } else {
           return stat_name_and_num(e.stationGroup, e.stationNumber);
         }
-      })
-      .filter((_, e) => !e.isEmpty())
-      .mapValues((e) => e.toArray()),
+      }),
   };
 }
 
@@ -186,7 +191,7 @@ export interface LoadCycleData extends PartCycleData {
 
 export interface FilteredLoadCycles {
   readonly seriesLabel: string;
-  readonly data: HashMap<string, ReadonlyArray<LoadCycleData>>;
+  readonly data: ReadonlyMap<string, ReadonlyArray<LoadCycleData>>;
 }
 
 export interface LoadCycleFilter {
@@ -197,57 +202,66 @@ export interface LoadCycleFilter {
 }
 
 export function loadOccupancyCycles(
-  allCycles: L.List<PartCycleData>,
+  allCycles: Iterable<PartCycleData>,
   { zoom, partAndProc, pallet, station }: LoadCycleFilter
 ): FilteredLoadCycles & CycleFilterOptions {
+  const filteredCycles = LazySeq.ofIterable(allCycles).filter((e) => {
+    if (!station || station === FilterAnyLoadKey) {
+      return e.isLabor;
+    } else {
+      return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
+    }
+  });
+
   return {
     ...extractFilterOptions(allCycles, partAndProc),
     seriesLabel: "Station",
-    data: LazySeq.ofIterable(allCycles)
-      .filter((e) => {
-        if (!station || station === FilterAnyLoadKey) {
-          return e.isLabor;
-        } else {
-          return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
-        }
-      })
-      .groupBy((e) => stat_name_and_num(e.stationGroup, e.stationNumber))
-      .mapValues((cyclesForStat) =>
-        chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
-          .transform(LazySeq.ofIterable)
-          .mapOption((chunk) => {
-            const cycle = chunk.find((e) => {
-              if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
-                return false;
-              }
-              if (partAndProc && (e.part !== partAndProc.part || e.process !== partAndProc.proc)) {
-                return false;
-              }
-              if (pallet && e.pallet !== pallet) {
-                return false;
-              }
-              return true;
-            });
+    data: chunkCyclesWithSimilarEndTime(
+      filteredCycles,
+      (e) => stat_name_and_num(e.stationGroup, e.stationNumber),
+      (c) => c.x
+    )
+      .map(
+        ([statNameAndNum, cyclesForStat]) =>
+          [
+            statNameAndNum,
+            cyclesForStat
+              .toLazySeq()
+              .collect((chunk) => {
+                const cycle = chunk.find((e) => {
+                  if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
+                    return false;
+                  }
+                  if (partAndProc && (e.part !== partAndProc.part || e.process !== partAndProc.proc)) {
+                    return false;
+                  }
+                  if (pallet && e.pallet !== pallet) {
+                    return false;
+                  }
+                  return true;
+                });
 
-            if (cycle) {
-              return Option.some({
-                ...cycle,
-                operations: LazySeq.ofIterable(chunk)
-                  .flatMap((e) =>
-                    e.material.map((mat) => ({
-                      mat,
-                      operation: e.operation,
-                    }))
-                  )
-                  .toArray(),
-              });
-            } else {
-              return Option.none<LoadCycleData>();
-            }
-          })
-          .toArray()
+                if (cycle) {
+                  return {
+                    ...cycle,
+                    operations: LazySeq.ofIterable(chunk)
+                      .flatMap((e) =>
+                        e.material.map((mat) => ({
+                          mat,
+                          operation: e.operation,
+                        }))
+                      )
+                      .toRArray(),
+                  };
+                } else {
+                  return null;
+                }
+              })
+              .toRArray(),
+          ] as const
       )
-      .filter((_, e) => e.length > 0),
+      .filter(([, e]) => e.length > 0)
+      .toRMap((x) => x),
   };
 }
 
@@ -259,68 +273,76 @@ export interface LoadOpFilters {
 }
 
 export function estimateLulOperations(
-  allCycles: L.List<PartCycleData>,
+  allCycles: Iterable<PartCycleData>,
   { operation, pallet, zoom, station }: LoadOpFilters
 ): FilteredLoadCycles & CycleFilterOptions {
+  const filteredCycles = LazySeq.ofIterable(allCycles).filter((e) => {
+    if (!station || station === FilterAnyLoadKey) {
+      return e.isLabor;
+    } else {
+      return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
+    }
+  });
   return {
     ...extractFilterOptions(allCycles),
     seriesLabel: "Station",
-    data: LazySeq.ofIterable(allCycles)
-      .filter((e) => {
-        if (!station || station === FilterAnyLoadKey) {
-          return e.isLabor;
-        } else {
-          return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
-        }
-      })
-      .groupBy((e) => stat_name_and_num(e.stationGroup, e.stationNumber))
-      .mapValues((cyclesForStat) =>
-        chunkCyclesWithSimilarEndTime(cyclesForStat, (c) => c.x)
-          .transform(LazySeq.ofIterable)
-          .mapOption((chunk) => {
-            const split = splitElapsedTimeAmongChunk(
-              chunk,
-              (c) => c.y,
-              (c) => c.activeMinutes
-            );
-            const splitCycle = split.find((e) => {
-              if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
-                return false;
-              }
-              if (!operation.equals(cycleToPartAndOp(e.cycle))) {
-                return false;
-              }
-              if (pallet && e.cycle.pallet !== pallet) {
-                return false;
-              }
-              return true;
-            });
+    data: chunkCyclesWithSimilarEndTime(
+      filteredCycles,
+      (e) => stat_name_and_num(e.stationGroup, e.stationNumber),
+      (c) => c.x
+    )
+      .map(
+        ([statNameAndNum, cyclesForStat]) =>
+          [
+            statNameAndNum,
+            cyclesForStat
+              .toLazySeq()
+              .collect((chunk) => {
+                const split = splitElapsedTimeAmongChunk(
+                  chunk,
+                  (c) => c.y,
+                  (c) => c.activeMinutes
+                );
+                const splitCycle = split.find((e) => {
+                  if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
+                    return false;
+                  }
+                  if (!operation.equals(cycleToPartAndOp(e.cycle))) {
+                    return false;
+                  }
+                  if (pallet && e.cycle.pallet !== pallet) {
+                    return false;
+                  }
+                  return true;
+                });
 
-            if (splitCycle) {
-              return Option.some({
-                ...splitCycle.cycle,
-                y: splitCycle.elapsedForSingleMaterialMinutes,
-                operations: LazySeq.ofIterable(chunk)
-                  .flatMap((e) =>
-                    e.material.map((mat) => ({
-                      mat,
-                      operation: e.operation + (e === splitCycle.cycle ? "*" : ""),
-                    }))
-                  )
-                  .toArray(),
-              });
-            } else {
-              return Option.none<LoadCycleData>();
-            }
-          })
-          .toArray()
+                if (splitCycle) {
+                  return {
+                    ...splitCycle.cycle,
+                    y: splitCycle.elapsedForSingleMaterialMinutes,
+                    operations: LazySeq.ofIterable(chunk)
+                      .flatMap((e) =>
+                        e.material.map((mat) => ({
+                          mat,
+                          operation: e.operation + (e === splitCycle.cycle ? "*" : ""),
+                        }))
+                      )
+                      .toRArray(),
+                  };
+                } else {
+                  return null;
+                }
+              })
+              .toRArray(),
+          ] as const
       )
-      .filter((_, e) => e.length > 0),
+      .filter(([_, e]) => e.length > 0)
+      .toRMap((x) => x),
   };
 }
 
 export function outlierMachineCycles(
-  allCycles: L.List<PartCycleData>,
+  allCycles: Iterable<PartCycleData>,
   start: Date,
   end: Date,
   estimated: EstimatedCycleTimes
@@ -332,15 +354,14 @@ export function outlierMachineCycles(
       .filter((cycle) => {
         if (cycle.material.length === 0) return false;
         const stats = estimated.get(cycleToPartAndOp(cycle));
-        return stats.isSome() && isOutlier(stats.get(), cycle.y / cycle.material.length);
+        return stats !== undefined && isOutlier(stats, cycle.y / cycle.material.length);
       })
-      .groupBy((e) => e.part + "-" + e.process.toString())
-      .mapValues((e) => e.toArray()),
+      .toRLookup((e) => e.part + "-" + e.process.toString()),
   };
 }
 
 export function outlierLoadCycles(
-  allCycles: L.List<PartCycleData>,
+  allCycles: Iterable<PartCycleData>,
   start: Date,
   end: Date,
   estimated: EstimatedCycleTimes
@@ -362,22 +383,23 @@ export function outlierLoadCycles(
         if (Math.abs(differenceInSeconds(now, e.cycle.x)) < 15) return false;
 
         const stats = estimated.get(cycleToPartAndOp(e.cycle));
-        return stats.isSome() && isOutlier(stats.get(), e.elapsedForSingleMaterialMinutes);
+        return stats !== undefined && isOutlier(stats, e.elapsedForSingleMaterialMinutes);
       })
-      .map((e) => e.cycle)
-      .groupBy((c) => c.part + "-" + c.process.toString())
-      .mapValues((e) => e.toArray()),
+      .toRLookup(
+        (e) => e.cycle.part + "-" + e.cycle.process.toString(),
+        (e) => e.cycle
+      ),
   };
 }
 
-export function stationMinutes(partCycles: L.List<PartCycleData>, cutoff: Date): HashMap<string, number> {
+export function stationMinutes(partCycles: Iterable<PartCycleData>, cutoff: Date): ReadonlyMap<string, number> {
   return LazySeq.ofIterable(partCycles)
     .filter((p) => p.x >= cutoff)
     .map((p) => ({
       station: stat_name_and_num(p.stationGroup, p.stationNumber),
       active: p.activeMinutes,
     }))
-    .toMap(
+    .toRMap(
       (x) => [x.station, x.active] as [string, number],
       (v1, v2) => v1 + v2
     );
@@ -405,30 +427,32 @@ export function plannedOperationMinutes(s: FilteredStationCycles, forSingleMat: 
 
 export function format_cycle_inspection(
   c: PartCycleData,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>
+  matsById: IMap<number, MaterialSummaryAndCompletedData>
 ): string {
   const ret = [];
-  let signaled = HashSet.empty<string>();
-  let completed = HashSet.empty<string>();
-  let success = HashSet.empty<string>();
+  const signaled = new Set<string>();
+  const completed = new Set<string>();
+  const success = new Set<string>();
 
   for (const mat of c.material) {
-    const summary = matsById.get(mat.id).getOrNull();
-    if (summary) {
-      signaled = signaled.addAll(summary.signaledInspections);
+    const summary = matsById.get(mat.id);
+    if (summary !== undefined) {
+      for (const s of summary.signaledInspections) {
+        signaled.add(s);
+      }
       for (const [compInsp, details] of LazySeq.ofObject(summary.completedInspections ?? {})) {
-        signaled = signaled.add(compInsp);
-        completed = completed.add(compInsp);
+        signaled.add(compInsp);
+        completed.add(compInsp);
         if (details.success) {
-          success = success.add(compInsp);
+          success.add(compInsp);
         }
       }
     }
   }
 
-  for (const name of signaled.toArray({ sortOn: (x) => x })) {
-    if (completed.contains(name)) {
-      ret.push(name + "[" + (success.contains(name) ? "success" : "failed") + "]");
+  for (const name of signaled.toLazySeq().toSortedArray((x) => x)) {
+    if (completed.has(name)) {
+      ret.push(name + "[" + (success.has(name) ? "success" : "failed") + "]");
     } else {
       ret.push(name);
     }
@@ -438,7 +462,7 @@ export function format_cycle_inspection(
 
 export function buildCycleTable(
   cycles: FilteredStationCycles,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
+  matsById: IMap<number, MaterialSummaryAndCompletedData>,
   startD: Date | undefined,
   endD: Date | undefined,
   hideMedian?: boolean
@@ -455,8 +479,7 @@ export function buildCycleTable(
   const filteredCycles = LazySeq.ofIterable(cycles.data)
     .flatMap(([_, c]) => c)
     .filter((p) => (!startD || p.x >= startD) && (!endD || p.x < endD))
-    .toArray()
-    .sort((a, b) => a.x.getTime() - b.x.getTime());
+    .toSortedArray((a) => a.x.getTime());
   for (const cycle of filteredCycles) {
     table += "<tr>";
     table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
@@ -492,24 +515,22 @@ export function buildCycleTable(
 
 export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
+  matsById: IMap<number, MaterialSummaryAndCompletedData>,
   zoom: { start: Date; end: Date } | undefined,
   hideMedian?: boolean
 ): void {
   copy(buildCycleTable(cycles, matsById, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian));
 }
 
-export function buildPalletCycleTable(
-  points: HashMap<string, Iterable<{ readonly x: Date; readonly y: number }>>
-): string {
+export function buildPalletCycleTable(points: PalletCyclesByPallet): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Pallet</th><th>Date</th><th>Elapsed (min)</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const pals = points.keySet().toArray({ sortOn: (x) => x });
+  const pals = points.keysToLazySeq().toSortedArray((x) => x);
 
   for (const pal of pals) {
-    for (const cycle of points.get(pal).getOrElse([])) {
+    for (const cycle of points.get(pal)?.valuesToLazySeq() ?? []) {
       table += "<tr>";
       table += "<td>" + pal + "</td>";
       table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
@@ -521,9 +542,7 @@ export function buildPalletCycleTable(
   return table;
 }
 
-export function copyPalletCyclesToClipboard(
-  points: HashMap<string, Iterable<{ readonly x: Date; readonly y: number }>>
-): void {
+export function copyPalletCyclesToClipboard(points: PalletCyclesByPallet): void {
   copy(buildPalletCycleTable(points));
 }
 

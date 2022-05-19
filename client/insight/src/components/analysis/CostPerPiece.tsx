@@ -46,7 +46,6 @@ import BuildIcon from "@mui/icons-material/Build";
 import CallSplit from "@mui/icons-material/CallSplit";
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { Vector } from "prelude-ts";
 import { LazySeq } from "../../util/lazyseq";
 import * as localForage from "localforage";
 import { CircularProgress } from "@mui/material";
@@ -259,9 +258,8 @@ function CostBreakdown(props: CostBreakdownProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {Vector.ofIterable(props.costs.parts)
-              .sortOn((c) => c.part)
-              .transform((x) => LazySeq.ofIterable(x))
+            {LazySeq.ofIterable(props.costs.parts)
+              .sort((c) => c.part)
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
@@ -308,7 +306,7 @@ function MachineCostTooltip({
   return (
     <div>
       {LazySeq.ofIterable(part.machine.pctPerStat)
-        .sortOn(([stat]) => stat)
+        .sort(([stat]) => stat)
         .map(([stat, pct]) => (
           <div key={stat}>
             {stat}: {pctFormat.format(pct)} of {decimalFormat.format(machineCostForPeriod.get(stat) ?? 0)} total machine
@@ -357,9 +355,8 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {Vector.ofIterable(props.costs.parts)
-              .sortOn((c) => c.part)
-              .transform((x) => LazySeq.ofIterable(x))
+            {LazySeq.ofIterable(props.costs.parts)
+              .sort((c) => c.part)
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
@@ -471,7 +468,7 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const statGroups = React.useMemo(() => {
     const groups = new Set<string>();
-    for (const c of cycles) {
+    for (const c of cycles.valuesToLazySeq()) {
       groups.add(c.stationGroup);
     }
     return Array.from(groups).sort((a, b) => a.localeCompare(b));
@@ -524,7 +521,7 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
       machineCostPerYear,
       automationCostPerYear,
       totalLaborCost,
-      cycles,
+      cycles.valuesToLazySeq(),
       matIds.matsById,
       month ? { month: month } : { thirtyDaysAgo }
     );

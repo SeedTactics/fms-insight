@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "../network/api";
 import { LazySeq } from "../util/lazyseq";
-import { HashSet, HashMap } from "prelude-ts";
 import { LogBackend } from "../network/backend";
 import { differenceInSeconds } from "date-fns";
 
@@ -42,7 +41,7 @@ export interface JobAndGroups {
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
     readonly details?: string;
-    readonly queues: HashSet<string>;
+    readonly queues: ReadonlySet<string>;
   }>;
 }
 
@@ -54,14 +53,14 @@ function describePath(path: Readonly<api.IProcPathInfo>): string {
 
 interface RawMatDetails {
   readonly path: string;
-  readonly queues: HashSet<string>;
+  readonly queue: string | null;
 }
 
 function rawMatDetails(job: Readonly<api.IActiveJob>, pathIdx: number): RawMatDetails {
   const queue = job.procsAndPaths[0].paths[pathIdx].inputQueue;
   return {
     path: describePath(job.procsAndPaths[0].paths[pathIdx]),
-    queues: queue !== undefined && queue !== "" ? HashSet.of(queue) : HashSet.empty(),
+    queue: queue !== undefined && queue !== "" ? queue : null,
   };
 }
 
@@ -71,14 +70,14 @@ function joinRawMatDetails(details: ReadonlyArray<RawMatDetails>): string {
 
 interface PathDetails {
   readonly path: string;
-  readonly queues: HashSet<string>;
+  readonly queue: string | null;
 }
 
 function pathDetails(job: Readonly<api.IActiveJob>, procIdx: number, pathIdx: number): PathDetails {
   const queue = job.procsAndPaths[0].paths[pathIdx].outputQueue;
   return {
     path: describePath(job.procsAndPaths[procIdx].paths[pathIdx]),
-    queues: queue !== undefined && queue !== "" ? HashSet.of(queue) : HashSet.empty(),
+    queue: queue !== undefined && queue !== "" ? queue : null,
   };
 }
 
@@ -90,7 +89,7 @@ export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
   const machinedProcs: {
     readonly lastProc: number;
     readonly details?: string;
-    readonly queues: HashSet<string>;
+    readonly queues: ReadonlySet<string>;
   }[] = [];
 
   // Raw material
@@ -98,7 +97,9 @@ export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
   machinedProcs.push({
     lastProc: 0,
     details: joinRawMatDetails(rawMatPaths),
-    queues: LazySeq.ofIterable(rawMatPaths).foldLeft(HashSet.empty(), (s, path) => s.addAll(path.queues)),
+    queues: LazySeq.ofIterable(rawMatPaths)
+      .collect((p) => p.queue)
+      .toRSet((p) => p),
   });
 
   // paths besides the final path
@@ -107,7 +108,9 @@ export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
     machinedProcs.push({
       lastProc: procIdx + 1,
       details: joinDetails(paths),
-      queues: LazySeq.ofIterable(paths).foldLeft(HashSet.empty(), (s, path) => s.addAll(path.queues)),
+      queues: LazySeq.ofIterable(paths)
+        .collect((p) => p.queue)
+        .toRSet((p) => p),
     });
   }
 
@@ -200,12 +203,11 @@ export function extractJobRawMaterial(
           };
         })
     )
-    .sortOn((x) => {
+    .toSortedArray((x) => {
       const prec = x.job.precedence?.[0]?.[x.proc1Path - 1];
       if (!prec || prec < 0) return Number.MAX_SAFE_INTEGER;
       return prec;
-    })
-    .toArray();
+    });
 }
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
@@ -222,12 +224,6 @@ export interface QueueData {
   readonly rawMaterialQueue: boolean;
   readonly material: MaterialList;
   readonly groupedRawMat?: ReadonlyArray<QueueRawMaterialGroup>;
-}
-
-export interface AllQueueData {
-  readonly freeLoadingMaterial: MaterialList;
-  readonly free?: MaterialList;
-  readonly queues: HashMap<string, MaterialList>;
 }
 
 function compareByQueuePos(m1: Readonly<api.IInProcessMaterial>, m2: Readonly<api.IInProcessMaterial>): number {

@@ -224,19 +224,18 @@ function AddSerialFound(props: AddSerialFoundProps) {
 
   let addProcMsg: string | null = null;
   if (!props.display_material.loading_events) {
-    const lastProc = LazySeq.ofIterable(props.display_material.events)
-      .filter(
-        (e) =>
-          e.details?.["PalletCycleInvalidated"] !== "1" &&
-          (e.type === api.LogType.LoadUnloadCycle ||
-            e.type === api.LogType.MachineCycle ||
-            e.type === api.LogType.AddToQueue)
-      )
-      .flatMap((e) => e.material)
-      .filter((m) => m.id === props.display_material.materialID)
-      .maxOn((m) => m.proc)
-      .map((m) => m.proc)
-      .getOrElse(0);
+    const lastProc =
+      LazySeq.ofIterable(props.display_material.events)
+        .filter(
+          (e) =>
+            e.details?.["PalletCycleInvalidated"] !== "1" &&
+            (e.type === api.LogType.LoadUnloadCycle ||
+              e.type === api.LogType.MachineCycle ||
+              e.type === api.LogType.AddToQueue)
+        )
+        .flatMap((e) => e.material)
+        .filter((m) => m.id === props.display_material.materialID)
+        .maxOn((m) => m.proc)?.proc ?? 0;
     addProcMsg = " To Run Process " + (lastProc + 1).toString();
   }
   return (
@@ -307,8 +306,7 @@ function SelectJob(props: SelectJobProps) {
     () =>
       LazySeq.ofObject(currentSt.jobs)
         .map(([_uniq, j]) => extractJobGroups(j))
-        .sortOn((j) => j.job.partName)
-        .toArray(),
+        .toSortedArray((j) => j.job.partName),
     [currentSt.jobs]
   );
 
@@ -337,14 +335,14 @@ function SelectJob(props: SelectJobProps) {
           <Collapse in={selectedJob === j.job.unique} timeout="auto">
             {j.machinedProcs.map((p, idx) => (
               <Tooltip
-                title={props.queue !== undefined && !p.queues.contains(props.queue) ? "Not used in " + props.queue : ""}
+                title={props.queue !== undefined && !p.queues.has(props.queue) ? "Not used in " + props.queue : ""}
                 key={idx}
               >
                 <div>
                   <ListItem
                     button
                     sx={(theme) => ({ pl: theme.spacing(4) })}
-                    disabled={props.queue !== undefined && !p.queues.contains(props.queue)}
+                    disabled={props.queue !== undefined && !p.queues.has(props.queue)}
                     selected={
                       props.selected_job?.job.unique === j.job.unique && props.selected_job?.last_proc === p.lastProc
                     }
@@ -508,11 +506,11 @@ function matCurrentlyInQueue(
       if (path.outputQueue !== undefined) q.push(path.outputQueue);
       return q;
     })
-    .toSet((x) => x);
+    .toRSet((x) => x);
   for (const inProcMat of currentSt.material) {
     if (inProcMat.materialID === mat.materialID) {
       if (inProcMat.location.type === api.LocType.InQueue && !!inProcMat.location.currentQueue) {
-        if (activeQueues.contains(inProcMat.location.currentQueue)) {
+        if (activeQueues.has(inProcMat.location.currentQueue)) {
           return { type: "InRegularQueue", inProcMat };
         } else {
           return { type: "InQuarantine", inProcMat, queue: inProcMat.location.currentQueue };
@@ -667,19 +665,19 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const printRef = React.useRef(null);
   const [adding, setAdding] = React.useState<boolean>(false);
   const castNames = useRecoilValue(castingNames);
-  const castings: ReadonlyArray<[string, number]> = React.useMemo(
+  const castings: LazySeq<readonly [string, number]> = React.useMemo(
     () =>
       LazySeq.ofObject(currentSt.jobs)
         .flatMap(([, j]) => j.procsAndPaths[0].paths)
         .filter((p) => p.casting !== undefined && p.casting !== "")
         .map((p) => ({ casting: p.casting as string, cnt: 1 }))
-        .appendAll(LazySeq.ofIterable(castNames).map((c) => ({ casting: c, cnt: 0 })))
-        .toMap(
+        .concat(LazySeq.ofIterable(castNames).map((c) => ({ casting: c, cnt: 0 })))
+        .toRMap(
           (c) => [c.casting, c.cnt],
           (q1, q2) => q1 + q2
         )
-        .toVector()
-        .sortBy(([c1, q1], [c2, q2]) => {
+        .toLazySeq()
+        .sortWith(([c1, q1], [c2, q2]) => {
           if (q1 === 0 && q2 != 0) {
             return 1; // put non-zero quantities first
           } else if (q1 !== 0 && q2 == 0) {
@@ -687,8 +685,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
           } else {
             return c1.localeCompare(c2);
           }
-        })
-        .toArray(),
+        }),
     [currentSt.jobs, castNames]
   );
 

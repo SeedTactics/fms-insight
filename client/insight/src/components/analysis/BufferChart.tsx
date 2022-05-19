@@ -37,12 +37,12 @@ import { curveCatmullRom } from "@visx/curve";
 import { XYChart, AnimatedAxis, AnimatedLineSeries, Grid } from "@visx/xychart";
 import { BufferChartPoint, buildBufferChart } from "../../data/results.bufferchart";
 import { chartTheme, seriesColor } from "../../util/chart-colors";
-import { HashSet } from "prelude-ts";
 import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers";
 import { Box, ToggleButton } from "@mui/material";
+import { useImmer } from "../../util/recoil-util";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;
@@ -57,7 +57,7 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
   const entries = useRecoilValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
   const rawMatQueues = useRecoilValue(rawMaterialQueues);
 
-  const [disabledBuffers, setDisabledBuffers] = React.useState<HashSet<string>>(HashSet.empty());
+  const [disabledBuffers, setDisabledBuffers] = useImmer<ReadonlySet<string>>(new Set<string>());
 
   const series = React.useMemo(
     () =>
@@ -66,12 +66,12 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
         defaultDateRange[1],
         props.movingAverageDistanceInHours,
         rawMatQueues,
-        entries
+        entries.valuesToLazySeq()
       ),
     [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours]
   );
 
-  const emptySeries = series.findIndex((s) => !disabledBuffers.contains(s.label)) < 0;
+  const emptySeries = series.findIndex((s) => !disabledBuffers.has(s.label)) < 0;
 
   return (
     <div>
@@ -81,7 +81,7 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
           <AnimatedAxis orientation="left" label="Buffer Size" />
           <Grid />
           {series.map((s, idx) =>
-            disabledBuffers.contains(s.label) ? undefined : (
+            disabledBuffers.has(s.label) ? undefined : (
               <AnimatedLineSeries
                 key={s.label}
                 dataKey={s.label}
@@ -108,12 +108,16 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
         {series.map((s, idx) => (
           <ToggleButton
             key={s.label}
-            selected={!disabledBuffers.contains(s.label)}
+            selected={!disabledBuffers.has(s.label)}
             value={s.label}
             onChange={() =>
-              disabledBuffers.contains(s.label)
-                ? setDisabledBuffers(disabledBuffers.remove(s.label))
-                : setDisabledBuffers(disabledBuffers.add(s.label))
+              setDisabledBuffers((db) => {
+                if (db.has(s.label)) {
+                  db.delete(s.label);
+                } else {
+                  db.add(s.label);
+                }
+              })
             }
           >
             <div style={{ display: "flex", alignItems: "center" }}>

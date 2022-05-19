@@ -445,13 +445,13 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
       .then((events) => {
         if (isSubscribed) {
           setEvents(events);
-          setLastOperator(
-            LazySeq.ofIterable(events)
-              .filter((e) => e.type === api.LogType.AddToQueue && e.details?.["operator"] !== undefined)
-              .last()
-              .map((e) => e.details?.["operator"] ?? undefined)
-              .getOrUndefined()
-          );
+          let operator: string | undefined;
+          for (const e of events) {
+            if (e.type === api.LogType.AddToQueue && e.details?.["operator"] !== undefined) {
+              operator = e.details["operator"];
+            }
+          }
+          setLastOperator(operator);
         }
       })
       .finally(() => setLoading(false));
@@ -466,9 +466,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
     if (!uniq || uniq === "" || !jobs[uniq]) return undefined;
     return LazySeq.ofIterable(jobs[uniq].procsAndPaths[0].paths)
       .filter((p) => p.casting !== undefined && p.casting !== "")
-      .head()
-      .map((p) => p.casting)
-      .getOrUndefined();
+      .head()?.casting;
   }, [props.material, jobs]);
 
   function close() {
@@ -488,7 +486,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
           LazySeq.ofIterable(props.material || [])
             .take(removeCnt)
             .map((m) => m.materialID)
-            .toArray()
+            .toRArray()
         ).finally(close);
       }
     } else {

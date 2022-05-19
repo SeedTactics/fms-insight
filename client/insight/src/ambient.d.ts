@@ -14,3 +14,11 @@ declare module "react-timeago" {
 
   export default class TimeAgo extends React.Component<TimeAgoProps> {}
 }
+
+declare module "hamt_plus" {
+  const hamt: {
+    empty: any;
+    make: (cfg: any) => any;
+  };
+  export default hamt;
+}

@@ -41,12 +41,11 @@ import { DialogActions } from "@mui/material";
 import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
 import * as matDetails from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary";
-import { HashMap, HashSet } from "prelude-ts";
-import { LazySeq } from "../../util/lazyseq";
 import { currentOperator } from "../../data/operators";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
 import { last30MaterialSummary } from "../../cell-status/material-summary";
+import { IMap } from "../../util/imap";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -200,34 +199,41 @@ export function Inspection(props: InspectionProps): JSX.Element {
 }
 
 function extractRecentInspections(
-  mats: HashMap<number, MaterialSummaryAndCompletedData>,
+  mats: IMap<number, MaterialSummaryAndCompletedData>,
   inspType: string | null
 ): PartsForInspection {
   const uninspectedCutoff = addDays(new Date(), -7);
   const inspectedCutoff = addDays(new Date(), -1);
 
   function checkAllCompleted(m: MaterialSummaryAndCompletedData): boolean {
-    return HashSet.ofIterable(m.signaledInspections)
-      .removeAll(m.completedInspections ? Object.keys(m.completedInspections) : [])
-      .isEmpty();
+    const comp = m.completedInspections;
+    if (comp === undefined) {
+      return m.signaledInspections.length === 0;
+    } else {
+      return m.signaledInspections.toLazySeq().allMatch((s) => s in comp);
+    }
   }
 
   const uninspected = Array.from(
     inspType === null
-      ? LazySeq.ofIterable(mats.valueIterable()).filter(
-          (m) =>
-            m.last_unload_time !== undefined &&
-            m.last_unload_time >= uninspectedCutoff &&
-            m.signaledInspections.length > 0 &&
-            !checkAllCompleted(m)
-        )
-      : LazySeq.ofIterable(mats.valueIterable()).filter(
-          (m) =>
-            m.last_unload_time !== undefined &&
-            m.last_unload_time >= uninspectedCutoff &&
-            m.signaledInspections.includes(inspType) &&
-            (m.completedInspections || {})[inspType] === undefined
-        )
+      ? mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.last_unload_time !== undefined &&
+              m.last_unload_time >= uninspectedCutoff &&
+              m.signaledInspections.length > 0 &&
+              !checkAllCompleted(m)
+          )
+      : mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.last_unload_time !== undefined &&
+              m.last_unload_time >= uninspectedCutoff &&
+              m.signaledInspections.includes(inspType) &&
+              (m.completedInspections || {})[inspType] === undefined
+          )
   );
   // sort descending
   uninspected.sort((e1, e2) =>
@@ -236,20 +242,24 @@ function extractRecentInspections(
 
   const inspected = Array.from(
     inspType === null
-      ? LazySeq.ofIterable(mats.valueIterable()).filter(
-          (m) =>
-            m.completed_inspect_time !== undefined &&
-            m.completed_inspect_time >= inspectedCutoff &&
-            m.signaledInspections.length > 0 &&
-            checkAllCompleted(m)
-        )
-      : LazySeq.ofIterable(mats.valueIterable()).filter(
-          (m) =>
-            m.completed_inspect_time !== undefined &&
-            m.completed_inspect_time >= inspectedCutoff &&
-            m.signaledInspections.includes(inspType) &&
-            (m.completedInspections || {})[inspType] !== undefined
-        )
+      ? mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.completed_inspect_time !== undefined &&
+              m.completed_inspect_time >= inspectedCutoff &&
+              m.signaledInspections.length > 0 &&
+              checkAllCompleted(m)
+          )
+      : mats
+          .valuesToLazySeq()
+          .filter(
+            (m) =>
+              m.completed_inspect_time !== undefined &&
+              m.completed_inspect_time >= inspectedCutoff &&
+              m.signaledInspections.includes(inspType) &&
+              (m.completedInspections || {})[inspType] !== undefined
+          )
   );
   // sort descending
   inspected.sort((e1, e2) =>

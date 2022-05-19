@@ -33,25 +33,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { LazySeq } from "../util/lazyseq";
 import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import { HashMap } from "prelude-ts";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
 import { IHistoricData, IHistoricJob } from "../network/api";
+import { emptyIMap, IMap, iterableToIMap } from "../util/imap";
 
-const last30JobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
+const last30JobsRW = atom<IMap<string, Readonly<IHistoricJob>>>({
   key: "last30Jobs",
-  default: HashMap.empty(),
+  default: emptyIMap(),
 });
-export const last30Jobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
+export const last30Jobs: RecoilValueReadOnly<IMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
 
-const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
+const specificMonthJobsRW = atom<IMap<string, Readonly<IHistoricJob>>>({
   key: "specificMonthJobs",
-  default: HashMap.empty(),
+  default: emptyIMap(),
 });
-export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
+export const specificMonthJobs: RecoilValueReadOnly<IMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
 
 export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-  t.set(last30JobsRW, (oldJobs) => LazySeq.ofObject(history.jobs).foldLeft(oldJobs, (m, [_, j]) => m.put(j.unique, j)));
+  t.set(last30JobsRW, (oldJobs) => oldJobs.union(iterableToIMap(LazySeq.ofObject(history.jobs))));
 });
 
 export const updateLast30Jobs = conduit<ServerEventAndTime>(
@@ -61,24 +61,20 @@ export const updateLast30Jobs = conduit<ServerEventAndTime>(
       t.set(last30JobsRW, (oldJobs) => {
         if (expire) {
           const expire = addDays(now, -30);
-
-          const minStat = LazySeq.ofIterable(oldJobs).minOn(([, e]) => e.routeStartUTC.getTime());
-
-          if ((minStat.isNone() || minStat.get()[1].routeStartUTC >= expire) && newJobs.isEmpty()) {
-            return oldJobs;
-          }
-
-          oldJobs = oldJobs.filter((_, j) => j.routeStartUTC >= expire);
+          oldJobs = oldJobs.bulkDelete((_, j) => j.routeStartUTC < expire);
         }
 
-        return newJobs.foldLeft(oldJobs, (m, j) => m.put(j.unique, { ...j, copiedToSystem: true }));
+        return oldJobs.union(newJobs.toIMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
       });
     }
   }
 );
 
 export const updateSpecificMonthJobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-  t.set(specificMonthJobsRW, HashMap.ofObjectDictionary(history.jobs));
+  t.set(
+    specificMonthJobsRW,
+    LazySeq.ofObject(history.jobs).toIMap((x) => x)
+  );
 });
 
 export const last30JobComment = selectorFamily<string | null, string>({
@@ -86,7 +82,7 @@ export const last30JobComment = selectorFamily<string | null, string>({
   get:
     (uniq) =>
     ({ get }) =>
-      get(last30Jobs).get(uniq).getOrNull()?.comment ?? null,
+      get(last30Jobs).get(uniq)?.comment ?? null,
   set:
     (uniq) =>
     ({ set }, newVal) => {
@@ -94,8 +90,8 @@ export const last30JobComment = selectorFamily<string | null, string>({
 
       set(last30JobsRW, (oldJobs) => {
         const old = oldJobs.get(uniq);
-        if (old.isSome()) {
-          return oldJobs.put(uniq, { ...old.get(), comment: newComment ?? undefined });
+        if (old !== undefined) {
+          return oldJobs.set(uniq, { ...old, comment: newComment ?? undefined });
         } else {
           return oldJobs;
         }

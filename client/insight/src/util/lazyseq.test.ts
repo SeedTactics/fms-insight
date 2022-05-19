@@ -1,6 +1,6 @@
 import { LazySeq } from "./lazyseq";
-import { HashMap, Vector, Option, HashSet } from "prelude-ts";
 import { it, expect } from "vitest";
+import { emptyIMap, unionMaps } from "./imap";
 
 const oddSeq = LazySeq.ofIterator(function* () {
   for (let x = 1; x <= 9; x += 2) {
@@ -42,27 +42,11 @@ it("appends", () => {
 });
 
 it("appends all", () => {
-  seqShouldBe(oddSeq.appendAll([2, 4]), [1, 3, 5, 7, 9, 2, 4]);
-});
-
-it("arrangeBy", () => {
-  const m = oddSeq.arrangeBy((x) => x.toString());
-  expect(m.isSome()).toBe(true);
-  expect(m.getOrThrow().equals(HashMap.of(["1", 1], ["3", 3], ["5", 5], ["7", 7], ["9", 9]))).toBe(true);
-  expect(
-    LazySeq.ofIterable([1, 2, 1])
-      .arrangeBy((x) => x)
-      .isNone()
-  ).toBe(true);
+  seqShouldBe(oddSeq.concat([2, 4]), [1, 3, 5, 7, 9, 2, 4]);
 });
 
 it("chunk", () => {
   seqShouldBe(oddSeq.chunk(2), [[1, 3], [5, 7], [9]]);
-});
-
-it("contains", () => {
-  expect(oddSeq.contains(3)).toBe(true);
-  expect(oddSeq.contains(2)).toBe(false);
 });
 
 it("drops", () => {
@@ -90,8 +74,8 @@ it("filter", () => {
 });
 
 it("find", () => {
-  expect(oddSeq.find((x) => x === 3).getOrThrow()).toBe(3);
-  expect(oddSeq.find((x) => x === 2).isNone()).toBe(true);
+  expect(oddSeq.find((x) => x === 3)).toBe(3);
+  expect(oddSeq.find((x) => x === 2)).toBeUndefined();
 });
 
 it("flatMap", () => {
@@ -102,13 +86,16 @@ it("flatMap", () => {
 });
 
 it("groupBy", () => {
-  const m: HashMap<string, Vector<number>> = oddSeq.groupBy((x) => (x < 6 ? "low" : "high"));
-  expect(m.equals(HashMap.of(["low", Vector.of(1, 3, 5)], ["high", Vector.of(7, 9)])));
+  const m = oddSeq.groupBy((x) => (x < 6 ? "low" : "high"));
+  seqShouldBe(m, [
+    ["low", [1, 3, 5]],
+    ["high", [7, 9]],
+  ]);
 });
 
 it("head", () => {
-  expect(oddSeq.head().getOrThrow()).toBe(1);
-  expect(LazySeq.ofIterable([]).head().isNone()).toBe(true);
+  expect(oddSeq.head()).toBe(1);
+  expect(LazySeq.ofIterable([]).head()).toBeUndefined();
 });
 
 it("length", () => {
@@ -122,57 +109,21 @@ it("map", () => {
   );
 });
 
-it("mapOption", () => {
+it("collect", () => {
   seqShouldBe(
-    oddSeq.mapOption((x) => (x === 5 ? Option.none<string>() : Option.some(x.toString()))),
+    oddSeq.collect((x) => (x === 5 ? null : x.toString())),
     ["1", "3", "7", "9"]
   );
 });
 
-it("maxBy", () => {
-  expect(oddSeq.maxBy((v1, v2) => v1 - v2).getOrThrow()).toBe(9);
-  expect(
-    LazySeq.ofIterable([])
-      .maxBy((v1, v2) => v1 - v2)
-      .isNone()
-  ).toBe(true);
-});
-
 it("maxOn", () => {
-  expect(
-    oddSeq
-      .map((x) => ({ prop: x }))
-      .maxOn((x) => x.prop)
-      .getOrThrow()
-  ).toEqual({ prop: 9 });
-  expect(
-    LazySeq.ofIterable([] as { prop: number }[])
-      .maxOn((x) => x.prop)
-      .isNone()
-  ).toBe(true);
-});
-
-it("minBy", () => {
-  expect(oddSeq.minBy((v1, v2) => v1 - v2).getOrThrow()).toBe(1);
-  expect(
-    LazySeq.ofIterable([])
-      .minBy((v1, v2) => v1 - v2)
-      .isNone()
-  ).toBe(true);
+  expect(oddSeq.map((x) => ({ prop: x })).maxOn((x) => x.prop)).toEqual({ prop: 9 });
+  expect(LazySeq.ofIterable([] as { prop: number }[]).maxOn((x) => x.prop)).toBeUndefined();
 });
 
 it("minOn", () => {
-  expect(
-    oddSeq
-      .map((x) => ({ prop: x }))
-      .minOn((x) => x.prop)
-      .getOrThrow()
-  ).toEqual({ prop: 1 });
-  expect(
-    LazySeq.ofIterable([] as { prop: number }[])
-      .minOn((x) => x.prop)
-      .isNone()
-  ).toBe(true);
+  expect(oddSeq.map((x) => ({ prop: x })).minOn((x) => x.prop)).toEqual({ prop: 1 });
+  expect(LazySeq.ofIterable([] as { prop: number }[]).minOn((x) => x.prop)).toBeUndefined();
 });
 
 it("prepend", () => {
@@ -183,33 +134,34 @@ it("prependAll", () => {
   seqShouldBe(oddSeq.prependAll([100, 200]), [100, 200, 1, 3, 5, 7, 9]);
 });
 
-it("reduce", () => {
-  expect(oddSeq.reduce((x1, x2) => x1 + x2).getOrThrow()).toBe(1 + 3 + 5 + 7 + 9);
-  expect(
-    LazySeq.ofIterable([])
-      .reduce((x1, _) => x1)
-      .isNone()
-  ).toBe(true);
-});
-
-it("single", () => {
-  expect(oddSeq.single().isNone()).toBe(true);
-  expect(LazySeq.ofIterable([]).single().isNone()).toBe(true);
-  expect(LazySeq.ofIterable([1]).single().getOrThrow()).toBe(1);
-});
-
 it("sortBy", () => {
   seqShouldBe(
-    LazySeq.ofIterable([9, 8, 7, 6]).sortBy((v1, v2) => v1 - v2),
+    LazySeq.ofIterable([9, 8, 7, 6]).sortWith((v1, v2) => v1 - v2),
     [6, 7, 8, 9]
   );
 });
 
+it("sortBy to array", () => {
+  expect(
+    LazySeq.ofIterable([9, 8, 7, 6])
+      .sortWith((v1, v2) => v1 - v2)
+      .toMutableArray()
+  ).toStrictEqual([6, 7, 8, 9]);
+});
+
 it("sortOn", () => {
   seqShouldBe(
-    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }]).sortOn((x) => x.a),
+    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }]).sort((x) => x.a),
     [{ a: 4 }, { a: 5 }, { a: 7 }, { a: 10 }]
   );
+});
+
+it("sortOn to array", () => {
+  expect(
+    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }])
+      .sort((x) => x.a)
+      .toMutableArray()
+  ).toStrictEqual([{ a: 4 }, { a: 5 }, { a: 7 }, { a: 10 }]);
 });
 
 it("sumOn", () => {
@@ -234,28 +186,11 @@ it("takeWhile", () => {
 });
 
 it("toArray", () => {
-  expect(oddSeq.toArray()).toEqual([1, 3, 5, 7, 9]);
-});
-
-it("toMap", () => {
-  const m = oddSeq.toMap(
-    (x) => (x < 6 ? ["low", x] : ["high", x]),
-    (v1, v2) => v1 + v2
-  );
-  const expected = HashMap.of(["low", 1 + 3 + 5], ["high", 7 + 9]);
-  expect(m.equals(expected)).toBe(true);
-});
-
-it("toSet", () => {
-  expect(oddSeq.toSet((x) => x + 1).equals(HashSet.of(2, 4, 6, 8, 10))).toBe(true);
-});
-
-it("toVector", () => {
-  expect(oddSeq.toVector().equals(Vector.of(1, 3, 5, 7, 9))).toBe(true);
+  expect(oddSeq.toMutableArray()).toEqual([1, 3, 5, 7, 9]);
 });
 
 it("transform", () => {
-  expect(oddSeq.transform((s) => s.toArray())).toEqual([1, 3, 5, 7, 9]);
+  expect(oddSeq.transform((s) => s.toMutableArray())).toEqual([1, 3, 5, 7, 9]);
 });
 
 it("zip", () => {
@@ -271,4 +206,229 @@ it("zip", () => {
     [7, 8],
     [9, 10],
   ]);
+});
+
+it("bulkDeletes IMap", () => {
+  let m = emptyIMap<number, string>();
+  m = m.set(1, "a");
+  m = m.set(2, "b");
+  m = m.set(3, "c");
+  m = m.set(4, "d");
+
+  m = m.bulkDelete((i) => i <= 2);
+
+  expect(m.toLazySeq().toRArray()).toEqual([
+    [3, "c"],
+    [4, "d"],
+  ]);
+});
+
+it("maps values in IMap", () => {
+  let m = emptyIMap<number, string>();
+  m = m.set(1, "a");
+  m = m.set(2, "b");
+  m = m.set(3, "c");
+  m = m.set(4, "d");
+
+  m = m.mapValues((v) => v + "!");
+
+  expect(m.toLazySeq().toRArray()).toEqual([
+    [1, "a!"],
+    [2, "b!"],
+    [3, "c!"],
+    [4, "d!"],
+  ]);
+});
+
+it("collects values in IMap", () => {
+  let m = emptyIMap<number, string>();
+  m = m.set(1, "a");
+  m = m.set(2, "b");
+  m = m.set(3, "c");
+  m = m.set(4, "d");
+
+  m = m.collectValues((v) => (v === "b" ? null : v + "!"));
+
+  expect(m.toLazySeq().toRArray()).toEqual([
+    [1, "a!"],
+    [3, "c!"],
+    [4, "d!"],
+  ]);
+});
+
+it("union maps", () => {
+  let m = emptyIMap<number, string>();
+  m = m.set(1, "a");
+  m = m.set(2, "b");
+  m = m.set(3, "c");
+  m = m.set(4, "d");
+
+  let m2 = emptyIMap<number, string>();
+  m2 = m2.set(4, "e");
+  m2 = m2.set(5, "f");
+
+  const e = unionMaps((a, b) => a + b, m, m2);
+
+  expect(e.toLazySeq().toRArray()).toEqual([
+    [1, "a"],
+    [2, "b"],
+    [3, "c"],
+    [4, "de"],
+    [5, "f"],
+  ]);
+});
+
+it("toIMap", () => {
+  const seq = LazySeq.ofIterable([
+    { foo: 1, bar: "aa" },
+    { foo: 2, bar: "bb" },
+    { foo: 2, bar: "bbbb" },
+    { foo: 3, bar: "c" },
+    { foo: 1, bar: "aaaa" },
+  ]);
+
+  const m = seq.toIMap((x) => [x.foo, x.bar]);
+
+  expect(m.toLazySeq().toRArray()).toEqual([
+    [1, "aaaa"],
+    [2, "bbbb"],
+    [3, "c"],
+  ]);
+
+  const m2 = seq.toIMap(
+    (x) => [x.foo, x.bar],
+    (a, b) => a + b
+  );
+
+  expect(m2.toLazySeq().toRArray()).toEqual([
+    [1, "aaaaaa"],
+    [2, "bbbbbb"],
+    [3, "c"],
+  ]);
+});
+
+it("toLookup", () => {
+  const seq = LazySeq.ofIterable([
+    { foo: 1, bar: "aa" },
+    { foo: 1, bar: "aaaa" },
+    { foo: 2, bar: "bb" },
+    { foo: 3, bar: "c" },
+    { foo: 2, bar: "bbbb" },
+  ]);
+
+  const lookup = seq.toLookup(
+    (x) => x.foo,
+    (x) => x.bar
+  );
+
+  expect(lookup.toLazySeq().toRArray()).toEqual([
+    [1, ["aa", "aaaa"]],
+    [2, ["bb", "bbbb"]],
+    [3, ["c"]],
+  ]);
+
+  const lookupKey = seq.toLookup((x) => x.foo);
+
+  expect(lookupKey.toLazySeq().toRArray()).toEqual([
+    [
+      1,
+      [
+        { foo: 1, bar: "aa" },
+        { foo: 1, bar: "aaaa" },
+      ],
+    ],
+    [
+      2,
+      [
+        { foo: 2, bar: "bb" },
+        { foo: 2, bar: "bbbb" },
+      ],
+    ],
+    [3, [{ foo: 3, bar: "c" }]],
+  ]);
+});
+
+it("toRLookup", () => {
+  const seq = LazySeq.ofIterable([
+    { foo: 1, bar: "aa" },
+    { foo: 1, bar: "aaaa" },
+    { foo: 2, bar: "bb" },
+    { foo: 3, bar: "c" },
+    { foo: 2, bar: "bbbb" },
+  ]);
+
+  const lookup = seq.toRLookup(
+    (x) => x.foo,
+    (x) => x.bar
+  );
+
+  expect(lookup).toStrictEqual(
+    new Map([
+      [1, ["aa", "aaaa"]],
+      [2, ["bb", "bbbb"]],
+      [3, ["c"]],
+    ])
+  );
+
+  const lookupKey = seq.toRLookup((x) => x.foo);
+
+  expect(lookupKey).toStrictEqual(
+    new Map([
+      [
+        1,
+        [
+          { foo: 1, bar: "aa" },
+          { foo: 1, bar: "aaaa" },
+        ],
+      ],
+      [
+        2,
+        [
+          { foo: 2, bar: "bb" },
+          { foo: 2, bar: "bbbb" },
+        ],
+      ],
+      [3, [{ foo: 3, bar: "c" }]],
+    ])
+  );
+});
+
+it("toLookupMap", () => {
+  const seq = LazySeq.ofIterable([
+    { foo: 1, bar: "aa" },
+    { foo: 1, bar: "aaaa" },
+    { foo: 2, bar: "bb" },
+    { foo: 3, bar: "c" },
+    { foo: 2, bar: "bbbb" },
+  ]);
+
+  const lookup = seq.toLookupMap(
+    (x) => x.foo,
+    (x) => x.bar
+  );
+
+  expect(
+    lookup
+      .toLazySeq()
+      .map(([a, b]) => [a, b.toLazySeq().toRMap((x) => x)] as const)
+      .toRMap((x) => x)
+  ).toEqual(
+    new Map([
+      [
+        1,
+        new Map([
+          ["aaaa", { foo: 1, bar: "aaaa" }],
+          ["aa", { foo: 1, bar: "aa" }],
+        ]),
+      ],
+      [
+        2,
+        new Map([
+          ["bbbb", { foo: 2, bar: "bbbb" }],
+          ["bb", { foo: 2, bar: "bb" }],
+        ]),
+      ],
+      [3, new Map([["c", { foo: 3, bar: "c" }]])],
+    ])
+  );
 });

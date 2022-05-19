@@ -5,7 +5,7 @@ exports[`creates all material > all material bins 1`] = `
   {
     "binId": "__FMS_INSIGHT_LOAD_STATION_BIN__",
     "byLul": Map {
-      "1" => [
+      1 => [
         {
           "action": {
             "elapsedLoadUnloadTime": undefined,
@@ -97,7 +97,7 @@ exports[`creates all material > all material bins 1`] = `
           "workorderId": undefined,
         },
       ],
-      "2" => [
+      2 => [
         {
           "action": {
             "elapsedLoadUnloadTime": undefined,

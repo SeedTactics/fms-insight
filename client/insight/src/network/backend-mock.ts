@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addSeconds } from "date-fns";
 import * as api from "./api";
 import { registerBackend } from "./backend";
-import { LazySeq } from "../util/lazyseq";
+import { LazySeq, sortByProp } from "../util/lazyseq";
 
 export type MockEvents = ReadonlyArray<object /* ILogEntry json */>;
 
@@ -79,9 +79,9 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
     if (m.location.pallet) {
       m.location.pallet = m.location.pallet.toString();
     }
-    if (m.location.face) {
+    if (m.location.face && typeof m.location.face === "string") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      m.location.face = parseInt(m.location.face as any, 10);
+      m.location.face = parseInt(m.location.face, 10);
     }
   }
 
@@ -104,7 +104,7 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
     jobs: historicJobs,
     stationUse: LazySeq.ofIterable(allNewJobs)
       .flatMap((j) => j.stationUse || [])
-      .toArray(),
+      .toMutableArray(),
   };
 
   return {
@@ -125,7 +125,7 @@ async function loadEventsJson(
 
   return LazySeq.ofIterable(await evts)
     .map((evtJson) => {
-      const tools = toolUse[(evtJson as any).counter.toString()];
+      const tools = toolUse[(evtJson as { counter: number }).counter.toString()];
       const e = api.LogEntry.fromJS(tools ? { ...evtJson, tools } : evtJson);
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
@@ -144,12 +144,13 @@ async function loadEventsJson(
         return true;
       }
     })
-    .toVector()
-    .sortOn(
-      (e) => e.endUTC.getTime(),
-      (e) => e.counter
-    )
-    .toArray();
+    .toMutableArray()
+    .sort(
+      sortByProp(
+        (e) => e.endUTC.getTime(),
+        (e) => e.counter
+      )
+    );
 }
 
 export function registerMockBackend(
@@ -226,7 +227,7 @@ export function registerMockBackend(
       LazySeq.ofIterable(evts)
         .filter((e) => e.type === api.LogType.PartMark)
         .flatMap((e) => e.material.map((m) => [e.result, m.id] as [string, number]))
-        .toMap(
+        .toRMap(
           (x) => x,
           (id1, id2) => id2
         )
@@ -255,8 +256,8 @@ export function registerMockBackend(
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return serialsToMatId.then((s) => {
         const mId = s.get(serial);
-        if (mId.isSome()) {
-          return this.logForMaterial(mId.get());
+        if (mId !== undefined) {
+          return this.logForMaterial(mId);
         } else {
           return Promise.resolve([]);
         }
@@ -335,7 +336,7 @@ export function registerMockBackend(
         active: insp.active,
         details: insp.extraData,
       };
-      return data.then((d) =>
+      return data.then(() =>
         events.then((evts) => {
           evts.push(evt);
           return evt;
@@ -402,7 +403,7 @@ export function registerMockBackend(
         elapsed: "00:00:00",
         active: "00:00:00",
       };
-      return data.then((d) =>
+      return data.then(() =>
         events.then((evts) => {
           evts.push(evt);
           return evt;
@@ -436,7 +437,7 @@ export function registerMockBackend(
           note: notes,
         },
       };
-      return data.then((d) =>
+      return data.then(() =>
         events.then((evts) => {
           evts.push(evt);
           return evt;

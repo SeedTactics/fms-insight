@@ -33,10 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { IEditMaterialInLogEvents, ILogEntry, ILogMaterial, LogType } from "../network/api";
 import { conduit } from "../util/recoil-util";
-import * as L from "list/methods";
 import type { ServerEventAndTime } from "./loading";
 import { LazySeq } from "../util/lazyseq";
-import { Option } from "prelude-ts";
 import {
   activeMinutes,
   EstimatedCycleTimes,
@@ -45,10 +43,10 @@ import {
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
   splitElapsedLoadTime,
-  StatisticalCycleTime,
 } from "./estimated-cycle-times";
 import { durationToMinutes } from "../util/parseISODuration";
 import { addDays } from "date-fns";
+import { emptyIMap, IMap } from "../util/imap";
 
 export interface PartCycleData {
   readonly x: Date;
@@ -67,6 +65,8 @@ export interface PartCycleData {
   readonly material: ReadonlyArray<Readonly<ILogMaterial>>;
   readonly operator: string;
 }
+
+export type StationCyclesByCntr = IMap<number, PartCycleData>;
 
 export function stat_name_and_num(stationGroup: string, stationNumber: number): string {
   if (stationGroup.startsWith("Inspect")) {
@@ -88,19 +88,19 @@ export function splitElapsedLoadTimeAmongCycles(
   );
 }
 
-const last30StationCyclesRW = atom<L.List<PartCycleData>>({
+const last30StationCyclesRW = atom<StationCyclesByCntr>({
   key: "last30StationCycles",
-  default: L.empty(),
+  default: emptyIMap(),
 });
-export const last30StationCycles: RecoilValueReadOnly<L.List<PartCycleData>> = last30StationCyclesRW;
+export const last30StationCycles: RecoilValueReadOnly<StationCyclesByCntr> = last30StationCyclesRW;
 
-const specificMonthStationCyclesRW = atom<L.List<PartCycleData>>({
+const specificMonthStationCyclesRW = atom<StationCyclesByCntr>({
   key: "specificMonthStationCycles",
-  default: L.empty(),
+  default: emptyIMap(),
 });
-export const specificMonthStationCycles: RecoilValueReadOnly<L.List<PartCycleData>> = specificMonthStationCyclesRW;
+export const specificMonthStationCycles: RecoilValueReadOnly<StationCyclesByCntr> = specificMonthStationCyclesRW;
 
-function convertLogToCycle(estimatedCycleTimes: EstimatedCycleTimes, cycle: ILogEntry): PartCycleData | null {
+function convertLogToCycle(estimatedCycleTimes: EstimatedCycleTimes, cycle: ILogEntry): [number, PartCycleData] | null {
   if (
     cycle.startofcycle ||
     (cycle.type !== LogType.LoadUnloadCycle && cycle.type !== LogType.MachineCycle) ||
@@ -111,53 +111,50 @@ function convertLogToCycle(estimatedCycleTimes: EstimatedCycleTimes, cycle: ILog
   const part = cycle.material.length > 0 ? cycle.material[0].part : "";
   const proc = cycle.material.length > 0 ? cycle.material[0].proc : 1;
   const stats =
-    cycle.material.length > 0
-      ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
-      : Option.none<StatisticalCycleTime>();
+    cycle.material.length > 0 ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle)) : undefined;
   const elapsed = durationToMinutes(cycle.elapsed);
-  return {
-    x: cycle.endUTC,
-    y: elapsed,
-    cntr: cycle.counter,
-    activeMinutes: activeMinutes(cycle, stats.getOrNull()),
-    medianCycleMinutes: stats.map((s) => s.medianMinutesForSingleMat).getOrElse(0) * cycle.material.length,
-    MAD_aboveMinutes: stats.map((s) => s.MAD_aboveMinutes).getOrElse(0),
-    part: part,
-    process: proc,
-    pallet: cycle.pal,
-    material: cycle.material,
-    isLabor: cycle.type === LogType.LoadUnloadCycle,
-    stationGroup: cycle.loc,
-    stationNumber: cycle.locnum,
-    operation: cycle.type === LogType.LoadUnloadCycle ? cycle.result : cycle.program,
-    operator: cycle.details ? cycle.details.operator || "" : "",
-  };
+  return [
+    cycle.counter,
+    {
+      x: cycle.endUTC,
+      y: elapsed,
+      cntr: cycle.counter,
+      activeMinutes: activeMinutes(cycle, stats),
+      medianCycleMinutes: (stats?.medianMinutesForSingleMat ?? 0) * cycle.material.length,
+      MAD_aboveMinutes: stats?.MAD_aboveMinutes ?? 0,
+      part: part,
+      process: proc,
+      pallet: cycle.pal,
+      material: cycle.material,
+      isLabor: cycle.type === LogType.LoadUnloadCycle,
+      stationGroup: cycle.loc,
+      stationNumber: cycle.locnum,
+      operation: cycle.type === LogType.LoadUnloadCycle ? cycle.result : cycle.program,
+      operator: cycle.details ? cycle.details.operator || "" : "",
+    },
+  ];
 }
 
-function process_swap(
-  swap: Readonly<IEditMaterialInLogEvents>,
-  partCycles: L.List<PartCycleData>
-): L.List<PartCycleData> {
-  const changedByCntr = LazySeq.ofIterable(swap.editedEvents).toMap(
-    (e) => [e.counter, e],
-    (e, _) => e
-  );
-
-  return partCycles.map((cycle) => {
-    const changed = changedByCntr.get(cycle.cntr).getOrNull();
-    if (changed) {
-      return { ...cycle, material: changed.material };
-    } else {
-      return cycle;
+function process_swap(swap: Readonly<IEditMaterialInLogEvents>, partCycles: StationCyclesByCntr): StationCyclesByCntr {
+  for (const changed of swap.editedEvents) {
+    const c = partCycles.get(changed.counter);
+    if (c !== undefined) {
+      const newC = { ...c, material: changed.material };
+      partCycles = partCycles.set(changed.counter, newC);
     }
-  });
+  }
+  return partCycles;
 }
 
 export const setLast30StationCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     const estimatedCycleTimes = t.get(last30EstimatedCycleTimes);
     t.set(last30StationCyclesRW, (oldCycles) =>
-      oldCycles.concat(L.from(LazySeq.ofIterable(log).collect((c) => convertLogToCycle(estimatedCycleTimes, c))))
+      oldCycles.union(
+        LazySeq.ofIterable(log)
+          .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
+          .toIMap((x) => x)
+      )
     );
   }
 );
@@ -166,17 +163,18 @@ export const updateLast30StationCycles = conduit<ServerEventAndTime>(
   (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
     if (evt.logEntry && evt.logEntry.type === LogType.InvalidateCycle) {
       const cntrs = evt.logEntry.details?.["EditedCounters"];
-      const invalidatedCycles = cntrs ? new Set(cntrs.split(",").map((i) => parseInt(i))) : new Set();
+      const invalidatedCycles = cntrs ? new Set(cntrs.split(",").map((i) => parseInt(i))) : new Set<number>();
 
       if (invalidatedCycles.size > 0) {
-        t.set(last30StationCyclesRW, (cycles) =>
-          cycles.map((x) => {
-            if (invalidatedCycles.has(x.cntr)) {
-              x = { ...x, activeMinutes: 0 };
+        t.set(last30StationCyclesRW, (cycles) => {
+          for (const invalid of invalidatedCycles) {
+            const c = cycles.get(invalid);
+            if (c !== undefined) {
+              cycles = cycles.set(invalid, { ...c, activeMinutes: 0 });
             }
-            return x;
-          })
-        );
+          }
+          return cycles;
+        });
       }
     } else if (evt.logEntry) {
       const estimatedCycleTimes = t.get(last30EstimatedCycleTimes);
@@ -186,10 +184,10 @@ export const updateLast30StationCycles = conduit<ServerEventAndTime>(
       t.set(last30StationCyclesRW, (cycles) => {
         if (expire) {
           const thirtyDaysAgo = addDays(now, -30);
-          cycles = cycles.filter((e) => e.x >= thirtyDaysAgo);
+          cycles = cycles.bulkDelete((_, e) => e.x < thirtyDaysAgo);
         }
 
-        cycles = cycles.append(converted);
+        cycles = cycles.set(converted[0], converted[1]);
 
         return cycles;
       });
@@ -205,7 +203,9 @@ export const setSpecificMonthStationCycles = conduit<ReadonlyArray<Readonly<ILog
     const estimatedCycleTimes = t.get(specificMonthEstimatedCycleTimes);
     t.set(
       specificMonthStationCyclesRW,
-      L.from(LazySeq.ofIterable(log).collect((c) => convertLogToCycle(estimatedCycleTimes, c)))
+      LazySeq.ofIterable(log)
+        .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
+        .toIMap((x) => x)
     );
   }
 );

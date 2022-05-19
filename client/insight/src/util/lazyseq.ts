@@ -1,4 +1,76 @@
-import { Vector, HashMap, WithEquality, Option, ToOrderable, Ordering, HashSet, areEqual } from "prelude-ts";
+import { IMap, HashKey, buildIMap, iterableToIMap, emptyIMap } from "./imap";
+import { ISet } from "./iset";
+
+declare global {
+  interface Array<T> {
+    toLazySeq(): LazySeq<T>;
+  }
+  interface ReadonlyArray<T> {
+    toLazySeq(): LazySeq<T>;
+  }
+  interface Map<K, V> {
+    toLazySeq(): LazySeq<readonly [K, V]>;
+  }
+  interface ReadonlyMap<K, V> {
+    toLazySeq(): LazySeq<readonly [K, V]>;
+  }
+  interface Set<T> {
+    toLazySeq(): LazySeq<T>;
+  }
+  interface ReadonlySet<T> {
+    toLazySeq(): LazySeq<T>;
+  }
+}
+
+export type PrimitiveOrd = number | string | boolean;
+
+export type ToPrimitiveOrd<T> = ((t: T) => number) | ((t: T) => string) | ((t: T) => boolean);
+
+export type SortByProperty<T> = { asc: ToPrimitiveOrd<T> } | { desc: ToPrimitiveOrd<T> };
+
+export function sortByProp<T>(
+  ...getKeys: ReadonlyArray<ToPrimitiveOrd<T> | SortByProperty<T>>
+): (a: T, b: T) => -1 | 0 | 1 {
+  return (x, y) => {
+    for (const getKey of getKeys) {
+      if ("desc" in getKey) {
+        const a = getKey.desc(x);
+        const b = getKey.desc(y);
+        if (typeof a === "string" && typeof b === "string") {
+          const cmp = a.localeCompare(b);
+          if (cmp === 0) {
+            continue;
+          } else {
+            return cmp < 0 ? 1 : -1;
+          }
+        } else {
+          if (a === b) {
+            continue;
+          }
+          return a < b ? 1 : -1;
+        }
+      } else {
+        const f = "asc" in getKey ? getKey.asc : getKey;
+        const a = f(x);
+        const b = f(y);
+        if (typeof a === "string" && typeof b === "string") {
+          const cmp = a.localeCompare(b);
+          if (cmp === 0) {
+            continue;
+          } else {
+            return cmp < 0 ? -1 : 1;
+          }
+        } else {
+          if (a === b) {
+            continue;
+          }
+          return a < b ? -1 : 1;
+        }
+      }
+    }
+    return 0;
+  };
+}
 
 export class LazySeq<T> {
   static ofIterable<T>(iter: Iterable<T>): LazySeq<T> {
@@ -13,11 +85,11 @@ export class LazySeq<T> {
     });
   }
 
-  static ofObject<V>(obj: { [k: string]: V }): LazySeq<[string, V]> {
+  static ofObject<V>(obj: { [k: string]: V }): LazySeq<readonly [string, V]> {
     return LazySeq.ofIterator(function* () {
       for (const k in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, k)) {
-          yield [k, obj[k]] as [string, V];
+          yield [k, obj[k]];
         }
       }
     });
@@ -34,6 +106,24 @@ export class LazySeq<T> {
 
   [Symbol.iterator](): Iterator<T> {
     return this.iter[Symbol.iterator]();
+  }
+
+  aggregate<K, S>(
+    key: (x: T) => K & PrimitiveOrd,
+    val: (x: T) => S,
+    combine: (s1: S, s2: S) => S
+  ): LazySeq<readonly [K, S]> {
+    const m = new Map<K, S>();
+    for (const x of this.iter) {
+      const k = key(x);
+      const v = m.get(k);
+      if (v === undefined) {
+        m.set(k, val(x));
+      } else {
+        m.set(k, combine(v, val(x)));
+      }
+    }
+    return LazySeq.ofIterable(m);
   }
 
   allMatch(f: (x: T) => boolean): boolean {
@@ -62,25 +152,12 @@ export class LazySeq<T> {
     });
   }
 
-  appendAll(i: Iterable<T>): LazySeq<T> {
+  concat(i: Iterable<T>): LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function* () {
       yield* iter;
       yield* i;
     });
-  }
-
-  arrangeBy<K>(f: (x: T) => K & WithEquality): Option<HashMap<K, T>> {
-    let m = HashMap.empty<K, T>();
-    for (const x of this.iter) {
-      const k = f(x);
-      if (m.containsKey(k)) {
-        return Option.none();
-      } else {
-        m = m.put(k, x);
-      }
-    }
-    return Option.some(m);
   }
 
   chunk(size: number): LazySeq<ReadonlyArray<T>> {
@@ -100,13 +177,17 @@ export class LazySeq<T> {
     });
   }
 
-  contains(v: T & WithEquality): boolean {
-    for (const x of this.iter) {
-      if (areEqual(x, v)) {
-        return true;
+  distinct(this: LazySeq<T & HashKey>): LazySeq<T> {
+    const iter = this.iter;
+    return LazySeq.ofIterator(function* () {
+      let s = ISet.empty<T>();
+      for (const x of iter) {
+        if (!s.has(x)) {
+          s = s.add(x);
+          yield x;
+        }
       }
-    }
-    return false;
+    });
   }
 
   drop(n: number): LazySeq<T> {
@@ -156,13 +237,13 @@ export class LazySeq<T> {
     });
   }
 
-  find(f: (v: T) => boolean): Option<T> {
+  find(f: (v: T) => boolean): T | undefined {
     for (const x of this.iter) {
       if (f(x)) {
-        return Option.of(x);
+        return x;
       }
     }
-    return Option.none<T>();
+    return undefined;
   }
 
   flatMap<S>(f: (x: T) => Iterable<S>): LazySeq<S> {
@@ -182,28 +263,36 @@ export class LazySeq<T> {
     return soFar;
   }
 
-  groupBy<K>(f: (x: T) => K & WithEquality): HashMap<K, Vector<T>> {
-    return this.toMap<K & WithEquality, Vector<T>>(
-      (x) => [f(x), Vector.of(x)] as [K & WithEquality, Vector<T>],
-      (v1, v2) => v1.appendAll(v2)
-    );
+  groupBy<K>(
+    f: (x: T) => K & PrimitiveOrd,
+    ...sort: ReadonlyArray<SortByProperty<T>>
+  ): LazySeq<readonly [K, ReadonlyArray<T>]> {
+    const m = new Map<K, T[]>();
+    for (const x of this.iter) {
+      const k = f(x);
+      let v = m.get(k);
+      if (v === undefined) {
+        v = [];
+        m.set(k, v);
+      }
+      v.push(x);
+    }
+    if (sort.length > 0) {
+      const sortF = sortByProp(...sort);
+      for (const v of m.values()) {
+        v.sort(sortF);
+      }
+    }
+    return LazySeq.ofIterable(m);
   }
 
-  head(): Option<T> {
+  head(): T | undefined {
     const first = this.iter[Symbol.iterator]().next();
     if (first.done) {
-      return Option.none<T>();
+      return undefined;
     } else {
-      return Option.some(first.value);
+      return first.value;
     }
-  }
-
-  last(): Option<T> {
-    let last = Option.none<T>();
-    for (const x of this.iter) {
-      last = Option.some(x);
-    }
-    return last;
   }
 
   length(): number {
@@ -226,18 +315,6 @@ export class LazySeq<T> {
     });
   }
 
-  mapOption<S>(f: (x: T) => Option<S>): LazySeq<S> {
-    const iter = this.iter;
-    return LazySeq.ofIterator(function* () {
-      for (const x of iter) {
-        const y = f(x);
-        if (y.isSome()) {
-          yield y.get();
-        }
-      }
-    });
-  }
-
   collect<S>(f: (x: T) => S | null | undefined): LazySeq<S> {
     const iter = this.iter;
     return LazySeq.ofIterator(function* () {
@@ -250,21 +327,17 @@ export class LazySeq<T> {
     });
   }
 
-  maxBy(compare: (v1: T, v2: T) => Ordering): Option<T> {
-    return this.reduce((v1, v2) => (compare(v1, v2) < 0 ? v2 : v1));
-  }
-
-  maxOn(getOrderable: ToOrderable<T>): Option<T> {
-    let ret = Option.none<T>();
-    let maxVal: number | string | boolean | undefined;
+  maxOn(f: ToPrimitiveOrd<T>): T | undefined {
+    let ret: T | undefined = undefined;
+    let maxVal: number | string | boolean | null = null;
     for (const x of this.iter) {
-      if (ret.isNone()) {
-        ret = Option.of(x);
-        maxVal = getOrderable(x);
+      if (ret === null) {
+        ret = x;
+        maxVal = f(x);
       } else {
-        const curVal = getOrderable(x);
-        if (!maxVal || maxVal < curVal) {
-          ret = Option.of(x);
+        const curVal = f(x);
+        if (maxVal === null || maxVal < curVal) {
+          ret = x;
           maxVal = curVal;
         }
       }
@@ -272,21 +345,17 @@ export class LazySeq<T> {
     return ret;
   }
 
-  minBy(compare: (v1: T, v2: T) => Ordering): Option<T> {
-    return this.reduce((v1, v2) => (compare(v1, v2) > 0 ? v2 : v1));
-  }
-
-  minOn(getOrderable: ToOrderable<T>): Option<T> {
-    let ret = Option.none<T>();
-    let minVal: number | string | boolean | undefined;
+  minOn(f: ToPrimitiveOrd<T>): T | undefined {
+    let ret: T | undefined = undefined;
+    let minVal: number | string | boolean | null = null;
     for (const x of this.iter) {
-      if (ret.isNone()) {
-        ret = Option.of(x);
-        minVal = getOrderable(x);
+      if (ret === null) {
+        ret = x;
+        minVal = f(x);
       } else {
-        const curVal = getOrderable(x);
-        if (!minVal || minVal > curVal) {
-          ret = Option.of(x);
+        const curVal = f(x);
+        if (minVal === null || minVal > curVal) {
+          ret = x;
           minVal = curVal;
         }
       }
@@ -310,61 +379,12 @@ export class LazySeq<T> {
     });
   }
 
-  reduce(f: (x1: T, x2: T) => T): Option<T> {
-    let ret = Option.none<T>();
-    for (const x of this.iter) {
-      if (ret.isNone()) {
-        ret = Option.of(x);
-      } else {
-        ret = Option.of(f(ret.get(), x));
-      }
-    }
-    return ret;
+  sortWith(compare: (v1: T, v2: T) => number): LazySeq<T> {
+    return LazySeq.ofIterable(Array.from(this.iter).sort(compare));
   }
 
-  single(): Option<T> {
-    const iter = this.iter[Symbol.iterator]();
-    const first = iter.next();
-    if (first.done) {
-      // empty
-      return Option.none<T>();
-    }
-    const next = iter.next();
-    if (next.done) {
-      // singleton
-      return Option.some(first.value);
-    } else {
-      // more than one
-      return Option.none<T>();
-    }
-  }
-
-  sortBy(compare: (v1: T, v2: T) => Ordering): LazySeq<T> {
-    const arr = this.toArray().sort(compare);
-    return LazySeq.ofIterable(arr);
-  }
-
-  sortOn(...getKeys: Array<ToOrderable<T> | { desc: ToOrderable<T> }>): LazySeq<T> {
-    return this.sortBy((x, y) => {
-      for (const getKey of getKeys) {
-        if ((<any>getKey).desc) {
-          const a = (<ToOrderable<T>>(<any>getKey).desc)(x);
-          const b = (<ToOrderable<T>>(<any>getKey).desc)(y);
-          if (a === b) {
-            continue;
-          }
-          return a < b ? 1 : -1;
-        } else {
-          const a = (<ToOrderable<T>>getKey)(x);
-          const b = (<ToOrderable<T>>getKey)(y);
-          if (a === b) {
-            continue;
-          }
-          return a < b ? -1 : 1;
-        }
-      }
-      return 0;
-    });
+  sort(...getKeys: Array<ToPrimitiveOrd<T> | SortByProperty<T>>): LazySeq<T> {
+    return LazySeq.ofIterable(Array.from(this.iter).sort(sortByProp(...getKeys)));
   }
 
   sumOn(getNumber: (v: T) => number): number {
@@ -416,62 +436,7 @@ export class LazySeq<T> {
     });
   }
 
-  toArray(): Array<T> {
-    return Array.from(this.iter);
-  }
-
-  toMap<K, S>(f: (x: T) => readonly [K & WithEquality, S], merge: (v1: S, v2: S) => S): HashMap<K, S> {
-    let m = HashMap.empty<K, S>();
-    for (const x of this.iter) {
-      const [k, s] = f(x);
-      m = m.putWithMerge(k, s, merge);
-    }
-    return m;
-  }
-
-  toRMap<K, S>(f: (x: T) => [K, S], merge: (v1: S, v2: S) => S): ReadonlyMap<K, S> {
-    const m = new Map<K, S>();
-    for (const x of this.iter) {
-      const [k, s] = f(x);
-      const old = m.get(k);
-      if (old) {
-        m.set(k, merge(old, s));
-      } else {
-        m.set(k, s);
-      }
-    }
-    return m;
-  }
-
-  toSet<S>(converter: (x: T) => S & WithEquality): HashSet<S> {
-    const iter = this.iter;
-    return HashSet.ofIterable({
-      *[Symbol.iterator]() {
-        for (const x of iter) {
-          yield converter(x);
-        }
-      },
-    });
-  }
-
-  toRSet<S>(converter: (x: T) => S): ReadonlySet<S> {
-    const iter = this.iter;
-    const s = new Set<S>();
-    for (const x of iter) {
-      s.add(converter(x));
-    }
-    return s;
-  }
-
-  toVector(): Vector<T> {
-    return Vector.ofIterable(this.iter);
-  }
-
-  transform<U>(f: (s: LazySeq<T>) => U): U {
-    return f(this);
-  }
-
-  zip<S>(other: Iterable<S>): LazySeq<[T, S]> {
+  zip<S>(other: Iterable<S>): LazySeq<readonly [T, S]> {
     const iter = this.iter;
     return LazySeq.ofIterator(function* () {
       const i1 = iter[Symbol.iterator]();
@@ -487,5 +452,159 @@ export class LazySeq<T> {
     });
   }
 
+  toMutableArray(): Array<T> {
+    return Array.from(this.iter);
+  }
+
+  toRArray(): ReadonlyArray<T> {
+    return Array.from(this.iter);
+  }
+
+  toSortedArray(
+    getKey: ToPrimitiveOrd<T> | SortByProperty<T>,
+    ...getKeys: ReadonlyArray<ToPrimitiveOrd<T> | SortByProperty<T>>
+  ): ReadonlyArray<T> {
+    return Array.from(this.iter).sort(sortByProp(getKey, ...getKeys));
+  }
+
+  toIMap<K, S>(f: (x: T) => readonly [K & HashKey, S], merge?: (v1: S, v2: S) => S): IMap<K, S> {
+    return iterableToIMap(this.map(f), merge);
+  }
+
+  toMutableMap<K, S>(f: (x: T) => readonly [K & PrimitiveOrd, S], merge?: (v1: S, v2: S) => S): Map<K, S> {
+    const m = new Map<K, S>();
+    for (const x of this.iter) {
+      const [k, s] = f(x);
+      if (merge !== undefined) {
+        const old = m.get(k);
+        if (old) {
+          m.set(k, merge(old, s));
+        } else {
+          m.set(k, s);
+        }
+      } else {
+        m.set(k, s);
+      }
+    }
+    return m;
+  }
+
+  toObject<S>(f: (x: T) => readonly [string, S], merge?: (v1: S, v2: S) => S): { [key: string]: S };
+  toObject<S>(f: (x: T) => readonly [number, S], merge?: (v1: S, v2: S) => S): { [key: number]: S };
+  toObject<S>(f: (x: T) => readonly [string | number, S], merge?: (v1: S, v2: S) => S): { [key: string | number]: S } {
+    const m: { [key: string | number]: S } = {};
+    for (const x of this.iter) {
+      const [k, s] = f(x);
+      if (merge !== undefined) {
+        const old = m[k];
+        if (old) {
+          m[k] = merge(old, s);
+        } else {
+          m[k] = s;
+        }
+      } else {
+        m[k] = s;
+      }
+    }
+    return m;
+  }
+
+  toRMap<K, S>(f: (x: T) => readonly [K & PrimitiveOrd, S], merge?: (v1: S, v2: S) => S): ReadonlyMap<K, S> {
+    return this.toMutableMap(f, merge);
+  }
+
+  toMutableSet<S>(converter: (x: T) => S & PrimitiveOrd): Set<S> {
+    const s = new Set<S>();
+    for (const x of this.iter) {
+      s.add(converter(x));
+    }
+    return s;
+  }
+
+  toRSet<S>(converter: (x: T) => S & PrimitiveOrd): ReadonlySet<S> {
+    return this.toMutableSet(converter);
+  }
+
+  toLookup<K>(key: (x: T) => K & HashKey): IMap<K, ReadonlyArray<T>>;
+  toLookup<K, S>(key: (x: T) => K & HashKey, val: (x: T) => S): IMap<K, ReadonlyArray<S>>;
+  toLookup<K, S>(key: (x: T) => K & HashKey, val?: (x: T) => S): IMap<K, ReadonlyArray<T | S>> {
+    function merge(old: Array<T | S> | undefined, t: T): Array<T | S> {
+      if (old) {
+        old.push(val === undefined ? t : val(t));
+        return old;
+      } else {
+        return [val === undefined ? t : val(t)];
+      }
+    }
+    return buildIMap<K, Array<T | S>, T>(this.iter, key, merge);
+  }
+
+  toLookupMap<K1, K2>(key1: (x: T) => K1 & HashKey, key2: (x: T) => K2 & HashKey): IMap<K1, IMap<K2, T>>;
+  toLookupMap<K1, K2, S>(
+    key1: (x: T) => K1 & HashKey,
+    key2: (x: T) => K2 & HashKey,
+    val: (x: T) => S,
+    mergeVals?: (v1: S, v2: S) => S
+  ): IMap<K1, IMap<K2, S>>;
+  toLookupMap<K1, K2, S>(
+    key1: (x: T) => K1 & HashKey,
+    key2: (x: T) => K2 & HashKey,
+    val?: (x: T) => S,
+    mergeVals?: (v1: S, v2: S) => S
+  ): IMap<K1, IMap<K2, T | S>> {
+    function merge(old: IMap<K2, T | S> | undefined, t: T): IMap<K2, T | S> {
+      if (old === undefined) {
+        old = emptyIMap<K2, T | S>();
+      }
+      if (val === undefined) {
+        return old.set(key2(t), t);
+      } else if (mergeVals === undefined) {
+        return old.set(key2(t), val(t));
+      } else {
+        return old.modify(key2(t), (oldV) => (oldV === undefined ? val(t) : mergeVals(oldV as S, val(t))));
+      }
+    }
+    return buildIMap<K1, IMap<K2, T | S>, T>(this.iter, key1, merge);
+  }
+
+  toRLookup<K>(key: (x: T) => K): ReadonlyMap<K, ReadonlyArray<T>>;
+  toRLookup<K, S>(key: (x: T) => K, val: (x: T) => S): ReadonlyMap<K, ReadonlyArray<S>>;
+  toRLookup<K, S>(key: (x: T) => K, val?: (x: T) => S): ReadonlyMap<K, ReadonlyArray<T | S>> {
+    const m = new Map<K, Array<T | S>>();
+    for (const x of this.iter) {
+      const k = key(x);
+      const v = val === undefined ? x : val(x);
+      const old = m.get(k);
+      if (old !== undefined) {
+        old.push(v);
+      } else {
+        m.set(k, [v]);
+      }
+    }
+    return m;
+  }
+
+  transform<U>(f: (s: LazySeq<T>) => U): U {
+    return f(this);
+  }
+
   private constructor(private iter: Iterable<T>) {}
+}
+
+/* eslint-disable @typescript-eslint/unbound-method */
+if (!Array.prototype.toLazySeq) {
+  Array.prototype.toLazySeq = function () {
+    // don't set iterIsNewArray to true, because we don't want to copy the array
+    return LazySeq.ofIterable(this);
+  };
+}
+if (!Map.prototype.toLazySeq) {
+  Map.prototype.toLazySeq = function () {
+    return LazySeq.ofIterable(this);
+  };
+}
+if (!Set.prototype.toLazySeq) {
+  Set.prototype.toLazySeq = function () {
+    return LazySeq.ofIterable(this);
+  };
 }

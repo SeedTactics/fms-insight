@@ -30,7 +30,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { HashMap } from "prelude-ts";
 import { JobsBackend } from "../network/backend";
 import {
   InProcessMaterial,
@@ -106,17 +105,16 @@ function processEventsIntoCurrentStatus(
   entry: Readonly<ILogEntry>
 ): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
   return (curSt) => {
-    let mats: HashMap<number, Readonly<InProcessMaterial>> | undefined;
+    const mats = new Map<number, Readonly<InProcessMaterial>>();
     function adjustMat(id: number, f: (mat: Readonly<IInProcessMaterial>) => Readonly<IInProcessMaterial>) {
-      if (mats === undefined) {
-        mats = curSt.material.reduce(
-          (map, mat) => map.put(mat.materialID, mat),
-          HashMap.empty<number, Readonly<InProcessMaterial>>()
-        );
+      if (mats.size === 0) {
+        for (const m of curSt.material) {
+          mats.set(m.materialID, m);
+        }
       }
       const oldMat = mats.get(id);
-      if (oldMat.isSome()) {
-        mats = mats.put(id, new InProcessMaterial(f(oldMat.get())));
+      if (oldMat !== undefined) {
+        mats.set(id, new InProcessMaterial(f(oldMat)));
       }
     }
 
@@ -154,12 +152,12 @@ function processEventsIntoCurrentStatus(
         break;
     }
 
-    if (mats === undefined) {
+    if (mats.size === 0) {
       return curSt;
     } else {
       return {
         ...curSt,
-        material: Array.from(mats.valueIterable()),
+        material: Array.from(mats.values()),
       };
     }
   };

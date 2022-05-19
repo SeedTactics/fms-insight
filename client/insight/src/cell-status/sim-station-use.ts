@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { durationToMinutes } from "../util/parseISODuration";
 import { LazySeq } from "../util/lazyseq";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import * as L from "list/methods";
 import { addDays } from "date-fns";
 import type { ServerEventAndTime } from "./loading";
 import { conduit } from "../util/recoil-util";
@@ -47,20 +46,21 @@ export interface SimStationUse {
   readonly plannedDownTime: number;
 }
 
-const last30SimStationUseRW = atom<L.List<SimStationUse>>({
+const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>({
   key: "last30SimStationUse",
-  default: L.empty(),
+  default: [], // TODO: switch to persistent list
 });
-export const last30SimStationUse: RecoilValueReadOnly<L.List<SimStationUse>> = last30SimStationUseRW;
+export const last30SimStationUse: RecoilValueReadOnly<ReadonlyArray<SimStationUse>> = last30SimStationUseRW;
 
-const specificMonthSimStationUseRW = atom<L.List<SimStationUse>>({
+const specificMonthSimStationUseRW = atom<ReadonlyArray<SimStationUse>>({
   key: "specificMonthSimStationUse",
-  default: L.empty(),
+  default: [],
 });
-export const specificMonthSimStationUse: RecoilValueReadOnly<L.List<SimStationUse>> = specificMonthSimStationUseRW;
+export const specificMonthSimStationUse: RecoilValueReadOnly<ReadonlyArray<SimStationUse>> =
+  specificMonthSimStationUseRW;
 
-function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): L.List<SimStationUse> {
-  return L.from(apiSimUse).map((simUse) => ({
+function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): ReadonlyArray<SimStationUse> {
+  return apiSimUse.map((simUse) => ({
     station: simUse.stationGroup + " #" + simUse.stationNum.toString(),
     start: simUse.startUTC,
     end: simUse.endUTC,
@@ -84,7 +84,7 @@ export const updateLast30SimStatUse = conduit<ServerEventAndTime>(
           const expireT = addDays(now, -30);
           // check if nothing to expire and no new data
           const minStat = LazySeq.ofIterable(simUse).minOn((e) => e.end.getTime());
-          if ((minStat.isNone() || minStat.get().start >= expireT) && apiSimUse.length === 0) {
+          if ((minStat === undefined || minStat.start >= expireT) && apiSimUse.length === 0) {
             return simUse;
           }
 

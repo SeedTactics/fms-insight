@@ -56,15 +56,14 @@ import MoreHoriz from "@mui/icons-material/MoreHoriz";
 import Calendar from "react-calendar";
 
 import { addDays } from "date-fns";
-import { LazySeq } from "../../util/lazyseq";
-import { ToOrderable } from "prelude-ts";
+import { LazySeq, ToPrimitiveOrd } from "../../util/lazyseq";
 
 export interface Column<Id, Row> {
   readonly id: Id;
   readonly numeric: boolean;
   readonly label: string;
   readonly getDisplay: (c: Row) => string;
-  readonly getForSort?: ToOrderable<Row>;
+  readonly getForSort?: ToPrimitiveOrd<Row>;
 }
 
 export interface DataTableHeadProps<Id, Row> {

@@ -49,21 +49,21 @@ import { last30StationCycles } from "../cell-status/station-cycles";
 import { last30MaterialSummary } from "../cell-status/material-summary";
 import { last30EstimatedCycleTimes } from "../cell-status/estimated-cycle-times";
 import { it, expect } from "vitest";
-import { ptsToJs } from "../../test/prelude-ts-snapshots";
+import { toRawJs } from "../../test/to-raw-js";
 
 it("creates cycles clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30 }),
-    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15 })
+    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
   const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
   const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
 
-  const data = filterStationCycles(cycles, {});
+  const data = filterStationCycles(cycles.valuesToLazySeq(), {});
 
   const table = document.createElement("div");
   table.innerHTML = buildCycleTable(data, matSummary.matsById, undefined, undefined);
@@ -77,48 +77,53 @@ it("loads outlier cycles", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30 }),
-    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15 })
+    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
   const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
   const estimatedCycleTimes = snapshot.getLoadable(last30EstimatedCycleTimes).valueOrThrow();
 
-  const loadOutliers = outlierLoadCycles(cycles, new Date(2018, 0, 1), new Date(2018, 11, 1), estimatedCycleTimes);
-  expect(loadOutliers.data.length()).toBe(0);
-
-  const machineOutliers = outlierMachineCycles(
-    cycles,
+  const loadOutliers = outlierLoadCycles(
+    cycles.valuesToLazySeq(),
     new Date(2018, 0, 1),
     new Date(2018, 11, 1),
     estimatedCycleTimes
   );
-  expect(machineOutliers.data.length()).toBe(0);
+  expect(loadOutliers.data.size).toBe(0);
+
+  const machineOutliers = outlierMachineCycles(
+    cycles.valuesToLazySeq(),
+    new Date(2018, 0, 1),
+    new Date(2018, 11, 1),
+    estimatedCycleTimes
+  );
+  expect(machineOutliers.data.size).toBe(0);
 });
 
 it("computes station oee", () => {
   const now = new Date(2018, 2, 5);
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30 }),
-    fakeCycle({ time: addDays(now, -3), machineTime: 20 }),
-    fakeCycle({ time: addDays(now, -15), machineTime: 15 })
+    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
+    fakeCycle({ time: addDays(now, -3), machineTime: 20, counter: 200 }),
+    fakeCycle({ time: addDays(now, -15), machineTime: 15, counter: 300 })
   );
   const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
 
-  const statMins = stationMinutes(cycles, addDays(now, -7));
-  expect(ptsToJs(statMins)).toMatchSnapshot("station minutes for last week");
+  const statMins = stationMinutes(cycles.valuesToLazySeq(), addDays(now, -7));
+  expect(toRawJs(statMins)).toMatchSnapshot("station minutes for last week");
 });
 
 it("creates log entries clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30 }),
-    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15 })
+    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
   const table = document.createElement("div");
   table.innerHTML = buildLogEntriesTable(evts);

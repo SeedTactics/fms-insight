@@ -81,11 +81,11 @@ function SerialLookup(props: SerialLookupProps) {
 }
 
 function lastMachineTime(mat: matDetails.MaterialDetail) {
-  const first = mat.events.get(0);
-  if (first.isNone()) {
+  const first = mat.events[0];
+  if (first === undefined) {
     return startOfToday();
   }
-  let lastEnd = first.get().endUTC;
+  let lastEnd = first.endUTC;
   for (const e of mat.events) {
     if (e.type === LogType.MachineCycle) {
       lastEnd = e.endUTC;

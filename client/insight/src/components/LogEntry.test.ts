@@ -36,13 +36,13 @@ import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/event
 import { it, expect } from "vitest";
 
 it("doesn't filter just a single add", () => {
-  const cycles = [...fakeCycle({ time: new Date(), machineTime: 100 }), fakeAddToQueue()];
+  const cycles = [...fakeCycle({ time: new Date(), machineTime: 100, counter: 100 }), fakeAddToQueue()];
   expect(Array.from(filterRemoveAddQueue(cycles))).toEqual(cycles);
 });
 
 it("doesn't filter a single add and remove", () => {
   const cycles = [
-    ...fakeCycle({ time: new Date(), machineTime: 100 }),
+    ...fakeCycle({ time: new Date(), machineTime: 100, counter: 100 }),
     fakeAddToQueue("q1"),
     fakeRemoveFromQueue("q1"),
   ];
@@ -50,7 +50,7 @@ it("doesn't filter a single add and remove", () => {
 });
 
 it("filters out a single add and remove", () => {
-  const regCycle = fakeCycle({ time: new Date(), machineTime: 100 });
+  const regCycle = fakeCycle({ time: new Date(), machineTime: 100, counter: 100 });
   const a1 = fakeAddToQueue("q1");
   const r1 = fakeRemoveFromQueue("q1");
   const a2 = fakeAddToQueue("q1");
@@ -60,7 +60,7 @@ it("filters out a single add and remove", () => {
 });
 
 it("doesn't filters when they are different queues", () => {
-  const regCycle = fakeCycle({ time: new Date(), machineTime: 100 });
+  const regCycle = fakeCycle({ time: new Date(), machineTime: 100, counter: 100 });
   const a1 = fakeAddToQueue("q1");
   const r1 = fakeRemoveFromQueue("q1");
   const a2 = fakeAddToQueue("q2");

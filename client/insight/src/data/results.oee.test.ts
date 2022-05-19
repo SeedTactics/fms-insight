@@ -42,7 +42,7 @@ import { applyConduitToSnapshot } from "../util/recoil-util";
 import { onLoadLast30Log } from "../cell-status/loading";
 import { last30StationCycles } from "../cell-status/station-cycles";
 import { it, expect } from "vitest";
-import { ptsToJs } from "../../test/prelude-ts-snapshots";
+import { toRawJs } from "../../test/to-raw-js";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -50,9 +50,9 @@ it("bins actual cycles by day", () => {
   const minOffset = differenceInMinutes(nowChicago, now);
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30 }),
-    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15 }),
+    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 }),
     LazySeq.ofRange(1, 3)
       .map((i) => {
         const material = [fakeMaterial()];
@@ -71,27 +71,31 @@ it("bins actual cycles by day", () => {
           active: "PT3M",
         };
       })
-      .toArray()
+      .toRArray()
   );
 
   const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
 
-  let byDayAndStat = binActiveCyclesByDayAndStat(cycles);
+  let byDayAndStat = binActiveCyclesByDayAndStat(cycles.valuesToLazySeq());
 
   // update day to be in Chicago timezone
   // This is because the snapshot formats the day as a UTC time in Chicago timezone
   // Note this is after cycles are binned, which is correct since cycles are generated using
   // now in local time and then binned in local time.  Just need to update the date before
   // comparing with the snapshot
-  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
+  byDayAndStat = byDayAndStat
+    .toLazySeq()
+    .toIMap(([dayAndStat, val]) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
-  expect(ptsToJs(byDayAndStat)).toMatchSnapshot("cycles binned by day and station");
+  expect(toRawJs(byDayAndStat)).toMatchSnapshot("cycles binned by day and station");
 
-  byDayAndStat = binOccupiedCyclesByDayAndStat(cycles);
-  byDayAndStat = byDayAndStat.map((dayAndStat, val) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
+  byDayAndStat = binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq());
+  byDayAndStat = byDayAndStat
+    .toLazySeq()
+    .toIMap(([dayAndStat, val]) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
-  expect(ptsToJs(byDayAndStat)).toMatchSnapshot("occupied cycles binned by day and station");
+  expect(toRawJs(byDayAndStat)).toMatchSnapshot("occupied cycles binned by day and station");
 });
 
 it("creates points clipboard table", () => {
@@ -99,15 +103,15 @@ it("creates points clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30 }),
-    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15 })
+    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
 
   const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
 
-  const byDayAndStat = binActiveCyclesByDayAndStat(cycles);
+  const byDayAndStat = binActiveCyclesByDayAndStat(cycles.valuesToLazySeq());
 
   const points = LazySeq.ofIterable(byDayAndStat)
     .map(([dayAndStat, val]) => ({
@@ -115,7 +119,7 @@ it("creates points clipboard table", () => {
       y: dayAndStat.station,
       label: val.toString(),
     }))
-    .toArray();
+    .toRArray();
 
   const table = document.createElement("div");
   table.innerHTML = buildOeeHeatmapTable("Station", points);

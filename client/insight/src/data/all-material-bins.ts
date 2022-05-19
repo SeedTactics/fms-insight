@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api";
-import { HashMap } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { atom } from "recoil";
 
@@ -49,7 +48,7 @@ export interface MaterialBinState {
 
 export const currentMaterialBinOrder = atom<ReadonlyArray<MaterialBinId>>({
   key: "current-material-bin-order",
-  default: JSON.parse(localStorage.getItem("material-bins") || "[]"),
+  default: JSON.parse(localStorage.getItem("material-bins") || "[]") as ReadonlyArray<MaterialBinId>,
   effects: [
     ({ onSet }) => {
       onSet((newBins) => {
@@ -90,17 +89,17 @@ export type MaterialBin =
   | {
       readonly type: MaterialBinType.LoadStations;
       readonly binId: MaterialBinId;
-      readonly byLul: HashMap<number, MaterialList>;
+      readonly byLul: ReadonlyMap<number, MaterialList>;
     }
   | {
       readonly type: MaterialBinType.Pallets;
       readonly binId: MaterialBinId;
-      readonly byPallet: HashMap<string, MaterialList>;
+      readonly byPallet: ReadonlyMap<string, MaterialList>;
     }
   | {
       readonly type: MaterialBinType.ActiveQueues;
       readonly binId: MaterialBinId;
-      readonly byQueue: HashMap<string, MaterialList>;
+      readonly byQueue: ReadonlyMap<string, MaterialList>;
     }
   | {
       readonly type: MaterialBinType.QuarantineQueues;
@@ -118,9 +117,10 @@ export function selectAllMaterialIntoBins(
   const pallets = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
   const queues = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
 
-  const palLoc = HashMap.ofObjectDictionary(curSt.pallets).mapValues(
-    (st) => " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")"
-  );
+  const palLoc = LazySeq.ofObject(curSt.pallets).toRMap(([k, st]) => [
+    k,
+    " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")",
+  ]);
 
   for (const mat of curSt.material) {
     switch (mat.location.type) {
@@ -144,7 +144,7 @@ export function selectAllMaterialIntoBins(
           if (palSt.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload) {
             addToMap(loadStations, palSt.currentPalletLocation.num, mat);
           } else {
-            const loc = palLoc.get(mat.location.pallet).getOrElse("");
+            const loc = palLoc.get(mat.location.pallet) ?? "";
             addToMap(pallets, mat.location.pallet + loc, mat);
           }
         } else {
@@ -154,10 +154,11 @@ export function selectAllMaterialIntoBins(
 
       case api.LocType.Free:
         switch (mat.action.type) {
-          case api.ActionType.Loading:
+          case api.ActionType.Loading: {
             const lul = curSt.pallets[mat.action.loadOntoPallet ?? ""]?.currentPalletLocation.num;
             addToMap(loadStations, lul, mat);
             break;
+          }
           default:
             addToMap(queues, "Free Material", mat);
             break;
@@ -175,13 +176,13 @@ export function selectAllMaterialIntoBins(
       if (path.outputQueue !== undefined) q.push(path.outputQueue);
       return q;
     })
-    .toSet((x) => x);
+    .toRSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
-    .filter(([qname, _]) => !activeQueues.contains(qname))
-    .toSet(([qname, _]) => qname);
+    .filter(([qname, _]) => !activeQueues.has(qname))
+    .toRSet(([qname, _]) => qname);
 
   const bins = curBinOrder.filter(
-    (b) => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.contains(b)
+    (b) => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.has(b)
   );
   if (bins.indexOf(ActiveQueuesBinId) < 0) {
     bins.unshift(ActiveQueuesBinId);
@@ -192,7 +193,7 @@ export function selectAllMaterialIntoBins(
   if (bins.indexOf(LoadStationBinId) < 0) {
     bins.unshift(LoadStationBinId);
   }
-  for (const queue of quarantineQueues.toArray({ sortOn: (x) => x })) {
+  for (const queue of quarantineQueues.toLazySeq().sort((x) => x)) {
     if (bins.indexOf(queue) < 0) {
       bins.push(queue);
     }
@@ -200,23 +201,21 @@ export function selectAllMaterialIntoBins(
 
   return bins.map((binId) => {
     if (binId === LoadStationBinId) {
-      return { type: MaterialBinType.LoadStations, binId: LoadStationBinId, byLul: HashMap.ofIterable(loadStations) };
+      return { type: MaterialBinType.LoadStations, binId: LoadStationBinId, byLul: loadStations };
     } else if (binId === PalletsBinId) {
-      return { type: MaterialBinType.Pallets, binId: PalletsBinId, byPallet: HashMap.ofIterable(pallets) };
+      return { type: MaterialBinType.Pallets, binId: PalletsBinId, byPallet: pallets };
     } else if (binId === ActiveQueuesBinId) {
       return {
         type: MaterialBinType.ActiveQueues,
         binId: ActiveQueuesBinId,
-        byQueue: LazySeq.ofIterable(activeQueues)
-          .map((queueName) => {
+        byQueue: LazySeq.ofIterable(activeQueues).toRMap(
+          (queueName) => {
             const mat = queues.get(queueName) ?? [];
             mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
-            return [queueName, mat] as [string, MaterialList];
-          })
-          .toMap(
-            ([queueName, mat]) => [queueName, mat],
-            (ms1, ms2) => ms1.concat(ms2)
-          ),
+            return [queueName, mat] as const;
+          },
+          (ms1, ms2) => ms1.concat(ms2) // TODO: rework to use toLookup
+        ),
       };
     } else {
       const queueName = binId;
@@ -224,7 +223,7 @@ export function selectAllMaterialIntoBins(
       mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
       return {
         type: MaterialBinType.QuarantineQueues as const,
-        binId: queueName as MaterialBinId,
+        binId: queueName,
         queueName,
         material: mat,
       };

@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
-import { fieldsHashCode, HashMap } from "prelude-ts";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, IMaterialProcessActualPath, LogType, MaterialProcessActualPath } from "../network/api";
+import { emptyIMap, IMap, unionMaps } from "../util/imap";
 import { LazySeq } from "../util/lazyseq";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
@@ -70,33 +70,34 @@ export interface InspectionLogEntry {
   readonly inspType: string;
 }
 
+export type InspectionLogsByCntr = IMap<number, InspectionLogEntry>;
+
 export class PartAndInspType {
   public constructor(public readonly part: string, public readonly inspType: string) {}
   equals(other: PartAndInspType): boolean {
     return this.part === other.part && this.inspType === other.inspType;
   }
-  hashCode(): number {
-    return fieldsHashCode(this.part, this.inspType);
+  hashPrimitives(): readonly [string, string] {
+    return [this.part, this.inspType];
   }
   toString(): string {
     return `{part: ${this.part}}, inspType: ${this.inspType}}`;
   }
 }
 
-const last30InspectionsRW = atom<HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>>({
-  key: "last30Inspections",
-  default: HashMap.empty(),
-});
-export const last30Inspections: RecoilValueReadOnly<HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>> =
-  last30InspectionsRW;
+export type InspectionsByPartAndType = IMap<PartAndInspType, InspectionLogsByCntr>;
 
-const specificMonthInspectionsRW = atom<HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>>({
-  key: "specificMonthInspections",
-  default: HashMap.empty(),
+const last30InspectionsRW = atom<InspectionsByPartAndType>({
+  key: "last30Inspections",
+  default: emptyIMap(),
 });
-export const specificMonthInspections: RecoilValueReadOnly<
-  HashMap<PartAndInspType, ReadonlyArray<InspectionLogEntry>>
-> = specificMonthInspectionsRW;
+export const last30Inspections: RecoilValueReadOnly<InspectionsByPartAndType> = last30InspectionsRW;
+
+const specificMonthInspectionsRW = atom<InspectionsByPartAndType>({
+  key: "specificMonthInspections",
+  default: emptyIMap(),
+});
+export const specificMonthInspections: RecoilValueReadOnly<InspectionsByPartAndType> = specificMonthInspectionsRW;
 
 export function convertLogToInspections(
   c: Readonly<ILogEntry>
@@ -192,15 +193,16 @@ export function convertLogToInspections(
 export const setLast30Inspections = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30InspectionsRW, (oldEntries) =>
-      log
-        .flatMap(convertLogToInspections)
-        .reduce(
-          (m, e) =>
-            m.putWithMerge(e.key, [e.entry], (a, b) =>
-              a.concat(b).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
-            ),
-          oldEntries
-        )
+      oldEntries.union(
+        LazySeq.ofIterable(log)
+          .flatMap(convertLogToInspections)
+          .toLookupMap(
+            (e) => e.key,
+            (e) => e.entry.cntr,
+            (e) => e.entry
+          ),
+        (e1, e2) => unionMaps((_, s) => s, e1, e2)
+      )
     );
   }
 );
@@ -214,43 +216,39 @@ export const updateLast30Inspections = conduit<ServerEventAndTime>(
       t.set(last30InspectionsRW, (parts) => {
         if (expire) {
           const expireD = addDays(now, -30);
-          parts = parts.mapValues((entries) => {
-            // check if expire is needed
-            if (entries.length === 0 || entries[0].time >= expireD) {
-              return entries;
+          parts = parts.collectValues((entries) => {
+            const newEntries = entries.bulkDelete((_, e) => e.time < expireD);
+            if (newEntries.size === 0) {
+              return null;
             } else {
-              return entries.filter((e) => e.time >= expireD);
+              return newEntries;
             }
           });
         }
 
-        return log.reduce(
-          (m, e) =>
-            m.putWithMerge(e.key, [e.entry], (a, b) =>
-              a.concat(b).sort((e1, e2) => e1.time.getTime() - e2.time.getTime())
-            ),
-          parts
-        );
+        return log.reduce((m, e) => m.modify(e.key, (old) => (old ?? emptyIMap()).set(e.entry.cntr, e.entry)), parts);
       });
     } else if (evt.editMaterialInLog) {
-      const changedByCntr = LazySeq.ofIterable(evt.editMaterialInLog.editedEvents).toMap(
-        (e) => [e.counter, e],
-        (e, _) => e
-      );
+      const changedByCntr = evt.editMaterialInLog.editedEvents;
 
       t.set(last30InspectionsRW, (parts) =>
-        parts.mapValues((entries) =>
-          entries.map((entry) => {
-            const changed = changedByCntr.get(entry.cntr).getOrNull();
+        parts.collectValues((entries) => {
+          for (const changed of changedByCntr) {
             // inspection logs have only a single material
             const mat = changed?.material[0];
-            if (changed && mat) {
-              return { ...entry, materialID: mat.id, serial: mat.serial, workorder: mat.workorder };
-            } else {
-              return entry;
+            const old = entries.get(changed.counter);
+            if (old !== undefined && mat) {
+              const newEntry = {
+                ...old,
+                materialID: mat.id,
+                serial: mat.serial,
+                workorder: mat.workorder,
+              };
+              entries = entries.set(changed.counter, newEntry);
             }
-          })
-        )
+          }
+          return entries;
+        })
       );
     }
   }
@@ -260,12 +258,13 @@ export const setSpecificMonthInspections = conduit<ReadonlyArray<Readonly<ILogEn
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(
       specificMonthInspectionsRW,
-      HashMap.ofIterable(
-        LazySeq.ofIterable(log)
-          .flatMap(convertLogToInspections)
-          .groupBy((e) => e.key)
-          .map((k, es) => [k, es.map((e) => e.entry).toArray()])
-      )
+      LazySeq.ofIterable(log)
+        .flatMap(convertLogToInspections)
+        .toLookupMap(
+          (e) => e.key,
+          (e) => e.entry.cntr,
+          (e) => e.entry
+        )
     );
   }
 );

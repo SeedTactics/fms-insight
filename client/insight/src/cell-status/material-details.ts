@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "../network/backend";
-import { Vector, HashSet } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { MaterialSummary } from "./material-summary";
 import { atom, DefaultValue, selector, useSetRecoilState, waitForNone } from "recoil";
@@ -153,7 +152,7 @@ export interface MaterialDetail {
   readonly completedInspections: ReadonlyArray<string>;
 
   readonly loading_events: boolean;
-  readonly events: Vector<Readonly<ILogEntry>>;
+  readonly events: ReadonlyArray<Readonly<ILogEntry>>;
 }
 
 export const materialDetail = selector<MaterialDetail | null>({
@@ -165,13 +164,14 @@ export const materialDetail = selector<MaterialDetail | null>({
     const [localEvts, otherEvts] = get(waitForNone([localMatEvents, otherMatEvents]));
     const evtsFromUpdate = get(extraLogEventsFromUpdates);
     const loading = localEvts.state === "loading" || otherEvts.state === "loading";
-    const allEvents = Vector.ofIterable(localEvts.state === "hasValue" ? localEvts.valueOrThrow() : [])
-      .appendAll(otherEvts.state === "hasValue" ? otherEvts.valueOrThrow() : [])
-      .sortOn(
+    const allEvents = LazySeq.ofIterable(localEvts.state === "hasValue" ? localEvts.valueOrThrow() : [])
+      .concat(otherEvts.state === "hasValue" ? otherEvts.valueOrThrow() : [])
+      .sort(
         (e) => e.endUTC.getTime(),
         (e) => e.counter
       )
-      .appendAll(evtsFromUpdate);
+      .concat(evtsFromUpdate)
+      .toRArray();
 
     let mat: MaterialDetail;
     switch (curMat.type) {
@@ -180,7 +180,7 @@ export const materialDetail = selector<MaterialDetail | null>({
           ...curMat.summary,
           completedInspections: [],
           loading_events: loading,
-          events: Vector.empty(),
+          events: [],
         };
         break;
       case "LogMat":
@@ -194,7 +194,7 @@ export const materialDetail = selector<MaterialDetail | null>({
           signaledInspections: [],
           completedInspections: [],
           loading_events: loading,
-          events: Vector.empty(),
+          events: [],
         };
         break;
       case "Serial":
@@ -208,13 +208,13 @@ export const materialDetail = selector<MaterialDetail | null>({
           signaledInspections: [],
           completedInspections: [],
           loading_events: loading,
-          events: Vector.empty(),
+          events: [],
         };
         break;
     }
 
-    let inspTypes = HashSet.ofIterable(mat.signaledInspections);
-    let completedTypes = HashSet.ofIterable(mat.completedInspections);
+    const inspTypes = new Set(mat.signaledInspections);
+    const completedTypes = new Set(mat.completedInspections);
 
     allEvents.forEach((e) => {
       e.material.forEach((m) => {
@@ -242,27 +242,27 @@ export const materialDetail = selector<MaterialDetail | null>({
           if (e.result.toLowerCase() === "true" || e.result === "1") {
             const itype = (e.details || {}).InspectionType;
             if (itype) {
-              inspTypes = inspTypes.add(itype);
+              inspTypes.add(itype);
             }
           }
           break;
 
         case LogType.InspectionForce:
           if (e.result.toLowerCase() === "true" || e.result === "1") {
-            inspTypes = inspTypes.add(e.program);
+            inspTypes.add(e.program);
           }
           break;
 
         case LogType.InspectionResult:
-          completedTypes = completedTypes.add(e.program);
+          completedTypes.add(e.program);
           break;
       }
     });
 
     return {
       ...mat,
-      signaledInspections: inspTypes.toArray({ sortOn: (x) => x }),
-      completedInspections: completedTypes.toArray({ sortOn: (x) => x }),
+      signaledInspections: inspTypes.toLazySeq().toSortedArray((x) => x),
+      completedInspections: completedTypes.toLazySeq().toSortedArray((x) => x),
       events: allEvents,
     };
   },
@@ -350,12 +350,12 @@ export interface WorkorderPlanAndSummary {
   readonly summary?: Readonly<IWorkorderPartSummary>;
 }
 
-export const possibleWorkordersForMaterialInDialog = selector<Vector<WorkorderPlanAndSummary>>({
+export const possibleWorkordersForMaterialInDialog = selector<ReadonlyArray<WorkorderPlanAndSummary>>({
   key: "possible-workorders-for-mat-in-dialog",
   get: async ({ get }) => {
     const mat = get(materialDetail);
     const load = get(loadWorkordersForMaterialInDialog);
-    if (mat === null || mat.partName === "" || load === false) return Vector.empty();
+    if (mat === null || mat.partName === "" || load === false) return [];
 
     const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName);
     const summaries: IWorkorderSummary[] = [];
@@ -377,7 +377,7 @@ export const possibleWorkordersForMaterialInDialog = selector<Vector<WorkorderPl
         }
       }
     }
-    return Vector.ofIterable(workMap.values()).sortOn(
+    return LazySeq.ofIterable(workMap.values()).toSortedArray(
       (w) => w.plan.dueDate.getTime(),
       (w) => -w.plan.priority
     );

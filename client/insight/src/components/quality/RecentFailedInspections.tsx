@@ -39,13 +39,12 @@ import { IconButton } from "@mui/material";
 import ImportExport from "@mui/icons-material/ImportExport";
 import { Table } from "@mui/material";
 import BugIcon from "@mui/icons-material/BugReport";
-import { Vector, ToOrderable } from "prelude-ts";
 import {
   extractFailedInspections,
   FailedInspectionEntry,
   copyFailedInspectionsToClipboard,
 } from "../../data/results.inspection";
-import { LazySeq } from "../../util/lazyseq";
+import { LazySeq, SortByProperty } from "../../util/lazyseq";
 import { addDays, startOfToday } from "date-fns";
 import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
 import { materialToShowInDialog } from "../../cell-status/material-details";
@@ -54,7 +53,7 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections";
 
 interface RecentFailedInspectionsProps {
-  readonly failed: Vector<FailedInspectionEntry>;
+  readonly failed: ReadonlyArray<FailedInspectionEntry>;
 }
 
 enum ColumnId {
@@ -117,18 +116,17 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
     }
   }
 
-  let sortOn: ToOrderable<FailedInspectionEntry> | { desc: ToOrderable<FailedInspectionEntry> } =
-    columns[0].getForSort || columns[0].getDisplay;
+  let sortOn: SortByProperty<FailedInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
   for (const col of columns) {
     if (col.id === orderBy && order === "asc") {
-      sortOn = col.getForSort || col.getDisplay;
+      sortOn = { asc: col.getForSort || col.getDisplay };
     } else if (col.id === orderBy) {
       sortOn = { desc: col.getForSort || col.getDisplay };
     }
   }
 
-  const curPage = Math.min(origCurPage, Math.ceil(props.failed.length() / rowsPerPage));
-  const points = props.failed.sortOn(sortOn);
+  const curPage = Math.min(origCurPage, Math.ceil(props.failed.length / rowsPerPage));
+  const points = props.failed.toLazySeq().sort(sortOn);
 
   return (
     <>
@@ -166,7 +164,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
       </Table>
       <DataTableActions
         page={curPage}
-        count={props.failed.length()}
+        count={props.failed.length}
         rowsPerPage={rowsPerPage}
         setPage={setPage}
         setRowsPerPage={setRowsPerPage}
@@ -179,7 +177,7 @@ export function RecentFailedInspectionsTable() {
   const inspections = useRecoilValue(last30Inspections);
   const failed = React.useMemo(() => {
     const today = startOfToday();
-    const allEvts = LazySeq.ofIterable(inspections).flatMap(([_, evts]) => evts);
+    const allEvts = LazySeq.ofIterable(inspections).flatMap(([_, evts]) => evts.valuesToLazySeq());
     return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
   }, [inspections]);
   return (

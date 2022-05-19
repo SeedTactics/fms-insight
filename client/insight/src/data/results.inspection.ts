@@ -31,9 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as api from "../network/api";
-import { Vector, ToOrderable, HashMap, Option } from "prelude-ts";
 import { InspectionLogEntry, InspectionLogResultType } from "../cell-status/inspections";
-import { LazySeq } from "../util/lazyseq";
+import { LazySeq, SortByProperty } from "../util/lazyseq";
 import { format } from "date-fns";
 import { MaterialDetail } from "../cell-status/material-details";
 import copy from "copy-to-clipboard";
@@ -60,33 +59,33 @@ export function buildPathString(procs: ReadonlyArray<Readonly<api.IMaterialProce
 }
 
 export interface InspectionsForPath {
-  readonly material: Vector<TriggeredInspectionEntry>;
+  readonly material: ReadonlyArray<TriggeredInspectionEntry>;
   readonly failedCnt: number;
 }
 
 export function groupInspectionsByPath(
-  entries: ReadonlyArray<InspectionLogEntry>,
+  entries: Iterable<InspectionLogEntry>,
   dateRange: { start: Date; end: Date } | undefined,
-  sortOn: ToOrderable<TriggeredInspectionEntry> | { desc: ToOrderable<TriggeredInspectionEntry> }
-): HashMap<string, InspectionsForPath> {
+  sortOn: SortByProperty<TriggeredInspectionEntry>
+): ReadonlyMap<string, InspectionsForPath> {
   const failed = LazySeq.ofIterable(entries)
-    .mapOption((e) => {
+    .collect((e) => {
       if (e.result.type === InspectionLogResultType.Completed && !e.result.success) {
-        return Option.some(e.materialID);
+        return e.materialID;
       } else {
-        return Option.none<number>();
+        return null;
       }
     })
-    .toSet((e) => e);
+    .toRSet((e) => e);
 
   return LazySeq.ofIterable(entries)
-    .mapOption((e) => {
+    .collect((e) => {
       if (dateRange && (e.time < dateRange.start || e.time > dateRange.end)) {
-        return Option.none<TriggeredInspectionEntry>();
+        return null;
       }
       switch (e.result.type) {
         case InspectionLogResultType.Triggered:
-          return Option.some({
+          return {
             time: e.time,
             materialID: e.materialID,
             partName: e.part,
@@ -94,17 +93,22 @@ export function groupInspectionsByPath(
             workorder: e.workorder,
             toInspect: e.result.toInspect,
             path: buildPathString(e.result.actualPath),
-            failed: failed.contains(e.materialID),
-          });
+            failed: failed.has(e.materialID),
+          };
         default:
-          return Option.none<TriggeredInspectionEntry>();
+          return null;
       }
     })
-    .groupBy((e) => e.path)
-    .mapValues((mats) => ({
-      material: mats.sortOn(sortOn, (e) => e.time.getTime()),
-      failedCnt: mats.sumOn((e) => (e.failed ? 1 : 0)),
-    }));
+    .groupBy((e) => e.path, sortOn, { asc: (e) => e.time.getTime() })
+    .toRMap(([path, mats]) => {
+      return [
+        path,
+        {
+          material: mats,
+          failedCnt: mats.reduce((acc, e) => acc + (e.failed ? 1 : 0), 0),
+        },
+      ];
+    });
 }
 
 export interface FailedInspectionEntry {
@@ -120,26 +124,26 @@ export function extractFailedInspections(
   entries: Iterable<InspectionLogEntry>,
   start: Date,
   end: Date
-): Vector<FailedInspectionEntry> {
+): ReadonlyArray<FailedInspectionEntry> {
   return LazySeq.ofIterable(entries)
-    .mapOption((e) => {
+    .collect((e) => {
       if (e.time < start || e.time > end) {
-        return Option.none<FailedInspectionEntry>();
+        return null;
       }
       if (e.result.type === InspectionLogResultType.Completed && !e.result.success) {
-        return Option.some({
+        return {
           time: e.time,
           materialID: e.materialID,
           serial: e.serial,
           workorder: e.workorder,
           inspType: e.inspType,
           part: e.part,
-        });
+        };
       } else {
-        return Option.none<FailedInspectionEntry>();
+        return null;
       }
     })
-    .toVector();
+    .toSortedArray((e) => e.time.getTime());
 }
 
 // --------------------------------------------------------------------------------
@@ -149,7 +153,9 @@ export function extractFailedInspections(
 export function extractPath(mat: MaterialDetail): ReadonlyArray<Readonly<api.IMaterialProcessActualPath>> {
   for (const e of mat.events) {
     if (e.type === api.LogType.Inspection) {
-      const pathsJson: ReadonlyArray<object> = JSON.parse((e.details || {}).ActualPath || "[]");
+      const pathsJson: ReadonlyArray<object> = JSON.parse(
+        (e.details || {}).ActualPath || "[]"
+      ) as ReadonlyArray<object>;
       const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
       for (const pathJson of pathsJson) {
         paths.push(api.MaterialProcessActualPath.fromJS(pathJson));
@@ -166,32 +172,30 @@ export function extractPath(mat: MaterialDetail): ReadonlyArray<Readonly<api.IMa
 // Clipboard
 // --------------------------------------------------------------------------------
 
-export function buildInspectionTable(
-  part: string,
-  inspType: string,
-  entries: ReadonlyArray<InspectionLogEntry>
-): string {
+export function buildInspectionTable(part: string, inspType: string, entries: Iterable<InspectionLogEntry>): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Path</th><th>Date</th><th>Part</th><th>Inspection</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspected</th><th>Failed</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const groups = groupInspectionsByPath(entries, undefined, (e) => e.time.getTime());
-  const paths = groups.keySet().toArray({ sortOn: (x) => x });
+  const groups = groupInspectionsByPath(entries, undefined, { asc: (e) => e.time.getTime() });
+  const paths = LazySeq.ofIterable(groups.keys()).toSortedArray((x) => x);
 
   for (const path of paths) {
-    const data = groups.get(path).getOrThrow();
-    for (const mat of data.material) {
-      table += "<tr>";
-      table += "<td>" + path + "</td>";
-      table += "<td>" + format(mat.time, "MMM d, yyyy, h:mm aa") + "</td>";
-      table += "<td>" + part + "</td>";
-      table += "<td>" + inspType + "</td>";
-      table += "<td>" + (mat.serial || "") + "</td>";
-      table += "<td>" + (mat.workorder || "") + "</td>";
-      table += "<td>" + (mat.toInspect ? "inspected" : "") + "</td>";
-      table += "<td>" + (mat.failed ? "failed" : "") + "</td>";
-      table += "</tr>\n";
+    const data = groups.get(path);
+    if (data) {
+      for (const mat of data.material) {
+        table += "<tr>";
+        table += "<td>" + path + "</td>";
+        table += "<td>" + format(mat.time, "MMM d, yyyy, h:mm aa") + "</td>";
+        table += "<td>" + part + "</td>";
+        table += "<td>" + inspType + "</td>";
+        table += "<td>" + (mat.serial || "") + "</td>";
+        table += "<td>" + (mat.workorder || "") + "</td>";
+        table += "<td>" + (mat.toInspect ? "inspected" : "") + "</td>";
+        table += "<td>" + (mat.failed ? "failed" : "") + "</td>";
+        table += "</tr>\n";
+      }
     }
   }
 
@@ -202,17 +206,17 @@ export function buildInspectionTable(
 export function copyInspectionEntriesToClipboard(
   part: string,
   inspType: string,
-  entries: ReadonlyArray<InspectionLogEntry>
+  entries: Iterable<InspectionLogEntry>
 ): void {
   copy(buildInspectionTable(part, inspType, entries));
 }
 
-export function buildFailedInspTable(entries: Vector<FailedInspectionEntry>): string {
+export function buildFailedInspTable(entries: Iterable<FailedInspectionEntry>): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Inspection</th><th>Serial</th><th>Workorder</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  for (const e of entries.sortOn({ desc: (x) => x.time.getTime() })) {
+  for (const e of LazySeq.ofIterable(entries).sort({ desc: (x) => x.time.getTime() })) {
     table += "<tr>";
     table += "<td>" + e.time.toLocaleString() + "</td>";
     table += "<td>" + e.part + "</td>";
@@ -226,6 +230,6 @@ export function buildFailedInspTable(entries: Vector<FailedInspectionEntry>): st
   return table;
 }
 
-export function copyFailedInspectionsToClipboard(entries: Vector<FailedInspectionEntry>) {
+export function copyFailedInspectionsToClipboard(entries: Iterable<FailedInspectionEntry>) {
   copy(buildFailedInspTable(entries));
 }

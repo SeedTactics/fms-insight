@@ -30,13 +30,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { HashMap, HashSet } from "prelude-ts";
 import { LazySeq } from "../util/lazyseq";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { IEditMaterialInLogEvents, IInProcessMaterial, ILogEntry, LogType } from "../network/api";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
 import { addDays } from "date-fns";
+import { emptyIMap, IMap } from "../util/imap";
+import { ISet } from "../util/iset";
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -64,15 +65,15 @@ interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
 }
 
 export interface MatSummaryState {
-  readonly matsById: HashMap<number, MaterialSummaryFromEvents>;
-  readonly matIdsForJob: HashMap<string, HashSet<number>>;
+  readonly matsById: IMap<number, MaterialSummaryFromEvents>;
+  readonly matIdsForJob: IMap<string, ISet<number>>;
 }
 
 const last30MaterialSummaryRW = atom<MatSummaryState>({
   key: "last30-material-summary",
   default: {
-    matsById: HashMap.empty(),
-    matIdsForJob: HashMap.empty(),
+    matsById: emptyIMap(),
+    matIdsForJob: emptyIMap(),
   },
 });
 export const last30MaterialSummary: RecoilValueReadOnly<MatSummaryState> = last30MaterialSummaryRW;
@@ -80,8 +81,8 @@ export const last30MaterialSummary: RecoilValueReadOnly<MatSummaryState> = last3
 const specificMonthMaterialSummaryRW = atom<MatSummaryState>({
   key: "month-material-summary",
   default: {
-    matsById: HashMap.empty(),
-    matIdsForJob: HashMap.empty(),
+    matsById: emptyIMap(),
+    matIdsForJob: emptyIMap(),
   },
 });
 export const specificMonthMaterialSummary: RecoilValueReadOnly<MatSummaryState> = specificMonthMaterialSummaryRW;
@@ -107,20 +108,20 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
   }
   for (const logMat of e.material) {
     if (logMat.uniq && logMat.uniq !== "") {
-      const forJob = jobs.get(logMat.uniq).getOrNull();
-      if (forJob === null) {
-        jobs = jobs.put(logMat.uniq, HashSet.of(logMat.id));
+      const forJob = jobs.get(logMat.uniq);
+      if (forJob === undefined) {
+        jobs = jobs.set(logMat.uniq, ISet.empty<number>().add(logMat.id));
       } else {
-        if (!forJob.contains(logMat.id)) {
-          jobs = jobs.put(logMat.uniq, forJob.add(logMat.id));
+        if (!forJob.has(logMat.id)) {
+          jobs = jobs.set(logMat.uniq, forJob.add(logMat.id));
         }
       }
     }
 
     const oldMat = mats.get(logMat.id);
     let mat: MaterialSummaryFromEvents;
-    if (oldMat.isSome()) {
-      mat = { ...oldMat.get(), last_event: e.endUTC };
+    if (oldMat !== undefined) {
+      mat = { ...oldMat, last_event: e.endUTC };
     } else {
       mat = {
         materialID: logMat.id,
@@ -211,35 +212,38 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
         break;
     }
 
-    mats = mats.put(logMat.id, mat);
+    mats = mats.set(logMat.id, mat);
   }
 
   return { matsById: mats, matIdsForJob: jobs };
 }
 
 function filter_old(expire: Date, { matIdsForJob, matsById }: MatSummaryState): MatSummaryState {
-  const matsToRemove = LazySeq.ofIterable(matsById.valueIterable())
+  const matsToRemove = matsById
+    .valuesToLazySeq()
     .filter((e) => e.last_event < expire)
-    .map((e) => e.materialID)
-    .toRSet((x) => x);
+    .toRSet((e) => e.materialID);
 
   if (matsToRemove.size > 0) {
-    matIdsForJob = HashMap.ofIterable(
-      LazySeq.ofIterable(matIdsForJob)
-        .map(([uniq, ids]) => [uniq, ids.removeAll(matsToRemove)] as [string, HashSet<number>])
-        .filter(([_, ids]) => !ids.isEmpty())
-    );
+    matIdsForJob = matIdsForJob.collectValues((ids) => {
+      const newIds = LazySeq.ofIterable(matsToRemove).foldLeft(ids, (i, c) => i.delete(c));
+      if (newIds.size > 0) {
+        return newIds;
+      } else {
+        return null;
+      }
+    });
   }
 
-  matsById = matsById.filter((_, e) => e.last_event >= expire);
+  matsById = matsById.bulkDelete((_, e) => e.last_event < expire);
 
   return { matIdsForJob, matsById };
 }
 
 function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummaryState): MatSummaryState {
   let jobs = st.matIdsForJob;
-  const oldMatFromState = st.matsById.get(swap.oldMaterialID).getOrNull();
-  const newMatFromState = st.matsById.get(swap.newMaterialID).getOrNull();
+  const oldMatFromState = st.matsById.get(swap.oldMaterialID) ?? null;
+  const newMatFromState = st.matsById.get(swap.newMaterialID) ?? null;
 
   if (oldMatFromState === null) return st;
   let oldMat = oldMatFromState;
@@ -263,9 +267,9 @@ function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummarySt
 
   if (oldMat.jobUnique && oldMat.jobUnique !== "" && (!newMat.jobUnique || newMat.jobUnique === "")) {
     // Swap newMat from raw material
-    const forJob = jobs.get(oldMat.jobUnique).getOrNull();
-    if (forJob !== null) {
-      jobs = jobs.put(oldMat.jobUnique, forJob.remove(oldMat.materialID).add(newMat.materialID));
+    const forJob = jobs.get(oldMat.jobUnique);
+    if (forJob !== undefined) {
+      jobs = jobs.set(oldMat.jobUnique, forJob.delete(oldMat.materialID).add(newMat.materialID));
     }
     newMat = { ...newMat, jobUnique: oldMat.jobUnique };
     oldMat = { ...oldMat, jobUnique: "" };
@@ -301,13 +305,13 @@ function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummarySt
             ...oldMat,
             signaledInspections: LazySeq.ofIterable(oldMat.signaledInspections)
               .filter((i) => i !== inspType)
-              .toArray(),
+              .toRArray(),
           };
           newMat = {
             ...newMat,
             signaledInspections: LazySeq.ofIterable([...newMat.signaledInspections, inspType])
-              .toSet((x) => x)
-              .toArray(),
+              .distinct()
+              .toSortedArray((x) => x),
           };
         }
       }
@@ -315,7 +319,7 @@ function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummarySt
   }
 
   return {
-    matsById: st.matsById.put(oldMat.materialID, oldMat).put(newMat.materialID, newMat),
+    matsById: st.matsById.set(oldMat.materialID, oldMat).set(newMat.materialID, newMat),
     matIdsForJob: jobs,
   };
 }
@@ -350,8 +354,8 @@ export const setSpecificMonthMatSummary = conduit<ReadonlyArray<Readonly<ILogEnt
     t.set(
       specificMonthMaterialSummaryRW,
       log.reduce<MatSummaryState>(process_event, {
-        matsById: HashMap.empty(),
-        matIdsForJob: HashMap.empty(),
+        matsById: emptyIMap(),
+        matIdsForJob: emptyIMap(),
       })
     );
   }

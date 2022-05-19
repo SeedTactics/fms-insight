@@ -43,21 +43,21 @@ import { onLoadLast30Log } from "../cell-status/loading";
 import { last30StationCycles } from "../cell-status/station-cycles";
 import { last30MaterialSummary } from "../cell-status/material-summary";
 import { it, expect } from "vitest";
-import { ptsToJs } from "../../test/prelude-ts-snapshots";
+import { toRawJs } from "../../test/to-raw-js";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
   const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30 }),
-    fakeCycle({ time: addHours(now, -3), machineTime: 20 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15 })
+    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
+    fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
   const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
   const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
 
-  let byDayAndPart = binCyclesByDayAndPart(cycles, matSummary.matsById, addDays(now, -30), now);
+  let byDayAndPart = binCyclesByDayAndPart(cycles.valuesToLazySeq(), matSummary.matsById, addDays(now, -30), now);
 
   const points = LazySeq.ofIterable(byDayAndPart)
     .map(([dayAndPart, val]) => ({
@@ -67,7 +67,7 @@ it("bins actual cycles by day", () => {
       count: val.count,
       activeMachineMins: val.activeMachineMins,
     }))
-    .toArray();
+    .toRArray();
 
   const heattable = document.createElement("div");
   heattable.innerHTML = buildCompletedPartsHeatmapTable(points);
@@ -76,7 +76,9 @@ it("bins actual cycles by day", () => {
   // convert to chicago time because snapshot includes date and time in UTC when formatting the byDayAndPart snapshot
   const nowChicago = new Date(Date.UTC(2018, 2, 5, 6, 0, 0)); // America/Chicago time
   const minOffset = differenceInMinutes(nowChicago, now);
-  byDayAndPart = byDayAndPart.map((dayAndPart, val) => [dayAndPart.adjustDay((d) => addMinutes(d, minOffset)), val]);
+  byDayAndPart = byDayAndPart
+    .toLazySeq()
+    .toIMap(([dayAndPart, val]) => [dayAndPart.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
-  expect(ptsToJs(byDayAndPart)).toMatchSnapshot("cycles binned by day and part");
+  expect(toRawJs(byDayAndPart)).toMatchSnapshot("cycles binned by day and part");
 });

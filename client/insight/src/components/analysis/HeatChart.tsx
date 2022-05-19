@@ -135,10 +135,7 @@ function useScales({
         range: [color1, color2],
       });
     } else {
-      const maxCnt = LazySeq.ofIterable(points)
-        .maxOn((pt) => pt.color)
-        .map((x) => x.color)
-        .getOrElse(1);
+      const maxCnt = LazySeq.ofIterable(points).maxOn((pt) => pt.color)?.color ?? 1;
       colorScale = scaleLinear({
         domain: [0, maxCnt],
         range: [color1, color2],

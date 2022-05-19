@@ -2,8 +2,8 @@
 
 exports[`computes station oee > station minutes for last week 1`] = `
 Map {
-  "MC #1" => 50,
   "L/U #1" => 12,
+  "MC #1" => 50,
   "L/U #2" => 6,
 }
 `;

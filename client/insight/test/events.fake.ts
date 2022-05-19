@@ -203,12 +203,11 @@ export function fakeCycle({
   pallet?: string;
   noInspections?: boolean;
   includeTools?: boolean;
-  counter?: number;
+  counter: number;
 }): ReadonlyArray<ILogEntry> {
   const pal = pallet || "pal" + faker.random.alphaNumeric();
   const material = [fakeMaterial(part, proc)];
 
-  counter = counter ?? 1;
   time = addMinutes(time, 5);
 
   const es: ILogEntry[] = [];

@@ -42,27 +42,26 @@ import { last30Jobs, specificMonthJobs } from "./scheduled-jobs";
 import newJobsJson from "../../test/newjobs.json";
 import { LazySeq } from "../util/lazyseq";
 import { it, expect } from "vitest";
-import { ptsToJs } from "../../test/prelude-ts-snapshots";
+import { toRawJs } from "../../test/to-raw-js";
 const newJobs = newJobsJson.map((j) => NewJobs.fromJS(j));
 
 function checkLast30(snapshot: Snapshot, msg: string) {
-  expect(ptsToJs(snapshot.getLoadable(last30SimProduction).valueOrThrow())).toMatchSnapshot(msg + " - sim production");
-  expect(ptsToJs(snapshot.getLoadable(last30SimStationUse).valueOrThrow())).toMatchSnapshot(msg + " - sim stations");
-  expect(ptsToJs(snapshot.getLoadable(last30Jobs).valueOrThrow())).toMatchSnapshot(msg + " - jobs");
+  expect(toRawJs(snapshot.getLoadable(last30SimProduction).valueOrThrow())).toMatchSnapshot(msg + " - sim production");
+  expect(toRawJs(snapshot.getLoadable(last30SimStationUse).valueOrThrow())).toMatchSnapshot(msg + " - sim stations");
+  expect(toRawJs(snapshot.getLoadable(last30Jobs).valueOrThrow())).toMatchSnapshot(msg + " - jobs");
 }
 
 function jobsToHistory(newJs: Iterable<NewJobs>): IHistoricData {
   return {
     jobs: LazySeq.ofIterable(newJs)
       .flatMap((s) => s.jobs)
-      .toMap(
+      .toObject(
         (j) => [j.unique, new HistoricJob({ ...j, copiedToSystem: true })],
         (a, _) => a
-      )
-      .toObjectDictionary((k) => k),
+      ),
     stationUse: LazySeq.ofIterable(newJs)
       .flatMap((s) => s.stationUse ?? [])
-      .toArray(),
+      .toMutableArray(),
   };
 }
 
@@ -98,7 +97,7 @@ it("processes jobs in a specific month", () => {
   // only the first 10 just to keep the size of the snapshots down
   snapshot = applyConduitToSnapshot(snapshot, onLoadSpecificMonthJobs, jobsToHistory(newJobs.slice(0, 10)));
 
-  expect(ptsToJs(snapshot.getLoadable(specificMonthSimProduction).valueOrThrow())).toMatchSnapshot("sim production");
-  expect(ptsToJs(snapshot.getLoadable(specificMonthSimStationUse).valueOrThrow())).toMatchSnapshot("sim stations");
-  expect(ptsToJs(snapshot.getLoadable(specificMonthJobs).valueOrThrow())).toMatchSnapshot("jobs");
+  expect(toRawJs(snapshot.getLoadable(specificMonthSimProduction).valueOrThrow())).toMatchSnapshot("sim production");
+  expect(toRawJs(snapshot.getLoadable(specificMonthSimStationUse).valueOrThrow())).toMatchSnapshot("sim stations");
+  expect(toRawJs(snapshot.getLoadable(specificMonthJobs).valueOrThrow())).toMatchSnapshot("jobs");
 });
