@@ -2835,6 +2835,35 @@
           "PlannedDownTime": {
             "type": "string",
             "format": "duration"
+          },
+          "Parts": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedStationPart"
+            }
+          }
+        }
+      },
+      "SimulatedStationPart": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "JobUnique",
+          "Process",
+          "Path"
+        ],
+        "properties": {
+          "JobUnique": {
+            "type": "string"
+          },
+          "Process": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Path": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
