@@ -1416,6 +1416,27 @@ namespace MachineWatchTest
       var ret = ImmutableList.CreateBuilder<SimulatedStationUtilization>();
       for (int i = 0; i < 3; i++)
       {
+        ImmutableList<SimulatedStationPart> parts;
+        if (i == 1)
+        {
+          parts = null;
+        }
+        else
+        {
+          parts = ImmutableList.CreateRange(new[] {
+            new SimulatedStationPart() {
+              JobUnique = "uniq" + i,
+              Process = rnd.Next(1, 10),
+              Path = rnd.Next(1, 10)
+            },
+            new SimulatedStationPart() {
+              JobUnique = "uniq" + i,
+              Process = rnd.Next(1, 10),
+              Path = 11 + rnd.Next(1, 10)
+            }
+          });
+        }
+
         ret.Add(new SimulatedStationUtilization()
         {
           ScheduleId = schId,
@@ -1424,7 +1445,8 @@ namespace MachineWatchTest
           StartUTC = start.AddMinutes(-rnd.Next(200, 300)),
           EndUTC = start.AddMinutes(rnd.Next(0, 100)),
           UtilizationTime = TimeSpan.FromMinutes(rnd.Next(10, 1000)),
-          PlannedDownTime = TimeSpan.FromMinutes(rnd.Next(10, 1000))
+          PlannedDownTime = TimeSpan.FromMinutes(rnd.Next(10, 1000)),
+          Parts = parts
         });
       }
       return ret.ToImmutable();

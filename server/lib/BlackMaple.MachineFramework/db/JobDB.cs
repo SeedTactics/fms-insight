@@ -107,6 +107,30 @@ namespace BlackMaple.MachineFramework
       public HoldRow Hold { get; init; }
     }
 
+    private record SimStatUseKey : IComparable<SimStatUseKey>
+    {
+      public string ScheduleId { get; init; } = "";
+      public DateTime StartUTC { get; init; }
+      public DateTime EndUTC { get; init; }
+      public string StationGroup { get; init; } = "";
+      public int StationNum { get; init; }
+
+      public int CompareTo(SimStatUseKey other)
+      {
+        return (this.ScheduleId, this.StartUTC, this.EndUTC, this.StationGroup, this.StationNum)
+            .CompareTo(
+               (other.ScheduleId, other.StartUTC, other.EndUTC, other.StationGroup, other.StationNum)
+            );
+      }
+    }
+
+    private record SimStatUseRow
+    {
+      public TimeSpan UtilizationTime { get; init; }
+      public TimeSpan PlannedDownTime { get; init; }
+      public ImmutableList<SimulatedStationPart>.Builder Parts { get; init; } = ImmutableList.CreateBuilder<SimulatedStationPart>();
+    }
+
     private JobDetails LoadJobData(string uniq, IDbTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
@@ -582,32 +606,69 @@ namespace BlackMaple.MachineFramework
     }
 
     private ImmutableList<SimulatedStationUtilization> LoadSimulatedStationUse(
-        IDbCommand cmd, IDbTransaction trans)
+        IDbCommand cmd, IDbCommand partCmd, IDbTransaction trans)
     {
-      var ret = ImmutableList.CreateBuilder<SimulatedStationUtilization>();
+      var rows = new SortedDictionary<SimStatUseKey, SimStatUseRow>();
 
       using (var reader = cmd.ExecuteReader())
       {
         while (reader.Read())
         {
-          var sim = new SimulatedStationUtilization()
+          var key = new SimStatUseKey()
           {
             ScheduleId = reader.GetString(0),
             StationGroup = reader.GetString(1),
             StationNum = reader.GetInt32(2),
             StartUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
             EndUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+          };
+          var row = new SimStatUseRow()
+          {
             UtilizationTime = TimeSpan.FromTicks(reader.GetInt64(5)),
             PlannedDownTime = reader.IsDBNull(6) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(6))
           };
-          ret.Add(sim);
+          rows.Add(key, row);
         }
       }
 
-      return ret.ToImmutable();
+      using (var reader = partCmd.ExecuteReader())
+      {
+        while (reader.Read())
+        {
+          var key = new SimStatUseKey()
+          {
+            ScheduleId = reader.GetString(0),
+            StationGroup = reader.GetString(1),
+            StationNum = reader.GetInt32(2),
+            StartUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+            EndUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+          };
+          if (rows.TryGetValue(key, out var row))
+          {
+            row.Parts.Add(new SimulatedStationPart()
+            {
+              JobUnique = reader.GetString(5),
+              Process = reader.GetInt32(6),
+              Path = reader.GetInt32(7),
+            });
+          }
+        }
+      }
+
+      return rows.Select(e => new SimulatedStationUtilization()
+      {
+        ScheduleId = e.Key.ScheduleId,
+        StationGroup = e.Key.StationGroup,
+        StationNum = e.Key.StationNum,
+        StartUTC = e.Key.StartUTC,
+        EndUTC = e.Key.EndUTC,
+        UtilizationTime = e.Value.UtilizationTime,
+        PlannedDownTime = e.Value.PlannedDownTime,
+        Parts = e.Value.Parts.Count == 0 ? null : e.Value.Parts.ToImmutable()
+      }).ToImmutableList();
     }
 
-    private HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd)
+    private HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd, IDbCommand simPartCmd)
     {
       lock (_cfg)
       {
@@ -619,9 +680,10 @@ namespace BlackMaple.MachineFramework
         {
           jobCmd.Transaction = trans;
           simCmd.Transaction = trans;
+          simPartCmd.Transaction = trans;
 
           jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr);
-          statUse = LoadSimulatedStationUse(simCmd, trans);
+          statUse = LoadSimulatedStationUse(simCmd, simPartCmd, trans);
 
           trans.Commit();
         }
@@ -681,6 +743,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
+      using (var simPartCmd = _connection.CreateCommand())
       {
         jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
             " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
@@ -692,7 +755,12 @@ namespace BlackMaple.MachineFramework
         simCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         simCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
 
-        return LoadHistory(jobCmd, simCmd);
+        simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path FROM sim_station_use_parts " +
+            " WHERE EndUTC >= $start AND StartUTC <= $end";
+        simPartCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+        simPartCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
+
+        return LoadHistory(jobCmd, simCmd, simPartCmd);
       }
     }
 
@@ -700,6 +768,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var jobCmd = _connection.CreateCommand())
       using (var simCmd = _connection.CreateCommand())
+      using (var simPartCmd = _connection.CreateCommand())
       {
         jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
             " FROM jobs WHERE ScheduleId > $sid";
@@ -709,7 +778,11 @@ namespace BlackMaple.MachineFramework
             " WHERE SimId > $sid";
         simCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
 
-        return LoadHistory(jobCmd, simCmd);
+        simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path FROM sim_station_use_parts " +
+            " WHERE SimId > $sid";
+        simPartCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+
+        return LoadHistory(jobCmd, simCmd, simPartCmd);
       }
     }
 
@@ -1386,8 +1459,10 @@ namespace BlackMaple.MachineFramework
       if (simStats == null) return;
 
       using (var cmd = _connection.CreateCommand())
+      using (var partCmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
+        ((IDbCommand)partCmd).Transaction = trans;
 
         cmd.CommandText = "INSERT OR REPLACE INTO sim_station_use(SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime) " +
             " VALUES($simid,$group,$num,$start,$end,$utilization,$plandown)";
@@ -1399,6 +1474,17 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("utilization", SqliteType.Integer);
         cmd.Parameters.Add("plandown", SqliteType.Integer);
 
+        partCmd.CommandText = "INSERT OR REPLACE INTO sim_station_use_parts(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path) " +
+            " VALUES($simid,$group,$num,$start,$end,$job,$proc,$path)";
+        partCmd.Parameters.Add("simid", SqliteType.Text);
+        partCmd.Parameters.Add("group", SqliteType.Text);
+        partCmd.Parameters.Add("num", SqliteType.Integer);
+        partCmd.Parameters.Add("start", SqliteType.Integer);
+        partCmd.Parameters.Add("end", SqliteType.Integer);
+        partCmd.Parameters.Add("job", SqliteType.Text);
+        partCmd.Parameters.Add("proc", SqliteType.Integer);
+        partCmd.Parameters.Add("path", SqliteType.Integer);
+
         foreach (var sim in simStats)
         {
           cmd.Parameters[0].Value = sim.ScheduleId;
@@ -1409,6 +1495,22 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[5].Value = sim.UtilizationTime.Ticks;
           cmd.Parameters[6].Value = sim.PlannedDownTime.Ticks;
           cmd.ExecuteNonQuery();
+
+          if (sim.Parts != null)
+          {
+            partCmd.Parameters[0].Value = sim.ScheduleId;
+            partCmd.Parameters[1].Value = sim.StationGroup;
+            partCmd.Parameters[2].Value = sim.StationNum;
+            partCmd.Parameters[3].Value = sim.StartUTC.Ticks;
+            partCmd.Parameters[4].Value = sim.EndUTC.Ticks;
+            foreach (var part in sim.Parts)
+            {
+              partCmd.Parameters[5].Value = part.JobUnique;
+              partCmd.Parameters[6].Value = part.Process;
+              partCmd.Parameters[7].Value = part.Path;
+              partCmd.ExecuteNonQuery();
+            }
+          }
         }
       }
     }

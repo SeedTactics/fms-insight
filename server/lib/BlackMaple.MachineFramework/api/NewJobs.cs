@@ -41,6 +41,19 @@ namespace BlackMaple.MachineFramework
 {
 
   [DataContract, Draftable]
+  public record SimulatedStationPart
+  {
+    [DataMember(IsRequired = true)]
+    public string JobUnique { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int Process { get; init; } = 1;
+
+    [DataMember(IsRequired = true)]
+    public int Path { get; init; } = 1;
+  }
+
+  [DataContract, Draftable]
   public record SimulatedStationUtilization
   {
     [DataMember(IsRequired = true)] public string ScheduleId { get; init; } = "";
@@ -50,6 +63,9 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)] public DateTime EndUTC { get; init; }
     [DataMember(IsRequired = true)] public TimeSpan UtilizationTime { get; init; } //time between StartUTC and EndUTC the station is busy.
     [DataMember(IsRequired = true)] public TimeSpan PlannedDownTime { get; init; } //time between StartUTC and EndUTC the station is planned to be down.
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<SimulatedStationPart>? Parts { get; init; }
 
     public static SimulatedStationUtilization operator %(SimulatedStationUtilization s, Action<ISimulatedStationUtilizationDraft> f)
        => s.Produce(f);

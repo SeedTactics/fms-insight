@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 25;
+    private const int Version = 26;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, FMSSettings settings)
@@ -212,6 +212,9 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX sim_station_time_idx ON sim_station_use(EndUTC, StartUTC)";
         cmd.ExecuteNonQuery();
 
+        cmd.CommandText = "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
+        cmd.ExecuteNonQuery();
+
         cmd.CommandText = "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
         cmd.ExecuteNonQuery();
 
@@ -358,6 +361,8 @@ namespace BlackMaple.MachineFramework
           bool updateJobsTables = curVersion >= 24; // Ver23ToVer24 creates fresh job tables, so no updates needed if coming from before then
 
           if (curVersion < 25) Ver24ToVer25(trans, updateJobsTables);
+
+          if (curVersion < 26) Ver25ToVer26(trans, updateJobsTables);
 
 
           //update the version in the database
@@ -829,6 +834,17 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "ALTER TABLE jobs ADD AllocateAlg TEXT";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
+    private static void Ver25ToVer26(IDbTransaction transaction, bool updateJobTables)
+    {
+      if (!updateJobTables) return;
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+        cmd.CommandText = "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
         cmd.ExecuteNonQuery();
       }
     }
