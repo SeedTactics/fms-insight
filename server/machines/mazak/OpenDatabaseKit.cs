@@ -212,6 +212,8 @@ namespace MazakMachineInterface
       {
         if (prog.Command == MazakWriteCommand.Add)
         {
+          var dir = System.IO.Path.GetDirectoryName(prog.MainProgram);
+          System.IO.Directory.CreateDirectory(dir);
           System.IO.File.WriteAllText(prog.MainProgram, prog.ProgramContent);
         }
       }
