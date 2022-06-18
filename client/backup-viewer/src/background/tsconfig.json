@@ -13,8 +13,6 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
 
-    "downlevelIteration": true,
-
     "strict": true,
     "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
