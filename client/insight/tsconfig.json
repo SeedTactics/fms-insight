@@ -7,15 +7,15 @@
     "allowJs": false,
     "jsx": "react",
     "moduleResolution": "node",
-    "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
 
     "strict": true,
-    "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true
   },

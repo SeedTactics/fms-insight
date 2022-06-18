@@ -70,7 +70,7 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
     return `M${arr.fromX},${arr.fromY} Q ${cx} ${cy} ${arr.toX} ${arr.toY}`;
   }
 
-  render() {
+  override render() {
     const data: MoveMaterialArrowData<MoveArrowElemRect> = {
       container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
       nodes: this.props.nodes.mapValues(MoveMaterialArrows.elementToRect),
@@ -103,7 +103,7 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
   { readonly children: JSX.Element },
   MoveMaterialArrowData<Element>
 > {
-  state = {
+  override state = {
     container: null,
     nodes: emptyIMap<MoveMaterialIdentifier, Element>(),
     node_type: emptyIMap<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
@@ -140,7 +140,7 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
     }
   }
 
-  render(): JSX.Element {
+  override render(): JSX.Element {
     return (
       <div style={{ position: "relative" }}>
         <svg
@@ -190,19 +190,19 @@ class MoveMaterialArrowNodeHelper extends React.PureComponent<
     props.ctx.registerNodeKind(this.ident, props.kind);
   }
 
-  componentDidUpdate(oldProps: MoveMaterialArrowNodeHelperProps) {
+  override componentDidUpdate(oldProps: MoveMaterialArrowNodeHelperProps) {
     if (oldProps.kind !== this.props.kind) {
       this.props.ctx.registerNodeKind(this.ident, this.props.kind);
     }
   }
 
-  render() {
+  override render() {
     return <div ref={this.props.ctx.registerNode(this.ident)}>{this.props.children}</div>;
   }
 }
 
 export class MoveMaterialArrowNode extends React.PureComponent<MoveMaterialNodeKind & { children?: JSX.Element }> {
-  render(): JSX.Element {
+  override render(): JSX.Element {
     const { children, ...kind } = this.props;
     return (
       <MoveMaterialArrowCtx.Consumer>

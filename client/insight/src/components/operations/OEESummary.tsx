@@ -245,7 +245,7 @@ function StationOEEWithStyles(p: StationOEEProps) {
 // decorate doesn't work well with classes yet.
 // https://github.com/Microsoft/TypeScript/issues/4881
 class StationOEE extends React.PureComponent<StationOEEProps> {
-  render() {
+  override render() {
     return <StationOEEWithStyles {...this.props} />;
   }
 }

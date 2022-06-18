@@ -388,7 +388,7 @@ export interface DataTableBodyProps<Id, Row> {
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<DataTableBodyProps<Id, Row>> {
-  render(): JSX.Element {
+  override render(): JSX.Element {
     const onClickDetails = this.props.onClickDetails;
     return (
       <TableBody>

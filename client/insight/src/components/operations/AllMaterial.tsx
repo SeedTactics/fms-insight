@@ -168,7 +168,7 @@ function compareQueue(q1: string, q2: string) {
 }
 
 class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
-  render() {
+  override render() {
     return (
       <Draggable draggableId={this.props.draggableId} index={this.props.idx}>
         {(provided, snapshot) => (

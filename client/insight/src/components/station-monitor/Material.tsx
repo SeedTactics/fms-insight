@@ -65,7 +65,7 @@ export class PartIdenticon extends React.PureComponent<{
   part: string;
   size?: number;
 }> {
-  render() {
+  override render() {
     const iconSize = this.props.size || 50;
     const icon = jdenticon.toSvg(this.props.part, iconSize);
 
@@ -256,7 +256,7 @@ export interface InProcMaterialProps {
 }
 
 export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
-  render() {
+  override render() {
     return (
       <MatSummary
         mat={inproc_mat_to_summary(this.props.mat)}
@@ -325,7 +325,7 @@ export class MaterialDetailTitle extends React.PureComponent<{
   subtitle?: string;
   notes?: boolean;
 }> {
-  render() {
+  override render() {
     let title;
     if (this.props.partName === "" && (this.props.serial === undefined || this.props.serial === "")) {
       title = "Loading";
@@ -363,7 +363,7 @@ export interface MaterialDetailProps {
 }
 
 export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
-  render() {
+  override render() {
     const mat = this.props.mat;
     function colorForInspType(type: string): string {
       if (mat.completedInspections && mat.completedInspections.includes(type)) {

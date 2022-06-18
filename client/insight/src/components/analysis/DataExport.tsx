@@ -47,11 +47,11 @@ interface CSVLogExportState {
 }
 
 class CSVLogExport extends React.PureComponent<{}, CSVLogExportState> {
-  state: CSVLogExportState = {
+  override state: CSVLogExportState = {
     exportDate: df.format(df.addDays(new Date(), -1), "yyyy-MM-dd"),
   };
 
-  render() {
+  override render() {
     const startDate = df.parseISO(this.state.exportDate);
     const endDate = df.addDays(startDate, 1);
     const queryString = new URLSearchParams();
@@ -105,11 +105,11 @@ interface CSVWorkorderExportState {
 }
 
 class CSVWorkorderExport extends React.PureComponent<{}, CSVWorkorderExportState> {
-  state: CSVWorkorderExportState = {
+  override state: CSVWorkorderExportState = {
     exportWorkorder: "",
   };
 
-  render() {
+  override render() {
     const queryString = new URLSearchParams();
     queryString.append("ids", this.state.exportWorkorder);
     const startEndQuery = queryString.toString();
