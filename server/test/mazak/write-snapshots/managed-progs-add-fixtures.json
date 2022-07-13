@@ -33,7 +33,7 @@
     {
       "ProgramName": "prog-aaa-1",
       "ProgramRevision": 8,
-      "MainProgram": "theprogdir/prog-aaa-1_rev8.EIA",
+      "MainProgram": "theprogdir/rev8/prog-aaa-1.EIA",
       "Comment": "Insight:8:prog-aaa-1",
       "Command": "Add",
       "ProgramContent": "prog-aaa-1 content rev 8"
@@ -41,7 +41,7 @@
     {
       "ProgramName": "prog-aaa-2",
       "ProgramRevision": 4,
-      "MainProgram": "theprogdir/prog-aaa-2_rev4.EIA",
+      "MainProgram": "theprogdir/rev4/prog-aaa-2.EIA",
       "Comment": "Insight:4:prog-aaa-2",
       "Command": "Add",
       "ProgramContent": "prog-aaa-2 content rev 4"
@@ -49,7 +49,7 @@
     {
       "ProgramName": "prog-bbb-2",
       "ProgramRevision": 5,
-      "MainProgram": "theprogdir/prog-bbb-2_rev5.EIA",
+      "MainProgram": "theprogdir/rev5/prog-bbb-2.EIA",
       "Comment": "Insight:5:prog-bbb-2",
       "Command": "Add",
       "ProgramContent": "prog-bbb-2 content rev 5"

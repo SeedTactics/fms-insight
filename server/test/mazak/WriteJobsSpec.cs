@@ -204,12 +204,12 @@ namespace MachineWatchTest
               new[] {
                 new MazakProgramRow()
                 {
-                  MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev2.EIA"),
+                  MainProgram = System.IO.Path.Combine("theprogdir", "rev2", "prog-bbb-1.EIA"),
                   Comment = "Insight:2:prog-bbb-1"
                 },
                 new MazakProgramRow()
                 {
-                  MainProgram = System.IO.Path.Combine("theprogdir", "prog-bbb-1_rev3.EIA"),
+                  MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "prog-bbb-1.EIA"),
                   Comment = "Insight:3:prog-bbb-1"
                 }
               }

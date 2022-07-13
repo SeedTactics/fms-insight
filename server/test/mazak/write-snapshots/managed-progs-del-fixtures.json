@@ -12,7 +12,7 @@
   "Programs": [
     {
       "Command": "Delete",
-      "MainProgram": "theprogdir/prog-bbb-1_rev2.EIA",
+      "MainProgram": "theprogdir/rev2/prog-bbb-1.EIA",
       "Comment": "Insight:2:prog-bbb-1"
     }
   ]

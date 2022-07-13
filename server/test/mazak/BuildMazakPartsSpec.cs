@@ -627,12 +627,12 @@ namespace MachineWatchTest
       var log = new List<string>();
       var dset = new MazakTestData();
 
-      CreatePart(dset, "OldJob", "Part1", 1, "fix", System.IO.Path.Combine("theprogdir", "ccc_rev7.EIA"));
+      CreatePart(dset, "OldJob", "Part1", 1, "fix", System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA"));
 
-      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev7.EIA"), "Insight:7:ccc"); // 7 is used by OldJob part
-      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev8.EIA"), "Insight:8:ccc"); // 8 is not used, should be deleted
-      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA"), "Insight:9:ccc"); // 9 is used by new job, should not be deleted
-      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "ddd_rev7.EIA"), "Insight:7:ddd"); // latest revision of unused program, should be kept
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA"), "Insight:7:ccc"); // 7 is used by OldJob part
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev8", "ccc.EIA"), "Insight:8:ccc"); // 8 is not used, should be deleted
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev9", "ccc.EIA"), "Insight:9:ccc"); // 9 is used by new job, should not be deleted
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev7", "ddd.EIA"), "Insight:7:ddd"); // latest revision of unused program, should be kept
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
       lookupProgram("aaa", null).Returns(new ProgramRevision()
@@ -672,7 +672,7 @@ namespace MachineWatchTest
         .Programs.Should().BeEquivalentTo(new[] {
           new NewMazakProgram() {
             Command = MazakWriteCommand.Add,
-            MainProgram = System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA"),
+            MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA"),
             Comment = "Insight:3:aaa",
             ProgramName = "aaa",
             ProgramRevision = 3,
@@ -680,7 +680,7 @@ namespace MachineWatchTest
           },
           new NewMazakProgram() {
             Command = MazakWriteCommand.Add,
-            MainProgram = System.IO.Path.Combine("theprogdir", "bbb_rev7.EIA"),
+            MainProgram = System.IO.Path.Combine("theprogdir", "rev7", "bbb.EIA"),
             Comment = "Insight:7:bbb",
             ProgramName = "bbb",
             ProgramRevision = 7,
@@ -691,7 +691,7 @@ namespace MachineWatchTest
         .Programs.Should().BeEquivalentTo(new[] {
           new NewMazakProgram() {
             Command = MazakWriteCommand.Delete,
-            MainProgram = System.IO.Path.Combine("theprogdir", "ccc_rev8.EIA"),
+            MainProgram = System.IO.Path.Combine("theprogdir", "rev8", "ccc.EIA"),
             Comment = "Insight:8:ccc"
           }
           // ccc rev9 already exists, should not be added
@@ -700,10 +700,10 @@ namespace MachineWatchTest
       var trans = pMap.CreatePartPalletDatabaseRows();
 
       trans.Parts.First().Processes.Select(p => (proc: p.ProcessNumber, prog: p.MainProgram)).Should().BeEquivalentTo(new[] {
-        (1, System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA")),
-        (2, System.IO.Path.Combine("theprogdir", "bbb_rev7.EIA")),
-        (3, System.IO.Path.Combine("theprogdir", "ccc_rev9.EIA")),
-        (4, System.IO.Path.Combine("theprogdir", "aaa_rev3.EIA")),
+        (1, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
+        (2, System.IO.Path.Combine("theprogdir", "rev7", "bbb.EIA")),
+        (3, System.IO.Path.Combine("theprogdir", "rev9", "ccc.EIA")),
+        (4, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
       });
     }
 
@@ -722,7 +722,7 @@ namespace MachineWatchTest
       var dset = new MazakTestData();
 
       // create bbb with older revision
-      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "bbb_rev6.EIA"), "Insight:6:bbb");
+      CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev6", "bbb.EIA"), "Insight:6:bbb");
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
       lookupProgram("aaa", null).Returns(new ProgramRevision()

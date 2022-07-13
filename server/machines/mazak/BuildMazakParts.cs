@@ -586,7 +586,9 @@ namespace MazakMachineInterface
                 ProgramRevision = proc.PartProgram.Revision,
                 MainProgram = System.IO.Path.Combine(
                   programDir,
-                  proc.PartProgram.ProgramName + "_rev" + proc.PartProgram.Revision.ToString() + ".EIA"
+                  "rev" + proc.PartProgram.Revision.ToString(),
+                  // filenames have a maximum length
+                  proc.PartProgram.ProgramName + ".EIA"
                 ),
                 Comment = MazakProcess.CreateMainProgramComment(proc.PartProgram.ProgramName, proc.PartProgram.Revision),
                 ProgramContent = getProgramContent(proc.PartProgram.ProgramName, proc.PartProgram.Revision)

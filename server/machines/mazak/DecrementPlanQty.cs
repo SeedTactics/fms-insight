@@ -153,7 +153,6 @@ namespace MazakMachineInterface
           {
             Command = MazakWriteCommand.ScheduleSafeEdit,
             PlanQuantity = job.NewPlanQty,
-            Processes = new List<MazakScheduleProcessRow>()
           };
           schs.Add(newSchRow);
         }
