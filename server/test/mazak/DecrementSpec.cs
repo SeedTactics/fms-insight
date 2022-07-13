@@ -127,14 +127,23 @@ namespace MachineWatchTest
       var sch = _write.Schedules[0];
       sch.Id.Should().Be(15);
       sch.PlanQuantity.Should().Be(35);
-      sch.Processes.Should().BeEmpty();
+      sch.Processes.Should().BeEquivalentTo(
+        new[] {
+          new MazakScheduleProcessRow() {
+            MazakScheduleRowId = 15,
+            FixQuantity = 1,
+            ProcessNumber = 1,
+            ProcessMaterialQuantity = 15,
+            ProcessExecuteQuantity = 5
+          }
+      });
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
-  new DecrementQuantity() {
-    DecrementId = 0,
-    TimeUTC = now,
-    Quantity = 50 - 35
-  }
+        new DecrementQuantity() {
+          DecrementId = 0,
+          TimeUTC = now,
+          Quantity = 50 - 35
+        }
       });
     }
 
@@ -441,7 +450,17 @@ namespace MachineWatchTest
       var sch = _write.Schedules[0];
       sch.Id.Should().Be(15);
       sch.PlanQuantity.Should().Be(35);
-      sch.Processes.Should().BeEmpty();
+      sch.Processes.Should().BeEquivalentTo(
+        new List<MazakScheduleProcessRow> {
+          new MazakScheduleProcessRow() {
+            MazakScheduleRowId = 15,
+            FixQuantity = 1,
+            ProcessNumber = 1,
+            ProcessMaterialQuantity = 15,
+            ProcessExecuteQuantity = 5
+          }
+        }
+      );
 
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEquivalentTo(new[] {
   new DecrementQuantity() {
