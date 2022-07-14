@@ -72,7 +72,7 @@ namespace BlackMaple.MachineFramework
 
     public static RepositoryConfig InitializeEventDatabase(FMSSettings st, string filename, string oldInspDbFile = null, string oldJobDbFile = null)
     {
-      var connStr = "Data Source=" + filename;
+      var connStr = "Data Source=" + filename + ";Pooling=false;";
       if (System.IO.File.Exists(filename))
       {
         using (var conn = new SqliteConnection(connStr))
