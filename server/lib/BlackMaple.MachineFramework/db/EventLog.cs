@@ -3129,15 +3129,13 @@ namespace BlackMaple.MachineFramework
         {
           ((IDbCommand)loadCmd).Transaction = trans;
           loadCmd.CommandText = "SELECT MAX(m.Process) FROM " +
-            " stations_mat m " +
-            " WHERE m.MaterialID = $matid AND " +
-            "   NOT EXISTS (" +
-            "    SELECT 1 FROM stations s, program_details d " +
-            "      WHERE s.Counter = m.Counter AND s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
-            "   ) AND " +
-            "   EXISTS (" +
-            "    SELECT 1 FROM stations s WHERE s.Counter = m.Counter AND s.StationLoc IN (" + LogTypesToCheckForNextProcess + ")" +
-            "   )";
+            "stations_mat m " +
+            "INNER JOIN stations s ON m.Counter = s.Counter " +
+            "LEFT OUTER JOIN program_details d ON m.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
+            "WHERE " +
+            "  m.MaterialId = $matid " +
+            " AND s.StationLoc IN (" + LogTypesToCheckForNextProcess + ") " +
+            " AND d.Key IS NULL";
           loadCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
 
           var val = loadCmd.ExecuteScalar();
