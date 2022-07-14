@@ -314,8 +314,18 @@ namespace MazakMachineInterface
         // material could be in the process of being loaded
         if (seenMatIds.Contains(mat.MaterialID)) continue;
         var matLogs = jobDB.GetLogForMaterial(mat.MaterialID);
-        var nextProcess = jobDB.NextProcessForQueuedMaterial(mat.MaterialID);
-        var lastProc = (nextProcess ?? 1) - 1;
+        //var nextProcess = jobDB.NextProcessForQueuedMaterial(mat.MaterialID);
+        int lastProc = 0;
+        foreach (var entry in matLogs)
+        {
+          foreach (var entryMat in entry.Material)
+          {
+            if (entryMat.MaterialID == mat.MaterialID)
+            {
+              lastProc = Math.Max(lastProc, entryMat.Process);
+            }
+          }
+        }
         var matDetails = jobDB.GetMaterialDetails(mat.MaterialID);
         material.Add(new InProcessMaterial()
         {
