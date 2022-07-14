@@ -166,7 +166,7 @@ export const materialDetail = selector<MaterialDetail | null>({
     const loading = localEvts.state === "loading" || otherEvts.state === "loading";
     const allEvents = LazySeq.ofIterable(localEvts.state === "hasValue" ? localEvts.valueOrThrow() : [])
       .concat(otherEvts.state === "hasValue" ? otherEvts.valueOrThrow() : [])
-      .sort(
+      .sortBy(
         (e) => e.endUTC.getTime(),
         (e) => e.counter
       )

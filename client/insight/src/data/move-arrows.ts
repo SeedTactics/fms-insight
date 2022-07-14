@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api";
-import { IMap } from "../util/imap";
+import { HashMap } from "../util/imap";
 import {} from "../util/lazyseq";
 
 export class MoveMaterialIdentifier {
@@ -82,8 +82,8 @@ export type MoveMaterialNodeKind =
 
 export interface MoveMaterialArrowData<T> {
   readonly container: T | null;
-  readonly nodes: IMap<MoveMaterialIdentifier, T>;
-  readonly node_type: IMap<MoveMaterialIdentifier, MoveMaterialNodeKind>;
+  readonly nodes: HashMap<MoveMaterialIdentifier, T>;
+  readonly node_type: HashMap<MoveMaterialIdentifier, MoveMaterialNodeKind>;
 }
 
 export interface MoveMaterialArrow {
@@ -164,7 +164,7 @@ export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): R
   const queueDestUsed = new Map<string, number>();
   let lastFreeUsed = 0;
 
-  for (const [rect, mat] of byKind.material.toLazySeq().sort(
+  for (const [rect, mat] of byKind.material.toLazySeq().sortBy(
     ([rect]) => rect.left,
     ([rect]) => rect.top
   )) {

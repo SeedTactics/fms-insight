@@ -51,7 +51,7 @@ import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
 import { PartCycleData } from "../../cell-status/station-cycles";
-import { IMap } from "../../util/imap";
+import { HashMap } from "../../util/imap";
 
 enum ColumnId {
   Date,
@@ -68,7 +68,7 @@ enum ColumnId {
 }
 
 function buildColumns(
-  matIds: IMap<number, MaterialSummaryAndCompletedData>
+  matIds: HashMap<number, MaterialSummaryAndCompletedData>
 ): ReadonlyArray<Column<ColumnId, PartCycleData>> {
   return [
     {
@@ -154,7 +154,7 @@ function buildColumns(
 
 interface StationDataTableProps {
   readonly points: ReadonlyMap<string, ReadonlyArray<PartCycleData>>;
-  readonly matsById: IMap<number, MaterialSummaryAndCompletedData>;
+  readonly matsById: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;

@@ -151,7 +151,7 @@ it("sortBy to array", () => {
 
 it("sortOn", () => {
   seqShouldBe(
-    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }]).sort((x) => x.a),
+    LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }]).sortBy((x) => x.a),
     [{ a: 4 }, { a: 5 }, { a: 7 }, { a: 10 }]
   );
 });
@@ -159,7 +159,7 @@ it("sortOn", () => {
 it("sortOn to array", () => {
   expect(
     LazySeq.ofIterable([{ a: 5 }, { a: 4 }, { a: 10 }, { a: 7 }])
-      .sort((x) => x.a)
+      .sortBy((x) => x.a)
       .toMutableArray()
   ).toStrictEqual([{ a: 4 }, { a: 5 }, { a: 7 }, { a: 10 }]);
 });
@@ -208,14 +208,14 @@ it("zip", () => {
   ]);
 });
 
-it("bulkDeletes IMap", () => {
+it("filters IMap", () => {
   let m = emptyIMap<number, string>();
   m = m.set(1, "a");
   m = m.set(2, "b");
   m = m.set(3, "c");
   m = m.set(4, "d");
 
-  m = m.bulkDelete((i) => i <= 2);
+  m = m.filter((_, i) => i > 2);
 
   expect(m.toLazySeq().toRArray()).toEqual([
     [3, "c"],
@@ -287,7 +287,7 @@ it("toIMap", () => {
     { foo: 1, bar: "aaaa" },
   ]);
 
-  const m = seq.toIMap((x) => [x.foo, x.bar]);
+  const m = seq.toHashMap((x) => [x.foo, x.bar]);
 
   expect(m.toLazySeq().toRArray()).toEqual([
     [1, "aaaa"],
@@ -295,7 +295,7 @@ it("toIMap", () => {
     [3, "c"],
   ]);
 
-  const m2 = seq.toIMap(
+  const m2 = seq.toHashMap(
     (x) => [x.foo, x.bar],
     (a, b) => a + b
   );

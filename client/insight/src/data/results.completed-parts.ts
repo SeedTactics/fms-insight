@@ -37,7 +37,7 @@ import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary
 import copy from "copy-to-clipboard";
 import { SimPartCompleted } from "../cell-status/sim-production";
 import { PartCycleData } from "../cell-status/station-cycles";
-import { IMap } from "../util/imap";
+import { HashMap } from "../util/imap";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -79,10 +79,10 @@ class MatIdAndProcess {
 
 export function binCyclesByDayAndPart(
   cycles: Iterable<PartCycleData>,
-  matsById: IMap<number, MaterialSummaryAndCompletedData>,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
   end: Date
-): IMap<DayAndPart, PartsCompletedSummary> {
+): HashMap<DayAndPart, PartsCompletedSummary> {
   const activeTimeByMatId = LazySeq.ofIterable(cycles)
     .filter(
       (cycle) =>
@@ -95,7 +95,7 @@ export function binCyclesByDayAndPart(
         active: cycle.activeMinutes / cycle.material.length,
       }))
     )
-    .toIMap(
+    .toHashMap(
       (p) => [new MatIdAndProcess(p.matId, p.proc), p.active],
       (a1, a2) => a1 + a2
     );
@@ -113,7 +113,7 @@ export function binCyclesByDayAndPart(
           },
         }))
     )
-    .toIMap(
+    .toHashMap(
       (p) => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
       (v1, v2) => ({
         count: v1.count + v2.count,
@@ -128,8 +128,8 @@ export function binCyclesByDayAndPart(
 
 export function binSimProductionByDayAndPart(
   prod: Iterable<SimPartCompleted>
-): IMap<DayAndPart, PartsCompletedSummary> {
-  return LazySeq.ofIterable(prod).toIMap(
+): HashMap<DayAndPart, PartsCompletedSummary> {
+  return LazySeq.ofIterable(prod).toHashMap(
     (p) =>
       [
         new DayAndPart(startOfDay(p.completeTime), p.part),
@@ -167,7 +167,7 @@ class HeatmapClipboardCell {
 export function buildCompletedPartsHeatmapTable(
   points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
 ): string {
-  const cells = LazySeq.ofIterable(points).toIMap(
+  const cells = LazySeq.ofIterable(points).toHashMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );
@@ -181,7 +181,7 @@ export function buildCompletedPartsHeatmapTable(
       (p) => p.activeMachineMins / p.count,
       (first, snd) => (isNaN(first) ? snd : first)
     )
-    .sort(([name, _cycleMins]) => name);
+    .sortBy(([name, _cycleMins]) => name);
 
   let table = "<table>\n<thead><tr><th>Part</th><th>Expected Cycle Mins</th>";
   for (const x of days) {

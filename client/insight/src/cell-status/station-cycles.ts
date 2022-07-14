@@ -46,7 +46,7 @@ import {
 } from "./estimated-cycle-times";
 import { durationToMinutes } from "../util/parseISODuration";
 import { addDays } from "date-fns";
-import { emptyIMap, IMap } from "../util/imap";
+import { emptyIMap, HashMap } from "../util/imap";
 
 export interface PartCycleData {
   readonly x: Date;
@@ -66,7 +66,7 @@ export interface PartCycleData {
   readonly operator: string;
 }
 
-export type StationCyclesByCntr = IMap<number, PartCycleData>;
+export type StationCyclesByCntr = HashMap<number, PartCycleData>;
 
 export function stat_name_and_num(stationGroup: string, stationNumber: number): string {
   if (stationGroup.startsWith("Inspect")) {
@@ -153,7 +153,7 @@ export const setLast30StationCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>
       oldCycles.union(
         LazySeq.ofIterable(log)
           .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
-          .toIMap((x) => x)
+          .toHashMap((x) => x)
       )
     );
   }
@@ -184,7 +184,7 @@ export const updateLast30StationCycles = conduit<ServerEventAndTime>(
       t.set(last30StationCyclesRW, (cycles) => {
         if (expire) {
           const thirtyDaysAgo = addDays(now, -30);
-          cycles = cycles.bulkDelete((_, e) => e.x < thirtyDaysAgo);
+          cycles = cycles.filter((e) => e.x >= thirtyDaysAgo);
         }
 
         cycles = cycles.set(converted[0], converted[1]);
@@ -205,7 +205,7 @@ export const setSpecificMonthStationCycles = conduit<ReadonlyArray<Readonly<ILog
       specificMonthStationCyclesRW,
       LazySeq.ofIterable(log)
         .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
-        .toIMap((x) => x)
+        .toHashMap((x) => x)
     );
   }
 );

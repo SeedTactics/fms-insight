@@ -37,7 +37,7 @@ import type { ServerEventAndTime } from "./loading";
 import { ILogEntry, LogType } from "../network/api";
 import { durationToSeconds } from "../util/parseISODuration";
 import { LazySeq } from "../util/lazyseq";
-import { IMap, emptyIMap } from "../util/imap";
+import { HashMap, emptyIMap } from "../util/imap";
 
 export type BufferType =
   | { readonly type: "Rotary"; readonly machineGroup: string; readonly machineNum: number }
@@ -52,7 +52,7 @@ export interface BufferEntry {
   readonly numMaterial: number;
 }
 
-export type BufferEntryByCntr = IMap<number, BufferEntry>;
+export type BufferEntryByCntr = HashMap<number, BufferEntry>;
 
 const last30BufferEntriesRW = atom<BufferEntryByCntr>({
   key: "last30Buffers",
@@ -132,7 +132,7 @@ export const setLast30Buffer = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
       oldEntries.union(
         LazySeq.ofIterable(log)
           .collect(convertEntry)
-          .toIMap((x) => x)
+          .toHashMap((x) => x)
       )
     );
   }
@@ -147,7 +147,7 @@ export const updateLast30Buffer = conduit<ServerEventAndTime>(
     t.set(last30BufferEntriesRW, (entries) => {
       if (expire) {
         const expireD = addDays(now, -30);
-        entries = entries.bulkDelete((_, e) => e.endTime < expireD);
+        entries = entries.filter((e) => e.endTime >= expireD);
       }
 
       return entries.set(log[0], log[1]);
@@ -161,7 +161,7 @@ export const setSpecificMonthBuffer = conduit<ReadonlyArray<Readonly<ILogEntry>>
       specificMonthBufferEntriesRW,
       LazySeq.ofIterable(log)
         .collect(convertEntry)
-        .toIMap((x) => x)
+        .toHashMap((x) => x)
     );
   }
 );

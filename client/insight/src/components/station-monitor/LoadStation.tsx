@@ -117,7 +117,7 @@ function StationStatus(props: StationStatusProps) {
   return (
     <dl style={{ color: "rgba(0,0,0,0.6" }}>
       {LazySeq.ofIterable(props.byStation)
-        .sort(([s, _]) => s)
+        .sortBy(([s, _]) => s)
         .map(([stat, pals]) => (
           <React.Fragment key={stat}>
             {pals.pal ? (
@@ -262,7 +262,7 @@ function PalletColumn(props: PalletColumnProps) {
     palDetails = (
       <Box sx={{ ml: "4em", mr: "4em" }}>
         {LazySeq.ofIterable(props.data.face)
-          .sort(([face, _]) => face)
+          .sortBy(([face, _]) => face)
           .map(([face, data]) => (
             <div key={face}>
               <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={face}>
@@ -491,7 +491,7 @@ export function LoadStation(props: LoadStationDisplayProps) {
   const isDemo = useIsDemo();
 
   const queues = LazySeq.ofIterable(data.queues)
-    .sort(([q, _]) => q)
+    .sortBy(([q, _]) => q)
     .map(([q, mats]) => ({
       label: q,
       material: mats,

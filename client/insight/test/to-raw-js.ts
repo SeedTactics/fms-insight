@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import { ISet } from "../src/util/iset";
+import { HashSet } from "../src/util/iset";
 import { LazySeq } from "../src/util/lazyseq";
 
 export function toRawJs(val: any): any {
@@ -16,7 +16,7 @@ export function toRawJs(val: any): any {
     return new Map([...val].map(([k, v]) => [k, toRawJs(v)]));
   } else if (val instanceof Set) {
     return val;
-  } else if (val instanceof ISet) {
+  } else if (val instanceof HashSet) {
     return LazySeq.ofIterable(val).map(toRawJs).toRArray();
   } else if (typeof val === "object" && typeof val.toLazySeq === "function") {
     // should be instanceof IMap

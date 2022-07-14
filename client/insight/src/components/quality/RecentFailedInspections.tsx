@@ -126,7 +126,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   }
 
   const curPage = Math.min(origCurPage, Math.ceil(props.failed.length / rowsPerPage));
-  const points = props.failed.toLazySeq().sort(sortOn);
+  const points = props.failed.toLazySeq().sortBy(sortOn);
 
   return (
     <>

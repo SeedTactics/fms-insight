@@ -46,9 +46,12 @@ import {
   StatisticalCycleTime,
 } from "../cell-status/estimated-cycle-times";
 import { stat_name_and_num } from "../cell-status/station-cycles";
-import { emptyIMap, IMap } from "../util/imap";
+import { emptyIMap, HashMap } from "../util/imap";
 
-function averageToolUse(usage: ToolUsage, sort: boolean): IMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
+function averageToolUse(
+  usage: ToolUsage,
+  sort: boolean
+): HashMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
   return usage.mapValues((cycles) => {
     const tools = LazySeq.ofIterable(cycles)
       .flatMap((c) => c.tools)
@@ -168,7 +171,7 @@ export function calcToolReport(
         return [];
       }
     })
-    .sort(
+    .sortBy(
       (p) => p.part.partName,
       (p) => p.part.process
     )
@@ -183,7 +186,7 @@ export function calcToolReport(
     .map(([toolName, tools]) => {
       const toolsInMachine = tools
         .toLazySeq()
-        .sort(
+        .sortBy(
           (t) => t.machineGroupName,
           (t) => t.machineNum,
           (t) => t.pocket

@@ -37,9 +37,9 @@ import { atom, selector, waitForAny } from "recoil";
 import { convertLogToInspections, PartAndInspType, InspectionLogsByCntr } from "../cell-status/inspections";
 import { LazySeq } from "../util/lazyseq";
 import { ILogEntry } from "../network/api";
-import { emptyIMap, IMap, unionMaps } from "../util/imap";
+import { emptyIMap, HashMap, unionMaps } from "../util/imap";
 
-export type PathLookupLogEntries = IMap<PartAndInspType, InspectionLogsByCntr>;
+export type PathLookupLogEntries = HashMap<PartAndInspType, InspectionLogsByCntr>;
 
 export interface PathLookupRange {
   readonly part: string;
@@ -105,7 +105,7 @@ export const inspectionLogEntries = selector<PathLookupLogEntries>({
     const vals = entries
       .filter((e) => e.state === "hasValue")
       .map((e) => e.valueOrThrow())
-      .filter((e) => !e.isEmpty());
+      .filter((e) => e.size > 0);
     if (vals.length === 0) {
       return emptyIMap();
     } else if (vals.length === 1) {

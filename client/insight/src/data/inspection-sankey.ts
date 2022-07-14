@@ -137,14 +137,14 @@ export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyD
     .toMutableArray();
 
   // create a map from NodeR to index
-  const nodesToIdx = nodes.toIMap(
+  const nodesToIdx = nodes.toHashMap(
     (n) => [n.node, n.idx],
     (i1, _) => i1
   );
 
   // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
-    .toIMap(
+    .toHashMap(
       (e) => [e, 1],
       (c1, c2) => c1 + c2
     )

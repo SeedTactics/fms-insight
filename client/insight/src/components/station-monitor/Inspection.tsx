@@ -45,7 +45,7 @@ import { currentOperator } from "../../data/operators";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings";
 import { last30MaterialSummary } from "../../cell-status/material-summary";
-import { IMap } from "../../util/imap";
+import { HashMap } from "../../util/imap";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -199,7 +199,7 @@ export function Inspection(props: InspectionProps): JSX.Element {
 }
 
 function extractRecentInspections(
-  mats: IMap<number, MaterialSummaryAndCompletedData>,
+  mats: HashMap<number, MaterialSummaryAndCompletedData>,
   inspType: string | null
 ): PartsForInspection {
   const uninspectedCutoff = addDays(new Date(), -7);

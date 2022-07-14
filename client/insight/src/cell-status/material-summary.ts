@@ -36,8 +36,8 @@ import { IEditMaterialInLogEvents, IInProcessMaterial, ILogEntry, LogType } from
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
 import { addDays } from "date-fns";
-import { emptyIMap, IMap } from "../util/imap";
-import { ISet } from "../util/iset";
+import { emptyIMap, HashMap } from "../util/imap";
+import { HashSet } from "../util/iset";
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -65,8 +65,8 @@ interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
 }
 
 export interface MatSummaryState {
-  readonly matsById: IMap<number, MaterialSummaryFromEvents>;
-  readonly matIdsForJob: IMap<string, ISet<number>>;
+  readonly matsById: HashMap<number, MaterialSummaryFromEvents>;
+  readonly matIdsForJob: HashMap<string, HashSet<number>>;
 }
 
 const last30MaterialSummaryRW = atom<MatSummaryState>({
@@ -110,7 +110,7 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
     if (logMat.uniq && logMat.uniq !== "") {
       const forJob = jobs.get(logMat.uniq);
       if (forJob === undefined) {
-        jobs = jobs.set(logMat.uniq, ISet.empty<number>().add(logMat.id));
+        jobs = jobs.set(logMat.uniq, HashSet.empty<number>().add(logMat.id));
       } else {
         if (!forJob.has(logMat.id)) {
           jobs = jobs.set(logMat.uniq, forJob.add(logMat.id));
@@ -235,7 +235,7 @@ function filter_old(expire: Date, { matIdsForJob, matsById }: MatSummaryState): 
     });
   }
 
-  matsById = matsById.bulkDelete((_, e) => e.last_event < expire);
+  matsById = matsById.filter((e) => e.last_event >= expire);
 
   return { matIdsForJob, matsById };
 }

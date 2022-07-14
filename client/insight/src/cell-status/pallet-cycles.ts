@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api";
-import { emptyIMap, IMap, unionMaps } from "../util/imap";
+import { emptyIMap, HashMap, unionMaps } from "../util/imap";
 import { LazySeq } from "../util/lazyseq";
 import { durationToMinutes } from "../util/parseISODuration";
 import { conduit } from "../util/recoil-util";
@@ -46,8 +46,8 @@ export interface PalletCycleData {
   readonly active: number;
 }
 
-export type PalletCyclesByCntr = IMap<number, PalletCycleData>;
-export type PalletCyclesByPallet = IMap<string, PalletCyclesByCntr>;
+export type PalletCyclesByCntr = HashMap<number, PalletCycleData>;
+export type PalletCyclesByPallet = HashMap<string, PalletCyclesByCntr>;
 
 const last30PalletCyclesRW = atom<PalletCyclesByPallet>({
   key: "last30PalletCycles",
@@ -101,7 +101,7 @@ export const updateLast30PalletCycles = conduit<ServerEventAndTime>(
         if (expire) {
           const thirtyDaysAgo = addDays(now, -30);
           oldCycles = oldCycles.collectValues((es) => {
-            const newEs = es.bulkDelete((_, e) => e.x < thirtyDaysAgo);
+            const newEs = es.filter((e) => e.x >= thirtyDaysAgo);
             return newEs.size > 0 ? newEs : null;
           });
         }

@@ -46,8 +46,8 @@ import {
 } from "../cell-status/estimated-cycle-times";
 import { PartCycleData, splitElapsedLoadTimeAmongCycles, stat_name_and_num } from "../cell-status/station-cycles";
 import { PalletCyclesByPallet } from "../cell-status/pallet-cycles";
-import { emptyIMap, IMap } from "../util/imap";
-import { ISet } from "../util/iset";
+import { emptyIMap, HashMap } from "../util/imap";
+import { HashSet } from "../util/iset";
 
 export interface PartAndProcess {
   readonly part: string;
@@ -70,8 +70,8 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
   const palNames = new Set<string>();
   const lulNames = new Set<string>();
   const mcNames = new Set<string>();
-  let partNames = emptyIMap<string, ISet<number>>();
-  let oper = ISet.empty<PartAndStationOperation>();
+  let partNames = emptyIMap<string, HashSet<number>>();
+  let oper = HashSet.empty<PartAndStationOperation>();
 
   for (const c of cycles) {
     palNames.add(c.pallet);
@@ -87,7 +87,7 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
     }
 
     for (const m of c.material) {
-      partNames = partNames.modify(m.part, (old) => (old ?? ISet.empty()).add(m.proc));
+      partNames = partNames.modify(m.part, (old) => (old ?? HashSet.empty()).add(m.proc));
     }
   }
 
@@ -96,7 +96,7 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
     allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
     allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
     allPartAndProcNames: LazySeq.ofIterable(partNames)
-      .sort(([p, _]) => p)
+      .sortBy(([p, _]) => p)
       .flatMap(([part, procs]) => procs.toLazySeq().map((proc) => ({ part: part, proc: proc })))
       .toSortedArray(
         (n) => n.part,
@@ -427,7 +427,7 @@ export function plannedOperationMinutes(s: FilteredStationCycles, forSingleMat: 
 
 export function format_cycle_inspection(
   c: PartCycleData,
-  matsById: IMap<number, MaterialSummaryAndCompletedData>
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>
 ): string {
   const ret = [];
   const signaled = new Set<string>();
@@ -462,7 +462,7 @@ export function format_cycle_inspection(
 
 export function buildCycleTable(
   cycles: FilteredStationCycles,
-  matsById: IMap<number, MaterialSummaryAndCompletedData>,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   startD: Date | undefined,
   endD: Date | undefined,
   hideMedian?: boolean
@@ -515,7 +515,7 @@ export function buildCycleTable(
 
 export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
-  matsById: IMap<number, MaterialSummaryAndCompletedData>,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   zoom: { start: Date; end: Date } | undefined,
   hideMedian?: boolean
 ): void {

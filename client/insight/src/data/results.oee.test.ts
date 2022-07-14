@@ -86,14 +86,14 @@ it("bins actual cycles by day", () => {
   // comparing with the snapshot
   byDayAndStat = byDayAndStat
     .toLazySeq()
-    .toIMap(([dayAndStat, val]) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
+    .toHashMap(([dayAndStat, val]) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(toRawJs(byDayAndStat)).toMatchSnapshot("cycles binned by day and station");
 
   byDayAndStat = binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq());
   byDayAndStat = byDayAndStat
     .toLazySeq()
-    .toIMap(([dayAndStat, val]) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
+    .toHashMap(([dayAndStat, val]) => [dayAndStat.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(toRawJs(byDayAndStat)).toMatchSnapshot("occupied cycles binned by day and station");
 });

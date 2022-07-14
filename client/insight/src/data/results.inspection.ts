@@ -216,7 +216,7 @@ export function buildFailedInspTable(entries: Iterable<FailedInspectionEntry>): 
   table += "<th>Date</th><th>Part</th><th>Inspection</th><th>Serial</th><th>Workorder</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  for (const e of LazySeq.ofIterable(entries).sort({ desc: (x) => x.time.getTime() })) {
+  for (const e of LazySeq.ofIterable(entries).sortBy({ desc: (x) => x.time.getTime() })) {
     table += "<tr>";
     table += "<td>" + e.time.toLocaleString() + "</td>";
     table += "<td>" + e.part + "</td>";

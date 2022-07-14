@@ -259,7 +259,7 @@ function CostBreakdown(props: CostBreakdownProps) {
           </TableHead>
           <TableBody>
             {LazySeq.ofIterable(props.costs.parts)
-              .sort((c) => c.part)
+              .sortBy((c) => c.part)
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>
@@ -306,7 +306,7 @@ function MachineCostTooltip({
   return (
     <div>
       {LazySeq.ofIterable(part.machine.pctPerStat)
-        .sort(([stat]) => stat)
+        .sortBy(([stat]) => stat)
         .map(([stat, pct]) => (
           <div key={stat}>
             {stat}: {pctFormat.format(pct)} of {decimalFormat.format(machineCostForPeriod.get(stat) ?? 0)} total machine
@@ -356,7 +356,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
           </TableHead>
           <TableBody>
             {LazySeq.ofIterable(props.costs.parts)
-              .sort((c) => c.part)
+              .sortBy((c) => c.part)
               .map((c, idx) => (
                 <TableRow key={idx}>
                   <TableCell>

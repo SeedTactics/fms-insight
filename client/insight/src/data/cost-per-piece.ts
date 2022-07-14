@@ -36,7 +36,7 @@ import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import copy from "copy-to-clipboard";
 import { PartCycleData } from "../cell-status/station-cycles";
-import { IMap } from "../util/imap";
+import { HashMap } from "../util/imap";
 
 export interface PartCost {
   readonly part: string;
@@ -75,7 +75,7 @@ export function compute_monthly_cost(
   automationCostPerYear: number | null,
   totalLaborCostForPeriod: number,
   cycles: Iterable<PartCycleData>,
-  matsById: IMap<number, MaterialSummaryAndCompletedData>,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   type: { month: Date } | { thirtyDaysAgo: Date }
 ): CostData {
   const days = isMonthType(type) ? getDaysInMonth(type.month) : 30;
@@ -180,7 +180,7 @@ export function buildCostPerPieceTable(costs: CostData): string {
   table += "<th>Total</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const rows = LazySeq.ofIterable(costs.parts).sort((c) => c.part);
+  const rows = LazySeq.ofIterable(costs.parts).sortBy((c) => c.part);
   const format = Intl.NumberFormat(undefined, {
     maximumFractionDigits: 1,
   });
@@ -228,7 +228,7 @@ export function buildCostBreakdownTable(costs: CostData): string {
   table += "<th>Automation Cost %</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const rows = LazySeq.ofIterable(costs.parts).sort((c) => c.part);
+  const rows = LazySeq.ofIterable(costs.parts).sortBy((c) => c.part);
   const pctFormat = new Intl.NumberFormat(undefined, {
     style: "percent",
     minimumFractionDigits: 1,

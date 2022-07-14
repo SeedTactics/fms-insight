@@ -37,7 +37,7 @@ import copy from "copy-to-clipboard";
 import { SimStationUse } from "../cell-status/sim-station-use";
 import { chunkCyclesWithSimilarEndTime } from "../cell-status/estimated-cycle-times";
 import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles";
-import { IMap } from "../util/imap";
+import { HashMap } from "../util/imap";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -86,7 +86,7 @@ function splitTimeToDays(startTime: Date, endTime: Date, mins: number): Array<{ 
   }
 }
 
-export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): IMap<DayAndStation, number> {
+export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(cycles)
     .flatMap((point) =>
       // point.x is the end time, point.y is elapsed in minutes, so point.x - point.y is start time
@@ -97,13 +97,13 @@ export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): IM
         isLabor: point.isLabor,
       }))
     )
-    .toIMap(
+    .toHashMap(
       (p) => [new DayAndStation(p.day, p.station), p.value],
       (v1, v2) => v1 + v2
     );
 }
 
-export function binOccupiedCyclesByDayAndStat(cycles: Iterable<PartCycleData>): IMap<DayAndStation, number> {
+export function binOccupiedCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
   return chunkCyclesWithSimilarEndTime(
     LazySeq.ofIterable(cycles),
     (point) => stat_name_and_num(point.stationGroup, point.stationNumber),
@@ -119,7 +119,7 @@ export function binOccupiedCyclesByDayAndStat(cycles: Iterable<PartCycleData>): 
         }))
       )
     )
-    .toIMap(
+    .toHashMap(
       (p) => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
       (v1, v2) => v1 + v2
     );
@@ -129,7 +129,7 @@ export function binOccupiedCyclesByDayAndStat(cycles: Iterable<PartCycleData>): 
 // Planned
 // --------------------------------------------------------------------------------
 
-export function binSimStationUseByDayAndStat(simUses: Iterable<SimStationUse>): IMap<DayAndStation, number> {
+export function binSimStationUseByDayAndStat(simUses: Iterable<SimStationUse>): HashMap<DayAndStation, number> {
   return LazySeq.ofIterable(simUses)
     .flatMap((simUse) =>
       splitTimeToDays(simUse.start, simUse.end, simUse.utilizationTime - simUse.plannedDownTime).map((x) => ({
@@ -137,7 +137,7 @@ export function binSimStationUseByDayAndStat(simUses: Iterable<SimStationUse>): 
         station: simUse.station,
       }))
     )
-    .toIMap(
+    .toHashMap(
       (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
       (v1, v2) => v1 + v2
     );
@@ -228,7 +228,7 @@ class HeatmapClipboardCell {
 }
 
 export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
-  const cells = LazySeq.ofIterable(points).toIMap(
+  const cells = LazySeq.ofIterable(points).toHashMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );

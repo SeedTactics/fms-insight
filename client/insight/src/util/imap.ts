@@ -8,8 +8,7 @@ export type HashKeyObj = {
 
 export type HashKey = string | number | boolean | HashKeyObj;
 
-export interface IMap<K, V> {
-  isEmpty(): boolean;
+export interface HashMap<K, V> {
   get(k: K): V | undefined;
   has(k: K): boolean;
   size: number;
@@ -19,19 +18,19 @@ export interface IMap<K, V> {
   entries(): Iterator<readonly [K, V]>;
   keys(): Iterator<K>;
   values(): Iterator<V>;
-  forEach(f: (val: V, k: K, map: IMap<K, V>) => void): void;
+  forEach(f: (val: V, k: K, map: HashMap<K, V>) => void): void;
   toLazySeq(): LazySeq<readonly [K, V]>;
   keysToLazySeq(): LazySeq<K>;
   valuesToLazySeq(): LazySeq<V>; // TODO: when converting to immutable-collections, switch most to just values
 
-  set(k: K & HashKey, v: V): IMap<K, V>;
-  modify(k: K & HashKey, f: (v: V | undefined) => V): IMap<K, V>;
-  delete(k: K & HashKey): IMap<K, V>;
-  union(other: IMap<K, V>, merge?: (v1: V, v2: V) => V): IMap<K, V>;
+  set(k: K & HashKey, v: V): HashMap<K, V>;
+  modify(k: K & HashKey, f: (v: V | undefined) => V): HashMap<K, V>;
+  delete(k: K & HashKey): HashMap<K, V>;
+  union(other: HashMap<K, V>, merge?: (v1: V, v2: V) => V): HashMap<K, V>;
 
-  bulkDelete(shouldDelete: (k: K, v: V) => boolean): IMap<K, V>; // TODO: remove once collectValues is efficient
-  mapValues<U>(f: (v: V, k: K) => U): IMap<K, U>;
-  collectValues(f: (v: V, k: K) => V | null | undefined): IMap<K, V>;
+  filter(f: (v: V, k: K) => boolean): HashMap<K, V>;
+  mapValues<U>(f: (v: V, k: K) => U): HashMap<K, U>;
+  collectValues(f: (v: V, k: K) => V | null | undefined): HashMap<K, V>;
 }
 
 interface MakeConfig<K> {
@@ -39,7 +38,7 @@ interface MakeConfig<K> {
   hash: (v: K) => number;
 }
 
-interface HamtMap<K, V> extends IMap<K, V> {
+interface HamtMap<K, V> extends HashMap<K, V> {
   beginMutation(): HamtMap<K, V>;
   endMutation(): HamtMap<K, V>;
 
@@ -194,14 +193,14 @@ function makeWithDynamicConfig<K, V>(): HamtMap<K, V> {
   return m;
 }
 
-export function emptyIMap<K, V>(): IMap<K, V> {
+export function emptyIMap<K, V>(): HashMap<K, V> {
   return makeWithDynamicConfig<K, V>();
 }
 
 export function iterableToIMap<K, V>(
   items: Iterable<readonly [K & HashKey, V]>,
   merge?: (v1: V, v2: V) => V
-): IMap<K, V> {
+): HashMap<K, V> {
   const m = makeWithDynamicConfig<K, V>().beginMutation();
   if (merge !== undefined) {
     for (const [k, v] of items) {
@@ -219,7 +218,7 @@ export function buildIMap<K, V, T>(
   items: Iterable<T>,
   getKey: (t: T) => K & HashKey,
   getVal: (old: V | undefined, t: T) => V
-): IMap<K, V> {
+): HashMap<K, V> {
   const m = makeWithDynamicConfig<K, V>().beginMutation();
   for (const t of items) {
     m.modify(getKey(t), (old) => getVal(old, t));
@@ -231,10 +230,10 @@ export function buildIMap<K, V, T>(
 // Extra functions placed onto the IMap prototype
 // --------------------------------------------------------------------------------
 
-function imapToLazySeq<K, V>(this: IMap<K, V>): LazySeq<readonly [K, V]> {
+function imapToLazySeq<K, V>(this: HashMap<K, V>): LazySeq<readonly [K, V]> {
   return LazySeq.ofIterable(this);
 }
-function imapToKeysLazySeq<K, V>(this: IMap<K, V>): LazySeq<K> {
+function imapToKeysLazySeq<K, V>(this: HashMap<K, V>): LazySeq<K> {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   const m = this;
   return LazySeq.ofIterable({
@@ -243,7 +242,7 @@ function imapToKeysLazySeq<K, V>(this: IMap<K, V>): LazySeq<K> {
     },
   });
 }
-function imapToValuesLazySeq<K, V>(this: IMap<K, V>): LazySeq<V> {
+function imapToValuesLazySeq<K, V>(this: HashMap<K, V>): LazySeq<V> {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   const m = this;
   return LazySeq.ofIterable({
@@ -253,7 +252,7 @@ function imapToValuesLazySeq<K, V>(this: IMap<K, V>): LazySeq<V> {
   });
 }
 
-function bulkDeleteIMap<K, V>(this: IMap<K & HashKey, V>, shouldRemove: (k: K, v: V) => boolean): IMap<K, V> {
+function bulkDeleteIMap<K, V>(this: HashMap<K & HashKey, V>, shouldRemove: (k: K, v: V) => boolean): HashMap<K, V> {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   let m = this;
   for (const [k, v] of this) {
@@ -264,7 +263,18 @@ function bulkDeleteIMap<K, V>(this: IMap<K & HashKey, V>, shouldRemove: (k: K, v
   return m;
 }
 
-function mapValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V): IMap<K, V> {
+function filter<K, V>(this: HashMap<K & HashKey, V>, f: (k: V, v: K) => boolean): HashMap<K, V> {
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  let m = this;
+  for (const [k, v] of this) {
+    if (!f(v, k)) {
+      m = m.delete(k);
+    }
+  }
+  return m;
+}
+
+function mapValuesIMap<K, V>(this: HashMap<K & HashKey, V>, f: (v: V) => V): HashMap<K, V> {
   return buildIMap(
     this,
     ([k]) => k,
@@ -272,7 +282,7 @@ function mapValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V): IMap<K
   );
 }
 
-function collectValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V | null | undefined): IMap<K, V> {
+function collectValuesIMap<K, V>(this: HashMap<K & HashKey, V>, f: (v: V) => V | null | undefined): HashMap<K, V> {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   let m = this;
   for (const [k, v] of this) {
@@ -286,7 +296,10 @@ function collectValuesIMap<K, V>(this: IMap<K & HashKey, V>, f: (v: V) => V | nu
   return m;
 }
 
-export function unionMaps<K, V>(merge: (v1: V, v2: V) => V, ...maps: readonly IMap<K & HashKey, V>[]): IMap<K, V> {
+export function unionMaps<K, V>(
+  merge: (v1: V, v2: V) => V,
+  ...maps: readonly HashMap<K & HashKey, V>[]
+): HashMap<K, V> {
   const nonEmpty = maps.filter((m) => m.size > 0);
   if (nonEmpty.length === 0) {
     return emptyIMap();
@@ -302,8 +315,8 @@ export function unionMaps<K, V>(merge: (v1: V, v2: V) => V, ...maps: readonly IM
   return m;
 }
 
-function unionOneMap<K, V>(this: IMap<K, V>, other: IMap<K, V>, merge?: (v1: V, v2: V) => V) {
-  return unionMaps(merge ?? ((_, snd) => snd), this as IMap<K & HashKey, V>, other as IMap<K & HashKey, V>);
+function unionOneMap<K, V>(this: HashMap<K, V>, other: HashMap<K, V>, merge?: (v1: V, v2: V) => V) {
+  return unionMaps(merge ?? ((_, snd) => snd), this as HashMap<K & HashKey, V>, other as HashMap<K & HashKey, V>);
 }
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -314,6 +327,7 @@ if (hamtProto.toLazySeq === undefined) {
   hamtProto.toLazySeq = imapToLazySeq;
   hamtProto.keysToLazySeq = imapToKeysLazySeq;
   hamtProto.valuesToLazySeq = imapToValuesLazySeq;
+  hamtProto.filter = filter;
   hamtProto.bulkDelete = bulkDeleteIMap;
   hamtProto.mapValues = mapValuesIMap;
   hamtProto.collectValues = collectValuesIMap;

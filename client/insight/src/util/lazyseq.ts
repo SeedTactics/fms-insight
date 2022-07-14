@@ -1,5 +1,5 @@
-import { IMap, HashKey, buildIMap, iterableToIMap, emptyIMap } from "./imap";
-import { ISet } from "./iset";
+import { HashMap, HashKey, buildIMap, iterableToIMap, emptyIMap } from "./imap";
+import { HashSet } from "./iset";
 
 declare global {
   interface Array<T> {
@@ -180,7 +180,7 @@ export class LazySeq<T> {
   distinct(this: LazySeq<T & HashKey>): LazySeq<T> {
     const iter = this.iter;
     return LazySeq.ofIterator(function* () {
-      let s = ISet.empty<T>();
+      let s = HashSet.empty<T>();
       for (const x of iter) {
         if (!s.has(x)) {
           s = s.add(x);
@@ -383,7 +383,7 @@ export class LazySeq<T> {
     return LazySeq.ofIterable(Array.from(this.iter).sort(compare));
   }
 
-  sort(...getKeys: Array<ToPrimitiveOrd<T> | SortByProperty<T>>): LazySeq<T> {
+  sortBy(...getKeys: Array<ToPrimitiveOrd<T> | SortByProperty<T>>): LazySeq<T> {
     return LazySeq.ofIterable(Array.from(this.iter).sort(sortByProp(...getKeys)));
   }
 
@@ -467,8 +467,14 @@ export class LazySeq<T> {
     return Array.from(this.iter).sort(sortByProp(getKey, ...getKeys));
   }
 
-  toIMap<K, S>(f: (x: T) => readonly [K & HashKey, S], merge?: (v1: S, v2: S) => S): IMap<K, S> {
+  toHashMap<K, S>(f: (x: T) => readonly [K & HashKey, S], merge?: (v1: S, v2: S) => S): HashMap<K, S> {
     return iterableToIMap(this.map(f), merge);
+  }
+
+  buildHashMap<K>(key: (x: T) => K & HashKey): HashMap<K & HashKey, T>;
+  buildHashMap<K, S>(key: (x: T) => K & HashKey, val: (old: S | undefined, t: T) => S): HashMap<K & HashKey, S>;
+  buildHashMap<K, S>(key: (x: T) => K & HashKey, val?: (old: S | undefined, t: T) => S): HashMap<K & HashKey, S> {
+    return buildIMap(this.iter, key, val as (old: S | undefined, t: T) => S) as HashMap<K & HashKey, S>;
   }
 
   toMutableMap<K, S>(f: (x: T) => readonly [K & PrimitiveOrd, S], merge?: (v1: S, v2: S) => S): Map<K, S> {
@@ -525,9 +531,9 @@ export class LazySeq<T> {
     return this.toMutableSet(converter);
   }
 
-  toLookup<K>(key: (x: T) => K & HashKey): IMap<K, ReadonlyArray<T>>;
-  toLookup<K, S>(key: (x: T) => K & HashKey, val: (x: T) => S): IMap<K, ReadonlyArray<S>>;
-  toLookup<K, S>(key: (x: T) => K & HashKey, val?: (x: T) => S): IMap<K, ReadonlyArray<T | S>> {
+  toLookup<K>(key: (x: T) => K & HashKey): HashMap<K, ReadonlyArray<T>>;
+  toLookup<K, S>(key: (x: T) => K & HashKey, val: (x: T) => S): HashMap<K, ReadonlyArray<S>>;
+  toLookup<K, S>(key: (x: T) => K & HashKey, val?: (x: T) => S): HashMap<K, ReadonlyArray<T | S>> {
     function merge(old: Array<T | S> | undefined, t: T): Array<T | S> {
       if (old) {
         old.push(val === undefined ? t : val(t));
@@ -539,20 +545,20 @@ export class LazySeq<T> {
     return buildIMap<K, Array<T | S>, T>(this.iter, key, merge);
   }
 
-  toLookupMap<K1, K2>(key1: (x: T) => K1 & HashKey, key2: (x: T) => K2 & HashKey): IMap<K1, IMap<K2, T>>;
+  toLookupMap<K1, K2>(key1: (x: T) => K1 & HashKey, key2: (x: T) => K2 & HashKey): HashMap<K1, HashMap<K2, T>>;
   toLookupMap<K1, K2, S>(
     key1: (x: T) => K1 & HashKey,
     key2: (x: T) => K2 & HashKey,
     val: (x: T) => S,
     mergeVals?: (v1: S, v2: S) => S
-  ): IMap<K1, IMap<K2, S>>;
+  ): HashMap<K1, HashMap<K2, S>>;
   toLookupMap<K1, K2, S>(
     key1: (x: T) => K1 & HashKey,
     key2: (x: T) => K2 & HashKey,
     val?: (x: T) => S,
     mergeVals?: (v1: S, v2: S) => S
-  ): IMap<K1, IMap<K2, T | S>> {
-    function merge(old: IMap<K2, T | S> | undefined, t: T): IMap<K2, T | S> {
+  ): HashMap<K1, HashMap<K2, T | S>> {
+    function merge(old: HashMap<K2, T | S> | undefined, t: T): HashMap<K2, T | S> {
       if (old === undefined) {
         old = emptyIMap<K2, T | S>();
       }
@@ -564,7 +570,7 @@ export class LazySeq<T> {
         return old.modify(key2(t), (oldV) => (oldV === undefined ? val(t) : mergeVals(oldV as S, val(t))));
       }
     }
-    return buildIMap<K1, IMap<K2, T | S>, T>(this.iter, key1, merge);
+    return buildIMap<K1, HashMap<K2, T | S>, T>(this.iter, key1, merge);
   }
 
   toRLookup<K>(key: (x: T) => K): ReadonlyMap<K, ReadonlyArray<T>>;

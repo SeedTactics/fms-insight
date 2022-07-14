@@ -49,8 +49,8 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
-import { IMap } from "../../util/imap";
-import { ISet } from "../../util/iset";
+import { HashMap } from "../../util/imap";
+import { HashSet } from "../../util/iset";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;
@@ -158,8 +158,8 @@ function MaterialStatus(props: MaterialStatusProps) {
 
 interface JobMaterialProps {
   readonly unique: string;
-  readonly matsFromEvents: IMap<number, MaterialSummaryAndCompletedData>;
-  readonly matIdsForJob: IMap<string, ISet<number>>;
+  readonly matsFromEvents: HashMap<number, MaterialSummaryAndCompletedData>;
+  readonly matIdsForJob: HashMap<string, HashSet<number>>;
   readonly fullWidth: boolean;
 }
 
@@ -167,7 +167,7 @@ function JobMaterial(props: JobMaterialProps) {
   const currentMaterial = useRecoilValue(currentStatus).material;
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
-  const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique) ?? ISet.empty<number>())
+  const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique) ?? HashSet.empty<number>())
     .collect((matId) => props.matsFromEvents.get(matId))
     .toRArray();
 
@@ -175,7 +175,7 @@ function JobMaterial(props: JobMaterialProps) {
     return <div />;
   }
 
-  const matsById = LazySeq.ofIterable(currentMaterial).toIMap(
+  const matsById = LazySeq.ofIterable(currentMaterial).toHashMap(
     (m) => [m.materialID, m],
     (m1, _m2) => m1
   );

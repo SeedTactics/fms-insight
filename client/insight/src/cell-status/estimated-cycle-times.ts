@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { differenceInSeconds } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api";
-import { emptyIMap, IMap } from "../util/imap";
+import { emptyIMap, HashMap } from "../util/imap";
 import { LazySeq, PrimitiveOrd } from "../util/lazyseq";
 import { durationToMinutes } from "../util/parseISODuration";
 import { conduit } from "../util/recoil-util";
@@ -76,7 +76,7 @@ export class PartAndStationOperation {
   }
 }
 
-export type EstimatedCycleTimes = IMap<PartAndStationOperation, StatisticalCycleTime>;
+export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCycleTime>;
 
 const last30EstimatedTimesRW = atom<EstimatedCycleTimes>({
   key: "last30Estimatedcycletimes",

@@ -58,11 +58,11 @@ import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status";
 import { last30Jobs } from "../../cell-status/scheduled-jobs";
 import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
-import { IMap } from "../../util/imap";
+import { HashMap } from "../../util/imap";
 
 export interface JobsTableProps {
-  readonly schJobs: IMap<string, Readonly<IHistoricJob>>;
-  readonly matIds: IMap<number, MaterialSummaryAndCompletedData>;
+  readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
+  readonly matIds: HashMap<number, MaterialSummaryAndCompletedData>;
   readonly showInProcCnt: boolean;
   readonly start: Date;
   readonly end: Date;

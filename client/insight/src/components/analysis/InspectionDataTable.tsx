@@ -52,7 +52,7 @@ import { addDays, addHours } from "date-fns";
 import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details";
 import { LazySeq, SortByProperty } from "../../util/lazyseq";
-import { emptyIMap, IMap } from "../../util/imap";
+import { emptyIMap, HashMap } from "../../util/imap";
 
 enum ColumnId {
   Date,
@@ -108,7 +108,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  const [pages, setPages] = React.useState<IMap<string, number>>(emptyIMap());
+  const [pages, setPages] = React.useState<HashMap<string, number>>(emptyIMap());
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [curPath, setCurPathOpen] = React.useState<string | undefined>(undefined);
   const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);

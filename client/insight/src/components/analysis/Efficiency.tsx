@@ -101,7 +101,7 @@ import {
 } from "../../cell-status/estimated-cycle-times";
 import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles";
 import { last30StationCycles, PartCycleData, specificMonthStationCycles } from "../../cell-status/station-cycles";
-import { IMap } from "../../util/imap";
+import { HashMap } from "../../util/imap";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -643,7 +643,7 @@ function PalletCycleChart() {
               )}
               {palletCycles
                 .keysToLazySeq()
-                .sort((x) => x)
+                .sortBy((x) => x)
                 .map((n) => (
                   <MenuItem key={n} value={n}>
                     <div style={{ display: "flex", alignItems: "center" }}>
@@ -712,7 +712,7 @@ function BufferOccupancyChart() {
 
 type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
 
-function dayAndStatToHeatmapPoints(pts: IMap<DayAndStation, number>) {
+function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
   return LazySeq.ofIterable(pts)
     .map(([dayAndStat, val]) => {
       const pct = val / (24 * 60);
@@ -771,7 +771,7 @@ type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
 function partsCompletedPoints(
   partCycles: Iterable<PartCycleData>,
-  matsById: IMap<number, MaterialSummaryAndCompletedData>,
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
   end: Date
 ) {

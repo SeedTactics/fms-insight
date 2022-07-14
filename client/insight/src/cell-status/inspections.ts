@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, IMaterialProcessActualPath, LogType, MaterialProcessActualPath } from "../network/api";
-import { emptyIMap, IMap, unionMaps } from "../util/imap";
+import { emptyIMap, HashMap, unionMaps } from "../util/imap";
 import { LazySeq } from "../util/lazyseq";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
@@ -70,7 +70,7 @@ export interface InspectionLogEntry {
   readonly inspType: string;
 }
 
-export type InspectionLogsByCntr = IMap<number, InspectionLogEntry>;
+export type InspectionLogsByCntr = HashMap<number, InspectionLogEntry>;
 
 export class PartAndInspType {
   public constructor(public readonly part: string, public readonly inspType: string) {}
@@ -85,7 +85,7 @@ export class PartAndInspType {
   }
 }
 
-export type InspectionsByPartAndType = IMap<PartAndInspType, InspectionLogsByCntr>;
+export type InspectionsByPartAndType = HashMap<PartAndInspType, InspectionLogsByCntr>;
 
 const last30InspectionsRW = atom<InspectionsByPartAndType>({
   key: "last30Inspections",
@@ -217,7 +217,7 @@ export const updateLast30Inspections = conduit<ServerEventAndTime>(
         if (expire) {
           const expireD = addDays(now, -30);
           parts = parts.collectValues((entries) => {
-            const newEntries = entries.bulkDelete((_, e) => e.time < expireD);
+            const newEntries = entries.filter((e) => e.time >= expireD);
             if (newEntries.size === 0) {
               return null;
             } else {

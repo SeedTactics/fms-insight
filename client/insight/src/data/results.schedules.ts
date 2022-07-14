@@ -35,7 +35,7 @@ import { LazySeq } from "../util/lazyseq";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import { ICurrentStatus, IHistoricJob, IActiveJob } from "../network/api";
 import copy from "copy-to-clipboard";
-import { IMap } from "../util/imap";
+import { HashMap } from "../util/imap";
 
 export interface ScheduledJobDisplay {
   readonly historicJob: Readonly<IHistoricJob>;
@@ -54,8 +54,8 @@ type WritableScheduledJob = { -readonly [K in keyof ScheduledJobDisplay]: Schedu
 export function buildScheduledJobs(
   start: Date,
   end: Date,
-  matIds: IMap<number, MaterialSummaryAndCompletedData>,
-  schJobs: IMap<string, Readonly<IHistoricJob>>,
+  matIds: HashMap<number, MaterialSummaryAndCompletedData>,
+  schJobs: HashMap<string, Readonly<IHistoricJob>>,
   currentSt: Readonly<ICurrentStatus>
 ): ReadonlyArray<ScheduledJobDisplay> {
   const completedMats = LazySeq.ofIterable(matIds)

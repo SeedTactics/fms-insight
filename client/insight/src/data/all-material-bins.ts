@@ -193,7 +193,7 @@ export function selectAllMaterialIntoBins(
   if (bins.indexOf(LoadStationBinId) < 0) {
     bins.unshift(LoadStationBinId);
   }
-  for (const queue of quarantineQueues.toLazySeq().sort((x) => x)) {
+  for (const queue of quarantineQueues.toLazySeq().sortBy((x) => x)) {
     if (bins.indexOf(queue) < 0) {
       bins.push(queue);
     }

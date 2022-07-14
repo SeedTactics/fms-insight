@@ -42,7 +42,7 @@ import {
   last30EstimatedCycleTimes,
   PartAndStationOperation,
 } from "./estimated-cycle-times";
-import { emptyIMap, IMap } from "../util/imap";
+import { emptyIMap, HashMap } from "../util/imap";
 
 export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
@@ -52,7 +52,7 @@ export interface ProgramToolUseInSingleCycle {
   }>;
 }
 
-export type ToolUsage = IMap<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>;
+export type ToolUsage = HashMap<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>;
 
 const last30ToolUseRW = atom<ToolUsage>({
   key: "last30ToolUse",

@@ -36,22 +36,22 @@ import { addDays } from "date-fns";
 import { conduit } from "../util/recoil-util";
 import type { ServerEventAndTime } from "./loading";
 import { IHistoricData, IHistoricJob } from "../network/api";
-import { emptyIMap, IMap, iterableToIMap } from "../util/imap";
+import { emptyIMap, HashMap } from "../util/imap";
 
-const last30JobsRW = atom<IMap<string, Readonly<IHistoricJob>>>({
+const last30JobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "last30Jobs",
   default: emptyIMap(),
 });
-export const last30Jobs: RecoilValueReadOnly<IMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
+export const last30Jobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
 
-const specificMonthJobsRW = atom<IMap<string, Readonly<IHistoricJob>>>({
+const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "specificMonthJobs",
   default: emptyIMap(),
 });
-export const specificMonthJobs: RecoilValueReadOnly<IMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
+export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
 
 export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-  t.set(last30JobsRW, (oldJobs) => oldJobs.union(iterableToIMap(LazySeq.ofObject(history.jobs))));
+  t.set(last30JobsRW, (oldJobs) => oldJobs.union(LazySeq.ofObject(history.jobs).toHashMap((x) => x)));
 });
 
 export const updateLast30Jobs = conduit<ServerEventAndTime>(
@@ -61,10 +61,10 @@ export const updateLast30Jobs = conduit<ServerEventAndTime>(
       t.set(last30JobsRW, (oldJobs) => {
         if (expire) {
           const expire = addDays(now, -30);
-          oldJobs = oldJobs.bulkDelete((_, j) => j.routeStartUTC < expire);
+          oldJobs = oldJobs.filter((j) => j.routeStartUTC >= expire);
         }
 
-        return oldJobs.union(newJobs.toIMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
+        return oldJobs.union(newJobs.toHashMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
       });
     }
   }
@@ -73,7 +73,7 @@ export const updateLast30Jobs = conduit<ServerEventAndTime>(
 export const updateSpecificMonthJobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
   t.set(
     specificMonthJobsRW,
-    LazySeq.ofObject(history.jobs).toIMap((x) => x)
+    LazySeq.ofObject(history.jobs).toHashMap((x) => x)
   );
 });
 

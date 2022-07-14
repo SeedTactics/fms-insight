@@ -89,7 +89,7 @@ export const SelectInspTypeDialog = React.memo(function SelectInspTypeDialog() {
   const [forceInsp] = matDetails.useForceInspection();
   const [dialogOpen, setDialogOpen] = useRecoilState(selectInspTypeDialogOpen);
   const inspTypes = useRecoilValue(last30InspectionTypes);
-  const sortedInspTypes = LazySeq.ofIterable(inspTypes).sort((x) => x);
+  const sortedInspTypes = LazySeq.ofIterable(inspTypes).sortBy((x) => x);
 
   let body: JSX.Element | undefined;
 

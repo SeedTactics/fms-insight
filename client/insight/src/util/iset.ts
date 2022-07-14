@@ -1,19 +1,15 @@
-import { emptyIMap, HashKey, IMap, iterableToIMap } from "./imap";
+import { emptyIMap, HashKey, HashMap } from "./imap";
 import { LazySeq } from "./lazyseq";
 
-export class ISet<T> {
-  #imap: IMap<T, number>;
+export class HashSet<T> {
+  #imap: HashMap<T, number>;
 
-  private constructor(imap: IMap<T, number>) {
+  private constructor(imap: HashMap<T, number>) {
     this.#imap = imap;
   }
 
-  public static empty<T>(): ISet<T> {
-    return new ISet<T>(emptyIMap<T, number>());
-  }
-
-  public static fromIterable<T>(items: Iterable<T & HashKey>): ISet<T> {
-    return new ISet<T>(iterableToIMap(LazySeq.ofIterable(items).map((i) => [i, 1])));
+  public static empty<T>(): HashSet<T> {
+    return new HashSet<T>(emptyIMap<T, number>());
   }
 
   public has(item: T & HashKey): boolean {
@@ -24,12 +20,12 @@ export class ISet<T> {
     return this.#imap.size;
   }
 
-  public add(item: T & HashKey): ISet<T> {
-    return new ISet<T>(this.#imap.set(item, 1));
+  public add(item: T & HashKey): HashSet<T> {
+    return new HashSet<T>(this.#imap.set(item, 1));
   }
 
-  public delete(item: T & HashKey): ISet<T> {
-    return new ISet<T>(this.#imap.delete(item));
+  public delete(item: T & HashKey): HashSet<T> {
+    return new HashSet<T>(this.#imap.delete(item));
   }
 
   [Symbol.iterator](): Iterator<T> {

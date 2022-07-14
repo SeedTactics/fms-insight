@@ -78,7 +78,7 @@ it("bins actual cycles by day", () => {
   const minOffset = differenceInMinutes(nowChicago, now);
   byDayAndPart = byDayAndPart
     .toLazySeq()
-    .toIMap(([dayAndPart, val]) => [dayAndPart.adjustDay((d) => addMinutes(d, minOffset)), val]);
+    .toHashMap(([dayAndPart, val]) => [dayAndPart.adjustDay((d) => addMinutes(d, minOffset)), val]);
 
   expect(toRawJs(byDayAndPart)).toMatchSnapshot("cycles binned by day and part");
 });
