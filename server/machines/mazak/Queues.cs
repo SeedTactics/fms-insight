@@ -444,13 +444,26 @@ namespace MazakMachineInterface
       }
     }
 
+    private static int FindNextProcess(IRepository log, long matId)
+    {
+      var matLog = log.GetLogForMaterial(matId);
+      var lastProc =
+        matLog
+        .SelectMany(e => e.Material)
+        .Where(m => m.MaterialID == matId)
+        .Select(m => m.Process)
+        .DefaultIfEmpty(0)
+        .Max();
+      return lastProc + 1;
+    }
+
     public static List<QueuedMaterial> QueuedMaterialForLoading(string jobUniq, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
     {
       var mats = new List<QueuedMaterial>();
       foreach (var m in materialToSearch)
       {
         if (m.Unique != jobUniq) continue;
-        if ((log.NextProcessForQueuedMaterial(m.MaterialID) ?? 1) != proc) continue;
+        if (FindNextProcess(log, m.MaterialID) != proc) continue;
         mats.Add(m);
       }
       return mats;
