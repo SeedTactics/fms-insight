@@ -31,22 +31,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { fakeCycle } from "../../test/events.fake";
+import { fakeCycle } from "../../test/events.fake.js";
 import { Snapshot, snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util";
-import { lastEventCounter, onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading";
+import { applyConduitToSnapshot } from "../util/recoil-util.js";
+import { lastEventCounter, onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading.js";
 import { addDays } from "date-fns";
-import { last30BufferEntries, specificMonthBufferEntries } from "./buffers";
-import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "./estimated-cycle-times";
-import { last30Inspections, specificMonthInspections } from "./inspections";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "./material-summary";
-import { last30PalletCycles, specificMonthPalletCycles } from "./pallet-cycles";
-import { last30StationCycles, specificMonthStationCycles } from "./station-cycles";
-import { last30ToolUse } from "./tool-usage";
-import { LogEntry } from "../network/api";
+import { last30BufferEntries, specificMonthBufferEntries } from "./buffers.js";
+import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "./estimated-cycle-times.js";
+import { last30Inspections, specificMonthInspections } from "./inspections.js";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "./material-summary.js";
+import { last30PalletCycles, specificMonthPalletCycles } from "./pallet-cycles.js";
+import { last30StationCycles, specificMonthStationCycles } from "./station-cycles.js";
+import { last30ToolUse } from "./tool-usage.js";
+import { LogEntry } from "../network/api.js";
 import { it, expect } from "vitest";
 
-import { toRawJs } from "../../test/to-raw-js";
+import { toRawJs } from "../../test/to-raw-js.js";
 
 function checkLast30(snapshot: Snapshot, msg: string) {
   expect(toRawJs(snapshot.getLoadable(last30BufferEntries).valueOrThrow())).toMatchSnapshot(msg + " - buffers");

@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "../network/api";
-import { LazySeq } from "../util/lazyseq";
+import * as api from "../network/api.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { atom } from "recoil";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
@@ -193,7 +193,7 @@ export function selectAllMaterialIntoBins(
   if (bins.indexOf(LoadStationBinId) < 0) {
     bins.unshift(LoadStationBinId);
   }
-  for (const queue of quarantineQueues.toLazySeq().sortBy((x) => x)) {
+  for (const queue of LazySeq.ofIterable(quarantineQueues).sortBy((x) => x)) {
     if (bins.indexOf(queue) < 0) {
       bins.push(queue);
     }

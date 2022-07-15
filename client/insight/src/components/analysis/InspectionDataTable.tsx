@@ -35,7 +35,7 @@ import { Table } from "@mui/material";
 import { Accordion } from "@mui/material";
 import { AccordionDetails } from "@mui/material";
 import { AccordionSummary } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 
 import {
   Column,
@@ -44,15 +44,14 @@ import {
   DataTableBody,
   DataTableActionZoom,
   DataTableActionZoomType,
-} from "./DataTable";
-import { InspectionLogEntry } from "../../cell-status/inspections";
+} from "./DataTable.js";
+import { InspectionLogEntry } from "../../cell-status/inspections.js";
 import { Typography } from "@mui/material";
-import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection";
+import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection.js";
 import { addDays, addHours } from "date-fns";
 import { useSetRecoilState } from "recoil";
-import { materialToShowInDialog } from "../../cell-status/material-details";
-import { LazySeq, SortByProperty } from "../../util/lazyseq";
-import { emptyIMap, HashMap } from "../../util/imap";
+import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { LazySeq, HashMap, ToComparable } from "@seedtactics/immutable-collections";
 
 enum ColumnId {
   Date,
@@ -108,7 +107,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
   const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  const [pages, setPages] = React.useState<HashMap<string, number>>(emptyIMap());
+  const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [curPath, setCurPathOpen] = React.useState<string | undefined>(undefined);
   const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
@@ -122,7 +121,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
     }
   }
 
-  let sortOn: SortByProperty<TriggeredInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
+  let sortOn: ToComparable<TriggeredInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
   for (const col of columns) {
     if (col.id === orderBy && order === "asc") {
       sortOn = { asc: col.getForSort ?? col.getDisplay };
@@ -193,8 +192,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   />
                   <DataTableBody
                     columns={columns}
-                    pageData={points.material
-                      .toLazySeq()
+                    pageData={LazySeq.ofIterable(points.material)
                       .drop(page * rowsPerPage)
                       .take(rowsPerPage)}
                     onClickDetails={

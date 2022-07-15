@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { addDays, addMonths, startOfToday } from "date-fns";
 import * as React from "react";
 import { useRecoilValue } from "recoil";
-import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs";
-import { JobsTable } from "../operations/CompletedParts";
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
-import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
+import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
+import { JobsTable } from "../operations/CompletedParts.js";
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 
 function ConnectedSchedules() {
   const period = useRecoilValue(selectedAnalysisPeriod);

@@ -31,11 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { LazySeq } from "../util/lazyseq";
-import * as api from "../network/api";
+import * as api from "../network/api.js";
 import { format, differenceInSeconds } from "date-fns";
-import { durationToMinutes } from "../util/parseISODuration";
-import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
+import { durationToMinutes } from "../util/parseISODuration.js";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
 import {
   chunkCyclesWithSimilarEndTime,
@@ -43,11 +42,10 @@ import {
   isOutlier,
   PartAndStationOperation,
   splitElapsedTimeAmongChunk,
-} from "../cell-status/estimated-cycle-times";
-import { PartCycleData, splitElapsedLoadTimeAmongCycles, stat_name_and_num } from "../cell-status/station-cycles";
-import { PalletCyclesByPallet } from "../cell-status/pallet-cycles";
-import { emptyIMap, HashMap } from "../util/imap";
-import { HashSet } from "../util/iset";
+} from "../cell-status/estimated-cycle-times.js";
+import { PartCycleData, splitElapsedLoadTimeAmongCycles, stat_name_and_num } from "../cell-status/station-cycles.js";
+import { PalletCyclesByPallet } from "../cell-status/pallet-cycles.js";
+import { HashSet, HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 export interface PartAndProcess {
   readonly part: string;
@@ -70,7 +68,7 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
   const palNames = new Set<string>();
   const lulNames = new Set<string>();
   const mcNames = new Set<string>();
-  let partNames = emptyIMap<string, HashSet<number>>();
+  let partNames = HashMap.empty<string, HashSet<number>>();
   let oper = HashSet.empty<PartAndStationOperation>();
 
   for (const c of cycles) {
@@ -167,7 +165,7 @@ export function filterStationCycles(
           return false;
         }
 
-        if (operation && !operation.equals(cycleToPartAndOp(e))) {
+        if (operation && operation.compare(cycleToPartAndOp(e)) !== 0) {
           return false;
         }
 
@@ -225,8 +223,7 @@ export function loadOccupancyCycles(
         ([statNameAndNum, cyclesForStat]) =>
           [
             statNameAndNum,
-            cyclesForStat
-              .toLazySeq()
+            LazySeq.ofIterable(cyclesForStat)
               .collect((chunk) => {
                 const cycle = chunk.find((e) => {
                   if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
@@ -295,8 +292,7 @@ export function estimateLulOperations(
         ([statNameAndNum, cyclesForStat]) =>
           [
             statNameAndNum,
-            cyclesForStat
-              .toLazySeq()
+            LazySeq.ofIterable(cyclesForStat)
               .collect((chunk) => {
                 const split = splitElapsedTimeAmongChunk(
                   chunk,
@@ -307,7 +303,7 @@ export function estimateLulOperations(
                   if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
                     return false;
                   }
-                  if (!operation.equals(cycleToPartAndOp(e.cycle))) {
+                  if (operation.compare(cycleToPartAndOp(e.cycle)) !== 0) {
                     return false;
                   }
                   if (pallet && e.cycle.pallet !== pallet) {
@@ -450,7 +446,7 @@ export function format_cycle_inspection(
     }
   }
 
-  for (const name of signaled.toLazySeq().toSortedArray((x) => x)) {
+  for (const name of LazySeq.ofIterable(signaled).toSortedArray((x) => x)) {
     if (completed.has(name)) {
       ret.push(name + "[" + (success.has(name) ? "success" : "failed") + "]");
     } else {

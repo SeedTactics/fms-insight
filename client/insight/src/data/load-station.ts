@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "../network/api";
-import { LazySeq, sortByProp } from "../util/lazyseq";
+import * as api from "../network/api.js";
+import { LazySeq, mkCompareByProperties } from "@seedtactics/immutable-collections";
 
 export interface PalletData {
   pallet: api.IPalletStatus;
@@ -205,8 +205,8 @@ export function selectLoadStationAndQueueProps(
     .flatMap(([_, j]) => j.procsAndPaths[0]?.paths ?? [])
     .allMatch((p) => !!p.inputQueue && p.inputQueue !== "");
 
-  byFace.forEach((face) => face.sort(sortByProp((m) => m.location.queuePosition ?? 0)));
-  queueMat.forEach((mats) => mats.sort(sortByProp((m) => m.location.queuePosition ?? 0)));
+  byFace.forEach((face) => face.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
+  queueMat.forEach((mats) => mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
 
   return {
     loadNum,

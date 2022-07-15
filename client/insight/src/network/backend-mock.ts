@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { addSeconds } from "date-fns";
-import * as api from "./api";
-import { registerBackend } from "./backend";
-import { LazySeq, sortByProp } from "../util/lazyseq";
+import * as api from "./api.js";
+import { registerBackend } from "./backend.js";
+import { LazySeq, mkCompareByProperties } from "@seedtactics/immutable-collections";
 
 export type MockEvents = ReadonlyArray<object /* ILogEntry json */>;
 
@@ -146,7 +146,7 @@ async function loadEventsJson(
     })
     .toMutableArray()
     .sort(
-      sortByProp(
+      mkCompareByProperties(
         (e) => e.endUTC.getTime(),
         (e) => e.counter
       )

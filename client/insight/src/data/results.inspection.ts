@@ -30,11 +30,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as api from "../network/api";
-import { InspectionLogEntry, InspectionLogResultType } from "../cell-status/inspections";
-import { LazySeq, SortByProperty } from "../util/lazyseq";
+import * as api from "../network/api.js";
+import { InspectionLogEntry, InspectionLogResultType } from "../cell-status/inspections.js";
+import { LazySeq, mkCompareByProperties, ToComparable } from "@seedtactics/immutable-collections";
 import { format } from "date-fns";
-import { MaterialDetail } from "../cell-status/material-details";
+import { MaterialDetail } from "../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 
 export interface TriggeredInspectionEntry {
@@ -66,7 +66,7 @@ export interface InspectionsForPath {
 export function groupInspectionsByPath(
   entries: Iterable<InspectionLogEntry>,
   dateRange: { start: Date; end: Date } | undefined,
-  sortOn: SortByProperty<TriggeredInspectionEntry>
+  sortOn: ToComparable<TriggeredInspectionEntry>
 ): ReadonlyMap<string, InspectionsForPath> {
   const failed = LazySeq.ofIterable(entries)
     .collect((e) => {
@@ -99,16 +99,18 @@ export function groupInspectionsByPath(
           return null;
       }
     })
-    .groupBy((e) => e.path, sortOn, { asc: (e) => e.time.getTime() })
-    .toRMap(([path, mats]) => {
-      return [
-        path,
-        {
-          material: mats,
-          failedCnt: mats.reduce((acc, e) => acc + (e.failed ? 1 : 0), 0),
-        },
-      ];
-    });
+    .buildHashMap<string, Array<TriggeredInspectionEntry>>(
+      (e) => e.path,
+      (old, e) => {
+        const a = old ?? [];
+        a.push(e);
+        return a;
+      }
+    )
+    .mapValues((mats) => ({
+      material: mats.sort(mkCompareByProperties(sortOn, (e) => e.time.getTime())),
+      failedCnt: mats.reduce((acc, e) => acc + (e.failed ? 1 : 0), 0),
+    }));
 }
 
 export interface FailedInspectionEntry {

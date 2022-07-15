@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { JobsBackend } from "../network/backend";
+import { JobsBackend } from "../network/backend.js";
 import {
   InProcessMaterial,
   ICurrentStatus,
@@ -39,11 +39,11 @@ import {
   LogType,
   LocType,
   ActiveJob,
-} from "../network/api";
+} from "../network/api.js";
 import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
-import { last30JobComment } from "./scheduled-jobs";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
+import { last30JobComment } from "./scheduled-jobs.js";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
 
 const currentStatusRW = atom<Readonly<ICurrentStatus>>({
   key: "current-status",

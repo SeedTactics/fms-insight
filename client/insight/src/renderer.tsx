@@ -47,7 +47,7 @@ import { Router } from "wouter";
 import { enableMapSet } from "immer";
 enableMapSet();
 
-import App, { AppProps } from "./components/App";
+import App, { AppProps } from "./components/App.js";
 
 export function render(appProps: AppProps | null, elem: HTMLElement | null): void {
   const theme = createTheme({

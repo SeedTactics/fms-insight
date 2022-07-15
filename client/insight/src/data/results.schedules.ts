@@ -31,11 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { LazySeq } from "../util/lazyseq";
-import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
-import { ICurrentStatus, IHistoricJob, IActiveJob } from "../network/api";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
+import { ICurrentStatus, IHistoricJob, IActiveJob } from "../network/api.js";
 import copy from "copy-to-clipboard";
-import { HashMap } from "../util/imap";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 export interface ScheduledJobDisplay {
   readonly historicJob: Readonly<IHistoricJob>;
@@ -87,7 +86,7 @@ export function buildScheduledJobs(
         inProcJob: null,
         casting: casting ?? "",
         scheduledQty: job.cycles ?? 0,
-        decrementedQty: LazySeq.ofIterable(job.decrements || []).sumOn((d) => d.quantity),
+        decrementedQty: LazySeq.ofIterable(job.decrements || []).sumBy((d) => d.quantity),
         completedQty: completedMats.get(uniq)?.get(job.procsAndPaths.length) ?? 0,
         inProcessQty: 0,
         darkRow: false,
@@ -109,7 +108,7 @@ export function buildScheduledJobs(
     const job = result.get(uniq);
     if (job) {
       const plannedQty = curJob.cycles ?? 0;
-      const completedQty = LazySeq.ofIterable(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumOn((c) => c);
+      const completedQty = LazySeq.ofIterable(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c);
       job.remainingQty = plannedQty - job.inProcessQty - completedQty;
       job.inProcJob = curJob;
       if (plannedQty < job.scheduledQty) {

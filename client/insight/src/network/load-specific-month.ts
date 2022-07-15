@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { addMonths, startOfMonth } from "date-fns";
 import { atom, RecoilState, RecoilValueReadOnly, selector, useRecoilCallback, useSetRecoilState } from "recoil";
-import { onLoadSpecificMonthJobs, onLoadSpecificMonthLog } from "../cell-status/loading";
-import { JobsBackend, LogBackend } from "./backend";
-import { RecoilConduit } from "../util/recoil-util";
+import { onLoadSpecificMonthJobs, onLoadSpecificMonthLog } from "../cell-status/loading.js";
+import { JobsBackend, LogBackend } from "./backend.js";
+import { RecoilConduit } from "../util/recoil-util.js";
 
 const selectType = atom<"Last30" | "SpecificMonth">({
   key: "analysisSelectType",

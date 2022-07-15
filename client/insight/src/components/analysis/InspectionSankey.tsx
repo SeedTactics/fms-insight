@@ -32,18 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Box } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import ImportExport from "@mui/icons-material/ImportExport";
+import { Search as SearchIcon, ImportExport } from "@mui/icons-material";
 import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
 
-import { PartIdenticon } from "../station-monitor/Material";
-import { SankeyNode, inspectionDataToSankey, SankeyLink } from "../../data/inspection-sankey";
+import { PartIdenticon } from "../station-monitor/Material.js";
+import { SankeyNode, inspectionDataToSankey, SankeyLink } from "../../data/inspection-sankey.js";
 
-import { PartAndInspType, InspectionLogEntry, InspectionsByPartAndType } from "../../cell-status/inspections";
-import InspectionDataTable from "./InspectionDataTable";
-import { copyInspectionEntriesToClipboard } from "../../data/results.inspection";
-import { DataTableActionZoomType } from "./DataTable";
-import { useIsDemo } from "../routes";
+import { PartAndInspType, InspectionLogEntry, InspectionsByPartAndType } from "../../cell-status/inspections.js";
+import InspectionDataTable from "./InspectionDataTable.js";
+import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
+import { DataTableActionZoomType } from "./DataTable.js";
+import { useIsDemo } from "../routes.js";
 import { Group } from "@visx/group";
 import { green, grey } from "@mui/material/colors";
 import { useTooltip, Tooltip as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";

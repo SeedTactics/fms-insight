@@ -30,14 +30,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { LazySeq } from "../util/lazyseq";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { IEditMaterialInLogEvents, IInProcessMaterial, ILogEntry, LogType } from "../network/api";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
+import { IEditMaterialInLogEvents, IInProcessMaterial, ILogEntry, LogType } from "../network/api.js";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
 import { addDays } from "date-fns";
-import { emptyIMap, HashMap } from "../util/imap";
-import { HashSet } from "../util/iset";
+import { HashMap, LazySeq, HashSet } from "@seedtactics/immutable-collections";
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -72,8 +70,8 @@ export interface MatSummaryState {
 const last30MaterialSummaryRW = atom<MatSummaryState>({
   key: "last30-material-summary",
   default: {
-    matsById: emptyIMap(),
-    matIdsForJob: emptyIMap(),
+    matsById: HashMap.empty(),
+    matIdsForJob: HashMap.empty(),
   },
 });
 export const last30MaterialSummary: RecoilValueReadOnly<MatSummaryState> = last30MaterialSummaryRW;
@@ -81,8 +79,8 @@ export const last30MaterialSummary: RecoilValueReadOnly<MatSummaryState> = last3
 const specificMonthMaterialSummaryRW = atom<MatSummaryState>({
   key: "month-material-summary",
   default: {
-    matsById: emptyIMap(),
-    matIdsForJob: emptyIMap(),
+    matsById: HashMap.empty(),
+    matIdsForJob: HashMap.empty(),
   },
 });
 export const specificMonthMaterialSummary: RecoilValueReadOnly<MatSummaryState> = specificMonthMaterialSummaryRW;
@@ -354,8 +352,8 @@ export const setSpecificMonthMatSummary = conduit<ReadonlyArray<Readonly<ILogEnt
     t.set(
       specificMonthMaterialSummaryRW,
       log.reduce<MatSummaryState>(process_event, {
-        matsById: emptyIMap(),
-        matIdsForJob: emptyIMap(),
+        matsById: HashMap.empty(),
+        matIdsForJob: HashMap.empty(),
       })
     );
   }

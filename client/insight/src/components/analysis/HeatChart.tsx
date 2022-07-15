@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { addDays, format } from "date-fns";
 import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Stack } from "@mui/material";
-import ImportExport from "@mui/icons-material/ImportExport";
+import { ImportExport } from "@mui/icons-material";
 import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
 import { ParentSize } from "@visx/responsive";
 
-import { LazySeq } from "../../util/lazyseq";
-import { chartTheme } from "../../util/chart-colors";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { chartTheme } from "../../util/chart-colors.js";
 import { Axis } from "@visx/axis";
 import { Group } from "@visx/group";
 import { useTooltip, Tooltip as VisxTooltip } from "@visx/tooltip";
@@ -135,7 +135,7 @@ function useScales({
         range: [color1, color2],
       });
     } else {
-      const maxCnt = LazySeq.ofIterable(points).maxOn((pt) => pt.color)?.color ?? 1;
+      const maxCnt = LazySeq.ofIterable(points).maxBy((pt) => pt.color)?.color ?? 1;
       colorScale = scaleLinear({
         domain: [0, maxCnt],
         range: [color1, color2],

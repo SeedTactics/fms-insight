@@ -33,16 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { addHours, differenceInMinutes, addMinutes } from "date-fns";
 
-import { fakeCycle, fakeMaterial } from "../../test/events.fake";
-import { ILogEntry, LogType } from "../network/api";
-import { LazySeq } from "../util/lazyseq";
-import { binActiveCyclesByDayAndStat, binOccupiedCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee";
+import { fakeCycle, fakeMaterial } from "../../test/events.fake.js";
+import { ILogEntry, LogType } from "../network/api.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { binActiveCyclesByDayAndStat, binOccupiedCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee.js";
 import { snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util";
-import { onLoadLast30Log } from "../cell-status/loading";
-import { last30StationCycles } from "../cell-status/station-cycles";
+import { applyConduitToSnapshot } from "../util/recoil-util.js";
+import { onLoadLast30Log } from "../cell-status/loading.js";
+import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js";
+import { toRawJs } from "../../test/to-raw-js.js";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time

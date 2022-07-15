@@ -44,11 +44,11 @@ import {
   Stack,
   Box,
 } from "@mui/material";
-import ZoomIn from "@mui/icons-material/ZoomIn";
-import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times";
-import { chartTheme, seriesColor } from "../../util/chart-colors";
+import { ZoomIn } from "@mui/icons-material";
+import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times.js";
+import { chartTheme, seriesColor } from "../../util/chart-colors.js";
 import { grey } from "@mui/material/colors";
-import { useImmer } from "../../util/recoil-util";
+import { useImmer } from "../../util/recoil-util.js";
 import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { Group } from "@visx/group";
@@ -56,6 +56,7 @@ import { useTooltip, TooltipWithBounds as VisxTooltip, defaultStyles as defaultT
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
 import { useSpring, useSprings, animated } from "react-spring";
 import { ParentSize } from "@visx/responsive";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 export interface CycleChartPoint {
   readonly cntr: number;
@@ -100,8 +101,7 @@ interface DataToPlot {
 function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): DataToPlot {
   const series = React.useMemo(() => {
     return (
-      points
-        .toLazySeq()
+      LazySeq.ofIterable(points)
         // need to sort first so the color indices are correct
         .toSortedArray(([k]) => k)
         .map(([seriesName, seriesPoints], idx) => ({
@@ -177,10 +177,9 @@ function useScales({
   const maxYVal = React.useMemo(() => {
     if (points.size === 0) return 60;
     const m =
-      points
-        .toLazySeq()
+      LazySeq.ofIterable(points)
         .flatMap(([, pts]) => pts.map((p) => p.y))
-        .maxOn((y) => y) ?? 1;
+        .maxBy((y) => y) ?? 1;
     // round up to nearest 5
     return Math.ceil(m / 5) * 5;
   }, [points]);

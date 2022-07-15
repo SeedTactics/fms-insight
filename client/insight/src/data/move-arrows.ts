@@ -31,9 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "../network/api";
-import { HashMap } from "../util/imap";
-import {} from "../util/lazyseq";
+import * as api from "../network/api.js";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 export class MoveMaterialIdentifier {
   public static allocateNodeId: () => MoveMaterialIdentifier = (function () {
@@ -44,11 +43,11 @@ export class MoveMaterialIdentifier {
     };
   })();
 
-  equals(other: MoveMaterialIdentifier): boolean {
-    return this.cntr === other.cntr;
+  compare(other: MoveMaterialIdentifier): number {
+    return this.cntr - other.cntr;
   }
-  hashPrimitives(): readonly [number] {
-    return [this.cntr];
+  hash(): number {
+    return this.cntr;
   }
   toString(): string {
     return "MoveMaterialId-" + this.cntr.toString();
@@ -164,7 +163,7 @@ export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): R
   const queueDestUsed = new Map<string, number>();
   let lastFreeUsed = 0;
 
-  for (const [rect, mat] of byKind.material.toLazySeq().sortBy(
+  for (const [rect, mat] of LazySeq.ofIterable(byKind.material).sortBy(
     ([rect]) => rect.left,
     ([rect]) => rect.top
   )) {

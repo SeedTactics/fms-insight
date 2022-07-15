@@ -32,11 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { addMonths, getDaysInMonth, addDays } from "date-fns";
-import { LazySeq } from "../util/lazyseq";
-import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
-import { PartCycleData } from "../cell-status/station-cycles";
-import { HashMap } from "../util/imap";
+import { PartCycleData } from "../cell-status/station-cycles.js";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 export interface PartCost {
   readonly part: string;

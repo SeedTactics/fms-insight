@@ -38,32 +38,34 @@ import { TableRow } from "@mui/material";
 import { TableSortLabel } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import FirstPageIcon from "@mui/icons-material/FirstPage";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import LastPageIcon from "@mui/icons-material/LastPage";
 import { Toolbar } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Select } from "@mui/material";
-import ZoomOutIcon from "@mui/icons-material/ZoomOut";
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import { InputBase } from "@mui/material";
-import SkipPrevIcon from "@mui/icons-material/SkipPrevious";
-import SkipNextIcon from "@mui/icons-material/SkipNext";
 import { MenuItem } from "@mui/material";
 import { Button } from "@mui/material";
-import MoreHoriz from "@mui/icons-material/MoreHoriz";
 import Calendar from "react-calendar";
+import {
+  MoreHoriz,
+  FirstPage as FirstPageIcon,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+  LastPage as LastPageIcon,
+  ZoomOut as ZoomOutIcon,
+  ZoomIn as ZoomInIcon,
+  SkipPrevious as SkipPrevIcon,
+  SkipNext as SkipNextIcon,
+} from "@mui/icons-material";
 
 import { addDays } from "date-fns";
-import { LazySeq, ToPrimitiveOrd } from "../../util/lazyseq";
+import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 
 export interface Column<Id, Row> {
   readonly id: Id;
   readonly numeric: boolean;
   readonly label: string;
   readonly getDisplay: (c: Row) => string;
-  readonly getForSort?: ToPrimitiveOrd<Row>;
+  readonly getForSort?: ToComparableBase<Row>;
 }
 
 export interface DataTableHeadProps<Id, Row> {

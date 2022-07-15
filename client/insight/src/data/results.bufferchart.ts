@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BufferEntry } from "../cell-status/buffers";
-import { LazySeq } from "../util/lazyseq";
+import { BufferEntry } from "../cell-status/buffers.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 export interface BufferChartPoint {
   readonly x: Date;

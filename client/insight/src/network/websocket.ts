@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import ReconnectingWebSocket from "reconnecting-websocket";
-import { ServerEvent } from "./api";
-import { BackendHost, JobsBackend, LogBackend } from "./backend";
-import { fmsInformation } from "./server-settings";
+import { default as ReconnectingWebSocket } from "reconnecting-websocket";
+import { ServerEvent } from "./api.js";
+import { BackendHost, JobsBackend, LogBackend } from "./backend.js";
+import { fmsInformation } from "./server-settings.js";
 import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback, useRecoilValueLoadable } from "recoil";
 import { useEffect, useRef } from "react";
 import {
@@ -43,9 +43,9 @@ import {
   onLoadLast30Jobs,
   onLoadLast30Log,
   onServerEvent,
-} from "../cell-status/loading";
+} from "../cell-status/loading.js";
 import { addDays } from "date-fns";
-import { RecoilConduit } from "../util/recoil-util";
+import { RecoilConduit } from "../util/recoil-util.js";
 
 const websocketReconnectingAtom = atom<boolean>({
   key: "websocket-reconnecting",

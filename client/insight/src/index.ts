@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { render } from "./renderer";
-import { RouteLocation } from "./components/routes";
-import { registerBackupViewerBackend } from "./network/backend-backupviewer";
-import { registerNetworkBackend } from "./network/backend";
+import { render } from "./renderer.js";
+import { RouteLocation } from "./components/routes.js";
+import { registerBackupViewerBackend } from "./network/backend-backupviewer.js";
+import { registerNetworkBackend } from "./network/backend.js";
 
 if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
   registerBackupViewerBackend();

@@ -30,13 +30,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+import { hashValues } from "@seedtactics/immutable-collections";
 import { addDays } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { ILogEntry, IMaterialProcessActualPath, LogType, MaterialProcessActualPath } from "../network/api";
-import { emptyIMap, HashMap, unionMaps } from "../util/imap";
-import { LazySeq } from "../util/lazyseq";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
+import { ILogEntry, IMaterialProcessActualPath, LogType, MaterialProcessActualPath } from "../network/api.js";
+import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
 
 export enum InspectionLogResultType {
   Triggered,
@@ -74,11 +74,16 @@ export type InspectionLogsByCntr = HashMap<number, InspectionLogEntry>;
 
 export class PartAndInspType {
   public constructor(public readonly part: string, public readonly inspType: string) {}
-  equals(other: PartAndInspType): boolean {
-    return this.part === other.part && this.inspType === other.inspType;
+  compare(other: PartAndInspType): number {
+    const cmp = this.part.localeCompare(other.part);
+    if (cmp !== 0) {
+      return cmp;
+    } else {
+      return this.inspType.localeCompare(other.inspType);
+    }
   }
-  hashPrimitives(): readonly [string, string] {
-    return [this.part, this.inspType];
+  hash(): number {
+    return hashValues(this.part, this.inspType);
   }
   toString(): string {
     return `{part: ${this.part}}, inspType: ${this.inspType}}`;
@@ -89,13 +94,13 @@ export type InspectionsByPartAndType = HashMap<PartAndInspType, InspectionLogsBy
 
 const last30InspectionsRW = atom<InspectionsByPartAndType>({
   key: "last30Inspections",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const last30Inspections: RecoilValueReadOnly<InspectionsByPartAndType> = last30InspectionsRW;
 
 const specificMonthInspectionsRW = atom<InspectionsByPartAndType>({
   key: "specificMonthInspections",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const specificMonthInspections: RecoilValueReadOnly<InspectionsByPartAndType> = specificMonthInspectionsRW;
 
@@ -201,7 +206,7 @@ export const setLast30Inspections = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
             (e) => e.entry.cntr,
             (e) => e.entry
           ),
-        (e1, e2) => unionMaps((_, s) => s, e1, e2)
+        (e1, e2) => e1.union(e2)
       )
     );
   }
@@ -226,7 +231,14 @@ export const updateLast30Inspections = conduit<ServerEventAndTime>(
           });
         }
 
-        return log.reduce((m, e) => m.modify(e.key, (old) => (old ?? emptyIMap()).set(e.entry.cntr, e.entry)), parts);
+        return parts.union(
+          LazySeq.ofIterable(log).toLookupMap(
+            (e) => e.key,
+            (e) => e.entry.cntr,
+            (e) => e.entry
+          ),
+          (e1, e2) => e1.union(e2)
+        );
       });
     } else if (evt.editMaterialInLog) {
       const changedByCntr = evt.editMaterialInLog.editedEvents;

@@ -32,12 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { startOfDay } from "date-fns";
-import { LazySeq } from "../util/lazyseq";
-import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
+import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
-import { SimPartCompleted } from "../cell-status/sim-production";
-import { PartCycleData } from "../cell-status/station-cycles";
-import { HashMap } from "../util/imap";
+import { SimPartCompleted } from "../cell-status/sim-production.js";
+import { PartCycleData } from "../cell-status/station-cycles.js";
+import { HashMap, hashValues, LazySeq } from "@seedtactics/immutable-collections";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -45,11 +44,16 @@ import { HashMap } from "../util/imap";
 
 class DayAndPart {
   constructor(public day: Date, public part: string) {}
-  equals(other: DayAndPart): boolean {
-    return this.day.getTime() === other.day.getTime() && this.part === other.part;
+  compare(other: DayAndPart): number {
+    const cmp = this.day.getTime() - other.day.getTime();
+    if (cmp === 0) {
+      return this.part.localeCompare(other.part);
+    } else {
+      return cmp;
+    }
   }
-  hashPrimitives(): readonly [Date, string] {
-    return [this.day, this.part];
+  hash(): number {
+    return hashValues(this.day, this.part);
   }
   toString(): string {
     return `{day: ${this.day.toISOString()}}, part: ${this.part}}`;
@@ -66,11 +70,16 @@ export interface PartsCompletedSummary {
 
 class MatIdAndProcess {
   public constructor(public readonly matId: number, public readonly proc: number) {}
-  equals(other: MatIdAndProcess): boolean {
-    return this.matId === other.matId && this.proc === other.proc;
+  compare(other: MatIdAndProcess): number {
+    const cmp = this.matId - other.matId;
+    if (cmp === 0) {
+      return this.proc - other.proc;
+    } else {
+      return cmp;
+    }
   }
-  hashPrimitives(): readonly [number, number] {
-    return [this.matId, this.proc];
+  hash(): number {
+    return hashValues(this.matId, this.proc);
   }
   toString(): string {
     return this.matId.toString() + "-" + this.proc.toString();
@@ -153,11 +162,16 @@ interface HeatmapClipboardPoint {
 
 class HeatmapClipboardCell {
   public constructor(public readonly x: number, public readonly y: string) {}
-  equals(other: HeatmapClipboardCell): boolean {
-    return this.x === other.x && this.y === other.y;
+  compare(other: HeatmapClipboardCell): number {
+    const cmp = this.x - other.x;
+    if (cmp === 0) {
+      return this.y.localeCompare(other.y);
+    } else {
+      return cmp;
+    }
   }
-  hashPrimitives(): readonly [number, string] {
-    return [this.x, this.y];
+  hash(): number {
+    return hashValues(this.x, this.y);
   }
   toString(): string {
     return `{x: ${new Date(this.x).toISOString()}, y: ${this.y}}`;

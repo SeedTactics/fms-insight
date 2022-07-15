@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { User, UserManager } from "oidc-client";
-import * as api from "./api";
-import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend";
+import * as api from "./api.js";
+import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend.js";
 import { selector } from "recoil";
 
 export interface FMSInfoAndUser extends Readonly<api.IFMSInfo> {

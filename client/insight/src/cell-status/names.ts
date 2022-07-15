@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { IHistoricData, IJob, ILogEntry, LogType } from "../network/api";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
+import { IHistoricData, IJob, ILogEntry, LogType } from "../network/api.js";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
 
 const rawMaterialQueuesRW = atom<ReadonlySet<string>>({
   key: "rawMaterialQueueNames",

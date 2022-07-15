@@ -32,22 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { ICurrentStatus, IHistoricData, ILogEntry, IServerEvent } from "../network/api";
-import { conduit } from "../util/recoil-util";
-import { LazySeq } from "../util/lazyseq";
+import { ICurrentStatus, IHistoricData, ILogEntry, IServerEvent } from "../network/api.js";
+import { conduit } from "../util/recoil-util.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
-import * as simProd from "./sim-production";
-import * as simUse from "./sim-station-use";
-import * as schJobs from "./scheduled-jobs";
-import * as buffers from "./buffers";
-import * as currentSt from "./current-status";
-import * as insp from "./inspections";
-import * as mats from "./material-summary";
-import * as names from "./names";
-import * as estimated from "./estimated-cycle-times";
-import * as tool from "./tool-usage";
-import * as palCycles from "./pallet-cycles";
-import * as statCycles from "./station-cycles";
+import * as simProd from "./sim-production.js";
+import * as simUse from "./sim-station-use.js";
+import * as schJobs from "./scheduled-jobs.js";
+import * as buffers from "./buffers.js";
+import * as currentSt from "./current-status.js";
+import * as insp from "./inspections.js";
+import * as mats from "./material-summary.js";
+import * as names from "./names.js";
+import * as estimated from "./estimated-cycle-times.js";
+import * as tool from "./tool-usage.js";
+import * as palCycles from "./pallet-cycles.js";
+import * as statCycles from "./station-cycles.js";
 
 export interface ServerEventAndTime {
   readonly evt: Readonly<IServerEvent>;
@@ -102,7 +102,7 @@ export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
     palCycles.setLast30PalletCycles.transform(t, log);
     statCycles.setLast30StationCycles.transform(t, log);
 
-    const newCntr = LazySeq.ofIterable(log).maxOn((x) => x.counter)?.counter ?? null;
+    const newCntr = LazySeq.ofIterable(log).maxBy((x) => x.counter)?.counter ?? null;
     t.set(lastEventCounterRW, (oldCntr) => (oldCntr === null ? newCntr : Math.max(oldCntr, newCntr ?? -1)));
   }
 );

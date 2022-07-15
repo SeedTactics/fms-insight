@@ -33,17 +33,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { addDays, addHours, differenceInMinutes, addMinutes } from "date-fns";
 
-import { fakeCycle } from "../../test/events.fake";
-import { ILogEntry } from "../network/api";
-import { binCyclesByDayAndPart, buildCompletedPartsHeatmapTable } from "./results.completed-parts";
-import { LazySeq } from "../util/lazyseq";
-import { applyConduitToSnapshot } from "../util/recoil-util";
+import { fakeCycle } from "../../test/events.fake.js";
+import { ILogEntry } from "../network/api.js";
+import { binCyclesByDayAndPart, buildCompletedPartsHeatmapTable } from "./results.completed-parts.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { snapshot_UNSTABLE } from "recoil";
-import { onLoadLast30Log } from "../cell-status/loading";
-import { last30StationCycles } from "../cell-status/station-cycles";
-import { last30MaterialSummary } from "../cell-status/material-summary";
+import { onLoadLast30Log } from "../cell-status/loading.js";
+import { last30StationCycles } from "../cell-status/station-cycles.js";
+import { last30MaterialSummary } from "../cell-status/material-summary.js";
 import { it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js";
+import { toRawJs } from "../../test/to-raw-js.js";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time

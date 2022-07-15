@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "../network/api";
-import { LazySeq } from "../util/lazyseq";
-import { LogBackend } from "../network/backend";
+import * as api from "../network/api.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
 
 export interface JobAndGroups {
@@ -165,7 +165,7 @@ export function extractJobRawMaterial(
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
     .filter(
-      ([, j]) => LazySeq.ofIterable(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumOn((x) => x) < (j.cycles ?? 0)
+      ([, j]) => LazySeq.ofIterable(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumBy((x) => x) < (j.cycles ?? 0)
     )
     .flatMap(([, j]) =>
       j.procsAndPaths[0].paths

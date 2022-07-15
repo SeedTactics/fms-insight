@@ -32,12 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { startOfDay, addSeconds, addDays, max, min } from "date-fns";
-import { LazySeq } from "../util/lazyseq";
 import copy from "copy-to-clipboard";
-import { SimStationUse } from "../cell-status/sim-station-use";
-import { chunkCyclesWithSimilarEndTime } from "../cell-status/estimated-cycle-times";
-import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles";
-import { HashMap } from "../util/imap";
+import { SimStationUse } from "../cell-status/sim-station-use.js";
+import { chunkCyclesWithSimilarEndTime } from "../cell-status/estimated-cycle-times.js";
+import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles.js";
+import { HashMap, hashValues, LazySeq } from "@seedtactics/immutable-collections";
 
 // --------------------------------------------------------------------------------
 // Actual
@@ -45,11 +44,13 @@ import { HashMap } from "../util/imap";
 
 export class DayAndStation {
   constructor(public readonly day: Date, public readonly station: string) {}
-  equals(other: DayAndStation): boolean {
-    return this.day.getTime() === other.day.getTime() && this.station === other.station;
+  compare(other: DayAndStation): number {
+    const cmp = this.day.getTime() - other.day.getTime();
+    if (cmp !== 0) return cmp;
+    return this.station.localeCompare(other.station);
   }
-  hashPrimitives(): readonly [Date, string] {
-    return [this.day, this.station];
+  hash(): number {
+    return hashValues(this.day, this.station);
   }
   toString(): string {
     return `{day: ${this.day.toISOString()}}, station: ${this.station}}`;
@@ -216,11 +217,13 @@ export interface HeatmapClipboardPoint {
 
 class HeatmapClipboardCell {
   public constructor(public readonly x: number, public readonly y: string) {}
-  equals(other: HeatmapClipboardCell): boolean {
-    return this.x === other.x && this.y === other.y;
+  compare(other: HeatmapClipboardCell): number {
+    const cmp = this.x - other.x;
+    if (cmp !== 0) return cmp;
+    return this.y.localeCompare(other.y);
   }
-  hashPrimitives(): readonly [number, string] {
-    return [this.x, this.y];
+  hash(): number {
+    return hashValues(this.x, this.y);
   }
   toString(): string {
     return `{x: ${new Date(this.x).toISOString()}, y: ${this.y}}`;

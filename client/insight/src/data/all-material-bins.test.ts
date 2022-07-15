@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import curSt from "../../test/status-mock.json";
-import { selectAllMaterialIntoBins } from "./all-material-bins";
-import { CurrentStatus } from "../network/api";
+import { selectAllMaterialIntoBins } from "./all-material-bins.js";
+import { CurrentStatus } from "../network/api.js";
 import { it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js";
+import { toRawJs } from "../../test/to-raw-js.js";
 
 it("creates all material", () => {
   const status = CurrentStatus.fromJS(curSt);

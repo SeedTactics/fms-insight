@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "../network/api";
-import { durationToSeconds } from "../util/parseISODuration";
-import { LazySeq } from "../util/lazyseq";
+import * as api from "../network/api.js";
+import { durationToSeconds } from "../util/parseISODuration.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 export interface DataPoint {
   readonly part: string;
@@ -74,8 +74,7 @@ export interface DataPoints {
 }
 
 export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IActiveJob>>): DataPoints {
-  const points = jobs
-    .toLazySeq()
+  const points = LazySeq.ofIterable(jobs)
     .sortBy(
       (j) => j.routeStartUTC.getTime(),
       (j) => j.scheduleId ?? "",

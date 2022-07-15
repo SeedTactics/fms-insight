@@ -32,12 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
-import { ILogEntry, LogType } from "../network/api";
-import { durationToSeconds } from "../util/parseISODuration";
-import { LazySeq } from "../util/lazyseq";
-import { HashMap, emptyIMap } from "../util/imap";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
+import { ILogEntry, LogType } from "../network/api.js";
+import { durationToSeconds } from "../util/parseISODuration.js";
+import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
 
 export type BufferType =
   | { readonly type: "Rotary"; readonly machineGroup: string; readonly machineNum: number }
@@ -56,13 +55,13 @@ export type BufferEntryByCntr = HashMap<number, BufferEntry>;
 
 const last30BufferEntriesRW = atom<BufferEntryByCntr>({
   key: "last30Buffers",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const last30BufferEntries: RecoilValueReadOnly<BufferEntryByCntr> = last30BufferEntriesRW;
 
 const specificMonthBufferEntriesRW = atom<BufferEntryByCntr>({
   key: "specificMonthBuffers",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const specificMonthBufferEntries: RecoilValueReadOnly<BufferEntryByCntr> = specificMonthBufferEntriesRW;
 

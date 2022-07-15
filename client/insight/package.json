@@ -13,13 +13,14 @@
     "nswag-openapi": "./node_modules/nswag/bin/nswag.js aspnetcore2openapi /project:../../server/debug-mock /output:../../server/fms-insight-api.json",
     "nswag-client": "./node_modules/nswag/bin/nswag.js swagger2tsclient /input:../../server/fms-insight-api.json /output:src/network/api.ts"
   },
-  "packageManager": "pnpm@7.2.1",
+  "packageManager": "pnpm@7.5.0",
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
     "@fontsource/roboto": "^4.5.5",
     "@mui/icons-material": "^5.6.2",
     "@mui/material": "^5.6.2",
+    "@seedtactics/immutable-collections": "^0.9.1",
     "@visx/axis": "^2.6.0",
     "@visx/curve": "^2.1.0",
     "@visx/event": "^2.6.0",

@@ -33,8 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Table } from "@mui/material";
 
-import { format_cycle_inspection } from "../../data/results.cycles";
-import { LazySeq, ToPrimitiveOrd } from "../../util/lazyseq";
+import { format_cycle_inspection } from "../../data/results.cycles.js";
 import {
   Column,
   DataTableHead,
@@ -42,16 +41,16 @@ import {
   DataTableBody,
   DataTableActionZoom,
   DataTableActionZoomType,
-} from "./DataTable";
+} from "./DataTable.js";
 import { addDays, addHours } from "date-fns";
-import * as api from "../../network/api";
+import * as api from "../../network/api.js";
 import { Menu } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { useSetRecoilState } from "recoil";
-import { materialToShowInDialog } from "../../cell-status/material-details";
-import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
-import { PartCycleData } from "../../cell-status/station-cycles";
-import { HashMap } from "../../util/imap";
+import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
+import { PartCycleData } from "../../cell-status/station-cycles.js";
+import { HashMap, LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
 
 enum ColumnId {
   Date,
@@ -171,7 +170,7 @@ function extractData(
   orderBy: ColumnId,
   order: "asc" | "desc"
 ): ReadonlyArray<PartCycleData> {
-  let getData: ToPrimitiveOrd<PartCycleData> | undefined;
+  let getData: ToComparableBase<PartCycleData> | undefined;
   for (const col of columns) {
     if (col.id === orderBy) {
       getData = col.getForSort || col.getDisplay;
@@ -186,24 +185,12 @@ function extractData(
   const arr = currentZoom
     ? data.filter((p) => p.x >= currentZoom.start && p.x <= currentZoom.end).toMutableArray()
     : data.toMutableArray();
-  return arr.sort((a, b) => {
-    const aVal = getDataC(a);
-    const bVal = getDataC(b);
-    if (aVal === bVal) {
-      // sort by date
-      if (order === "desc") {
-        return b.x.getTime() - a.x.getTime();
-      } else {
-        return a.x.getTime() - b.x.getTime();
-      }
-    } else {
-      if (order === "desc") {
-        return aVal > bVal ? -1 : 1;
-      } else {
-        return aVal > bVal ? 1 : -1;
-      }
-    }
-  });
+  return arr.sort(
+    mkCompareByProperties(
+      order === "desc" ? { desc: getDataC } : { asc: getDataC },
+      order === "desc" ? { desc: (a) => a.x.getTime() } : { asc: (a) => a.x.getTime() }
+    )
+  );
 }
 
 interface DetailMenuData {

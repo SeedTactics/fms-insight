@@ -35,14 +35,14 @@ import * as React from "react";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import { curveCatmullRom } from "@visx/curve";
 import { XYChart, AnimatedAxis, AnimatedLineSeries, Grid } from "@visx/xychart";
-import { BufferChartPoint, buildBufferChart } from "../../data/results.bufferchart";
-import { chartTheme, seriesColor } from "../../util/chart-colors";
+import { BufferChartPoint, buildBufferChart } from "../../data/results.bufferchart.js";
+import { chartTheme, seriesColor } from "../../util/chart-colors.js";
 import { useRecoilValue } from "recoil";
-import { rawMaterialQueues } from "../../cell-status/names";
-import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers";
+import { rawMaterialQueues } from "../../cell-status/names.js";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers.js";
 import { Box, ToggleButton } from "@mui/material";
-import { useImmer } from "../../util/recoil-util";
+import { useImmer } from "../../util/recoil-util.js";
 
 export interface BufferChartProps {
   readonly movingAverageDistanceInHours: number;

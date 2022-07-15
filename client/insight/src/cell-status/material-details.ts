@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "../network/backend";
-import { LazySeq } from "../util/lazyseq";
-import { MaterialSummary } from "./material-summary";
+import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "../network/backend.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { MaterialSummary } from "./material-summary.js";
 import { atom, DefaultValue, selector, useSetRecoilState, waitForNone } from "recoil";
 import {
   IInProcessMaterial,
@@ -46,7 +46,7 @@ import {
   NewInspectionCompleted,
   NewWash,
   QueuePosition,
-} from "../network/api";
+} from "../network/api.js";
 import { useCallback, useEffect, useState } from "react";
 
 export type MaterialToShow =
@@ -261,8 +261,8 @@ export const materialDetail = selector<MaterialDetail | null>({
 
     return {
       ...mat,
-      signaledInspections: inspTypes.toLazySeq().toSortedArray((x) => x),
-      completedInspections: completedTypes.toLazySeq().toSortedArray((x) => x),
+      signaledInspections: LazySeq.ofIterable(inspTypes).toSortedArray((x) => x),
+      completedInspections: LazySeq.ofIterable(completedTypes).toSortedArray((x) => x),
       events: allEvents,
     };
   },

@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { jobsToPoints } from "./job-bullet";
-import * as api from "../network/api";
+import { jobsToPoints } from "./job-bullet.js";
+import * as api from "../network/api.js";
 import { it, expect } from "vitest";
 
 it("converts events to points", () => {

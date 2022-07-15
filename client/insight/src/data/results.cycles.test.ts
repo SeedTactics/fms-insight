@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays, addHours } from "date-fns";
 
-import { fakeCycle } from "../../test/events.fake";
-import { ILogEntry } from "../network/api";
+import { fakeCycle } from "../../test/events.fake.js";
+import { ILogEntry } from "../network/api.js";
 import {
   stationMinutes,
   filterStationCycles,
@@ -41,15 +41,15 @@ import {
   buildLogEntriesTable,
   outlierLoadCycles,
   outlierMachineCycles,
-} from "./results.cycles";
-import { applyConduitToSnapshot } from "../util/recoil-util";
+} from "./results.cycles.js";
+import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { snapshot_UNSTABLE } from "recoil";
-import { onLoadLast30Log } from "../cell-status/loading";
-import { last30StationCycles } from "../cell-status/station-cycles";
-import { last30MaterialSummary } from "../cell-status/material-summary";
-import { last30EstimatedCycleTimes } from "../cell-status/estimated-cycle-times";
+import { onLoadLast30Log } from "../cell-status/loading.js";
+import { last30StationCycles } from "../cell-status/station-cycles.js";
+import { last30MaterialSummary } from "../cell-status/material-summary.js";
+import { last30EstimatedCycleTimes } from "../cell-status/estimated-cycle-times.js";
 import { it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js";
+import { toRawJs } from "../../test/to-raw-js.js";
 
 it("creates cycles clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time

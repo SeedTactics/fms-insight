@@ -30,23 +30,22 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { LazySeq } from "../util/lazyseq";
 import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
-import { IHistoricData, IHistoricJob } from "../network/api";
-import { emptyIMap, HashMap } from "../util/imap";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
+import { IHistoricData, IHistoricJob } from "../network/api.js";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 const last30JobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "last30Jobs",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const last30Jobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
 
 const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "specificMonthJobs",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
 

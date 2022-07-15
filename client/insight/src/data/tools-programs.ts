@@ -31,22 +31,21 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api";
-import { LazySeq } from "../util/lazyseq";
-import { durationToMinutes } from "../util/parseISODuration";
+import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api.js";
+import { durationToMinutes } from "../util/parseISODuration.js";
 import { atom, selector, useRecoilCallback } from "recoil";
-import { MachineBackend } from "../network/backend";
-import { currentStatus } from "../cell-status/current-status";
+import { MachineBackend } from "../network/backend.js";
+import { currentStatus } from "../cell-status/current-status.js";
 import copy from "copy-to-clipboard";
-import { last30ToolUse, ProgramToolUseInSingleCycle, ToolUsage } from "../cell-status/tool-usage";
+import { last30ToolUse, ProgramToolUseInSingleCycle, ToolUsage } from "../cell-status/tool-usage.js";
 import {
   EstimatedCycleTimes,
   last30EstimatedCycleTimes,
   PartAndStationOperation,
   StatisticalCycleTime,
-} from "../cell-status/estimated-cycle-times";
-import { stat_name_and_num } from "../cell-status/station-cycles";
-import { emptyIMap, HashMap } from "../util/imap";
+} from "../cell-status/estimated-cycle-times.js";
+import { stat_name_and_num } from "../cell-status/station-cycles.js";
+import { LazySeq, HashMap, hashValues } from "@seedtactics/immutable-collections";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -59,7 +58,7 @@ function averageToolUse(
       .groupBy((t) => t.toolName)
       .map(([toolName, usageInCycles]) => ({
         toolName: toolName,
-        cycleUsageMinutes: LazySeq.ofIterable(usageInCycles).sumOn((c) => c.cycleUsageMinutes) / usageInCycles.length,
+        cycleUsageMinutes: LazySeq.ofIterable(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
         toolChanged: false,
       }))
       .toMutableArray();
@@ -96,11 +95,13 @@ export interface ToolReport {
 
 class StationOperation {
   public constructor(public readonly statGroup: string, public readonly operation: string) {}
-  equals(other: PartAndStationOperation): boolean {
-    return this.statGroup === other.statGroup && this.operation === other.operation;
+  compare(other: PartAndStationOperation): number {
+    const c = this.statGroup.localeCompare(other.statGroup);
+    if (c !== 0) return c;
+    return this.operation.localeCompare(other.operation);
   }
-  hashPrimitives(): readonly [string, string] {
-    return [this.statGroup, this.operation];
+  hash(): number {
+    return hashValues(this.statGroup, this.operation);
   }
   toString(): string {
     return `{statGroup: ${this.statGroup}, operation: ${this.operation}}`;
@@ -113,12 +114,12 @@ export function calcToolReport(
   usage: ToolUsage,
   machineFilter: string | null
 ): ReadonlyArray<ToolReport> {
-  let partPlannedQtys = emptyIMap<PartAndStationOperation, number>();
+  let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
     const planQty = job.cycles ?? 0;
     for (let procIdx = 0; procIdx < job.procsAndPaths.length; procIdx++) {
       let completed = 0;
-      let programsToAfterInProc = emptyIMap<StationOperation, number>();
+      let programsToAfterInProc = HashMap.empty<StationOperation, number>();
       for (let pathIdx = 0; pathIdx < job.procsAndPaths[procIdx].paths.length; pathIdx++) {
         completed += job.completed?.[procIdx]?.[pathIdx] ?? 0;
         const path = job.procsAndPaths[procIdx].paths[pathIdx];
@@ -184,8 +185,7 @@ export function calcToolReport(
     .filter((t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum))
     .groupBy((t) => t.toolName)
     .map(([toolName, tools]) => {
-      const toolsInMachine = tools
-        .toLazySeq()
+      const toolsInMachine: ReadonlyArray<ToolInMachine> = LazySeq.ofIterable(tools)
         .sortBy(
           (t) => t.machineGroupName,
           (t) => t.machineNum,
@@ -208,9 +208,9 @@ export function calcToolReport(
         .groupBy((m) => m.machineName)
         .map(([machineName, toolsForMachine]) => ({
           machineName,
-          remaining: LazySeq.ofIterable(toolsForMachine).sumOn((m) => m.remainingMinutes),
+          remaining: LazySeq.ofIterable(toolsForMachine).sumBy((m) => m.remainingMinutes),
         }))
-        .minOn((m) => m.remaining);
+        .minBy((m) => m.remaining);
 
       return {
         toolName,
@@ -310,10 +310,10 @@ export function buildToolReportHTML(tools: Iterable<ToolReport>, singleMachine: 
   for (const tool of tools) {
     table += "<tr><td>" + tool.toolName + "</td>";
 
-    const schUse = LazySeq.ofIterable(tool.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity);
+    const schUse = LazySeq.ofIterable(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
     table += "<td>" + schUse.toFixed(1) + "</td>";
 
-    const totalLife = LazySeq.ofIterable(tool.machines).sumOn((m) => m.remainingMinutes);
+    const totalLife = LazySeq.ofIterable(tool.machines).sumBy((m) => m.remainingMinutes);
     table += "<td>" + totalLife.toFixed(1) + "</td>";
 
     if (singleMachine) {

@@ -32,17 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { Snapshot, snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util";
-import { onLoadLast30Jobs, onLoadSpecificMonthJobs, onServerEvent } from "./loading";
+import { applyConduitToSnapshot } from "../util/recoil-util.js";
+import { onLoadLast30Jobs, onLoadSpecificMonthJobs, onServerEvent } from "./loading.js";
 import { addDays } from "date-fns";
-import { HistoricJob, IHistoricData, NewJobs } from "../network/api";
-import { last30SimProduction, specificMonthSimProduction } from "./sim-production";
-import { last30SimStationUse, specificMonthSimStationUse } from "./sim-station-use";
-import { last30Jobs, specificMonthJobs } from "./scheduled-jobs";
+import { HistoricJob, IHistoricData, NewJobs } from "../network/api.js";
+import { last30SimProduction, specificMonthSimProduction } from "./sim-production.js";
+import { last30SimStationUse, specificMonthSimStationUse } from "./sim-station-use.js";
+import { last30Jobs, specificMonthJobs } from "./scheduled-jobs.js";
 import newJobsJson from "../../test/newjobs.json";
-import { LazySeq } from "../util/lazyseq";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js";
+import { toRawJs } from "../../test/to-raw-js.js";
 const newJobs = newJobsJson.map((j) => NewJobs.fromJS(j));
 
 function checkLast30(snapshot: Snapshot, msg: string) {

@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "../network/api";
-import { InspectionLogResultType, InspectionLogEntry } from "../cell-status/inspections";
-import { LazySeq } from "../util/lazyseq";
+import * as api from "../network/api.js";
+import { InspectionLogResultType, InspectionLogEntry } from "../cell-status/inspections.js";
+import { hashValues, LazySeq } from "@seedtactics/immutable-collections";
 
 export interface SankeyNode {
   readonly unique: string; // full unique of node
@@ -53,11 +53,16 @@ export interface SankeyDiagram {
 
 class NodeR {
   public constructor(public readonly unique: string, public readonly name: string) {}
-  equals(other: NodeR): boolean {
-    return this.unique === other.unique && this.name === other.name;
+  compare(other: NodeR): number {
+    const cmp = this.unique.localeCompare(other.unique);
+    if (cmp === 0) {
+      return this.name.localeCompare(other.name);
+    } else {
+      return cmp;
+    }
   }
-  hashPrimitives(): readonly [string, string] {
-    return [this.unique, this.name];
+  hash(): number {
+    return hashValues(this.unique, this.name);
   }
   toString(): string {
     return `{unique: ${this.unique}}, name: ${this.name}}`;
@@ -66,11 +71,16 @@ class NodeR {
 
 class Edge {
   public constructor(public readonly from: NodeR, public readonly to: NodeR) {}
-  equals(other: Edge): boolean {
-    return this.from.equals(other.from) && this.to.equals(other.to);
+  compare(other: Edge): number {
+    const cmp = this.from.compare(other.from);
+    if (cmp === 0) {
+      return this.to.compare(other.to);
+    } else {
+      return cmp;
+    }
   }
-  hashPrimitives(): readonly [NodeR, NodeR] {
-    return [this.from, this.to];
+  hash(): number {
+    return hashValues(this.from, this.to);
   }
   toString(): string {
     return `{from: ${this.from.toString()}}, to: ${this.to.toString()}}`;
@@ -125,7 +135,7 @@ export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyD
   // extract the nodes and assign an index
   const nodes = edges
     .flatMap((e) => [e.from, e.to])
-    .distinct()
+    .distinctBy((x) => x)
     .map((node, idx) => ({ idx, node }));
 
   // create the sankey nodes to return

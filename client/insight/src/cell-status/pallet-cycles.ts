@@ -32,12 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { ILogEntry, LogType } from "../network/api";
-import { emptyIMap, HashMap, unionMaps } from "../util/imap";
-import { LazySeq } from "../util/lazyseq";
-import { durationToMinutes } from "../util/parseISODuration";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
+import { ILogEntry, LogType } from "../network/api.js";
+import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
+import { durationToMinutes } from "../util/parseISODuration.js";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
 
 export interface PalletCycleData {
   readonly cntr: number;
@@ -51,13 +50,13 @@ export type PalletCyclesByPallet = HashMap<string, PalletCyclesByCntr>;
 
 const last30PalletCyclesRW = atom<PalletCyclesByPallet>({
   key: "last30PalletCycles",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const last30PalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> = last30PalletCyclesRW;
 
 const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>({
   key: "specificMonthPalletCycles",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const specificMonthPalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> = specificMonthPalletCyclesRW;
 
@@ -81,7 +80,7 @@ export const setLast30PalletCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>
             (c) => c.counter,
             logToPalletCycle
           ),
-        (e1, e2) => unionMaps((_, s) => s, e1, e2)
+        (e1, e2) => e1.union(e2)
       )
     );
   }
@@ -106,7 +105,7 @@ export const updateLast30PalletCycles = conduit<ServerEventAndTime>(
           });
         }
 
-        return oldCycles.modify(log.pal, (old) => (old ?? emptyIMap()).set(log.counter, logToPalletCycle(log)));
+        return oldCycles.modify(log.pal, (old) => (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log)));
       });
     }
   }

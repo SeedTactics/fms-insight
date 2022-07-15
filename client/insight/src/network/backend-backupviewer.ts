@@ -31,12 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as api from "./api";
-import { RouteLocation } from "../components/routes";
-import { registerBackend } from "./backend";
-import { onLoadLast30Jobs, onLoadLast30Log } from "../cell-status/loading";
+import * as api from "./api.js";
+import { RouteLocation } from "../components/routes.js";
+import { registerBackend } from "./backend.js";
+import { onLoadLast30Jobs, onLoadLast30Log } from "../cell-status/loading.js";
 import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback } from "recoil";
-import { RecoilConduit } from "../util/recoil-util";
+import { RecoilConduit } from "../util/recoil-util.js";
 import { addDays } from "date-fns";
 
 export function registerBackupViewerBackend(): void {

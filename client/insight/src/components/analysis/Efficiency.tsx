@@ -31,11 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import WorkIcon from "@mui/icons-material/Work";
-import BasketIcon from "@mui/icons-material/ShoppingBasket";
 import { addMonths, addDays, startOfToday } from "date-fns";
-import ExtensionIcon from "@mui/icons-material/Extension";
-import HourglassIcon from "@mui/icons-material/HourglassFull";
 import { Card } from "@mui/material";
 import { CardHeader } from "@mui/material";
 import { Select } from "@mui/material";
@@ -43,17 +39,23 @@ import { MenuItem } from "@mui/material";
 import { CardContent } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import ImportExport from "@mui/icons-material/ImportExport";
-import AccountIcon from "@mui/icons-material/AccountBox";
-import DonutIcon from "@mui/icons-material/DonutSmall";
 import { Slider } from "@mui/material";
+import {
+  Work as WorkIcon,
+  ShoppingBasket as BasketIcon,
+  Extension as ExtensionIcon,
+  HourglassFull as HourglassIcon,
+  ImportExport,
+  AccountBox as AccountIcon,
+  DonutSmall as DonutIcon,
+} from "@mui/icons-material";
 
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
-import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart";
-import { SelectableHeatChart } from "./HeatChart";
-import * as matDetails from "../../cell-status/material-details";
-import { InspectionSankey } from "./InspectionSankey";
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart.js";
+import { SelectableHeatChart } from "./HeatChart.js";
+import * as matDetails from "../../cell-status/material-details.js";
+import { InspectionSankey } from "./InspectionSankey.js";
 import {
   filterStationCycles,
   FilterAnyMachineKey,
@@ -66,42 +68,41 @@ import {
   copyPalletCyclesToClipboard,
   emptyStationCycles,
   PartAndProcess,
-} from "../../data/results.cycles";
-import { PartIdenticon } from "../station-monitor/Material";
-import { LazySeq } from "../../util/lazyseq";
-import StationDataTable from "./StationDataTable";
+} from "../../data/results.cycles.js";
+import { PartIdenticon } from "../station-monitor/Material.js";
+import StationDataTable from "./StationDataTable.js";
 import {
   binSimStationUseByDayAndStat,
   copyOeeHeatmapToClipboard,
   binActiveCyclesByDayAndStat,
   DayAndStation,
   binOccupiedCyclesByDayAndStat,
-} from "../../data/results.oee";
+} from "../../data/results.oee.js";
 import {
   binCyclesByDayAndPart,
   binSimProductionByDayAndPart,
   copyCompletedPartsHeatmapToClipboard,
-} from "../../data/results.completed-parts";
-import { DataTableActionZoomType } from "./DataTable";
-import { BufferChart } from "./BufferChart";
-import { useIsDemo } from "../routes";
+} from "../../data/results.completed-parts.js";
+import { DataTableActionZoomType } from "./DataTable.js";
+import { BufferChart } from "./BufferChart.js";
+import { useIsDemo } from "../routes.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use";
-import { last30SimProduction, SimPartCompleted, specificMonthSimProduction } from "../../cell-status/sim-production";
-import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections";
+import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
+import { last30SimProduction, SimPartCompleted, specificMonthSimProduction } from "../../cell-status/sim-production.js";
+import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
 import {
   last30MaterialSummary,
   specificMonthMaterialSummary,
   MaterialSummaryAndCompletedData,
-} from "../../cell-status/material-summary";
+} from "../../cell-status/material-summary.js";
 import {
   last30EstimatedCycleTimes,
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
-} from "../../cell-status/estimated-cycle-times";
-import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles";
-import { last30StationCycles, PartCycleData, specificMonthStationCycles } from "../../cell-status/station-cycles";
-import { HashMap } from "../../util/imap";
+} from "../../cell-status/estimated-cycle-times.js";
+import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles.js";
+import { last30StationCycles, PartCycleData, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -249,7 +250,7 @@ function PartMachineCycleChart() {
               value={
                 selectedPart
                   ? curOperation
-                    ? points.allMachineOperations.findIndex((o) => curOperation.equals(o))
+                    ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0)
                     : -1
                   : selectedMachine
               }
@@ -321,7 +322,9 @@ function PartMachineCycleChart() {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
-            partCntPerPoint={curOperation ? points.data.toLazySeq().head()?.[1]?.[0]?.material?.length : undefined}
+            partCntPerPoint={
+              curOperation ? LazySeq.ofIterable(points.data).head()?.[1]?.[0]?.material?.length : undefined
+            }
             plannedTimeMinutes={plannedMinutes}
           />
         ) : (

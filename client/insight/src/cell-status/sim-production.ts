@@ -30,13 +30,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { durationToMinutes } from "../util/parseISODuration";
-import { LazySeq } from "../util/lazyseq";
+import { durationToMinutes } from "../util/parseISODuration.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
-import { IHistoricData, IJob } from "../network/api";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
+import { IHistoricData, IJob } from "../network/api.js";
 
 export interface SimPartCompleted {
   readonly part: string;
@@ -97,7 +97,7 @@ export const updateLast30JobProduction = conduit<ServerEventAndTime>(
         if (expire) {
           const expire = addDays(now, -30);
           // check if nothing to expire and no new data
-          const minProd = LazySeq.ofIterable(simProd).minOn((e) => e.completeTime.getTime());
+          const minProd = LazySeq.ofIterable(simProd).minBy((e) => e.completeTime.getTime());
           if ((minProd === undefined || minProd.completeTime >= expire) && apiNewJobs.length === 0) {
             return simProd;
           }

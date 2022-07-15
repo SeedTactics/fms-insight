@@ -32,11 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { differenceInSeconds } from "date-fns";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { ILogEntry, LogType } from "../network/api";
-import { emptyIMap, HashMap } from "../util/imap";
-import { LazySeq, PrimitiveOrd } from "../util/lazyseq";
-import { durationToMinutes } from "../util/parseISODuration";
-import { conduit } from "../util/recoil-util";
+import { ILogEntry, LogType } from "../network/api.js";
+import { LazySeq, HashMap, hashValues, OrderedMapKey } from "@seedtactics/immutable-collections";
+import { durationToMinutes } from "../util/parseISODuration.js";
+import { conduit } from "../util/recoil-util.js";
 
 export interface StatisticalCycleTime {
   readonly medianMinutesForSingleMat: number;
@@ -60,16 +59,17 @@ export class PartAndStationOperation {
       c.type === LogType.LoadUnloadCycle ? c.result : c.program
     );
   }
-  equals(other: PartAndStationOperation): boolean {
-    return (
-      this.part === other.part &&
-      this.proc === other.proc &&
-      this.statGroup === other.statGroup &&
-      this.operation === other.operation
-    );
+  compare(other: PartAndStationOperation): number {
+    let cmp = this.part.localeCompare(other.part);
+    if (cmp !== 0) return cmp;
+    cmp = this.proc - other.proc;
+    if (cmp !== 0) return cmp;
+    cmp = this.statGroup.localeCompare(other.statGroup);
+    if (cmp !== 0) return cmp;
+    return this.operation.localeCompare(other.operation);
   }
-  hashPrimitives(): readonly [string, number, string, string] {
-    return [this.part, this.proc, this.statGroup, this.operation];
+  hash(): number {
+    return hashValues(this.part, this.proc, this.statGroup, this.operation);
   }
   toString(): string {
     return `{part: ${this.part}}, proc: ${this.proc}, statGroup: ${this.statGroup}, operation: ${this.operation}}`;
@@ -80,13 +80,13 @@ export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCy
 
 const last30EstimatedTimesRW = atom<EstimatedCycleTimes>({
   key: "last30Estimatedcycletimes",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const last30EstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> = last30EstimatedTimesRW;
 
 const specificMonthEstimatedTimesRW = atom<EstimatedCycleTimes>({
   key: "specificMonthEstimatedcycleTimes",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const specificMonthEstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> = specificMonthEstimatedTimesRW;
 
@@ -176,27 +176,30 @@ function estimateCycleTimes(cycles: Iterable<number>): StatisticalCycleTime {
 
 export function chunkCyclesWithSimilarEndTime<T, K>(
   allCycles: LazySeq<T>,
-  getKey: (x: T) => K & PrimitiveOrd,
+  getKey: (t: T) => K & OrderedMapKey,
   getTime: (c: T) => Date
 ): LazySeq<[K, ReadonlyArray<ReadonlyArray<T>>]> {
-  return allCycles.groupBy(getKey, { asc: (c) => getTime(c).getTime() }).map(([k, cycles]) => {
-    const ret: Array<ReadonlyArray<T>> = [];
-    let chunk: Array<T> = [];
-    for (const c of cycles) {
-      if (chunk.length === 0) {
-        chunk = [c];
-      } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {
-        chunk.push(c);
-      } else {
-        ret.push(chunk);
-        chunk = [c];
+  return allCycles
+    .toLookupOrderedMap(getKey, getTime)
+    .toAscLazySeq()
+    .map(([k, cycles]) => {
+      const ret: Array<ReadonlyArray<T>> = [];
+      let chunk: Array<T> = [];
+      for (const c of cycles.valuesToAscLazySeq()) {
+        if (chunk.length === 0) {
+          chunk = [c];
+        } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {
+          chunk.push(c);
+        } else {
+          ret.push(chunk);
+          chunk = [c];
+        }
       }
-    }
-    if (chunk.length > 0) {
-      ret.push(chunk);
-    }
-    return [k, ret];
-  });
+      if (chunk.length > 0) {
+        ret.push(chunk);
+      }
+      return [k, ret];
+    });
 }
 
 export interface LogEntryWithSplitElapsed<T> {

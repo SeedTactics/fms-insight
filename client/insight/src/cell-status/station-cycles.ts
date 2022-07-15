@@ -31,10 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { IEditMaterialInLogEvents, ILogEntry, ILogMaterial, LogType } from "../network/api";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
-import { LazySeq } from "../util/lazyseq";
+import { IEditMaterialInLogEvents, ILogEntry, ILogMaterial, LogType } from "../network/api.js";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
 import {
   activeMinutes,
   EstimatedCycleTimes,
@@ -43,10 +42,10 @@ import {
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
   splitElapsedLoadTime,
-} from "./estimated-cycle-times";
-import { durationToMinutes } from "../util/parseISODuration";
+} from "./estimated-cycle-times.js";
+import { durationToMinutes } from "../util/parseISODuration.js";
 import { addDays } from "date-fns";
-import { emptyIMap, HashMap } from "../util/imap";
+import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
 
 export interface PartCycleData {
   readonly x: Date;
@@ -90,13 +89,13 @@ export function splitElapsedLoadTimeAmongCycles(
 
 const last30StationCyclesRW = atom<StationCyclesByCntr>({
   key: "last30StationCycles",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const last30StationCycles: RecoilValueReadOnly<StationCyclesByCntr> = last30StationCyclesRW;
 
 const specificMonthStationCyclesRW = atom<StationCyclesByCntr>({
   key: "specificMonthStationCycles",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const specificMonthStationCycles: RecoilValueReadOnly<StationCyclesByCntr> = specificMonthStationCyclesRW;
 

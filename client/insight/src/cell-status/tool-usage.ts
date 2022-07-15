@@ -31,18 +31,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { ILogEntry, LogType } from "../network/api";
-import { LazySeq } from "../util/lazyseq";
-import { conduit } from "../util/recoil-util";
-import type { ServerEventAndTime } from "./loading";
-import { durationToMinutes } from "../util/parseISODuration";
+import { ILogEntry, LogType } from "../network/api.js";
+import { conduit } from "../util/recoil-util.js";
+import type { ServerEventAndTime } from "./loading.js";
+import { durationToMinutes } from "../util/parseISODuration.js";
 import {
   EstimatedCycleTimes,
   isOutlier,
   last30EstimatedCycleTimes,
   PartAndStationOperation,
-} from "./estimated-cycle-times";
-import { emptyIMap, HashMap } from "../util/imap";
+} from "./estimated-cycle-times.js";
+import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
 
 export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
@@ -56,7 +55,7 @@ export type ToolUsage = HashMap<PartAndStationOperation, ReadonlyArray<ProgramTo
 
 const last30ToolUseRW = atom<ToolUsage>({
   key: "last30ToolUse",
-  default: emptyIMap(),
+  default: HashMap.empty(),
 });
 export const last30ToolUse: RecoilValueReadOnly<ToolUsage> = last30ToolUseRW;
 

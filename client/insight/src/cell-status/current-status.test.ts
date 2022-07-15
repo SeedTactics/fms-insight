@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as cs from "./current-status";
-import * as api from "../network/api";
+import * as cs from "./current-status.js";
+import * as api from "../network/api.js";
 import {
   fakeMaterial,
   fakeSerial,
@@ -41,10 +41,10 @@ import {
   fakeInspComplete,
   fakeInspForce,
   fakeInProcMaterial,
-} from "../../test/events.fake";
+} from "../../test/events.fake.js";
 import { Snapshot, snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util";
-import { onLoadCurrentSt, onServerEvent } from "./loading";
+import { applyConduitToSnapshot } from "../util/recoil-util.js";
+import { onLoadCurrentSt, onServerEvent } from "./loading.js";
 import { it, expect } from "vitest";
 
 const statusWithMat: api.ICurrentStatus = {

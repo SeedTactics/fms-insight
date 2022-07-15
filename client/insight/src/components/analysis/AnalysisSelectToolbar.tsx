@@ -35,14 +35,14 @@ import { Radio } from "@mui/material";
 import { FormControlLabel } from "@mui/material";
 import { useRecoilValue } from "recoil";
 
-import MonthSelect from "../MonthSelect";
+import MonthSelect from "../MonthSelect.js";
 import {
   selectedAnalysisPeriod,
   selectedMonth,
   useSetSpecificMonthWithoutLoading,
   useLoadSpecificMonth,
   useSetLast30,
-} from "../../network/load-specific-month";
+} from "../../network/load-specific-month.js";
 
 const toolbarStyle = {
   display: "flex",

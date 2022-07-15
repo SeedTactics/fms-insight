@@ -30,13 +30,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { durationToMinutes } from "../util/parseISODuration";
-import { LazySeq } from "../util/lazyseq";
+import { durationToMinutes } from "../util/parseISODuration.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import type { ServerEventAndTime } from "./loading";
-import { conduit } from "../util/recoil-util";
-import { IHistoricData, ISimulatedStationUtilization } from "../network/api";
+import type { ServerEventAndTime } from "./loading.js";
+import { conduit } from "../util/recoil-util.js";
+import { IHistoricData, ISimulatedStationUtilization } from "../network/api.js";
 
 export interface SimStationUse {
   readonly station: string;
@@ -83,7 +83,7 @@ export const updateLast30SimStatUse = conduit<ServerEventAndTime>(
         if (expire) {
           const expireT = addDays(now, -30);
           // check if nothing to expire and no new data
-          const minStat = LazySeq.ofIterable(simUse).minOn((e) => e.end.getTime());
+          const minStat = LazySeq.ofIterable(simUse).minBy((e) => e.end.getTime());
           if ((minStat === undefined || minStat.start >= expireT) && apiSimUse.length === 0) {
             return simUse;
           }

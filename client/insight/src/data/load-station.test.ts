@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import curSt from "../../test/status-mock.json";
-import { CurrentStatus } from "../network/api";
-import { selectLoadStationAndQueueProps } from "./load-station";
+import { CurrentStatus } from "../network/api.js";
+import { selectLoadStationAndQueueProps } from "./load-station.js";
 import { describe, it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js";
+import { toRawJs } from "../../test/to-raw-js.js";
 
 describe("load station status", () => {
   it("load 1 with no queues", () => {

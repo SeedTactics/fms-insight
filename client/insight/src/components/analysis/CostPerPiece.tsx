@@ -40,13 +40,10 @@ import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
 import { TextField } from "@mui/material";
-import MoneyIcon from "@mui/icons-material/AttachMoney";
-import ImportExport from "@mui/icons-material/ImportExport";
-import BuildIcon from "@mui/icons-material/Build";
-import CallSplit from "@mui/icons-material/CallSplit";
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar";
-import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { LazySeq } from "../../util/lazyseq";
+import { AttachMoney as MoneyIcon, ImportExport, Build as BuildIcon, CallSplit } from "@mui/icons-material";
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import * as localForage from "localforage";
 import { CircularProgress } from "@mui/material";
 import {
@@ -56,15 +53,15 @@ import {
   CostData,
   PartCost,
   copyCostBreakdownToClipboard,
-} from "../../data/cost-per-piece";
+} from "../../data/cost-per-piece.js";
 import { format, startOfToday, addDays } from "date-fns";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import { PartIdenticon } from "../station-monitor/Material";
+import { PartIdenticon } from "../station-monitor/Material.js";
 import { Typography } from "@mui/material";
 import { useRecoilValue } from "recoil";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
-import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
+import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
