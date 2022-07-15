@@ -222,6 +222,8 @@ namespace MachineWatchTest
           Unique = "uuu5",
           PartNameOrCasting = "part5",
           NumProcesses = 1,
+          NextProcess = 2,
+          Paths = ImmutableDictionary<int, int>.Empty,
           AddTimeUTC = now.AddHours(2)
         }
       });

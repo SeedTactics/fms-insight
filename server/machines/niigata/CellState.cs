@@ -379,18 +379,17 @@ namespace BlackMaple.FMSInsight.Niigata
             .OrderBy(m => m.Position)
             .Select(m =>
             {
-              var details = logDB.GetMaterialDetails(m.MaterialID);
               return new QueuedMaterialWithDetails()
               {
                 MaterialID = m.MaterialID,
                 Unique = m.Unique,
-                Serial = details?.Serial,
-                Workorder = details?.Workorder,
+                Serial = m.Serial,
+                Workorder = m.Workorder,
                 PartNameOrCasting = m.PartNameOrCasting,
-                NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
+                NextProcess = m.NextProcess ?? 1,
                 QueuePosition = m.Position,
-                Paths = details?.Paths?.ToDictionary(k => k.Key, k => k.Value),
-                Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : logDB.WorkordersById(details?.Workorder).ToImmutableList()
+                Paths = m.Paths?.ToDictionary(k => k.Key, k => k.Value),
+                Workorders = string.IsNullOrEmpty(m.Workorder) ? null : logDB.WorkordersById(m.Workorder).ToImmutableList()
               };
             })
             .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
@@ -522,22 +521,22 @@ namespace BlackMaple.FMSInsight.Niigata
               .Where(m => !currentlyLoading.Contains(m.MaterialID))
               .Select(m =>
               {
-                var details = logDB.GetMaterialDetails(m.MaterialID);
                 return new QueuedMaterialWithDetails()
                 {
                   MaterialID = m.MaterialID,
                   Unique = m.Unique,
-                  Serial = details?.Serial,
-                  Workorder = details?.Workorder,
+                  Serial = m.Serial,
+                  Workorder = m.Workorder,
                   QueuePosition = m.Position,
                   PartNameOrCasting = m.PartNameOrCasting,
-                  NextProcess = logDB.NextProcessForQueuedMaterial(m.MaterialID) ?? 1,
-                  Paths = details?.Paths?.ToDictionary(k => k.Key, k => k.Value),
-                  Workorders = string.IsNullOrEmpty(details?.Workorder) ? null : logDB.WorkordersById(details?.Workorder).ToImmutableList()
+                  NextProcess = m.NextProcess ?? 1,
+                  Paths = m.Paths?.ToDictionary(k => k.Key, k => k.Value),
+                  Workorders = string.IsNullOrEmpty(m.Workorder) ? null : logDB.WorkordersById(m.Workorder).ToImmutableList()
                 };
               })
               .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
               .ToList();
+            var inspections = logDB.LookupInspectionDecisions(availableMaterial.Select(m => m.MaterialID));
             foreach (var mat in availableMaterial)
             {
               pallet.Material.Add(new InProcessMaterialAndJob()
@@ -551,7 +550,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   Serial = mat.Serial,
                   WorkorderId = mat.Workorder,
                   SignaledInspections =
-                      logDB.LookupInspectionDecisions(mat.MaterialID)
+                      inspections[mat.MaterialID]
                       .Where(x => x.Inspect)
                       .Select(x => x.InspType)
                       .Distinct()
@@ -1509,17 +1508,16 @@ namespace BlackMaple.FMSInsight.Niigata
     private List<InProcessMaterialAndJob> QueuedMaterial(HashSet<long> matsOnPallets, IRepository logDB, Func<string, HistoricJob> loadJob)
     {
       var mats = new List<InProcessMaterialAndJob>();
+      var queuedMats = logDB.GetMaterialInAllQueues();
+      var insps = logDB.LookupInspectionDecisions(queuedMats.Select(m => m.MaterialID));
 
-      foreach (var mat in logDB.GetMaterialInAllQueues())
+      foreach (var mat in queuedMats)
       {
         if (matsOnPallets.Contains(mat.MaterialID)) continue;
 
-        var nextProc = logDB.NextProcessForQueuedMaterial(mat.MaterialID);
-        var lastProc = (nextProc ?? 1) - 1;
+        var lastProc = (mat.NextProcess ?? 1) - 1;
 
-        var matDetails = logDB.GetMaterialDetails(mat.MaterialID);
-
-        var job = string.IsNullOrEmpty(matDetails.JobUnique) ? null : loadJob(matDetails.JobUnique);
+        var job = string.IsNullOrEmpty(mat.Unique) ? null : loadJob(mat.Unique);
 
         mats.Add(new InProcessMaterialAndJob()
         {
@@ -1530,11 +1528,11 @@ namespace BlackMaple.FMSInsight.Niigata
             JobUnique = mat.Unique,
             PartName = mat.PartNameOrCasting,
             Process = lastProc,
-            Path = matDetails?.Paths != null && matDetails.Paths.TryGetValue(Math.Max(1, lastProc), out var path) ? path : 1,
-            Serial = matDetails?.Serial,
-            WorkorderId = matDetails?.Workorder,
+            Path = mat.Paths != null && mat.Paths.TryGetValue(Math.Max(1, lastProc), out var path) ? path : 1,
+            Serial = mat.Serial,
+            WorkorderId = mat.Workorder,
             SignaledInspections =
-                logDB.LookupInspectionDecisions(mat.MaterialID)
+                insps[mat.MaterialID]
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .Distinct()
@@ -1550,7 +1548,7 @@ namespace BlackMaple.FMSInsight.Niigata
               Type = InProcessMaterialAction.ActionType.Waiting
             }
           },
-          Workorders = string.IsNullOrEmpty(matDetails?.Workorder) ? null : logDB.WorkordersById(matDetails?.Workorder).ToImmutableList()
+          Workorders = string.IsNullOrEmpty(mat.Workorder) ? null : logDB.WorkordersById(mat.Workorder).ToImmutableList()
         });
       }
 

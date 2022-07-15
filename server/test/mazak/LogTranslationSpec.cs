@@ -1117,6 +1117,9 @@ namespace MachineWatchTest
           Queue = queue,
           Position = idx,
           Unique = m.Unique,
+          NextProcess = 1,
+          Serial = FMSSettings.ConvertToBase62(m.MaterialID).PadLeft(10, '0'),
+          Paths = ImmutableDictionary<int, int>.Empty,
           PartNameOrCasting = m.JobPartName,
           NumProcesses = m.NumProcess,
         }
@@ -1921,6 +1924,9 @@ namespace MachineWatchTest
             Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
             PartNameOrCasting = "pppp",
             NumProcesses = 2,
+            NextProcess = 2,
+            Serial = FMSSettings.ConvertToBase62(i).PadLeft(10, '0'),
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             AddTimeUTC = t.AddMinutes(i <= 3 ? 15 : i <= 6 ? 27 : 33)
           }
         )
@@ -1943,6 +1949,9 @@ namespace MachineWatchTest
               Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
               PartNameOrCasting = "pppp",
               NumProcesses = 2,
+              NextProcess = 2,
+              Serial = FMSSettings.ConvertToBase62(i).PadLeft(10, '0'),
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
               AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33)
             }
         )
@@ -1970,6 +1979,9 @@ namespace MachineWatchTest
               Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
               PartNameOrCasting = "pppp",
               NumProcesses = 2,
+              NextProcess = 2,
+              Serial = FMSSettings.ConvertToBase62(i).PadLeft(10, '0'),
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
               AddTimeUTC = t.AddMinutes(27)
             }
         )
@@ -2311,6 +2323,9 @@ namespace MachineWatchTest
           Unique = "unique",
           PartNameOrCasting = "part1",
           NumProcesses = 2,
+          NextProcess = 2,
+          Serial = FMSSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
+          Paths = ImmutableDictionary<int, int>.Empty,
           AddTimeUTC = t.AddMinutes(10)
         }
       });

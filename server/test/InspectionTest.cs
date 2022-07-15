@@ -160,6 +160,8 @@ namespace MachineWatchTest
       _insp.MakeInspectionDecisions(4, 2, new[] { inspProg });
       CheckDecision(4, "insp1", "counter1", true, now);
       CheckLastUTC("counter1", now);
+
+      CheckDecisions(new[] { 1L, 2, 3, 4 }, "insp1", "counter1", new[] { false, false, true, true }, now);
     }
 
     [Fact]
@@ -365,6 +367,7 @@ namespace MachineWatchTest
 
       CheckDecision(1, "myinspection", "", true, now, true);
       CheckDecision(2, "myinspection", "", false, now, true);
+      CheckDecisions(new[] { 1L, 2L }, "myinspection", "", new[] { true, false }, now, true);
     }
 
     private DateTime _lastCycleTime;
@@ -379,9 +382,23 @@ namespace MachineWatchTest
 
     private void CheckDecision(long matID, string iType, string counter, bool inspect, DateTime now, bool forced = false)
     {
+      CheckDecision(matID, _insp.LookupInspectionDecisions(matID), iType, counter, inspect, now, forced);
+
+    }
+    private void CheckDecisions(IReadOnlyList<long> mats, string iType, string counter, IReadOnlyList<bool> inspect, DateTime now, bool forced = false)
+    {
+      var insps = _insp.LookupInspectionDecisions(mats);
+      insps.Keys.Should().BeEquivalentTo(mats);
+      for (var i = 0; i < mats.Count; i++)
+      {
+        CheckDecision(mats[i], insps[mats[i]], iType, counter, inspect[i], now, forced);
+      }
+    }
+    private void CheckDecision(long matID, IReadOnlyList<Decision> decisions, string iType, string counter, bool inspect, DateTime now, bool forced = false)
+    {
       int decisionCnt = 0;
       int forcedCnt = 0;
-      foreach (var d in _insp.LookupInspectionDecisions(matID))
+      foreach (var d in decisions)
       {
         if (d.InspType == iType)
         {

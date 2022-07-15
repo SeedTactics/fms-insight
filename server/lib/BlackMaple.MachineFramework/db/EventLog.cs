@@ -2975,6 +2975,49 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    private void AddAdditionalDataToQueuedMaterial(SqliteTransaction trans, List<QueuedMaterial> mats)
+    {
+      using (var pathCmd = _connection.CreateCommand())
+      using (var nextProcCmd = _connection.CreateCommand())
+      {
+        pathCmd.Transaction = trans;
+        pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mid";
+        pathCmd.Parameters.Add("mid", SqliteType.Integer);
+
+        nextProcCmd.Transaction = trans;
+        nextProcCmd.CommandText = _nextProcessForQueuedMaterialSql;
+        nextProcCmd.Parameters.Add("matid", SqliteType.Integer);
+
+        for (var i = 0; i < mats.Count; i++)
+        {
+          var m = mats[i];
+          pathCmd.Parameters[0].Value = m.MaterialID;
+          var paths = ImmutableDictionary.CreateBuilder<int, int>();
+          using (var pathReader = pathCmd.ExecuteReader())
+          {
+            while (pathReader.Read())
+            {
+              paths.Add(pathReader.GetInt32(0), pathReader.GetInt32(1));
+            }
+          }
+
+          nextProcCmd.Parameters[0].Value = m.MaterialID;
+          var nextProcObj = nextProcCmd.ExecuteScalar();
+          int? nextProc;
+          if (nextProcObj != null && nextProcObj != DBNull.Value)
+          {
+            nextProc = Convert.ToInt32(nextProcObj) + 1;
+          }
+          else
+          {
+            nextProc = null;
+          }
+
+          mats[i] = mats[i] with { Paths = paths.ToImmutable(), NextProcess = nextProc };
+        }
+      }
+    }
+
     public IEnumerable<QueuedMaterial> GetMaterialInQueueByUnique(string queue, string unique)
     {
       lock (_cfg)
@@ -2986,13 +3029,15 @@ namespace BlackMaple.MachineFramework
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
-            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
-              " FROM queues " +
-              " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
-              " WHERE Queue = $q AND UniqueStr = $uniq " +
-              " ORDER BY Position";
+
+            cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
+              " FROM queues q " +
+              " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
+              " WHERE q.Queue = $q AND m.UniqueStr = $uniq " +
+              " ORDER BY q.Position";
             cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+
             using (var reader = cmd.ExecuteReader())
             {
               while (reader.Read())
@@ -3005,12 +3050,20 @@ namespace BlackMaple.MachineFramework
                   Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
                   PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
-                  AddTimeUTC = reader.IsDBNull(5) ? null : ((DateTime?)(new DateTime(reader.GetInt64(5), DateTimeKind.Utc))),
+                  Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
+                  Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
+
+                  // these are filled in by AddAdditionalDataToQueuedMaterial
+                  Paths = ImmutableDictionary<int, int>.Empty,
                 });
               }
             }
-            trans.Commit();
           }
+
+          AddAdditionalDataToQueuedMaterial(trans, ret);
+
+          trans.Commit();
           return ret;
         }
         catch
@@ -3030,15 +3083,21 @@ namespace BlackMaple.MachineFramework
         try
         {
           using (var cmd = _connection.CreateCommand())
+          using (var pathCmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
-            cmd.CommandText = "SELECT queues.MaterialID, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
-              " FROM queues " +
-              " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
-              " WHERE Queue = $q AND UniqueStr IS NULL AND PartName = $part " +
-              " ORDER BY Position";
+            pathCmd.Transaction = trans;
+
+            cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
+              " FROM queues q " +
+              " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
+              " WHERE q.Queue = $q AND m.UniqueStr IS NULL AND m.PartName = $part " +
+              " ORDER BY q.Position";
             cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
             cmd.Parameters.Add("part", SqliteType.Text).Value = partNameOrCasting;
+
+            pathCmd.CommandText = "SELECT Path FROM mat_path_details WHERE MaterialID = $mid";
+
             using (var reader = cmd.ExecuteReader())
             {
               while (reader.Read())
@@ -3051,10 +3110,18 @@ namespace BlackMaple.MachineFramework
                   Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
                   PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
-                  AddTimeUTC = reader.IsDBNull(5) ? null : ((DateTime?)(new DateTime(reader.GetInt64(5), DateTimeKind.Utc))),
+                  Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
+                  Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
+
+                  // these are filled in by AddAdditionalDataToQueuedMaterial
+                  Paths = ImmutableDictionary<int, int>.Empty,
                 });
               }
             }
+
+            AddAdditionalDataToQueuedMaterial(trans, ret);
+
             trans.Commit();
           }
           return ret;
@@ -3078,10 +3145,10 @@ namespace BlackMaple.MachineFramework
           using (var cmd = _connection.CreateCommand())
           {
             cmd.Transaction = trans;
-            cmd.CommandText = "SELECT queues.MaterialID, Queue, Position, UniqueStr, PartName, NumProcesses, AddTimeUTC " +
-              " FROM queues " +
-              " LEFT OUTER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
-              " ORDER BY Queue, Position";
+            cmd.CommandText = "SELECT q.MaterialID, q.Queue, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
+              " FROM queues q " +
+              " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
+              " ORDER BY q.Queue, q.Position";
             using (var reader = cmd.ExecuteReader())
             {
               while (reader.Read())
@@ -3094,10 +3161,17 @@ namespace BlackMaple.MachineFramework
                   Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
                   PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
                   NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
-                  AddTimeUTC = reader.IsDBNull(6) ? null : ((DateTime?)(new DateTime(reader.GetInt64(6), DateTimeKind.Utc))),
+                  Serial = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  Workorder = reader.IsDBNull(7) ? null : reader.GetString(7),
+                  AddTimeUTC = reader.IsDBNull(8) ? null : ((DateTime?)(new DateTime(reader.GetInt64(8), DateTimeKind.Utc))),
+
+                  // these are filled in by AddAdditionalDataToQueuedMaterial
+                  Paths = ImmutableDictionary<int, int>.Empty,
                 });
               }
             }
+
+            AddAdditionalDataToQueuedMaterial(trans, ret);
             trans.Commit();
             return ret;
           }
@@ -3121,6 +3195,16 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    private static readonly string _nextProcessForQueuedMaterialSql =
+      "SELECT MAX(m.Process) FROM " +
+        "stations_mat m " +
+        "INNER JOIN stations s ON m.Counter = s.Counter " +
+        "LEFT OUTER JOIN program_details d ON m.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
+        "WHERE " +
+        "  m.MaterialId = $matid " +
+        " AND s.StationLoc IN (" + LogTypesToCheckForNextProcess + ") " +
+        " AND d.Key IS NULL";
+
     private int? NextProcessForQueuedMaterial(IDbTransaction trans, long matId)
     {
       lock (_cfg)
@@ -3128,14 +3212,7 @@ namespace BlackMaple.MachineFramework
         using (var loadCmd = _connection.CreateCommand())
         {
           ((IDbCommand)loadCmd).Transaction = trans;
-          loadCmd.CommandText = "SELECT MAX(m.Process) FROM " +
-            "stations_mat m " +
-            "INNER JOIN stations s ON m.Counter = s.Counter " +
-            "LEFT OUTER JOIN program_details d ON m.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
-            "WHERE " +
-            "  m.MaterialId = $matid " +
-            " AND s.StationLoc IN (" + LogTypesToCheckForNextProcess + ") " +
-            " AND d.Key IS NULL";
+          loadCmd.CommandText = _nextProcessForQueuedMaterialSql;
           loadCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
 
           var val = loadCmd.ExecuteScalar();
@@ -3727,16 +3804,16 @@ namespace BlackMaple.MachineFramework
 
     #region Inspection Decisions
 
-    public IList<Decision> LookupInspectionDecisions(long matID)
+    public IReadOnlyList<Decision> LookupInspectionDecisions(long matID)
     {
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
         try
         {
-          var ret = LookupInspectionDecisions(trans, matID);
+          var ret = LookupInspectionDecisions(trans, new[] { matID });
           trans.Commit();
-          return ret;
+          return ret.GetValueOrDefault(matID, new Decision[] { });
         }
         catch
         {
@@ -3744,12 +3821,30 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-
     }
 
-    private IList<Decision> LookupInspectionDecisions(IDbTransaction trans, long matID)
+    public ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(IEnumerable<long> matIDs)
     {
-      List<Decision> ret = new List<Decision>();
+      lock (_cfg)
+      {
+        var trans = _connection.BeginTransaction();
+        try
+        {
+          var ret = LookupInspectionDecisions(trans, matIDs);
+          trans.Commit();
+          return ret.ToImmutable();
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      }
+    }
+
+    private ImmutableDictionary<long, IReadOnlyList<Decision>>.Builder LookupInspectionDecisions(IDbTransaction trans, IEnumerable<long> matIDs)
+    {
+      var ret = ImmutableDictionary.CreateBuilder<long, IReadOnlyList<Decision>>();
       using (var detailCmd = _connection.CreateCommand())
       using (var cmd = _connection.CreateCommand())
       {
@@ -3760,7 +3855,7 @@ namespace BlackMaple.MachineFramework
             "    Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) " +
             "    AND (StationLoc = $loc1 OR StationLoc = $loc2) " +
             " ORDER BY Counter ASC";
-        cmd.Parameters.Add("$mat", SqliteType.Integer).Value = matID;
+        cmd.Parameters.Add("$mat", SqliteType.Integer);
         cmd.Parameters.Add("$loc1", SqliteType.Integer).Value = LogType.InspectionForce;
         cmd.Parameters.Add("$loc2", SqliteType.Integer).Value = LogType.Inspection;
 
@@ -3768,61 +3863,70 @@ namespace BlackMaple.MachineFramework
         detailCmd.CommandText = "SELECT Value FROM program_details WHERE Counter = $cntr AND Key = 'InspectionType'";
         detailCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        using (var reader = cmd.ExecuteReader())
+        foreach (var matId in matIDs)
         {
-          while (reader.Read())
-          {
-            var cntr = reader.GetInt64(0);
-            var logTy = (LogType)reader.GetInt32(1);
-            var prog = reader.GetString(2);
-            var timeUtc = new DateTime(reader.GetInt64(3), DateTimeKind.Utc);
-            var result = reader.GetString(4);
-            var inspect = false;
-            bool.TryParse(result, out inspect);
+          cmd.Parameters[0].Value = matId;
+          var decisions = new List<Decision>();
 
-            if (logTy == LogType.Inspection)
+          using (var reader = cmd.ExecuteReader())
+          {
+            while (reader.Read())
             {
-              detailCmd.Parameters[0].Value = cntr;
-              var inspVal = detailCmd.ExecuteScalar();
-              string inspType;
-              if (inspVal != null)
+              var cntr = reader.GetInt64(0);
+              var logTy = (LogType)reader.GetInt32(1);
+              var prog = reader.GetString(2);
+              var timeUtc = new DateTime(reader.GetInt64(3), DateTimeKind.Utc);
+              var result = reader.GetString(4);
+              var inspect = false;
+              bool.TryParse(result, out inspect);
+
+              if (logTy == LogType.Inspection)
               {
-                inspType = inspVal.ToString();
+                detailCmd.Parameters[0].Value = cntr;
+                var inspVal = detailCmd.ExecuteScalar();
+                string inspType;
+                if (inspVal != null)
+                {
+                  inspType = inspVal.ToString();
+                }
+                else
+                {
+                  // old code didn't record in details, so assume the counter is in a specific format
+                  var parts = prog.Split(',');
+                  if (parts.Length >= 2)
+                    inspType = parts[1];
+                  else
+                    inspType = "";
+                }
+                decisions.Add(new Decision()
+                {
+                  MaterialID = matId,
+                  InspType = inspType,
+                  Counter = prog,
+                  Inspect = inspect,
+                  Forced = false,
+                  CreateUTC = timeUtc
+                });
               }
               else
               {
-                // old code didn't record in details, so assume the counter is in a specific format
-                var parts = prog.Split(',');
-                if (parts.Length >= 2)
-                  inspType = parts[1];
-                else
-                  inspType = "";
+                decisions.Add(new Decision()
+                {
+                  MaterialID = matId,
+                  InspType = prog,
+                  Counter = "",
+                  Inspect = inspect,
+                  Forced = true,
+                  CreateUTC = timeUtc
+                });
               }
-              ret.Add(new Decision()
-              {
-                MaterialID = matID,
-                InspType = inspType,
-                Counter = prog,
-                Inspect = inspect,
-                Forced = false,
-                CreateUTC = timeUtc
-              });
-            }
-            else
-            {
-              ret.Add(new Decision()
-              {
-                MaterialID = matID,
-                InspType = prog,
-                Counter = "",
-                Inspect = inspect,
-                Forced = true,
-                CreateUTC = timeUtc
-              });
             }
           }
+
+          ret.Add(matId, decisions);
         }
       }
+
       return ret;
     }
 
@@ -3850,7 +3954,8 @@ namespace BlackMaple.MachineFramework
       var actualPath = LookupActualPath(trans, matID);
 
       var decisions =
-          LookupInspectionDecisions(trans, matID)
+          LookupInspectionDecisions(trans, new[] { matID })
+          .GetValueOrDefault(matID, new Decision[] { })
           .ToLookup(d => d.InspType, d => d);
 
       Dictionary<string, PathInspection> insps;

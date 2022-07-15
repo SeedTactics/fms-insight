@@ -450,7 +450,7 @@ namespace MazakMachineInterface
       foreach (var m in materialToSearch)
       {
         if (m.Unique != jobUniq) continue;
-        if ((log.NextProcessForQueuedMaterial(m.MaterialID) ?? 1) != proc) continue;
+        if ((m.NextProcess ?? 1) != proc) continue;
         mats.Add(m);
       }
       return mats;

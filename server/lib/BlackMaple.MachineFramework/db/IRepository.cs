@@ -148,7 +148,8 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     List<InspectCount> LoadInspectCounts();
     void SetInspectCounts(IEnumerable<InspectCount> counts);
-    IList<Decision> LookupInspectionDecisions(long matID);
+    IReadOnlyList<Decision> LookupInspectionDecisions(long matID);
+    ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(IEnumerable<long> matID);
     IEnumerable<LogEntry> MakeInspectionDecisions(long matID, int process, IEnumerable<PathInspection> inspections, DateTime? mutcNow = null);
     LogEntry ForceInspection(long matID, string inspType);
     LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect);
@@ -270,7 +271,11 @@ namespace BlackMaple.MachineFramework
     public string Unique { get; init; }
     public string PartNameOrCasting { get; init; }
     public int NumProcesses { get; init; }
+    public string Serial { get; init; }
+    public string Workorder { get; init; }
+    public ImmutableDictionary<int, int> Paths { get; init; } // key is process, value is path
     public DateTime? AddTimeUTC { get; init; }
+    public int? NextProcess { get; init; }
   }
 
   [Draftable]
