@@ -1087,15 +1087,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
 
       _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-  new QueuedMaterial() {
-    MaterialID = 10,
-    Queue = "castingQ",
-    Position = 0,
-    Unique = "",
-    PartNameOrCasting = "aaa",
-    NumProcesses = 1,
-    AddTimeUTC = addTime
-  }
+        new QueuedMaterial() {
+          MaterialID = 10,
+          Queue = "castingQ",
+          Position = 0,
+          Unique = "",
+          Workorder = "work2",
+          NextProcess = 1,
+          Paths = ImmutableDictionary<int, int>.Empty,
+          PartNameOrCasting = "aaa",
+          NumProcesses = 1,
+          AddTimeUTC = addTime
+        }
       });
     }
 

@@ -581,9 +581,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
       mats.Should().BeEquivalentTo(new[] {
          new QueuedMaterial()
-          { MaterialID = 1, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC },
+          {
+            MaterialID = 1, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC,
+            Serial = "aaa", NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+          },
          new QueuedMaterial()
-          { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 1, Queue = "q1", Unique = "", AddTimeUTC = mats[1].AddTimeUTC }
+          {
+            MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 1, Queue = "q1", Unique = "", AddTimeUTC = mats[1].AddTimeUTC,
+            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+           }
         });
 
       _syncMock.Received().JobsOrQueuesChanged();
@@ -593,7 +599,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       mats = _logDB.GetMaterialInAllQueues().ToList();
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
-            { MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC}
+            {
+              MaterialID = 2, NumProcesses = 1, PartNameOrCasting = "c1", Position = 0, Queue = "q1", Unique = "", AddTimeUTC = mats[0].AddTimeUTC,
+              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            }
         }, options => options.Using<DateTime?>(ctx => ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, TimeSpan.FromSeconds(4))).WhenTypeIs<DateTime?>());
 
       _syncMock.Received().JobsOrQueuesChanged();
@@ -661,7 +670,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
-          { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
+          {
+            MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC,
+            Serial = "aaa", NextProcess = lastCompletedProcess + 1, Paths = ImmutableDictionary<int, int>.Empty
+          }
         });
 
       _syncMock.Received().JobsOrQueuesChanged();
@@ -679,7 +691,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       mats = _logDB.GetMaterialInAllQueues().ToList();
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
-          { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
+          {
+            MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC,
+            Serial = "aaa", NextProcess = lastCompletedProcess + 1, Paths = ImmutableDictionary<int, int>.Empty
+          }
         });
 
       _syncMock.Received().JobsOrQueuesChanged();
@@ -689,7 +704,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
       mats.Should().BeEquivalentTo(new[] {
           new QueuedMaterial()
-          { MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC}
+          {
+            MaterialID = 1, NumProcesses = 2, PartNameOrCasting = "p1", Position = 0, Queue = "q1", Unique = "uuu1", AddTimeUTC = mats[0].AddTimeUTC,
+            Serial = "aaa", NextProcess = lastCompletedProcess + 1, Paths = ImmutableDictionary<int, int>.Empty
+          }
         });
 
       var logMat = new LogMaterial(matID: 1, uniq: "uuu1", proc: lastCompletedProcess, part: "p1", numProc: 2, serial: "aaa", workorder: "", face: "");

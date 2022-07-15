@@ -274,11 +274,11 @@ namespace MazakMachineInterface
                 Serial = matDetails?.Serial,
                 WorkorderId = matDetails?.Workorder,
                 SignaledInspections =
-                jobDB.LookupInspectionDecisions(matID)
-                .Where(x => x.Inspect)
-                .Select(x => x.InspType)
-                .Distinct()
-                .ToImmutableList(),
+                  jobDB.LookupInspectionDecisions(matID)
+                  .Where(x => x.Inspect)
+                  .Select(x => x.InspType)
+                  .Distinct()
+                  .ToImmutableList(),
                 LastCompletedMachiningRouteStopIndex =
                   oldCycles.Any(
                 c => c.LogType == LogType.MachineCycle
@@ -309,29 +309,28 @@ namespace MazakMachineInterface
 
       //now queued
       var seenMatIds = new HashSet<long>(material.Select(m => m.MaterialID));
-      foreach (var mat in jobDB.GetMaterialInAllQueues())
+      var queuedMats = jobDB.GetMaterialInAllQueues();
+      var inspections = jobDB.LookupInspectionDecisions(queuedMats.Select(m => m.MaterialID));
+      foreach (var mat in queuedMats)
       {
         // material could be in the process of being loaded
         if (seenMatIds.Contains(mat.MaterialID)) continue;
-        var matLogs = jobDB.GetLogForMaterial(mat.MaterialID);
-        var nextProcess = jobDB.NextProcessForQueuedMaterial(mat.MaterialID);
-        var lastProc = (nextProcess ?? 1) - 1;
-        var matDetails = jobDB.GetMaterialDetails(mat.MaterialID);
+        var lastProc = (mat.NextProcess ?? 1) - 1;
         material.Add(new InProcessMaterial()
         {
           MaterialID = mat.MaterialID,
           JobUnique = mat.Unique,
           PartName = mat.PartNameOrCasting,
           Process = lastProc,
-          Path = matDetails.Paths != null && matDetails.Paths.TryGetValue(Math.Max(lastProc, 1), out var path) ? path : 1,
-          Serial = matDetails?.Serial,
-          WorkorderId = matDetails?.Workorder,
+          Path = mat.Paths != null && mat.Paths.TryGetValue(Math.Max(lastProc, 1), out var path) ? path : 1,
+          Serial = mat.Serial,
+          WorkorderId = mat.Workorder,
           SignaledInspections =
-          jobDB.LookupInspectionDecisions(mat.MaterialID)
-          .Where(x => x.Inspect)
-          .Select(x => x.InspType)
-          .Distinct()
-          .ToImmutableList(),
+            inspections[mat.MaterialID]
+            .Where(x => x.Inspect)
+            .Select(x => x.InspType)
+            .Distinct()
+            .ToImmutableList(),
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,
@@ -770,10 +769,9 @@ namespace MazakMachineInterface
               CurrentQueue = mat.Queue,
               QueuePosition = mat.Position,
             };
-            var matDetails = log.GetMaterialDetails(matId);
-            serial = matDetails?.Serial;
-            workId = matDetails?.Workorder;
-            prevProcPath = matDetails.Paths != null && matDetails.Paths.TryGetValue(Math.Max(operation.Process - 1, 1), out var path) ? path : 1;
+            serial = mat.Serial;
+            workId = mat.Workorder;
+            prevProcPath = mat.Paths != null && mat.Paths.TryGetValue(Math.Max(operation.Process - 1, 1), out var path) ? path : 1;
           }
 
           material.Add(new InProcessMaterial()
