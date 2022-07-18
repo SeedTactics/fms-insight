@@ -39,8 +39,8 @@ import {
   MoveMaterialIdentifier,
   MoveMaterialNodeKind,
   MoveArrowElemRect,
-} from "../../data/move-arrows";
-import { emptyIMap } from "../../util/imap";
+} from "../../data/move-arrows.js";
+import { HashMap } from "@seedtactics/immutable-collections";
 
 class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
   static elementToRect(e: Element): MoveArrowElemRect {
@@ -105,8 +105,8 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
 > {
   override state = {
     container: null,
-    nodes: emptyIMap<MoveMaterialIdentifier, Element>(),
-    node_type: emptyIMap<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
+    nodes: HashMap.empty<MoveMaterialIdentifier, Element>(),
+    node_type: HashMap.empty<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
   } as MoveMaterialArrowData<Element>;
 
   readonly ctx: MoveMaterialArrowContext | undefined = undefined;

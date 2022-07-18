@@ -36,12 +36,12 @@ import { addHours } from "date-fns";
 import { Grid } from "@mui/material";
 import { Button } from "@mui/material";
 
-import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material";
-import { SelectWorkorderDialog } from "./SelectWorkorder";
+import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material.js";
+import { SelectWorkorderDialog } from "./SelectWorkorder.js";
 import { Tooltip } from "@mui/material";
-import { LazySeq } from "../../util/lazyseq";
-import { currentOperator } from "../../data/operators";
-import { fmsInformation } from "../../network/server-settings";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { currentOperator } from "../../data/operators.js";
+import { fmsInformation } from "../../network/server-settings.js";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import {
   loadWorkordersForMaterialInDialog,
@@ -49,8 +49,8 @@ import {
   materialToShowInDialog,
   useAddExistingMaterialToQueue,
   useCompleteWash,
-} from "../../cell-status/material-details";
-import { last30MaterialSummary } from "../../cell-status/material-summary";
+} from "../../cell-status/material-details.js";
+import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 
 const WashDialog = React.memo(function WashDialog() {
   const operator = useRecoilValue(currentOperator);

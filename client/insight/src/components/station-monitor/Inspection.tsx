@@ -38,14 +38,14 @@ import { Button } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { DialogActions } from "@mui/material";
 
-import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material";
-import * as matDetails from "../../cell-status/material-details";
-import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary";
-import { currentOperator } from "../../data/operators";
+import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material.js";
+import * as matDetails from "../../cell-status/material-details.js";
+import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
+import { currentOperator } from "../../data/operators.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../network/server-settings";
-import { last30MaterialSummary } from "../../cell-status/material-summary";
-import { HashMap } from "../../util/imap";
+import { fmsInformation } from "../../network/server-settings.js";
+import { last30MaterialSummary } from "../../cell-status/material-summary.js";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 interface InspButtonsProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -210,7 +210,7 @@ function extractRecentInspections(
     if (comp === undefined) {
       return m.signaledInspections.length === 0;
     } else {
-      return m.signaledInspections.toLazySeq().allMatch((s) => s in comp);
+      return LazySeq.ofIterable(m.signaledInspections).allMatch((s) => s in comp);
     }
   }
 

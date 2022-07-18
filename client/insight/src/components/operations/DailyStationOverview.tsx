@@ -34,18 +34,20 @@ import * as React from "react";
 import { Card } from "@mui/material";
 import { CardHeader } from "@mui/material";
 import { CardContent } from "@mui/material";
-import BugIcon from "@mui/icons-material/BugReport";
 import { addDays, startOfToday } from "date-fns";
 import { Tooltip } from "@mui/material";
-import WorkIcon from "@mui/icons-material/Work";
 import { IconButton } from "@mui/material";
 import { Select } from "@mui/material";
-import ImportExport from "@mui/icons-material/ImportExport";
 import { MenuItem } from "@mui/material";
-import HourglassIcon from "@mui/icons-material/HourglassFull";
+import {
+  HourglassFull as HourglassIcon,
+  BugReport as BugIcon,
+  ImportExport,
+  Work as WorkIcon,
+} from "@mui/icons-material";
 
-import StationDataTable from "../analysis/StationDataTable";
-import { PartIdenticon } from "../station-monitor/Material";
+import StationDataTable from "../analysis/StationDataTable.js";
+import { PartIdenticon } from "../station-monitor/Material.js";
 import {
   filterStationCycles,
   outlierMachineCycles,
@@ -57,16 +59,17 @@ import {
   LoadCycleData,
   FilterAnyLoadKey,
   PartAndProcess,
-} from "../../data/results.cycles";
-import * as matDetails from "../../cell-status/material-details";
-import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart";
-import { OEEChart, OEETable } from "./OEEChart";
-import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee";
+} from "../../data/results.cycles.js";
+import * as matDetails from "../../cell-status/material-details.js";
+import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart.js";
+import { OEEChart, OEETable } from "./OEEChart.js";
+import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { last30SimStationUse } from "../../cell-status/sim-station-use";
-import { last30MaterialSummary } from "../../cell-status/material-summary";
-import { last30EstimatedCycleTimes, PartAndStationOperation } from "../../cell-status/estimated-cycle-times";
-import { last30StationCycles } from "../../cell-status/station-cycles";
+import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
+import { last30MaterialSummary } from "../../cell-status/material-summary.js";
+import { last30EstimatedCycleTimes, PartAndStationOperation } from "../../cell-status/estimated-cycle-times.js";
+import { last30StationCycles } from "../../cell-status/station-cycles.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -346,7 +349,7 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
                 name="Station-Cycles-cycle-chart-station-select"
                 autoWidth
                 displayEmpty
-                value={curOperation ? points.allMachineOperations.findIndex((o) => curOperation.equals(o)) : -1}
+                value={curOperation ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0) : -1}
                 style={{ marginLeft: "1em" }}
                 onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
               >
@@ -395,7 +398,9 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
             current_date_zoom={chartZoom.zoom}
             set_date_zoom_range={setChartZoom}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
-            partCntPerPoint={curOperation ? points.data.toLazySeq().head()?.[1]?.[0]?.material?.length : undefined}
+            partCntPerPoint={
+              curOperation ? LazySeq.ofIterable(points.data).head()?.[1]?.[0]?.material?.length : undefined
+            }
             plannedTimeMinutes={plannedMinutes}
           />
         ) : (

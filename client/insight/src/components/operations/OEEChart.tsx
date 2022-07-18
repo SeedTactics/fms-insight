@@ -34,11 +34,11 @@ import * as React from "react";
 import { Box, Grid } from "@mui/material";
 import { Table } from "@mui/material";
 
-import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable";
-import { LazySeq, ToPrimitiveOrd } from "../../util/lazyseq";
-import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee";
+import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable.js";
+import { LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
+import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee.js";
 import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
-import { seriesColor, chartTheme } from "../../util/chart-colors";
+import { seriesColor, chartTheme } from "../../util/chart-colors.js";
 
 export interface OEEProps {
   readonly showLabor: boolean;
@@ -163,7 +163,7 @@ function dataForTable(
   orderBy: ColumnId,
   order: "asc" | "desc"
 ): ReadonlyArray<OEEBarPoint> {
-  let getData: ToPrimitiveOrd<OEEBarPoint> | undefined;
+  let getData: ToComparableBase<OEEBarPoint> | undefined;
   for (const col of columns) {
     if (col.id === orderBy) {
       getData = col.getForSort || col.getDisplay;
@@ -172,29 +172,11 @@ function dataForTable(
   if (getData === undefined) {
     getData = columns[0].getForSort || columns[0].getDisplay;
   }
-  const getDataC = getData;
 
   const arr = LazySeq.ofIterable(series)
     .flatMap((e) => e.points)
     .toMutableArray();
-  return arr.sort((a, b) => {
-    const aVal = getDataC(a);
-    const bVal = getDataC(b);
-    if (aVal === bVal) {
-      // sort by date
-      if (order === "desc") {
-        return b.day.getTime() - a.day.getTime();
-      } else {
-        return a.day.getTime() - b.day.getTime();
-      }
-    } else {
-      if (order === "desc") {
-        return aVal > bVal ? -1 : 1;
-      } else {
-        return aVal > bVal ? 1 : -1;
-      }
-    }
-  });
+  return arr.sort(mkCompareByProperties(order === "desc" ? { desc: getData } : { asc: getData }));
 }
 
 export const OEETable = React.memo(function OEETableF(p: OEEProps) {

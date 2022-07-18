@@ -40,15 +40,15 @@ import {
   currentMaterialBinOrder,
   MaterialBin,
   moveMaterialInBin,
-} from "../../data/all-material-bins";
-import * as matDetails from "../../cell-status/material-details";
-import * as currentSt from "../../cell-status/current-status";
+} from "../../data/all-material-bins.js";
+import * as matDetails from "../../cell-status/material-details.js";
+import * as currentSt from "../../cell-status/current-status.js";
 import { Paper } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Button } from "@mui/material";
-import { LazySeq } from "../../util/lazyseq";
-import { InProcMaterial, MaterialDialog } from "../station-monitor/Material";
-import { IInProcessMaterial, LocType, QueuePosition } from "../../network/api";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { InProcMaterial, MaterialDialog } from "../station-monitor/Material.js";
+import { IInProcessMaterial, LocType, QueuePosition } from "../../network/api.js";
 import {
   InvalidateCycleDialogButtons,
   InvalidateCycleDialogContent,
@@ -56,9 +56,9 @@ import {
   SwapMaterialButtons,
   SwapMaterialDialogContent,
   SwapMaterialState,
-} from "../station-monitor/InvalidateCycle";
+} from "../station-monitor/InvalidateCycle.js";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { JobsBackend } from "../../network/backend";
+import { JobsBackend } from "../../network/backend.js";
 
 enum DragType {
   Material = "DRAG_MATERIAL",

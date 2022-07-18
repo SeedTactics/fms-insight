@@ -36,12 +36,12 @@ import { Dialog } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { useRecoilValue } from "recoil";
-import { fmsInformation } from "../../network/server-settings";
+import { fmsInformation } from "../../network/server-settings.js";
 import { Button } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { DialogTitle } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
+import { Settings as SettingsIcon } from "@mui/icons-material";
 
 export const CustomStationMonitorDialog = React.memo(function CustomStationMonitorDialog(): JSX.Element | null {
   const url = useRecoilValue(fmsInformation)?.customStationMonitorDialogUrl;

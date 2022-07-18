@@ -38,17 +38,20 @@ import { ListItemIcon } from "@mui/material";
 import { ListSubheader } from "@mui/material";
 import { ListItemText } from "@mui/material";
 import { Typography } from "@mui/material";
-import BuildIcon from "@mui/icons-material/Build";
-import ShoppingBasket from "@mui/icons-material/ShoppingBasket";
-import DirectionsIcon from "@mui/icons-material/Directions";
-import StarIcon from "@mui/icons-material/StarRate";
-import ChartIcon from "@mui/icons-material/InsertChart";
-import ExtensionIcon from "@mui/icons-material/Extension";
-import InfoIcon from "@mui/icons-material/Info";
-import OpacityIcon from "@mui/icons-material/Opacity";
-import MemoryIcon from "@mui/icons-material/Memory";
 
-import { RouteState, RouteLocation } from "./routes";
+import {
+  Build as BuildIcon,
+  ShoppingBasket,
+  Directions as DirectionsIcon,
+  StarRate as StarIcon,
+  InsertChart as ChartIcon,
+  Extension as ExtensionIcon,
+  Info as InfoIcon,
+  Opacity as OpacityIcon,
+  Memory as MemoryIcon,
+} from "@mui/icons-material";
+
+import { RouteState, RouteLocation } from "./routes.js";
 
 export type ChooseModeItem =
   | { readonly type: "Subheader"; readonly caption: string }

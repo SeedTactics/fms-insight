@@ -37,8 +37,6 @@ import { Typography } from "@mui/material";
 import { ButtonBase } from "@mui/material";
 import { Button } from "@mui/material";
 import { Tooltip } from "@mui/material";
-import WarningIcon from "@mui/icons-material/Warning";
-import SearchIcon from "@mui/icons-material/Search";
 import { Avatar } from "@mui/material";
 import { Paper } from "@mui/material";
 import { CircularProgress } from "@mui/material";
@@ -48,17 +46,21 @@ import { Dialog } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
-import DragIndicator from "@mui/icons-material/DragIndicator";
 import { SortableElement, SortableContainer } from "react-sortable-hoc";
 import { DraggableProvided } from "react-beautiful-dnd";
 
-import * as api from "../../network/api";
-import * as matDetails from "../../cell-status/material-details";
-import { LogEntries } from "../LogEntry";
-import { inproc_mat_to_summary, MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
-import { LazySeq } from "../../util/lazyseq";
-import { currentOperator } from "../../data/operators";
-import { instructionUrl } from "../../network/backend";
+import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
+
+import * as api from "../../network/api.js";
+import * as matDetails from "../../cell-status/material-details.js";
+import { LogEntries } from "../LogEntry.js";
+import {
+  inproc_mat_to_summary,
+  MaterialSummaryAndCompletedData,
+} from "../../cell-status/material-summary.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { currentOperator } from "../../data/operators.js";
+import { instructionUrl } from "../../network/backend.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 
 export class PartIdenticon extends React.PureComponent<{
@@ -73,7 +75,10 @@ export class PartIdenticon extends React.PureComponent<{
   }
 }
 
-function materialAction(mat: Readonly<api.IInProcessMaterial>, displaySinglePallet?: string): string | undefined {
+function materialAction(
+  mat: Readonly<api.IInProcessMaterial>,
+  displaySinglePallet?: string
+): string | undefined {
   switch (mat.action.type) {
     case api.ActionType.Loading:
       switch (mat.location.type) {
@@ -178,7 +183,10 @@ export const MatSummary = React.memo(function MatSummary(props: MaterialSummaryP
       }}
     >
       {dragHandleProps ? (
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }} {...dragHandleProps}>
+        <div
+          style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}
+          {...dragHandleProps}
+        >
           <DragIndicator fontSize="large" color={props.isDragging ? "primary" : "action"} />
         </div>
       ) : undefined}
@@ -424,7 +432,7 @@ export function InstructionButton({
       )
       .flatMap((e) => e.material)
       .filter((e) => e.id === material.materialID)
-      .maxOn((e) => e.proc)?.proc ?? null;
+      .maxBy((e) => e.proc)?.proc ?? null;
   const url = instructionUrl(material.partName, type, material.materialID, pallet, maxProc, operator);
   return (
     <Button href={url} target="bms-instructions" color="primary">

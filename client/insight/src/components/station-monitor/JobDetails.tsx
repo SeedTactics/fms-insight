@@ -32,25 +32,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import * as api from "../../network/api";
+import * as api from "../../network/api.js";
 import { IconButton } from "@mui/material";
 import { Table } from "@mui/material";
 import { TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
-import MoreHoriz from "@mui/icons-material/MoreHoriz";
-import { durationToMinutes } from "../../util/parseISODuration";
 import { format } from "date-fns";
-import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
-import { LazySeq } from "../../util/lazyseq";
-import { materialToShowInDialog } from "../../cell-status/material-details";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { currentStatus } from "../../cell-status/current-status";
-import { selectedAnalysisPeriod } from "../../network/load-specific-month";
-import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary";
-import { HashMap } from "../../util/imap";
-import { HashSet } from "../../util/iset";
+import { durationToMinutes } from "../../util/parseISODuration.js";
+import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
+import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
+import { LazySeq, HashMap, HashSet } from "@seedtactics/immutable-collections";
+
+import { MoreHoriz } from "@mui/icons-material";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;

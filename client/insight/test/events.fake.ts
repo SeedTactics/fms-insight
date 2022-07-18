@@ -43,9 +43,9 @@ import {
   InProcessMaterialAction,
   ToolUse,
   ActionType,
-} from "../src/network/api";
+} from "../src/network/api.js";
 import { faker } from "@faker-js/faker";
-import { durationToSeconds } from "../src/util/parseISODuration";
+import { durationToSeconds } from "../src/util/parseISODuration.js";
 import { addSeconds, addMinutes } from "date-fns";
 
 faker.seed(0x6f79);
@@ -102,7 +102,12 @@ function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
   es.push(e);
 }
 
-export function fakeInspSignal(mat?: LogMaterial, inspType?: string, now?: Date, counter?: number): ILogEntry {
+export function fakeInspSignal(
+  mat?: LogMaterial,
+  inspType?: string,
+  now?: Date,
+  counter?: number
+): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
   now = now || new Date(2017, 9, 5);

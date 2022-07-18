@@ -36,15 +36,27 @@ import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
 import TimeAgo from "react-timeago";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import { CardHeader } from "@mui/material";
-import ToolIcon from "@mui/icons-material/Dns";
 import { Table } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableRow } from "@mui/material";
 import { TableSortLabel } from "@mui/material";
 import { Tooltip } from "@mui/material";
+import { TableBody } from "@mui/material";
+import { IconButton } from "@mui/material";
+import { Select } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import { Collapse } from "@mui/material";
+
+import {
+  Dns as ToolIcon,
+  Refresh as RefreshIcon,
+  ImportExport,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+} from "@mui/icons-material";
+
 import {
   ToolReport,
   currentToolReport,
@@ -53,20 +65,12 @@ import {
   copyToolReportToClipboard,
   toolReportRefreshTime,
   machinesWithTools,
-} from "../../data/tools-programs";
-import { TableBody } from "@mui/material";
-import { IconButton } from "@mui/material";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import { Collapse } from "@mui/material";
-import { LazySeq } from "../../util/lazyseq";
-import { PartIdenticon } from "../station-monitor/Material";
+} from "../../data/tools-programs.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { PartIdenticon } from "../station-monitor/Material.js";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { useIsDemo } from "../routes";
-import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
-import { Select } from "@mui/material";
-import ImportExport from "@mui/icons-material/ImportExport";
-import { MenuItem } from "@mui/material";
+import { useIsDemo } from "../routes.js";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading.js";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -97,8 +101,8 @@ const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStri
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
 
-  const schUse = LazySeq.ofIterable(props.tool.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity);
-  const totalLife = LazySeq.ofIterable(props.tool.machines).sumOn((m) => m.remainingMinutes);
+  const schUse = LazySeq.ofIterable(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+  const totalLife = LazySeq.ofIterable(props.tool.machines).sumBy((m) => m.remainingMinutes);
 
   return (
     <>
@@ -234,7 +238,7 @@ export function ToolSummaryTable(): JSX.Element {
     return <div />;
   }
 
-  const rows = tools.toLazySeq().sortWith((a: ToolReport, b: ToolReport) => {
+  const rows = LazySeq.ofIterable(tools).sortWith((a: ToolReport, b: ToolReport) => {
     let c = 0;
     switch (sortCol) {
       case "ToolName":
@@ -242,13 +246,13 @@ export function ToolSummaryTable(): JSX.Element {
         break;
       case "ScheduledUse":
         c =
-          LazySeq.ofIterable(a.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity) -
-          LazySeq.ofIterable(b.parts).sumOn((p) => p.scheduledUseMinutes * p.quantity);
+          LazySeq.ofIterable(a.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity) -
+          LazySeq.ofIterable(b.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
         break;
       case "RemainingTotalLife":
         c =
-          LazySeq.ofIterable(a.machines).sumOn((m) => m.remainingMinutes) -
-          LazySeq.ofIterable(b.machines).sumOn((m) => m.remainingMinutes);
+          LazySeq.ofIterable(a.machines).sumBy((m) => m.remainingMinutes) -
+          LazySeq.ofIterable(b.machines).sumBy((m) => m.remainingMinutes);
         break;
       case "MinRemainingLife":
         c = a.minRemainingMinutes - b.minRemainingMinutes;

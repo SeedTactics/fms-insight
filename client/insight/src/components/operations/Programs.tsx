@@ -36,10 +36,7 @@ import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
 import TimeAgo from "react-timeago";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import { CardHeader } from "@mui/material";
-import ProgramIcon from "@mui/icons-material/Receipt";
-import CodeIcon from "@mui/icons-material/Code";
 import { Table } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
@@ -47,6 +44,19 @@ import { TableRow } from "@mui/material";
 import { TableSortLabel } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Tooltip } from "@mui/material";
+
+import {
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+  FirstPage as FirstPageIcon,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+  History as HistoryIcon,
+  Refresh as RefreshIcon,
+  Receipt as ProgramIcon,
+  Code as CodeIcon,
+} from "@mui/icons-material";
+
 import {
   programReportRefreshTime,
   currentProgramReport,
@@ -56,28 +66,22 @@ import {
   programContent,
   programToShowHistory,
   programFilter,
-} from "../../data/tools-programs";
+} from "../../data/tools-programs.js";
 import { TableBody } from "@mui/material";
 import { IconButton } from "@mui/material";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import FirstPageIcon from "@mui/icons-material/FirstPage";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import HistoryIcon from "@mui/icons-material/History";
 import { Collapse } from "@mui/material";
-import { LazySeq } from "../../util/lazyseq";
-import { PartIdenticon } from "../station-monitor/Material";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { PartIdenticon } from "../station-monitor/Material.js";
 import { useSetRecoilState, useRecoilState, useRecoilValue } from "recoil";
 import { Dialog } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { Button } from "@mui/material";
 import { DialogActions } from "@mui/material";
-import { useIsDemo } from "../routes";
-import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
-import { IProgramRevision } from "../../network/api";
-import { MachineBackend } from "../../network/backend";
+import { useIsDemo } from "../routes.js";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading.js";
+import { IProgramRevision } from "../../network/api.js";
+import { MachineBackend } from "../../network/backend.js";
 import { Select } from "@mui/material";
 import { MenuItem } from "@mui/material";
 
@@ -229,7 +233,7 @@ export function ProgramSummaryTable(): JSX.Element {
     return <div />;
   }
 
-  const rows = report.programs.toLazySeq().sortWith((a: CellControllerProgram, b: CellControllerProgram) => {
+  const rows = LazySeq.ofIterable(report.programs).sortWith((a: CellControllerProgram, b: CellControllerProgram) => {
     let c = 0;
     switch (sortCol) {
       case "ProgramName":

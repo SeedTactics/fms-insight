@@ -41,13 +41,13 @@ import { Dialog } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
-import CheckmarkIcon from "@mui/icons-material/Check";
-import ShoppingBasketIcon from "@mui/icons-material/ShoppingBasket";
 import { TextField } from "@mui/material";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
-import * as matDetails from "../../cell-status/material-details";
-import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
+import { Check as CheckmarkIcon, ShoppingBasket as ShoppingBasketIcon } from "@mui/icons-material";
+
+import * as matDetails from "../../cell-status/material-details.js";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading.js";
 
 function workorderComplete(w: matDetails.WorkorderPlanAndSummary): string {
   let completed = 0;

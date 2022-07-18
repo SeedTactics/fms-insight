@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { filterRemoveAddQueue } from "./LogEntry";
-import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake";
+import { filterRemoveAddQueue } from "./LogEntry.js";
+import { fakeCycle, fakeAddToQueue, fakeRemoveFromQueue } from "../../test/events.fake.js";
 import { it, expect } from "vitest";
 
 it("doesn't filter just a single add", () => {

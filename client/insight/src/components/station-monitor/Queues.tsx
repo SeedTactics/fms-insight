@@ -42,19 +42,22 @@ import { TableBody } from "@mui/material";
 import { Button } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { Typography } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
 import { Dialog } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { DialogContent } from "@mui/material";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { TextField } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { Fab } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { CircularProgress } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import AssignIcon from "@mui/icons-material/AssignmentReturn";
+
+import {
+  Add as AddIcon,
+  AssignmentReturn as AssignIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  Edit as EditIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+} from "@mui/icons-material";
 
 import {
   SortableInProcMaterial,
@@ -63,8 +66,8 @@ import {
   MultiMaterial,
   InProcMaterial,
   MaterialDetailTitle,
-} from "./Material";
-import * as api from "../../network/api";
+} from "./Material.js";
+import * as api from "../../network/api.js";
 import {
   QueueMaterialDialog,
   AddBySerialDialog,
@@ -73,31 +76,31 @@ import {
   addMaterialBySerial,
   bulkAddCastingToQueue,
   addMaterialWithoutSerial,
-} from "./QueuesAddMaterial";
+} from "./QueuesAddMaterial.js";
 import {
   selectQueueData,
   extractJobRawMaterial,
   loadRawMaterialEvents,
   JobRawMaterialData,
-} from "../../data/queue-material";
-import { LogEntries } from "../LogEntry";
-import { JobsBackend, BackendUrl } from "../../network/backend";
-import { LazySeq } from "../../util/lazyseq";
-import { currentOperator } from "../../data/operators";
-import ReactToPrint from "react-to-print";
-import { PrintedLabel } from "./PrintedLabel";
-import { JobDetails } from "./JobDetails";
+} from "../../data/queue-material.js";
+import { LogEntries } from "../LogEntry.js";
+import { JobsBackend, BackendUrl } from "../../network/backend.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { currentOperator } from "../../data/operators.js";
+import { default as ReactToPrint } from "react-to-print";
+import { PrintedLabel } from "./PrintedLabel.js";
+import { JobDetails } from "./JobDetails.js";
 import { atom, useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../network/server-settings";
+import { fmsInformation } from "../../network/server-settings.js";
 import {
   currentStatus,
   currentStatusJobComment,
   reorderQueuedMatInCurrentStatus,
-} from "../../cell-status/current-status";
-import { useAddExistingMaterialToQueue, usePrintLabel } from "../../cell-status/material-details";
+} from "../../cell-status/current-status.js";
+import { useAddExistingMaterialToQueue, usePrintLabel } from "../../cell-status/material-details.js";
 import { Collapse } from "@mui/material";
-import { rawMaterialQueues } from "../../cell-status/names";
-import { useRecoilConduit } from "../../util/recoil-util";
+import { rawMaterialQueues } from "../../cell-status/names.js";
+import { useRecoilConduit } from "../../util/recoil-util.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;

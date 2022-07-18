@@ -37,7 +37,7 @@ import { MenuItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
 import { ListItemSecondaryAction } from "@mui/material";
 import { IconButton } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { Delete as DeleteIcon } from "@mui/icons-material";
 import { Dialog } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { TextField } from "@mui/material";
@@ -46,10 +46,10 @@ import { DialogActions } from "@mui/material";
 import { Button } from "@mui/material";
 
 import { useRecoilState, useRecoilValue } from "recoil";
-import { allOperators, currentOperator } from "../data/operators";
-import { fmsInformation } from "../network/server-settings";
-import { LazySeq } from "../util/lazyseq";
-import { useRecoilStateDraft } from "../util/recoil-util";
+import { allOperators, currentOperator } from "../data/operators.js";
+import { fmsInformation } from "../network/server-settings.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { useRecoilStateDraft } from "../util/recoil-util.js";
 
 const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__" as const;
 

@@ -35,14 +35,15 @@ import { Grid } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import TimeAgo from "react-timeago";
 
-import * as api from "../../network/api";
+import * as api from "../../network/api.js";
 import { addSeconds, addDays } from "date-fns";
-import { PalletData, buildPallets } from "../../data/load-station";
-import { stationMinutes } from "../../data/results.cycles";
+import { PalletData, buildPallets } from "../../data/load-station.js";
+import { stationMinutes } from "../../data/results.cycles.js";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../cell-status/current-status";
-import { durationToSeconds } from "../../util/parseISODuration";
-import { last30StationCycles } from "../../cell-status/station-cycles";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { durationToSeconds } from "../../util/parseISODuration.js";
+import { last30StationCycles } from "../../cell-status/station-cycles.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 interface StationOEEProps {
   readonly dateOfCurrentStatus: Date | undefined;
@@ -259,10 +260,9 @@ export default React.memo(function StationOEEs() {
     [cycles, currentSt.timeOfCurrentStatusUTC]
   );
 
-  const stats = pallets
-    .toLazySeq()
+  const stats = LazySeq.ofIterable(pallets)
     .map((p) => p[0])
-    .concat(stationMins.toLazySeq().map((s) => s[0]))
+    .concat(LazySeq.ofIterable(stationMins).map((s) => s[0]))
     .distinct()
     .toSortedArray(
       (s) => s.startsWith("L/U"),

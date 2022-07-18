@@ -38,17 +38,17 @@ import { Step } from "@mui/material";
 import { StepLabel } from "@mui/material";
 import { StepContent } from "@mui/material";
 
-import * as matDetails from "../../cell-status/material-details";
-import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material";
-import { buildPathString, extractPath } from "../../data/results.inspection";
+import * as matDetails from "../../cell-status/material-details.js";
+import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material.js";
+import { buildPathString, extractPath } from "../../data/results.inspection.js";
 import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
-import { LogType } from "../../network/api";
-import { InspectionSankey } from "../analysis/InspectionSankey";
-import { DataTableActionZoomType } from "../analysis/DataTable";
-import { useIsDemo } from "../routes";
+import { LogType } from "../../network/api.js";
+import { InspectionSankey } from "../analysis/InspectionSankey.js";
+import { DataTableActionZoomType } from "../analysis/DataTable.js";
+import { useIsDemo } from "../routes.js";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup";
-import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading";
+import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
+import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading.js";
 
 interface SerialLookupProps {
   readonly onSelect: (s: string) => void;

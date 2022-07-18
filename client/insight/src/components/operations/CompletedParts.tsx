@@ -36,9 +36,6 @@ import { CardHeader } from "@mui/material";
 import { CardContent } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { Tooltip } from "@mui/material";
-import ImportExport from "@mui/icons-material/ImportExport";
-import ExtensionIcon from "@mui/icons-material/Extension";
-import EditIcon from "@mui/icons-material/Edit";
 import { Typography } from "@mui/material";
 import { Table } from "@mui/material";
 import { TableRow } from "@mui/material";
@@ -46,19 +43,24 @@ import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableBody } from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
-import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules";
-import { IHistoricJob } from "../../network/api";
-import { PartIdenticon } from "../station-monitor/Material";
-import { EditNoteDialog } from "../station-monitor/Queues";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import { JobDetails } from "../station-monitor/JobDetails";
+import { ScheduledJobDisplay, buildScheduledJobs, copyScheduledJobsToClipboard } from "../../data/results.schedules.js";
+import { IHistoricJob } from "../../network/api.js";
+import { PartIdenticon } from "../station-monitor/Material.js";
+import { EditNoteDialog } from "../station-monitor/Queues.js";
+import {
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+  Edit as EditIcon,
+  Extension as ExtensionIcon,
+  ImportExport,
+} from "@mui/icons-material";
+import { JobDetails } from "../station-monitor/JobDetails.js";
 import { Collapse } from "@mui/material";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../cell-status/current-status";
-import { last30Jobs } from "../../cell-status/scheduled-jobs";
-import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../../cell-status/material-summary";
-import { HashMap } from "../../util/imap";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
+import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
+import { HashMap } from "@seedtactics/immutable-collections";
 
 export interface JobsTableProps {
   readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;

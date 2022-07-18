@@ -31,20 +31,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as api from "../network/api";
+import * as api from "../network/api.js";
 import { styled, Table } from "@mui/material";
 import { TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
-import DateTimeDisplay from "./DateTimeDisplay";
-import { LazySeq } from "../util/lazyseq";
+import DateTimeDisplay from "./DateTimeDisplay.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ImportExport from "@mui/icons-material/ImportExport";
-import { copyLogEntriesToClipboard } from "../data/results.cycles";
-import { durationToMinutes, durationToSeconds } from "../util/parseISODuration";
+import { ChevronRight as ChevronRightIcon, ImportExport } from "@mui/icons-material";
+import { copyLogEntriesToClipboard } from "../data/results.cycles.js";
+import { durationToMinutes, durationToSeconds } from "../util/parseISODuration.js";
 
 type ColoredSpanType = "machine" | "loadStation" | "pallet" | "queue" | "inspectionNotSignaled" | "inspectionSignaled";
 

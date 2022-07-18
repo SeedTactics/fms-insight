@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { addDays, startOfToday } from "date-fns";
-import { InspectionSankey } from "../analysis/InspectionSankey";
+import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { useRecoilValue } from "recoil";
-import { last30Inspections } from "../../cell-status/inspections";
+import { last30Inspections } from "../../cell-status/inspections.js";
 
 const SelectedInspections = React.memo(function SelectedInspections() {
   const inspections = useRecoilValue(last30Inspections);

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Button, CircularProgress, Stack } from "@mui/material";
 
-import { useRequestOpenBackupFile } from "../network/backend-backupviewer";
+import { useRequestOpenBackupFile } from "../network/backend-backupviewer.js";
 
 export function BackupViewer(): JSX.Element {
   const [loading, setLoading] = React.useState(false);

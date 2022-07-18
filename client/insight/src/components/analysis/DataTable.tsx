@@ -44,7 +44,7 @@ import { Select } from "@mui/material";
 import { InputBase } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { Button } from "@mui/material";
-import Calendar from "react-calendar";
+import { default as Calendar } from "react-calendar";
 import {
   MoreHoriz,
   FirstPage as FirstPageIcon,
@@ -76,7 +76,9 @@ export interface DataTableHeadProps<Id, Row> {
   readonly showDetailsCol: boolean;
 }
 
-export function DataTableHead<Id extends string | number, Row>(props: DataTableHeadProps<Id, Row>): JSX.Element {
+export function DataTableHead<Id extends string | number, Row>(
+  props: DataTableHeadProps<Id, Row>
+): JSX.Element {
   return (
     <TableHead>
       <TableRow>
@@ -169,7 +171,9 @@ const StyledCalendar = styled(Calendar)(({ theme }) => ({
 
 function SelectDateRange(props: SelectDateRangeProps) {
   const [open, setOpen] = React.useState(false);
-  const start = props.zoom.current_date_zoom ? props.zoom.current_date_zoom.start : props.zoom.default_date_range[0];
+  const start = props.zoom.current_date_zoom
+    ? props.zoom.current_date_zoom.start
+    : props.zoom.default_date_range[0];
   const end = addDays(
     props.zoom.current_date_zoom ? props.zoom.current_date_zoom.end : props.zoom.default_date_range[1],
     -1
@@ -346,7 +350,12 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
           (props.page + 1) * props.rowsPerPage
         )} of ${props.count}`}
       </Typography>
-      <IconButton onClick={() => props.setPage(0)} disabled={props.page === 0} aria-label="First Page" size="large">
+      <IconButton
+        onClick={() => props.setPage(0)}
+        disabled={props.page === 0}
+        aria-label="First Page"
+        size="large"
+      >
         <FirstPageIcon />
       </IconButton>
       <IconButton
@@ -389,7 +398,9 @@ export interface DataTableBodyProps<Id, Row> {
   readonly onClickDetails?: (event: React.MouseEvent, r: Row) => void;
 }
 
-export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<DataTableBodyProps<Id, Row>> {
+export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<
+  DataTableBodyProps<Id, Row>
+> {
   override render(): JSX.Element {
     const onClickDetails = this.props.onClickDetails;
     return (

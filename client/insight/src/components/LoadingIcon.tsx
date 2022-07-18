@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import ErrorIcon from "@mui/icons-material/Error";
+import { Error as ErrorIcon } from "@mui/icons-material";
 
 import { Tooltip } from "@mui/material";
-import { errorLoadingLast30, websocketReconnecting } from "../network/websocket";
+import { errorLoadingLast30, websocketReconnecting } from "../network/websocket.js";
 import { useRecoilValue } from "recoil";
-import { errorLoadingBackupViewer, loadingBackupViewer } from "../network/backend-backupviewer";
-import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month";
+import { errorLoadingBackupViewer, loadingBackupViewer } from "../network/backend-backupviewer.js";
+import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month.js";
 
 export const LoadingIcon = React.memo(function LoadingIcon() {
   const websocketLoading = useRecoilValue(websocketReconnecting);

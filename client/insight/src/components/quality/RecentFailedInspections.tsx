@@ -36,21 +36,20 @@ import { CardHeader } from "@mui/material";
 import { CardContent } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import ImportExport from "@mui/icons-material/ImportExport";
 import { Table } from "@mui/material";
-import BugIcon from "@mui/icons-material/BugReport";
+import { BugReport as BugIcon, ImportExport } from "@mui/icons-material";
 import {
   extractFailedInspections,
   FailedInspectionEntry,
   copyFailedInspectionsToClipboard,
-} from "../../data/results.inspection";
-import { LazySeq, SortByProperty } from "../../util/lazyseq";
+} from "../../data/results.inspection.js";
+import { LazySeq, ToComparable } from "@seedtactics/immutable-collections";
 import { addDays, startOfToday } from "date-fns";
-import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable";
-import { materialToShowInDialog } from "../../cell-status/material-details";
-import { RouteLocation, useCurrentRoute, useIsDemo } from "../routes";
+import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable.js";
+import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { RouteLocation, useCurrentRoute, useIsDemo } from "../routes.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { last30Inspections } from "../../cell-status/inspections";
+import { last30Inspections } from "../../cell-status/inspections.js";
 
 interface RecentFailedInspectionsProps {
   readonly failed: ReadonlyArray<FailedInspectionEntry>;
@@ -116,7 +115,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
     }
   }
 
-  let sortOn: SortByProperty<FailedInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
+  let sortOn: ToComparable<FailedInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
   for (const col of columns) {
     if (col.id === orderBy && order === "asc") {
       sortOn = { asc: col.getForSort || col.getDisplay };
@@ -126,7 +125,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   }
 
   const curPage = Math.min(origCurPage, Math.ceil(props.failed.length / rowsPerPage));
-  const points = props.failed.toLazySeq().sortBy(sortOn);
+  const points = LazySeq.ofIterable(props.failed).sortBy(sortOn);
 
   return (
     <>

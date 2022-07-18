@@ -35,9 +35,9 @@ import { Button } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
 import * as React from "react";
-import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../network/api";
-import { JobsBackend } from "../../network/backend";
-import { LazySeq } from "../../util/lazyseq";
+import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../network/api.js";
+import { JobsBackend } from "../../network/backend.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 interface InvalidateCycle {
   readonly process: number | null;
@@ -58,7 +58,7 @@ export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps
   const maxProc =
     LazySeq.ofIterable(props.events)
       .flatMap((e) => e.material)
-      .maxOn((m) => m.proc)?.proc ?? 1;
+      .maxBy((m) => m.proc)?.proc ?? 1;
 
   return (
     <div style={{ margin: "2em" }}>

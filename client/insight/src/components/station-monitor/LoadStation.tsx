@@ -35,13 +35,14 @@ import * as React from "react";
 import { Box, Divider } from "@mui/material";
 import { Button } from "@mui/material";
 import { Hidden } from "@mui/material";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import TimeAgo from "react-timeago";
 import { addSeconds } from "date-fns";
-import { durationToSeconds } from "../../util/parseISODuration";
-import { LazySeq } from "../../util/lazyseq";
+import { durationToSeconds } from "../../util/parseISODuration.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
-import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from "../../data/load-station";
+import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
+
+import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from "../../data/load-station.js";
 import {
   MaterialDialog,
   InProcMaterial,
@@ -49,25 +50,25 @@ import {
   WhiteboardRegion,
   SortableWhiteboardRegion,
   InstructionButton,
-} from "./Material";
-import * as api from "../../network/api";
-import * as matDetails from "../../cell-status/material-details";
-import { SelectWorkorderDialog } from "./SelectWorkorder";
-import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType";
-import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows";
-import { MoveMaterialNodeKindType } from "../../data/move-arrows";
+} from "./Material.js";
+import * as api from "../../network/api.js";
+import * as matDetails from "../../cell-status/material-details.js";
+import { SelectWorkorderDialog } from "./SelectWorkorder.js";
+import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType.js";
+import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
+import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
 import { SortEnd } from "react-sortable-hoc";
-import { currentOperator } from "../../data/operators";
-import { PrintedLabel } from "./PrintedLabel";
-import ReactToPrint from "react-to-print";
-import { instructionUrl } from "../../network/backend";
+import { currentOperator } from "../../data/operators.js";
+import { PrintedLabel } from "./PrintedLabel.js";
+import { default as ReactToPrint } from "react-to-print";
+import { instructionUrl } from "../../network/backend.js";
 import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../network/server-settings";
-import { currentStatus, reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status";
-import { useIsDemo } from "../routes";
-import { useRecoilConduit } from "../../util/recoil-util";
+import { fmsInformation } from "../../network/server-settings.js";
+import { currentStatus, reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
+import { useIsDemo } from "../routes.js";
+import { useRecoilConduit } from "../../util/recoil-util.js";
 
 function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
@@ -236,10 +237,10 @@ interface PalletColumnProps {
 }
 
 function PalletColumn(props: PalletColumnProps) {
-  const maxFace = LazySeq.ofIterable(props.data.face.keys()).maxOn((x) => x) ?? 1;
+  const maxFace = LazySeq.ofIterable(props.data.face.keys()).maxBy((x) => x) ?? 1;
 
   let palDetails: JSX.Element;
-  const firstMats = props.data.face.toLazySeq().head()?.[1];
+  const firstMats = LazySeq.ofIterable(props.data.face).head()?.[1];
   if (props.data.face.size === 1 && firstMats) {
     palDetails = (
       <Box sx={{ ml: "4em", mr: "4em" }}>
@@ -433,7 +434,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
                         )
                         .flatMap((e) => e.material)
                         .filter((e) => e.id === displayMat.materialID)
-                        .maxOn((e) => e.proc)?.proc ?? 1,
+                        .maxBy((e) => e.proc)?.proc ?? 1,
                     loadStation: props.loadNum,
                     queue: null,
                   })

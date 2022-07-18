@@ -77,7 +77,12 @@ export enum RouteLocation {
 
 export type RouteState =
   | { route: RouteLocation.ChooseMode }
-  | { route: RouteLocation.Station_LoadMonitor; loadNum: number; free: boolean; queues: ReadonlyArray<string> }
+  | {
+      route: RouteLocation.Station_LoadMonitor;
+      loadNum: number;
+      free: boolean;
+      queues: ReadonlyArray<string>;
+    }
   | { route: RouteLocation.Station_InspectionMonitor }
   | { route: RouteLocation.Station_InspectionMonitorWithType; inspType: string }
   | { route: RouteLocation.Station_WashMonitor }
@@ -175,7 +180,7 @@ export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  const setRoute = useCallback((r) => setLocation(routeToUrl(r)), []);
+  const setRoute = useCallback((r: RouteState) => setLocation(routeToUrl(r)), []);
 
   const curRoute: RouteState = useMemo(() => {
     for (const route of Object.values(RouteLocation)) {
@@ -222,7 +227,7 @@ export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
           case RouteLocation.Client_Custom:
             return {
               route: RouteLocation.Client_Custom,
-              custom: params?.custom?.split("/")?.map((s) => decodeURIComponent(s)) ?? [],
+              custom: params?.custom?.split("/")?.map((s: string) => decodeURIComponent(s)) ?? [],
             };
 
           default:

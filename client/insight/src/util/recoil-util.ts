@@ -40,13 +40,13 @@ import {
   useRecoilTransaction_UNSTABLE,
   useSetRecoilState,
 } from "recoil";
-import produce, { Draft } from "immer";
+import { default as produce, Draft } from "immer";
 
 export function useRecoilStateDraft<T>(recoilState: RecoilState<T>): [T, (f: (d: Draft<T>) => void) => void] {
   const [st, setState] = useRecoilState(recoilState);
   const setDraft = React.useCallback(
     function setDraft(f: (d: Draft<T>) => void) {
-      const mapper = produce((d) => void f(d));
+      const mapper: (t: T) => T = produce((d: Draft<T>) => void f(d));
       setState(mapper);
     },
     [setState]
@@ -58,7 +58,7 @@ export function useSetRecoilStateDraft<T>(recoilState: RecoilState<T>): (f: (d: 
   const setState = useSetRecoilState(recoilState);
   const setDraft = React.useCallback(
     function setDraft(f: (d: Draft<T>) => void) {
-      const mapper = produce((d) => void f(d));
+      const mapper: (t: T) => T = produce((d: Draft<T>) => void f(d));
       setState(mapper);
     },
     [setState]
@@ -74,7 +74,9 @@ export function useRecoilConduit<T>({ transform }: RecoilConduit<T>): (val: T) =
   return useRecoilTransaction_UNSTABLE((trans) => (val: T) => transform(trans, val));
 }
 
-export function conduit<T>(transform: (trans: TransactionInterface_UNSTABLE, val: T) => void): RecoilConduit<T> {
+export function conduit<T>(
+  transform: (trans: TransactionInterface_UNSTABLE, val: T) => void
+): RecoilConduit<T> {
   return { transform };
 }
 
@@ -95,7 +97,7 @@ export function useImmer<T>(initial: T): [T, (f: (d: Draft<T>) => void) => void]
   const [state, setState] = React.useState(initial);
   const setDraft = React.useCallback(
     function setDraft(f: (d: Draft<T>) => void) {
-      const mapper = produce((d) => void f(d));
+      const mapper: (t: T) => T = produce((d: Draft<T>) => void f(d));
       setState(mapper);
     },
     [setState]

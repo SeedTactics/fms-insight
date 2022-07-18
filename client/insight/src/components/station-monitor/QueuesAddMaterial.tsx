@@ -48,22 +48,22 @@ import { DialogTitle } from "@mui/material";
 import { Collapse } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { TextField } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
-import ReactToPrint from "react-to-print";
+import { default as ReactToPrint } from "react-to-print";
 
-import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material";
-import * as api from "../../network/api";
-import * as matDetails from "../../cell-status/material-details";
-import { LazySeq } from "../../util/lazyseq";
-import { JobAndGroups, extractJobGroups } from "../../data/queue-material";
-import { currentOperator } from "../../data/operators";
-import { PrintedLabel } from "./PrintedLabel";
+import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material.js";
+import * as api from "../../network/api.js";
+import * as matDetails from "../../cell-status/material-details.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { JobAndGroups, extractJobGroups } from "../../data/queue-material.js";
+import { currentOperator } from "../../data/operators.js";
+import { PrintedLabel } from "./PrintedLabel.js";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { fmsInformation } from "../../network/server-settings";
-import { currentStatus } from "../../cell-status/current-status";
-import { useAddNewCastingToQueue } from "../../cell-status/material-details";
-import { castingNames } from "../../cell-status/names";
+import { fmsInformation } from "../../network/server-settings.js";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
+import { castingNames } from "../../cell-status/names.js";
 
 interface ExistingMatInQueueDialogBodyProps {
   readonly display_material: matDetails.MaterialDetail;
@@ -235,7 +235,7 @@ function AddSerialFound(props: AddSerialFoundProps) {
         )
         .flatMap((e) => e.material)
         .filter((m) => m.id === props.display_material.materialID)
-        .maxOn((m) => m.proc)?.proc ?? 0;
+        .maxBy((m) => m.proc)?.proc ?? 0;
     addProcMsg = " To Run Process " + (lastProc + 1).toString();
   }
   return (
@@ -672,20 +672,11 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
         .filter((p) => p.casting !== undefined && p.casting !== "")
         .map((p) => ({ casting: p.casting as string, cnt: 1 }))
         .concat(LazySeq.ofIterable(castNames).map((c) => ({ casting: c, cnt: 0 })))
-        .toRMap(
-          (c) => [c.casting, c.cnt],
-          (q1, q2) => q1 + q2
+        .buildOrderedMap<string, number>(
+          (c) => c.casting,
+          (old, c) => (old === undefined ? c.cnt : old + c.cnt)
         )
-        .toLazySeq()
-        .sortWith(([c1, q1], [c2, q2]) => {
-          if (q1 === 0 && q2 != 0) {
-            return 1; // put non-zero quantities first
-          } else if (q1 !== 0 && q2 == 0) {
-            return -1;
-          } else {
-            return c1.localeCompare(c2);
-          }
-        }),
+        .toAscLazySeq(),
     [currentSt.jobs, castNames]
   );
 

@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import JsBarcode from "jsbarcode";
-import { LazySeq } from "../../util/lazyseq";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { format } from "date-fns";
 import { useRecoilValue } from "recoil";
-import { currentStatus } from "../../cell-status/current-status";
+import { currentStatus } from "../../cell-status/current-status.js";
 
 interface BarcodeProps {
   readonly text: string;

@@ -35,15 +35,14 @@ import * as React from "react";
 import { Input } from "@mui/material";
 import { InputAdornment } from "@mui/material";
 import { IconButton } from "@mui/material";
-import CalendarIcon from "@mui/icons-material/CalendarToday";
+import { CalendarToday as CalendarIcon } from "@mui/icons-material";
 import { Dialog } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { format, startOfMonth, addYears } from "date-fns";
-import LeftArrowIcon from "@mui/icons-material/KeyboardArrowLeft";
-import RightArrowIcon from "@mui/icons-material/KeyboardArrowRight";
+import { KeyboardArrowLeft as LeftArrowIcon, KeyboardArrowRight as RightArrowIcon } from "@mui/icons-material";
 import { Button } from "@mui/material";
 import { Typography } from "@mui/material";
-import { LazySeq } from "../util/lazyseq";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 export interface MonthSelectProps {
   curMonth: Date;

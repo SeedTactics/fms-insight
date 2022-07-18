@@ -41,14 +41,14 @@ import { Dialog } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { Search as SearchIcon } from "@mui/icons-material";
 import { TextField } from "@mui/material";
 
-import { MaterialDetailTitle } from "./Material";
-import * as matDetails from "../../cell-status/material-details";
+import { MaterialDetailTitle } from "./Material.js";
+import * as matDetails from "../../cell-status/material-details.js";
 import { atom, useRecoilState, useRecoilValue } from "recoil";
-import { last30InspectionTypes } from "../../cell-status/names";
-import { LazySeq } from "../../util/lazyseq";
+import { last30InspectionTypes } from "../../cell-status/names.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 interface ManualInpTypeEntryProps {
   readonly close: () => void;

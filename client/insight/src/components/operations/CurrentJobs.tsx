@@ -44,9 +44,9 @@ import {
 import { Stack } from "@mui/material";
 import { defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
 
-import { chartTheme } from "../../util/chart-colors";
-import { IndexedDataPoint, jobsToPoints } from "../../data/job-bullet";
-import { currentStatus } from "../../cell-status/current-status";
+import { chartTheme } from "../../util/chart-colors.js";
+import { IndexedDataPoint, jobsToPoints } from "../../data/job-bullet.js";
+import { currentStatus } from "../../cell-status/current-status.js";
 
 export interface CurrentJobsProps {
   readonly fillViewport: boolean;
