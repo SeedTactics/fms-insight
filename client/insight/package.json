@@ -20,7 +20,7 @@
     "@fontsource/roboto": "^4.5.5",
     "@mui/icons-material": "^5.6.2",
     "@mui/material": "^5.6.2",
-    "@seedtactics/immutable-collections": "^0.9.1",
+    "@seedtactics/immutable-collections": "^0.9.2",
     "@visx/axis": "^2.6.0",
     "@visx/curve": "^2.1.0",
     "@visx/event": "^2.6.0",

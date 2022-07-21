@@ -6,13 +6,13 @@
   "configurations": [
     {
       "type": "node",
-      "name": "vscode-jest-tests",
       "request": "launch",
-      "program": "${workspaceFolder}/client/insight/node_modules/jest/bin/jest",
-      "args": ["--runInBand"],
-      "cwd": "${workspaceFolder}/client/insight",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
+      "name": "Debug FMS Insight Test File",
+      "autoAttachChildProcesses": true,
+      "program": "${workspaceRoot}/client/insight/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${relativeFile}"],
+      "smartStep": true,
+      "console": "integratedTerminal"
     },
     {
       "name": "Mock Server",

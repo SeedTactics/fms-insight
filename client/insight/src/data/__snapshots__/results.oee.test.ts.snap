@@ -2,25 +2,25 @@
 
 exports[`bins actual cycles by day > cycles binned by day and station 1`] = `
 Map {
-  "{day: 2018-03-05T06:00:00.000Z}, station: MC #1}" => 30,
   "{day: 2018-03-05T06:00:00.000Z}, station: L/U #2}" => 3,
-  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #2}" => 6,
+  "{day: 2018-03-05T06:00:00.000Z}, station: MC #1}" => 30,
   "{day: 2018-03-04T06:00:00.000Z}, station: MC #1}" => 35,
-  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #1}" => 13,
   "{day: 2018-03-04T06:00:00.000Z}, station: L/U #3}" => 3,
+  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #2}" => 6,
   "{day: 2018-03-05T06:00:00.000Z}, station: L/U #1}" => 5,
+  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #1}" => 13,
 }
 `;
 
 exports[`bins actual cycles by day > occupied cycles binned by day and station 1`] = `
 Map {
-  "{day: 2018-03-05T06:00:00.000Z}, station: MC #1}" => 30,
   "{day: 2018-03-05T06:00:00.000Z}, station: L/U #2}" => 3,
-  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #2}" => 6,
+  "{day: 2018-03-05T06:00:00.000Z}, station: MC #1}" => 30,
   "{day: 2018-03-04T06:00:00.000Z}, station: MC #1}" => 35,
-  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #1}" => 13,
   "{day: 2018-03-04T06:00:00.000Z}, station: L/U #3}" => 8,
+  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #2}" => 6,
   "{day: 2018-03-05T06:00:00.000Z}, station: L/U #1}" => 5,
+  "{day: 2018-03-04T06:00:00.000Z}, station: L/U #1}" => 13,
 }
 `;
 

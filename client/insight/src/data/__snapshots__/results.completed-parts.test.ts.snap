@@ -2,12 +2,12 @@
 
 exports[`bins actual cycles by day > cycles binned by day and part 1`] = `
 Map {
-  "{day: 2018-03-04T06:00:00.000Z}, part: partk-3}" => {
-    "activeMachineMins": 15,
-    "count": 1,
-  },
   "{day: 2018-03-04T06:00:00.000Z}, part: partm-2}" => {
     "activeMachineMins": 20,
+    "count": 1,
+  },
+  "{day: 2018-03-04T06:00:00.000Z}, part: partk-3}" => {
+    "activeMachineMins": 15,
     "count": 1,
   },
 }
