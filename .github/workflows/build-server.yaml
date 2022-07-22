@@ -1,9 +1,11 @@
 name: build-server
 
 on:
-  push:
-    branches:
-      - release/*
+  workflow_dispatch:
+    inputs:
+      release-type:
+        description: "Release type (one of): patch, minor, major, prepatch, preminor, premajor, prerelease"
+        required: true
 
 jobs:
   build:
@@ -14,24 +16,11 @@ jobs:
       # Setup
       # ----------------------------------------------------------
 
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: "17"
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0.9.9
-        with:
-          versionSpec: "5.x"
-
-      - name: Calculate Version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v0.9.9
-        with:
-          targetPath: server
+          node-version: "18"
 
       - name: Corepack
         run: corepack enable
@@ -43,28 +32,52 @@ jobs:
           $path = pnpm store path | Out-String
           Write-Host "::set-output name=cachedir::$path"
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ${{ steps.pnpmcache.outputs.cachedir }}
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
+      - name: Git configuration
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+
+      # ----------------------------------------------------------
+      # Version
+      # ----------------------------------------------------------
+
+      # Use tag latest
+      - name: Bump release version
+        if: startsWith(github.event.inputs.release-type, 'pre') != true
+        run: |
+          echo "NEW_VERSION=$(npm version --message 'chore: release %s' $RELEASE_TYPE)" >> $GITHUB_ENV
+        env:
+          RELEASE_TYPE: ${{ github.event.inputs.release-type }}
+        working-directory: client/insight
+
+      # Bump package pre-release version
+      - name: Bump pre-release version
+        if: startsWith(github.event.inputs.release-type, 'pre')
+        run: |
+          echo "NEW_VERSION=$(npm version --message 'chore: release %s' --preid=beta $RELEASE_TYPE) >> $GITHUB_ENV
+        env:
+          RELEASE_TYPE: ${{ github.event.inputs.release-type }}
+        working-directory: client/insight
+
       # ----------------------------------------------------------
       # Test and Build
       # ----------------------------------------------------------
 
       - run: pnpm --dir client/insight install --frozen-lockfile
-
-      - run: pnpm version "${{ steps.gitversion.outputs.semVer }}" --no-git-tag-version
-        working-directory: client/insight
 
       - run: pnpm --dir client/insight run test
 
@@ -79,13 +92,13 @@ jobs:
           dotnet test server/test --collect:"XPlat Code Coverage"
 
       - name: Build MachineFramework
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/lib/BlackMaple.MachineFramework
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/machines/mazak
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/machines/mazak
       - name: Build Makino
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/machines/makino
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/machines/makino
       - name: Build Niigata
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ steps.gitversion.outputs.semVer }}" server/machines/niigata
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/machines/niigata
 
       # ----------------------------------------------------------
       # Publish
@@ -99,6 +112,16 @@ jobs:
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\makino\bin\Release\*.nupkg
       - name: Publish Niigata
         run: dotnet nuget push -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json server\machines\niigata\bin\Release\*.nupkg
+
+      # ----------------------------------------------------------
+      # Create Release
+      # ----------------------------------------------------------
+
+      - name: Push version commit to git
+        run: |
+          git push origin && git push --tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ----------------------------------------------------------
       # Cleanup
