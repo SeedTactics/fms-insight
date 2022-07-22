@@ -15,14 +15,6 @@ declare module "react-timeago" {
   export default class TimeAgo extends React.Component<TimeAgoProps> {}
 }
 
-declare module "hamt_plus" {
-  const hamt: {
-    empty: any;
-    make: (cfg: any) => any;
-  };
-  export default hamt;
-}
-
 declare module "jdenticon" {
   // for some reason typescript doesn't pick up jdenticon types
   export function toSvg(hash: any, size: number, cfg?: any): string;

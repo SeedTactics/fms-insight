@@ -37,7 +37,6 @@ specifiers:
   eslint-config-prettier: ^8.5.0
   eslint-plugin-react: ^7.29.4
   eslint-plugin-react-hooks: ^4.4.0
-  hamt_plus: ^1.0.2
   highlight.js: ^11.5.1
   immer: ^9.0.12
   jdenticon: ^3.1.1
@@ -84,7 +83,6 @@ dependencies:
   copy-to-clipboard: 3.3.1
   d3-sankey: 0.12.3
   date-fns: 2.29.1
-  hamt_plus: 1.0.2
   highlight.js: 11.6.0
   immer: 9.0.15
   jdenticon: 3.1.1
