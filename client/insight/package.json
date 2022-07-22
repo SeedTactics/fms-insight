@@ -6,7 +6,7 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit --skipLibCheck && vite build",
     "start": "vite",
     "test": "vitest run",
     "test:watch": "vitest watch",

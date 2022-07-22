@@ -1,1 +1,0 @@
-global.Window = window.Window;
