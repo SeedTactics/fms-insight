@@ -6,7 +6,6 @@ on:
       - "v*"
       - "insightapi-*"
     branches-ignore:
-      - main
       - release/*
 
 jobs:

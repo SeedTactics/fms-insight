@@ -3,7 +3,6 @@ name: build-server
 on:
   push:
     branches:
-      - main
       - release/*
 
 jobs:
