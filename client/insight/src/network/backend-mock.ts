@@ -90,7 +90,11 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
   for (const newJ of allNewJobs) {
     for (const j of newJ.jobs) {
       offsetJob(j, offsetSeconds);
-      historicJobs[j.unique] = new api.HistoricJob({ ...j, copiedToSystem: false, scheduleId: newJ.scheduleId });
+      historicJobs[j.unique] = new api.HistoricJob({
+        ...j,
+        copiedToSystem: false,
+        scheduleId: newJ.scheduleId,
+      });
     }
     for (const s of newJ.stationUse || []) {
       s.startUTC = addSeconds(s.startUTC, offsetSeconds);
@@ -102,7 +106,7 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
   }
   const historic: api.IHistoricData = {
     jobs: historicJobs,
-    stationUse: LazySeq.ofIterable(allNewJobs)
+    stationUse: LazySeq.of(allNewJobs)
       .flatMap((j) => j.stationUse || [])
       .toMutableArray(),
   };
@@ -123,7 +127,7 @@ async function loadEventsJson(
 ): Promise<Readonly<api.ILogEntry>[]> {
   const toolUse = (await mockD).toolUse;
 
-  return LazySeq.ofIterable(await evts)
+  return LazySeq.of(await evts)
     .map((evtJson) => {
       const tools = toolUse[(evtJson as { counter: number }).counter.toString()];
       const e = api.LogEntry.fromJS(tools ? { ...evtJson, tools } : evtJson);
@@ -224,7 +228,7 @@ export function registerMockBackend(
 
   const serialsToMatId = data.then(() =>
     events.then((evts) =>
-      LazySeq.ofIterable(evts)
+      LazySeq.of(evts)
         .filter((e) => e.type === api.LogType.PartMark)
         .flatMap((e) => e.material.map((m) => [e.result, m.id] as [string, number]))
         .toRMap(
@@ -236,7 +240,9 @@ export function registerMockBackend(
 
   const logB = {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
-      return data.then(() => events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC)));
+      return data.then(() =>
+        events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC))
+      );
     },
     recent(_lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       // no recent events, everything is static
@@ -244,13 +250,13 @@ export function registerMockBackend(
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => m.id === materialID)))
+        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => m.id === materialID)))
       );
     },
     logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       const matIds = new Set(materialIDs);
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => LazySeq.ofIterable(e.material).anyMatch((m) => matIds.has(m.id))))
+        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => matIds.has(m.id))))
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
@@ -343,7 +349,11 @@ export function registerMockBackend(
         })
       );
     },
-    recordWashCompleted(wash: api.NewWash, jobUnique?: string, partName?: string): Promise<Readonly<api.ILogEntry>> {
+    recordWashCompleted(
+      wash: api.NewWash,
+      jobUnique?: string,
+      partName?: string
+    ): Promise<Readonly<api.ILogEntry>> {
       const mat = new api.LogMaterial({
         id: wash.materialID,
         uniq: jobUnique || "",

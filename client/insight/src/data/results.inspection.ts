@@ -68,7 +68,7 @@ export function groupInspectionsByPath(
   dateRange: { start: Date; end: Date } | undefined,
   sortOn: ToComparable<TriggeredInspectionEntry>
 ): ReadonlyMap<string, InspectionsForPath> {
-  const failed = LazySeq.ofIterable(entries)
+  const failed = LazySeq.of(entries)
     .collect((e) => {
       if (e.result.type === InspectionLogResultType.Completed && !e.result.success) {
         return e.materialID;
@@ -78,7 +78,7 @@ export function groupInspectionsByPath(
     })
     .toRSet((e) => e);
 
-  return LazySeq.ofIterable(entries)
+  return LazySeq.of(entries)
     .collect((e) => {
       if (dateRange && (e.time < dateRange.start || e.time > dateRange.end)) {
         return null;
@@ -127,7 +127,7 @@ export function extractFailedInspections(
   start: Date,
   end: Date
 ): ReadonlyArray<FailedInspectionEntry> {
-  return LazySeq.ofIterable(entries)
+  return LazySeq.of(entries)
     .collect((e) => {
       if (e.time < start || e.time > end) {
         return null;
@@ -174,14 +174,18 @@ export function extractPath(mat: MaterialDetail): ReadonlyArray<Readonly<api.IMa
 // Clipboard
 // --------------------------------------------------------------------------------
 
-export function buildInspectionTable(part: string, inspType: string, entries: Iterable<InspectionLogEntry>): string {
+export function buildInspectionTable(
+  part: string,
+  inspType: string,
+  entries: Iterable<InspectionLogEntry>
+): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Path</th><th>Date</th><th>Part</th><th>Inspection</th>";
   table += "<th>Serial</th><th>Workorder</th><th>Inspected</th><th>Failed</th>";
   table += "</tr></thead>\n<tbody>\n";
 
   const groups = groupInspectionsByPath(entries, undefined, { asc: (e) => e.time.getTime() });
-  const paths = LazySeq.ofIterable(groups.keys()).toSortedArray((x) => x);
+  const paths = LazySeq.of(groups.keys()).toSortedArray((x) => x);
 
   for (const path of paths) {
     const data = groups.get(path);
@@ -218,7 +222,7 @@ export function buildFailedInspTable(entries: Iterable<FailedInspectionEntry>): 
   table += "<th>Date</th><th>Part</th><th>Inspection</th><th>Serial</th><th>Workorder</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  for (const e of LazySeq.ofIterable(entries).sortBy({ desc: (x) => x.time.getTime() })) {
+  for (const e of LazySeq.of(entries).sortBy({ desc: (x) => x.time.getTime() })) {
     table += "<tr>";
     table += "<td>" + e.time.toLocaleString() + "</td>";
     table += "<td>" + e.part + "</td>";

@@ -69,7 +69,11 @@ export function moveMaterialBin(
   return newBinOrder;
 }
 
-function addToMap<T>(m: Map<T, Array<Readonly<api.IInProcessMaterial>>>, k: T, mat: Readonly<api.IInProcessMaterial>) {
+function addToMap<T>(
+  m: Map<T, Array<Readonly<api.IInProcessMaterial>>>,
+  k: T,
+  mat: Readonly<api.IInProcessMaterial>
+) {
   const mats = m.get(k);
   if (mats) {
     mats.push(mat);
@@ -193,7 +197,7 @@ export function selectAllMaterialIntoBins(
   if (bins.indexOf(LoadStationBinId) < 0) {
     bins.unshift(LoadStationBinId);
   }
-  for (const queue of LazySeq.ofIterable(quarantineQueues).sortBy((x) => x)) {
+  for (const queue of LazySeq.of(quarantineQueues).sortBy((x) => x)) {
     if (bins.indexOf(queue) < 0) {
       bins.push(queue);
     }
@@ -208,7 +212,7 @@ export function selectAllMaterialIntoBins(
       return {
         type: MaterialBinType.ActiveQueues,
         binId: ActiveQueuesBinId,
-        byQueue: LazySeq.ofIterable(activeQueues).toRMap(
+        byQueue: LazySeq.of(activeQueues).toRMap(
           (queueName) => {
             const mat = queues.get(queueName) ?? [];
             mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));

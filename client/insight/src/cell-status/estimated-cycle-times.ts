@@ -88,7 +88,8 @@ const specificMonthEstimatedTimesRW = atom<EstimatedCycleTimes>({
   key: "specificMonthEstimatedcycleTimes",
   default: HashMap.empty(),
 });
-export const specificMonthEstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> = specificMonthEstimatedTimesRW;
+export const specificMonthEstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> =
+  specificMonthEstimatedTimesRW;
 
 // Assume: samples come from two distributions:
 //  - the program runs without interruption, giving a guassian iid around the cycle time.
@@ -127,7 +128,7 @@ function median(vals: LazySeq<number>): number {
 
 function estimateCycleTimes(cycles: Iterable<number>): StatisticalCycleTime {
   // compute median
-  const medianMinutes = median(LazySeq.ofIterable(cycles));
+  const medianMinutes = median(LazySeq.of(cycles));
 
   // absolute deviation from median, but use different values for below and above
   // median.  Below is assumed to be from fake cycles and above is from interrupted programs.
@@ -136,7 +137,7 @@ function estimateCycleTimes(cycles: Iterable<number>): StatisticalCycleTime {
   let madBelowMinutes =
     1.4826 *
     median(
-      LazySeq.ofIterable(cycles)
+      LazySeq.of(cycles)
         .filter((x) => x <= medianMinutes)
         .map((x) => medianMinutes - x)
     );
@@ -148,7 +149,7 @@ function estimateCycleTimes(cycles: Iterable<number>): StatisticalCycleTime {
   let madAboveMinutes =
     1.4826 *
     median(
-      LazySeq.ofIterable(cycles)
+      LazySeq.of(cycles)
         .filter((x) => x >= medianMinutes)
         .map((x) => x - medianMinutes)
     );
@@ -165,7 +166,7 @@ function estimateCycleTimes(cycles: Iterable<number>): StatisticalCycleTime {
   };
 
   // filter to only inliers
-  const inliers = LazySeq.ofIterable(cycles)
+  const inliers = LazySeq.of(cycles)
     .filter((x) => !isOutlier(statCycleTime, x))
     .toRArray();
   // compute average of inliers
@@ -261,7 +262,10 @@ export function splitElapsedLoadTime<T extends { material: ReadonlyArray<unknown
     .flatMap((chunk) => chunk);
 }
 
-export function activeMinutes(cycle: Readonly<ILogEntry>, stats: StatisticalCycleTime | null | undefined): number {
+export function activeMinutes(
+  cycle: Readonly<ILogEntry>,
+  stats: StatisticalCycleTime | null | undefined
+): number {
   const aMins = durationToMinutes(cycle.active);
   if (cycle.active === "" || aMins <= 0 || cycle.material.length === 0) {
     return (stats?.expectedCycleMinutesForSingleMat ?? 0) * cycle.material.length;
@@ -271,15 +275,17 @@ export function activeMinutes(cycle: Readonly<ILogEntry>, stats: StatisticalCycl
 }
 
 function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): EstimatedCycleTimes {
-  const machines = LazySeq.ofIterable(cycles)
+  const machines = LazySeq.of(cycles)
     .filter((c) => c.type === LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
     .toLookup((c) => PartAndStationOperation.ofLogCycle(c))
     .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length))
+      estimateCycleTimes(
+        cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length)
+      )
     );
 
   const loads = splitElapsedLoadTime(
-    LazySeq.ofIterable(cycles).filter(
+    LazySeq.of(cycles).filter(
       (c) => c.type === LogType.LoadUnloadCycle && !c.startofcycle && c.material.length > 0
     ),
     (c) => c.locnum,

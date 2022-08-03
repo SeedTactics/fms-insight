@@ -422,7 +422,7 @@ export function InstructionButton({
   readonly pallet: string | null;
 }) {
   const maxProc =
-    LazySeq.ofIterable(material.events)
+    LazySeq.of(material.events)
       .filter(
         (e) =>
           e.details?.["PalletCycleInvalidated"] !== "1" &&

@@ -102,7 +102,7 @@ export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
     palCycles.setLast30PalletCycles.transform(t, log);
     statCycles.setLast30StationCycles.transform(t, log);
 
-    const newCntr = LazySeq.ofIterable(log).maxBy((x) => x.counter)?.counter ?? null;
+    const newCntr = LazySeq.of(log).maxBy((x) => x.counter)?.counter ?? null;
     t.set(lastEventCounterRW, (oldCntr) => (oldCntr === null ? newCntr : Math.max(oldCntr, newCntr ?? -1)));
   }
 );

@@ -125,7 +125,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   }
 
   const curPage = Math.min(origCurPage, Math.ceil(props.failed.length / rowsPerPage));
-  const points = LazySeq.ofIterable(props.failed).sortBy(sortOn);
+  const points = LazySeq.of(props.failed).sortBy(sortOn);
 
   return (
     <>
@@ -176,7 +176,7 @@ export function RecentFailedInspectionsTable() {
   const inspections = useRecoilValue(last30Inspections);
   const failed = React.useMemo(() => {
     const today = startOfToday();
-    const allEvts = LazySeq.ofIterable(inspections).flatMap(([_, evts]) => evts.valuesToLazySeq());
+    const allEvts = LazySeq.of(inspections).flatMap(([_, evts]) => evts.valuesToLazySeq());
     return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
   }, [inspections]);
   return (

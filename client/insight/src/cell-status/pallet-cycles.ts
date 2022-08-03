@@ -58,7 +58,8 @@ const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>({
   key: "specificMonthPalletCycles",
   default: HashMap.empty(),
 });
-export const specificMonthPalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> = specificMonthPalletCyclesRW;
+export const specificMonthPalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> =
+  specificMonthPalletCyclesRW;
 
 function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
   return {
@@ -73,7 +74,7 @@ export const setLast30PalletCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30PalletCyclesRW, (oldCycles) =>
       oldCycles.union(
-        LazySeq.ofIterable(log)
+        LazySeq.of(log)
           .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
           .toLookupMap(
             (c) => c.pal,
@@ -105,7 +106,9 @@ export const updateLast30PalletCycles = conduit<ServerEventAndTime>(
           });
         }
 
-        return oldCycles.modify(log.pal, (old) => (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log)));
+        return oldCycles.modify(log.pal, (old) =>
+          (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log))
+        );
       });
     }
   }
@@ -115,7 +118,7 @@ export const setSpecificMonthPalletCycles = conduit<ReadonlyArray<Readonly<ILogE
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(
       specificMonthPalletCyclesRW,
-      LazySeq.ofIterable(log)
+      LazySeq.of(log)
         .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
         .toLookupMap(
           (c) => c.pal,

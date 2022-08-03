@@ -88,7 +88,11 @@ import { BufferChart } from "./BufferChart.js";
 import { useIsDemo } from "../routes.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
-import { last30SimProduction, SimPartCompleted, specificMonthSimProduction } from "../../cell-status/sim-production.js";
+import {
+  last30SimProduction,
+  SimPartCompleted,
+  specificMonthSimProduction,
+} from "../../cell-status/sim-production.js";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
 import {
   last30MaterialSummary,
@@ -101,7 +105,11 @@ import {
   specificMonthEstimatedCycleTimes,
 } from "../../cell-status/estimated-cycle-times.js";
 import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles.js";
-import { last30StationCycles, PartCycleData, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
+import {
+  last30StationCycles,
+  PartCycleData,
+  specificMonthStationCycles,
+} from "../../cell-status/station-cycles.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 // --------------------------------------------------------------------------------
@@ -131,7 +139,9 @@ function PartMachineCycleChart() {
   const estimatedCycleTimes = useRecoilValue(
     period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
   );
-  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const matSummary = useRecoilValue(
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+  );
 
   // filter/display state
   const demo = useIsDemo();
@@ -153,7 +163,10 @@ function PartMachineCycleChart() {
   const points = React.useMemo(() => {
     if (selectedPart) {
       if (selectedOperation) {
-        return filterStationCycles(cycles.valuesToLazySeq(), { operation: selectedOperation, pallet: selectedPallet });
+        return filterStationCycles(cycles.valuesToLazySeq(), {
+          operation: selectedOperation,
+          pallet: selectedPallet,
+        });
       } else {
         return filterStationCycles(cycles.valuesToLazySeq(), {
           partAndProc: selectedPart,
@@ -163,7 +176,10 @@ function PartMachineCycleChart() {
       }
     } else {
       if (selectedPallet || selectedMachine !== FilterAnyMachineKey) {
-        return filterStationCycles(cycles.valuesToLazySeq(), { pallet: selectedPallet, station: selectedMachine });
+        return filterStationCycles(cycles.valuesToLazySeq(), {
+          pallet: selectedPallet,
+          station: selectedMachine,
+        });
       } else {
         return emptyStationCycles(cycles.valuesToLazySeq());
       }
@@ -323,7 +339,7 @@ function PartMachineCycleChart() {
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
             partCntPerPoint={
-              curOperation ? LazySeq.ofIterable(points.data).head()?.[1]?.[0]?.material?.length : undefined
+              curOperation ? LazySeq.of(points.data).head()?.[1]?.[0]?.material?.length : undefined
             }
             plannedTimeMinutes={plannedMinutes}
           />
@@ -376,7 +392,9 @@ function PartLoadStationCycleChart() {
   const [selectedPart, setSelectedPart] = React.useState<PartAndProcess | undefined>(
     demo ? { part: "aaa", proc: 2 } : undefined
   );
-  const [selectedOperation, setSelectedOperation] = React.useState<LoadCycleFilter>(demo ? "LoadOp" : "LULOccupancy");
+  const [selectedOperation, setSelectedOperation] = React.useState<LoadCycleFilter>(
+    demo ? "LoadOp" : "LULOccupancy"
+  );
   const [selectedLoadStation, setSelectedLoadStation] = React.useState<string>(FilterAnyLoadKey);
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
@@ -392,7 +410,9 @@ function PartLoadStationCycleChart() {
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
   const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const matSummary = useRecoilValue(
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+  );
   const estimatedCycleTimes = useRecoilValue(
     period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
   );
@@ -514,7 +534,9 @@ function PartLoadStationCycleChart() {
             >
               <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
               {selectedPart ? <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem> : undefined}
-              {selectedPart ? <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem> : undefined}
+              {selectedPart ? (
+                <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem>
+              ) : undefined}
             </Select>
             <Select
               name="Station-Cycles-cycle-chart-station-select"
@@ -603,7 +625,9 @@ function PalletCycleChart() {
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
 
-  const palletCycles = useRecoilValue(period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles);
+  const palletCycles = useRecoilValue(
+    period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles
+  );
   const points = React.useMemo(() => {
     if (selectedPallet) {
       const palData = palletCycles.get(selectedPallet);
@@ -716,7 +740,7 @@ function BufferOccupancyChart() {
 type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
 
 function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
-  return LazySeq.ofIterable(pts)
+  return LazySeq.of(pts)
     .map(([dayAndStat, val]) => {
       const pct = val / (24 * 60);
       return {
@@ -779,7 +803,7 @@ function partsCompletedPoints(
   end: Date
 ) {
   const pts = binCyclesByDayAndPart(partCycles, matsById, start, end);
-  return LazySeq.ofIterable(pts)
+  return LazySeq.of(pts)
     .map(([dayAndPart, val]) => {
       return {
         x: dayAndPart.day,
@@ -795,7 +819,7 @@ function partsCompletedPoints(
 
 function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
   const pts = binSimProductionByDayAndPart(prod);
-  return LazySeq.ofIterable(pts)
+  return LazySeq.of(pts)
     .map(([dayAndPart, val]) => {
       return {
         x: dayAndPart.day,
@@ -819,8 +843,12 @@ function CompletedCountHeatmap() {
       : [period.month, addMonths(period.month, 1)];
 
   const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const productionCounts = useRecoilValue(period.type === "Last30" ? last30SimProduction : specificMonthSimProduction);
-  const matSummary = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const productionCounts = useRecoilValue(
+    period.type === "Last30" ? last30SimProduction : specificMonthSimProduction
+  );
+  const matSummary = useRecoilValue(
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+  );
   const points = React.useMemo(() => {
     if (selected === "Completed") {
       const today = startOfToday();
@@ -854,7 +882,9 @@ function CompletedCountHeatmap() {
 function ConnectedInspection() {
   const period = useRecoilValue(selectedAnalysisPeriod);
 
-  const inspectionlogs = useRecoilValue(period.type === "Last30" ? last30Inspections : specificMonthInspections);
+  const inspectionlogs = useRecoilValue(
+    period.type === "Last30" ? last30Inspections : specificMonthInspections
+  );
   const zoomType =
     period.type === "Last30" ? DataTableActionZoomType.Last30Days : DataTableActionZoomType.ZoomIntoRange;
   const default_date_range =

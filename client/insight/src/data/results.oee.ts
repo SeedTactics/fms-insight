@@ -88,7 +88,7 @@ function splitTimeToDays(startTime: Date, endTime: Date, mins: number): Array<{ 
 }
 
 export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
-  return LazySeq.ofIterable(cycles)
+  return LazySeq.of(cycles)
     .flatMap((point) =>
       // point.x is the end time, point.y is elapsed in minutes, so point.x - point.y is start time
       // also, use addSeconds since addMinutes from date-fns rounds to nearest minute
@@ -104,9 +104,11 @@ export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): Ha
     );
 }
 
-export function binOccupiedCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
+export function binOccupiedCyclesByDayAndStat(
+  cycles: Iterable<PartCycleData>
+): HashMap<DayAndStation, number> {
   return chunkCyclesWithSimilarEndTime(
-    LazySeq.ofIterable(cycles),
+    LazySeq.of(cycles),
     (point) => stat_name_and_num(point.stationGroup, point.stationNumber),
     (c) => c.x
   )
@@ -130,8 +132,10 @@ export function binOccupiedCyclesByDayAndStat(cycles: Iterable<PartCycleData>): 
 // Planned
 // --------------------------------------------------------------------------------
 
-export function binSimStationUseByDayAndStat(simUses: Iterable<SimStationUse>): HashMap<DayAndStation, number> {
-  return LazySeq.ofIterable(simUses)
+export function binSimStationUseByDayAndStat(
+  simUses: Iterable<SimStationUse>
+): HashMap<DayAndStation, number> {
+  return LazySeq.of(simUses)
     .flatMap((simUse) =>
       splitTimeToDays(simUse.start, simUse.end, simUse.utilizationTime - simUse.plannedDownTime).map((x) => ({
         ...x,
@@ -168,9 +172,11 @@ export function buildOeeSeries(
   cycles: Iterable<PartCycleData>,
   statUse: Iterable<SimStationUse>
 ): ReadonlyArray<OEEBarSeries> {
-  const filteredCycles = LazySeq.ofIterable(cycles).filter((e) => isLabor === e.isLabor && e.x >= start && e.x <= end);
+  const filteredCycles = LazySeq.of(cycles).filter(
+    (e) => isLabor === e.isLabor && e.x >= start && e.x <= end
+  );
   const actualBins = binActiveCyclesByDayAndStat(filteredCycles);
-  const filteredStatUse = LazySeq.ofIterable(statUse).filter(
+  const filteredStatUse = LazySeq.of(statUse).filter(
     (e) => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
   );
   const plannedBins = binSimStationUseByDayAndStat(filteredStatUse);
@@ -231,15 +237,15 @@ class HeatmapClipboardCell {
 }
 
 export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
-  const cells = LazySeq.ofIterable(points).toHashMap(
+  const cells = LazySeq.of(points).toHashMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );
-  const days = LazySeq.ofIterable(points)
+  const days = LazySeq.of(points)
     .map((p) => p.x.getTime())
     .distinct()
     .toSortedArray((x) => x);
-  const rows = LazySeq.ofIterable(points)
+  const rows = LazySeq.of(points)
     .map((p) => p.y)
     .distinct()
     .toSortedArray((x) => x);
@@ -265,7 +271,10 @@ export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<Heatm
   return table;
 }
 
-export function copyOeeHeatmapToClipboard(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): void {
+export function copyOeeHeatmapToClipboard(
+  yTitle: string,
+  points: ReadonlyArray<HeatmapClipboardPoint>
+): void {
   copy(buildOeeHeatmapTable(yTitle, points));
 }
 

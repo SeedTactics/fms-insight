@@ -139,7 +139,9 @@ function LaborCost(props: LaborCostProps) {
   return (
     <TextField
       type="number"
-      label={"Total labor cost for " + (props.month === null ? "last 30 days" : format(props.month, "MMMM yyyy"))}
+      label={
+        "Total labor cost for " + (props.month === null ? "last 30 days" : format(props.month, "MMMM yyyy"))
+      }
       inputProps={{ min: 0 }}
       variant="outlined"
       value={cost === null ? props.laborCost ?? "" : isNaN(cost) ? "" : cost}
@@ -255,7 +257,7 @@ function CostBreakdown(props: CostBreakdownProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {LazySeq.ofIterable(props.costs.parts)
+            {LazySeq.of(props.costs.parts)
               .sortBy((c) => c.part)
               .map((c, idx) => (
                 <TableRow key={idx}>
@@ -302,12 +304,12 @@ function MachineCostTooltip({
 }) {
   return (
     <div>
-      {LazySeq.ofIterable(part.machine.pctPerStat)
+      {LazySeq.of(part.machine.pctPerStat)
         .sortBy(([stat]) => stat)
         .map(([stat, pct]) => (
           <div key={stat}>
-            {stat}: {pctFormat.format(pct)} of {decimalFormat.format(machineCostForPeriod.get(stat) ?? 0)} total machine
-            cost
+            {stat}: {pctFormat.format(pct)} of {decimalFormat.format(machineCostForPeriod.get(stat) ?? 0)}{" "}
+            total machine cost
           </div>
         ))}
     </div>
@@ -352,7 +354,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {LazySeq.ofIterable(props.costs.parts)
+            {LazySeq.of(props.costs.parts)
               .sortBy((c) => c.part)
               .map((c, idx) => (
                 <TableRow key={idx}>
@@ -376,7 +378,12 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
                   <TableCell align="right">{c.parts_completed}</TableCell>
                   <TableCell align="right">
                     <Tooltip
-                      title={<MachineCostTooltip part={c} machineCostForPeriod={props.costs.stationCostForPeriod} />}
+                      title={
+                        <MachineCostTooltip
+                          part={c}
+                          machineCostForPeriod={props.costs.stationCostForPeriod}
+                        />
+                      }
                     >
                       <span>
                         {c.parts_completed > 0 ? decimalFormat.format(c.machine.cost / c.parts_completed) : 0}
@@ -392,7 +399,9 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
                         " total labor cost"
                       }
                     >
-                      <span>{c.parts_completed > 0 ? decimalFormat.format(c.labor.cost / c.parts_completed) : 0}</span>
+                      <span>
+                        {c.parts_completed > 0 ? decimalFormat.format(c.labor.cost / c.parts_completed) : 0}
+                      </span>
                     </Tooltip>
                   </TableCell>
                   <TableCell align="right">
@@ -470,7 +479,9 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
     }
     return Array.from(groups).sort((a, b) => a.localeCompare(b));
   }, [cycles]);
-  const matIds = useRecoilValue(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const matIds = useRecoilValue(
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+  );
 
   const thirtyDaysAgo = addDays(startOfToday(), -30);
 
@@ -522,7 +533,16 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
       matIds.matsById,
       month ? { month: month } : { thirtyDaysAgo }
     );
-  }, [machineCostPerYear, automationCostPerYear, cycles, matIds, month, curMonthLaborCost, last30LaborCost, loading]);
+  }, [
+    machineCostPerYear,
+    automationCostPerYear,
+    cycles,
+    matIds,
+    month,
+    curMonthLaborCost,
+    last30LaborCost,
+    loading,
+  ]);
 
   if (loading || curMonthLaborCost === "LOADING") {
     return (

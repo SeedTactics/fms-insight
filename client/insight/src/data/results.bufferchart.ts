@@ -106,7 +106,11 @@ function calcPoints(
     const startIdx = Math.max(
       0,
       Math.ceil(
-        (e.endTime.getTime() - e.elapsedSeconds * 1000 - movingAverageDistanceInMilliseconds - start.getTime()) / gap
+        (e.endTime.getTime() -
+          e.elapsedSeconds * 1000 -
+          movingAverageDistanceInMilliseconds -
+          start.getTime()) /
+          gap
       )
     );
     const endIdx = Math.min(
@@ -129,7 +133,7 @@ export function buildBufferChart(
   entries: Iterable<BufferEntry>
 ): ReadonlyArray<BufferChartSeries> {
   const movingAverageDistanceInMilliseconds = movingAverageDistanceInHours * 60 * 60 * 1000;
-  return LazySeq.ofIterable(entries)
+  return LazySeq.of(entries)
     .filter((e) => e.buffer.type !== "Queue" || !rawMatQueues.has(e.buffer.queue))
     .groupBy((v) => bufferSeriesLabel(v.buffer))
     .map(([k, points]) => ({

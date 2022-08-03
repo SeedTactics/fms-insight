@@ -89,7 +89,8 @@ function useScales({
   readonly dateRange: [Date, Date];
   readonly containerWidth: number | null | undefined;
 }): HeatChartDimensions & HeatChartScales {
-  const width = containerWidth === null || containerWidth === undefined || containerWidth === 0 ? 400 : containerWidth;
+  const width =
+    containerWidth === null || containerWidth === undefined || containerWidth === 0 ? 400 : containerWidth;
 
   const xMax = width - marginLeft - marginRight;
 
@@ -135,7 +136,7 @@ function useScales({
         range: [color1, color2],
       });
     } else {
-      const maxCnt = LazySeq.ofIterable(points).maxBy((pt) => pt.color)?.color ?? 1;
+      const maxCnt = LazySeq.of(points).maxBy((pt) => pt.color)?.color ?? 1;
       colorScale = scaleLinear({
         domain: [0, maxCnt],
         range: [color1, color2],
@@ -338,7 +339,11 @@ function CardTitle<T extends string>(props: SelectableHeatCardProps<T>) {
       <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
       <div style={{ flexGrow: 1 }} />
       <Tooltip title="Copy to Clipboard">
-        <IconButton onClick={props.onExport} style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }} size="large">
+        <IconButton
+          onClick={props.onExport}
+          style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+          size="large"
+        >
           <ImportExport />
         </IconButton>
       </Tooltip>

@@ -42,7 +42,11 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 
 import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
 
-import { LoadStationAndQueueData, selectLoadStationAndQueueProps, PalletData } from "../../data/load-station.js";
+import {
+  LoadStationAndQueueData,
+  selectLoadStationAndQueueProps,
+  PalletData,
+} from "../../data/load-station.js";
 import {
   MaterialDialog,
   InProcMaterial,
@@ -70,7 +74,10 @@ import { currentStatus, reorderQueuedMatInCurrentStatus } from "../../cell-statu
 import { useIsDemo } from "../routes.js";
 import { useRecoilConduit } from "../../util/recoil-util.js";
 
-function stationPalMaterialStatus(mat: Readonly<api.IInProcessMaterial>, dateOfCurrentStatus: Date): JSX.Element {
+function stationPalMaterialStatus(
+  mat: Readonly<api.IInProcessMaterial>,
+  dateOfCurrentStatus: Date
+): JSX.Element {
   const name = mat.partName + "-" + mat.process.toString();
 
   let matStatus = "";
@@ -117,7 +124,7 @@ function StationStatus(props: StationStatusProps) {
   }
   return (
     <dl style={{ color: "rgba(0,0,0,0.6" }}>
-      {LazySeq.ofIterable(props.byStation)
+      {LazySeq.of(props.byStation)
         .sortBy(([s, _]) => s)
         .map(([stat, pals]) => (
           <React.Fragment key={stat}>
@@ -157,7 +164,7 @@ function MultiInstructionButton({
   const urls = React.useMemo(() => {
     const pal = loadData.pallet;
     if (pal) {
-      return LazySeq.ofIterable(loadData.face.values())
+      return LazySeq.of(loadData.face.values())
         .append(loadData.freeLoadingMaterial)
         .append(loadData.free ?? [])
         .concat(loadData.queues.values())
@@ -237,10 +244,10 @@ interface PalletColumnProps {
 }
 
 function PalletColumn(props: PalletColumnProps) {
-  const maxFace = LazySeq.ofIterable(props.data.face.keys()).maxBy((x) => x) ?? 1;
+  const maxFace = LazySeq.of(props.data.face.keys()).maxBy((x) => x) ?? 1;
 
   let palDetails: JSX.Element;
-  const firstMats = LazySeq.ofIterable(props.data.face).head()?.[1];
+  const firstMats = LazySeq.of(props.data.face).head()?.[1];
   if (props.data.face.size === 1 && firstMats) {
     palDetails = (
       <Box sx={{ ml: "4em", mr: "4em" }}>
@@ -262,7 +269,7 @@ function PalletColumn(props: PalletColumnProps) {
   } else {
     palDetails = (
       <Box sx={{ ml: "4em", mr: "4em" }}>
-        {LazySeq.ofIterable(props.data.face)
+        {LazySeq.of(props.data.face)
           .sortBy(([face, _]) => face)
           .map(([face, data]) => (
             <div key={face}>
@@ -317,7 +324,10 @@ function PalletColumn(props: PalletColumnProps) {
                 }
           }
         >
-          <StationStatus byStation={props.data.stationStatus} dateOfCurrentStatus={props.dateOfCurrentStatus} />
+          <StationStatus
+            byStation={props.data.stationStatus}
+            dateOfCurrentStatus={props.dateOfCurrentStatus}
+          />
         </Box>
       ) : (
         <Box
@@ -424,7 +434,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
                   printLabel({
                     materialId: displayMat.materialID,
                     proc:
-                      LazySeq.ofIterable(displayMat.events)
+                      LazySeq.of(displayMat.events)
                         .filter(
                           (e) =>
                             e.details?.["PalletCycleInvalidated"] !== "1" &&
@@ -491,7 +501,7 @@ export function LoadStation(props: LoadStationDisplayProps) {
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
   const isDemo = useIsDemo();
 
-  const queues = LazySeq.ofIterable(data.queues)
+  const queues = LazySeq.of(data.queues)
     .sortBy(([q, _]) => q)
     .map(([q, mats]) => ({
       label: q,

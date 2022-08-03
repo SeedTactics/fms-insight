@@ -196,7 +196,7 @@ function ProgramRow(props: ProgramRowProps) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {LazySeq.ofIterable(props.program.toolUse.tools).map((t, idx) => (
+                    {LazySeq.of(props.program.toolUse.tools).map((t, idx) => (
                       <TableRow key={idx}>
                         <TableCell>{t.toolName}</TableCell>
                         <TableCell align="right">{t.cycleUsageMinutes.toFixed(1)}</TableCell>
@@ -233,7 +233,7 @@ export function ProgramSummaryTable(): JSX.Element {
     return <div />;
   }
 
-  const rows = LazySeq.ofIterable(report.programs).sortWith((a: CellControllerProgram, b: CellControllerProgram) => {
+  const rows = LazySeq.of(report.programs).sortWith((a: CellControllerProgram, b: CellControllerProgram) => {
     let c = 0;
     switch (sortCol) {
       case "ProgramName":
@@ -286,7 +286,9 @@ export function ProgramSummaryTable(): JSX.Element {
         } else if (b.statisticalCycleTime === null) {
           c = -1;
         } else {
-          c = a.statisticalCycleTime.medianMinutesForSingleMat - b.statisticalCycleTime.medianMinutesForSingleMat;
+          c =
+            a.statisticalCycleTime.medianMinutesForSingleMat -
+            b.statisticalCycleTime.medianMinutesForSingleMat;
         }
         break;
       case "DeviationAbove":
@@ -437,7 +439,7 @@ export function ProgramSummaryTable(): JSX.Element {
             </TableRow>
           </TableHead>
           <TableBody>
-            {LazySeq.ofIterable(rows).map((program, idx) => (
+            {LazySeq.of(rows).map((program, idx) => (
               <ProgramRow
                 key={idx}
                 program={program}
@@ -495,13 +497,18 @@ export function ProgramContentDialog(): JSX.Element {
 
   // when history is open, content is shown on the history dialog
   return (
-    <Dialog open={program !== null && history === null} onClose={() => setProgramToShowContent(null)} maxWidth="lg">
+    <Dialog
+      open={program !== null && history === null}
+      onClose={() => setProgramToShowContent(null)}
+      maxWidth="lg"
+    >
       <DialogTitle>
         {program?.partName ? (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
             <PartIdenticon part={program.partName} />
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>
-              {program?.programName ?? "Program"} {program?.revision ? " rev" + program.revision.toFixed() : ""}{" "}
+              {program?.programName ?? "Program"}{" "}
+              {program?.revision ? " rev" + program.revision.toFixed() : ""}{" "}
               <Typography variant="subtitle1" component="span">
                 ({program.partName}-{program.process ?? 1})
               </Typography>
@@ -566,7 +573,7 @@ function ProgramRevisionTable(props: ProgramRevisionTableProps) {
             ))}
           </>
         ) : (
-          LazySeq.ofIterable(props.revisions)
+          LazySeq.of(props.revisions)
             .drop(props.page * revisionsPerPage)
             .take(revisionsPerPage)
             .map((rev) => (
@@ -623,7 +630,11 @@ export function ProgramHistoryDialog(): JSX.Element {
       // load initial
       setLoading(true);
       setError(null);
-      MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(program.programName, revisionsPerPage, undefined)
+      MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
+        program.programName,
+        revisionsPerPage,
+        undefined
+      )
         .then((revs) => {
           setRevisions(revs);
           setLastLoadedPage({ page: 0, hasMore: revs.length === revisionsPerPage });

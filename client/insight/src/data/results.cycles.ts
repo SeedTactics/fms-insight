@@ -43,7 +43,11 @@ import {
   PartAndStationOperation,
   splitElapsedTimeAmongChunk,
 } from "../cell-status/estimated-cycle-times.js";
-import { PartCycleData, splitElapsedLoadTimeAmongCycles, stat_name_and_num } from "../cell-status/station-cycles.js";
+import {
+  PartCycleData,
+  splitElapsedLoadTimeAmongCycles,
+  stat_name_and_num,
+} from "../cell-status/station-cycles.js";
 import { PalletCyclesByPallet } from "../cell-status/pallet-cycles.js";
 import { HashSet, HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
@@ -64,7 +68,10 @@ export interface CycleFilterOptions {
   readonly allMachineOperations: ReadonlyArray<PartAndStationOperation>;
 }
 
-function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: PartAndProcess): CycleFilterOptions {
+function extractFilterOptions(
+  cycles: Iterable<PartCycleData>,
+  selectedPart?: PartAndProcess
+): CycleFilterOptions {
   const palNames = new Set<string>();
   const lulNames = new Set<string>();
   const mcNames = new Set<string>();
@@ -93,7 +100,7 @@ function extractFilterOptions(cycles: Iterable<PartCycleData>, selectedPart?: Pa
     allPalletNames: Array.from(palNames).sort((a, b) => a.localeCompare(b)),
     allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
     allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
-    allPartAndProcNames: LazySeq.ofIterable(partNames)
+    allPartAndProcNames: LazySeq.of(partNames)
       .sortBy(([p, _]) => p)
       .flatMap(([part, procs]) => procs.toLazySeq().map((proc) => ({ part: part, proc: proc })))
       .toSortedArray(
@@ -123,7 +130,9 @@ export interface StationCycleFilter {
   readonly operation?: PartAndStationOperation;
 }
 
-export function emptyStationCycles(allCycles: Iterable<PartCycleData>): FilteredStationCycles & CycleFilterOptions {
+export function emptyStationCycles(
+  allCycles: Iterable<PartCycleData>
+): FilteredStationCycles & CycleFilterOptions {
   return {
     ...extractFilterOptions(allCycles),
     seriesLabel: "Station",
@@ -135,13 +144,14 @@ export function filterStationCycles(
   allCycles: Iterable<PartCycleData>,
   { zoom, partAndProc, pallet, station, operation }: StationCycleFilter
 ): FilteredStationCycles & CycleFilterOptions {
-  const groupByPal = partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+  const groupByPal =
+    partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
   const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
 
   return {
     ...extractFilterOptions(allCycles, partAndProc),
     seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
-    data: LazySeq.ofIterable(allCycles)
+    data: LazySeq.of(allCycles)
       .filter((e) => {
         if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
           return false;
@@ -184,7 +194,10 @@ export function filterStationCycles(
 }
 
 export interface LoadCycleData extends PartCycleData {
-  readonly operations?: ReadonlyArray<{ readonly mat: Readonly<api.ILogMaterial>; readonly operation: string }>;
+  readonly operations?: ReadonlyArray<{
+    readonly mat: Readonly<api.ILogMaterial>;
+    readonly operation: string;
+  }>;
 }
 
 export interface FilteredLoadCycles {
@@ -203,7 +216,7 @@ export function loadOccupancyCycles(
   allCycles: Iterable<PartCycleData>,
   { zoom, partAndProc, pallet, station }: LoadCycleFilter
 ): FilteredLoadCycles & CycleFilterOptions {
-  const filteredCycles = LazySeq.ofIterable(allCycles).filter((e) => {
+  const filteredCycles = LazySeq.of(allCycles).filter((e) => {
     if (!station || station === FilterAnyLoadKey) {
       return e.isLabor;
     } else {
@@ -223,7 +236,7 @@ export function loadOccupancyCycles(
         ([statNameAndNum, cyclesForStat]) =>
           [
             statNameAndNum,
-            LazySeq.ofIterable(cyclesForStat)
+            LazySeq.of(cyclesForStat)
               .collect((chunk) => {
                 const cycle = chunk.find((e) => {
                   if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
@@ -241,7 +254,7 @@ export function loadOccupancyCycles(
                 if (cycle) {
                   return {
                     ...cycle,
-                    operations: LazySeq.ofIterable(chunk)
+                    operations: LazySeq.of(chunk)
                       .flatMap((e) =>
                         e.material.map((mat) => ({
                           mat,
@@ -273,7 +286,7 @@ export function estimateLulOperations(
   allCycles: Iterable<PartCycleData>,
   { operation, pallet, zoom, station }: LoadOpFilters
 ): FilteredLoadCycles & CycleFilterOptions {
-  const filteredCycles = LazySeq.ofIterable(allCycles).filter((e) => {
+  const filteredCycles = LazySeq.of(allCycles).filter((e) => {
     if (!station || station === FilterAnyLoadKey) {
       return e.isLabor;
     } else {
@@ -292,7 +305,7 @@ export function estimateLulOperations(
         ([statNameAndNum, cyclesForStat]) =>
           [
             statNameAndNum,
-            LazySeq.ofIterable(cyclesForStat)
+            LazySeq.of(cyclesForStat)
               .collect((chunk) => {
                 const split = splitElapsedTimeAmongChunk(
                   chunk,
@@ -316,7 +329,7 @@ export function estimateLulOperations(
                   return {
                     ...splitCycle.cycle,
                     y: splitCycle.elapsedForSingleMaterialMinutes,
-                    operations: LazySeq.ofIterable(chunk)
+                    operations: LazySeq.of(chunk)
                       .flatMap((e) =>
                         e.material.map((mat) => ({
                           mat,
@@ -345,7 +358,7 @@ export function outlierMachineCycles(
 ): FilteredStationCycles {
   return {
     seriesLabel: "Part",
-    data: LazySeq.ofIterable(allCycles)
+    data: LazySeq.of(allCycles)
       .filter((e) => !e.isLabor && e.x >= start && e.x <= end)
       .filter((cycle) => {
         if (cycle.material.length === 0) return false;
@@ -362,7 +375,7 @@ export function outlierLoadCycles(
   end: Date,
   estimated: EstimatedCycleTimes
 ): FilteredStationCycles {
-  const loadCycles = LazySeq.ofIterable(allCycles).filter((e) => e.isLabor && e.x >= start && e.x <= end);
+  const loadCycles = LazySeq.of(allCycles).filter((e) => e.isLabor && e.x >= start && e.x <= end);
   const now = new Date();
   return {
     seriesLabel: "Part",
@@ -370,7 +383,8 @@ export function outlierLoadCycles(
       .filter((e) => {
         if (e.cycle.material.length === 0) return false;
         // if it is too close to the start (or end) we might have cut off and only seen half of the events
-        if (differenceInSeconds(e.cycle.x, start) < 20 || differenceInSeconds(end, e.cycle.x) < 20) return false;
+        if (differenceInSeconds(e.cycle.x, start) < 20 || differenceInSeconds(end, e.cycle.x) < 20)
+          return false;
 
         // if the cycle is within 15 seconds of now, don't display it yet.  We might only have received some
         // of the events for the load and the others are in-flight about to be received.
@@ -388,8 +402,11 @@ export function outlierLoadCycles(
   };
 }
 
-export function stationMinutes(partCycles: Iterable<PartCycleData>, cutoff: Date): ReadonlyMap<string, number> {
-  return LazySeq.ofIterable(partCycles)
+export function stationMinutes(
+  partCycles: Iterable<PartCycleData>,
+  cutoff: Date
+): ReadonlyMap<string, number> {
+  return LazySeq.of(partCycles)
     .filter((p) => p.x >= cutoff)
     .map((p) => ({
       station: stat_name_and_num(p.stationGroup, p.stationNumber),
@@ -446,7 +463,7 @@ export function format_cycle_inspection(
     }
   }
 
-  for (const name of LazySeq.ofIterable(signaled).toSortedArray((x) => x)) {
+  for (const name of LazySeq.of(signaled).toSortedArray((x) => x)) {
     if (completed.has(name)) {
       ret.push(name + "[" + (success.has(name) ? "success" : "failed") + "]");
     } else {
@@ -472,7 +489,7 @@ export function buildCycleTable(
   }
   table += "</tr></thead>\n<tbody>\n";
 
-  const filteredCycles = LazySeq.ofIterable(cycles.data)
+  const filteredCycles = LazySeq.of(cycles.data)
     .flatMap(([_, c]) => c)
     .filter((p) => (!startD || p.x >= startD) && (!endD || p.x < endD))
     .toSortedArray((a) => a.x.getTime());
@@ -515,7 +532,9 @@ export function copyCyclesToClipboard(
   zoom: { start: Date; end: Date } | undefined,
   hideMedian?: boolean
 ): void {
-  copy(buildCycleTable(cycles, matsById, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian));
+  copy(
+    buildCycleTable(cycles, matsById, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian)
+  );
 }
 
 export function buildPalletCycleTable(points: PalletCyclesByPallet): string {

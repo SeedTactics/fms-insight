@@ -147,7 +147,9 @@ function buildMatByKind(data: MoveMaterialArrowData<MoveArrowElemRect>): MoveMat
   return { freeMaterial, completedMaterial, faces, queues, material };
 }
 
-export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): ReadonlyArray<MoveMaterialArrow> {
+export function computeArrows(
+  data: MoveMaterialArrowData<MoveArrowElemRect>
+): ReadonlyArray<MoveMaterialArrow> {
   const container = data.container;
   if (!container) {
     return [];
@@ -163,7 +165,7 @@ export function computeArrows(data: MoveMaterialArrowData<MoveArrowElemRect>): R
   const queueDestUsed = new Map<string, number>();
   let lastFreeUsed = 0;
 
-  for (const [rect, mat] of LazySeq.ofIterable(byKind.material).sortBy(
+  for (const [rect, mat] of LazySeq.of(byKind.material).sortBy(
     ([rect]) => rect.left,
     ([rect]) => rect.top
   )) {

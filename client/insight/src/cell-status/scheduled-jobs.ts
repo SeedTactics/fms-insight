@@ -30,7 +30,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
+import {
+  atom,
+  DefaultValue,
+  RecoilValueReadOnly,
+  selectorFamily,
+  TransactionInterface_UNSTABLE,
+} from "recoil";
 import { addDays } from "date-fns";
 import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
@@ -47,7 +53,8 @@ const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "specificMonthJobs",
   default: HashMap.empty(),
 });
-export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
+export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> =
+  specificMonthJobsRW;
 
 export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
   t.set(last30JobsRW, (oldJobs) => oldJobs.union(LazySeq.ofObject(history.jobs).toHashMap((x) => x)));
@@ -56,7 +63,7 @@ export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history:
 export const updateLast30Jobs = conduit<ServerEventAndTime>(
   (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
     if (evt.newJobs) {
-      const newJobs = LazySeq.ofIterable(evt.newJobs.jobs);
+      const newJobs = LazySeq.of(evt.newJobs.jobs);
       t.set(last30JobsRW, (oldJobs) => {
         if (expire) {
           const expire = addDays(now, -30);
@@ -69,12 +76,14 @@ export const updateLast30Jobs = conduit<ServerEventAndTime>(
   }
 );
 
-export const updateSpecificMonthJobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-  t.set(
-    specificMonthJobsRW,
-    LazySeq.ofObject(history.jobs).toHashMap((x) => x)
-  );
-});
+export const updateSpecificMonthJobs = conduit(
+  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
+    t.set(
+      specificMonthJobsRW,
+      LazySeq.ofObject(history.jobs).toHashMap((x) => x)
+    );
+  }
+);
 
 export const last30JobComment = selectorFamily<string | null, string>({
   key: "last-30-job-comment",

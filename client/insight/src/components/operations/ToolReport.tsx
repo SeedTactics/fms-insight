@@ -101,8 +101,8 @@ const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStri
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
 
-  const schUse = LazySeq.ofIterable(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-  const totalLife = LazySeq.ofIterable(props.tool.machines).sumBy((m) => m.remainingMinutes);
+  const schUse = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+  const totalLife = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingMinutes);
 
   return (
     <>
@@ -160,7 +160,7 @@ function ToolRow(props: ToolRowProps) {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {LazySeq.ofIterable(props.tool.parts).map((p, idx) => (
+                      {LazySeq.of(props.tool.parts).map((p, idx) => (
                         <TableRow key={idx}>
                           <TableCell>
                             <Box
@@ -203,7 +203,7 @@ function ToolRow(props: ToolRowProps) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {LazySeq.ofIterable(props.tool.machines).map((m, idx) => (
+                    {LazySeq.of(props.tool.machines).map((m, idx) => (
                       <TableRow key={idx}>
                         <TableCell>{m.machineName}</TableCell>
                         <TableCell align="right">{m.pocket}</TableCell>
@@ -223,7 +223,12 @@ function ToolRow(props: ToolRowProps) {
   );
 }
 
-type SortColumn = "ToolName" | "ScheduledUse" | "RemainingTotalLife" | "MinRemainingLife" | "MinRemainingMachine";
+type SortColumn =
+  | "ToolName"
+  | "ScheduledUse"
+  | "RemainingTotalLife"
+  | "MinRemainingLife"
+  | "MinRemainingMachine";
 
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
@@ -238,7 +243,7 @@ export function ToolSummaryTable(): JSX.Element {
     return <div />;
   }
 
-  const rows = LazySeq.ofIterable(tools).sortWith((a: ToolReport, b: ToolReport) => {
+  const rows = LazySeq.of(tools).sortWith((a: ToolReport, b: ToolReport) => {
     let c = 0;
     switch (sortCol) {
       case "ToolName":
@@ -246,13 +251,13 @@ export function ToolSummaryTable(): JSX.Element {
         break;
       case "ScheduledUse":
         c =
-          LazySeq.ofIterable(a.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity) -
-          LazySeq.ofIterable(b.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+          LazySeq.of(a.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity) -
+          LazySeq.of(b.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
         break;
       case "RemainingTotalLife":
         c =
-          LazySeq.ofIterable(a.machines).sumBy((m) => m.remainingMinutes) -
-          LazySeq.ofIterable(b.machines).sumBy((m) => m.remainingMinutes);
+          LazySeq.of(a.machines).sumBy((m) => m.remainingMinutes) -
+          LazySeq.of(b.machines).sumBy((m) => m.remainingMinutes);
         break;
       case "MinRemainingLife":
         c = a.minRemainingMinutes - b.minRemainingMinutes;

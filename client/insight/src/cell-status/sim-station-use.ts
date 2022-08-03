@@ -83,7 +83,7 @@ export const updateLast30SimStatUse = conduit<ServerEventAndTime>(
         if (expire) {
           const expireT = addDays(now, -30);
           // check if nothing to expire and no new data
-          const minStat = LazySeq.ofIterable(simUse).minBy((e) => e.end.getTime());
+          const minStat = LazySeq.of(simUse).minBy((e) => e.end.getTime());
           if ((minStat === undefined || minStat.start >= expireT) && apiSimUse.length === 0) {
             return simUse;
           }

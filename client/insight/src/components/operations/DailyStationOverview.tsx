@@ -67,7 +67,10 @@ import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
-import { last30EstimatedCycleTimes, PartAndStationOperation } from "../../cell-status/estimated-cycle-times.js";
+import {
+  last30EstimatedCycleTimes,
+  PartAndStationOperation,
+} from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
@@ -87,7 +90,12 @@ const OutlierCycles = React.memo(function OutlierCycles(props: OutlierCycleProps
   const points = React.useMemo(() => {
     const today = startOfToday();
     if (props.showLabor) {
-      return outlierLoadCycles(allCycles.valuesToLazySeq(), addDays(today, -4), addDays(today, 1), estimatedCycleTimes);
+      return outlierLoadCycles(
+        allCycles.valuesToLazySeq(),
+        addDays(today, -4),
+        addDays(today, 1),
+        estimatedCycleTimes
+      );
     } else {
       return outlierMachineCycles(
         allCycles.valuesToLazySeq(),
@@ -291,7 +299,9 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
             {points.data.size > 0 ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
-                  onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, props.showLabor)}
+                  onClick={() =>
+                    copyCyclesToClipboard(points, matSummary.matsById, undefined, props.showLabor)
+                  }
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
                   size="large"
                 >
@@ -349,7 +359,11 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
                 name="Station-Cycles-cycle-chart-station-select"
                 autoWidth
                 displayEmpty
-                value={curOperation ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0) : -1}
+                value={
+                  curOperation
+                    ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0)
+                    : -1
+                }
                 style={{ marginLeft: "1em" }}
                 onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
               >
@@ -399,7 +413,7 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
             set_date_zoom_range={setChartZoom}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
             partCntPerPoint={
-              curOperation ? LazySeq.ofIterable(points.data).head()?.[1]?.[0]?.material?.length : undefined
+              curOperation ? LazySeq.of(points.data).head()?.[1]?.[0]?.material?.length : undefined
             }
             plannedTimeMinutes={plannedMinutes}
           />

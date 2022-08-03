@@ -181,14 +181,24 @@ export function Inspection(props: InspectionProps): JSX.Element {
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
             {recent_inspections.waiting_to_inspect.map((m, idx) => (
-              <MatSummary key={idx} mat={m} focusInspectionType={props.focusInspectionType} hideInspectionIcon />
+              <MatSummary
+                key={idx}
+                mat={m}
+                focusInspectionType={props.focusInspectionType}
+                hideInspectionIcon
+              />
             ))}
           </WhiteboardRegion>
         </Grid>
         <Grid item xs={12} md={6}>
           <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
             {recent_inspections.inspect_completed.map((m, idx) => (
-              <MatSummary key={idx} mat={m} focusInspectionType={props.focusInspectionType} hideInspectionIcon />
+              <MatSummary
+                key={idx}
+                mat={m}
+                focusInspectionType={props.focusInspectionType}
+                hideInspectionIcon
+              />
             ))}
           </WhiteboardRegion>
         </Grid>
@@ -210,7 +220,7 @@ function extractRecentInspections(
     if (comp === undefined) {
       return m.signaledInspections.length === 0;
     } else {
-      return LazySeq.ofIterable(m.signaledInspections).allMatch((s) => s in comp);
+      return LazySeq.of(m.signaledInspections).allMatch((s) => s in comp);
     }
   }
 
@@ -237,7 +247,9 @@ function extractRecentInspections(
   );
   // sort descending
   uninspected.sort((e1, e2) =>
-    e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
+    e1.last_unload_time && e2.last_unload_time
+      ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime()
+      : 0
   );
 
   const inspected = Array.from(

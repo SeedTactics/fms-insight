@@ -52,7 +52,11 @@ import { useImmer } from "../../util/recoil-util.js";
 import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { Group } from "@visx/group";
-import { useTooltip, TooltipWithBounds as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
+import {
+  useTooltip,
+  TooltipWithBounds as VisxTooltip,
+  defaultStyles as defaultTooltipStyles,
+} from "@visx/tooltip";
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
 import { useSpring, useSprings, animated } from "react-spring";
 import { ParentSize } from "@visx/responsive";
@@ -101,7 +105,7 @@ interface DataToPlot {
 function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): DataToPlot {
   const series = React.useMemo(() => {
     return (
-      LazySeq.ofIterable(points)
+      LazySeq.of(points)
         // need to sort first so the color indices are correct
         .toSortedArray(([k]) => k)
         .map(([seriesName, seriesPoints], idx) => ({
@@ -177,7 +181,7 @@ function useScales({
   const maxYVal = React.useMemo(() => {
     if (points.size === 0) return 60;
     const m =
-      LazySeq.ofIterable(points)
+      LazySeq.of(points)
         .flatMap(([, pts]) => pts.map((p) => p.y))
         .maxBy((y) => y) ?? 1;
     // round up to nearest 5
@@ -498,7 +502,9 @@ interface ChartMouseEventProps {
   readonly setXZoom: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly hideTooltip: () => void;
   readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
-  readonly setHighlightStart: (p: { readonly x: number; readonly y: number; readonly nowMS: number } | null) => void;
+  readonly setHighlightStart: (
+    p: { readonly x: number; readonly y: number; readonly nowMS: number } | null
+  ) => void;
 }
 
 const ChartMouseEvents = React.memo(function ChartMouseEvents({
@@ -546,7 +552,8 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
 
           setYZoom(y1 < y2 ? { y_low: y1, y_high: y2 } : { y_low: y2, y_high: y1 });
           setXZoom?.({
-            zoom: time1.getTime() < time2.getTime() ? { start: time1, end: time2 } : { start: time2, end: time1 },
+            zoom:
+              time1.getTime() < time2.getTime() ? { start: time1, end: time2 } : { start: time2, end: time1 },
           });
         }
       }
@@ -670,7 +677,12 @@ const ChartTooltip = React.memo(function ChartTooltip({
                 {e.title}:{" "}
                 {e.link ? (
                   <a
-                    style={{ color: "white", pointerEvents: "auto", cursor: "pointer", borderBottom: "1px solid" }}
+                    style={{
+                      color: "white",
+                      pointerEvents: "auto",
+                      cursor: "pointer",
+                      borderBottom: "1px solid",
+                    }}
                     onClick={e.link}
                   >
                     {e.value}
@@ -717,7 +729,12 @@ function CycleChartSvg(
     <svg width={width} height={height}>
       <Group left={marginLeft} top={marginTop}>
         <AxisAndGrid xScale={xScale} yScale={yScale} />
-        <StatsSeries median={props.median} plannedMinutes={props.plannedTimeMinutes} xScale={xScale} yScale={yScale} />
+        <StatsSeries
+          median={props.median}
+          plannedMinutes={props.plannedTimeMinutes}
+          xScale={xScale}
+          yScale={yScale}
+        />
         <ChartMouseEvents
           setYZoom={props.setYZoom}
           setXZoom={props.set_date_zoom_range}

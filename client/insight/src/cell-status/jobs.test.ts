@@ -46,20 +46,24 @@ import { toRawJs } from "../../test/to-raw-js.js";
 const newJobs = newJobsJson.map((j) => NewJobs.fromJS(j));
 
 function checkLast30(snapshot: Snapshot, msg: string) {
-  expect(toRawJs(snapshot.getLoadable(last30SimProduction).valueOrThrow())).toMatchSnapshot(msg + " - sim production");
-  expect(toRawJs(snapshot.getLoadable(last30SimStationUse).valueOrThrow())).toMatchSnapshot(msg + " - sim stations");
+  expect(toRawJs(snapshot.getLoadable(last30SimProduction).valueOrThrow())).toMatchSnapshot(
+    msg + " - sim production"
+  );
+  expect(toRawJs(snapshot.getLoadable(last30SimStationUse).valueOrThrow())).toMatchSnapshot(
+    msg + " - sim stations"
+  );
   expect(toRawJs(snapshot.getLoadable(last30Jobs).valueOrThrow())).toMatchSnapshot(msg + " - jobs");
 }
 
 function jobsToHistory(newJs: Iterable<NewJobs>): IHistoricData {
   return {
-    jobs: LazySeq.ofIterable(newJs)
+    jobs: LazySeq.of(newJs)
       .flatMap((s) => s.jobs)
       .toObject(
         (j) => [j.unique, new HistoricJob({ ...j, copiedToSystem: true })],
         (a, _) => a
       ),
-    stationUse: LazySeq.ofIterable(newJs)
+    stationUse: LazySeq.of(newJs)
       .flatMap((s) => s.stationUse ?? [])
       .toMutableArray(),
   };
@@ -97,7 +101,11 @@ it("processes jobs in a specific month", () => {
   // only the first 10 just to keep the size of the snapshots down
   snapshot = applyConduitToSnapshot(snapshot, onLoadSpecificMonthJobs, jobsToHistory(newJobs.slice(0, 10)));
 
-  expect(toRawJs(snapshot.getLoadable(specificMonthSimProduction).valueOrThrow())).toMatchSnapshot("sim production");
-  expect(toRawJs(snapshot.getLoadable(specificMonthSimStationUse).valueOrThrow())).toMatchSnapshot("sim stations");
+  expect(toRawJs(snapshot.getLoadable(specificMonthSimProduction).valueOrThrow())).toMatchSnapshot(
+    "sim production"
+  );
+  expect(toRawJs(snapshot.getLoadable(specificMonthSimStationUse).valueOrThrow())).toMatchSnapshot(
+    "sim stations"
+  );
   expect(toRawJs(snapshot.getLoadable(specificMonthJobs).valueOrThrow())).toMatchSnapshot("jobs");
 });

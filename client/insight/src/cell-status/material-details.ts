@@ -164,7 +164,7 @@ export const materialDetail = selector<MaterialDetail | null>({
     const [localEvts, otherEvts] = get(waitForNone([localMatEvents, otherMatEvents]));
     const evtsFromUpdate = get(extraLogEventsFromUpdates);
     const loading = localEvts.state === "loading" || otherEvts.state === "loading";
-    const allEvents = LazySeq.ofIterable(localEvts.state === "hasValue" ? localEvts.valueOrThrow() : [])
+    const allEvents = LazySeq.of(localEvts.state === "hasValue" ? localEvts.valueOrThrow() : [])
       .concat(otherEvts.state === "hasValue" ? otherEvts.valueOrThrow() : [])
       .sortBy(
         (e) => e.endUTC.getTime(),
@@ -261,8 +261,8 @@ export const materialDetail = selector<MaterialDetail | null>({
 
     return {
       ...mat,
-      signaledInspections: LazySeq.ofIterable(inspTypes).toSortedArray((x) => x),
-      completedInspections: LazySeq.ofIterable(completedTypes).toSortedArray((x) => x),
+      signaledInspections: LazySeq.of(inspTypes).toSortedArray((x) => x),
+      completedInspections: LazySeq.of(completedTypes).toSortedArray((x) => x),
       events: allEvents,
     };
   },
@@ -359,7 +359,7 @@ export const possibleWorkordersForMaterialInDialog = selector<ReadonlyArray<Work
 
     const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName);
     const summaries: IWorkorderSummary[] = [];
-    for (const ws of LazySeq.ofIterable(works).chunk(16)) {
+    for (const ws of LazySeq.of(works).chunk(16)) {
       summaries.push(...(await LogBackend.getWorkorders(ws.map((w) => w.workorderId))));
     }
 
@@ -377,7 +377,7 @@ export const possibleWorkordersForMaterialInDialog = selector<ReadonlyArray<Work
         }
       }
     }
-    return LazySeq.ofIterable(workMap.values()).toSortedArray(
+    return LazySeq.of(workMap.values()).toSortedArray(
       (w) => w.plan.dueDate.getTime(),
       (w) => -w.plan.priority
     );
@@ -521,9 +521,12 @@ export function usePrintLabel(): [(data: PrintLabelData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((d: PrintLabelData) => {
     setUpdating(true);
-    FmsServerBackend.printLabel(d.materialId, d.proc, d.loadStation ?? undefined, d.queue ?? undefined).finally(() =>
-      setUpdating(false)
-    );
+    FmsServerBackend.printLabel(
+      d.materialId,
+      d.proc,
+      d.loadStation ?? undefined,
+      d.queue ?? undefined
+    ).finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -539,7 +542,10 @@ export function useRemoveFromQueue(): [(matId: number, operator: string | null) 
   return [callback, updating];
 }
 
-export function useSignalForQuarantine(): [(matId: number, queue: string, operator: string | null) => void, boolean] {
+export function useSignalForQuarantine(): [
+  (matId: number, queue: string, operator: string | null) => void,
+  boolean
+] {
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((matId: number, queue: string, operator: string | null) => {
     setUpdating(true);
@@ -627,7 +633,9 @@ export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => voi
   const callback = useCallback((d: AddNewCastingToQueueData) => {
     setUpdating(true);
 
-    JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.quantity, d.operator, [...(d.serials || [])])
+    JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.quantity, d.operator, [
+      ...(d.serials || []),
+    ])
       .then((ms) => {
         if (d.onNewMaterial) d.onNewMaterial(ms);
       }, d.onError)

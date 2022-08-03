@@ -120,7 +120,7 @@ const highlightedComments = [/\bhold\b/, /\bmissing\b/, /\bwait\b/, /\bwaiting\b
 function highlightRow(j: Readonly<api.IActiveJob>): boolean {
   const comment = j.comment;
   if (!comment || comment === "") return false;
-  return LazySeq.ofIterable(highlightedComments).anyMatch((r) => r.test(comment));
+  return LazySeq.of(highlightedComments).anyMatch((r) => r.test(comment));
 }
 
 export interface RawMaterialJobRowProps {
@@ -130,7 +130,8 @@ export interface RawMaterialJobRowProps {
 }
 
 function RawMaterialJobRow(props: RawMaterialJobRowProps) {
-  const allowEditQty = (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
+  const allowEditQty =
+    (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
   const [open, setOpen] = React.useState<boolean>(false);
 
   const j = props.job;
@@ -215,7 +216,11 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
         <TableCell align="right">{j.assignedRaw}</TableCell>
         <TableCell align="right">
           <Tooltip
-            title={j.startedQty > 0 || j.assignedRaw > 0 ? `${j.plannedQty} - ${j.startedQty} - ${j.assignedRaw}` : ""}
+            title={
+              j.startedQty > 0 || j.assignedRaw > 0
+                ? `${j.plannedQty} - ${j.startedQty} - ${j.assignedRaw}`
+                : ""
+            }
           >
             <span>{j.plannedQty - j.startedQty - j.assignedRaw}</span>
           </Tooltip>
@@ -229,7 +234,10 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
           </Tooltip>
         </TableCell>
       </JobTableRow>
-      <JobTableRow $highlightedRow={highlRow} $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}>
+      <JobTableRow
+        $highlightedRow={highlRow}
+        $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}
+      >
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails job={j.job} checkAnalysisMonth={false} />
@@ -279,7 +287,11 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
 }
 
 interface EditNoteDialogProps {
-  readonly job: { readonly unique: string; readonly partName: string; readonly comment?: string | null } | null;
+  readonly job: {
+    readonly unique: string;
+    readonly partName: string;
+    readonly comment?: string | null;
+  } | null;
   readonly closeDialog: () => void;
 }
 
@@ -287,7 +299,9 @@ const nullCommentAtom = atom<string | null>({ key: "null-comment-atom", default:
 
 export const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogProps) {
   const [note, setNote] = React.useState<string | null>(null);
-  const setJobComment = useSetRecoilState(props.job ? currentStatusJobComment(props.job.unique) : nullCommentAtom);
+  const setJobComment = useSetRecoilState(
+    props.job ? currentStatusJobComment(props.job.unique) : nullCommentAtom
+  );
 
   function close() {
     props.closeDialog();
@@ -390,7 +404,9 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
               <div>
                 <PartIdenticon part={props.job.job.partName} size={40} />
               </div>
-              <div style={{ marginLeft: "1em", flexGrow: 1 }}>Edit Planned Quantity For {props.job.job.unique}</div>
+              <div style={{ marginLeft: "1em", flexGrow: 1 }}>
+                Edit Planned Quantity For {props.job.job.unique}
+              </div>
             </div>
           </DialogTitle>
           <DialogContent>
@@ -467,7 +483,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
     if (!props.material || props.material.length === 0) return undefined;
     const uniq = props.material[0].jobUnique;
     if (!uniq || uniq === "" || !jobs[uniq]) return undefined;
-    return LazySeq.ofIterable(jobs[uniq].procsAndPaths[0].paths)
+    return LazySeq.of(jobs[uniq].procsAndPaths[0].paths)
       .filter((p) => p.casting !== undefined && p.casting !== "")
       .head()?.casting;
   }, [props.material, jobs]);
@@ -486,7 +502,7 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
         setLoading(true);
         JobsBackend.bulkRemoveMaterialFromQueues(
           props.operator,
-          LazySeq.ofIterable(props.material || [])
+          LazySeq.of(props.material || [])
             .take(removeCnt)
             .map((m) => m.materialID)
             .toRArray()
@@ -686,7 +702,10 @@ export const Queues = (props: QueueProps) => {
       }}
     >
       {data.map((region, idx) => (
-        <div style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined} key={idx}>
+        <div
+          style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined}
+          key={idx}
+        >
           <SortableWhiteboardRegion
             axis="xy"
             label={region.label}
@@ -743,7 +762,11 @@ export const Queues = (props: QueueProps) => {
               : undefined}
             {region.rawMaterialQueue ? (
               <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
-                <RawMaterialJobTable queue={region.label} editNote={setChangeNoteForJob} editQty={setEditQtyForJob} />
+                <RawMaterialJobTable
+                  queue={region.label}
+                  editNote={setChangeNoteForJob}
+                  editQty={setEditQtyForJob}
+                />
               </div>
             ) : undefined}
           </SortableWhiteboardRegion>
@@ -755,7 +778,11 @@ export const Queues = (props: QueueProps) => {
       <BulkAddCastingWithoutSerialDialog />
       <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
-      <MultiMaterialDialog material={multiMaterialDialog} closeDialog={closeMultiMatDialog} operator={operator} />
+      <MultiMaterialDialog
+        material={multiMaterialDialog}
+        closeDialog={closeMultiMatDialog}
+        operator={operator}
+      />
     </Box>
   );
 };

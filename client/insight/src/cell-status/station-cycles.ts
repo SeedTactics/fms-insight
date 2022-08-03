@@ -97,9 +97,13 @@ const specificMonthStationCyclesRW = atom<StationCyclesByCntr>({
   key: "specificMonthStationCycles",
   default: HashMap.empty(),
 });
-export const specificMonthStationCycles: RecoilValueReadOnly<StationCyclesByCntr> = specificMonthStationCyclesRW;
+export const specificMonthStationCycles: RecoilValueReadOnly<StationCyclesByCntr> =
+  specificMonthStationCyclesRW;
 
-function convertLogToCycle(estimatedCycleTimes: EstimatedCycleTimes, cycle: ILogEntry): [number, PartCycleData] | null {
+function convertLogToCycle(
+  estimatedCycleTimes: EstimatedCycleTimes,
+  cycle: ILogEntry
+): [number, PartCycleData] | null {
   if (
     cycle.startofcycle ||
     (cycle.type !== LogType.LoadUnloadCycle && cycle.type !== LogType.MachineCycle) ||
@@ -110,7 +114,9 @@ function convertLogToCycle(estimatedCycleTimes: EstimatedCycleTimes, cycle: ILog
   const part = cycle.material.length > 0 ? cycle.material[0].part : "";
   const proc = cycle.material.length > 0 ? cycle.material[0].proc : 1;
   const stats =
-    cycle.material.length > 0 ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle)) : undefined;
+    cycle.material.length > 0
+      ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
+      : undefined;
   const elapsed = durationToMinutes(cycle.elapsed);
   return [
     cycle.counter,
@@ -134,7 +140,10 @@ function convertLogToCycle(estimatedCycleTimes: EstimatedCycleTimes, cycle: ILog
   ];
 }
 
-function process_swap(swap: Readonly<IEditMaterialInLogEvents>, partCycles: StationCyclesByCntr): StationCyclesByCntr {
+function process_swap(
+  swap: Readonly<IEditMaterialInLogEvents>,
+  partCycles: StationCyclesByCntr
+): StationCyclesByCntr {
   for (const changed of swap.editedEvents) {
     const c = partCycles.get(changed.counter);
     if (c !== undefined) {
@@ -150,7 +159,7 @@ export const setLast30StationCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>
     const estimatedCycleTimes = t.get(last30EstimatedCycleTimes);
     t.set(last30StationCyclesRW, (oldCycles) =>
       oldCycles.union(
-        LazySeq.ofIterable(log)
+        LazySeq.of(log)
           .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
           .toHashMap((x) => x)
       )
@@ -202,7 +211,7 @@ export const setSpecificMonthStationCycles = conduit<ReadonlyArray<Readonly<ILog
     const estimatedCycleTimes = t.get(specificMonthEstimatedCycleTimes);
     t.set(
       specificMonthStationCyclesRW,
-      LazySeq.ofIterable(log)
+      LazySeq.of(log)
         .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
         .toHashMap((x) => x)
     );

@@ -63,7 +63,8 @@ const specificMonthBufferEntriesRW = atom<BufferEntryByCntr>({
   key: "specificMonthBuffers",
   default: HashMap.empty(),
 });
-export const specificMonthBufferEntries: RecoilValueReadOnly<BufferEntryByCntr> = specificMonthBufferEntriesRW;
+export const specificMonthBufferEntries: RecoilValueReadOnly<BufferEntryByCntr> =
+  specificMonthBufferEntriesRW;
 
 function convertEntry(e: Readonly<ILogEntry>): [number, BufferEntry] | null {
   if (e.elapsed === "") return null;
@@ -129,7 +130,7 @@ export const setLast30Buffer = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30BufferEntriesRW, (oldEntries) =>
       oldEntries.union(
-        LazySeq.ofIterable(log)
+        LazySeq.of(log)
           .collect(convertEntry)
           .toHashMap((x) => x)
       )
@@ -158,7 +159,7 @@ export const setSpecificMonthBuffer = conduit<ReadonlyArray<Readonly<ILogEntry>>
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(
       specificMonthBufferEntriesRW,
-      LazySeq.ofIterable(log)
+      LazySeq.of(log)
         .collect(convertEntry)
         .toHashMap((x) => x)
     );

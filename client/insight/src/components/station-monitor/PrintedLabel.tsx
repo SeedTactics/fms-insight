@@ -140,7 +140,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
 
   const assignments = React.useMemo(
     () =>
-      LazySeq.ofIterable(props.material || [])
+      LazySeq.of(props.material || [])
         .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
         .groupBy((m) => m.jobUnique)
         .map(
@@ -201,7 +201,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
 function CombinedToOnePage(props: PrintedLabelProps) {
   const assignments = React.useMemo(
     () =>
-      LazySeq.ofIterable(props.material || [])
+      LazySeq.of(props.material || [])
         .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
         .groupBy((m) => m.jobUnique)
         .map(([k, mats]) => [k, { length: mats.length, part: mats[0]?.partName ?? "" }] as const)
@@ -213,7 +213,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
 
   const notes = React.useMemo(
     () =>
-      LazySeq.ofIterable(props.material || [])
+      LazySeq.of(props.material || [])
         .collect((m) => (m.jobUnique ? allJobs[m.jobUnique]?.comment : undefined))
         .distinct()
         .toSortedArray((n) => n),
@@ -252,7 +252,10 @@ function CombinedToOnePage(props: PrintedLabelProps) {
           <>
             <p style={{ fontSize: "x-large" }}>Assigned To</p>
             {assignments.map(([uniq, part], idx) => (
-              <div key={idx} style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}>
+              <div
+                key={idx}
+                style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}
+              >
                 <Barcode text={part.part} />
                 <h3 style={{ marginLeft: "4em" }}>x{part.length}</h3>
                 <h3 style={{ marginLeft: "4em" }}>assigned to {uniq}</h3>

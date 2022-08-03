@@ -83,7 +83,12 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
     const val = parseFloat(valStr);
     if (!isNaN(val) && isFinite(val)) {
       if (route.route === RouteLocation.Station_LoadMonitor) {
-        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, free: route.free, queues: route.queues });
+        setRoute({
+          route: RouteLocation.Station_LoadMonitor,
+          loadNum: val,
+          free: route.free,
+          queues: route.queues,
+        });
       } else {
         setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, free: false, queues: [] });
       }
@@ -106,7 +111,12 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
     const free = newQueues.includes(freeMaterialSym);
     newQueues = newQueues.filter((q) => q !== freeMaterialSym).slice(0, 3);
     if (route.route === RouteLocation.Station_LoadMonitor) {
-      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: route.loadNum, free: free, queues: newQueues });
+      setRoute({
+        route: RouteLocation.Station_LoadMonitor,
+        loadNum: route.loadNum,
+        free: free,
+        queues: newQueues,
+      });
     } else {
       setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, free: free, queues: newQueues });
     }
@@ -179,7 +189,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
           <MenuItem key={allInspSym} value={allInspSym}>
             <em>All</em>
           </MenuItem>
-          {LazySeq.ofIterable(inspTypes)
+          {LazySeq.of(inspTypes)
             .sortBy((x) => x)
             .map((ty) => (
               <MenuItem key={ty} value={ty}>

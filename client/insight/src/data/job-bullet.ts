@@ -74,7 +74,7 @@ export interface DataPoints {
 }
 
 export function jobsToPoints(jobs: ReadonlyArray<Readonly<api.IActiveJob>>): DataPoints {
-  const points = LazySeq.ofIterable(jobs)
+  const points = LazySeq.of(jobs)
     .sortBy(
       (j) => j.routeStartUTC.getTime(),
       (j) => j.scheduleId ?? "",

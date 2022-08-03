@@ -52,13 +52,13 @@ function averageToolUse(
   sort: boolean
 ): HashMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
   return usage.mapValues((cycles) => {
-    const tools = LazySeq.ofIterable(cycles)
+    const tools = LazySeq.of(cycles)
       .flatMap((c) => c.tools)
       .filter((c) => c.toolChanged !== true)
       .groupBy((t) => t.toolName)
       .map(([toolName, usageInCycles]) => ({
         toolName: toolName,
-        cycleUsageMinutes: LazySeq.ofIterable(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
+        cycleUsageMinutes: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
         toolChanged: false,
       }))
       .toMutableArray();
@@ -125,7 +125,7 @@ export function calcToolReport(
         const path = job.procsAndPaths[procIdx].paths[pathIdx];
         for (let stopIdx = 0; stopIdx < path.stops.length; stopIdx += 1) {
           const stop = path.stops[stopIdx];
-          const inProcAfter = LazySeq.ofIterable(currentSt.material)
+          const inProcAfter = LazySeq.of(currentSt.material)
             .filter(
               (m) =>
                 m.jobUnique === uniq &&
@@ -154,7 +154,7 @@ export function calcToolReport(
     }
   }
 
-  const parts = LazySeq.ofIterable(averageToolUse(usage, false))
+  const parts = LazySeq.of(averageToolUse(usage, false))
     .flatMap(([partAndProg, tools]) => {
       const qty = partPlannedQtys.get(partAndProg);
       if (qty !== undefined && qty > 0) {
@@ -181,11 +181,13 @@ export function calcToolReport(
       (t) => t.part
     );
 
-  return LazySeq.ofIterable(toolsInMach)
-    .filter((t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum))
+  return LazySeq.of(toolsInMach)
+    .filter(
+      (t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum)
+    )
     .groupBy((t) => t.toolName)
     .map(([toolName, tools]) => {
-      const toolsInMachine: ReadonlyArray<ToolInMachine> = LazySeq.ofIterable(tools)
+      const toolsInMachine: ReadonlyArray<ToolInMachine> = LazySeq.of(tools)
         .sortBy(
           (t) => t.machineGroupName,
           (t) => t.machineNum,
@@ -193,7 +195,8 @@ export function calcToolReport(
         )
         .map((m) => {
           const currentUseMinutes = m.currentUse !== "" ? durationToMinutes(m.currentUse) : 0;
-          const lifetimeMinutes = m.totalLifeTime && m.totalLifeTime !== "" ? durationToMinutes(m.totalLifeTime) : 0;
+          const lifetimeMinutes =
+            m.totalLifeTime && m.totalLifeTime !== "" ? durationToMinutes(m.totalLifeTime) : 0;
           return {
             machineName: m.machineGroupName + " #" + m.machineNum.toString(),
             pocket: m.pocket,
@@ -204,11 +207,11 @@ export function calcToolReport(
         })
         .toRArray();
 
-      const minMachine = LazySeq.ofIterable(toolsInMachine)
+      const minMachine = LazySeq.of(toolsInMachine)
         .groupBy((m) => m.machineName)
         .map(([machineName, toolsForMachine]) => ({
           machineName,
-          remaining: LazySeq.ofIterable(toolsForMachine).sumBy((m) => m.remainingMinutes),
+          remaining: LazySeq.of(toolsForMachine).sumBy((m) => m.remainingMinutes),
         }))
         .minBy((m) => m.remaining);
 
@@ -310,10 +313,10 @@ export function buildToolReportHTML(tools: Iterable<ToolReport>, singleMachine: 
   for (const tool of tools) {
     table += "<tr><td>" + tool.toolName + "</td>";
 
-    const schUse = LazySeq.ofIterable(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+    const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
     table += "<td>" + schUse.toFixed(1) + "</td>";
 
-    const totalLife = LazySeq.ofIterable(tool.machines).sumBy((m) => m.remainingMinutes);
+    const totalLife = LazySeq.of(tool.machines).sumBy((m) => m.remainingMinutes);
     table += "<td>" + totalLife.toFixed(1) + "</td>";
 
     if (singleMachine) {
@@ -366,7 +369,7 @@ export function calcProgramReport(
     (_, x) => x
   );
 
-  let allPrograms = LazySeq.ofIterable(progsInCellCtrl);
+  let allPrograms = LazySeq.of(progsInCellCtrl);
 
   if (progsToShow != null) {
     allPrograms = allPrograms.filter((p) => progsToShow.has(p.programName));

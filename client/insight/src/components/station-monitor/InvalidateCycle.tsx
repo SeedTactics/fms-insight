@@ -56,15 +56,15 @@ export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps
   if (props.st === null) return <div />;
 
   const maxProc =
-    LazySeq.ofIterable(props.events)
+    LazySeq.of(props.events)
       .flatMap((e) => e.material)
       .maxBy((m) => m.proc)?.proc ?? 1;
 
   return (
     <div style={{ margin: "2em" }}>
       <p>
-        An invalidated cycle remains in the event log, but is not considered when determining the next process to be
-        machined on a piece of material.
+        An invalidated cycle remains in the event log, but is not considered when determining the next process
+        to be machined on a piece of material.
       </p>
       <TextField
         value={props.st?.process ?? ""}
@@ -102,9 +102,12 @@ export function InvalidateCycleDialogButtons(props: InvalidateCycleDialogButtons
   function invalidateCycle() {
     if (props.curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(props.curMat.materialID, null, props.operator, props.st.process).finally(() =>
-        props.close()
-      );
+      JobsBackend.invalidatePalletCycle(
+        props.curMat.materialID,
+        null,
+        props.operator,
+        props.st.process
+      ).finally(() => props.close());
     }
   }
 
@@ -116,8 +119,14 @@ export function InvalidateCycleDialogButtons(props: InvalidateCycleDialogButtons
         </Button>
       ) : undefined}
       {props.curMat && props.st !== null ? (
-        <Button color="primary" onClick={invalidateCycle} disabled={props.st.process === null || props.st.updating}>
-          {props.st.process === null ? "Invalidate Cycle" : "Invalidate Process " + props.st.process.toString()}
+        <Button
+          color="primary"
+          onClick={invalidateCycle}
+          disabled={props.st.process === null || props.st.updating}
+        >
+          {props.st.process === null
+            ? "Invalidate Cycle"
+            : "Invalidate Process " + props.st.process.toString()}
         </Button>
       ) : undefined}
     </>
@@ -160,7 +169,7 @@ function matCanSwap(
       if (newMat.partName !== curMat.partName) {
         if (!job) return false;
         if (
-          !LazySeq.ofIterable(job.procsAndPaths)
+          !LazySeq.of(job.procsAndPaths)
             .flatMap((p) => p.paths)
             .anyMatch((p) => p.casting === newMat.partName)
         ) {
@@ -185,9 +194,9 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
   if (availMats.length === 0) {
     return (
       <p style={{ margin: "2em" }}>
-        No material with the same job is available for swapping. You must edit the pallet using the cell controller
-        software to remove the material from the pallet. Insight will automatically refresh once the cell controller
-        software is updated.
+        No material with the same job is available for swapping. You must edit the pallet using the cell
+        controller software to remove the material from the pallet. Insight will automatically refresh once
+        the cell controller software is updated.
       </p>
     );
   } else {
@@ -195,9 +204,9 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
       <div style={{ margin: "2em" }}>
         <p>Swap serial on pallet with material from the same job.</p>
         <p>
-          If material on the pallet is from a different job, you cannot use this screen. Instead, the material must
-          first be removed from the pallet using the cell controller software. Insight will automatically refresh when
-          this occurs.
+          If material on the pallet is from a different job, you cannot use this screen. Instead, the material
+          must first be removed from the pallet using the cell controller software. Insight will automatically
+          refresh when this occurs.
         </p>
         <TextField
           value={props.st?.selectedMatToSwap?.serial ?? ""}
@@ -234,7 +243,12 @@ export interface SwapMaterialButtonsProps {
 
 export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
   function swapMats() {
-    if (props.curMat && props.st && props.st.selectedMatToSwap && props.curMat.location.type === LocType.OnPallet) {
+    if (
+      props.curMat &&
+      props.st &&
+      props.st.selectedMatToSwap &&
+      props.curMat.location.type === LocType.OnPallet
+    ) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
       JobsBackend.swapMaterialOnPallet(props.curMat.materialID, props.operator, {
         pallet: props.curMat.location.pallet ?? "",
@@ -251,7 +265,11 @@ export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
         </Button>
       ) : undefined}
       {props.curMat && props.st !== null && props.curMat.location.type === LocType.OnPallet ? (
-        <Button color="primary" onClick={swapMats} disabled={props.st.selectedMatToSwap === null || props.st.updating}>
+        <Button
+          color="primary"
+          onClick={swapMats}
+          disabled={props.st.selectedMatToSwap === null || props.st.updating}
+        >
           {props.st.selectedMatToSwap === null
             ? "Swap Serial"
             : "Swap with " + (props.st.selectedMatToSwap.serial ?? "")}

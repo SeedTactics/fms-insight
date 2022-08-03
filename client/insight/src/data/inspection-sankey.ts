@@ -119,14 +119,21 @@ function edgesForPath(
 }
 
 export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyDiagram {
-  const matIdToInspResult = LazySeq.ofIterable(d)
+  const matIdToInspResult = LazySeq.of(d)
     .filter((e) => e.result.type === InspectionLogResultType.Completed)
-    .toRMap((e) => [e.materialID, e.result.type === InspectionLogResultType.Completed ? e.result.success : false]);
+    .toRMap((e) => [
+      e.materialID,
+      e.result.type === InspectionLogResultType.Completed ? e.result.success : false,
+    ]);
 
   // create all the edges, likely with duplicate edges between nodes
-  const edges = LazySeq.ofIterable(d).flatMap((c) => {
+  const edges = LazySeq.of(d).flatMap((c) => {
     if (c.result.type === InspectionLogResultType.Triggered) {
-      return edgesForPath(c.result.actualPath, c.result.toInspect, matIdToInspResult.get(c.materialID) ?? false);
+      return edgesForPath(
+        c.result.actualPath,
+        c.result.toInspect,
+        matIdToInspResult.get(c.materialID) ?? false
+      );
     } else {
       return [];
     }

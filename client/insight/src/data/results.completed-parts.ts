@@ -92,10 +92,14 @@ export function binCyclesByDayAndPart(
   start: Date,
   end: Date
 ): HashMap<DayAndPart, PartsCompletedSummary> {
-  const activeTimeByMatId = LazySeq.ofIterable(cycles)
+  const activeTimeByMatId = LazySeq.of(cycles)
     .filter(
       (cycle) =>
-        cycle.x >= start && cycle.x <= end && !cycle.isLabor && cycle.activeMinutes > 0 && cycle.material.length > 0
+        cycle.x >= start &&
+        cycle.x <= end &&
+        !cycle.isLabor &&
+        cycle.activeMinutes > 0 &&
+        cycle.material.length > 0
     )
     .flatMap((cycle) =>
       cycle.material.map((mat) => ({
@@ -109,7 +113,7 @@ export function binCyclesByDayAndPart(
       (a1, a2) => a1 + a2
     );
 
-  return LazySeq.ofIterable(matsById)
+  return LazySeq.of(matsById)
     .flatMap(([matId, details]) =>
       LazySeq.ofObject(details.unloaded_processes ?? {})
         .filter(([_, unloadTime]) => unloadTime >= start && unloadTime <= end)
@@ -138,7 +142,7 @@ export function binCyclesByDayAndPart(
 export function binSimProductionByDayAndPart(
   prod: Iterable<SimPartCompleted>
 ): HashMap<DayAndPart, PartsCompletedSummary> {
-  return LazySeq.ofIterable(prod).toHashMap(
+  return LazySeq.of(prod).toHashMap(
     (p) =>
       [
         new DayAndPart(startOfDay(p.completeTime), p.part),
@@ -181,15 +185,15 @@ class HeatmapClipboardCell {
 export function buildCompletedPartsHeatmapTable(
   points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
 ): string {
-  const cells = LazySeq.ofIterable(points).toHashMap(
+  const cells = LazySeq.of(points).toHashMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
     (_, c) => c // cells should be unique, but just in case take the second
   );
-  const days = LazySeq.ofIterable(points)
+  const days = LazySeq.of(points)
     .map((p) => p.x.getTime())
     .distinct()
     .toSortedArray((x) => x);
-  const rows = LazySeq.ofIterable(points)
+  const rows = LazySeq.of(points)
     .aggregate(
       (p) => p.y,
       (p) => p.activeMachineMins / p.count,

@@ -65,7 +65,10 @@ enum DragType {
   Queue = "DRAG_QUEUE",
 }
 
-function getQueueStyle(isDraggingOver: boolean, draggingFromThisWith: string | undefined): React.CSSProperties {
+function getQueueStyle(
+  isDraggingOver: boolean,
+  draggingFromThisWith: string | undefined
+): React.CSSProperties {
   return {
     display: "flex",
     flexDirection: "column",
@@ -187,7 +190,7 @@ class SystemMaterial<T extends string | number> extends React.PureComponent<Syst
               </Typography>
             </div>
             <div style={getQueueStyle(false, undefined)}>
-              {LazySeq.ofIterable(this.props.material)
+              {LazySeq.of(this.props.material)
                 .sortWith(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
                 .map(([label, material], idx) => (
                   <div key={idx}>
@@ -236,7 +239,11 @@ function AllMatDialog(props: AllMatDialogProps) {
         <>
           <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} curMat={curMat} status={status} />
           {displayMat && curMat && curMat.location.type === LocType.InQueue ? (
-            <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} events={displayMat.events} />
+            <InvalidateCycleDialogContent
+              st={invalidateSt}
+              setState={setInvalidateSt}
+              events={displayMat.events}
+            />
           ) : undefined}
         </>
       }
@@ -247,7 +254,13 @@ function AllMatDialog(props: AllMatDialogProps) {
               Remove From System
             </Button>
           ) : undefined}
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} curMat={curMat} close={close} operator={null} />
+          <SwapMaterialButtons
+            st={swapSt}
+            setState={setSwapSt}
+            curMat={curMat}
+            close={close}
+            operator={null}
+          />
           {curMat && curMat.location.type === LocType.InQueue ? (
             <InvalidateCycleDialogButtons
               st={invalidateSt}
@@ -276,7 +289,9 @@ export function AllMaterial(props: AllMaterialProps) {
   const displayMaterial = useRecoilValue(matDetails.materialDetail);
 
   const binsFromSt = React.useMemo(() => selectAllMaterialIntoBins(st, matBinOrder), [st, matBinOrder]);
-  const [tempBinsDuringUpdate, setTempBinsDuringUpdate] = React.useState<ReadonlyArray<MaterialBin> | null>(null);
+  const [tempBinsDuringUpdate, setTempBinsDuringUpdate] = React.useState<ReadonlyArray<MaterialBin> | null>(
+    null
+  );
   React.useEffect(() => {
     setTempBinsDuringUpdate(null);
   }, [st]);
@@ -297,11 +312,13 @@ export function AllMaterial(props: AllMaterialProps) {
       const mat = st.material.find((m) => m.materialID === materialId);
       if (mat) {
         setTempBinsDuringUpdate(moveMaterialInBin(allBins, mat, queue, queuePosition));
-        JobsBackend.setMaterialInQueue(materialId, null, new QueuePosition({ queue, position: queuePosition })).catch(
-          () => {
-            setTempBinsDuringUpdate(null);
-          }
-        );
+        JobsBackend.setMaterialInQueue(
+          materialId,
+          null,
+          new QueuePosition({ queue, position: queuePosition })
+        ).catch(() => {
+          setTempBinsDuringUpdate(null);
+        });
       }
     } else if (result.type === DragType.Queue) {
       setMatBinOrder(
@@ -367,7 +384,12 @@ export function AllMaterial(props: AllMaterialProps) {
                   );
                 case MaterialBinType.QuarantineQueues:
                   return (
-                    <QuarantineQueue key={matBin.binId} idx={idx} queue={matBin.queueName} material={matBin.material} />
+                    <QuarantineQueue
+                      key={matBin.binId}
+                      idx={idx}
+                      queue={matBin.queueName}
+                      material={matBin.material}
+                    />
                   );
               }
             })}

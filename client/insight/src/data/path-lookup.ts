@@ -34,7 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { LogBackend, OtherLogBackends } from "../network/backend.js";
 import { addDays } from "date-fns";
 import { atom, selector, waitForAny } from "recoil";
-import { convertLogToInspections, PartAndInspType, InspectionLogsByCntr } from "../cell-status/inspections.js";
+import {
+  convertLogToInspections,
+  PartAndInspType,
+  InspectionLogsByCntr,
+} from "../cell-status/inspections.js";
 import { ILogEntry } from "../network/api.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
@@ -58,7 +62,7 @@ const localLogEntries = selector<PathLookupLogEntries>({
     if (range == null) return HashMap.empty();
 
     const events = await LogBackend.get(range.curStart, range.curEnd);
-    return LazySeq.ofIterable(events)
+    return LazySeq.of(events)
       .flatMap(convertLogToInspections)
       .filter((e) => e.key.part === range.part)
       .toLookupMap(
@@ -82,7 +86,7 @@ const otherLogEntries = selector<PathLookupLogEntries>({
       allEvts.push(await b.get(range.curStart, range.curEnd));
     }
 
-    return LazySeq.ofIterable(allEvts)
+    return LazySeq.of(allEvts)
       .flatMap((es) => es)
       .flatMap(convertLogToInspections)
       .filter((e) => e.key.part === range.part)
@@ -110,7 +114,8 @@ export const inspectionLogEntries = selector<PathLookupLogEntries>({
       return vals[0];
     } else {
       return HashMap.union(
-        (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) => inspsByCntr1.union(inspsByCntr2),
+        (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) =>
+          inspsByCntr1.union(inspsByCntr2),
         ...vals
       );
     }

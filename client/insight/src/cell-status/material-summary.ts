@@ -83,7 +83,8 @@ const specificMonthMaterialSummaryRW = atom<MatSummaryState>({
     matIdsForJob: HashMap.empty(),
   },
 });
-export const specificMonthMaterialSummary: RecoilValueReadOnly<MatSummaryState> = specificMonthMaterialSummaryRW;
+export const specificMonthMaterialSummary: RecoilValueReadOnly<MatSummaryState> =
+  specificMonthMaterialSummaryRW;
 
 export function inproc_mat_to_summary(mat: Readonly<IInProcessMaterial>): MaterialSummary {
   return {
@@ -224,7 +225,7 @@ function filter_old(expire: Date, { matIdsForJob, matsById }: MatSummaryState): 
 
   if (matsToRemove.size > 0) {
     matIdsForJob = matIdsForJob.collectValues((ids) => {
-      const newIds = LazySeq.ofIterable(matsToRemove).foldLeft(ids, (i, c) => i.delete(c));
+      const newIds = LazySeq.of(matsToRemove).foldLeft(ids, (i, c) => i.delete(c));
       if (newIds.size > 0) {
         return newIds;
       } else {
@@ -301,13 +302,13 @@ function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummarySt
           // remove from oldMat, add to newMat
           oldMat = {
             ...oldMat,
-            signaledInspections: LazySeq.ofIterable(oldMat.signaledInspections)
+            signaledInspections: LazySeq.of(oldMat.signaledInspections)
               .filter((i) => i !== inspType)
               .toRArray(),
           };
           newMat = {
             ...newMat,
-            signaledInspections: LazySeq.ofIterable([...newMat.signaledInspections, inspType])
+            signaledInspections: LazySeq.of([...newMat.signaledInspections, inspType])
               .distinct()
               .toSortedArray((x) => x),
           };

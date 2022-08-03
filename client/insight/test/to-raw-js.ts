@@ -16,7 +16,7 @@ export function toRawJs(val: any): any {
   } else if (val instanceof Set) {
     return val;
   } else if (val instanceof HashSet) {
-    return LazySeq.ofIterable(val).map(toRawJs).toRArray();
+    return LazySeq.of(val).map(toRawJs).toRArray();
   } else if (val instanceof HashMap) {
     return val.toLazySeq().toRMap(([k, v]) => [k.toString(), toRawJs(v)]);
   } else if (val instanceof OrderedMap) {

@@ -101,13 +101,15 @@ function JobDisplay(props: JobDisplayProps) {
                   <div>Pallets: {path.pallets.join(",")}</div>
                   {path.fixture ? (
                     <div>
-                      Fixture: {path.fixture} {path.face !== undefined ? ", Face: " + path.face.toString() : undefined}
+                      Fixture: {path.fixture}{" "}
+                      {path.face !== undefined ? ", Face: " + path.face.toString() : undefined}
                     </div>
                   ) : undefined}
                   {path.inputQueue ? <div>Input Queue: {path.inputQueue}</div> : undefined}
                   {path.casting ? <div>Raw Material: {path.casting}</div> : undefined}
                   <div>
-                    Load Stations: {path.load.join(",")} | {durationToMinutes(path.expectedLoadTime).toFixed(1)} mins
+                    Load Stations: {path.load.join(",")} |{" "}
+                    {durationToMinutes(path.expectedLoadTime).toFixed(1)} mins
                   </div>
                   {path.stops.map((stop, stopIdx) => (
                     <React.Fragment key={stopIdx}>
@@ -119,8 +121,8 @@ function JobDisplay(props: JobDisplayProps) {
                     </React.Fragment>
                   ))}
                   <div>
-                    Unload Stations: {path.unload.join(",")} | {durationToMinutes(path.expectedUnloadTime).toFixed(1)}{" "}
-                    mins
+                    Unload Stations: {path.unload.join(",")} |{" "}
+                    {durationToMinutes(path.expectedUnloadTime).toFixed(1)} mins
                   </div>
                   {path.outputQueue ? <div>Output Queue: {path.outputQueue}</div> : undefined}
                   {path.inspections && path.inspections.length > 0 ? (
@@ -166,7 +168,7 @@ function JobMaterial(props: JobMaterialProps) {
   const currentMaterial = useRecoilValue(currentStatus).material;
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
-  const mats = LazySeq.ofIterable(props.matIdsForJob.get(props.unique) ?? HashSet.empty<number>())
+  const mats = LazySeq.of(props.matIdsForJob.get(props.unique) ?? HashSet.empty<number>())
     .collect((matId) => props.matsFromEvents.get(matId))
     .toRArray();
 
@@ -174,12 +176,12 @@ function JobMaterial(props: JobMaterialProps) {
     return <div />;
   }
 
-  const matsById = LazySeq.ofIterable(currentMaterial).toHashMap(
+  const matsById = LazySeq.of(currentMaterial).toHashMap(
     (m) => [m.materialID, m],
     (m1, _m2) => m1
   );
 
-  const anyWorkorder = LazySeq.ofIterable(mats).anyMatch(
+  const anyWorkorder = LazySeq.of(mats).anyMatch(
     (m) => m.workorderId !== undefined && m.workorderId !== "" && m.workorderId !== m.serial
   );
 
@@ -242,7 +244,9 @@ export interface JobDetailsProps {
 export function JobDetails(props: JobDetailsProps): JSX.Element {
   const period = useRecoilValue(selectedAnalysisPeriod);
   const matsFromEvents = useRecoilValue(
-    props.checkAnalysisMonth && period.type === "SpecificMonth" ? specificMonthMaterialSummary : last30MaterialSummary
+    props.checkAnalysisMonth && period.type === "SpecificMonth"
+      ? specificMonthMaterialSummary
+      : last30MaterialSummary
   );
 
   return (

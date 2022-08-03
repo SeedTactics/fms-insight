@@ -46,9 +46,9 @@ export interface JobAndGroups {
 }
 
 function describePath(path: Readonly<api.IProcPathInfo>): string {
-  return `${path.pallets.length > 1 ? "Pallets " + path.pallets.join(",") : "Pallet " + path.pallets[0]}; ${path.stops
-    .map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(","))
-    .join("->")}`;
+  return `${
+    path.pallets.length > 1 ? "Pallets " + path.pallets.join(",") : "Pallet " + path.pallets[0]
+  }; ${path.stops.map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
 }
 
 interface RawMatDetails {
@@ -65,7 +65,7 @@ function rawMatDetails(job: Readonly<api.IActiveJob>, pathIdx: number): RawMatDe
 }
 
 function joinRawMatDetails(details: ReadonlyArray<RawMatDetails>): string {
-  return LazySeq.ofIterable(details).foldLeft("", (x, details) => x + " | " + details.path);
+  return LazySeq.of(details).foldLeft("", (x, details) => x + " | " + details.path);
 }
 
 interface PathDetails {
@@ -82,7 +82,9 @@ function pathDetails(job: Readonly<api.IActiveJob>, procIdx: number, pathIdx: nu
 }
 
 function joinDetails(details: ReadonlyArray<PathDetails>): string {
-  return LazySeq.ofIterable(details).foldLeft("", (x, details) => (x === "" ? details.path : x + " | " + details.path));
+  return LazySeq.of(details).foldLeft("", (x, details) =>
+    x === "" ? details.path : x + " | " + details.path
+  );
 }
 
 export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
@@ -97,7 +99,7 @@ export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
   machinedProcs.push({
     lastProc: 0,
     details: joinRawMatDetails(rawMatPaths),
-    queues: LazySeq.ofIterable(rawMatPaths)
+    queues: LazySeq.of(rawMatPaths)
       .collect((p) => p.queue)
       .toRSet((p) => p),
   });
@@ -108,7 +110,7 @@ export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
     machinedProcs.push({
       lastProc: procIdx + 1,
       details: joinDetails(paths),
-      queues: LazySeq.ofIterable(paths)
+      queues: LazySeq.of(paths)
         .collect((p) => p.queue)
         .toRSet((p) => p),
     });
@@ -165,7 +167,7 @@ export function extractJobRawMaterial(
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
     .filter(
-      ([, j]) => LazySeq.ofIterable(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumBy((x) => x) < (j.cycles ?? 0)
+      ([, j]) => LazySeq.of(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumBy((x) => x) < (j.cycles ?? 0)
     )
     .flatMap(([, j]) =>
       j.procsAndPaths[0].paths
@@ -184,13 +186,13 @@ export function extractJobRawMaterial(
             plannedQty: j.cycles ?? 0,
             startedQty:
               (j.completed?.[0]?.[pathNum - 1] || 0) +
-              LazySeq.ofIterable(mats)
+              LazySeq.of(mats)
                 .filter((m) => isMatDuringProc1(j.unique, pathNum, m))
                 .length(),
-            assignedRaw: LazySeq.ofIterable(mats)
+            assignedRaw: LazySeq.of(mats)
               .filter((m) => isMatAssigned(j.unique, pathNum, m))
               .length(),
-            availableUnassigned: LazySeq.ofIterable(mats)
+            availableUnassigned: LazySeq.of(mats)
               .filter(
                 (m) =>
                   m.location.type === api.LocType.InQueue &&
@@ -226,7 +228,10 @@ export interface QueueData {
   readonly groupedRawMat?: ReadonlyArray<QueueRawMaterialGroup>;
 }
 
-function compareByQueuePos(m1: Readonly<api.IInProcessMaterial>, m2: Readonly<api.IInProcessMaterial>): number {
+function compareByQueuePos(
+  m1: Readonly<api.IInProcessMaterial>,
+  m2: Readonly<api.IInProcessMaterial>
+): number {
   return (m1.location.queuePosition ?? 10000000000) - (m2.location.queuePosition ?? 10000000000);
 }
 
@@ -253,14 +258,17 @@ export function selectQueueData(
       label: "Loading Material",
       free: true,
       rawMaterialQueue: false,
-      material: curSt.material.filter((m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free),
+      material: curSt.material.filter(
+        (m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free
+      ),
     });
     queues.push({
       label: "In Process Material",
       free: true,
       rawMaterialQueue: false,
       material: curSt.material.filter(
-        (m) => m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
+        (m) =>
+          m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
       ),
     });
   }
@@ -341,7 +349,7 @@ export async function loadRawMaterialEvents(
   material: ReadonlyArray<Readonly<api.IInProcessMaterial>>
 ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
   const events: Array<Readonly<api.ILogEntry>> = [];
-  for (const chunk of LazySeq.ofIterable(material).chunk(15)) {
+  for (const chunk of LazySeq.of(material).chunk(15)) {
     events.push(...(await LogBackend.logForMaterials(chunk.map((m) => m.materialID))));
   }
   events.sort((a, b) => a.endUTC.getTime() - b.endUTC.getTime());

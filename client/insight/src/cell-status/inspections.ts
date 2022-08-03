@@ -102,12 +102,17 @@ const specificMonthInspectionsRW = atom<InspectionsByPartAndType>({
   key: "specificMonthInspections",
   default: HashMap.empty(),
 });
-export const specificMonthInspections: RecoilValueReadOnly<InspectionsByPartAndType> = specificMonthInspectionsRW;
+export const specificMonthInspections: RecoilValueReadOnly<InspectionsByPartAndType> =
+  specificMonthInspectionsRW;
 
 export function convertLogToInspections(
   c: Readonly<ILogEntry>
 ): ReadonlyArray<{ key: PartAndInspType; entry: InspectionLogEntry }> {
-  if (c.type !== LogType.Inspection && c.type !== LogType.InspectionForce && c.type !== LogType.InspectionResult) {
+  if (
+    c.type !== LogType.Inspection &&
+    c.type !== LogType.InspectionForce &&
+    c.type !== LogType.InspectionResult
+  ) {
     return [];
   }
 
@@ -199,7 +204,7 @@ export const setLast30Inspections = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30InspectionsRW, (oldEntries) =>
       oldEntries.union(
-        LazySeq.ofIterable(log)
+        LazySeq.of(log)
           .flatMap(convertLogToInspections)
           .toLookupMap(
             (e) => e.key,
@@ -232,7 +237,7 @@ export const updateLast30Inspections = conduit<ServerEventAndTime>(
         }
 
         return parts.union(
-          LazySeq.ofIterable(log).toLookupMap(
+          LazySeq.of(log).toLookupMap(
             (e) => e.key,
             (e) => e.entry.cntr,
             (e) => e.entry
@@ -270,7 +275,7 @@ export const setSpecificMonthInspections = conduit<ReadonlyArray<Readonly<ILogEn
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(
       specificMonthInspectionsRW,
-      LazySeq.ofIterable(log)
+      LazySeq.of(log)
         .flatMap(convertLogToInspections)
         .toLookupMap(
           (e) => e.key,

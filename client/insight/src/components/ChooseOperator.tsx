@@ -88,7 +88,7 @@ export const OperatorSelect = React.memo(function OperatorSelectF() {
   return (
     <>
       <Select value={operator || ""} onChange={changeOper} variant="standard" renderValue={(x) => x}>
-        {LazySeq.ofIterable(allOpers)
+        {LazySeq.of(allOpers)
           .sortBy((x) => x)
           .map((oper, idx) => (
             <MenuItem key={idx} value={oper}>

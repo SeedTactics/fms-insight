@@ -53,7 +53,7 @@ const selectedOperator = atom<string | null>({
 
 export const allOperators = atom<ReadonlySet<string>>({
   key: "all-operators",
-  default: LazySeq.ofIterable<string>(
+  default: LazySeq.of<string>(
     JSON.parse(typeof localStorage !== "undefined" ? localStorage.getItem("operators") || "[]" : "[]")
   ).toRSet((x) => x),
   effects: [

@@ -66,7 +66,9 @@ function describeArc(cx: number, cy: number, radius: number, startAngle: number,
 
   const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
 
-  const d = ["M", start.x, start.y, "A", radius, radius, Math.PI / 2, largeArcFlag, "0", end.x, end.y].join(" ");
+  const d = ["M", start.x, start.y, "A", radius, radius, Math.PI / 2, largeArcFlag, "0", end.x, end.y].join(
+    " "
+  );
 
   return d;
 }
@@ -260,9 +262,9 @@ export default React.memo(function StationOEEs() {
     [cycles, currentSt.timeOfCurrentStatusUTC]
   );
 
-  const stats = LazySeq.ofIterable(pallets)
+  const stats = LazySeq.of(pallets)
     .map((p) => p[0])
-    .concat(LazySeq.ofIterable(stationMins).map((s) => s[0]))
+    .concat(LazySeq.of(stationMins).map((s) => s[0]))
     .distinct()
     .toSortedArray(
       (s) => s.startsWith("L/U"),

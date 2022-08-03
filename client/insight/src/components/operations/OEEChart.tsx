@@ -57,7 +57,11 @@ export function OEEChart(props: OEEProps) {
         <Grid item xs={12} md={6} key={idx}>
           <div>
             <Box sx={{ height: "calc(100vh / 2 - 200px)" }}>
-              <XYChart xScale={{ type: "band" }} yScale={{ type: "linear", domain: [0, 24] }} theme={chartTheme}>
+              <XYChart
+                xScale={{ type: "band" }}
+                yScale={{ type: "linear", domain: [0, 24] }}
+                theme={chartTheme}
+              >
                 <AnimatedAxis orientation="bottom" />
                 <AnimatedAxis orientation="left" tickValues={[0, 8, 16, 24]} />
                 <AnimatedBarGroup>
@@ -88,7 +92,9 @@ export function OEEChart(props: OEEProps) {
                 />
               </XYChart>
             </Box>
-            <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-evenly" }}>
+            <div
+              style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-evenly" }}
+            >
               <div style={{ display: "flex", alignItems: "center" }}>
                 <div style={{ width: "14px", height: "14px", backgroundColor: actualOeeColor }} />
                 <div style={{ marginLeft: "1em" }}>{series.station} Actual</div>
@@ -173,7 +179,7 @@ function dataForTable(
     getData = columns[0].getForSort || columns[0].getDisplay;
   }
 
-  const arr = LazySeq.ofIterable(series)
+  const arr = LazySeq.of(series)
     .flatMap((e) => e.points)
     .toMutableArray();
   return arr.sort(mkCompareByProperties(order === "desc" ? { desc: getData } : { asc: getData }));

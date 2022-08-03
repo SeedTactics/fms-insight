@@ -36,7 +36,11 @@ import { addHours, differenceInMinutes, addMinutes } from "date-fns";
 import { fakeCycle, fakeMaterial } from "../../test/events.fake.js";
 import { ILogEntry, LogType } from "../network/api.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { binActiveCyclesByDayAndStat, binOccupiedCyclesByDayAndStat, buildOeeHeatmapTable } from "./results.oee.js";
+import {
+  binActiveCyclesByDayAndStat,
+  binOccupiedCyclesByDayAndStat,
+  buildOeeHeatmapTable,
+} from "./results.oee.js";
 import { snapshot_UNSTABLE } from "recoil";
 import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { onLoadLast30Log } from "../cell-status/loading.js";
@@ -113,7 +117,7 @@ it("creates points clipboard table", () => {
 
   const byDayAndStat = binActiveCyclesByDayAndStat(cycles.valuesToLazySeq());
 
-  const points = LazySeq.ofIterable(byDayAndStat)
+  const points = LazySeq.of(byDayAndStat)
     .map(([dayAndStat, val]) => ({
       x: dayAndStat.day,
       y: dayAndStat.station,

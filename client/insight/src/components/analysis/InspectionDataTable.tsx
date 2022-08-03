@@ -121,7 +121,9 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
     }
   }
 
-  let sortOn: ToComparable<TriggeredInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
+  let sortOn: ToComparable<TriggeredInspectionEntry> = {
+    asc: columns[0].getForSort ?? columns[0].getDisplay,
+  };
   for (const col of columns) {
     if (col.id === orderBy && order === "asc") {
       sortOn = { asc: col.getForSort ?? col.getDisplay };
@@ -131,7 +133,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   }
 
   const groups = groupInspectionsByPath(props.points, curZoom, sortOn);
-  const paths = LazySeq.ofIterable(groups).toSortedArray(([x]) => x);
+  const paths = LazySeq.of(groups).toSortedArray(([x]) => x);
 
   let zoom: DataTableActionZoom | undefined;
   if (props.zoomType && props.zoomType === DataTableActionZoomType.Last30Days) {
@@ -153,7 +155,11 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
       current_date_zoom: curZoom,
       set_date_zoom_range: setCurZoom,
     };
-  } else if (props.zoomType && props.extendDateRange && props.zoomType === DataTableActionZoomType.ExtendDays) {
+  } else if (
+    props.zoomType &&
+    props.extendDateRange &&
+    props.zoomType === DataTableActionZoomType.ExtendDays
+  ) {
     zoom = {
       type: DataTableActionZoomType.ExtendDays,
       curStart: props.default_date_range[0],
@@ -192,7 +198,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   />
                   <DataTableBody
                     columns={columns}
-                    pageData={LazySeq.ofIterable(points.material)
+                    pageData={LazySeq.of(points.material)
                       .drop(page * rowsPerPage)
                       .take(rowsPerPage)}
                     onClickDetails={

@@ -50,7 +50,12 @@ import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
 import { PartCycleData } from "../../cell-status/station-cycles.js";
-import { HashMap, LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
+import {
+  HashMap,
+  LazySeq,
+  mkCompareByProperties,
+  ToComparableBase,
+} from "@seedtactics/immutable-collections";
 
 enum ColumnId {
   Date,
@@ -77,7 +82,12 @@ function buildColumns(
       getDisplay: (c) => c.x.toLocaleString(),
       getForSort: (c) => c.x.getTime(),
     },
-    { id: ColumnId.Part, numeric: false, label: "Part", getDisplay: (c) => c.part + "-" + c.process.toString() },
+    {
+      id: ColumnId.Part,
+      numeric: false,
+      label: "Part",
+      getDisplay: (c) => c.part + "-" + c.process.toString(),
+    },
     {
       id: ColumnId.Station,
       numeric: false,
@@ -116,7 +126,7 @@ function buildColumns(
       label: "Inspection",
       getDisplay: (c) => format_cycle_inspection(c, matIds),
       getForSort: (c) => {
-        return LazySeq.ofIterable(c.material)
+        return LazySeq.of(c.material)
           .collect((m) => matIds.get(m.id))
           .flatMap((m) => m.signaledInspections)
           .distinct()
@@ -181,7 +191,7 @@ function extractData(
   }
   const getDataC = getData;
 
-  const data = LazySeq.ofIterable(points.values()).flatMap((x) => x);
+  const data = LazySeq.of(points.values()).flatMap((x) => x);
   const arr = currentZoom
     ? data.filter((p) => p.x >= currentZoom.start && p.x <= currentZoom.end).toMutableArray()
     : data.toMutableArray();
@@ -288,7 +298,12 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
         setRowsPerPage={setRowsPerPage}
         zoom={zoom}
       />
-      <Menu anchorEl={detailMenu?.anchorEl} keepMounted open={detailMenu !== null} onClose={() => setDetailMenu(null)}>
+      <Menu
+        anchorEl={detailMenu?.anchorEl}
+        keepMounted
+        open={detailMenu !== null}
+        onClose={() => setDetailMenu(null)}
+      >
         {detailMenu != null
           ? detailMenu.material.map((mat, idx) => (
               <MenuItem

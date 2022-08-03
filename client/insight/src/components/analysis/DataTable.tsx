@@ -405,7 +405,7 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
     const onClickDetails = this.props.onClickDetails;
     return (
       <TableBody>
-        {LazySeq.ofIterable(this.props.pageData).map((row, idx) => (
+        {LazySeq.of(this.props.pageData).map((row, idx) => (
           <TableRow key={idx}>
             {this.props.columns.map((col) => (
               <TableCell key={col.id} align={col.numeric ? "right" : "left"}>

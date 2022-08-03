@@ -154,18 +154,22 @@ export function Wash(): JSX.Element {
       .valuesToLazySeq()
       .filter(
         (e) =>
-          e.completed_last_proc_machining === true && e.last_unload_time !== undefined && e.last_unload_time >= cutoff
+          e.completed_last_proc_machining === true &&
+          e.last_unload_time !== undefined &&
+          e.last_unload_time >= cutoff
       )
       .toMutableArray();
     // sort decending
     recent.sort((e1, e2) =>
-      e1.last_unload_time && e2.last_unload_time ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime() : 0
+      e1.last_unload_time && e2.last_unload_time
+        ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime()
+        : 0
     );
     return recent;
   }, [matSummary]);
 
-  const unwashed = LazySeq.ofIterable(recentCompleted).filter((m) => m.wash_completed === undefined);
-  const washed = LazySeq.ofIterable(recentCompleted).filter((m) => m.wash_completed !== undefined);
+  const unwashed = LazySeq.of(recentCompleted).filter((m) => m.wash_completed === undefined);
+  const washed = LazySeq.of(recentCompleted).filter((m) => m.wash_completed !== undefined);
 
   return (
     <div data-testid="stationmonitor-wash" style={{ padding: "8px" }}>

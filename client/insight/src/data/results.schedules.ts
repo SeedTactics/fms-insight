@@ -57,7 +57,7 @@ export function buildScheduledJobs(
   schJobs: HashMap<string, Readonly<IHistoricJob>>,
   currentSt: Readonly<ICurrentStatus>
 ): ReadonlyArray<ScheduledJobDisplay> {
-  const completedMats = LazySeq.ofIterable(matIds)
+  const completedMats = LazySeq.of(matIds)
     .flatMap(([matId, summary]) =>
       LazySeq.ofObject(summary.unloaded_processes ?? {}).map(([proc, _]) => ({
         matId: matId,
@@ -76,7 +76,7 @@ export function buildScheduledJobs(
 
   for (const [uniq, job] of schJobs) {
     if (job.routeStartUTC >= start && job.routeStartUTC <= end) {
-      const casting = LazySeq.ofIterable(job.procsAndPaths[0]?.paths ?? [])
+      const casting = LazySeq.of(job.procsAndPaths[0]?.paths ?? [])
         .collect((p) => (p.casting === "" ? null : p.casting))
         .head();
 
@@ -86,7 +86,7 @@ export function buildScheduledJobs(
         inProcJob: null,
         casting: casting ?? "",
         scheduledQty: job.cycles ?? 0,
-        decrementedQty: LazySeq.ofIterable(job.decrements || []).sumBy((d) => d.quantity),
+        decrementedQty: LazySeq.of(job.decrements || []).sumBy((d) => d.quantity),
         completedQty: completedMats.get(uniq)?.get(job.procsAndPaths.length) ?? 0,
         inProcessQty: 0,
         darkRow: false,
@@ -108,7 +108,7 @@ export function buildScheduledJobs(
     const job = result.get(uniq);
     if (job) {
       const plannedQty = curJob.cycles ?? 0;
-      const completedQty = LazySeq.ofIterable(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c);
+      const completedQty = LazySeq.of(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c);
       job.remainingQty = plannedQty - job.inProcessQty - completedQty;
       job.inProcJob = curJob;
       if (plannedQty < job.scheduledQty) {
@@ -144,7 +144,10 @@ export function buildScheduledJobs(
 // Clipboard
 // --------------------------------------------------------------------------------
 
-export function buildScheduledJobsTable(jobs: ReadonlyArray<ScheduledJobDisplay>, showMaterial: boolean): string {
+export function buildScheduledJobsTable(
+  jobs: ReadonlyArray<ScheduledJobDisplay>,
+  showMaterial: boolean
+): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th>";
   table += "<th>Part</th>";
@@ -176,6 +179,9 @@ export function buildScheduledJobsTable(jobs: ReadonlyArray<ScheduledJobDisplay>
   return table;
 }
 
-export function copyScheduledJobsToClipboard(jobs: ReadonlyArray<ScheduledJobDisplay>, showMaterial: boolean): void {
+export function copyScheduledJobsToClipboard(
+  jobs: ReadonlyArray<ScheduledJobDisplay>,
+  showMaterial: boolean
+): void {
   copy(buildScheduledJobsTable(jobs, showMaterial));
 }

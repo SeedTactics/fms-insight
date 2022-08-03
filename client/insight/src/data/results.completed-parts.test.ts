@@ -57,9 +57,14 @@ it("bins actual cycles by day", () => {
   const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
   const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
 
-  let byDayAndPart = binCyclesByDayAndPart(cycles.valuesToLazySeq(), matSummary.matsById, addDays(now, -30), now);
+  let byDayAndPart = binCyclesByDayAndPart(
+    cycles.valuesToLazySeq(),
+    matSummary.matsById,
+    addDays(now, -30),
+    now
+  );
 
-  const points = LazySeq.ofIterable(byDayAndPart)
+  const points = LazySeq.of(byDayAndPart)
     .map(([dayAndPart, val]) => ({
       x: dayAndPart.day,
       y: dayAndPart.part,

@@ -100,12 +100,12 @@ export function compute_monthly_cost(
   }
 
   const automationCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
-  const stationCostForPeriod = LazySeq.ofIterable(stationCount).toRMap(
+  const stationCostForPeriod = LazySeq.of(stationCount).toRMap(
     ([statGroup, cnt]) => [statGroup, ((machineCostPerYear[statGroup] ?? 0) * cnt.size * days) / 365],
     (x, y) => x + y
   );
 
-  const completed = LazySeq.ofIterable(matsById)
+  const completed = LazySeq.of(matsById)
     .filter(([, details]) => {
       if (details.numProcesses === undefined) return false;
       const unload = details.unloaded_processes?.[details.numProcesses];
@@ -116,13 +116,13 @@ export function compute_monthly_cost(
       (v1, v2) => v1 + v2
     );
 
-  const parts = LazySeq.ofIterable(cycles)
+  const parts = LazySeq.of(cycles)
     .filter((c) => c.x >= start && c.x <= end)
     .groupBy((c) => c.part)
     .map(([partName, forPart]) => ({
       part: partName,
       parts_completed: completed.get(partName) ?? 0,
-      machine: LazySeq.ofIterable(forPart)
+      machine: LazySeq.of(forPart)
         .filter((c) => !c.isLabor)
         .aggregate(
           (c) => c.stationGroup,
@@ -135,7 +135,7 @@ export function compute_monthly_cost(
           x.pctPerStat.set(statGroup, minutes / totalUse + (x.pctPerStat.get(statGroup) ?? 0));
           return { cost: x.cost + (minutes / totalUse) * totalMachineCost, pctPerStat: x.pctPerStat };
         }),
-      labor: LazySeq.ofIterable(forPart)
+      labor: LazySeq.of(forPart)
         .filter((c) => c.isLabor)
         .aggregate(
           (c) => c.stationGroup,
@@ -155,7 +155,7 @@ export function compute_monthly_cost(
     }))
     .toRArray();
 
-  const machineCostGroups = LazySeq.ofIterable(parts)
+  const machineCostGroups = LazySeq.of(parts)
     .flatMap((p) => p.machine.pctPerStat.keys())
     .distinct()
     .toSortedArray((a) => a);
@@ -179,7 +179,7 @@ export function buildCostPerPieceTable(costs: CostData): string {
   table += "<th>Total</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const rows = LazySeq.ofIterable(costs.parts).sortBy((c) => c.part);
+  const rows = LazySeq.of(costs.parts).sortBy((c) => c.part);
   const format = Intl.NumberFormat(undefined, {
     maximumFractionDigits: 1,
   });
@@ -187,8 +187,10 @@ export function buildCostPerPieceTable(costs: CostData): string {
   for (const c of rows) {
     table += "<tr><td>" + c.part + "</td>";
     table += "<td>" + c.parts_completed.toString() + "</td>";
-    table += "<td>" + (c.parts_completed > 0 ? format.format(c.machine.cost / c.parts_completed) : "0") + "</td>";
-    table += "<td>" + (c.parts_completed > 0 ? format.format(c.labor.cost / c.parts_completed) : "0") + "</td>";
+    table +=
+      "<td>" + (c.parts_completed > 0 ? format.format(c.machine.cost / c.parts_completed) : "0") + "</td>";
+    table +=
+      "<td>" + (c.parts_completed > 0 ? format.format(c.labor.cost / c.parts_completed) : "0") + "</td>";
     table +=
       "<td>" +
       (c.parts_completed > 0
@@ -227,7 +229,7 @@ export function buildCostBreakdownTable(costs: CostData): string {
   table += "<th>Automation Cost %</th>";
   table += "</tr></thead>\n<tbody>\n";
 
-  const rows = LazySeq.ofIterable(costs.parts).sortBy((c) => c.part);
+  const rows = LazySeq.of(costs.parts).sortBy((c) => c.part);
   const pctFormat = new Intl.NumberFormat(undefined, {
     style: "percent",
     minimumFractionDigits: 1,
