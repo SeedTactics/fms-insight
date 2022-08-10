@@ -14,11 +14,6 @@ declare module "react-timeago" {
 
   export default class TimeAgo extends React.Component<TimeAgoProps> {}
 }
-declare module "jdenticon" {
-  // https://github.com/dmester/jdenticon/pull/52
-  export function toSvg(hash: any, size: number, cfg?: any): string;
-}
-
 declare module "highlight.js" {
   export function registerLanguage(lang: string, cfg: object): void;
   export function highlight(str: string, cfg: object): { value: string };
