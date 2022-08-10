@@ -364,6 +364,7 @@ export interface AppProps {
 }
 
 const App = React.memo(function App(props: AppProps) {
+  routes.useWatchHistory();
   const fmsInfoLoadable = useRecoilValueLoadable(serverSettings.fmsInformation);
   const [route, setRoute] = routes.useCurrentRoute();
 

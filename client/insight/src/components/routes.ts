@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -31,9 +31,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useCallback, useMemo } from "react";
-import { atom, useRecoilState } from "recoil";
-import { useRouter } from "wouter";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { useCallback, useEffect } from "react";
+import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Property 'UrlPattern' does not exist
+if (!globalThis.URLPattern) {
+  await import("urlpattern-polyfill");
+}
 
 export enum RouteLocation {
   ChooseMode = "/",
@@ -74,6 +80,10 @@ export enum RouteLocation {
 
   Client_Custom = "/client/:custom+",
 }
+
+const patterns = LazySeq.ofObject(RouteLocation)
+  .map(([, loc]) => [loc, new URLPattern(loc, location.origin)] as const)
+  .toRArray();
 
 export type RouteState =
   | { route: RouteLocation.ChooseMode }
@@ -152,91 +162,106 @@ function routeToUrl(route: RouteState): string {
   }
 }
 
-const demoLocation = atom<string>({ key: "demo-location", default: RouteLocation.Operations_Dashboard });
+function urlToRoute(url: URL): RouteState {
+  for (const [route, pattern] of patterns) {
+    const groups = pattern.exec(url.origin + url.pathname)?.pathname?.groups;
+    if (groups) {
+      switch (route) {
+        case RouteLocation.Station_LoadMonitor:
+          return {
+            route,
+            loadNum: parseInt(groups["num"] ?? "1"),
+            free: url.searchParams.has("free"),
+            queues: url.searchParams.getAll("queue"),
+          };
+        case RouteLocation.Station_InspectionMonitorWithType: {
+          const inspType = groups["type"];
+          if (inspType) {
+            return {
+              route: RouteLocation.Station_InspectionMonitorWithType,
+              inspType,
+            };
+          } else {
+            return { route: RouteLocation.Station_InspectionMonitor };
+          }
+        }
 
-export function useDemoLocation(): [string, (s: string) => void] {
-  return useRecoilState(demoLocation);
+        case RouteLocation.Station_Queues: {
+          return {
+            route: RouteLocation.Station_Queues,
+            free: url.searchParams.has("free"),
+            queues: url.searchParams.getAll("queue"),
+          };
+        }
+
+        case RouteLocation.Client_Custom:
+          return {
+            route: RouteLocation.Client_Custom,
+            custom: groups?.["custom"]?.split("/")?.map((s: string) => decodeURIComponent(s)) ?? [],
+          };
+        default:
+          return { route };
+      }
+    }
+  }
+  return { route: RouteLocation.ChooseMode };
 }
 
-export function useIsDemo(): boolean {
-  const router = useRouter();
-  return router.hook === useDemoLocation;
+const currentRouteLocation = atom<RouteState>({
+  key: "fms-insight-location",
+  default: urlToRoute(new URL(location.href)),
+});
+export const isDemoAtom = atom<boolean>({ key: "fms-insight-demo", default: false });
+
+export function useWatchHistory(): void {
+  const isDemo = useRecoilValue(isDemoAtom);
+  const setCurRoute = useSetRecoilState(currentRouteLocation);
+
+  // check for changes in history (back, forwards)
+  useEffect(() => {
+    if (isDemo) return;
+    function updateRoute() {
+      setCurRoute(urlToRoute(new URL(location.href)));
+    }
+
+    addEventListener("popstate", updateRoute);
+
+    return () => removeEventListener("popstate", updateRoute);
+  }, [isDemo]);
+}
+
+export function useSetCurrentRoute(): (r: RouteState) => void {
+  const isDemo = useRecoilValue(isDemoAtom);
+  const setCurRoute = useSetRecoilState(currentRouteLocation);
+
+  const setRouteAndUpdateHistory = useCallback((to: RouteState) => {
+    setCurRoute(to);
+    history.pushState(null, "", routeToUrl(to));
+  }, []);
+
+  if (isDemo) {
+    return setCurRoute;
+  } else {
+    return setRouteAndUpdateHistory;
+  }
 }
 
 export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
-  const router = useRouter();
-  // eslint-disable-next-line prefer-const
-  let [location, setLocation] = router.hook();
+  const isDemo = useRecoilValue(isDemoAtom);
+  const [curRoute, setCurRoute] = useRecoilState(currentRouteLocation);
 
-  let queryString = "";
-  if (router.hook === useDemoLocation) {
-    const idx = location.indexOf("?");
-    if (idx >= 0) {
-      queryString = location.substring(idx + 1);
-      location = location.substring(0, idx);
-    }
+  const setRouteAndUpdateHistory = useCallback((to: RouteState) => {
+    setCurRoute(to);
+    history.pushState(null, "", routeToUrl(to));
+  }, []);
+
+  if (isDemo) {
+    return [curRoute, setCurRoute];
   } else {
-    queryString = window.location.search;
+    return [curRoute, setRouteAndUpdateHistory];
   }
+}
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  const setRoute = useCallback((r: RouteState) => setLocation(routeToUrl(r)), []);
-
-  const curRoute: RouteState = useMemo(() => {
-    for (const route of Object.values(RouteLocation)) {
-      const [matches, params] = router.matcher(route, location);
-      if (matches) {
-        switch (route) {
-          case RouteLocation.Station_LoadMonitor:
-            if (params && params.num !== undefined) {
-              const search = new URLSearchParams(queryString);
-              return {
-                route: RouteLocation.Station_LoadMonitor,
-                loadNum: parseInt(params.num, 10),
-                free: search.has("free"),
-                queues: search.getAll("queue"),
-              };
-            } else {
-              return {
-                route: RouteLocation.Station_LoadMonitor,
-                loadNum: 1,
-                free: false,
-                queues: [],
-              };
-            }
-
-          case RouteLocation.Station_InspectionMonitorWithType:
-            if (params?.type) {
-              return {
-                route: RouteLocation.Station_InspectionMonitorWithType,
-                inspType: params.type,
-              };
-            } else {
-              return { route: RouteLocation.Station_InspectionMonitor };
-            }
-
-          case RouteLocation.Station_Queues: {
-            const search = new URLSearchParams(queryString);
-            return {
-              route: RouteLocation.Station_Queues,
-              free: search.has("free"),
-              queues: search.getAll("queue"),
-            };
-          }
-
-          case RouteLocation.Client_Custom:
-            return {
-              route: RouteLocation.Client_Custom,
-              custom: params?.custom?.split("/")?.map((s: string) => decodeURIComponent(s)) ?? [],
-            };
-
-          default:
-            return { route: route };
-        }
-      }
-    }
-    return { route: RouteLocation.ChooseMode };
-  }, [location, queryString]);
-
-  return [curRoute, setRoute];
+export function useIsDemo(): boolean {
+  return useRecoilValue(isDemoAtom);
 }

@@ -59,9 +59,9 @@ specifiers:
   recoil: 0.7.4
   reconnecting-websocket: ^4.4.0
   typescript: ^4.7.4
+  urlpattern-polyfill: ^5.0.5
   vite: ^3.0.5
   vitest: ^0.21.1
-  wouter: ^2.7.5
 
 dependencies:
   '@emotion/react': 11.10.0_skqlhrap4das3cz5b6iqdn2lqi
@@ -101,7 +101,7 @@ dependencies:
   react-to-print: 2.14.7_sfoxds7t5ydpegc3knd667wn6m
   recoil: 0.7.4_sfoxds7t5ydpegc3knd667wn6m
   reconnecting-websocket: 4.4.0
-  wouter: 2.7.5_react@17.0.2
+  urlpattern-polyfill: 5.0.5
 
 devDependencies:
   '@faker-js/faker': 7.4.0
@@ -3922,6 +3922,10 @@ packages:
       punycode: 2.1.1
     dev: true
 
+  /urlpattern-polyfill/5.0.5:
+    resolution: {integrity: sha512-Oq4ak65m3IezuCqYnxMN0cKh1eiL62YurYDCXp6epo91iBhN+aesVW8+q0qtUC9r84jKuTWXomWrnpkY5WWuRg==}
+    dev: false
+
   /use-memo-one/1.1.2_react@17.0.2:
     resolution: {integrity: sha512-u2qFKtxLsia/r8qG0ZKkbytbztzRb317XCkT7yP8wxL0tZ/CzK2G+WWie5vWvpyeP7+YoPIwbJoIHJ4Ba4k0oQ==}
     peerDependencies:
@@ -4064,14 +4068,6 @@ packages:
     resolution: {integrity: sha512-Hz/mrNwitNRh/HUAtM/VT/5VH+ygD6DV7mYKZAtHOrbs8U7lvPS6xf7EJKMF0uW1KJCl0H701g3ZGus+muE5vQ==}
     engines: {node: '>=0.10.0'}
     dev: true
-
-  /wouter/2.7.5_react@17.0.2:
-    resolution: {integrity: sha512-TOI9gD1wa7a8wW+lh3rjg0C+MjYGKMV3eC+++6D+7n1z36ZJIBPWe2G9Hs1jYNPsV7oKiPTI3UFC5TGhZjQfrQ==}
-    peerDependencies:
-      react: '>=16.8.0'
-    dependencies:
-      react: 17.0.2
-    dev: false
 
   /wrappy/1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}

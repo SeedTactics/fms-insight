@@ -52,7 +52,7 @@
     "react-to-print": "^2.14.7",
     "recoil": "0.7.4",
     "reconnecting-websocket": "^4.4.0",
-    "wouter": "^2.7.5"
+    "urlpattern-polyfill": "^5.0.5"
   },
   "devDependencies": {
     "@faker-js/faker": "^7.4.0",
