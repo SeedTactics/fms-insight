@@ -35,8 +35,6 @@ import { Box, Grid } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
 
-import { CurrentJobs } from "./CurrentJobs.js";
-
 function FillViewportDashboard() {
   return (
     <main style={{ height: "calc(100vh - 64px)", display: "flex" }}>
@@ -49,7 +47,7 @@ function FillViewportDashboard() {
         }}
       >
         <Card style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-          <CurrentJobs fillViewport={true} />
+          <p>Current Jobs</p>
         </Card>
       </div>
       <div
@@ -77,7 +75,7 @@ export function ScrollableDashboard() {
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>
-              <CurrentJobs fillViewport={false} />
+              <p>Current Jobs</p>
             </CardContent>
           </Card>
         </Grid>
