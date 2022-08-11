@@ -402,22 +402,6 @@ export function outlierLoadCycles(
   };
 }
 
-export function stationMinutes(
-  partCycles: Iterable<PartCycleData>,
-  cutoff: Date
-): ReadonlyMap<string, number> {
-  return LazySeq.of(partCycles)
-    .filter((p) => p.x >= cutoff)
-    .map((p) => ({
-      station: stat_name_and_num(p.stationGroup, p.stationNumber),
-      active: p.activeMinutes,
-    }))
-    .toRMap(
-      (x) => [x.station, x.active] as [string, number],
-      (v1, v2) => v1 + v2
-    );
-}
-
 export function plannedOperationMinutes(s: FilteredStationCycles, forSingleMat: boolean): number | undefined {
   let planned: { time: Date; mins: number } | null = null;
 

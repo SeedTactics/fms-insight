@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -35,7 +35,6 @@ import { Box, Grid } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
 
-import StationOEEs from "./OEESummary.js";
 import { CurrentJobs } from "./CurrentJobs.js";
 
 function FillViewportDashboard() {
@@ -63,7 +62,7 @@ function FillViewportDashboard() {
       >
         <Card style={{ flexGrow: 1 }}>
           <CardContent style={{ overflow: "auto" }}>
-            <StationOEEs />
+            <p>Station OEE</p>
           </CardContent>
         </Card>
       </div>
@@ -85,7 +84,7 @@ export function ScrollableDashboard() {
         <Grid item xs={12} sm={6}>
           <Card>
             <CardContent>
-              <StationOEEs />
+              <p>Station OEE</p>
             </CardContent>
           </Card>
         </Grid>

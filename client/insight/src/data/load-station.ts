@@ -39,7 +39,7 @@ export interface PalletData {
   material: api.IInProcessMaterial[];
 }
 
-export function buildPallets(
+function buildPallets(
   st: Readonly<api.ICurrentStatus>
 ): ReadonlyMap<string, { pal?: PalletData; queued?: PalletData }> {
   const matByPallet = new Map<string, api.IInProcessMaterial[]>();
@@ -127,7 +127,8 @@ export function selectLoadStationAndQueueProps(
   let free: MaterialList | undefined;
   if (displayFree) {
     free = curSt.material.filter(
-      (m) => m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
+      (m) =>
+        m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
     );
   }
 
@@ -139,7 +140,9 @@ export function selectLoadStationAndQueueProps(
     const queue = m.location.currentQueue ?? "";
     if (
       queueMat.has(queue) ||
-      (pal !== undefined && m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === pal.pallet) // show even if not listed as a queue
+      (pal !== undefined &&
+        m.action.type === api.ActionType.Loading &&
+        m.action.loadOntoPallet === pal.pallet) // show even if not listed as a queue
     ) {
       const old = queueMat.get(queue);
       if (old === undefined) {

@@ -30,12 +30,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { addDays, addHours } from "date-fns";
+import { addHours } from "date-fns";
 
 import { fakeCycle } from "../../test/events.fake.js";
 import { ILogEntry } from "../network/api.js";
 import {
-  stationMinutes,
   filterStationCycles,
   buildCycleTable,
   buildLogEntriesTable,
@@ -49,7 +48,6 @@ import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { last30MaterialSummary } from "../cell-status/material-summary.js";
 import { last30EstimatedCycleTimes } from "../cell-status/estimated-cycle-times.js";
 import { it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js.js";
 
 it("creates cycles clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -100,21 +98,6 @@ it("loads outlier cycles", () => {
     estimatedCycleTimes
   );
   expect(machineOutliers.data.size).toBe(0);
-});
-
-it("computes station oee", () => {
-  const now = new Date(2018, 2, 5);
-
-  const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
-    fakeCycle({ time: addDays(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addDays(now, -15), machineTime: 15, counter: 300 })
-  );
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
-
-  const statMins = stationMinutes(cycles.valuesToLazySeq(), addDays(now, -7));
-  expect(toRawJs(statMins)).toMatchSnapshot("station minutes for last week");
 });
 
 it("creates log entries clipboard table", () => {
