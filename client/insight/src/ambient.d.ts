@@ -5,15 +5,6 @@ declare module "*.svg" {
   export default empty;
 }
 
-declare module "react-timeago" {
-  import * as React from "react";
-
-  export interface TimeAgoProps {
-    readonly date: Date | string;
-  }
-
-  export default class TimeAgo extends React.Component<TimeAgoProps> {}
-}
 declare module "highlight.js" {
   export function registerLanguage(lang: string, cfg: object): void;
   export function highlight(str: string, cfg: object): { value: string };
