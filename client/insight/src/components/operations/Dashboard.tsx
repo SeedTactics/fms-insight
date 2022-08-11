@@ -36,6 +36,8 @@ import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { IProcPathInfo } from "../../network/api.js";
+import { ParentSize } from "@visx/responsive";
+import { RecentCycleChart } from "./RecentCycleChart.js";
 
 const pctFormat = new Intl.NumberFormat(undefined, { style: "percent", minimumFractionDigits: 1 });
 
@@ -103,8 +105,15 @@ const CompletedParts = React.memo(function CompletedParts() {
 
 function FillViewportDashboard() {
   return (
-    <main style={{ height: "calc(100vh - 64px)" }}>
-      <CompletedParts />
+    <main style={{ height: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
+      <div>
+        <CompletedParts />
+      </div>
+      <div style={{ flexGrow: 1, overflow: "hidden", margin: "8px" }}>
+        <ParentSize debounceTime={10}>
+          {({ width, height }) => <RecentCycleChart width={width} height={height} />}
+        </ParentSize>
+      </div>
     </main>
   );
 }
@@ -113,6 +122,11 @@ export function ScrollableDashboard() {
   return (
     <main style={{ padding: "8px" }}>
       <CompletedParts />
+      <div style={{ overflow: "hidden" }}>
+        <ParentSize ignoreDimensions={["height", "top"]}>
+          {({ width }) => <RecentCycleChart width={width} height={500} />}
+        </ParentSize>
+      </div>
     </main>
   );
 }

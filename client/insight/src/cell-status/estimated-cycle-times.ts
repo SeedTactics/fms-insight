@@ -36,6 +36,7 @@ import { ILogEntry, LogType } from "../network/api.js";
 import { LazySeq, HashMap, hashValues, OrderedMapKey } from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { conduit } from "../util/recoil-util.js";
+import type { PartCycleData } from "./station-cycles.js";
 
 export interface StatisticalCycleTime {
   readonly medianMinutesForSingleMat: number;
@@ -59,6 +60,10 @@ export class PartAndStationOperation {
       c.type === LogType.LoadUnloadCycle ? c.result : c.program
     );
   }
+  public static ofPartCycle(c: Readonly<PartCycleData>): PartAndStationOperation {
+    return new PartAndStationOperation(c.material[0].part, c.material[0].proc, c.stationGroup, c.operation);
+  }
+
   compare(other: PartAndStationOperation): number {
     let cmp = this.part.localeCompare(other.part);
     if (cmp !== 0) return cmp;

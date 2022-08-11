@@ -22,6 +22,7 @@ specifiers:
   '@visx/axis': ^2.12.2
   '@visx/curve': ^2.1.0
   '@visx/event': ^2.6.0
+  '@visx/grid': ^2.12.2
   '@visx/group': ^2.10.0
   '@visx/react-spring': ^2.12.2
   '@visx/responsive': ^2.10.0
@@ -73,6 +74,7 @@ dependencies:
   '@visx/axis': 2.12.2_react@17.0.2
   '@visx/curve': 2.1.0
   '@visx/event': 2.6.0
+  '@visx/grid': 2.12.2_react@17.0.2
   '@visx/group': 2.10.0_react@17.0.2
   '@visx/react-spring': 2.12.2_react@17.0.2
   '@visx/responsive': 2.10.0_react@17.0.2
