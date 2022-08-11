@@ -38,6 +38,8 @@ import {
   last30EstimatedCycleTimes,
   PartAndStationOperation,
   isOutlier,
+  chunkCyclesWithSimilarEndTime,
+  splitElapsedTimeAmongChunk,
 } from "../../cell-status/estimated-cycle-times.js";
 import { addHours, addMinutes } from "date-fns";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
@@ -46,6 +48,8 @@ import { Group } from "@visx/group";
 import { OrderedSet } from "@seedtactics/immutable-collections";
 import { Axis } from "@visx/axis";
 import { chartTheme } from "../../util/chart-colors.js";
+import { last30SimStationUse, SimStationUse } from "../../cell-status/sim-station-use.js";
+import { red, green, grey } from "@mui/material/colors";
 
 interface RecentCycle {
   readonly station: string;
@@ -55,9 +59,10 @@ interface RecentCycle {
   readonly outlier: boolean;
 }
 
-const activeColor = "green";
-const occupiedNonOutlierColor = "blue";
-const occupiedOutlierColor = "red";
+const activeColor = green[600];
+const occupiedNonOutlierColor = green[900];
+const occupiedOutlierColor = red[700];
+const simColor = grey[400];
 
 const recentCycles = selector<ReadonlyArray<RecentCycle>>({
   key: "insight-recent-cycles-for-chart",
@@ -65,20 +70,60 @@ const recentCycles = selector<ReadonlyArray<RecentCycle>>({
     const allCycles = get(last30StationCycles);
     const estimated = get(last30EstimatedCycleTimes);
     const cutoff = addHours(new Date(), -12);
-    return allCycles
-      .valuesToLazySeq()
-      .filter((c) => c.x >= cutoff)
-      .map((c) => {
-        const stats = estimated.get(PartAndStationOperation.ofPartCycle(c));
-        return {
-          station: stat_name_and_num(c.stationGroup, c.stationNumber),
-          startTime: addMinutes(c.x, -c.y),
-          endActive: addMinutes(c.x, c.activeMinutes - c.y),
-          endOccupied: c.x,
-          outlier: stats ? isOutlier(stats, c.y) : false,
-        };
+    return chunkCyclesWithSimilarEndTime(
+      allCycles.valuesToLazySeq().filter((c) => c.x >= cutoff),
+      (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
+      (c) => c.x
+    )
+      .flatMap(function* procChunk([station, chunks]) {
+        for (const chunk of chunks) {
+          const stats = estimated.get(PartAndStationOperation.ofPartCycle(chunk[0]));
+          if (chunk[0].isLabor) {
+            const entries = splitElapsedTimeAmongChunk(
+              chunk,
+              (c) => c.y,
+              (c) => c.activeMinutes
+            );
+            const endTime = chunk[0].x;
+            const occupiedMins = chunk[0].y;
+            let activeMins = 0;
+            let outlier = false;
+            for (let i = 0; i < chunk.length; i++) {
+              activeMins += chunk[i].activeMinutes;
+              if (stats && isOutlier(stats, entries[i].elapsedForSingleMaterialMinutes)) {
+                outlier = true;
+              }
+            }
+            yield {
+              station,
+              startTime: addMinutes(endTime, -occupiedMins),
+              endActive: addMinutes(endTime, activeMins - occupiedMins),
+              endOccupied: endTime,
+              outlier,
+            };
+          } else {
+            for (const c of chunk) {
+              yield {
+                station,
+                startTime: addMinutes(c.x, -c.y),
+                endActive: addMinutes(c.x, c.activeMinutes - c.y),
+                endOccupied: c.x,
+                outlier: stats ? isOutlier(stats, c.y / c.material.length) : false,
+              };
+            }
+          }
+        }
       })
       .toRArray();
+  },
+});
+
+const simCycles = selector<ReadonlyArray<SimStationUse>>({
+  key: "insight-planned-cycles-for-chart",
+  get: ({ get }) => {
+    const statUse = get(last30SimStationUse);
+    const cutoff = addHours(new Date(), -12);
+    return statUse.filter((s) => s.end >= cutoff);
   },
 });
 
@@ -224,8 +269,33 @@ function ActualSeries({
   );
 }
 
+function SimSeries({
+  sim,
+  xScale,
+  yScale,
+  actualPlannedScale,
+}: ChartScales & { sim: ReadonlyArray<SimStationUse> }): JSX.Element {
+  const plannedOffset = actualPlannedScale("planned") ?? 0;
+  return (
+    <g>
+      {sim.map((c, i) => (
+        <g key={i}>
+          <rect
+            x={xScale(c.start)}
+            y={(yScale(c.station) ?? 0) + plannedOffset}
+            width={xScale(c.end) - xScale(c.start)}
+            height={actualPlannedScale.bandwidth()}
+            fill={simColor}
+          />
+        </g>
+      ))}
+    </g>
+  );
+}
+
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
   const cycles = useRecoilValue(recentCycles);
+  const sim = useRecoilValue(simCycles);
   const now = new Date();
   const { xScale, yScale, actualPlannedScale } = useScales(cycles, now, width, height);
   return (
@@ -248,6 +318,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
             now={now}
             actualPlannedScale={actualPlannedScale}
           />
+          <SimSeries sim={sim} xScale={xScale} yScale={yScale} actualPlannedScale={actualPlannedScale} />
         </g>
       </Group>
     </svg>
