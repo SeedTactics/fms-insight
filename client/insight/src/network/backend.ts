@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "./api.js";
-import { User } from "oidc-client";
+import { User } from "oidc-client-ts";
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
@@ -41,8 +41,15 @@ export interface JobAPI {
   setJobComment(unique: string, comment: string): Promise<void>;
 
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
-  bulkRemoveMaterialFromQueues(operatorName: string | null, materialIds: ReadonlyArray<number> | null): Promise<void>;
-  setMaterialInQueue(materialId: number, operatorName: string | null, queue: api.QueuePosition): Promise<void>;
+  bulkRemoveMaterialFromQueues(
+    operatorName: string | null,
+    materialIds: ReadonlyArray<number> | null
+  ): Promise<void>;
+  setMaterialInQueue(
+    materialId: number,
+    operatorName: string | null,
+    queue: api.QueuePosition
+  ): Promise<void>;
   addUnprocessedMaterialToQueue(
     jobUnique: string,
     lastCompletedProcess: number,
@@ -104,7 +111,11 @@ export interface LogAPI {
     jobUnique?: string,
     partName?: string
   ): Promise<Readonly<api.ILogEntry>>;
-  recordWashCompleted(insp: api.NewWash, jobUnique?: string, partName?: string): Promise<Readonly<api.ILogEntry>>;
+  recordWashCompleted(
+    insp: api.NewWash,
+    jobUnique?: string,
+    partName?: string
+  ): Promise<Readonly<api.ILogEntry>>;
   setWorkorder(
     materialID: number,
     process: number,
@@ -162,7 +173,7 @@ export function registerBackend(log: LogAPI, job: JobAPI, fms: FmsAPI, machine: 
 }
 
 export function setUserToken(u: User): void {
-  const token = u.access_token || u.id_token;
+  const token = u.access_token;
   function fetch(url: RequestInfo, init?: RequestInit) {
     return window.fetch(
       url,
