@@ -34,12 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { useCallback, useEffect } from "react";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Property 'UrlPattern' does not exist
-if (!globalThis.URLPattern) {
-  await import("urlpattern-polyfill");
-}
+import "urlpattern-polyfill";
 
 export enum RouteLocation {
   ChooseMode = "/",
