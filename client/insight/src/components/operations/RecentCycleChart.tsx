@@ -447,10 +447,23 @@ function NowLine({
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
   const cycles = useRecoilValue(recentCycles);
   const sim = useRecoilValue(simCycles);
-  const hideTooltipRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // ensure a re-render at least every 5 minutes, but reset the timer if the data changes
   const now = new Date();
+  const [, forceRerender] = React.useState<number>(0);
+  const refreshRef = React.useRef<NodeJS.Timeout | null>(null);
+  React.useEffect(() => {
+    if (refreshRef.current !== null) clearTimeout(refreshRef.current);
+    refreshRef.current = setTimeout(() => {
+      forceRerender((x) => x + 1);
+    }, 5 * 60 * 1000);
+  });
+
   const { xScale, yScale, actualPlannedScale } = useScales(cycles, now, width, height);
+  const hideTooltipRef = React.useRef<NodeJS.Timeout | null>(null);
+
   if (height <= 0 || width <= 0) return null;
+
   return (
     <div style={{ position: "relative" }}>
       <svg height={height} width={width}>
