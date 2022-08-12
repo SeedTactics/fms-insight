@@ -450,18 +450,19 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const hideTooltipRef = React.useRef<NodeJS.Timeout | null>(null);
   const now = new Date();
   const { xScale, yScale, actualPlannedScale } = useScales(cycles, now, width, height);
+  if (height <= 0 || width <= 0) return null;
   return (
     <div style={{ position: "relative" }}>
       <svg height={height} width={width}>
-        <clipPath id="recent-cycle-clip-body">
-          <rect
-            x={marginLeft}
-            y={marginTop}
-            width={width - marginLeft - marginRight}
-            height={height - marginTop - marginBottom}
-          />
-        </clipPath>
         <Group left={marginLeft} top={marginTop}>
+          <clipPath id="recent-cycle-clip-body">
+            <rect
+              x={0}
+              y={0}
+              width={width - marginRight - marginLeft}
+              height={height - marginBottom - marginTop}
+            />
+          </clipPath>
           <AxisAndGrid xScale={xScale} yScale={yScale} />
           <g clipPath="url(#recent-cycle-clip-body)">
             <ActualSeries
