@@ -123,6 +123,7 @@ const recentCycles = selector<ReadonlyArray<RecentCycle>>({
       })
       .toRArray();
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 const simCycles = selector<ReadonlyArray<SimStationUse>>({
@@ -132,6 +133,7 @@ const simCycles = selector<ReadonlyArray<SimStationUse>>({
     const cutoff = addHours(new Date(), -12);
     return statUse.filter((s) => s.end >= cutoff);
   },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
 interface TooltipData {

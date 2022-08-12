@@ -52,11 +52,7 @@ import { useImmer } from "../../util/recoil-util.js";
 import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { Group } from "@visx/group";
-import {
-  useTooltip,
-  TooltipWithBounds as VisxTooltip,
-  defaultStyles as defaultTooltipStyles,
-} from "@visx/tooltip";
+import { ChartTooltip } from "../ChartTooltip.js";
 import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
 import { useSpring, useSprings, animated } from "react-spring";
 import { ParentSize } from "@visx/responsive";
@@ -359,11 +355,14 @@ const StatsSeries = React.memo(function StatsSeries({
   );
 });
 
-type ShowTooltipFunc = (a: {
-  readonly tooltipLeft?: number;
-  readonly tooltipTop?: number;
-  readonly tooltipData?: { readonly pt: CycleChartPoint; readonly seriesName: string };
-}) => void;
+interface TooltipData {
+  readonly left: number;
+  readonly top: number;
+  readonly pt: CycleChartPoint;
+  readonly seriesName: string;
+}
+
+type ShowTooltipFunc = (a: TooltipData | null) => void;
 
 const SingleSeries = React.memo(function SingleSeries({
   seriesName,
@@ -385,9 +384,10 @@ const SingleSeries = React.memo(function SingleSeries({
       const idxS = (e.target as SVGCircleElement).dataset.idx;
       if (idxS === undefined) return;
       showTooltip({
-        tooltipLeft: p.x,
-        tooltipTop: p.y,
-        tooltipData: { pt: points[parseInt(idxS)], seriesName },
+        left: p.x,
+        top: p.y,
+        pt: points[parseInt(idxS)],
+        seriesName,
       });
     },
     [showTooltip, points, seriesName]
@@ -500,7 +500,7 @@ const NoPointerEvents = styled("g", { shouldForwardProp: (prop) => prop.toString
 interface ChartMouseEventProps {
   readonly setYZoom: (r: YZoomRange) => void;
   readonly setXZoom: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
-  readonly hideTooltip: () => void;
+  readonly setTooltip: ShowTooltipFunc;
   readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
   readonly setHighlightStart: (
     p: { readonly x: number; readonly y: number; readonly nowMS: number } | null
@@ -510,7 +510,7 @@ interface ChartMouseEventProps {
 const ChartMouseEvents = React.memo(function ChartMouseEvents({
   setYZoom,
   setXZoom,
-  hideTooltip,
+  setTooltip,
   xScale,
   yScale,
   highlightStart,
@@ -525,9 +525,9 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
       if (p === null) return;
       setCurrent(null);
       setHighlightStart({ x: p.x - marginLeft, y: p.y - marginTop, nowMS: Date.now() });
-      hideTooltip();
+      setTooltip(null);
     },
-    [setHighlightStart, hideTooltip]
+    [setHighlightStart, setTooltip]
   );
 
   const pointerMove = React.useCallback(
@@ -646,33 +646,26 @@ const ChartZoomButtons = React.memo(function ChartZoomButtons({
   );
 });
 
-const ChartTooltip = React.memo(function ChartTooltip({
-  tooltipData,
-  tooltipTop,
-  tooltipLeft,
+const CycleChartTooltip = React.memo(function CycleChartTooltip({
+  tooltip,
   extraTooltip,
   seriesLabel,
 }: {
-  readonly tooltipData: { readonly pt: CycleChartPoint; readonly seriesName: string };
-  readonly tooltipTop: number | undefined;
-  readonly tooltipLeft: number | undefined;
+  readonly tooltip: TooltipData | null;
   readonly extraTooltip?: (point: CycleChartPoint) => ReadonlyArray<ExtraTooltip>;
   readonly seriesLabel: string;
 }) {
+  if (tooltip === null) return null;
   return (
-    <VisxTooltip
-      left={tooltipLeft}
-      top={tooltipTop}
-      style={{ ...defaultTooltipStyles, backgroundColor: grey[800], color: "white" }}
-    >
+    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
       <Stack direction="column" spacing={0.6}>
-        <div>Time: {format(tooltipData.pt.x, "MMM d, yyyy, h:mm aaaa")}</div>
+        <div>Time: {format(tooltip.pt.x, "MMM d, yyyy, h:mm aaaa")}</div>
         <div>
-          {seriesLabel}: {tooltipData.seriesName}
+          {seriesLabel}: {tooltip.seriesName}
         </div>
-        <div>Cycle Time: {tooltipData.pt.y.toFixed(1)} minutes</div>
+        <div>Cycle Time: {tooltip.pt.y.toFixed(1)} minutes</div>
         {extraTooltip
-          ? extraTooltip(tooltipData.pt).map((e, idx) => (
+          ? extraTooltip(tooltip.pt).map((e, idx) => (
               <div key={idx}>
                 {e.title}:{" "}
                 {e.link ? (
@@ -694,7 +687,7 @@ const ChartTooltip = React.memo(function ChartTooltip({
             ))
           : undefined}
       </Stack>
-    </VisxTooltip>
+    </ChartTooltip>
   );
 });
 
@@ -710,7 +703,6 @@ function CycleChartSvg(
         p: { readonly x: number; readonly y: number; readonly nowMS: number } | null
       ) => void;
       readonly showTooltip: ShowTooltipFunc;
-      readonly hideTooltip: () => void;
       readonly disabledSeries: ReadonlySet<string>;
     }
 ) {
@@ -738,8 +730,8 @@ function CycleChartSvg(
         <ChartMouseEvents
           setYZoom={props.setYZoom}
           setXZoom={props.set_date_zoom_range}
-          hideTooltip={props.hideTooltip}
           xScale={xScale}
+          setTooltip={props.showTooltip}
           yScale={yScale}
           highlightStart={props.highlightStart}
           setHighlightStart={props.setHighlightStart}
@@ -760,10 +752,7 @@ function CycleChartSvg(
 
 export const CycleChart = React.memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
-  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<{
-    readonly pt: CycleChartPoint;
-    readonly seriesName: string;
-  }>();
+  const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
   const [yZoom, setYZoom] = React.useState<YZoomRange | null>(null);
   const [disabledSeries, adjustDisabled] = useImmer<ReadonlySet<string>>(new Set());
   const [highlightStart, setHighlightStart] = React.useState<{
@@ -779,9 +768,9 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
   });
 
   const pointerLeave = React.useCallback(() => {
-    hideTooltip();
+    setTooltip(null);
     setHighlightStart(null);
-  }, [hideTooltip, setHighlightStart]);
+  }, [setTooltip, setHighlightStart]);
 
   return (
     <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
@@ -796,10 +785,9 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
               median={median}
               yZoom={yZoom}
               setYZoom={setYZoom}
-              hideTooltip={hideTooltip}
               highlightStart={highlightStart}
               setHighlightStart={setHighlightStart}
-              showTooltip={showTooltip}
+              showTooltip={setTooltip}
               disabledSeries={disabledSeries}
             />
           )}
@@ -817,15 +805,11 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
         />
       </div>
       <Legend series={series} disabledSeries={disabledSeries} adjustDisabled={adjustDisabled} />
-      {tooltipData ? (
-        <ChartTooltip
-          seriesLabel={props.series_label}
-          extraTooltip={props.extra_tooltip}
-          tooltipData={tooltipData}
-          tooltipLeft={tooltipLeft}
-          tooltipTop={tooltipTop}
-        />
-      ) : undefined}
+      <CycleChartTooltip
+        tooltip={tooltip}
+        seriesLabel={props.series_label}
+        extraTooltip={props.extra_tooltip}
+      />
     </div>
   );
 });

@@ -41,8 +41,8 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
 import { Axis } from "@visx/axis";
 import { Group } from "@visx/group";
-import { useTooltip, Tooltip as VisxTooltip } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
+import { ChartTooltip } from "../ChartTooltip.js";
 
 export type HeatChartYType = "Station" | "Part";
 
@@ -181,23 +181,23 @@ const HeatAxis = React.memo(function HeatAxis({ xScale, yScale }: HeatChartScale
   );
 });
 
-type ShowTooltipFunc = (a: {
-  readonly tooltipLeft?: number;
-  readonly tooltipTop?: number;
-  readonly tooltipData?: HeatChartPoint;
-}) => void;
+interface TooltipData {
+  readonly left: number;
+  readonly top: number;
+  readonly data: HeatChartPoint;
+}
+
+type ShowTooltipFunc = (a: TooltipData | null) => void;
 
 const HeatSeries = React.memo(function HeatSeries({
   points,
   xScale,
   yScale,
   colorScale,
-  showTooltip,
-  hideTooltip,
+  setTooltip,
 }: {
   readonly points: ReadonlyArray<HeatChartPoint>;
-  readonly showTooltip: ShowTooltipFunc;
-  readonly hideTooltip: () => void;
+  readonly setTooltip: ShowTooltipFunc;
 } & HeatChartScales) {
   const hideRef = React.useRef<number | null>(null);
   const pointerEnter = React.useCallback(
@@ -211,19 +211,19 @@ const HeatSeries = React.memo(function HeatSeries({
       const idxS = (e.target as SVGRectElement).dataset.idx;
       if (idxS === undefined) return;
       const heatPoint = points[parseInt(idxS)];
-      showTooltip({ tooltipLeft: pt.x, tooltipTop: pt.y, tooltipData: heatPoint });
+      setTooltip({ left: pt.x, top: pt.y, data: heatPoint });
     },
-    [points, showTooltip]
+    [points, setTooltip]
   );
 
   const pointerLeave = React.useCallback(() => {
     if (hideRef.current === null) {
       hideRef.current = window.setTimeout(() => {
         hideRef.current = null;
-        hideTooltip();
+        setTooltip(null);
       }, 100);
     }
-  }, [showTooltip]);
+  }, [setTooltip]);
 
   return (
     <g>
@@ -250,33 +250,30 @@ const HeatSeries = React.memo(function HeatSeries({
 const HeatTooltip = React.memo(function HeatTooltip({
   yType,
   seriesLabel,
-  tooltipData,
-  tooltipLeft,
-  tooltipTop,
+  tooltip,
 }: {
   yType: HeatChartYType;
   seriesLabel: string;
-  tooltipData: HeatChartPoint;
-  tooltipLeft: number | undefined;
-  tooltipTop: number | undefined;
+  tooltip: TooltipData | null;
 }) {
+  if (tooltip === null) return null;
   return (
-    <VisxTooltip left={tooltipLeft} top={tooltipTop}>
+    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
       <Stack direction="column" spacing={0.6}>
         <div>
-          {yType}: {tooltipData.y}
+          {yType}: {tooltip.data.y}
         </div>
-        <div>Day: {tooltipData.x.toDateString()}</div>
+        <div>Day: {tooltip.data.x.toDateString()}</div>
         <div>
-          {seriesLabel}: {tooltipData.label}
+          {seriesLabel}: {tooltip.data.label}
         </div>
       </Stack>
-    </VisxTooltip>
+    </ChartTooltip>
   );
 });
 
 const HeatChart = React.memo(function HeatChart(props: HeatChartProps & { readonly parentWidth: number }) {
-  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<HeatChartPoint>();
+  const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
 
   const { width, height, xScale, yScale, colorScale } = useScales({
     yType: props.y_title,
@@ -286,8 +283,8 @@ const HeatChart = React.memo(function HeatChart(props: HeatChartProps & { readon
   });
 
   const pointerLeave = React.useCallback(() => {
-    hideTooltip();
-  }, [hideTooltip]);
+    setTooltip(null);
+  }, [setTooltip]);
 
   return (
     <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
@@ -298,21 +295,12 @@ const HeatChart = React.memo(function HeatChart(props: HeatChartProps & { readon
             xScale={xScale}
             yScale={yScale}
             colorScale={colorScale}
-            showTooltip={showTooltip}
-            hideTooltip={hideTooltip}
+            setTooltip={setTooltip}
           />
           <HeatAxis xScale={xScale} yScale={yScale} colorScale={colorScale} />
         </Group>
       </svg>
-      {tooltipData ? (
-        <HeatTooltip
-          yType={props.y_title}
-          seriesLabel={props.label_title}
-          tooltipData={tooltipData}
-          tooltipLeft={tooltipLeft}
-          tooltipTop={tooltipTop}
-        />
-      ) : undefined}
+      <HeatTooltip yType={props.y_title} seriesLabel={props.label_title} tooltip={tooltip} />
     </div>
   );
 });

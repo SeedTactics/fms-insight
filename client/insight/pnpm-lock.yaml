@@ -29,7 +29,6 @@ specifiers:
   '@visx/responsive': ^2.10.0
   '@visx/scale': ^2.2.2
   '@visx/shape': ^2.12.2
-  '@visx/tooltip': ^2.10.0
   '@visx/xychart': ^2.12.2
   '@vitejs/plugin-react': ^2.0.0
   copy-to-clipboard: ^3.3.2
@@ -81,7 +80,6 @@ dependencies:
   '@visx/responsive': 2.10.0_react@17.0.2
   '@visx/scale': 2.2.2
   '@visx/shape': 2.12.2_react@17.0.2
-  '@visx/tooltip': 2.10.0_sfoxds7t5ydpegc3knd667wn6m
   '@visx/xychart': 2.12.2_sfoxds7t5ydpegc3knd667wn6m
   copy-to-clipboard: 3.3.2
   d3-sankey: 0.12.3
