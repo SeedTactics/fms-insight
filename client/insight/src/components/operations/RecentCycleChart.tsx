@@ -166,8 +166,8 @@ function useScales(
 ): ChartScales {
   const stats = OrderedSet.build(cycles, (c) => c.station);
 
-  const xMax = containerWidth - marginLeft - marginRight;
-  const yMax = containerHeight - marginTop - marginBottom;
+  const xMax = Math.max(containerWidth - marginLeft - marginRight, 5);
+  const yMax = Math.max(containerHeight - marginTop - marginBottom, 5);
 
   const xScale = scaleTime({
     domain: [addHours(now, -12), addHours(now, 8)],
@@ -416,6 +416,34 @@ const Tooltip = React.memo(function Tooltip() {
   );
 });
 
+function NowLine({
+  now,
+  xScale,
+  yScale,
+}: Pick<ChartScales, "xScale" | "yScale"> & { now: Date }): JSX.Element {
+  const x = xScale(now);
+  const fontSize = 11;
+  return (
+    <g>
+      <line
+        x1={x}
+        x2={x}
+        y1={yScale.range()[0]}
+        y2={yScale.range()[1] + chartTheme.axisStyles.x.bottom.tickLength}
+        stroke="black"
+      />
+      <text
+        x={x}
+        y={yScale.range()[1] + chartTheme.axisStyles.x.bottom.tickLength + fontSize}
+        textAnchor="middle"
+        fontSize={fontSize}
+      >
+        Now
+      </text>
+    </g>
+  );
+}
+
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
   const cycles = useRecoilValue(recentCycles);
   const sim = useRecoilValue(simCycles);
@@ -451,6 +479,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
               hideTooltipRef={hideTooltipRef}
             />
           </g>
+          <NowLine now={now} xScale={xScale} yScale={yScale} />
         </Group>
       </svg>
       <Tooltip />
