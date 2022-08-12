@@ -57,8 +57,8 @@ import { ChartTooltip } from "../ChartTooltip.js";
 interface RecentCycle {
   readonly station: string;
   readonly startTime: Date;
+  readonly endOccupied: Date;
   readonly endActive?: Date;
-  readonly endOccupied?: Date;
   readonly outlier: boolean;
   readonly part: string;
 }
@@ -102,7 +102,7 @@ const recentCycles = selector<ReadonlyArray<RecentCycle>>({
             yield {
               station,
               startTime: addMinutes(endTime, -occupiedMins),
-              endActive: addMinutes(endTime, activeMins - occupiedMins),
+              endActive: activeMins > 0 ? addMinutes(endTime, activeMins - occupiedMins) : undefined,
               endOccupied: endTime,
               outlier,
               part: chunk[0].part + "-" + chunk[0].process.toString(),
@@ -112,7 +112,7 @@ const recentCycles = selector<ReadonlyArray<RecentCycle>>({
               yield {
                 station,
                 startTime: addMinutes(c.x, -c.y),
-                endActive: addMinutes(c.x, c.activeMinutes - c.y),
+                endActive: c.activeMinutes > 0 ? addMinutes(c.x, c.activeMinutes - c.y) : undefined,
                 endOccupied: c.x,
                 outlier: stats ? isOutlier(stats, c.y / c.material.length) : false,
                 part: c.part + "-" + c.process.toString(),
@@ -235,11 +235,9 @@ function ActualSeries({
   xScale,
   yScale,
   actualPlannedScale,
-  now,
   hideTooltipRef,
 }: ChartScales & {
   cycles: ReadonlyArray<RecentCycle>;
-  now: Date;
   hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
 }): JSX.Element {
   const actualOffset = actualPlannedScale("actual") ?? 0;
@@ -269,27 +267,7 @@ function ActualSeries({
   return (
     <g>
       {cycles.map((c, i) => {
-        if (c.endActive) {
-          return (
-            <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
-              <rect
-                x={xScale(c.startTime)}
-                y={(yScale(c.station) ?? 0) + actualOffset}
-                width={xScale(c.endActive) - xScale(c.startTime)}
-                height={actualPlannedScale.bandwidth()}
-                fill={activeColor}
-              />
-              <rect
-                x={xScale(c.endActive)}
-                y={(yScale(c.station) ?? 0) + actualOffset}
-                width={xScale(c.endOccupied ?? now) - xScale(c.endActive)}
-                height={actualPlannedScale.bandwidth()}
-                fill={c.outlier ? occupiedOutlierColor : occupiedNonOutlierColor}
-              />
-            </g>
-          );
-        } else if (c.endOccupied) {
-          // no active time known, so just assume whole thing is ok.
+        if (c.endActive && c.endActive < c.endOccupied) {
           return (
             <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
               <rect
@@ -299,17 +277,23 @@ function ActualSeries({
                 height={actualPlannedScale.bandwidth()}
                 fill={activeColor}
               />
+              <rect
+                x={xScale(c.endActive)}
+                y={(yScale(c.station) ?? 0) + actualOffset + actualPlannedScale.bandwidth() / 10}
+                width={xScale(c.endOccupied) - xScale(c.endActive)}
+                height={(actualPlannedScale.bandwidth() * 8) / 10}
+                fill={c.outlier ? occupiedOutlierColor : occupiedNonOutlierColor}
+              />
             </g>
           );
         } else {
-          // no active time known, and this is a currently running cycle.
-          // Just assume everything is OK
+          // no active time known, so just assume whole thing is ok.
           return (
             <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
               <rect
                 x={xScale(c.startTime)}
                 y={(yScale(c.station) ?? 0) + actualOffset}
-                width={xScale(now) - xScale(c.startTime)}
+                width={xScale(c.endOccupied) - xScale(c.startTime)}
                 height={actualPlannedScale.bandwidth()}
                 fill={activeColor}
               />
@@ -401,21 +385,17 @@ const Tooltip = React.memo(function Tooltip() {
             )}
             <div>Part: {tooltip.data.cycle.part}</div>
             <div>Start: {tooltip.data.cycle.startTime.toLocaleString()}</div>
-            {tooltip.data.cycle.endOccupied !== undefined ? (
-              <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
-            ) : undefined}
+            <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
             {tooltip.data.cycle.endActive !== undefined ? (
               <div>
                 Active Minutes:{" "}
                 {differenceInMinutes(tooltip.data.cycle.endActive, tooltip.data.cycle.startTime)}
               </div>
             ) : undefined}
-            {tooltip.data.cycle.endOccupied !== undefined ? (
-              <div>
-                Occupied Minutes:{" "}
-                {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
-              </div>
-            ) : undefined}
+            <div>
+              Occupied Minutes:{" "}
+              {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
+            </div>
           </>
         ) : (
           <>
@@ -460,7 +440,6 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
               cycles={cycles}
               xScale={xScale}
               yScale={yScale}
-              now={now}
               hideTooltipRef={hideTooltipRef}
               actualPlannedScale={actualPlannedScale}
             />
