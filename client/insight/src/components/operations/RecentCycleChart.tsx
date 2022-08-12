@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { selector, useRecoilValue } from "recoil";
+import { atom, selector, useRecoilValue, useSetRecoilState } from "recoil";
 import { last30StationCycles, stat_name_and_num } from "../../cell-status/station-cycles.js";
 import {
   last30EstimatedCycleTimes,
@@ -41,15 +41,18 @@ import {
   chunkCyclesWithSimilarEndTime,
   splitElapsedTimeAmongChunk,
 } from "../../cell-status/estimated-cycle-times.js";
-import { addHours, addMinutes } from "date-fns";
+import { addHours, addMinutes, differenceInMinutes } from "date-fns";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { Grid } from "@visx/grid";
 import { Group } from "@visx/group";
-import { OrderedSet } from "@seedtactics/immutable-collections";
 import { Axis } from "@visx/axis";
+import { OrderedSet } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
 import { last30SimStationUse, SimStationUse } from "../../cell-status/sim-station-use.js";
 import { red, green, grey } from "@mui/material/colors";
+import { localPoint } from "@visx/event";
+import { Stack } from "@mui/material";
+import { ChartTooltip } from "../ChartTooltip.js";
 
 interface RecentCycle {
   readonly station: string;
@@ -57,12 +60,14 @@ interface RecentCycle {
   readonly endActive?: Date;
   readonly endOccupied?: Date;
   readonly outlier: boolean;
+  readonly part: string;
 }
 
 const activeColor = green[600];
 const occupiedNonOutlierColor = green[900];
 const occupiedOutlierColor = red[700];
 const simColor = grey[400];
+const downtimeColor = grey[100];
 
 const recentCycles = selector<ReadonlyArray<RecentCycle>>({
   key: "insight-recent-cycles-for-chart",
@@ -100,6 +105,7 @@ const recentCycles = selector<ReadonlyArray<RecentCycle>>({
               endActive: addMinutes(endTime, activeMins - occupiedMins),
               endOccupied: endTime,
               outlier,
+              part: chunk[0].part + "-" + chunk[0].process.toString(),
             };
           } else {
             for (const c of chunk) {
@@ -109,6 +115,7 @@ const recentCycles = selector<ReadonlyArray<RecentCycle>>({
                 endActive: addMinutes(c.x, c.activeMinutes - c.y),
                 endOccupied: c.x,
                 outlier: stats ? isOutlier(stats, c.y / c.material.length) : false,
+                part: c.part + "-" + c.process.toString(),
               };
             }
           }
@@ -127,13 +134,24 @@ const simCycles = selector<ReadonlyArray<SimStationUse>>({
   },
 });
 
+interface TooltipData {
+  readonly left: number;
+  readonly top: number;
+  readonly data: { kind: "actual"; cycle: RecentCycle } | { kind: "sim"; cycle: SimStationUse };
+}
+
+const tooltipData = atom<TooltipData | null>({
+  key: "insight-recent-cycles-tooltip-data",
+  default: null,
+});
+
 interface ChartScales {
   readonly xScale: PickD3Scale<"time", number>;
   readonly yScale: PickD3Scale<"band", number, string>;
   readonly actualPlannedScale: PickD3Scale<"band", number, "actual" | "planned">;
 }
 
-const marginLeft = 50;
+const marginLeft = 150;
 const marginBottom = 20;
 const marginTop = 10;
 const marginRight = 2;
@@ -192,7 +210,11 @@ function AxisAndGrid({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">)
         strokeWidth={chartTheme.axisStyles.y.left.axisLine.strokeWidth}
         tickLength={chartTheme.axisStyles.y.left.tickLength}
         tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
-        tickLabelProps={() => ({ ...chartTheme.axisStyles.y.left.tickLabel, width: marginLeft })}
+        tickLabelProps={() => ({
+          ...chartTheme.axisStyles.y.left.tickLabel,
+          width: marginLeft,
+          fontSize: "large",
+        })}
       />
       <Grid
         xScale={xScale}
@@ -212,14 +234,42 @@ function ActualSeries({
   yScale,
   actualPlannedScale,
   now,
-}: ChartScales & { cycles: ReadonlyArray<RecentCycle>; now: Date }): JSX.Element {
+  hideTooltipRef,
+}: ChartScales & {
+  cycles: ReadonlyArray<RecentCycle>;
+  now: Date;
+  hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
+}): JSX.Element {
   const actualOffset = actualPlannedScale("actual") ?? 0;
+  const setTooltip = useSetRecoilState(tooltipData);
+
+  function showTooltip(c: RecentCycle): (e: React.PointerEvent<SVGGElement>) => void {
+    return (e) => {
+      const pt = localPoint(e);
+      if (!pt) return;
+      if (hideTooltipRef.current !== null) {
+        clearTimeout(hideTooltipRef.current);
+        hideTooltipRef.current = null;
+      }
+      setTooltip({
+        left: pt.x,
+        top: pt.y,
+        data: { kind: "actual", cycle: c },
+      });
+    };
+  }
+  const hideTooltip = React.useCallback(() => {
+    hideTooltipRef.current = setTimeout(() => {
+      setTooltip(null);
+    }, 300);
+  }, []);
+
   return (
     <g>
       {cycles.map((c, i) => {
         if (c.endActive) {
           return (
-            <g key={i}>
+            <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
               <rect
                 x={xScale(c.startTime)}
                 y={(yScale(c.station) ?? 0) + actualOffset}
@@ -239,7 +289,7 @@ function ActualSeries({
         } else if (c.endOccupied) {
           // no active time known, so just assume whole thing is ok.
           return (
-            <g key={i}>
+            <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
               <rect
                 x={xScale(c.startTime)}
                 y={(yScale(c.station) ?? 0) + actualOffset}
@@ -253,7 +303,7 @@ function ActualSeries({
           // no active time known, and this is a currently running cycle.
           // Just assume everything is OK
           return (
-            <g key={i}>
+            <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
               <rect
                 x={xScale(c.startTime)}
                 y={(yScale(c.station) ?? 0) + actualOffset}
@@ -274,53 +324,155 @@ function SimSeries({
   xScale,
   yScale,
   actualPlannedScale,
-}: ChartScales & { sim: ReadonlyArray<SimStationUse> }): JSX.Element {
+  hideTooltipRef,
+}: ChartScales & {
+  sim: ReadonlyArray<SimStationUse>;
+  hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
+}): JSX.Element {
   const plannedOffset = actualPlannedScale("planned") ?? 0;
+
+  const setTooltip = useSetRecoilState(tooltipData);
+
+  function showTooltip(c: SimStationUse): (e: React.PointerEvent<SVGGElement>) => void {
+    return (e) => {
+      const pt = localPoint(e);
+      if (!pt) return;
+      if (hideTooltipRef.current !== null) {
+        clearTimeout(hideTooltipRef.current);
+        hideTooltipRef.current = null;
+      }
+      setTooltip({
+        left: pt.x,
+        top: pt.y,
+        data: { kind: "sim", cycle: c },
+      });
+    };
+  }
+  const hideTooltip = React.useCallback(() => {
+    hideTooltipRef.current = setTimeout(() => {
+      setTooltip(null);
+    }, 300);
+  }, []);
+
   return (
     <g>
       {sim.map((c, i) => (
-        <g key={i}>
-          <rect
-            x={xScale(c.start)}
-            y={(yScale(c.station) ?? 0) + plannedOffset}
-            width={xScale(c.end) - xScale(c.start)}
-            height={actualPlannedScale.bandwidth()}
-            fill={simColor}
-          />
+        <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
+          {c.utilizationTime > 0 ? (
+            <rect
+              x={xScale(c.start)}
+              y={(yScale(c.station) ?? 0) + plannedOffset}
+              width={xScale(addMinutes(c.start, c.utilizationTime)) - xScale(c.start)}
+              height={actualPlannedScale.bandwidth()}
+              fill={simColor}
+            />
+          ) : undefined}
+          {c.plannedDownTime > 0 ? (
+            <rect
+              x={xScale(c.start)}
+              y={(yScale(c.station) ?? 0) + plannedOffset}
+              width={xScale(addMinutes(c.start, c.plannedDownTime)) - xScale(c.start)}
+              height={actualPlannedScale.bandwidth()}
+              fill={downtimeColor}
+            />
+          ) : undefined}
         </g>
       ))}
     </g>
   );
 }
 
+const Tooltip = React.memo(function Tooltip() {
+  const tooltip = useRecoilValue(tooltipData);
+
+  if (tooltip === null) return null;
+
+  return (
+    <ChartTooltip style={{ top: tooltip.top, left: tooltip.left }}>
+      <Stack>
+        {tooltip.data.kind === "actual" ? (
+          <>
+            {tooltip.data.cycle.outlier ? (
+              <div>Outlier Cycle for {tooltip.data.cycle.station}</div>
+            ) : (
+              <div>{tooltip.data.cycle.station}</div>
+            )}
+            <div>Part: {tooltip.data.cycle.part}</div>
+            <div>Start: {tooltip.data.cycle.startTime.toLocaleString()}</div>
+            {tooltip.data.cycle.endOccupied !== undefined ? (
+              <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
+            ) : undefined}
+            {tooltip.data.cycle.endActive !== undefined ? (
+              <div>
+                Active Minutes:{" "}
+                {differenceInMinutes(tooltip.data.cycle.endActive, tooltip.data.cycle.startTime)}
+              </div>
+            ) : undefined}
+            {tooltip.data.cycle.endOccupied !== undefined ? (
+              <div>
+                Occupied Minutes:{" "}
+                {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
+              </div>
+            ) : undefined}
+          </>
+        ) : (
+          <>
+            <div>Simulation of {tooltip.data.cycle.station}</div>
+            {tooltip.data.cycle.part ? <div>Part: {tooltip.data.cycle.part}</div> : undefined}
+            <div>Predicted Start: {tooltip.data.cycle.start.toLocaleString()}</div>
+            <div>Predicted End: {tooltip.data.cycle.end.toLocaleString()}</div>
+            {tooltip.data.cycle.utilizationTime > 0 ? (
+              <div>Utilization Minutes: {tooltip.data.cycle.utilizationTime}</div>
+            ) : undefined}
+            {tooltip.data.cycle.plannedDownTime > 0 ? (
+              <div>Planned Downtime Minutes: {tooltip.data.cycle.plannedDownTime}</div>
+            ) : undefined}
+          </>
+        )}
+      </Stack>
+    </ChartTooltip>
+  );
+});
+
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
   const cycles = useRecoilValue(recentCycles);
   const sim = useRecoilValue(simCycles);
+  const hideTooltipRef = React.useRef<NodeJS.Timeout | null>(null);
   const now = new Date();
   const { xScale, yScale, actualPlannedScale } = useScales(cycles, now, width, height);
   return (
-    <svg height={height} width={width}>
-      <clipPath id="recent-cycle-clip-body">
-        <rect
-          x={marginLeft}
-          y={marginTop}
-          width={width - marginLeft - marginRight}
-          height={height - marginTop - marginBottom}
-        />
-      </clipPath>
-      <Group left={marginLeft} top={marginTop}>
-        <AxisAndGrid xScale={xScale} yScale={yScale} />
-        <g clipPath="url(#recent-cycle-clip-body)">
-          <ActualSeries
-            cycles={cycles}
-            xScale={xScale}
-            yScale={yScale}
-            now={now}
-            actualPlannedScale={actualPlannedScale}
+    <div style={{ position: "relative" }}>
+      <svg height={height} width={width}>
+        <clipPath id="recent-cycle-clip-body">
+          <rect
+            x={marginLeft}
+            y={marginTop}
+            width={width - marginLeft - marginRight}
+            height={height - marginTop - marginBottom}
           />
-          <SimSeries sim={sim} xScale={xScale} yScale={yScale} actualPlannedScale={actualPlannedScale} />
-        </g>
-      </Group>
-    </svg>
+        </clipPath>
+        <Group left={marginLeft} top={marginTop}>
+          <AxisAndGrid xScale={xScale} yScale={yScale} />
+          <g clipPath="url(#recent-cycle-clip-body)">
+            <ActualSeries
+              cycles={cycles}
+              xScale={xScale}
+              yScale={yScale}
+              now={now}
+              hideTooltipRef={hideTooltipRef}
+              actualPlannedScale={actualPlannedScale}
+            />
+            <SimSeries
+              sim={sim}
+              xScale={xScale}
+              yScale={yScale}
+              actualPlannedScale={actualPlannedScale}
+              hideTooltipRef={hideTooltipRef}
+            />
+          </g>
+        </Group>
+      </svg>
+      <Tooltip />
+    </div>
   );
 }

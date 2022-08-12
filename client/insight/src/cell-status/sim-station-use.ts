@@ -44,6 +44,7 @@ export interface SimStationUse {
   readonly end: Date;
   readonly utilizationTime: number;
   readonly plannedDownTime: number;
+  readonly part?: string;
 }
 
 const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>({
@@ -66,6 +67,7 @@ function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): Rea
     end: simUse.endUTC,
     utilizationTime: durationToMinutes(simUse.utilizationTime),
     plannedDownTime: durationToMinutes(simUse.plannedDownTime),
+    // TODO: set part
   }));
 }
 
