@@ -186,12 +186,17 @@ export function chunkCyclesWithSimilarEndTime<T, K>(
   getTime: (c: T) => Date
 ): LazySeq<[K, ReadonlyArray<ReadonlyArray<T>>]> {
   return allCycles
-    .toLookupOrderedMap(getKey, getTime)
+    .toLookupOrderedMap(
+      getKey,
+      getTime,
+      (c) => [c],
+      (cs, ds) => cs.concat(ds)
+    )
     .toAscLazySeq()
     .map(([k, cycles]) => {
       const ret: Array<ReadonlyArray<T>> = [];
       let chunk: Array<T> = [];
-      for (const c of cycles.valuesToAscLazySeq()) {
+      for (const c of cycles.valuesToAscLazySeq().flatMap((cs) => cs)) {
         if (chunk.length === 0) {
           chunk = [c];
         } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {

@@ -33,14 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { atom, selector, useRecoilValue, useSetRecoilState } from "recoil";
-import { last30StationCycles, stat_name_and_num } from "../../cell-status/station-cycles.js";
-import {
-  last30EstimatedCycleTimes,
-  PartAndStationOperation,
-  isOutlier,
-  chunkCyclesWithSimilarEndTime,
-  splitElapsedTimeAmongChunk,
-} from "../../cell-status/estimated-cycle-times.js";
+import { last30StationCycles } from "../../cell-status/station-cycles.js";
+import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
+import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
 import { addHours, addMinutes, differenceInMinutes } from "date-fns";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { Grid } from "@visx/grid";
@@ -54,74 +49,22 @@ import { localPoint } from "@visx/event";
 import { Stack } from "@mui/material";
 import { ChartTooltip } from "../ChartTooltip.js";
 
-interface RecentCycle {
-  readonly station: string;
-  readonly startTime: Date;
-  readonly endOccupied: Date;
-  readonly endActive?: Date;
-  readonly outlier: boolean;
-  readonly part: string;
-}
-
 const activeColor = green[600];
 const occupiedNonOutlierColor = green[900];
 const occupiedOutlierColor = red[700];
 const simColor = grey[400];
 const downtimeColor = grey[100];
 
-const recentCycles = selector<ReadonlyArray<RecentCycle>>({
+const recentCycleArr = selector<ReadonlyArray<RecentCycle>>({
   key: "insight-recent-cycles-for-chart",
   get: ({ get }) => {
     const allCycles = get(last30StationCycles);
     const estimated = get(last30EstimatedCycleTimes);
     const cutoff = addHours(new Date(), -12);
-    return chunkCyclesWithSimilarEndTime(
-      allCycles.valuesToLazySeq().filter((c) => c.x >= cutoff),
-      (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
-      (c) => c.x
-    )
-      .flatMap(function* procChunk([station, chunks]) {
-        for (const chunk of chunks) {
-          const stats = estimated.get(PartAndStationOperation.ofPartCycle(chunk[0]));
-          if (chunk[0].isLabor) {
-            const entries = splitElapsedTimeAmongChunk(
-              chunk,
-              (c) => c.y,
-              (c) => c.activeMinutes
-            );
-            const endTime = chunk[0].x;
-            const occupiedMins = chunk[0].y;
-            let activeMins = 0;
-            let outlier = false;
-            for (let i = 0; i < chunk.length; i++) {
-              activeMins += chunk[i].activeMinutes;
-              if (stats && isOutlier(stats, entries[i].elapsedForSingleMaterialMinutes)) {
-                outlier = true;
-              }
-            }
-            yield {
-              station,
-              startTime: addMinutes(endTime, -occupiedMins),
-              endActive: activeMins > 0 ? addMinutes(endTime, activeMins - occupiedMins) : undefined,
-              endOccupied: endTime,
-              outlier,
-              part: chunk[0].part + "-" + chunk[0].process.toString(),
-            };
-          } else {
-            for (const c of chunk) {
-              yield {
-                station,
-                startTime: addMinutes(c.x, -c.y),
-                endActive: c.activeMinutes > 0 ? addMinutes(c.x, c.activeMinutes - c.y) : undefined,
-                endOccupied: c.x,
-                outlier: stats ? isOutlier(stats, c.y / c.material.length) : false,
-                part: c.part + "-" + c.process.toString(),
-              };
-            }
-          }
-        }
-      })
-      .toRArray();
+    return recentCycles(
+      allCycles.valuesToLazySeq().filter((e) => e.x >= cutoff),
+      estimated
+    );
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -383,7 +326,6 @@ const Tooltip = React.memo(function Tooltip() {
             ) : (
               <div>{tooltip.data.cycle.station}</div>
             )}
-            <div>Part: {tooltip.data.cycle.part}</div>
             <div>Start: {tooltip.data.cycle.startTime.toLocaleString()}</div>
             <div>End: {tooltip.data.cycle.endOccupied.toLocaleString()}</div>
             {tooltip.data.cycle.endActive !== undefined ? (
@@ -396,6 +338,11 @@ const Tooltip = React.memo(function Tooltip() {
               Occupied Minutes:{" "}
               {differenceInMinutes(tooltip.data.cycle.endOccupied, tooltip.data.cycle.startTime)}
             </div>
+            {tooltip.data.cycle.parts.map((p, idx) => (
+              <div key={idx}>
+                Part: {p.part} {p.oper}
+              </div>
+            ))}
           </>
         ) : (
           <>
@@ -445,7 +392,7 @@ function NowLine({
 }
 
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
-  const cycles = useRecoilValue(recentCycles);
+  const cycles = useRecoilValue(recentCycleArr);
   const sim = useRecoilValue(simCycles);
 
   // ensure a re-render at least every 5 minutes, but reset the timer if the data changes

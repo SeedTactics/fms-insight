@@ -47,6 +47,7 @@ import {
 import { faker } from "@faker-js/faker";
 import { durationToSeconds } from "../src/util/parseISODuration.js";
 import { addSeconds, addMinutes } from "date-fns";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 faker.seed(0x6f79);
 
@@ -191,6 +192,92 @@ export function fakeInspComplete(
   };
 }
 
+export function fakeMachineCycle({
+  counter,
+  numMats,
+  part,
+  proc,
+  pal,
+  program,
+  time,
+  elapsedMin,
+  activeMin,
+}: {
+  counter: number;
+  numMats?: number;
+  part: string;
+  proc: number;
+  pal?: string;
+  program: string;
+  time: Date;
+  elapsedMin: number;
+  activeMin?: number;
+}): ReadonlyArray<ILogEntry> {
+  const material = LazySeq.ofRange(0, numMats ?? 1)
+    .map(() => fakeMaterial(part, proc))
+    .toMutableArray();
+
+  const es: Array<ILogEntry> = [];
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal: pal ?? faker.datatype.string(),
+    type: LogType.MachineCycle,
+    startofcycle: false,
+    endUTC: time,
+    loc: "MC",
+    locnum: 1,
+    result: "",
+    program,
+    elapsed: `PT${elapsedMin}M`,
+    active: activeMin ? `PT${activeMin}M` : "PT-1S",
+  });
+  return es;
+}
+
+export function fakeLoadOrUnload({
+  counter,
+  numMats,
+  part,
+  proc,
+  pal,
+  isLoad,
+  time,
+  elapsedMin,
+  activeMin,
+}: {
+  counter: number;
+  numMats?: number;
+  part: string;
+  proc: number;
+  pal?: string;
+  isLoad: boolean;
+  time: Date;
+  elapsedMin: number;
+  activeMin?: number;
+}): ReadonlyArray<ILogEntry> {
+  const material = LazySeq.ofRange(0, numMats ?? 1)
+    .map(() => fakeMaterial(part, proc))
+    .toMutableArray();
+
+  const es: Array<ILogEntry> = [];
+  addStartAndEnd(es, {
+    counter,
+    material,
+    pal: pal ?? faker.datatype.string(),
+    type: LogType.LoadUnloadCycle,
+    startofcycle: false,
+    endUTC: time,
+    loc: "L/U",
+    locnum: 1,
+    result: isLoad ? "LOAD" : "UNLOAD",
+    program: isLoad ? "LOAD" : "UNLOAD",
+    elapsed: `PT${elapsedMin}M`,
+    active: activeMin ? `PT${activeMin}M` : "PT-1S",
+  });
+  return es;
+}
+
 export function fakeCycle({
   time,
   machineTime,
@@ -199,6 +286,8 @@ export function fakeCycle({
   pallet,
   noInspections,
   includeTools,
+  program,
+  activeTimeMins,
   counter,
 }: {
   time: Date;
@@ -208,6 +297,8 @@ export function fakeCycle({
   pallet?: string;
   noInspections?: boolean;
   includeTools?: boolean;
+  program?: string;
+  activeTimeMins?: number;
   counter: number;
 }): ReadonlyArray<ILogEntry> {
   const pal = pallet || "pal" + faker.random.alphaNumeric();
@@ -264,9 +355,9 @@ export function fakeCycle({
     loc: "MC",
     locnum: 1,
     result: "",
-    program: "prog" + faker.random.alphaNumeric(),
+    program: program ?? "prog" + faker.random.alphaNumeric(),
     elapsed: elapsed,
-    active: elapsed,
+    active: activeTimeMins ? `PT${activeTimeMins}M` : elapsed,
   });
 
   if (includeTools) {

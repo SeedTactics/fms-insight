@@ -10,7 +10,8 @@
       "name": "Debug FMS Insight Test File",
       "autoAttachChildProcesses": true,
       "program": "${workspaceRoot}/client/insight/node_modules/vitest/vitest.mjs",
-      "args": ["run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}/client/insight",
+      "args": ["run", "${file}"],
       "smartStep": true,
       "console": "integratedTerminal"
     },
