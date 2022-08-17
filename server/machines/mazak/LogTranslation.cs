@@ -540,9 +540,9 @@ namespace MazakMachineInterface
         }
 
         var mats = new List<EventLogMaterial>();
-        var info = job.Processes[proc - 1].Paths[path - 1];
-        if (job != null && !string.IsNullOrEmpty(info.InputQueue))
+        if (job != null && !string.IsNullOrEmpty(job.Processes[proc - 1].Paths[path - 1].InputQueue))
         {
+          var info = job.Processes[proc - 1].Paths[path - 1];
           // search input queue for material
           Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
             info.InputQueue, unique, proc);
