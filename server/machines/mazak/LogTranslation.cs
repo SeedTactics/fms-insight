@@ -535,6 +535,7 @@ namespace MazakMachineInterface
         Job job = GetJob(unique);
         if (job == null)
         {
+          Log.Warning("Unable to find job for pending load {@pending} with unique {@uniq}", p, unique);
           unique = "";
           path = 1;
         }
