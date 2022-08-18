@@ -115,6 +115,17 @@ export function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
   }
 }
 
+export function isOutlierAbove(s: StatisticalCycleTime, mins: number): boolean {
+  if (s.medianMinutesForSingleMat === 0) {
+    return false;
+  }
+  if (mins < s.medianMinutesForSingleMat) {
+    return false;
+  } else {
+    return (mins - s.medianMinutesForSingleMat) / s.MAD_aboveMinutes > 2;
+  }
+}
+
 function median(vals: LazySeq<number>): number {
   const sorted = vals.toMutableArray().sort();
   const cnt = sorted.length;

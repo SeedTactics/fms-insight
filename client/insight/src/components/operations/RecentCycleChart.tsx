@@ -48,7 +48,10 @@ import { red, green, grey } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { Stack } from "@mui/material";
 import { ChartTooltip } from "../ChartTooltip.js";
+import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
+import { currentStatus } from "../../cell-status/current-status.js";
 
+const projectedColor = green[200];
 const activeColor = green[600];
 const occupiedNonOutlierColor = green[900];
 const occupiedOutlierColor = red[700];
@@ -79,10 +82,22 @@ const simCycles = selector<ReadonlyArray<SimStationUse>>({
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
+const curCycles = selector<ReadonlyArray<CurrentCycle>>({
+  key: "insight-current-cycles-for-chart",
+  get: ({ get }) => {
+    const currentSt = get(currentStatus);
+    const estimated = get(last30EstimatedCycleTimes);
+    return currentCycles(currentSt, estimated);
+  },
+});
+
 interface TooltipData {
   readonly left: number;
   readonly top: number;
-  readonly data: { kind: "actual"; cycle: RecentCycle } | { kind: "sim"; cycle: SimStationUse };
+  readonly data:
+    | { kind: "actual"; cycle: RecentCycle }
+    | { kind: "sim"; cycle: SimStationUse }
+    | { kind: "current"; cycle: CurrentCycle; now: Date };
 }
 
 const tooltipData = atom<TooltipData | null>({
@@ -103,11 +118,12 @@ const marginRight = 2;
 
 function useScales(
   cycles: ReadonlyArray<RecentCycle>,
+  current: ReadonlyArray<CurrentCycle>,
   now: Date,
   containerWidth: number,
   containerHeight: number
 ): ChartScales {
-  const stats = OrderedSet.build(cycles, (c) => c.station);
+  const stats = OrderedSet.build(cycles, (c) => c.station).union(OrderedSet.build(current, (c) => c.station));
 
   const xMax = Math.max(containerWidth - marginLeft - marginRight, 5);
   const yMax = Math.max(containerHeight - marginTop - marginBottom, 5);
@@ -173,7 +189,7 @@ function AxisAndGrid({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">)
   );
 }
 
-function ActualSeries({
+function RecentSeries({
   cycles,
   xScale,
   yScale,
@@ -243,6 +259,93 @@ function ActualSeries({
             </g>
           );
         }
+      })}
+    </g>
+  );
+}
+
+function halfCirclePath(x: number, y: number, rx: number, ry: number): string {
+  return `M ${x} ${y} A ${rx} ${ry} 0 0 1 ${x} ${y + ry}`;
+}
+
+function CurrentSeries({
+  now,
+  cycles,
+  xScale,
+  yScale,
+  actualPlannedScale,
+  hideTooltipRef,
+}: ChartScales & {
+  now: Date;
+  cycles: ReadonlyArray<CurrentCycle>;
+  hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
+}): JSX.Element {
+  const actualOffset = actualPlannedScale("actual") ?? 0;
+  const setTooltip = useSetRecoilState(tooltipData);
+
+  function showTooltip(c: CurrentCycle): (e: React.PointerEvent<SVGGElement>) => void {
+    return (e) => {
+      const pt = localPoint(e);
+      if (!pt) return;
+      if (hideTooltipRef.current !== null) {
+        clearTimeout(hideTooltipRef.current);
+        hideTooltipRef.current = null;
+      }
+      setTooltip({
+        left: pt.x,
+        top: pt.y,
+        data: { kind: "current", cycle: c, now },
+      });
+    };
+  }
+  const hideTooltip = React.useCallback(() => {
+    hideTooltipRef.current = setTimeout(() => {
+      setTooltip(null);
+    }, 300);
+  }, []);
+
+  return (
+    <g>
+      {cycles.map((c, i) => {
+        return (
+          <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
+            <rect
+              x={xScale(c.start)}
+              y={(yScale(c.station) ?? 0) + actualOffset}
+              width={xScale(now) - xScale(c.start)}
+              height={actualPlannedScale.bandwidth()}
+              fill={activeColor}
+            />
+            {c.expectedEnd < now ? (
+              <>
+                <rect
+                  x={xScale(c.expectedEnd)}
+                  y={(yScale(c.station) ?? 0) + actualOffset + actualPlannedScale.bandwidth() / 10}
+                  width={xScale(now) - xScale(c.expectedEnd)}
+                  height={(actualPlannedScale.bandwidth() * 8) / 10}
+                  fill={c.isOutlier ? occupiedOutlierColor : occupiedNonOutlierColor}
+                />
+                <path
+                  d={halfCirclePath(
+                    xScale(now),
+                    (yScale(c.station) ?? 0) + actualOffset,
+                    80, // rx
+                    actualPlannedScale.bandwidth()
+                  )}
+                  fill={projectedColor}
+                />
+              </>
+            ) : (
+              <rect
+                x={xScale(now)}
+                y={(yScale(c.station) ?? 0) + actualOffset}
+                width={xScale(c.expectedEnd) - xScale(now)}
+                height={actualPlannedScale.bandwidth()}
+                fill={projectedColor}
+              />
+            )}
+          </g>
+        );
       })}
     </g>
   );
@@ -344,7 +447,7 @@ const Tooltip = React.memo(function Tooltip() {
               </div>
             ))}
           </>
-        ) : (
+        ) : tooltip.data.kind === "sim" ? (
           <>
             <div>Simulation of {tooltip.data.cycle.station}</div>
             {tooltip.data.cycle.part ? <div>Part: {tooltip.data.cycle.part}</div> : undefined}
@@ -356,6 +459,33 @@ const Tooltip = React.memo(function Tooltip() {
             {tooltip.data.cycle.plannedDownTime > 0 ? (
               <div>Planned Downtime Minutes: {tooltip.data.cycle.plannedDownTime}</div>
             ) : undefined}
+          </>
+        ) : (
+          <>
+            {tooltip.data.cycle.isOutlier ? (
+              <div>Current Outlier Cycle for {tooltip.data.cycle.station}</div>
+            ) : (
+              <div>Current {tooltip.data.cycle.station}</div>
+            )}
+            <div>Start: {tooltip.data.cycle.start.toLocaleString()}</div>
+            <div>Expected End: {tooltip.data.cycle.expectedEnd.toLocaleString()}</div>
+            {tooltip.data.cycle.expectedEnd < tooltip.data.now ? (
+              <div>
+                Cycle Exceeding Expected By{" "}
+                {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.expectedEnd)} Minutes
+              </div>
+            ) : (
+              <div>
+                Expected Remaining Minutes:{" "}
+                {differenceInMinutes(tooltip.data.cycle.expectedEnd, tooltip.data.now)}
+              </div>
+            )}
+            <div>Occupied Minutes: {differenceInMinutes(tooltip.data.now, tooltip.data.cycle.start)}</div>
+            {tooltip.data.cycle.parts.map((p, idx) => (
+              <div key={idx}>
+                Part: {p.part} {p.oper}
+              </div>
+            ))}
           </>
         )}
       </Stack>
@@ -394,6 +524,7 @@ function NowLine({
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
   const cycles = useRecoilValue(recentCycleArr);
   const sim = useRecoilValue(simCycles);
+  const current = useRecoilValue(curCycles);
 
   // ensure a re-render at least every 5 minutes, but reset the timer if the data changes
   const now = new Date();
@@ -406,7 +537,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
     }, 5 * 60 * 1000);
   });
 
-  const { xScale, yScale, actualPlannedScale } = useScales(cycles, now, width, height);
+  const { xScale, yScale, actualPlannedScale } = useScales(cycles, current, now, width, height);
   const hideTooltipRef = React.useRef<NodeJS.Timeout | null>(null);
 
   if (height <= 0 || width <= 0) return null;
@@ -425,8 +556,16 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
           </clipPath>
           <AxisAndGrid xScale={xScale} yScale={yScale} />
           <g clipPath="url(#recent-cycle-clip-body)">
-            <ActualSeries
+            <RecentSeries
               cycles={cycles}
+              xScale={xScale}
+              yScale={yScale}
+              hideTooltipRef={hideTooltipRef}
+              actualPlannedScale={actualPlannedScale}
+            />
+            <CurrentSeries
+              now={now}
+              cycles={current}
               xScale={xScale}
               yScale={yScale}
               hideTooltipRef={hideTooltipRef}

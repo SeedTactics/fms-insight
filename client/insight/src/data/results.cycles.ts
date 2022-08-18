@@ -461,10 +461,17 @@ export function recentCycles(
             endActive: activeMins > 0 ? addMinutes(endTime, activeMins - occupiedMins) : undefined,
             endOccupied: endTime,
             outlier,
-            parts: chunk.map((c) => ({
-              part: c.part + "-" + c.process.toString(),
-              oper: c.operation,
-            })),
+            parts: LazySeq.of(chunk)
+              .distinctAndSortBy(
+                (c) => c.part,
+                (c) => c.process,
+                (c) => c.operation
+              )
+              .map((c) => ({
+                part: c.part + "-" + c.process.toString(),
+                oper: c.operation,
+              }))
+              .toRArray(),
           };
         } else {
           for (const c of chunk) {
