@@ -1,0 +1,268 @@
+// Vitest Snapshot v1
+
+exports[`calculates current cycles > current cycles with jobs and expected 1`] = `
+[
+  {
+    "expectedEnd": 2018-03-05T07:18:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:50:00.000Z,
+    "station": "MC #6",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:58:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:30:00.000Z,
+    "station": "MC #2",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:38:00.000Z,
+    "isOutlier": true,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:10:00.000Z,
+    "station": "MC #1",
+  },
+  {
+    "expectedEnd": 2018-03-05T07:11:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:50:00.000Z,
+    "station": "L/U #10",
+  },
+  {
+    "expectedEnd": 2018-03-05T07:01:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:40:00.000Z,
+    "station": "L/U #20",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:31:00.000Z,
+    "isOutlier": true,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:10:00.000Z,
+    "station": "L/U #30",
+  },
+]
+`;
+
+exports[`calculates current cycles > current cycles without jobs or expected 1`] = `
+[
+  {
+    "expectedEnd": 2018-03-05T07:18:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:50:00.000Z,
+    "station": "MC #6",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:58:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:30:00.000Z,
+    "station": "MC #2",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:38:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:10:00.000Z,
+    "station": "MC #1",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:50:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:50:00.000Z,
+    "station": "L/U #10",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:40:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:40:00.000Z,
+    "station": "L/U #20",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:10:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:10:00.000Z,
+    "station": "L/U #30",
+  },
+]
+`;
+
+exports[`calculates current cycles > current cycles without jobs, just expected 1`] = `
+[
+  {
+    "expectedEnd": 2018-03-05T07:18:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:50:00.000Z,
+    "station": "MC #6",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:58:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:30:00.000Z,
+    "station": "MC #2",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:38:00.000Z,
+    "isOutlier": true,
+    "parts": [
+      {
+        "oper": "abcd",
+        "part": "part1",
+      },
+    ],
+    "start": 2018-03-05T06:10:00.000Z,
+    "station": "MC #1",
+  },
+  {
+    "expectedEnd": 2018-03-05T07:09:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:50:00.000Z,
+    "station": "L/U #10",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:59:00.000Z,
+    "isOutlier": false,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:40:00.000Z,
+    "station": "L/U #20",
+  },
+  {
+    "expectedEnd": 2018-03-05T06:29:00.000Z,
+    "isOutlier": true,
+    "parts": [
+      {
+        "oper": "LOAD",
+        "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
+      },
+    ],
+    "start": 2018-03-05T06:10:00.000Z,
+    "station": "L/U #30",
+  },
+]
+`;

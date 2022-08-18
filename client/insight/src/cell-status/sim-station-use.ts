@@ -44,6 +44,7 @@ export interface SimStationUse {
   readonly end: Date;
   readonly utilizationTime: number;
   readonly plannedDownTime: number;
+  readonly parts?: ReadonlyArray<{ readonly uniq: string; readonly proc: number; readonly path: number }>;
 }
 
 const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>({
@@ -66,6 +67,7 @@ function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): Rea
     end: simUse.endUTC,
     utilizationTime: durationToMinutes(simUse.utilizationTime),
     plannedDownTime: durationToMinutes(simUse.plannedDownTime),
+    part: simUse.parts?.map((p) => ({ uniq: p.jobUnique, proc: p.process, path: p.path })),
   }));
 }
 

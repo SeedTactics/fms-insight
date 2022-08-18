@@ -30,26 +30,30 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { addDays, addHours } from "date-fns";
+import { addHours } from "date-fns";
 
-import { fakeCycle } from "../../test/events.fake.js";
+import { fakeCycle, fakeLoadOrUnload, fakeMachineCycle } from "../../test/events.fake.js";
 import { ILogEntry } from "../network/api.js";
 import {
-  stationMinutes,
   filterStationCycles,
   buildCycleTable,
   buildLogEntriesTable,
   outlierLoadCycles,
   outlierMachineCycles,
+  recentCycles,
 } from "./results.cycles.js";
 import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { snapshot_UNSTABLE } from "recoil";
 import { onLoadLast30Log } from "../cell-status/loading.js";
 import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { last30MaterialSummary } from "../cell-status/material-summary.js";
-import { last30EstimatedCycleTimes } from "../cell-status/estimated-cycle-times.js";
+import {
+  last30EstimatedCycleTimes,
+  PartAndStationOperation,
+  StatisticalCycleTime,
+} from "../cell-status/estimated-cycle-times.js";
 import { it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js.js";
+import { HashMap } from "@seedtactics/immutable-collections";
 
 it("creates cycles clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -102,21 +106,6 @@ it("loads outlier cycles", () => {
   expect(machineOutliers.data.size).toBe(0);
 });
 
-it("computes station oee", () => {
-  const now = new Date(2018, 2, 5);
-
-  const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
-    fakeCycle({ time: addDays(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addDays(now, -15), machineTime: 15, counter: 300 })
-  );
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
-
-  const statMins = stationMinutes(cycles.valuesToLazySeq(), addDays(now, -7));
-  expect(toRawJs(statMins)).toMatchSnapshot("station minutes for last week");
-});
-
 it("creates log entries clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
@@ -128,4 +117,112 @@ it("creates log entries clipboard table", () => {
   const table = document.createElement("div");
   table.innerHTML = buildLogEntriesTable(evts);
   expect(table).toMatchSnapshot("events clipboard table");
+});
+
+it("calculates recent cycles", () => {
+  const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
+
+  const evts = ([] as ILogEntry[]).concat([
+    // one good machine cycle
+    ...fakeMachineCycle({
+      time: now,
+      part: "part1",
+      proc: 1,
+      program: "abcd",
+      numMats: 3,
+      activeMin: 28,
+      elapsedMin: 29,
+      counter: 100,
+    }),
+
+    // one outlier machine cycle
+    ...fakeMachineCycle({
+      time: addHours(now, 1),
+      part: "part1",
+      proc: 1,
+      program: "abcd",
+      numMats: 3,
+      activeMin: 28,
+      elapsedMin: 40,
+      counter: 200,
+    }),
+
+    // one load and one unload at the same time
+    ...fakeLoadOrUnload({
+      time: addHours(now, 2),
+      part: "part3",
+      proc: 1,
+      isLoad: true,
+      elapsedMin: 21,
+      numMats: 2,
+      activeMin: 8,
+      counter: 300,
+    }),
+    ...fakeLoadOrUnload({
+      time: addHours(now, 2),
+      part: "part4",
+      proc: 2,
+      isLoad: false,
+      elapsedMin: 21,
+      numMats: 2,
+      activeMin: 12,
+      counter: 400,
+    }),
+
+    // one load and one unload at the same time but is outlier
+    ...fakeLoadOrUnload({
+      time: addHours(now, 3),
+      part: "part3",
+      proc: 1,
+      isLoad: true,
+      elapsedMin: 28,
+      numMats: 2,
+      activeMin: 8,
+      counter: 500,
+    }),
+    ...fakeLoadOrUnload({
+      time: addHours(now, 3),
+      part: "part4",
+      proc: 2,
+      isLoad: false,
+      elapsedMin: 28,
+      numMats: 2,
+      activeMin: 12,
+      counter: 600,
+    }),
+  ]);
+
+  const expected = HashMap.from<PartAndStationOperation, StatisticalCycleTime>([
+    [
+      new PartAndStationOperation("part1", 1, "MC", "abcd"),
+      {
+        medianMinutesForSingleMat: 28 / 3, // 3 parts per face
+        MAD_aboveMinutes: 1.2,
+        MAD_belowMinutes: 1.2,
+        expectedCycleMinutesForSingleMat: 100000, // not used
+      },
+    ],
+    [
+      new PartAndStationOperation("part3", 1, "L/U", "LOAD"),
+      {
+        medianMinutesForSingleMat: 8 / 2, // 2 parts per face
+        MAD_aboveMinutes: 1,
+        MAD_belowMinutes: 1,
+        expectedCycleMinutesForSingleMat: 100000, // not used
+      },
+    ],
+    [
+      new PartAndStationOperation("part4", 2, "L/U", "UNLOAD"),
+      {
+        medianMinutesForSingleMat: 11 / 2, // two parts per face
+        MAD_aboveMinutes: 1,
+        MAD_belowMinutes: 1,
+        expectedCycleMinutesForSingleMat: 100000, // not used
+      },
+    ],
+  ]);
+
+  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
+  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+  expect(recentCycles(cycles.valuesToLazySeq(), expected)).toMatchSnapshot("recent cycles");
 });

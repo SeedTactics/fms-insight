@@ -38,16 +38,20 @@ import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { SankeyNode, inspectionDataToSankey, SankeyLink } from "../../data/inspection-sankey.js";
 
-import { PartAndInspType, InspectionLogEntry, InspectionsByPartAndType } from "../../cell-status/inspections.js";
+import {
+  PartAndInspType,
+  InspectionLogEntry,
+  InspectionsByPartAndType,
+} from "../../cell-status/inspections.js";
 import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
 import { DataTableActionZoomType } from "./DataTable.js";
 import { useIsDemo } from "../routes.js";
 import { Group } from "@visx/group";
-import { green, grey } from "@mui/material/colors";
-import { useTooltip, Tooltip as VisxTooltip, defaultStyles as defaultTooltipStyles } from "@visx/tooltip";
+import { green } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
+import { ChartTooltip } from "../ChartTooltip.js";
 
 type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
 type LinkWithData = {
@@ -62,36 +66,36 @@ const marginTop = 20;
 const marginRight = 120;
 const marginBottom = 20;
 
-type ShowTooltipFunc = (a: {
-  readonly tooltipLeft?: number;
-  readonly tooltipTop?: number;
-  readonly tooltipData?: LinkWithData;
-}) => void;
+interface TooltipData {
+  readonly left: number;
+  readonly top: number;
+  readonly data: LinkWithData;
+}
+
+type ShowTooltipFunc = (a: TooltipData | null) => void;
 
 function LinkDisplay({
   link,
   path,
   strokeWidth,
-  showTooltip,
-  hideTooltip,
+  setTooltip,
 }: {
   readonly link: LinkWithData;
   readonly path: string | null;
   readonly strokeWidth: number;
-  readonly showTooltip: ShowTooltipFunc;
-  readonly hideTooltip: () => void;
+  readonly setTooltip: ShowTooltipFunc;
 }) {
   const [over, setOver] = React.useState(false);
   if (path === null) return null;
   function pointerOver(e: React.PointerEvent) {
     const pt = localPoint(e);
     if (pt === null) return;
-    showTooltip({ tooltipLeft: pt.x, tooltipTop: pt.y, tooltipData: link });
+    setTooltip({ left: pt.x, top: pt.y, data: link });
     setOver(true);
   }
   function pointerOut() {
     setOver(false);
-    hideTooltip();
+    setTooltip(null);
   }
   return (
     <path
@@ -107,10 +111,17 @@ function LinkDisplay({
 }
 
 function NodeDisplay({ node }: { readonly node: NodeWithData }) {
-  if (node.x1 === undefined || node.x0 === undefined || node.y1 === undefined || node.y0 === undefined) return null;
+  if (node.x1 === undefined || node.x0 === undefined || node.y1 === undefined || node.y0 === undefined)
+    return null;
   return (
     <Group top={node.y0} left={node.x0}>
-      <rect width={node.x1 - node.x0} height={node.y1 - node.y0} fill={green[800]} opacity={0.8} stroke="none" />
+      <rect
+        width={node.x1 - node.x0}
+        height={node.y1 - node.y0}
+        fill={green[800]}
+        opacity={0.8}
+        stroke="none"
+      />
 
       <text x={18} y={(node.y1 - node.y0) / 2}>
         {node.name}
@@ -121,16 +132,14 @@ function NodeDisplay({ node }: { readonly node: NodeWithData }) {
 
 const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
   data,
-  showTooltip,
-  hideTooltip,
+  setTooltip,
   parentHeight,
   parentWidth,
 }: {
   readonly data: Iterable<InspectionLogEntry>;
   readonly parentHeight: number;
   readonly parentWidth: number;
-  readonly showTooltip: ShowTooltipFunc;
-  readonly hideTooltip: () => void;
+  readonly setTooltip: ShowTooltipFunc;
 }) {
   const { nodes, links } = React.useMemo(() => {
     const { nodes, links } = inspectionDataToSankey(data);
@@ -162,8 +171,7 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
             link={link}
             path={path(link)}
             strokeWidth={Math.max(link.width ?? 1, 1)}
-            showTooltip={showTooltip}
-            hideTooltip={hideTooltip}
+            setTooltip={setTooltip}
           />
         ))}
       </g>
@@ -171,23 +179,12 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
   );
 });
 
-const LinkTooltip = React.memo(function LinkTooltip({
-  tooltipData,
-  tooltipTop,
-  tooltipLeft,
-}: {
-  readonly tooltipData: LinkWithData;
-  readonly tooltipTop: number | undefined;
-  readonly tooltipLeft: number | undefined;
-}) {
+const LinkTooltip = React.memo(function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
+  if (tooltip === null) return null;
   return (
-    <VisxTooltip
-      left={tooltipLeft}
-      top={tooltipTop}
-      style={{ ...defaultTooltipStyles, backgroundColor: grey[800], color: "white" }}
-    >
-      {tooltipData.source.name} ➞ {tooltipData.target.name}: {tooltipData.value} parts
-    </VisxTooltip>
+    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
+      {tooltip.data.source.name} ➞ {tooltip.data.target.name}: {tooltip.data.value} parts
+    </ChartTooltip>
   );
 });
 
@@ -196,7 +193,7 @@ const InspectionDiagram = React.memo(function InspectionDiagram({
 }: {
   readonly data: Iterable<InspectionLogEntry>;
 }) {
-  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip<LinkWithData>();
+  const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
   return (
     <div style={{ position: "relative" }}>
       <Box sx={{ height: "calc(100vh - 100px)", width: "100%" }}>
@@ -204,17 +201,14 @@ const InspectionDiagram = React.memo(function InspectionDiagram({
           {(parent) => (
             <SankeyDisplay
               data={data}
-              showTooltip={showTooltip}
-              hideTooltip={hideTooltip}
+              setTooltip={setTooltip}
               parentHeight={parent.height}
               parentWidth={parent.width}
             />
           )}
         </ParentSize>
       </Box>
-      {tooltipData ? (
-        <LinkTooltip tooltipData={tooltipData} tooltipLeft={tooltipLeft} tooltipTop={tooltipTop} />
-      ) : undefined}
+      <LinkTooltip tooltip={tooltip} />
     </div>
   );
 });
@@ -233,13 +227,17 @@ export interface InspectionSankeyProps {
 export function InspectionSankey(props: InspectionSankeyProps) {
   const demo = useIsDemo();
   const [curPart, setSelectedPart] = React.useState<string | undefined>(demo ? "aaa" : undefined);
-  const [selectedInspectType, setSelectedInspectType] = React.useState<string | undefined>(demo ? "CMM" : undefined);
+  const [selectedInspectType, setSelectedInspectType] = React.useState<string | undefined>(
+    demo ? "CMM" : undefined
+  );
   const [showTable, setShowTable] = React.useState<boolean>(props.defaultToTable);
 
   let curData: Iterable<InspectionLogEntry> | undefined;
   const selectedPart = props.restrictToPart || curPart;
   if (selectedPart && selectedInspectType) {
-    curData = props.inspectionlogs.get(new PartAndInspType(selectedPart, selectedInspectType))?.valuesToLazySeq() ?? [];
+    curData =
+      props.inspectionlogs.get(new PartAndInspType(selectedPart, selectedInspectType))?.valuesToLazySeq() ??
+      [];
   }
   const parts = props.inspectionlogs
     .keysToLazySeq()
@@ -270,7 +268,11 @@ export function InspectionSankey(props: InspectionSankeyProps) {
                 <IconButton
                   onClick={() =>
                     curData
-                      ? copyInspectionEntriesToClipboard(selectedPart || "", selectedInspectType || "", curData)
+                      ? copyInspectionEntriesToClipboard(
+                          selectedPart || "",
+                          selectedInspectType || "",
+                          curData
+                        )
                       : undefined
                   }
                   style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}

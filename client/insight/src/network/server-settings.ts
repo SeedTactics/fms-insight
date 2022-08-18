@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { User, UserManager } from "oidc-client";
+import { User, UserManager } from "oidc-client-ts";
 import * as api from "./api.js";
 import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend.js";
 import { selector } from "recoil";
@@ -62,11 +62,14 @@ async function loadInfo(): Promise<FMSInfoAndUser> {
   if (requireLogin(fmsInfo)) {
     userManager = new UserManager({
       authority:
-        location.hostname === "localhost" ? fmsInfo.localhostOpenIDConnectAuthority : fmsInfo.openIDConnectAuthority,
-      client_id: fmsInfo.openIDConnectClientId,
+        (location.hostname === "localhost"
+          ? fmsInfo.localhostOpenIDConnectAuthority
+          : fmsInfo.openIDConnectAuthority) ?? "",
+      client_id: fmsInfo.openIDConnectClientId ?? "",
       redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       post_logout_redirect_uri: window.location.protocol + "//" + window.location.host + "/",
       automaticSilentRenew: true,
+      loadUserInfo: true,
       scope: "openid profile",
     });
     user = await userManager.getUser();
@@ -95,12 +98,12 @@ export const fmsInformation = selector<FMSInfoAndUser>({
 
 export function login(fmsInfo: FMSInfoAndUser) {
   if (userManager && !fmsInfo.user) {
-    userManager.signinRedirect();
+    userManager.signinRedirect().catch((e) => console.log(e));
   }
 }
 
 export function logout() {
   if (userManager) {
-    userManager.signoutRedirect();
+    userManager.signoutRedirect().catch((e) => console.log(e));
   }
 }

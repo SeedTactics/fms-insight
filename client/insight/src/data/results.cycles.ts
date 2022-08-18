@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { format, differenceInSeconds } from "date-fns";
+import { format, differenceInSeconds, addMinutes } from "date-fns";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
@@ -402,22 +402,6 @@ export function outlierLoadCycles(
   };
 }
 
-export function stationMinutes(
-  partCycles: Iterable<PartCycleData>,
-  cutoff: Date
-): ReadonlyMap<string, number> {
-  return LazySeq.of(partCycles)
-    .filter((p) => p.x >= cutoff)
-    .map((p) => ({
-      station: stat_name_and_num(p.stationGroup, p.stationNumber),
-      active: p.activeMinutes,
-    }))
-    .toRMap(
-      (x) => [x.station, x.active] as [string, number],
-      (v1, v2) => v1 + v2
-    );
-}
-
 export function plannedOperationMinutes(s: FilteredStationCycles, forSingleMat: boolean): number | undefined {
   let planned: { time: Date; mins: number } | null = null;
 
@@ -432,6 +416,79 @@ export function plannedOperationMinutes(s: FilteredStationCycles, forSingleMat: 
     }
   }
   return planned?.mins;
+}
+
+export interface RecentCycle {
+  readonly station: string;
+  readonly startTime: Date;
+  readonly endOccupied: Date;
+  readonly endActive?: Date;
+  readonly outlier: boolean;
+  readonly parts: ReadonlyArray<{ part: string; oper: string }>;
+}
+
+export function recentCycles(
+  allCycles: LazySeq<PartCycleData>,
+  estimated: EstimatedCycleTimes
+): ReadonlyArray<RecentCycle> {
+  return chunkCyclesWithSimilarEndTime(
+    allCycles,
+    (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
+    (c) => c.x
+  )
+    .flatMap(function* procChunk([station, chunks]) {
+      for (const chunk of chunks) {
+        if (chunk[0].isLabor) {
+          const entries = splitElapsedTimeAmongChunk(
+            chunk,
+            (c) => c.y,
+            (c) => c.activeMinutes
+          );
+          const endTime = chunk[0].x;
+          const occupiedMins = chunk[0].y;
+          let activeMins = 0;
+          let outlier = false;
+          for (let i = 0; i < chunk.length; i++) {
+            activeMins += chunk[i].activeMinutes;
+            const stats = estimated.get(PartAndStationOperation.ofPartCycle(chunk[i]));
+            if (stats && isOutlier(stats, entries[i].elapsedForSingleMaterialMinutes)) {
+              outlier = true;
+            }
+          }
+          yield {
+            station,
+            startTime: addMinutes(endTime, -occupiedMins),
+            endActive: activeMins > 0 ? addMinutes(endTime, activeMins - occupiedMins) : undefined,
+            endOccupied: endTime,
+            outlier,
+            parts: LazySeq.of(chunk)
+              .distinctAndSortBy(
+                (c) => c.part,
+                (c) => c.process,
+                (c) => c.operation
+              )
+              .map((c) => ({
+                part: c.part + "-" + c.process.toString(),
+                oper: c.operation,
+              }))
+              .toRArray(),
+          };
+        } else {
+          for (const c of chunk) {
+            const stats = estimated.get(PartAndStationOperation.ofPartCycle(c));
+            yield {
+              station,
+              startTime: addMinutes(c.x, -c.y),
+              endActive: c.activeMinutes > 0 ? addMinutes(c.x, c.activeMinutes - c.y) : undefined,
+              endOccupied: c.x,
+              outlier: stats ? isOutlier(stats, c.y / c.material.length) : false,
+              parts: [{ part: c.part + "-" + c.process.toString(), oper: c.operation }],
+            };
+          }
+        }
+      }
+    })
+    .toRArray();
 }
 
 // --------------------------------------------------------------------------------

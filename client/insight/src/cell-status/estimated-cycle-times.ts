@@ -36,6 +36,7 @@ import { ILogEntry, LogType } from "../network/api.js";
 import { LazySeq, HashMap, hashValues, OrderedMapKey } from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { conduit } from "../util/recoil-util.js";
+import type { PartCycleData } from "./station-cycles.js";
 
 export interface StatisticalCycleTime {
   readonly medianMinutesForSingleMat: number;
@@ -59,6 +60,10 @@ export class PartAndStationOperation {
       c.type === LogType.LoadUnloadCycle ? c.result : c.program
     );
   }
+  public static ofPartCycle(c: Readonly<PartCycleData>): PartAndStationOperation {
+    return new PartAndStationOperation(c.material[0].part, c.material[0].proc, c.stationGroup, c.operation);
+  }
+
   compare(other: PartAndStationOperation): number {
     let cmp = this.part.localeCompare(other.part);
     if (cmp !== 0) return cmp;
@@ -105,6 +110,17 @@ export function isOutlier(s: StatisticalCycleTime, mins: number): boolean {
   }
   if (mins < s.medianMinutesForSingleMat) {
     return (s.medianMinutesForSingleMat - mins) / s.MAD_belowMinutes > 2;
+  } else {
+    return (mins - s.medianMinutesForSingleMat) / s.MAD_aboveMinutes > 2;
+  }
+}
+
+export function isOutlierAbove(s: StatisticalCycleTime, mins: number): boolean {
+  if (s.medianMinutesForSingleMat === 0) {
+    return false;
+  }
+  if (mins < s.medianMinutesForSingleMat) {
+    return false;
   } else {
     return (mins - s.medianMinutesForSingleMat) / s.MAD_aboveMinutes > 2;
   }
@@ -181,12 +197,17 @@ export function chunkCyclesWithSimilarEndTime<T, K>(
   getTime: (c: T) => Date
 ): LazySeq<[K, ReadonlyArray<ReadonlyArray<T>>]> {
   return allCycles
-    .toLookupOrderedMap(getKey, getTime)
+    .toLookupOrderedMap(
+      getKey,
+      getTime,
+      (c) => [c],
+      (cs, ds) => cs.concat(ds)
+    )
     .toAscLazySeq()
     .map(([k, cycles]) => {
       const ret: Array<ReadonlyArray<T>> = [];
       let chunk: Array<T> = [];
-      for (const c of cycles.valuesToAscLazySeq()) {
+      for (const c of cycles.valuesToAscLazySeq().flatMap((cs) => cs)) {
         if (chunk.length === 0) {
           chunk = [c];
         } else if (differenceInSeconds(getTime(c), getTime(chunk[chunk.length - 1])) < 10) {
