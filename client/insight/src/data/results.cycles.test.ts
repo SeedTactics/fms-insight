@@ -120,7 +120,7 @@ it("creates log entries clipboard table", () => {
 });
 
 it("calculates recent cycles", () => {
-  const now = new Date(2018, 2, 5); // midnight in local time
+  const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
 
   const evts = ([] as ILogEntry[]).concat([
     // one good machine cycle

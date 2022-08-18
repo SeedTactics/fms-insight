@@ -3,8 +3,8 @@
 exports[`calculates recent cycles > recent cycles 1`] = `
 [
   {
-    "endActive": 2018-03-05T07:59:00.000Z,
-    "endOccupied": 2018-03-05T08:00:00.000Z,
+    "endActive": 2018-03-05T08:59:00.000Z,
+    "endOccupied": 2018-03-05T09:00:00.000Z,
     "outlier": false,
     "parts": [
       {
@@ -16,12 +16,12 @@ exports[`calculates recent cycles > recent cycles 1`] = `
         "part": "part4-2",
       },
     ],
-    "startTime": 2018-03-05T07:39:00.000Z,
+    "startTime": 2018-03-05T08:39:00.000Z,
     "station": "L/U #1",
   },
   {
-    "endActive": 2018-03-05T08:52:00.000Z,
-    "endOccupied": 2018-03-05T09:00:00.000Z,
+    "endActive": 2018-03-05T09:52:00.000Z,
+    "endOccupied": 2018-03-05T10:00:00.000Z,
     "outlier": true,
     "parts": [
       {
@@ -33,12 +33,12 @@ exports[`calculates recent cycles > recent cycles 1`] = `
         "part": "part4-2",
       },
     ],
-    "startTime": 2018-03-05T08:32:00.000Z,
+    "startTime": 2018-03-05T09:32:00.000Z,
     "station": "L/U #1",
   },
   {
-    "endActive": 2018-03-05T05:59:00.000Z,
-    "endOccupied": 2018-03-05T06:00:00.000Z,
+    "endActive": 2018-03-05T06:59:00.000Z,
+    "endOccupied": 2018-03-05T07:00:00.000Z,
     "outlier": false,
     "parts": [
       {
@@ -46,12 +46,12 @@ exports[`calculates recent cycles > recent cycles 1`] = `
         "part": "part1-1",
       },
     ],
-    "startTime": 2018-03-05T05:31:00.000Z,
+    "startTime": 2018-03-05T06:31:00.000Z,
     "station": "MC #1",
   },
   {
-    "endActive": 2018-03-05T06:48:00.000Z,
-    "endOccupied": 2018-03-05T07:00:00.000Z,
+    "endActive": 2018-03-05T07:48:00.000Z,
+    "endOccupied": 2018-03-05T08:00:00.000Z,
     "outlier": true,
     "parts": [
       {
@@ -59,7 +59,7 @@ exports[`calculates recent cycles > recent cycles 1`] = `
         "part": "part1-1",
       },
     ],
-    "startTime": 2018-03-05T06:20:00.000Z,
+    "startTime": 2018-03-05T07:20:00.000Z,
     "station": "MC #1",
   },
 ]
