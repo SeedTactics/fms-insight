@@ -117,7 +117,9 @@ export function WebsocketConnection(): null {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (evt: MessageEvent<any>) => {
         const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
-        transact_UNSTABLE((trans) => onServerEvent.transform(trans, { evt: serverEvt, now: new Date(), expire: true }));
+        transact_UNSTABLE((trans) =>
+          onServerEvent.transform(trans, { evt: serverEvt, now: new Date(), expire: true })
+        );
       },
     []
   );
@@ -144,7 +146,7 @@ export function WebsocketConnection(): null {
     uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
 
     if (user) {
-      uri += "?token=" + encodeURIComponent(user.access_token || user.id_token);
+      uri += "?token=" + encodeURIComponent(user.access_token);
     }
 
     const websocket = new ReconnectingWebSocket(uri);
