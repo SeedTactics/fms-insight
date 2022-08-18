@@ -8,12 +8,12 @@ exports[`calculates recent cycles > recent cycles 1`] = `
     "outlier": false,
     "parts": [
       {
-        "oper": "UNLOAD",
-        "part": "part4-2",
-      },
-      {
         "oper": "LOAD",
         "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
       },
     ],
     "startTime": 2018-03-05T07:39:00.000Z,
@@ -25,12 +25,12 @@ exports[`calculates recent cycles > recent cycles 1`] = `
     "outlier": true,
     "parts": [
       {
-        "oper": "UNLOAD",
-        "part": "part4-2",
-      },
-      {
         "oper": "LOAD",
         "part": "part3-1",
+      },
+      {
+        "oper": "UNLOAD",
+        "part": "part4-2",
       },
     ],
     "startTime": 2018-03-05T08:32:00.000Z,

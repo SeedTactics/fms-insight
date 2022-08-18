@@ -41,15 +41,16 @@ import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { Grid } from "@visx/grid";
 import { Group } from "@visx/group";
 import { Axis } from "@visx/axis";
-import { OrderedSet } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { chartTheme } from "../../util/chart-colors.js";
-import { last30SimStationUse, SimStationUse } from "../../cell-status/sim-station-use.js";
+import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { red, green, grey } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { Stack } from "@mui/material";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 
 const projectedColor = green[200];
 const activeColor = green[600];
@@ -72,12 +73,39 @@ const recentCycleArr = selector<ReadonlyArray<RecentCycle>>({
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
-const simCycles = selector<ReadonlyArray<SimStationUse>>({
+type SimCycle = {
+  readonly station: string;
+  readonly start: Date;
+  readonly end: Date;
+  readonly utilizationTime: number;
+  readonly plannedDownTime: number;
+  readonly parts: ReadonlyArray<string>;
+};
+
+const simCycles = selector<ReadonlyArray<SimCycle>>({
   key: "insight-planned-cycles-for-chart",
   get: ({ get }) => {
+    const jobs = get(last30Jobs);
     const statUse = get(last30SimStationUse);
     const cutoff = addHours(new Date(), -12);
-    return statUse.filter((s) => s.end >= cutoff);
+    return LazySeq.of(statUse)
+      .filter((s) => s.end >= cutoff)
+      .map((s) => ({
+        station: s.station,
+        start: s.start,
+        end: s.end,
+        utilizationTime: s.utilizationTime,
+        plannedDownTime: s.plannedDownTime,
+        parts: LazySeq.of(s.parts ?? [])
+          .collect((p) => {
+            const j = jobs.get(p.uniq);
+            if (!j) return null;
+            return j.partName + "-" + p.proc.toString();
+          })
+          .distinctAndSortBy((p) => p)
+          .toRArray(),
+      }))
+      .toRArray();
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -96,7 +124,7 @@ interface TooltipData {
   readonly top: number;
   readonly data:
     | { kind: "actual"; cycle: RecentCycle }
-    | { kind: "sim"; cycle: SimStationUse }
+    | { kind: "sim"; cycle: SimCycle }
     | { kind: "current"; cycle: CurrentCycle; now: Date };
 }
 
@@ -358,14 +386,14 @@ function SimSeries({
   actualPlannedScale,
   hideTooltipRef,
 }: ChartScales & {
-  sim: ReadonlyArray<SimStationUse>;
+  sim: ReadonlyArray<SimCycle>;
   hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
 }): JSX.Element {
   const plannedOffset = actualPlannedScale("planned") ?? 0;
 
   const setTooltip = useSetRecoilState(tooltipData);
 
-  function showTooltip(c: SimStationUse): (e: React.PointerEvent<SVGGElement>) => void {
+  function showTooltip(c: SimCycle): (e: React.PointerEvent<SVGGElement>) => void {
     return (e) => {
       const pt = localPoint(e);
       if (!pt) return;
@@ -450,7 +478,9 @@ const Tooltip = React.memo(function Tooltip() {
         ) : tooltip.data.kind === "sim" ? (
           <>
             <div>Simulation of {tooltip.data.cycle.station}</div>
-            {tooltip.data.cycle.part ? <div>Part: {tooltip.data.cycle.part}</div> : undefined}
+            {tooltip.data.cycle.parts.map((p, idx) => (
+              <div key={idx}>Part: {p}</div>
+            ))}
             <div>Predicted Start: {tooltip.data.cycle.start.toLocaleString()}</div>
             <div>Predicted End: {tooltip.data.cycle.end.toLocaleString()}</div>
             {tooltip.data.cycle.utilizationTime > 0 ? (
