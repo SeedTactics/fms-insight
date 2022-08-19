@@ -37,7 +37,6 @@ import { Extension as ExtensionIcon, HourglassFull as HourglassIcon } from "@mui
 import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { SelectableHeatChart } from "./HeatChart.js";
-import { InspectionSankey } from "./InspectionSankey.js";
 import {
   binSimStationUseByDayAndStat,
   copyOeeHeatmapToClipboard,
@@ -50,7 +49,6 @@ import {
   binSimProductionByDayAndPart,
   copyCompletedPartsHeatmapToClipboard,
 } from "../../data/results.completed-parts.js";
-import { DataTableActionZoomType } from "./DataTable.js";
 import { BufferOccupancyChart } from "./BufferChart.js";
 import { useRecoilValue } from "recoil";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
@@ -59,7 +57,6 @@ import {
   SimPartCompleted,
   specificMonthSimProduction,
 } from "../../cell-status/sim-production.js";
-import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
 import {
   last30MaterialSummary,
   specificMonthMaterialSummary,
@@ -71,8 +68,6 @@ import {
   specificMonthStationCycles,
 } from "../../cell-status/station-cycles.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
-import { PartLoadStationCycleChart, PartMachineCycleChart } from "./PartCycleCards.js";
-import { PalletCycleChart } from "./PalletCycleCards.js";
 
 // --------------------------------------------------------------------------------
 // Oee Heatmap
@@ -217,59 +212,20 @@ function CompletedCountHeatmap() {
 }
 
 // --------------------------------------------------------------------------------
-// Inspection
-// --------------------------------------------------------------------------------
-
-function ConnectedInspection() {
-  const period = useRecoilValue(selectedAnalysisPeriod);
-
-  const inspectionlogs = useRecoilValue(
-    period.type === "Last30" ? last30Inspections : specificMonthInspections
-  );
-  const zoomType =
-    period.type === "Last30" ? DataTableActionZoomType.Last30Days : DataTableActionZoomType.ZoomIntoRange;
-  const default_date_range =
-    period.type === "Last30"
-      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [period.month, addMonths(period.month, 1)];
-
-  return (
-    <InspectionSankey
-      inspectionlogs={inspectionlogs}
-      zoomType={zoomType}
-      default_date_range={default_date_range}
-      defaultToTable={false}
-    />
-  );
-}
-
-// --------------------------------------------------------------------------------
 // Efficiency
 // --------------------------------------------------------------------------------
 
 export function EfficiencyCards(): JSX.Element {
   return (
     <>
-      <div data-testid="part-cycle-chart">
-        <PartMachineCycleChart />
-      </div>
-      <div data-testid="part-load-cycle-chart" style={{ marginTop: "3em" }}>
-        <PartLoadStationCycleChart />
-      </div>
-      <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
-        <PalletCycleChart />
-      </div>
-      <div data-testid="buffer-chart" style={{ marginTop: "3em" }}>
+      <div style={{ marginTop: "3em" }}>
         <BufferOccupancyChart />
       </div>
-      <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
+      <div style={{ marginTop: "3em" }}>
         <StationOeeHeatmap />
       </div>
-      <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
+      <div style={{ marginTop: "3em" }}>
         <CompletedCountHeatmap />
-      </div>
-      <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
-        <ConnectedInspection />
       </div>
     </>
   );
