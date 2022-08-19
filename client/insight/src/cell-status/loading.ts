@@ -48,6 +48,7 @@ import * as estimated from "./estimated-cycle-times.js";
 import * as tool from "./tool-usage.js";
 import * as palCycles from "./pallet-cycles.js";
 import * as statCycles from "./station-cycles.js";
+import * as toolReplace from "./tool-replacements.js";
 
 export interface ServerEventAndTime {
   readonly evt: Readonly<IServerEvent>;
@@ -73,6 +74,7 @@ export const onServerEvent = conduit<ServerEventAndTime>(
     names.updateNames.transform(t, evt);
     tool.updateLast30ToolUse.transform(t, evt);
     palCycles.updateLast30PalletCycles.transform(t, evt);
+    toolReplace.updateLastToolReplacements.transform(t, evt);
     statCycles.updateLast30StationCycles.transform(t, evt);
 
     if (evt.evt.logEntry) {
@@ -100,6 +102,7 @@ export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
     names.setNamesFromLast30Evts.transform(t, log);
     tool.setLast30ToolUse.transform(t, log);
     palCycles.setLast30PalletCycles.transform(t, log);
+    toolReplace.setLast30ToolReplacements.transform(t, log);
     statCycles.setLast30StationCycles.transform(t, log);
 
     const newCntr = LazySeq.of(log).maxBy((x) => x.counter)?.counter ?? null;
@@ -128,6 +131,7 @@ export const onLoadSpecificMonthLog = conduit<ReadonlyArray<Readonly<ILogEntry>>
     insp.setSpecificMonthInspections.transform(t, log);
     mats.setSpecificMonthMatSummary.transform(t, log);
     palCycles.setSpecificMonthPalletCycles.transform(t, log);
+    toolReplace.setSpecificMonthToolReplacements.transform(t, log);
     statCycles.setSpecificMonthStationCycles.transform(t, log);
   }
 );
