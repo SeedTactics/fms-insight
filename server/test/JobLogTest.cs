@@ -1919,6 +1919,18 @@ namespace MachineWatchTest
       expectedLife["tool11"] = TimeSpan.FromSeconds(100 + 100);
       expectedChange.Add("tool11");
 
+      // finally, a tool which changed between cycles to the starting was zero
+      start.Add(
+        new ToolPocketSnapshot() { PocketNumber = 10, Tool = "tool12", CurrentUse = TimeSpan.Zero, ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      end.Add(
+        new ToolPocketSnapshot() { PocketNumber = 10, Tool = "tool12", CurrentUse = TimeSpan.FromSeconds(34), ToolLife = TimeSpan.FromSeconds(100) }
+      );
+      expectedUse["tool12"] = TimeSpan.FromSeconds(34);
+      expectedTotalUse["tool12"] = TimeSpan.FromSeconds(34);
+      expectedLife["tool12"] = TimeSpan.FromSeconds(100);
+      expectedChange.Add("tool12");
+
       ToolSnapshotDiff.Diff(start, end).Should().BeEquivalentTo(
         expectedUse.Select(x => new
         {

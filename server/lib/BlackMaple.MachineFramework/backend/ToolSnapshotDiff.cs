@@ -74,7 +74,19 @@ namespace BlackMaple.MachineFramework
         {
           endPockets.Remove((startPocket.PocketNumber, startPocket.Tool));
 
-          if (startPocket.CurrentUse < endPocket.CurrentUse)
+          if (startPocket.CurrentUse == TimeSpan.Zero)
+          {
+            // change between cycles
+            addUse(startPocket.Tool, new ToolUse()
+            {
+              ToolUseDuringCycle = endPocket.CurrentUse,
+              TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
+              ConfiguredToolLife = endPocket.ToolLife,
+              ToolChangeOccurred = true
+            });
+
+          }
+          else if (startPocket.CurrentUse < endPocket.CurrentUse)
           {
             // no tool change
             addUse(startPocket.Tool, new ToolUse()
