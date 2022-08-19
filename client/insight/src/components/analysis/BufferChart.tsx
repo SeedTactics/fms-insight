@@ -41,14 +41,15 @@ import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers.js";
-import { Box, ToggleButton } from "@mui/material";
+import { Box, ToggleButton, Card, CardContent, CardHeader, Slider } from "@mui/material";
+import { DonutSmall as DonutIcon } from "@mui/icons-material";
 import { useImmer } from "../../util/recoil-util.js";
 
-export interface BufferChartProps {
+type BufferChartProps = {
   readonly movingAverageDistanceInHours: number;
-}
+};
 
-export const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
+const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
   const period = useRecoilValue(selectedAnalysisPeriod);
   const defaultDateRange =
     period.type === "Last30"
@@ -121,7 +122,9 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
             }
           >
             <div style={{ display: "flex", alignItems: "center" }}>
-              <div style={{ width: "14px", height: "14px", backgroundColor: seriesColor(idx, series.length) }} />
+              <div
+                style={{ width: "14px", height: "14px", backgroundColor: seriesColor(idx, series.length) }}
+              />
               <div style={{ marginLeft: "1em" }}>{s.label}</div>
             </div>
           </ToggleButton>
@@ -130,3 +133,37 @@ export const BufferChart = React.memo(function BufferChart(props: BufferChartPro
     </div>
   );
 });
+
+// https://github.com/mui-org/material-ui/issues/20191
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SliderAny: React.ComponentType<any> = Slider;
+
+export function BufferOccupancyChart() {
+  const [movingAverageHours, setMovingAverage] = React.useState(12);
+  return (
+    <Card raised>
+      <CardHeader
+        title={
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
+            <DonutIcon style={{ color: "#6D4C41" }} />
+            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Buffer Occupancy</div>
+            <div style={{ flexGrow: 1 }} />
+            <span style={{ fontSize: "small", marginRight: "1em" }}>Moving Average Window: </span>
+            <SliderAny
+              style={{ width: "10em" }}
+              min={1}
+              max={36}
+              steps={0.2}
+              valueLabelDisplay="off"
+              value={movingAverageHours}
+              onChange={(e: React.ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
+            />
+          </div>
+        }
+      />
+      <CardContent>
+        <BufferChart movingAverageDistanceInHours={movingAverageHours} />
+      </CardContent>
+    </Card>
+  );
+}
