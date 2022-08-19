@@ -1873,7 +1873,7 @@ namespace MachineWatchTest
       );
       expectedUse["tool6"] = TimeSpan.FromSeconds(100 - 65);
       expectedTotalUse["tool6"] = TimeSpan.Zero;
-      expectedLife["tool6"] = TimeSpan.Zero;
+      expectedLife["tool6"] = TimeSpan.FromSeconds(100);
       expectedChange.Add("tool6");
       expectedUse["tool7"] = TimeSpan.FromSeconds(30);
       expectedTotalUse["tool7"] = TimeSpan.FromSeconds(30);
@@ -1885,7 +1885,7 @@ namespace MachineWatchTest
       );
       expectedUse["tool8"] = TimeSpan.FromSeconds(100 - 80);
       expectedTotalUse["tool8"] = TimeSpan.Zero;
-      expectedLife["tool8"] = TimeSpan.Zero;
+      expectedLife["tool8"] = TimeSpan.FromSeconds(100);
       expectedChange.Add("tool8");
 
       // now a new tool which is appears

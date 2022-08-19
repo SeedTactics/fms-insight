@@ -92,7 +92,7 @@ namespace BlackMaple.MachineFramework
             {
               ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)) + endPocket.CurrentUse,
               TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-              ConfiguredToolLife = endPocket.ToolLife,
+              ConfiguredToolLife = startPocket.ToolLife,
               ToolChangeOccurred = true
             });
           }
@@ -109,7 +109,7 @@ namespace BlackMaple.MachineFramework
           {
             ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)),
             TotalToolUseAtEndOfCycle = TimeSpan.Zero,
-            ConfiguredToolLife = TimeSpan.Zero,
+            ConfiguredToolLife = startPocket.ToolLife,
             ToolChangeOccurred = true
           });
         }
