@@ -468,6 +468,7 @@ function ProgramContentCode() {
     worker.onmessage = (e) => set(e.data as string);
     return () => {
       // cleanup
+      // eslint-disable-next-line react/display-name
       set = () => null;
       worker.terminate();
       setHighlighted(null);
@@ -788,7 +789,7 @@ function ProgNavHeader() {
           alignItems: "center",
         }}
       >
-        <Tooltip title="Refresh Tools">
+        <Tooltip title="Refresh Programs">
           <div>
             <IconButton onClick={refresh} disabled={loading} size="small">
               {loading ? <CircularProgress size={10} /> : <RefreshIcon fontSize="inherit" />}
