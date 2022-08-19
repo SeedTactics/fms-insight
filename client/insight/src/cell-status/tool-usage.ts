@@ -47,7 +47,7 @@ export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
     readonly toolName: string;
     readonly cycleUsageMinutes: number;
-    readonly toolChanged: boolean;
+    readonly toolChangedDuringMiddleOfCycle: boolean;
   }>;
 }
 
@@ -69,7 +69,9 @@ function process_tools(
   }
 
   const stats =
-    cycle.material.length > 0 ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle)) : undefined;
+    cycle.material.length > 0
+      ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
+      : undefined;
   const elapsed = durationToMinutes(cycle.elapsed);
   if (stats === undefined || isOutlier(stats, elapsed)) {
     return toolUsage;
@@ -77,11 +79,16 @@ function process_tools(
 
   const key = PartAndStationOperation.ofLogCycle(cycle);
   const toolsUsedInCycle = LazySeq.ofObject(cycle.tools)
-    .map(([toolName, use]) => ({
-      toolName,
-      cycleUsageMinutes: use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle),
-      toolChanged: use.toolChangeOccurred === true,
-    }))
+    .map(([toolName, use]) => {
+      const useDuring = use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle);
+      const useAtEnd =
+        use.totalToolUseAtEndOfCycle === "" ? 0 : durationToMinutes(use.totalToolUseAtEndOfCycle);
+      return {
+        toolName,
+        cycleUsageMinutes: useDuring,
+        toolChangedDuringMiddleOfCycle: use.toolChangeOccurred === true && useDuring !== useAtEnd,
+      };
+    })
     .toRArray();
 
   if (toolsUsedInCycle.length === 0 && toolUsage.has(key)) {
@@ -102,7 +109,9 @@ function process_tools(
 export const setLast30ToolUse = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     const estimated = t.get(last30EstimatedCycleTimes);
-    t.set(last30ToolUseRW, (oldUsage) => log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage));
+    t.set(last30ToolUseRW, (oldUsage) =>
+      log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage)
+    );
   }
 );
 

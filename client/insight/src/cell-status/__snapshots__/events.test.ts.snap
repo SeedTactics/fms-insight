@@ -1233,12 +1233,12 @@ Map {
       "tools": [
         {
           "cycleUsageMinutes": 0.43333333333333335,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "5",
         },
         {
           "cycleUsageMinutes": 0.5166666666666667,
-          "toolChanged": true,
+          "toolChangedDuringMiddleOfCycle": true,
           "toolName": "v",
         },
       ],
@@ -1249,12 +1249,12 @@ Map {
       "tools": [
         {
           "cycleUsageMinutes": 0.4666666666666667,
-          "toolChanged": true,
+          "toolChangedDuringMiddleOfCycle": true,
           "toolName": "9",
         },
         {
           "cycleUsageMinutes": 0.38333333333333336,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "w",
         },
       ],
@@ -1265,12 +1265,12 @@ Map {
       "tools": [
         {
           "cycleUsageMinutes": 0.26666666666666666,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "v",
         },
         {
           "cycleUsageMinutes": 0.35,
-          "toolChanged": true,
+          "toolChangedDuringMiddleOfCycle": true,
           "toolName": "m",
         },
       ],
@@ -1879,12 +1879,12 @@ Map {
       "tools": [
         {
           "cycleUsageMinutes": 0.43333333333333335,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "5",
         },
         {
           "cycleUsageMinutes": 0.5166666666666667,
-          "toolChanged": true,
+          "toolChangedDuringMiddleOfCycle": true,
           "toolName": "v",
         },
       ],
@@ -1895,12 +1895,12 @@ Map {
       "tools": [
         {
           "cycleUsageMinutes": 0.4666666666666667,
-          "toolChanged": true,
+          "toolChangedDuringMiddleOfCycle": true,
           "toolName": "9",
         },
         {
           "cycleUsageMinutes": 0.38333333333333336,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "w",
         },
       ],
@@ -1911,12 +1911,12 @@ Map {
       "tools": [
         {
           "cycleUsageMinutes": 0.26666666666666666,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "v",
         },
         {
           "cycleUsageMinutes": 0.35,
-          "toolChanged": true,
+          "toolChangedDuringMiddleOfCycle": true,
           "toolName": "m",
         },
       ],

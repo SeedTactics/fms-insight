@@ -54,12 +54,12 @@ function averageToolUse(
   return usage.mapValues((cycles) => {
     const tools = LazySeq.of(cycles)
       .flatMap((c) => c.tools)
-      .filter((c) => c.toolChanged !== true)
+      .filter((c) => !c.toolChangedDuringMiddleOfCycle)
       .groupBy((t) => t.toolName)
       .map(([toolName, usageInCycles]) => ({
         toolName: toolName,
         cycleUsageMinutes: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
-        toolChanged: false,
+        toolChangedDuringMiddleOfCycle: false,
       }))
       .toMutableArray();
     if (sort) {
