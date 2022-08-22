@@ -38,14 +38,19 @@ import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
 import DateTimeDisplay from "./DateTimeDisplay.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { ChevronRight as ChevronRightIcon, ImportExport } from "@mui/icons-material";
 import { copyLogEntriesToClipboard } from "../data/results.cycles.js";
 import { durationToMinutes, durationToSeconds } from "../util/parseISODuration.js";
 
-type ColoredSpanType = "machine" | "loadStation" | "pallet" | "queue" | "inspectionNotSignaled" | "inspectionSignaled";
+type ColoredSpanType =
+  | "machine"
+  | "loadStation"
+  | "pallet"
+  | "queue"
+  | "inspectionNotSignaled"
+  | "inspectionSignaled";
 
 const ColoredSpan = styled("span", { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $type: ColoredSpanType;
@@ -262,7 +267,8 @@ function display(props: LogEntryProps): JSX.Element {
         case "Unloaded":
           return (
             <span>
-              {displayQueueMat(entry.material)} unloaded into queue <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
+              {displayQueueMat(entry.material)} unloaded into queue{" "}
+              <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
         case "SetByOperator":
@@ -289,7 +295,8 @@ function display(props: LogEntryProps): JSX.Element {
         default:
           return (
             <span>
-              {displayQueueMat(entry.material)} added to queue <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
+              {displayQueueMat(entry.material)} added to queue{" "}
+              <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
               {entry.program && entry.program !== "" ? " (" + entry.program + ")" : undefined}
             </span>
           );
@@ -298,7 +305,8 @@ function display(props: LogEntryProps): JSX.Element {
     case api.LogType.RemoveFromQueue:
       return (
         <span>
-          {displayQueueMat(entry.material)} removed from queue <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
+          {displayQueueMat(entry.material)} removed from queue{" "}
+          <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
         </span>
       );
 
@@ -381,8 +389,8 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
       value: e.details.note,
     });
   }
-  if (e.tools) {
-    for (const [toolName, use] of LazySeq.ofObject(e.tools)) {
+  if (e.tooluse) {
+    for (const use of e.tooluse) {
       if (use.toolUseDuringCycle && use.toolUseDuringCycle !== "") {
         let msg = durationToMinutes(use.toolUseDuringCycle).toFixed(1) + " min used during cycle.";
 
@@ -400,8 +408,10 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
           ).toFixed(0)}%).`;
         }
 
+        const name = use.pocket > 0 ? `${use.tool} [${use.pocket}]` : use.tool;
+
         details.push({
-          name: toolName,
+          name,
           value: msg,
         });
       }
@@ -481,7 +491,9 @@ export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
   );
 });
 
-export function* filterRemoveAddQueue(entries: Iterable<Readonly<api.ILogEntry>>): Iterable<Readonly<api.ILogEntry>> {
+export function* filterRemoveAddQueue(
+  entries: Iterable<Readonly<api.ILogEntry>>
+): Iterable<Readonly<api.ILogEntry>> {
   let prev: Readonly<api.ILogEntry> | null = null;
 
   for (const e of entries) {

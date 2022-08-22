@@ -40,21 +40,23 @@ import type { ServerEventAndTime } from "./loading.js";
 
 export type ToolReplacement =
   | {
-      tool: string;
-      type: "ReplaceBeforeCycleStart";
-      useAtReplacement: number;
+      readonly tool: string;
+      readonly pocket: number;
+      readonly type: "ReplaceBeforeCycleStart";
+      readonly useAtReplacement: number;
     }
   | {
-      tool: string;
-      type: "ReplaceInCycle";
+      readonly tool: string;
+      readonly pocket: number;
+      readonly type: "ReplaceInCycle";
 
       // when a replacement happens in the middle of the cycle, we don't know exactly how much usage there was.
       // We instead estimate it by recording the total use at the beginning and end of the cycle and estimate using
       // the calculated average usage (from tool-usage.ts)
 
       // Thus, useAtReplacement estimate = totalUseAtBeginningOfCycle + (averageUse - totalUseAtEndOfCycle)
-      totalUseAtBeginningOfCycle: number;
-      totalUseAtEndOfCycle: number;
+      readonly totalUseAtBeginningOfCycle: number;
+      readonly totalUseAtEndOfCycle: number;
     };
 
 export type ToolReplacements = {
@@ -82,7 +84,7 @@ export class StationGroupAndNum implements HashableObj {
 
 export type ToolReplacementsByCntr = OrderedMap<number, ToolReplacements>;
 export type ToolReplacementsByStation = HashMap<StationGroupAndNum, ToolReplacementsByCntr>;
-type MostRecentUseByStation = HashMap<StationGroupAndNum, { [key: string]: ToolUse }>;
+type MostRecentUseByStation = HashMap<StationGroupAndNum, ReadonlyArray<ToolUse>>;
 
 type ReplacementsAndMostRecentUse = {
   readonly replacements: ToolReplacementsByStation;
@@ -121,32 +123,34 @@ function addReplacementsFromLog(
   const key = StationGroupAndNum.ofLogCycle(e);
   const newReplacements = old.replacements.alter(key, (cycles) => {
     const replacements: Array<ToolReplacement> = [];
-    for (const [tool, use] of LazySeq.ofObject(e.tools ?? {})) {
+    for (const use of e.tooluse ?? []) {
       // see server/lib/BlackMaple.MachineFramework/backend/ToolSnapshotDiff.cs for the original calculations
       const useDuring = durationToMinutes(use.toolUseDuringCycle);
       const totalUseAtEnd = durationToMinutes(use.totalToolUseAtEndOfCycle);
 
-      if (use.toolChangeOccurred && useDuring === totalUseAtEnd && useDuring > 0) {
+      if (useDuring === totalUseAtEnd && useDuring > 0) {
         // replace before cycle start
-        const last = old.recentUse.get(key)?.[tool];
+        const last = old.recentUse.get(key)?.find((e) => e.tool === use.tool && e.pocket === use.pocket);
         if (last) {
-          const lastTotalUse = durationToMinutes(use.totalToolUseAtEndOfCycle);
+          const lastTotalUse = durationToMinutes(last.totalToolUseAtEndOfCycle);
           if (lastTotalUse > 0) {
             replacements.push({
-              tool,
+              tool: use.tool,
+              pocket: use.pocket,
               type: "ReplaceBeforeCycleStart",
               useAtReplacement: lastTotalUse,
             });
           }
         }
-      } else if (use.toolChangeOccurred && useDuring > 0 && totalUseAtEnd > 0 && use.configuredToolLife) {
+      } else if (use.toolChangeOccurred && useDuring > 0 && use.configuredToolLife) {
         // replace in the middle of the cycle
 
         // the server calculates  useDuring = lifetime - useAtStartOfCycle + useAtEndOfCycle
         // so solving for useAtStart = lifetime - useDuring + useAtEndOfCycle
         const lifetime = durationToMinutes(use.configuredToolLife);
         replacements.push({
-          tool,
+          tool: use.tool,
+          pocket: use.pocket,
           type: "ReplaceInCycle",
           totalUseAtBeginningOfCycle: lifetime - useDuring + totalUseAtEnd,
           totalUseAtEndOfCycle: totalUseAtEnd,
@@ -160,7 +164,7 @@ function addReplacementsFromLog(
     }
   });
 
-  const newRecent = e.tools ? old.recentUse.set(key, e.tools) : old.recentUse;
+  const newRecent = e.tooluse ? old.recentUse.set(key, e.tooluse) : old.recentUse;
 
   return { replacements: newReplacements, recentUse: newRecent };
 }
@@ -169,7 +173,9 @@ export const setLast30ToolReplacements = conduit<ReadonlyArray<Readonly<ILogEntr
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     t.set(last30ToolReplacementsRW, (oldCycles) =>
       LazySeq.of(log)
-        .filter((e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tools)
+        .filter(
+          (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0
+        )
         .foldLeft(oldCycles, addReplacementsFromLog)
     );
   }
@@ -181,7 +187,8 @@ export const updateLastToolReplacements = conduit<ServerEventAndTime>(
       evt.logEntry &&
       !evt.logEntry.startofcycle &&
       evt.logEntry.type === LogType.MachineCycle &&
-      evt.logEntry.tools
+      evt.logEntry.tooluse &&
+      evt.logEntry.tooluse.length > 0
     ) {
       const log = evt.logEntry;
 
@@ -206,7 +213,9 @@ export const setSpecificMonthToolReplacements = conduit<ReadonlyArray<Readonly<I
     t.set(
       specificMonthToolReplacementsRW,
       LazySeq.of(log)
-        .filter((e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tools)
+        .filter(
+          (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0
+        )
         .foldLeft(emptyReplacementsAndUse, addReplacementsFromLog)
     );
   }

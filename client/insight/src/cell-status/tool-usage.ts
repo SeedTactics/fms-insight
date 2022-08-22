@@ -64,7 +64,7 @@ function process_tools(
   estimatedCycleTimes: EstimatedCycleTimes,
   toolUsage: ToolUsage
 ): ToolUsage {
-  if (cycle.tools === undefined || cycle.type !== LogType.MachineCycle) {
+  if (cycle.tooluse === undefined || cycle.tooluse.length === 0 || cycle.type !== LogType.MachineCycle) {
     return toolUsage;
   }
 
@@ -78,15 +78,16 @@ function process_tools(
   }
 
   const key = PartAndStationOperation.ofLogCycle(cycle);
-  const toolsUsedInCycle = LazySeq.ofObject(cycle.tools)
-    .map(([toolName, use]) => {
-      const useDuring = use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle);
-      const useAtEnd =
-        use.totalToolUseAtEndOfCycle === "" ? 0 : durationToMinutes(use.totalToolUseAtEndOfCycle);
+  const toolsUsedInCycle = LazySeq.of(cycle.tooluse)
+    .groupBy((u) => u.tool)
+    .map(([toolName, uses]) => {
+      const useDuring = LazySeq.of(uses).sumBy((use) =>
+        use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle)
+      );
       return {
         toolName,
         cycleUsageMinutes: useDuring,
-        toolChangedDuringMiddleOfCycle: use.toolChangeOccurred === true && useDuring !== useAtEnd,
+        toolChangedDuringMiddleOfCycle: LazySeq.of(uses).anyMatch((use) => use.toolChangeOccurred ?? false),
       };
     })
     .toRArray();
