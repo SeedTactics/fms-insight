@@ -488,7 +488,7 @@ namespace DebugMachineWatchApiServer
         }
       }
 
-      var tools = JsonConvert.DeserializeObject<Dictionary<long, Dictionary<string, ToolUse>>>(
+      var tools = JsonConvert.DeserializeObject<Dictionary<long, List<ToolUse>>>(
         System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tool-use.json")), _jsonSettings);
 
       foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
@@ -529,7 +529,7 @@ namespace DebugMachineWatchApiServer
             {
               foreach (var u in usage)
               {
-                draft.Tools[u.Key] = u.Value;
+                draft.Tools.Add(u);
               }
             }
           });

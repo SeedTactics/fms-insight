@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 26;
+    private const int Version = 27;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, FMSSettings settings)
@@ -124,8 +124,8 @@ namespace BlackMaple.MachineFramework
             "PRIMARY KEY(Counter, Key))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
-            "PRIMARY KEY(Counter, Tool))";
+        cmd.CommandText = "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
+            "PRIMARY KEY(Counter, Tool, Pocket))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
@@ -363,6 +363,8 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 25) Ver24ToVer25(trans, updateJobsTables);
 
           if (curVersion < 26) Ver25ToVer26(trans, updateJobsTables);
+
+          if (curVersion < 27) Ver26ToVer27(trans);
 
 
           //update the version in the database
@@ -848,6 +850,24 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
       }
     }
+
+    private static void Ver26ToVer27(IDbTransaction transaction)
+    {
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
+      {
+        cmd.CommandText = "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
+            "PRIMARY KEY(Counter, Tool, Pocket))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange) " +
+            "SELECT Counter, Tool, -1, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tools";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "DROP TABLE station_tools";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
     #endregion
   }
 

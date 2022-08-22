@@ -64,6 +64,8 @@ namespace BlackMaple.MachineFramework
   [DataContract, Draftable]
   public record ToolUse
   {
+    [DataMember(IsRequired = true)] public string Tool { get; init; } = "";
+    [DataMember(IsRequired = true)] public int Pocket { get; init; }
     [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; init; }
     [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ConfiguredToolLife { get; init; }

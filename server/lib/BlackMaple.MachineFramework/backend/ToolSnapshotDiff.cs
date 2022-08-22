@@ -33,13 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace BlackMaple.MachineFramework
 {
   public static class ToolSnapshotDiff
   {
-    public static IDictionary<string, ToolUse> Diff(IEnumerable<ToolPocketSnapshot> start, IEnumerable<ToolPocketSnapshot> end)
+    public static ImmutableList<ToolUse> Diff(IEnumerable<ToolPocketSnapshot> start, IEnumerable<ToolPocketSnapshot> end)
     {
       if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
       if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
@@ -49,24 +50,7 @@ namespace BlackMaple.MachineFramework
         endPockets[(t.PocketNumber, t.Tool)] = t;
       }
 
-      var tools = new Dictionary<string, ToolUse>();
-      void addUse(string tool, ToolUse use)
-      {
-        if (tools.TryGetValue(tool, out var existingUse))
-        {
-          tools[tool] %= draft =>
-          {
-            draft.ToolUseDuringCycle += use.ToolUseDuringCycle;
-            draft.ConfiguredToolLife += use.ConfiguredToolLife;
-            draft.TotalToolUseAtEndOfCycle += use.TotalToolUseAtEndOfCycle;
-            draft.ToolChangeOccurred = existingUse.ToolChangeOccurred.GetValueOrDefault() || use.ToolChangeOccurred.GetValueOrDefault();
-          };
-        }
-        else
-        {
-          tools[tool] = use;
-        }
-      }
+      var tools = ImmutableList.CreateBuilder<ToolUse>();
 
       foreach (var startPocket in start)
       {
@@ -74,23 +58,13 @@ namespace BlackMaple.MachineFramework
         {
           endPockets.Remove((startPocket.PocketNumber, startPocket.Tool));
 
-          if (startPocket.CurrentUse == TimeSpan.Zero)
-          {
-            // change between cycles
-            addUse(startPocket.Tool, new ToolUse()
-            {
-              ToolUseDuringCycle = endPocket.CurrentUse,
-              TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-              ConfiguredToolLife = endPocket.ToolLife,
-              ToolChangeOccurred = true
-            });
-
-          }
-          else if (startPocket.CurrentUse < endPocket.CurrentUse)
+          if (startPocket.CurrentUse < endPocket.CurrentUse)
           {
             // no tool change
-            addUse(startPocket.Tool, new ToolUse()
+            tools.Add(new ToolUse()
             {
+              Tool = startPocket.Tool,
+              Pocket = startPocket.PocketNumber,
               ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
               TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
               ConfiguredToolLife = endPocket.ToolLife,
@@ -100,8 +74,10 @@ namespace BlackMaple.MachineFramework
           else if (endPocket.CurrentUse < startPocket.CurrentUse)
           {
             // there was a tool change
-            addUse(startPocket.Tool, new ToolUse()
+            tools.Add(new ToolUse()
             {
+              Tool = startPocket.Tool,
+              Pocket = startPocket.PocketNumber,
               ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)) + endPocket.CurrentUse,
               TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
               ConfiguredToolLife = startPocket.ToolLife,
@@ -117,8 +93,10 @@ namespace BlackMaple.MachineFramework
         {
           // no matching tool at end
           // assume start tool was used until life
-          addUse(startPocket.Tool, new ToolUse()
+          tools.Add(new ToolUse()
           {
+            Tool = startPocket.Tool,
+            Pocket = startPocket.PocketNumber,
             ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)),
             TotalToolUseAtEndOfCycle = TimeSpan.Zero,
             ConfiguredToolLife = startPocket.ToolLife,
@@ -132,8 +110,10 @@ namespace BlackMaple.MachineFramework
       {
         if (endPocket.CurrentUse.Ticks > 0)
         {
-          addUse(endPocket.Tool, new ToolUse()
+          tools.Add(new ToolUse()
           {
+            Tool = endPocket.Tool,
+            Pocket = endPocket.PocketNumber,
             ToolUseDuringCycle = endPocket.CurrentUse,
             TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
             ConfiguredToolLife = endPocket.ToolLife,
@@ -142,7 +122,7 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      return tools;
+      return tools.ToImmutable();
     }
   }
 }

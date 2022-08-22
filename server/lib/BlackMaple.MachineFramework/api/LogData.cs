@@ -157,8 +157,8 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "details", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<string, string>? ProgramDetails { get; init; } = ImmutableDictionary<string, string>.Empty;
 
-    [DataMember(Name = "tools", IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<string, ToolUse>? Tools { get; init; } = ImmutableDictionary<string, ToolUse>.Empty;
+    [DataMember(Name = "tooluse", IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<ToolUse>? Tools { get; init; } = ImmutableList<ToolUse>.Empty;
 
     public LogEntry() { }
 
@@ -207,7 +207,7 @@ namespace BlackMaple.MachineFramework
       ElapsedTime = elapsed;
       ActiveOperationTime = active;
       ProgramDetails = ImmutableDictionary<string, string>.Empty;
-      Tools = ImmutableDictionary<string, ToolUse>.Empty;
+      Tools = ImmutableList<ToolUse>.Empty;
     }
 
     public bool ShouldSerializeProgramDetails()
