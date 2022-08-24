@@ -39,6 +39,7 @@ import { InspectionSankey } from "./InspectionSankey.js";
 import { DataTableActionZoomType } from "./DataTable.js";
 import { useRecoilValue } from "recoil";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
+import { ToolReplacementCard } from "./ToolReplacements.js";
 
 function ConnectedInspection() {
   const period = useRecoilValue(selectedAnalysisPeriod);
@@ -72,6 +73,9 @@ export function QualityCards(): JSX.Element {
     <>
       <div style={{ marginTop: "3em" }}>
         <ConnectedInspection />
+      </div>
+      <div style={{ marginTop: "3em" }}>
+        <ToolReplacementCard />
       </div>
     </>
   );

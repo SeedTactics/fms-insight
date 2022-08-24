@@ -36,6 +36,7 @@ import { ILogEntry, LogType, ToolUse } from "../network/api.js";
 import { LazySeq, HashMap, OrderedMap, HashableObj, hashValues } from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { conduit } from "../util/recoil-util.js";
+import copy from "copy-to-clipboard";
 import type { ServerEventAndTime } from "./loading.js";
 
 export type ToolReplacement =
@@ -83,7 +84,7 @@ export class StationGroupAndNum implements HashableObj {
 }
 
 export type ToolReplacementsByCntr = OrderedMap<number, ToolReplacements>;
-export type ToolReplacementsByStation = HashMap<StationGroupAndNum, ToolReplacementsByCntr>;
+export type ToolReplacementsByStation = OrderedMap<StationGroupAndNum, ToolReplacementsByCntr>;
 type MostRecentUseByStation = HashMap<StationGroupAndNum, ReadonlyArray<ToolUse>>;
 
 type ReplacementsAndMostRecentUse = {
@@ -92,7 +93,7 @@ type ReplacementsAndMostRecentUse = {
 };
 
 const emptyReplacementsAndUse: ReplacementsAndMostRecentUse = {
-  replacements: HashMap.empty(),
+  replacements: OrderedMap.empty(),
   recentUse: HashMap.empty(),
 };
 
@@ -220,3 +221,93 @@ export const setSpecificMonthToolReplacements = conduit<ReadonlyArray<Readonly<I
     );
   }
 );
+
+export function buildDetailToolTable(tools: ToolReplacementsByStation): string {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Station</th>";
+  table += "<th>Date</th>";
+  table += "<th>Tool</th>";
+  table += "<th>Pocket</th>";
+  table += "<th>Type</th>";
+  table += "<th>Use At Replacement or Start (min)</th>";
+  table += "<th>Use At End of Cycle (min)</th>";
+  table += "</tr></thead>\n<tbody>\n";
+
+  const format = Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 1,
+  });
+
+  for (const [station, replForStat] of tools) {
+    for (const repls of replForStat.values()) {
+      for (const repl of repls.replacements) {
+        table += "<tr><td>" + station.group + " #" + station.num.toString() + "</td>";
+        table += "<td>" + repls.time.toISOString() + "</td>";
+        table += "<td>" + repl.tool + "</td>";
+        table += "<td>" + repl.pocket.toString() + "</td>";
+        table +=
+          "<td>" + (repl.type === "ReplaceBeforeCycleStart" ? "Between Cycles" : "During Cycle") + "</td>";
+        table +=
+          "<td>" +
+          format.format(
+            repl.type === "ReplaceBeforeCycleStart" ? repl.useAtReplacement : repl.totalUseAtBeginningOfCycle
+          ) +
+          "</td>";
+        table +=
+          "<td>" +
+          (repl.type === "ReplaceBeforeCycleStart" ? "" : format.format(repl.totalUseAtEndOfCycle)) +
+          "</td>";
+        table += "</tr>\n";
+      }
+    }
+  }
+
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function buildSummaryToolTable(tools: ToolReplacementsByStation): string {
+  let table = "<table>\n<thead><tr>";
+  table += "<th>Tool</th>";
+  table += "<th>Num Replacements</th>";
+  table += "<th>Avg Use At Replacement (min)</th>";
+  table += "</tr></thead>\n<tbody>\n";
+
+  const format = Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 1,
+  });
+
+  const summary = tools
+    .valuesToAscLazySeq()
+    .flatMap((rs) => rs.valuesToAscLazySeq())
+    .flatMap((rs) => rs.replacements)
+    .buildOrderedMap<string, { readonly cnt: number; readonly total: number }>(
+      (r) => r.tool,
+      (oldSummary, r) => ({
+        cnt: (oldSummary?.cnt ?? 0) + 1,
+        total:
+          (oldSummary?.total ?? 0) +
+          (r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle),
+      })
+    );
+
+  for (const [tool, s] of summary) {
+    table += "<tr><td>" + tool + "</td>";
+    table += "<td>" + s.cnt.toString() + "</td>";
+    table += "<td>" + format.format(s.total / s.cnt) + "</td>";
+    table += "</tr>\n";
+  }
+
+  table += "</tbody>\n</table>";
+  return table;
+}
+
+export function copyToolReplacementsToClipboard(
+  replacements: ToolReplacementsByStation,
+  displayType: "summary" | "details"
+): void {
+  if (displayType === "details") {
+    copy(buildDetailToolTable(replacements));
+  } else {
+    copy(buildSummaryToolTable(replacements));
+  }
+}
