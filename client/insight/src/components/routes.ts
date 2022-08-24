@@ -199,7 +199,7 @@ function urlToRoute(url: URL): RouteState {
             custom: groups?.["custom"]?.split("/")?.map((s: string) => decodeURIComponent(s)) ?? [],
           };
         default:
-          return { route };
+          return { route } as RouteState;
       }
     }
   }
