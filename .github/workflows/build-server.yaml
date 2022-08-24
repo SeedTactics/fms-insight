@@ -58,6 +58,7 @@ jobs:
       # Use tag latest
       - name: Bump release version
         if: startsWith(github.event.inputs.release-type, 'pre') != true
+        shell: bash
         run: |
           echo "NEW_VERSION=$(npm --no-git-tag-version version $RELEASE_TYPE)" >> $GITHUB_ENV
         env:
@@ -67,6 +68,7 @@ jobs:
       # Bump package pre-release version
       - name: Bump pre-release version
         if: startsWith(github.event.inputs.release-type, 'pre')
+        shell: bash
         run: |
           echo "NEW_VERSION=$(npm --no-git-tag-version --preid=beta version $RELEASE_TYPE)" >> $GITHUB_ENV
         env:
