@@ -48,7 +48,7 @@ import { Notifications, HelpOutline, ExitToApp } from "@mui/icons-material";
 import OperationDashboard from "./operations/Dashboard.js";
 import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview.js";
 import CostPerPiece from "./analysis/CostPerPiece.js";
-import Efficiency from "./analysis/Efficiency.js";
+import Efficiency from "./analysis/EfficiencyPage.js";
 import StationToolbar from "./station-monitor/StationToolbar.js";
 import DataExport from "./analysis/DataExport.js";
 import ChooseMode, { ChooseModeItem } from "./ChooseMode.js";
@@ -79,6 +79,8 @@ import { BarcodeListener } from "../cell-status/material-details.js";
 import { ScheduleHistory } from "./analysis/ScheduleHistory.js";
 import { differenceInDays, startOfToday } from "date-fns";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog.js";
+import { AnalysisCyclePage } from "./analysis/AnalysisCyclesPage.js";
+import { QualityPage } from "./analysis/QualityPage.js";
 
 /* eslint-disable react/display-name */
 
@@ -158,7 +160,9 @@ function AnalysisTabs(p: HeaderNavProps) {
       textColor="inherit"
       indicatorColor="secondary"
     >
+      <Tab label="Cycles" value={routes.RouteLocation.Analysis_Cycles} />
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
+      <Tab label="Quality" value={routes.RouteLocation.Analysis_Quality} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
       <Tab label="Schedules" value={routes.RouteLocation.Analysis_Schedules} />
       <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
@@ -217,7 +221,9 @@ function helpUrl(r: routes.RouteState): string {
     case routes.RouteLocation.Tools_Programs:
       return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
+    case routes.RouteLocation.Analysis_Cycles:
     case routes.RouteLocation.Analysis_Efficiency:
+    case routes.RouteLocation.Analysis_Quality:
     case routes.RouteLocation.Analysis_DataExport:
     case routes.RouteLocation.Backup_Efficiency:
       return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
@@ -416,8 +422,18 @@ const App = React.memo(function App(props: AppProps) {
         navigation = AnalysisTabs;
         showAlarms = false;
         break;
+      case routes.RouteLocation.Analysis_Cycles:
+        page = <AnalysisCyclePage />;
+        navigation = AnalysisTabs;
+        showAlarms = false;
+        break;
       case routes.RouteLocation.Analysis_Efficiency:
         page = <Efficiency />;
+        navigation = AnalysisTabs;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_Quality:
+        page = <QualityPage />;
         navigation = AnalysisTabs;
         showAlarms = false;
         break;

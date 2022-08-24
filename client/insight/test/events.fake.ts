@@ -361,7 +361,7 @@ export function fakeCycle({
   });
 
   if (includeTools) {
-    es[es.length - 1].tools = fakeToolUsage();
+    es[es.length - 1].tooluse = fakeToolUsage();
   }
 
   counter += 2;
@@ -509,17 +509,21 @@ export function fakeRemoveFromQueue(queue?: string, mat?: LogMaterial): ILogEntr
   };
 }
 
-export function fakeToolUsage(): { [tool: string]: ToolUse } {
+export function fakeToolUsage(): Array<ToolUse> {
   const use = faker.datatype.number({ min: 5, max: 30 });
-  return {
-    [faker.random.alphaNumeric()]: new ToolUse({
+  return [
+    new ToolUse({
+      tool: faker.random.alphaNumeric(),
+      pocket: faker.datatype.number(),
       toolUseDuringCycle: "PT" + use.toString() + "S",
       totalToolUseAtEndOfCycle: "PT" + (use * 2).toString() + "S",
     }),
-    [faker.random.alphaNumeric()]: new ToolUse({
+    new ToolUse({
+      tool: faker.random.alphaNumeric(),
+      pocket: faker.datatype.number(),
       toolUseDuringCycle: "PT" + (use + 5).toString() + "S",
       totalToolUseAtEndOfCycle: "PT" + (use + 20).toString() + "S",
       toolChangeOccurred: true,
     }),
-  };
+  ];
 }

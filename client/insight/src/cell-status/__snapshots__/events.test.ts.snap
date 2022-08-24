@@ -52,6 +52,12 @@ Map {
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
+  "{part: part111}, proc: 1, statGroup: MC, operation: progh}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 30,
+    "medianMinutesForSingleMat": 30,
+  },
   "{part: part222}, proc: 1, statGroup: L/U, operation: LOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
@@ -64,29 +70,23 @@ Map {
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
+  "{part: part222}, proc: 1, statGroup: MC, operation: progk}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 24,
+    "medianMinutesForSingleMat": 24,
+  },
   "{part: part111}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 3,
     "medianMinutesForSingleMat": 3,
   },
-  "{part: part222}, proc: 1, statGroup: MC, operation: prog6}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 24,
-    "medianMinutesForSingleMat": 24,
-  },
-  "{part: part222}, proc: 2, statGroup: MC, operation: progc}" => {
+  "{part: part222}, proc: 2, statGroup: MC, operation: progx}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 18,
     "medianMinutesForSingleMat": 18,
-  },
-  "{part: part111}, proc: 1, statGroup: MC, operation: progk}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 30,
-    "medianMinutesForSingleMat": 30,
   },
 }
 `;
@@ -97,26 +97,26 @@ Map {
     "109" => {
       "cntr": 109,
       "inspType": "Insp1",
-      "materialID": 62494,
+      "materialID": 63186,
       "part": "part111",
       "result": {
         "success": true,
         "type": 2,
       },
-      "serial": "serialo",
+      "serial": "serialv",
       "time": 2018-02-02T10:09:10.000Z,
-      "workorder": "workv",
+      "workorder": "workg",
     },
     "108" => {
       "cntr": 108,
       "inspType": "Insp1",
-      "materialID": 62494,
+      "materialID": 63186,
       "part": "part111",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 62494,
+            "materialID": 63186,
             "pallet": "6",
             "process": 1,
             "stops": [
@@ -131,48 +131,48 @@ Map {
         "toInspect": true,
         "type": 0,
       },
-      "serial": "serialo",
+      "serial": "serialv",
       "time": 2018-02-02T10:02:10.000Z,
-      "workorder": "workv",
+      "workorder": "workg",
     },
     "107" => {
       "cntr": 107,
       "inspType": "Insp1",
-      "materialID": 62494,
+      "materialID": 63186,
       "part": "part111",
       "result": {
         "toInspect": true,
         "type": 1,
       },
-      "serial": "serialo",
+      "serial": "serialv",
       "time": 2018-02-02T10:02:05.000Z,
-      "workorder": "workv",
+      "workorder": "workg",
     },
   },
   "{part: part222}, inspType: Insp1}" => Map {
     "308" => {
       "cntr": 308,
       "inspType": "Insp1",
-      "materialID": 78875,
+      "materialID": 92455,
       "part": "part222",
       "result": {
         "success": true,
         "type": 2,
       },
-      "serial": "serialo",
+      "serial": "serialx",
       "time": 2018-01-06T09:57:05.000Z,
-      "workorder": "workk",
+      "workorder": "work1",
     },
     "307" => {
       "cntr": 307,
       "inspType": "Insp1",
-      "materialID": 78875,
+      "materialID": 92455,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 78875,
+            "materialID": 92455,
             "pallet": "6",
             "process": 1,
             "stops": [
@@ -187,33 +187,33 @@ Map {
         "toInspect": true,
         "type": 0,
       },
-      "serial": "serialo",
+      "serial": "serialx",
       "time": 2018-01-06T09:50:05.000Z,
-      "workorder": "workk",
+      "workorder": "work1",
     },
     "209" => {
       "cntr": 209,
       "inspType": "Insp1",
-      "materialID": 41194,
+      "materialID": 83004,
       "part": "part222",
       "result": {
         "success": true,
         "type": 2,
       },
-      "serial": "serialq",
+      "serial": "serial5",
       "time": 2018-01-31T10:03:10.000Z,
-      "workorder": "workk",
+      "workorder": "worko",
     },
     "208" => {
       "cntr": 208,
       "inspType": "Insp1",
-      "materialID": 41194,
+      "materialID": 83004,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 41194,
+            "materialID": 83004,
             "pallet": "6",
             "process": 1,
             "stops": [
@@ -228,22 +228,22 @@ Map {
         "toInspect": true,
         "type": 0,
       },
-      "serial": "serialq",
+      "serial": "serial5",
       "time": 2018-01-31T09:56:10.000Z,
-      "workorder": "workk",
+      "workorder": "worko",
     },
     "207" => {
       "cntr": 207,
       "inspType": "Insp1",
-      "materialID": 41194,
+      "materialID": 83004,
       "part": "part222",
       "result": {
         "toInspect": true,
         "type": 1,
       },
-      "serial": "serialq",
+      "serial": "serial5",
       "time": 2018-01-31T09:56:05.000Z,
-      "workorder": "workk",
+      "workorder": "worko",
     },
   },
 }
@@ -252,18 +252,41 @@ Map {
 exports[`processes events in a specific month > material summary 1`] = `
 {
   "matIdsForJob": Map {
-    "uniqv" => [
-      41194,
-    ],
-    "uniqn" => [
-      62494,
+    "uniqs" => [
+      83004,
     ],
     "uniqf" => [
-      78875,
+      63186,
+    ],
+    "uniqm" => [
+      92455,
     ],
   },
   "matsById": Map {
-    "62494" => {
+    "83004" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-01-31T10:03:10.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-01-31T10:03:10.000Z,
+      "jobUnique": "uniqs",
+      "last_event": 2018-01-31T10:03:10.000Z,
+      "last_unload_time": 2018-01-31T09:51:05.000Z,
+      "materialID": 83004,
+      "numProcesses": 2,
+      "partName": "part222",
+      "signaledInspections": [
+        "Insp1",
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-01-31T09:51:05.000Z,
+      },
+    },
+    "63186" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -271,11 +294,11 @@ exports[`processes events in a specific month > material summary 1`] = `
         },
       },
       "completed_inspect_time": 2018-02-02T10:09:10.000Z,
-      "jobUnique": "uniqn",
+      "jobUnique": "uniqf",
       "last_event": 2018-02-02T10:09:10.000Z,
       "last_unload_time": 2018-02-02T09:57:05.000Z,
-      "materialID": 62494,
-      "numProcesses": 3,
+      "materialID": 63186,
+      "numProcesses": 2,
       "partName": "part111",
       "signaledInspections": [
         "Insp1",
@@ -286,7 +309,7 @@ exports[`processes events in a specific month > material summary 1`] = `
         "1": 2018-02-02T09:57:05.000Z,
       },
     },
-    "78875" => {
+    "92455" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -294,11 +317,11 @@ exports[`processes events in a specific month > material summary 1`] = `
         },
       },
       "completed_inspect_time": 2018-01-06T09:57:05.000Z,
-      "jobUnique": "uniqf",
+      "jobUnique": "uniqm",
       "last_event": 2018-01-06T09:57:05.000Z,
       "last_unload_time": 2018-01-06T09:45:05.000Z,
-      "materialID": 78875,
-      "numProcesses": 3,
+      "materialID": 92455,
+      "numProcesses": 4,
       "partName": "part222",
       "signaledInspections": [
         "Insp1",
@@ -306,29 +329,6 @@ exports[`processes events in a specific month > material summary 1`] = `
       "startedProcess1": true,
       "unloaded_processes": {
         "2": 2018-01-06T09:45:05.000Z,
-      },
-    },
-    "41194" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-01-31T10:03:10.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-01-31T10:03:10.000Z,
-      "jobUnique": "uniqv",
-      "last_event": 2018-01-31T10:03:10.000Z,
-      "last_unload_time": 2018-01-31T09:51:05.000Z,
-      "materialID": 41194,
-      "numProcesses": 2,
-      "partName": "part222",
-      "signaledInspections": [
-        "Insp1",
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-01-31T09:51:05.000Z,
       },
     },
   },
@@ -371,14 +371,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "face5",
-        "id": 78875,
-        "numproc": 3,
+        "face": "facei",
+        "id": 92455,
+        "numproc": 4,
         "part": "part222",
         "proc": 2,
-        "serial": "serialo",
-        "uniq": "uniqf",
-        "workorder": "workk",
+        "serial": "serialx",
+        "uniq": "uniqm",
+        "workorder": "work1",
       },
     ],
     "medianCycleMinutes": 3,
@@ -399,18 +399,18 @@ Map {
     "isLabor": false,
     "material": [
       {
-        "face": "face5",
-        "id": 78875,
-        "numproc": 3,
+        "face": "facei",
+        "id": 92455,
+        "numproc": 4,
         "part": "part222",
         "proc": 2,
-        "serial": "serialo",
-        "uniq": "uniqf",
-        "workorder": "workk",
+        "serial": "serialx",
+        "uniq": "uniqm",
+        "workorder": "work1",
       },
     ],
     "medianCycleMinutes": 18,
-    "operation": "progc",
+    "operation": "progx",
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
@@ -427,14 +427,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "faceh",
-        "id": 41194,
+        "face": "faceo",
+        "id": 83004,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "serialq",
-        "uniq": "uniqv",
-        "workorder": "workk",
+        "serial": "serial5",
+        "uniq": "uniqs",
+        "workorder": "worko",
       },
     ],
     "medianCycleMinutes": 3,
@@ -455,14 +455,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "face5",
-        "id": 78875,
-        "numproc": 3,
+        "face": "facei",
+        "id": 92455,
+        "numproc": 4,
         "part": "part222",
         "proc": 2,
-        "serial": "serialo",
-        "uniq": "uniqf",
-        "workorder": "workk",
+        "serial": "serialx",
+        "uniq": "uniqm",
+        "workorder": "work1",
       },
     ],
     "medianCycleMinutes": 6,
@@ -483,18 +483,18 @@ Map {
     "isLabor": false,
     "material": [
       {
-        "face": "faceh",
-        "id": 41194,
+        "face": "faceo",
+        "id": 83004,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "serialq",
-        "uniq": "uniqv",
-        "workorder": "workk",
+        "serial": "serial5",
+        "uniq": "uniqs",
+        "workorder": "worko",
       },
     ],
     "medianCycleMinutes": 24,
-    "operation": "prog6",
+    "operation": "progk",
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
@@ -511,14 +511,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facep",
-        "id": 62494,
-        "numproc": 3,
+        "face": "facee",
+        "id": 63186,
+        "numproc": 2,
         "part": "part111",
         "proc": 1,
-        "serial": "serialo",
-        "uniq": "uniqn",
-        "workorder": "workv",
+        "serial": "serialv",
+        "uniq": "uniqf",
+        "workorder": "workg",
       },
     ],
     "medianCycleMinutes": 3,
@@ -539,14 +539,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "faceh",
-        "id": 41194,
+        "face": "faceo",
+        "id": 83004,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "serialq",
-        "uniq": "uniqv",
-        "workorder": "workk",
+        "serial": "serial5",
+        "uniq": "uniqs",
+        "workorder": "worko",
       },
     ],
     "medianCycleMinutes": 6,
@@ -567,18 +567,18 @@ Map {
     "isLabor": false,
     "material": [
       {
-        "face": "facep",
-        "id": 62494,
-        "numproc": 3,
+        "face": "facee",
+        "id": 63186,
+        "numproc": 2,
         "part": "part111",
         "proc": 1,
-        "serial": "serialo",
-        "uniq": "uniqn",
-        "workorder": "workv",
+        "serial": "serialv",
+        "uniq": "uniqf",
+        "workorder": "workg",
       },
     ],
     "medianCycleMinutes": 30,
-    "operation": "progk",
+    "operation": "progh",
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
@@ -595,14 +595,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facep",
-        "id": 62494,
-        "numproc": 3,
+        "face": "facee",
+        "id": 63186,
+        "numproc": 2,
         "part": "part111",
         "proc": 1,
-        "serial": "serialo",
-        "uniq": "uniqn",
-        "workorder": "workv",
+        "serial": "serialv",
+        "uniq": "uniqf",
+        "workorder": "workg",
       },
     ],
     "medianCycleMinutes": 6,
@@ -695,17 +695,17 @@ Map {
     "expectedCycleMinutesForSingleMat": 30,
     "medianMinutesForSingleMat": 30,
   },
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 18,
-    "medianMinutesForSingleMat": 18,
-  },
-  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => {
+  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 24,
     "medianMinutesForSingleMat": 24,
+  },
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 18,
+    "medianMinutesForSingleMat": 18,
   },
 }
 `;
@@ -718,26 +718,26 @@ Map {
     "409" => {
       "cntr": 409,
       "inspType": "Insp1",
-      "materialID": 56538,
+      "materialID": 77508,
       "part": "part111",
       "result": {
         "success": true,
         "type": 2,
       },
-      "serial": "serials",
+      "serial": "serialz",
       "time": 2018-02-08T09:51:10.000Z,
-      "workorder": "work6",
+      "workorder": "workm",
     },
     "408" => {
       "cntr": 408,
       "inspType": "Insp1",
-      "materialID": 56538,
+      "materialID": 77508,
       "part": "part111",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 56538,
+            "materialID": 77508,
             "pallet": "6",
             "process": 1,
             "stops": [
@@ -752,25 +752,25 @@ Map {
         "toInspect": true,
         "type": 0,
       },
-      "serial": "serials",
+      "serial": "serialz",
       "time": 2018-02-08T09:44:10.000Z,
-      "workorder": "work6",
+      "workorder": "workm",
     },
     "407" => {
       "cntr": 407,
       "inspType": "Insp1",
-      "materialID": 56538,
+      "materialID": 77508,
       "part": "part111",
       "result": {
         "toInspect": true,
         "type": 1,
       },
-      "serial": "serials",
+      "serial": "serialz",
       "time": 2018-02-08T09:44:05.000Z,
-      "workorder": "work6",
+      "workorder": "workm",
     },
-    "108" => {
-      "cntr": 108,
+    "109" => {
+      "cntr": 109,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
@@ -779,11 +779,11 @@ Map {
         "type": 2,
       },
       "serial": "seriala",
-      "time": 2018-02-02T10:09:05.000Z,
+      "time": 2018-02-02T10:09:10.000Z,
       "workorder": "work7",
     },
-    "107" => {
-      "cntr": 107,
+    "108" => {
+      "cntr": 108,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
@@ -807,34 +807,47 @@ Map {
         "type": 0,
       },
       "serial": "seriala",
+      "time": 2018-02-02T10:02:10.000Z,
+      "workorder": "work7",
+    },
+    "107" => {
+      "cntr": 107,
+      "inspType": "Insp1",
+      "materialID": 70329,
+      "part": "part111",
+      "result": {
+        "toInspect": true,
+        "type": 1,
+      },
+      "serial": "seriala",
       "time": 2018-02-02T10:02:05.000Z,
       "workorder": "work7",
     },
   },
   "{part: part222}, inspType: Insp1}" => Map {
-    "208" => {
-      "cntr": 208,
+    "209" => {
+      "cntr": 209,
       "inspType": "Insp1",
-      "materialID": 34857,
+      "materialID": 48405,
       "part": "part222",
       "result": {
         "success": true,
         "type": 2,
       },
-      "serial": "seriall",
-      "time": 2018-01-31T10:03:05.000Z,
-      "workorder": "workw",
+      "serial": "serialt",
+      "time": 2018-01-31T10:03:10.000Z,
+      "workorder": "workf",
     },
-    "207" => {
-      "cntr": 207,
+    "208" => {
+      "cntr": 208,
       "inspType": "Insp1",
-      "materialID": 34857,
+      "materialID": 48405,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 34857,
+            "materialID": 48405,
             "pallet": "6",
             "process": 1,
             "stops": [
@@ -849,9 +862,22 @@ Map {
         "toInspect": true,
         "type": 0,
       },
-      "serial": "seriall",
+      "serial": "serialt",
+      "time": 2018-01-31T09:56:10.000Z,
+      "workorder": "workf",
+    },
+    "207" => {
+      "cntr": 207,
+      "inspType": "Insp1",
+      "materialID": 48405,
+      "part": "part222",
+      "result": {
+        "toInspect": true,
+        "type": 1,
+      },
+      "serial": "serialt",
       "time": 2018-01-31T09:56:05.000Z,
-      "workorder": "workw",
+      "workorder": "workf",
     },
   },
 }
@@ -860,18 +886,64 @@ Map {
 exports[`processes last 30 events > after filter - material summary 1`] = `
 {
   "matIdsForJob": Map {
-    "uniqv" => [
-      34857,
-    ],
-    "uniqn" => [
-      56538,
+    "uniqh" => [
+      77508,
     ],
     "uniqi" => [
       70329,
     ],
+    "uniqm" => [
+      48405,
+    ],
   },
   "matsById": Map {
-    "56538" => {
+    "70329" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-02-02T10:09:10.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-02-02T10:09:10.000Z,
+      "jobUnique": "uniqi",
+      "last_event": 2018-02-02T10:09:10.000Z,
+      "last_unload_time": 2018-02-02T09:57:05.000Z,
+      "materialID": 70329,
+      "numProcesses": 4,
+      "partName": "part111",
+      "signaledInspections": [
+        "Insp1",
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-02-02T09:57:05.000Z,
+      },
+    },
+    "48405" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-01-31T10:03:10.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-01-31T10:03:10.000Z,
+      "jobUnique": "uniqm",
+      "last_event": 2018-01-31T10:03:10.000Z,
+      "last_unload_time": 2018-01-31T09:51:05.000Z,
+      "materialID": 48405,
+      "numProcesses": 2,
+      "partName": "part222",
+      "signaledInspections": [
+        "Insp1",
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-01-31T09:51:05.000Z,
+      },
+    },
+    "77508" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -879,11 +951,11 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
         },
       },
       "completed_inspect_time": 2018-02-08T09:51:10.000Z,
-      "jobUnique": "uniqn",
+      "jobUnique": "uniqh",
       "last_event": 2018-02-08T09:51:10.000Z,
       "last_unload_time": 2018-02-08T09:39:05.000Z,
-      "materialID": 56538,
-      "numProcesses": 2,
+      "materialID": 77508,
+      "numProcesses": 4,
       "partName": "part111",
       "signaledInspections": [
         "Insp1",
@@ -892,50 +964,6 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
       "startedProcess1": true,
       "unloaded_processes": {
         "1": 2018-02-08T09:39:05.000Z,
-      },
-    },
-    "70329" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-02-02T10:09:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-02-02T10:09:05.000Z,
-      "jobUnique": "uniqi",
-      "last_event": 2018-02-02T10:09:05.000Z,
-      "last_unload_time": 2018-02-02T09:57:05.000Z,
-      "materialID": 70329,
-      "numProcesses": 4,
-      "partName": "part111",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-02-02T09:57:05.000Z,
-      },
-    },
-    "34857" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-01-31T10:03:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
-      "jobUnique": "uniqv",
-      "last_event": 2018-01-31T10:03:05.000Z,
-      "last_unload_time": 2018-01-31T09:51:05.000Z,
-      "materialID": 34857,
-      "numProcesses": 2,
-      "partName": "part222",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-01-31T09:51:05.000Z,
       },
     },
   },
@@ -953,16 +981,16 @@ Map {
     },
   },
   "palbb" => Map {
-    "208" => {
+    "209" => {
       "active": -1,
-      "cntr": 208,
-      "x": 2018-01-31T09:56:05.000Z,
+      "cntr": 209,
+      "x": 2018-01-31T09:56:10.000Z,
       "y": 44,
     },
-    "108" => {
+    "109" => {
       "active": -1,
-      "cntr": 108,
-      "x": 2018-02-02T10:02:05.000Z,
+      "cntr": 109,
+      "x": 2018-02-02T10:02:10.000Z,
       "y": 44,
     },
   },
@@ -978,14 +1006,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facer",
-        "id": 56538,
-        "numproc": 2,
+        "face": "facet",
+        "id": 77508,
+        "numproc": 4,
         "part": "part111",
         "proc": 1,
-        "serial": "serials",
-        "uniq": "uniqn",
-        "workorder": "work6",
+        "serial": "serialz",
+        "uniq": "uniqh",
+        "workorder": "workm",
       },
     ],
     "medianCycleMinutes": 3,
@@ -1006,18 +1034,18 @@ Map {
     "isLabor": false,
     "material": [
       {
-        "face": "facer",
-        "id": 56538,
-        "numproc": 2,
+        "face": "facet",
+        "id": 77508,
+        "numproc": 4,
         "part": "part111",
         "proc": 1,
-        "serial": "serials",
-        "uniq": "uniqn",
-        "workorder": "work6",
+        "serial": "serialz",
+        "uniq": "uniqh",
+        "workorder": "workm",
       },
     ],
     "medianCycleMinutes": 0,
-    "operation": "progr",
+    "operation": "progn",
     "operator": "",
     "pallet": "palcc",
     "part": "part111",
@@ -1034,14 +1062,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facer",
-        "id": 56538,
-        "numproc": 2,
+        "face": "facet",
+        "id": 77508,
+        "numproc": 4,
         "part": "part111",
         "proc": 1,
-        "serial": "serials",
-        "uniq": "uniqn",
-        "workorder": "work6",
+        "serial": "serialz",
+        "uniq": "uniqh",
+        "workorder": "workm",
       },
     ],
     "medianCycleMinutes": 6,
@@ -1062,14 +1090,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facem",
-        "id": 34857,
+        "face": "facew",
+        "id": 48405,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "seriall",
-        "uniq": "uniqv",
-        "workorder": "workw",
+        "serial": "serialt",
+        "uniq": "uniqm",
+        "workorder": "workf",
       },
     ],
     "medianCycleMinutes": 3,
@@ -1090,18 +1118,18 @@ Map {
     "isLabor": false,
     "material": [
       {
-        "face": "facem",
-        "id": 34857,
+        "face": "facew",
+        "id": 48405,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "seriall",
-        "uniq": "uniqv",
-        "workorder": "workw",
+        "serial": "serialt",
+        "uniq": "uniqm",
+        "workorder": "workf",
       },
     ],
     "medianCycleMinutes": 24,
-    "operation": "progt",
+    "operation": "progv",
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
@@ -1146,14 +1174,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facem",
-        "id": 34857,
+        "face": "facew",
+        "id": 48405,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "seriall",
-        "uniq": "uniqv",
-        "workorder": "workw",
+        "serial": "serialt",
+        "uniq": "uniqm",
+        "workorder": "workf",
       },
     ],
     "medianCycleMinutes": 6,
@@ -1232,46 +1260,41 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageMinutes": 0.5166666666666667,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "a",
+        },
+        {
           "cycleUsageMinutes": 0.43333333333333335,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "5",
         },
+      ],
+    },
+  ],
+  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => [
+    {
+      "tools": [
         {
-          "cycleUsageMinutes": 0.5166666666666667,
-          "toolChanged": true,
-          "toolName": "v",
+          "cycleUsageMinutes": 0.7833333333333333,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "7",
         },
       ],
     },
   ],
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => [
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => [
     {
       "tools": [
         {
-          "cycleUsageMinutes": 0.4666666666666667,
-          "toolChanged": true,
-          "toolName": "9",
+          "cycleUsageMinutes": 0.4,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "r",
         },
         {
-          "cycleUsageMinutes": 0.38333333333333336,
-          "toolChanged": false,
-          "toolName": "w",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageMinutes": 0.26666666666666666,
-          "toolChanged": false,
-          "toolName": "v",
-        },
-        {
-          "cycleUsageMinutes": 0.35,
-          "toolChanged": true,
-          "toolName": "m",
+          "cycleUsageMinutes": 0.31666666666666665,
+          "toolChangedDuringMiddleOfCycle": false,
+          "toolName": "n",
         },
       ],
     },
@@ -1355,17 +1378,17 @@ Map {
     "expectedCycleMinutesForSingleMat": 30,
     "medianMinutesForSingleMat": 30,
   },
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 18,
-    "medianMinutesForSingleMat": 18,
-  },
-  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => {
+  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 24,
     "medianMinutesForSingleMat": 24,
+  },
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 18,
+    "medianMinutesForSingleMat": 18,
   },
 }
 `;
@@ -1375,8 +1398,8 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
 exports[`processes last 30 events > initial 27 days ago, two days ago, and today - inspections 1`] = `
 Map {
   "{part: part111}, inspType: Insp1}" => Map {
-    "108" => {
-      "cntr": 108,
+    "109" => {
+      "cntr": 109,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
@@ -1385,11 +1408,11 @@ Map {
         "type": 2,
       },
       "serial": "seriala",
-      "time": 2018-02-02T10:09:05.000Z,
+      "time": 2018-02-02T10:09:10.000Z,
       "workorder": "work7",
     },
-    "107" => {
-      "cntr": 107,
+    "108" => {
+      "cntr": 108,
       "inspType": "Insp1",
       "materialID": 70329,
       "part": "part111",
@@ -1413,6 +1436,19 @@ Map {
         "type": 0,
       },
       "serial": "seriala",
+      "time": 2018-02-02T10:02:10.000Z,
+      "workorder": "work7",
+    },
+    "107" => {
+      "cntr": 107,
+      "inspType": "Insp1",
+      "materialID": 70329,
+      "part": "part111",
+      "result": {
+        "toInspect": true,
+        "type": 1,
+      },
+      "serial": "seriala",
       "time": 2018-02-02T10:02:05.000Z,
       "workorder": "work7",
     },
@@ -1421,26 +1457,26 @@ Map {
     "308" => {
       "cntr": 308,
       "inspType": "Insp1",
-      "materialID": 52057,
+      "materialID": 70517,
       "part": "part222",
       "result": {
         "success": true,
         "type": 2,
       },
-      "serial": "serialp",
+      "serial": "serialw",
       "time": 2018-01-06T09:57:05.000Z,
-      "workorder": "worku",
+      "workorder": "work9",
     },
     "307" => {
       "cntr": 307,
       "inspType": "Insp1",
-      "materialID": 52057,
+      "materialID": 70517,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 52057,
+            "materialID": 70517,
             "pallet": "6",
             "process": 1,
             "stops": [
@@ -1455,33 +1491,33 @@ Map {
         "toInspect": true,
         "type": 0,
       },
-      "serial": "serialp",
+      "serial": "serialw",
       "time": 2018-01-06T09:50:05.000Z,
-      "workorder": "worku",
+      "workorder": "work9",
     },
-    "208" => {
-      "cntr": 208,
+    "209" => {
+      "cntr": 209,
       "inspType": "Insp1",
-      "materialID": 34857,
+      "materialID": 48405,
       "part": "part222",
       "result": {
         "success": true,
         "type": 2,
       },
-      "serial": "seriall",
-      "time": 2018-01-31T10:03:05.000Z,
-      "workorder": "workw",
+      "serial": "serialt",
+      "time": 2018-01-31T10:03:10.000Z,
+      "workorder": "workf",
     },
-    "207" => {
-      "cntr": 207,
+    "208" => {
+      "cntr": 208,
       "inspType": "Insp1",
-      "materialID": 34857,
+      "materialID": 48405,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 34857,
+            "materialID": 48405,
             "pallet": "6",
             "process": 1,
             "stops": [
@@ -1496,9 +1532,22 @@ Map {
         "toInspect": true,
         "type": 0,
       },
-      "serial": "seriall",
+      "serial": "serialt",
+      "time": 2018-01-31T09:56:10.000Z,
+      "workorder": "workf",
+    },
+    "207" => {
+      "cntr": 207,
+      "inspType": "Insp1",
+      "materialID": 48405,
+      "part": "part222",
+      "result": {
+        "toInspect": true,
+        "type": 1,
+      },
+      "serial": "serialt",
       "time": 2018-01-31T09:56:05.000Z,
-      "workorder": "workw",
+      "workorder": "workf",
     },
   },
 }
@@ -1507,18 +1556,41 @@ Map {
 exports[`processes last 30 events > initial 27 days ago, two days ago, and today - material summary 1`] = `
 {
   "matIdsForJob": Map {
-    "uniqv" => [
-      34857,
-    ],
-    "uniq7" => [
-      52057,
+    "uniqu" => [
+      70517,
     ],
     "uniqi" => [
       70329,
     ],
+    "uniqm" => [
+      48405,
+    ],
   },
   "matsById": Map {
-    "52057" => {
+    "70329" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-02-02T10:09:10.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-02-02T10:09:10.000Z,
+      "jobUnique": "uniqi",
+      "last_event": 2018-02-02T10:09:10.000Z,
+      "last_unload_time": 2018-02-02T09:57:05.000Z,
+      "materialID": 70329,
+      "numProcesses": 4,
+      "partName": "part111",
+      "signaledInspections": [
+        "Insp1",
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-02-02T09:57:05.000Z,
+      },
+    },
+    "70517" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -1526,11 +1598,11 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
         },
       },
       "completed_inspect_time": 2018-01-06T09:57:05.000Z,
-      "jobUnique": "uniq7",
+      "jobUnique": "uniqu",
       "last_event": 2018-01-06T09:57:05.000Z,
       "last_unload_time": 2018-01-06T09:45:05.000Z,
-      "materialID": 52057,
-      "numProcesses": 4,
+      "materialID": 70517,
+      "numProcesses": 1,
       "partName": "part222",
       "signaledInspections": [
         "Insp1",
@@ -1540,43 +1612,22 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
         "2": 2018-01-06T09:45:05.000Z,
       },
     },
-    "70329" => {
+    "48405" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
-          "time": 2018-02-02T10:09:05.000Z,
+          "time": 2018-01-31T10:03:10.000Z,
         },
       },
-      "completed_inspect_time": 2018-02-02T10:09:05.000Z,
-      "jobUnique": "uniqi",
-      "last_event": 2018-02-02T10:09:05.000Z,
-      "last_unload_time": 2018-02-02T09:57:05.000Z,
-      "materialID": 70329,
-      "numProcesses": 4,
-      "partName": "part111",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-02-02T09:57:05.000Z,
-      },
-    },
-    "34857" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-01-31T10:03:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
-      "jobUnique": "uniqv",
-      "last_event": 2018-01-31T10:03:05.000Z,
+      "completed_inspect_time": 2018-01-31T10:03:10.000Z,
+      "jobUnique": "uniqm",
+      "last_event": 2018-01-31T10:03:10.000Z,
       "last_unload_time": 2018-01-31T09:51:05.000Z,
-      "materialID": 34857,
+      "materialID": 48405,
       "numProcesses": 2,
       "partName": "part222",
       "signaledInspections": [
+        "Insp1",
         "Insp1",
       ],
       "startedProcess1": true,
@@ -1599,16 +1650,16 @@ Map {
     },
   },
   "palbb" => Map {
-    "208" => {
+    "209" => {
       "active": -1,
-      "cntr": 208,
-      "x": 2018-01-31T09:56:05.000Z,
+      "cntr": 209,
+      "x": 2018-01-31T09:56:10.000Z,
       "y": 44,
     },
-    "108" => {
+    "109" => {
       "active": -1,
-      "cntr": 108,
-      "x": 2018-02-02T10:02:05.000Z,
+      "cntr": 109,
+      "x": 2018-02-02T10:02:10.000Z,
       "y": 44,
     },
   },
@@ -1624,14 +1675,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facek",
-        "id": 52057,
-        "numproc": 4,
+        "face": "faceo",
+        "id": 70517,
+        "numproc": 1,
         "part": "part222",
         "proc": 2,
-        "serial": "serialp",
-        "uniq": "uniq7",
-        "workorder": "worku",
+        "serial": "serialw",
+        "uniq": "uniqu",
+        "workorder": "work9",
       },
     ],
     "medianCycleMinutes": 3,
@@ -1652,18 +1703,18 @@ Map {
     "isLabor": false,
     "material": [
       {
-        "face": "facek",
-        "id": 52057,
-        "numproc": 4,
+        "face": "faceo",
+        "id": 70517,
+        "numproc": 1,
         "part": "part222",
         "proc": 2,
-        "serial": "serialp",
-        "uniq": "uniq7",
-        "workorder": "worku",
+        "serial": "serialw",
+        "uniq": "uniqu",
+        "workorder": "work9",
       },
     ],
     "medianCycleMinutes": 18,
-    "operation": "prog8",
+    "operation": "prog4",
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
@@ -1680,14 +1731,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facem",
-        "id": 34857,
+        "face": "facew",
+        "id": 48405,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "seriall",
-        "uniq": "uniqv",
-        "workorder": "workw",
+        "serial": "serialt",
+        "uniq": "uniqm",
+        "workorder": "workf",
       },
     ],
     "medianCycleMinutes": 3,
@@ -1708,14 +1759,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facek",
-        "id": 52057,
-        "numproc": 4,
+        "face": "faceo",
+        "id": 70517,
+        "numproc": 1,
         "part": "part222",
         "proc": 2,
-        "serial": "serialp",
-        "uniq": "uniq7",
-        "workorder": "worku",
+        "serial": "serialw",
+        "uniq": "uniqu",
+        "workorder": "work9",
       },
     ],
     "medianCycleMinutes": 6,
@@ -1736,18 +1787,18 @@ Map {
     "isLabor": false,
     "material": [
       {
-        "face": "facem",
-        "id": 34857,
+        "face": "facew",
+        "id": 48405,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "seriall",
-        "uniq": "uniqv",
-        "workorder": "workw",
+        "serial": "serialt",
+        "uniq": "uniqm",
+        "workorder": "workf",
       },
     ],
     "medianCycleMinutes": 24,
-    "operation": "progt",
+    "operation": "progv",
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
@@ -1792,14 +1843,14 @@ Map {
     "isLabor": true,
     "material": [
       {
-        "face": "facem",
-        "id": 34857,
+        "face": "facew",
+        "id": 48405,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
-        "serial": "seriall",
-        "uniq": "uniqv",
-        "workorder": "workw",
+        "serial": "serialt",
+        "uniq": "uniqm",
+        "workorder": "workf",
       },
     ],
     "medianCycleMinutes": 6,
@@ -1878,46 +1929,41 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageMinutes": 0.5166666666666667,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "a",
+        },
+        {
           "cycleUsageMinutes": 0.43333333333333335,
-          "toolChanged": false,
+          "toolChangedDuringMiddleOfCycle": false,
           "toolName": "5",
         },
+      ],
+    },
+  ],
+  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => [
+    {
+      "tools": [
         {
-          "cycleUsageMinutes": 0.5166666666666667,
-          "toolChanged": true,
-          "toolName": "v",
+          "cycleUsageMinutes": 0.7833333333333333,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "7",
         },
       ],
     },
   ],
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog8}" => [
+  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => [
     {
       "tools": [
         {
-          "cycleUsageMinutes": 0.4666666666666667,
-          "toolChanged": true,
-          "toolName": "9",
+          "cycleUsageMinutes": 0.4,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "r",
         },
         {
-          "cycleUsageMinutes": 0.38333333333333336,
-          "toolChanged": false,
-          "toolName": "w",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, proc: 1, statGroup: MC, operation: progt}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageMinutes": 0.26666666666666666,
-          "toolChanged": false,
-          "toolName": "v",
-        },
-        {
-          "cycleUsageMinutes": 0.35,
-          "toolChanged": true,
-          "toolName": "m",
+          "cycleUsageMinutes": 0.31666666666666665,
+          "toolChangedDuringMiddleOfCycle": false,
+          "toolName": "n",
         },
       ],
     },

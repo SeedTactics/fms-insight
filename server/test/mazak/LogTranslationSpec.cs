@@ -381,11 +381,11 @@ namespace MachineWatchTest
       expected.Add(expectedLog);
     }
 
-    protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null, string mazakProg = null, string logProg = null, long? progRev = null)
+    protected void MachEnd(TestMaterial mat, int offset, int mach, int elapMin, int activeMin = 0, IEnumerable<ToolUse> tools = null, string mazakProg = null, string logProg = null, long? progRev = null)
     {
       MachEnd(new[] { mat }, offset, mach, elapMin, activeMin, tools, mazakProg, logProg, progRev);
     }
-    protected void MachEnd(IEnumerable<TestMaterial> mats, int offset, int mach, int elapMin, int activeMin = 0, IReadOnlyDictionary<string, ToolUse> tools = null, string mazakProg = null, string logProg = null, long? progRev = null)
+    protected void MachEnd(IEnumerable<TestMaterial> mats, int offset, int mach, int elapMin, int activeMin = 0, IEnumerable<ToolUse> tools = null, string mazakProg = null, string logProg = null, long? progRev = null)
     {
       string prog = "program-" + mats.First().MaterialID.ToString();
       var e2 = new MazakMachineInterface.LogEntry()
@@ -432,13 +432,7 @@ namespace MachineWatchTest
       );
       if (tools != null)
       {
-        newEntry %= e =>
-        {
-          foreach (var t in tools)
-          {
-            e.Tools[t.Key] = t.Value;
-          }
-        };
+        newEntry = newEntry with { Tools = tools.ToImmutableList() };
       }
       if (progRev.HasValue)
       {
@@ -2144,21 +2138,21 @@ namespace MachineWatchTest
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = 40, GroupNo = null, IsToolDataValid = false, LifeUsed = 66, LifeSpan = 105},
         new ToolPocketRow() { MachineNumber = 2, PocketNumber = null, GroupNo = "ignored", IsToolDataValid = false, LifeUsed = 77, LifeSpan = 106}
       });
-      MachEnd(p, offset: 20, mach: 2, elapMin: 16, tools: new Dictionary<string, ToolUse>() {
-        { "tool1",
+      MachEnd(p, offset: 20, mach: 2, elapMin: 16, tools: new List<ToolUse>() {
           new ToolUse() {
+            Tool = "tool1",
+            Pocket = 10,
             ToolUseDuringCycle = TimeSpan.FromSeconds(33 - 30),
             TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(33),
             ConfiguredToolLife = TimeSpan.FromSeconds(102)
-          }
-        },
-        { "tool2",
+          },
           new ToolUse() {
+            Tool = "tool2",
+            Pocket = 20,
             ToolUseDuringCycle = TimeSpan.FromSeconds(44 - 40),
             TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(44),
             ConfiguredToolLife = TimeSpan.FromSeconds(103)
           }
-        },
       });
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));

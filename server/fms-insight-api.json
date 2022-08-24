@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v13.15.10.0 (NJsonSchema v10.6.10.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v13.16.1.0 (NJsonSchema v10.7.2.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -2240,10 +2240,10 @@
               "type": "string"
             }
           },
-          "tools": {
-            "type": "object",
+          "tooluse": {
+            "type": "array",
             "nullable": true,
-            "additionalProperties": {
+            "items": {
               "$ref": "#/components/schemas/ToolUse"
             }
           }
@@ -2340,10 +2340,19 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "Tool",
+          "Pocket",
           "ToolUseDuringCycle",
           "TotalToolUseAtEndOfCycle"
         ],
         "properties": {
+          "Tool": {
+            "type": "string"
+          },
+          "Pocket": {
+            "type": "integer",
+            "format": "int32"
+          },
           "ToolUseDuringCycle": {
             "type": "string",
             "format": "duration"

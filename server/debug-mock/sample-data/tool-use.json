@@ -1,30 +1,40 @@
 {
-  "17852": {
-    "tool1": {
+  "17852": [
+    {
+      "Tool": "tool1",
+      "Pocket": 10,
       "ToolUseDuringCycle": "PT7M",
       "TotalToolUseAtEndOfCycle": "PT25M"
     }
-  },
-  "17964": {
-    "tool1": {
+  ],
+  "17964": [
+    {
+      "Tool": "tool1",
+      "Pocket": 10,
       "ToolUseDuringCycle": "PT6M",
       "TotalToolUseAtEndOfCycle": "PT12M"
     }
-  },
-  "13272": {
-    "tool2": {
+  ],
+  "13272": [
+    {
+      "Tool": "tool2",
+      "Pocket": 10,
       "ToolUseDuringCycle": "PT4M30S",
       "TotalToolUseAtEndOfCycle": "PT50M"
     },
-    "tool3": {
+    {
+      "Tool": "tool3",
+      "Pocket": 20,
       "ToolUseDuringCycle": "PT8M",
       "TotalToolUseAtEndOfCycle": "PT30M"
     }
-  },
-  "13355": {
-    "tool2": {
+  ],
+  "13355": [
+    {
+      "Tool": "tool2",
+      "Pocket": 10,
       "ToolUseDuringCycle": "PT2M",
       "TotalToolUseAtEndOfCycle": "PT22M"
     }
-  }
+  ]
 }

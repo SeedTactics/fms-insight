@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -39,23 +39,11 @@ import { MenuItem } from "@mui/material";
 import { CardContent } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import { Slider } from "@mui/material";
-import {
-  Work as WorkIcon,
-  ShoppingBasket as BasketIcon,
-  Extension as ExtensionIcon,
-  HourglassFull as HourglassIcon,
-  ImportExport,
-  AccountBox as AccountIcon,
-  DonutSmall as DonutIcon,
-} from "@mui/icons-material";
+import { Work as WorkIcon, ImportExport, AccountBox as AccountIcon } from "@mui/icons-material";
 
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart.js";
-import { SelectableHeatChart } from "./HeatChart.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { InspectionSankey } from "./InspectionSankey.js";
 import {
   filterStationCycles,
   FilterAnyMachineKey,
@@ -65,58 +53,31 @@ import {
   LoadCycleData,
   loadOccupancyCycles,
   FilterAnyLoadKey,
-  copyPalletCyclesToClipboard,
   emptyStationCycles,
   PartAndProcess,
 } from "../../data/results.cycles.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import StationDataTable from "./StationDataTable.js";
-import {
-  binSimStationUseByDayAndStat,
-  copyOeeHeatmapToClipboard,
-  binActiveCyclesByDayAndStat,
-  DayAndStation,
-  binOccupiedCyclesByDayAndStat,
-} from "../../data/results.oee.js";
-import {
-  binCyclesByDayAndPart,
-  binSimProductionByDayAndPart,
-  copyCompletedPartsHeatmapToClipboard,
-} from "../../data/results.completed-parts.js";
-import { DataTableActionZoomType } from "./DataTable.js";
-import { BufferChart } from "./BufferChart.js";
 import { useIsDemo } from "../routes.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
-import {
-  last30SimProduction,
-  SimPartCompleted,
-  specificMonthSimProduction,
-} from "../../cell-status/sim-production.js";
-import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
-import {
-  last30MaterialSummary,
-  specificMonthMaterialSummary,
-  MaterialSummaryAndCompletedData,
-} from "../../cell-status/material-summary.js";
+import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import {
   last30EstimatedCycleTimes,
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
 } from "../../cell-status/estimated-cycle-times.js";
-import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles.js";
 import {
   last30StationCycles,
   PartCycleData,
   specificMonthStationCycles,
 } from "../../cell-status/station-cycles.js";
-import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
 // --------------------------------------------------------------------------------
 
-function PartMachineCycleChart() {
+export function PartMachineCycleChart() {
   const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
@@ -365,7 +326,7 @@ function PartMachineCycleChart() {
 
 type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
-function PartLoadStationCycleChart() {
+export function PartLoadStationCycleChart() {
   const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
   const extraLoadCycleTooltip = React.useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
@@ -607,343 +568,5 @@ function PartLoadStationCycleChart() {
         )}
       </CardContent>
     </Card>
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Pallet Cycles
-// --------------------------------------------------------------------------------
-
-function PalletCycleChart() {
-  const demo = useIsDemo();
-  const [selectedPallet, setSelectedPallet] = React.useState<string | undefined>(demo ? "3" : undefined);
-  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
-
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const defaultDateRange =
-    period.type === "Last30"
-      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [period.month, addMonths(period.month, 1)];
-
-  const palletCycles = useRecoilValue(
-    period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles
-  );
-  const points = React.useMemo(() => {
-    if (selectedPallet) {
-      const palData = palletCycles.get(selectedPallet);
-      if (palData !== undefined) {
-        return new Map<string, ReadonlyArray<CycleChartPoint>>([
-          [selectedPallet, Array.from(palData.valuesToLazySeq())],
-        ]);
-      }
-    }
-    return new Map<string, ReadonlyArray<CycleChartPoint>>();
-  }, [selectedPallet, palletCycles]);
-  return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <BasketIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Pallet Cycles</div>
-            <div style={{ flexGrow: 1 }} />
-            <Tooltip title="Copy to Clipboard">
-              <IconButton
-                onClick={() => copyPalletCyclesToClipboard(palletCycles)}
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                size="large"
-              >
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-            <Select
-              name={"Pallet-Cycles-cycle-chart-select"}
-              autoWidth
-              displayEmpty
-              value={selectedPallet || ""}
-              onChange={(e) => setSelectedPallet(e.target.value)}
-            >
-              {selectedPallet !== undefined ? undefined : (
-                <MenuItem key={0} value="">
-                  <em>Select Pallet</em>
-                </MenuItem>
-              )}
-              {palletCycles
-                .keysToLazySeq()
-                .sortBy((x) => x)
-                .map((n) => (
-                  <MenuItem key={n} value={n}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <span style={{ marginRight: "1em" }}>{n}</span>
-                    </div>
-                  </MenuItem>
-                ))}
-            </Select>
-          </div>
-        }
-      />
-      <CardContent>
-        <CycleChart
-          points={points}
-          series_label="Pallet"
-          default_date_range={defaultDateRange}
-          current_date_zoom={zoomDateRange}
-          set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Buffer Chart
-// --------------------------------------------------------------------------------
-
-// https://github.com/mui-org/material-ui/issues/20191
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SliderAny: React.ComponentType<any> = Slider;
-
-function BufferOccupancyChart() {
-  const [movingAverageHours, setMovingAverage] = React.useState(12);
-  return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <DonutIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Buffer Occupancy</div>
-            <div style={{ flexGrow: 1 }} />
-            <span style={{ fontSize: "small", marginRight: "1em" }}>Moving Average Window: </span>
-            <SliderAny
-              style={{ width: "10em" }}
-              min={1}
-              max={36}
-              steps={0.2}
-              valueLabelDisplay="off"
-              value={movingAverageHours}
-              onChange={(e: React.ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
-            />
-          </div>
-        }
-      />
-      <CardContent>
-        <BufferChart movingAverageDistanceInHours={movingAverageHours} />
-      </CardContent>
-    </Card>
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Oee Heatmap
-// --------------------------------------------------------------------------------
-
-type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
-
-function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
-  return LazySeq.of(pts)
-    .map(([dayAndStat, val]) => {
-      const pct = val / (24 * 60);
-      return {
-        x: dayAndStat.day,
-        y: dayAndStat.station,
-        color: Math.min(pct, 1),
-        label: (pct * 100).toFixed(1) + "%",
-      };
-    })
-    .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
-}
-
-function StationOeeHeatmap() {
-  const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
-
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const dateRange: [Date, Date] =
-    period.type === "Last30"
-      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [period.month, addMonths(period.month, 1)];
-
-  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const statUse = useRecoilValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
-  const points = React.useMemo(() => {
-    if (selected === "Standard OEE") {
-      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()));
-    } else if (selected === "Occupied") {
-      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq()));
-    } else {
-      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse));
-    }
-  }, [selected, cycles, statUse]);
-
-  return (
-    <SelectableHeatChart<StationOeeHeatmapTypes>
-      card_label="Station Use"
-      y_title="Station"
-      label_title={selected === "Occupied" ? "Occupied" : "OEE"}
-      dateRange={dateRange}
-      icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
-      cur_selected={selected}
-      options={["Standard OEE", "Occupied", "Planned OEE"]}
-      setSelected={setSelected}
-      points={points}
-      onExport={() => copyOeeHeatmapToClipboard("Station", points)}
-    />
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Completed Heatmap
-// --------------------------------------------------------------------------------
-
-type CompletedPartsHeatmapTypes = "Planned" | "Completed";
-
-function partsCompletedPoints(
-  partCycles: Iterable<PartCycleData>,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
-  start: Date,
-  end: Date
-) {
-  const pts = binCyclesByDayAndPart(partCycles, matsById, start, end);
-  return LazySeq.of(pts)
-    .map(([dayAndPart, val]) => {
-      return {
-        x: dayAndPart.day,
-        y: dayAndPart.part,
-        color: val.activeMachineMins,
-        label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
-        count: val.count,
-        activeMachineMins: val.activeMachineMins,
-      };
-    })
-    .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
-}
-
-function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
-  const pts = binSimProductionByDayAndPart(prod);
-  return LazySeq.of(pts)
-    .map(([dayAndPart, val]) => {
-      return {
-        x: dayAndPart.day,
-        y: dayAndPart.part,
-        color: val.activeMachineMins,
-        label: val.count.toFixed(0) + " (" + (val.activeMachineMins / 60).toFixed(1) + " hours)",
-        count: val.count,
-        activeMachineMins: val.activeMachineMins,
-      };
-    })
-    .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
-}
-
-function CompletedCountHeatmap() {
-  const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
-
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const dateRange: [Date, Date] =
-    period.type === "Last30"
-      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [period.month, addMonths(period.month, 1)];
-
-  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const productionCounts = useRecoilValue(
-    period.type === "Last30" ? last30SimProduction : specificMonthSimProduction
-  );
-  const matSummary = useRecoilValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
-  );
-  const points = React.useMemo(() => {
-    if (selected === "Completed") {
-      const today = startOfToday();
-      const start = period.type === "Last30" ? addDays(today, -30) : period.month;
-      const endD = period.type === "Last30" ? addDays(today, 1) : addMonths(period.month, 1);
-      return partsCompletedPoints(cycles.valuesToLazySeq(), matSummary.matsById, start, endD);
-    } else {
-      return partsPlannedPoints(productionCounts);
-    }
-  }, [selected, cycles, matSummary, productionCounts]);
-  return (
-    <SelectableHeatChart
-      card_label="Part Production"
-      y_title="Part"
-      label_title={selected}
-      dateRange={dateRange}
-      icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
-      cur_selected={selected}
-      options={["Completed", "Planned"]}
-      setSelected={setSelected}
-      points={points}
-      onExport={() => copyCompletedPartsHeatmapToClipboard(points)}
-    />
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Inspection
-// --------------------------------------------------------------------------------
-
-function ConnectedInspection() {
-  const period = useRecoilValue(selectedAnalysisPeriod);
-
-  const inspectionlogs = useRecoilValue(
-    period.type === "Last30" ? last30Inspections : specificMonthInspections
-  );
-  const zoomType =
-    period.type === "Last30" ? DataTableActionZoomType.Last30Days : DataTableActionZoomType.ZoomIntoRange;
-  const default_date_range =
-    period.type === "Last30"
-      ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
-      : [period.month, addMonths(period.month, 1)];
-
-  return (
-    <InspectionSankey
-      inspectionlogs={inspectionlogs}
-      zoomType={zoomType}
-      default_date_range={default_date_range}
-      defaultToTable={false}
-    />
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Efficiency
-// --------------------------------------------------------------------------------
-
-export function EfficiencyCards(): JSX.Element {
-  return (
-    <>
-      <div data-testid="part-cycle-chart">
-        <PartMachineCycleChart />
-      </div>
-      <div data-testid="part-load-cycle-chart" style={{ marginTop: "3em" }}>
-        <PartLoadStationCycleChart />
-      </div>
-      <div data-testid="pallet-cycle-chart" style={{ marginTop: "3em" }}>
-        <PalletCycleChart />
-      </div>
-      <div data-testid="buffer-chart" style={{ marginTop: "3em" }}>
-        <BufferOccupancyChart />
-      </div>
-      <div data-testid="station-oee-heatmap" style={{ marginTop: "3em" }}>
-        <StationOeeHeatmap />
-      </div>
-      <div data-testid="completed-heatmap" style={{ marginTop: "3em" }}>
-        <CompletedCountHeatmap />
-      </div>
-      <div data-testid="inspection-sankey" style={{ marginTop: "3em" }}>
-        <ConnectedInspection />
-      </div>
-    </>
-  );
-}
-
-export default function Efficiency(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Efficiency - FMS Insight";
-  }, []);
-  return (
-    <>
-      <AnalysisSelectToolbar />
-      <main style={{ padding: "24px" }}>
-        <EfficiencyCards />
-      </main>
-    </>
   );
 }

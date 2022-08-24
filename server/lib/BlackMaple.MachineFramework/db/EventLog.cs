@@ -65,7 +65,7 @@ namespace BlackMaple.MachineFramework
         detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
         detailCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        toolCmd.CommandText = "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tools WHERE Counter = $cntr";
+        toolCmd.CommandText = "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tool_use WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
 
         var lst = new List<LogEntry>();
@@ -187,18 +187,20 @@ namespace BlackMaple.MachineFramework
           }
 
           toolCmd.Parameters[0].Value = ctr;
-          var tools = ImmutableDictionary.CreateBuilder<string, ToolUse>();
+          var tools = ImmutableList.CreateBuilder<ToolUse>();
           using (var toolReader = toolCmd.ExecuteReader())
           {
             while (toolReader.Read())
             {
-              tools[toolReader.GetString(0)] = new ToolUse()
+              tools.Add(new ToolUse()
               {
-                ToolUseDuringCycle = TimeSpan.FromTicks(toolReader.GetInt64(1)),
-                TotalToolUseAtEndOfCycle = TimeSpan.FromTicks(toolReader.GetInt64(2)),
-                ConfiguredToolLife = TimeSpan.FromTicks(toolReader.GetInt64(3)),
-                ToolChangeOccurred = toolReader.IsDBNull(4) ? null : toolReader.GetBoolean(4) ? (bool?)true : null,
-              };
+                Tool = toolReader.GetString(0),
+                Pocket = toolReader.GetInt32(1),
+                ToolUseDuringCycle = TimeSpan.FromTicks(toolReader.GetInt64(2)),
+                TotalToolUseAtEndOfCycle = TimeSpan.FromTicks(toolReader.GetInt64(3)),
+                ConfiguredToolLife = TimeSpan.FromTicks(toolReader.GetInt64(4)),
+                ToolChangeOccurred = toolReader.IsDBNull(5) ? null : toolReader.GetBoolean(5) ? (bool?)true : null,
+              });
             }
           }
 
@@ -868,8 +870,7 @@ namespace BlackMaple.MachineFramework
       public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
       private Dictionary<string, string> _details = new Dictionary<string, string>();
       public IDictionary<string, string> ProgramDetails { get { return _details; } }
-      private Dictionary<string, ToolUse> _tools = new Dictionary<string, ToolUse>();
-      public IDictionary<string, ToolUse> Tools => _tools;
+      public ImmutableList<ToolUse> Tools { get; init; } = ImmutableList<ToolUse>.Empty;
       public IEnumerable<ToolPocketSnapshot> ToolPockets { get; init; }
 
       internal LogEntry ToLogEntry(long newCntr, Func<long, MaterialDetails> getDetails)
@@ -903,7 +904,7 @@ namespace BlackMaple.MachineFramework
           ElapsedTime = this.ElapsedTime,
           ActiveOperationTime = this.ActiveOperationTime,
           ProgramDetails = this.ProgramDetails?.ToImmutableDictionary(),
-          Tools = this.Tools?.ToImmutableDictionary()
+          Tools = this.Tools
         };
       }
 
@@ -922,20 +923,12 @@ namespace BlackMaple.MachineFramework
           Result = e.Result,
           EndOfRoute = e.EndOfRoute,
           ElapsedTime = e.ElapsedTime,
-          ActiveOperationTime = e.ActiveOperationTime
+          ActiveOperationTime = e.ActiveOperationTime,
+          Tools = e.Tools
         };
         foreach (var d in e.ProgramDetails)
         {
           ret.ProgramDetails[d.Key] = d.Value;
-        }
-        foreach (var t in e.Tools)
-        {
-          ret.Tools[t.Key] = new ToolUse()
-          {
-            ToolUseDuringCycle = t.Value.ToolUseDuringCycle,
-            TotalToolUseAtEndOfCycle = t.Value.TotalToolUseAtEndOfCycle,
-            ConfiguredToolLife = t.Value.ConfiguredToolLife
-          };
         }
         return ret;
       }
@@ -1034,27 +1027,30 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddToolUse(long counter, IDictionary<string, ToolUse> tools, IDbTransaction trans)
+    private void AddToolUse(long counter, IEnumerable<ToolUse> tools, IDbTransaction trans)
     {
+      if (tools == null) return;
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO station_tools(Counter, Tool, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange) VALUES ($cntr,$tool,$use,$totalUse,$life,$change)";
+        cmd.CommandText = "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange) VALUES ($cntr,$tool,$pocket,$use,$totalUse,$life,$change)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("tool", SqliteType.Text);
+        cmd.Parameters.Add("pocket", SqliteType.Integer);
         cmd.Parameters.Add("use", SqliteType.Integer);
         cmd.Parameters.Add("totalUse", SqliteType.Integer);
         cmd.Parameters.Add("life", SqliteType.Integer);
         cmd.Parameters.Add("change", SqliteType.Integer);
 
-        foreach (var pair in tools)
+        foreach (var tool in tools)
         {
-          cmd.Parameters[1].Value = pair.Key;
-          cmd.Parameters[2].Value = pair.Value.ToolUseDuringCycle.Ticks;
-          cmd.Parameters[3].Value = pair.Value.TotalToolUseAtEndOfCycle.Ticks;
-          cmd.Parameters[4].Value = (pair.Value.ConfiguredToolLife ?? TimeSpan.Zero).Ticks;
-          cmd.Parameters[5].Value = pair.Value.ToolChangeOccurred.GetValueOrDefault(false);
+          cmd.Parameters[1].Value = tool.Tool;
+          cmd.Parameters[2].Value = tool.Pocket;
+          cmd.Parameters[3].Value = tool.ToolUseDuringCycle.Ticks;
+          cmd.Parameters[4].Value = tool.TotalToolUseAtEndOfCycle.Ticks;
+          cmd.Parameters[5].Value = (tool.ConfiguredToolLife ?? TimeSpan.Zero).Ticks;
+          cmd.Parameters[6].Value = tool.ToolChangeOccurred.GetValueOrDefault(false);
           cmd.ExecuteNonQuery();
         }
       }
@@ -1380,7 +1376,7 @@ namespace BlackMaple.MachineFramework
         TimeSpan elapsed,
         TimeSpan active,
         IDictionary<string, string> extraData = null,
-        IDictionary<string, ToolUse> tools = null,
+        ImmutableList<ToolUse> tools = null,
         IEnumerable<ToolPocketSnapshot> pockets = null,
         string foreignId = null,
         string originalMessage = null
@@ -1400,17 +1396,13 @@ namespace BlackMaple.MachineFramework
         ElapsedTime = elapsed,
         ActiveOperationTime = active,
         EndOfRoute = false,
-        ToolPockets = pockets
+        ToolPockets = pockets,
+        Tools = tools ?? ImmutableList<ToolUse>.Empty
       };
       if (extraData != null)
       {
         foreach (var k in extraData)
           log.ProgramDetails[k.Key] = k.Value;
-      }
-      if (tools != null)
-      {
-        foreach (var t in tools)
-          log.Tools[t.Key] = t.Value;
       }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }

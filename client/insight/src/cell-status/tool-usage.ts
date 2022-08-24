@@ -47,7 +47,7 @@ export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
     readonly toolName: string;
     readonly cycleUsageMinutes: number;
-    readonly toolChanged: boolean;
+    readonly toolChangedDuringMiddleOfCycle: boolean;
   }>;
 }
 
@@ -64,24 +64,32 @@ function process_tools(
   estimatedCycleTimes: EstimatedCycleTimes,
   toolUsage: ToolUsage
 ): ToolUsage {
-  if (cycle.tools === undefined || cycle.type !== LogType.MachineCycle) {
+  if (cycle.tooluse === undefined || cycle.tooluse.length === 0 || cycle.type !== LogType.MachineCycle) {
     return toolUsage;
   }
 
   const stats =
-    cycle.material.length > 0 ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle)) : undefined;
+    cycle.material.length > 0
+      ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
+      : undefined;
   const elapsed = durationToMinutes(cycle.elapsed);
   if (stats === undefined || isOutlier(stats, elapsed)) {
     return toolUsage;
   }
 
   const key = PartAndStationOperation.ofLogCycle(cycle);
-  const toolsUsedInCycle = LazySeq.ofObject(cycle.tools)
-    .map(([toolName, use]) => ({
-      toolName,
-      cycleUsageMinutes: use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle),
-      toolChanged: use.toolChangeOccurred === true,
-    }))
+  const toolsUsedInCycle = LazySeq.of(cycle.tooluse)
+    .groupBy((u) => u.tool)
+    .map(([toolName, uses]) => {
+      const useDuring = LazySeq.of(uses).sumBy((use) =>
+        use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle)
+      );
+      return {
+        toolName,
+        cycleUsageMinutes: useDuring,
+        toolChangedDuringMiddleOfCycle: LazySeq.of(uses).anyMatch((use) => use.toolChangeOccurred ?? false),
+      };
+    })
     .toRArray();
 
   if (toolsUsedInCycle.length === 0 && toolUsage.has(key)) {
@@ -102,7 +110,9 @@ function process_tools(
 export const setLast30ToolUse = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     const estimated = t.get(last30EstimatedCycleTimes);
-    t.set(last30ToolUseRW, (oldUsage) => log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage));
+    t.set(last30ToolUseRW, (oldUsage) =>
+      log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage)
+    );
   }
 );
 

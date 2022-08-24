@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -30,49 +30,38 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+import * as React from "react";
 
-#nullable enable
+import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
+import { PartLoadStationCycleChart, PartMachineCycleChart } from "./PartCycleCards.js";
+import { PalletCycleChart } from "./PalletCycleCards.js";
 
-using System;
-using System.Runtime.Serialization;
-using Germinate;
+export function AnalysisCycleCards(): JSX.Element {
+  return (
+    <>
+      <div>
+        <PartMachineCycleChart />
+      </div>
+      <div style={{ marginTop: "3em" }}>
+        <PartLoadStationCycleChart />
+      </div>
+      <div style={{ marginTop: "3em" }}>
+        <PalletCycleChart />
+      </div>
+    </>
+  );
+}
 
-namespace BlackMaple.MachineFramework
-{
-  [DataContract]
-  public record ToolInMachine
-  {
-    [DataMember(IsRequired = true)]
-    public string MachineGroupName { get; init; } = "";
-
-    [DataMember(IsRequired = true)]
-    public int MachineNum { get; init; }
-
-    [DataMember(IsRequired = true)]
-    public int Pocket { get; init; }
-
-    [DataMember(IsRequired = true)]
-    public string ToolName { get; init; } = "";
-
-    [DataMember(IsRequired = true)]
-    public TimeSpan CurrentUse { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public TimeSpan? TotalLifeTime { get; init; }
-  }
-
-  [DataContract, Draftable]
-  public record ToolUse
-  {
-    [DataMember(IsRequired = true)] public string Tool { get; init; } = "";
-    [DataMember(IsRequired = true)] public int Pocket { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ConfiguredToolLife { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; init; }
-
-    public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f)
-       => t.Produce(f);
-  }
-
+export function AnalysisCyclePage(): JSX.Element {
+  React.useEffect(() => {
+    document.title = "Monthly Cycles - FMS Insight";
+  }, []);
+  return (
+    <>
+      <AnalysisSelectToolbar />
+      <main style={{ padding: "24px" }}>
+        <AnalysisCycleCards />
+      </main>
+    </>
+  );
 }

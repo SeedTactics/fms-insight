@@ -63,7 +63,9 @@ export enum RouteLocation {
   Tools_Dashboard = "/tools",
   Tools_Programs = "/tools/programs",
 
+  Analysis_Cycles = "/analysis/cycles",
   Analysis_Efficiency = "/analysis/efficiency",
+  Analysis_Quality = "/analysis/quality",
   Analysis_CostPerPiece = "/analysis/cost",
   Analysis_Schedules = "/analysis/schedules",
   Analysis_DataExport = "/analysis/data-export",
@@ -106,7 +108,9 @@ export type RouteState =
   | { route: RouteLocation.Quality_Quarantine }
   | { route: RouteLocation.Tools_Dashboard }
   | { route: RouteLocation.Tools_Programs }
+  | { route: RouteLocation.Analysis_Cycles }
   | { route: RouteLocation.Analysis_Efficiency }
+  | { route: RouteLocation.Analysis_Quality }
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
   | { route: RouteLocation.Analysis_DataExport }
@@ -195,7 +199,7 @@ function urlToRoute(url: URL): RouteState {
             custom: groups?.["custom"]?.split("/")?.map((s: string) => decodeURIComponent(s)) ?? [],
           };
         default:
-          return { route };
+          return { route } as RouteState;
       }
     }
   }
