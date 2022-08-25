@@ -59,28 +59,36 @@ jobs:
       - name: Bump release version
         if: startsWith(github.event.inputs.release-type, 'pre') != true
         shell: bash
-        run: |
-          echo "NEW_VERSION=$(npm --no-git-tag-version version $RELEASE_TYPE)" >> $GITHUB_ENV
+        working-directory: client/insight
+        run: echo "NEW_VERSION=$(npm --no-git-tag-version version $RELEASE_TYPE)" >> $GITHUB_ENV
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release-type }}
-        working-directory: client/insight
 
       # Bump package pre-release version
       - name: Bump pre-release version
         if: startsWith(github.event.inputs.release-type, 'pre')
         shell: bash
-        run: |
-          echo "NEW_VERSION=$(npm --no-git-tag-version --preid=beta version $RELEASE_TYPE)" >> $GITHUB_ENV
+        working-directory: client/insight
+        run: echo "NEW_VERSION=$(npm --no-git-tag-version --preid=beta version $RELEASE_TYPE)" >> $GITHUB_ENV
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release-type }}
-        working-directory: client/insight
 
+      # NEW_VERSION is something like v14.0.0 so need to also strip the initial 'v' off
       - name: Commit package.json changes and create tag
+        shell: pwsh
+        working-directory: client/insight
         run: |
           git add "package.json"
-          git commit -m "chore: release ${{ env.NEW_VERSION }}"
-          git tag ${{ env.NEW_VERSION }}
-        working-directory: client/insight
+          git commit -m "chore: release $ENV:NEW_VERSION"
+          git tag $ENV:NEW_VERSION
+          echo "NEW_VERSION_NUM=$($ENV:NEW_VERSION.substring(1))" | Out-File -FilePath $ENV:GITHUB_ENV -Append
+        env:
+          NEW_VERSION: ${{ env.NEW_VERSION }}
+
+      - name: Print Calculated Versions
+        run: |
+          echo "NEW_VERSION = ${{ env.NEW_VERSION }}"
+          echo "NEW_VERSION_NUM = ${{ env.NEW_VERSION_NUM }}"
 
       # ----------------------------------------------------------
       # Test and Build
@@ -101,13 +109,13 @@ jobs:
           dotnet test server/test --collect:"XPlat Code Coverage"
 
       - name: Build MachineFramework
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/lib/BlackMaple.MachineFramework
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" server/lib/BlackMaple.MachineFramework
       - name: Build Mazak
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/machines/mazak
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" server/machines/mazak
       - name: Build Makino
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/machines/makino
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" server/machines/makino
       - name: Build Niigata
-        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION }}" server/machines/niigata
+        run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" server/machines/niigata
 
       # ----------------------------------------------------------
       # Publish
