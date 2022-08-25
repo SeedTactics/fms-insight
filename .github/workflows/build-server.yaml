@@ -55,7 +55,6 @@ jobs:
       # Version
       # ----------------------------------------------------------
 
-      # Use tag latest
       - name: Bump release version
         if: startsWith(github.event.inputs.release-type, 'pre') != true
         shell: bash
@@ -64,7 +63,6 @@ jobs:
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release-type }}
 
-      # Bump package pre-release version
       - name: Bump pre-release version
         if: startsWith(github.event.inputs.release-type, 'pre')
         shell: bash

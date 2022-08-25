@@ -43,7 +43,7 @@ import {
   fakeToolChangeBeforeCycle,
   fakeToolChangeDuringCycle,
 } from "../../test/events.fake.js";
-import { addMinutes, addMonths } from "date-fns";
+import { addDays, addMinutes } from "date-fns";
 import { LogEntry } from "../network/api.js";
 
 const machCycle = {
@@ -129,7 +129,7 @@ it("calculates last 30 tool replacements", () => {
   const machEndMc4 = fakeMachineCycle({
     ...machCycle,
     counter: 5,
-    time: addMonths(start, 2),
+    time: addDays(start, 33),
     mcNum: 4,
     tooluse: [
       fakeNormalToolUsage({ tool: "aaa", pocket: 1, minsAtEnd: 44 }),
@@ -140,7 +140,7 @@ it("calculates last 30 tool replacements", () => {
   })[1];
 
   const afterAdd2 = applyConduitToSnapshot(afterAdd, onServerEvent, {
-    now: addMonths(start, 2),
+    now: addDays(start, 33),
     evt: { logEntry: new LogEntry(machEndMc4) },
     expire: true,
   });
