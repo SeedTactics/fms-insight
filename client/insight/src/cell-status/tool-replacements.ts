@@ -81,6 +81,9 @@ export class StationGroupAndNum implements HashableObj {
   compare(other: StationGroupAndNum): number {
     return this.group === other.group ? this.num - other.num : this.group.localeCompare(other.group);
   }
+  toString(): string {
+    return this.group + " #" + this.num.toString();
+  }
 }
 
 export type ToolReplacementsByCntr = OrderedMap<number, ToolReplacements>;

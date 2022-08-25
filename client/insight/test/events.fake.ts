@@ -43,6 +43,7 @@ import {
   InProcessMaterialAction,
   ToolUse,
   ActionType,
+  IToolUse,
 } from "../src/network/api.js";
 import { faker } from "@faker-js/faker";
 import { durationToSeconds } from "../src/util/parseISODuration.js";
@@ -98,6 +99,7 @@ function addStartAndEnd(es: ILogEntry[], e: ILogEntry): void {
     endUTC: startTime,
     result: "",
     program: "",
+    tooluse: undefined,
   };
   es.push(start);
   es.push(e);
@@ -199,9 +201,12 @@ export function fakeMachineCycle({
   proc,
   pal,
   program,
+  mcName,
+  mcNum,
   time,
   elapsedMin,
   activeMin,
+  tooluse,
 }: {
   counter: number;
   numMats?: number;
@@ -209,9 +214,12 @@ export function fakeMachineCycle({
   proc: number;
   pal?: string;
   program: string;
+  mcName?: string;
+  mcNum?: number;
   time: Date;
   elapsedMin: number;
   activeMin?: number;
+  tooluse?: ReadonlyArray<IToolUse>;
 }): ReadonlyArray<ILogEntry> {
   const material = LazySeq.ofRange(0, numMats ?? 1)
     .map(() => fakeMaterial(part, proc))
@@ -225,12 +233,13 @@ export function fakeMachineCycle({
     type: LogType.MachineCycle,
     startofcycle: false,
     endUTC: time,
-    loc: "MC",
-    locnum: 1,
+    loc: mcName ?? "MC",
+    locnum: mcNum ?? 1,
     result: "",
     program,
     elapsed: `PT${elapsedMin}M`,
     active: activeMin ? `PT${activeMin}M` : "PT-1S",
+    tooluse: tooluse?.map((t) => new ToolUse(t)),
   });
   return es;
 }
@@ -526,4 +535,61 @@ export function fakeToolUsage(): Array<ToolUse> {
       toolChangeOccurred: true,
     }),
   ];
+}
+
+export function fakeNormalToolUsage({
+  tool,
+  pocket,
+  minsAtEnd,
+}: {
+  tool: string;
+  pocket: number;
+  minsAtEnd: number;
+}): IToolUse {
+  return {
+    tool,
+    pocket,
+    toolUseDuringCycle: `PT${faker.datatype.number(10000)}S`,
+    totalToolUseAtEndOfCycle: `PT${minsAtEnd}M`,
+  };
+}
+
+export function fakeToolChangeBeforeCycle({
+  tool,
+  pocket,
+  minsAtEnd,
+}: {
+  tool: string;
+  pocket: number;
+  minsAtEnd: number;
+}): IToolUse {
+  return {
+    tool,
+    pocket,
+    toolUseDuringCycle: `PT${minsAtEnd}M`,
+    totalToolUseAtEndOfCycle: `PT${minsAtEnd}M`,
+  };
+}
+
+export function fakeToolChangeDuringCycle({
+  tool,
+  pocket,
+  use,
+  minsAtEnd,
+  life,
+}: {
+  tool: string;
+  pocket: number;
+  use: number;
+  minsAtEnd: number;
+  life: number;
+}): IToolUse {
+  return {
+    tool,
+    pocket,
+    toolUseDuringCycle: `PT${use}M`,
+    totalToolUseAtEndOfCycle: `PT${minsAtEnd}M`,
+    configuredToolLife: `PT${life}M`,
+    toolChangeOccurred: true,
+  };
 }

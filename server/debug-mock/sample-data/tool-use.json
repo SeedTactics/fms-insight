@@ -3,8 +3,20 @@
     {
       "Tool": "tool1",
       "Pocket": 10,
-      "ToolUseDuringCycle": "PT7M",
+      "ToolUseDuringCycle": "PT3M",
       "TotalToolUseAtEndOfCycle": "PT25M"
+    },
+    {
+      "Tool": "tool2",
+      "Pocket": 11,
+      "ToolUseDuringCycle": "PT6M",
+      "TotalToolUseAtEndOfCycle": "PT6M"
+    },
+    {
+      "Tool": "tool1",
+      "Pocket": 20,
+      "ToolUseDuringCycle": "PT4M",
+      "TotalToolUseAtEndOfCycle": "PT40M"
     }
   ],
   "17964": [
@@ -12,29 +24,45 @@
       "Tool": "tool1",
       "Pocket": 10,
       "ToolUseDuringCycle": "PT6M",
+      "TotalToolUseAtEndOfCycle": "PT12M",
+      "ToolChangeOccurred": true,
+      "ConfiguredToolLife": "PT1H"
+    },
+    {
+      "Tool": "tool2",
+      "Pocket": 11,
+      "ToolUseDuringCycle": "PT6M",
       "TotalToolUseAtEndOfCycle": "PT12M"
     }
   ],
   "13272": [
     {
       "Tool": "tool2",
-      "Pocket": 10,
+      "Pocket": 11,
       "ToolUseDuringCycle": "PT4M30S",
       "TotalToolUseAtEndOfCycle": "PT50M"
     },
     {
       "Tool": "tool3",
-      "Pocket": 20,
+      "Pocket": 30,
       "ToolUseDuringCycle": "PT8M",
       "TotalToolUseAtEndOfCycle": "PT30M"
     }
   ],
   "13355": [
     {
-      "Tool": "tool2",
+      "Tool": "tool1",
       "Pocket": 10,
+      "ToolUseDuringCycle": "PT6M",
+      "TotalToolUseAtEndOfCycle": "PT6M"
+    },
+    {
+      "Tool": "tool2",
+      "Pocket": 11,
       "ToolUseDuringCycle": "PT2M",
-      "TotalToolUseAtEndOfCycle": "PT22M"
+      "TotalToolUseAtEndOfCycle": "PT22M",
+      "ToolChangeOccurred": true,
+      "ConfiguredToolLife": "PT1H"
     }
   ]
 }

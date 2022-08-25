@@ -1,0 +1,101 @@
+// Vitest Snapshot v1
+
+exports[`calculates last 30 tool replacements > after machine 4 changes 1`] = `
+Map {
+  "MC #4" => Map {
+    "5" => {
+      "replacements": [
+        {
+          "pocket": 2,
+          "tool": "bbb",
+          "type": "ReplaceBeforeCycleStart",
+          "useAtReplacement": 5,
+        },
+        {
+          "pocket": 4,
+          "tool": "aaa",
+          "type": "ReplaceBeforeCycleStart",
+          "useAtReplacement": 77,
+        },
+      ],
+      "time": 2022-11-25T04:04:05.000Z,
+    },
+  },
+}
+`;
+
+exports[`calculates last 30 tool replacements > after machine 6 changes 1`] = `
+Map {
+  "MC #4" => Map {
+    "3" => {
+      "replacements": [
+        {
+          "pocket": 1,
+          "tool": "aaa",
+          "type": "ReplaceBeforeCycleStart",
+          "useAtReplacement": 40,
+        },
+        {
+          "pocket": 2,
+          "tool": "bbb",
+          "totalUseAtBeginningOfCycle": 39,
+          "totalUseAtEndOfCycle": 5,
+          "type": "ReplaceInCycle",
+        },
+      ],
+      "time": 2022-09-25T03:24:05.000Z,
+    },
+  },
+  "MC #6" => Map {
+    "4" => {
+      "replacements": [
+        {
+          "pocket": 1,
+          "tool": "aaa",
+          "type": "ReplaceBeforeCycleStart",
+          "useAtReplacement": 140,
+        },
+        {
+          "pocket": 2,
+          "tool": "bbb",
+          "type": "ReplaceBeforeCycleStart",
+          "useAtReplacement": 150,
+        },
+        {
+          "pocket": 3,
+          "tool": "ccc",
+          "totalUseAtBeginningOfCycle": 47,
+          "totalUseAtEndOfCycle": 7,
+          "type": "ReplaceInCycle",
+        },
+      ],
+      "time": 2022-09-25T03:34:05.000Z,
+    },
+  },
+}
+`;
+
+exports[`calculates last 30 tool replacements > tools 1`] = `
+Map {
+  "MC #4" => Map {
+    "3" => {
+      "replacements": [
+        {
+          "pocket": 1,
+          "tool": "aaa",
+          "type": "ReplaceBeforeCycleStart",
+          "useAtReplacement": 40,
+        },
+        {
+          "pocket": 2,
+          "tool": "bbb",
+          "totalUseAtBeginningOfCycle": 39,
+          "totalUseAtEndOfCycle": 5,
+          "type": "ReplaceInCycle",
+        },
+      ],
+      "time": 2022-09-25T03:24:05.000Z,
+    },
+  },
+}
+`;
