@@ -83,8 +83,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
       var assign = new MultiPalletAssign(new IAssignPallets[] {
-  new AssignNewRoutesOnPallets(statNames),
-  new SizedQueues(_settings.Queues)
+        new AssignNewRoutesOnPallets(statNames),
+        new SizedQueues(_settings.Queues)
       });
       var createLog = new CreateCellState(_settings, statNames, machConn);
 

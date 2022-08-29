@@ -83,11 +83,6 @@ jobs:
         env:
           NEW_VERSION: ${{ env.NEW_VERSION }}
 
-      - name: Print Calculated Versions
-        run: |
-          echo "NEW_VERSION = ${{ env.NEW_VERSION }}"
-          echo "NEW_VERSION_NUM = ${{ env.NEW_VERSION_NUM }}"
-
       # ----------------------------------------------------------
       # Test and Build
       # ----------------------------------------------------------
