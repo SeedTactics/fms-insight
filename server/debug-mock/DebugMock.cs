@@ -104,6 +104,15 @@ namespace DebugMachineWatchApiServer
 
       var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(cfg, serverSettings, fmsSettings, fmsImpl, useService: false);
 
+      var webroot = Environment.GetEnvironmentVariable("BMS_WEBROOT");
+      if (!string.IsNullOrEmpty(webroot))
+      {
+        hostB.ConfigureWebHostDefaults(webBuilder =>
+        {
+          webBuilder.UseWebRoot(webroot);
+        });
+      }
+
       hostB.ConfigureServices((_, services) => AddOpenApiDoc(services));
 
       hostB.Build().Run();

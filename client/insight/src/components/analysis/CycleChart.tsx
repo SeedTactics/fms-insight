@@ -53,8 +53,9 @@ import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { Group } from "@visx/group";
 import { ChartTooltip } from "../ChartTooltip.js";
-import { AnimatedAxis, AnimatedGridColumns, AnimatedGridRows } from "@visx/react-spring";
-import { useSpring, useSprings, animated } from "react-spring";
+import { Axis } from "@visx/axis";
+import { GridColumns, GridRows } from "@visx/grid";
+import { useSpring, useSprings, animated } from "@react-spring/web";
 import { ParentSize } from "@visx/responsive";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
@@ -204,7 +205,7 @@ function useScales({
 const AxisAndGrid = React.memo(function AxisAndGrid({ xScale, yScale }: CycleChartScales) {
   return (
     <>
-      <AnimatedAxis
+      <Axis
         scale={xScale}
         top={yScale.range()[0]}
         orientation="bottom"
@@ -215,7 +216,7 @@ const AxisAndGrid = React.memo(function AxisAndGrid({ xScale, yScale }: CycleCha
         tickStroke={chartTheme.axisStyles.x.bottom.tickLine.stroke}
         tickLabelProps={() => chartTheme.axisStyles.x.bottom.tickLabel}
       />
-      <AnimatedAxis
+      <Axis
         scale={yScale}
         orientation="left"
         left={xScale.range()[0]}
@@ -227,12 +228,12 @@ const AxisAndGrid = React.memo(function AxisAndGrid({ xScale, yScale }: CycleCha
         tickStroke={chartTheme.axisStyles.y.left.tickLine.stroke}
         tickLabelProps={() => ({ ...chartTheme.axisStyles.y.left.tickLabel, width: marginLeft })}
       />
-      <AnimatedGridColumns
+      <GridColumns
         height={yScale.range()[0] - yScale.range()[1]}
         scale={xScale}
         lineStyle={chartTheme.gridStyles}
       />
-      <AnimatedGridRows
+      <GridRows
         width={xScale.range()[1] - xScale.range()[0]}
         scale={yScale}
         lineStyle={chartTheme.gridStyles}
