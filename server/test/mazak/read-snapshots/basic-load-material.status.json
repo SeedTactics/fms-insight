@@ -16,6 +16,7 @@
       "Bookings": [],
       "ManuallyCreated": false,
       "Cycles": 20,
+      "RemainingToStart": 20,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -239,7 +240,7 @@
       ]
     },
     "aaa-schId1234": {
-      "Completed": [[0], [0]],
+      "Completed": [[3], [0]],
       "Precedence": [[2], [2]],
       "ScheduleId": "schId1234",
       "CopiedToSystem": true,
@@ -253,6 +254,7 @@
       "Bookings": [],
       "ManuallyCreated": false,
       "Cycles": 11,
+      "RemainingToStart": 8,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -418,6 +420,7 @@
       "Bookings": [],
       "ManuallyCreated": false,
       "Cycles": 38,
+      "RemainingToStart": 36,
       "ProcsAndPaths": [
         {
           "paths": [

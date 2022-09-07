@@ -311,6 +311,9 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "AssignedWorkorders", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? AssignedWorkorders { get; init; }
 
+    [DataMember(Name = "RemainingToStart", IsRequired = false, EmitDefaultValue = false)]
+    public long? RemainingToStart { get; init; }
+
     public static ActiveJob operator %(ActiveJob j, Action<IActiveJobDraft> f) => j.Produce(f);
   }
 

@@ -17,6 +17,7 @@
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Cycles": 20,
+      "RemainingToStart": 20,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -270,6 +271,7 @@
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Cycles": 11,
+      "RemainingToStart": 10,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -451,6 +453,7 @@
       "ManuallyCreated": false,
       "CreateMarkingData": false,
       "Cycles": 38,
+      "RemainingToStart": 38,
       "ProcsAndPaths": [
         {
           "paths": [

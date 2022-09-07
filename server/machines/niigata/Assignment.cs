@@ -218,6 +218,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private bool PathHasRemainingProc1ToRun(CellState cellSt, HistoricJob job, int proc1path)
     {
+      // the logic here should match the calculation of RemainingToRun when creating the CurrentStatus ActiveJobs
+
       if (job.Decrements?.Count > 0) return false;
 
       int startedQty;

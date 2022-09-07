@@ -105,12 +105,19 @@ namespace BlackMaple.FMSInsight.Niigata
         int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
         var newPlanned = j.Cycles - decrQty;
 
+        var started = 0;
+        if (status.CyclesStartedOnProc1 != null && status.CyclesStartedOnProc1.TryGetValue(j.UniqueStr, out var startedOnProc1))
+        {
+          started = startedOnProc1;
+        }
+
         var workorders = jobDB.GetWorkordersForUnique(j.UniqueStr);
 
         var curJob = j.CloneToDerived<ActiveJob, Job>() with
         {
           CopiedToSystem = true,
           Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
+          RemainingToStart = decrQty > 0 ? 0 : Math.Max(newPlanned - started, 0),
           Cycles = newPlanned,
           ScheduleId = j.ScheduleId,
           Precedence = precedence.Select(p => ImmutableList.Create(p)).ToImmutableList(),

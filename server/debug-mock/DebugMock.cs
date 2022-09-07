@@ -608,6 +608,7 @@ namespace DebugMachineWatchApiServer
                 CopiedToSystem = j.CopiedToSystem,
                 Decrements = j.Decrements,
                 Completed = j.Completed,
+                RemainingToStart = j.RemainingToStart,
                 Precedence = j.Precedence,
                 AssignedWorkorders = j.AssignedWorkorders,
               }

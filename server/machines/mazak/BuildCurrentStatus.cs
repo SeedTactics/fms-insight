@@ -49,6 +49,7 @@ namespace MazakMachineInterface
       public string PartName { get; init; }
       public HistoricJob DbJob { get; init; }
       public int Cycles { get; set; }
+      public long Started { get; set; }
       public IReadOnlyList<ImmutableList<int>.Builder> Completed { get; init; }
       public IReadOnlyList<ImmutableList<ProcPathInfo>.Builder> Processes { get; init; }
       public IReadOnlyList<ImmutableList<long>.Builder> Precedence { get; init; }
@@ -152,6 +153,7 @@ namespace MazakMachineInterface
         //Job Basics
         job.Cycles += schRow.PlanQuantity;
         AddCompletedToJob(schRow, job, procToPath);
+        AddMachiningOrCompletedToStarted(schRow, job);
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.UserHold = true;
         else
@@ -355,6 +357,7 @@ namespace MazakMachineInterface
         ).Select(j => j.CloneToDerived<ActiveJob, Job>() with
         {
           Completed = j.Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count])).ToImmutableList(),
+          RemainingToStart = j.Cycles,
           Decrements = j.Decrements,
           ScheduleId = j.ScheduleId,
           CopiedToSystem = false,
@@ -381,6 +384,7 @@ namespace MazakMachineInterface
           Processes = job.Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() }).ToImmutableList(),
           CopiedToSystem = true,
           Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
+          RemainingToStart = Math.Max(job.Cycles - job.Started, 0),
           Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
           AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
           Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList()
@@ -550,6 +554,17 @@ namespace MazakMachineInterface
           .Select(x => x.Value)
           .Sum();
         job.Completed[proc - 1][procToPath.PathForProc(proc) - 1] = cnt + schRow.CompleteQuantity;
+      }
+    }
+
+    private static void AddMachiningOrCompletedToStarted(MazakScheduleRow schRow, CurrentJob job)
+    {
+      job.Started += schRow.CompleteQuantity;
+      foreach (var schProcRow in schRow.Processes)
+      {
+        job.Started += schProcRow.ProcessBadQuantity + schProcRow.ProcessExecuteQuantity;
+        if (schProcRow.ProcessNumber > 1)
+          job.Started += schProcRow.ProcessMaterialQuantity;
       }
     }
 
@@ -738,11 +753,19 @@ namespace MazakMachineInterface
             Type = InProcessMaterialLocation.LocType.Free
           };
 
-          // load queued material
+          // Check for queued material
           List<BlackMaple.MachineFramework.QueuedMaterial> queuedMat = null;
           if (jobsByUniq.ContainsKey(operation.Unique))
           {
             var job = jobsByUniq[operation.Unique];
+
+            // add loads on process 1 into the job started.  Loads on other
+            // processes are calculated during AddMachiningOrCompletedToStarted
+            if (operation.Process == 1)
+            {
+              job.Started += 1;
+            }
+
             var queue = job.Processes[operation.Process - 1][operation.Path - 1].InputQueue;
             if (!string.IsNullOrEmpty(queue))
             {
