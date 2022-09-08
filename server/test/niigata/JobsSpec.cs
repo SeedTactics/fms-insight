@@ -139,7 +139,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         UniqueStr = "u2",
         PartName = "p1",
         RouteStartUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-        Cycles = 0,
+        Cycles = 40,
         Processes = ImmutableList.Create(new ProcessInfo()
         {
           Paths = ImmutableList.Create(new ProcPathInfo()
@@ -155,7 +155,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         UniqueStr = "u3",
         PartName = "p1",
         RouteStartUTC = new DateTime(2020, 04, 19, 10, 18, 0, DateTimeKind.Utc),
-        Cycles = 0,
+        Cycles = 50,
         Processes = ImmutableList.Create(new ProcessInfo()
         {
           Paths = ImmutableList.Create(new ProcPathInfo()
@@ -327,6 +327,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           CopiedToSystem = true,
           Cycles = 70 - 30,
+          RemainingToStart = 0, // zero since there is a decrement
           Completed = ImmutableList.Create(ImmutableList.Create(1)),
           Precedence = ImmutableList.Create(ImmutableList.Create(3L)), // has last precedence
           Decrements = job1Decrements,
@@ -337,7 +338,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectedJob2 = j2.CloneToDerived<ActiveJob, Job>() with
         {
           CopiedToSystem = true,
-          Cycles = 0,
+          Cycles = 40,
+          RemainingToStart = 40 - 11,
           Completed = ImmutableList.Create(ImmutableList.Create(0)),
           Precedence = ImmutableList.Create(ImmutableList.Create(2L)), // has middle precedence
           Decrements = null,
@@ -348,7 +350,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var expectedJob3 = j3.CloneToDerived<ActiveJob, Job>() with
         {
           CopiedToSystem = true,
-          Cycles = 0,
+          Cycles = 50,
+          RemainingToStart = 50,
           Completed = ImmutableList.Create(ImmutableList.Create(0)),
           Precedence = ImmutableList.Create(ImmutableList.Create(1L)), // has first precedence
           Decrements = null,
@@ -388,6 +391,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Pallets = new List<PalletAndMaterial> { pal1, pal2 },
         QueuedMaterial = new List<InProcessMaterialAndJob> { queuedMat },
         UnarchivedJobs = new List<HistoricJob> { j.CloneToDerived<HistoricJob, Job>() with { Decrements = job1Decrements }, j2.CloneToDerived<HistoricJob, Job>(), j3.CloneToDerived<HistoricJob, Job>() },
+        CyclesStartedOnProc1 = new Dictionary<string, int>() { { "u1", 5 }, { "u2", 11 } },
       });
 
       ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt,

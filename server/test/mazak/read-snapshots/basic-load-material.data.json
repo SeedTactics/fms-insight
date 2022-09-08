@@ -257,7 +257,7 @@
           "MazakScheduleRowId": 1,
           "FixQuantity": 1,
           "ProcessNumber": 2,
-          "ProcessMaterialQuantity": 0,
+          "ProcessMaterialQuantity": 3,
           "ProcessExecuteQuantity": 0,
           "ProcessBadQuantity": 0,
           "ProcessMachine": 0,

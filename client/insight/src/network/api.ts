@@ -3699,6 +3699,7 @@ export class ActiveJob extends HistoricJob implements IActiveJob {
     completed?: number[][] | undefined;
     precedence?: number[][] | undefined;
     assignedWorkorders?: string[] | undefined;
+    remainingToStart?: number | undefined;
 
     constructor(data?: IActiveJob) {
         super(data);
@@ -3722,6 +3723,7 @@ export class ActiveJob extends HistoricJob implements IActiveJob {
                 for (let item of _data["AssignedWorkorders"])
                     this.assignedWorkorders!.push(item);
             }
+            this.remainingToStart = _data["RemainingToStart"];
         }
     }
 
@@ -3749,6 +3751,7 @@ export class ActiveJob extends HistoricJob implements IActiveJob {
             for (let item of this.assignedWorkorders)
                 data["AssignedWorkorders"].push(item);
         }
+        data["RemainingToStart"] = this.remainingToStart;
         super.toJSON(data);
         return data;
     }
@@ -3758,6 +3761,7 @@ export interface IActiveJob extends IHistoricJob {
     completed?: number[][] | undefined;
     precedence?: number[][] | undefined;
     assignedWorkorders?: string[] | undefined;
+    remainingToStart?: number | undefined;
 }
 
 export class DecrementQuantity implements IDecrementQuantity {

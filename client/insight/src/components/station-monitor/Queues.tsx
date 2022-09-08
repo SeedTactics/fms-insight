@@ -142,7 +142,7 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
       <JobTableRow
         $noBorderBottom
         $highlightedRow={highlRow}
-        $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}
+        $noncompletedRow={j.remainingToStart - j.assignedRaw > 0}
       >
         <TableCell>
           <Box
@@ -152,28 +152,16 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
             }}
           >
             <Box sx={{ mr: "0.2em" }}>
-              <PartIdenticon part={j.job.partName} size={j.pathDetails === null ? 25 : 40} />
+              <PartIdenticon part={j.job.partName} size={25} />
             </Box>
             <div>
               <Typography variant="body2" component="span" display="block">
                 {j.job.unique}
               </Typography>
-              {j.pathDetails !== null ? (
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  display="block"
-                  sx={{
-                    maxWidth: "20em",
-                  }}
-                >
-                  {j.pathDetails}
-                </Typography>
-              ) : undefined}
             </div>
           </Box>
         </TableCell>
-        <TableCell>{j.path.simulatedStartingUTC.toLocaleString()}</TableCell>
+        <TableCell>{j.startingTime ? j.startingTime.toLocaleString() : ""}</TableCell>
         <TableCell>
           {j.rawMatName === j.job.partName ? (
             j.rawMatName
@@ -203,7 +191,7 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
           </Tooltip>
         </TableCell>
         <TableCell align="right">
-          {j.plannedQty}
+          {j.job.cycles ?? 0}
           {allowEditQty ? (
             <Tooltip title="Edit">
               <IconButton size="small" onClick={() => props.editQty(j)}>
@@ -212,17 +200,15 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
             </Tooltip>
           ) : undefined}
         </TableCell>
-        <TableCell align="right">{j.startedQty}</TableCell>
+        <TableCell align="right">{j.remainingToStart}</TableCell>
         <TableCell align="right">{j.assignedRaw}</TableCell>
         <TableCell align="right">
           <Tooltip
             title={
-              j.startedQty > 0 || j.assignedRaw > 0
-                ? `${j.plannedQty} - ${j.startedQty} - ${j.assignedRaw}`
-                : ""
+              j.remainingToStart > 0 || j.assignedRaw > 0 ? `${j.remainingToStart} - ${j.assignedRaw}` : ""
             }
           >
-            <span>{j.plannedQty - j.startedQty - j.assignedRaw}</span>
+            <span>{Math.max(j.remainingToStart - j.assignedRaw, 0)}</span>
           </Tooltip>
         </TableCell>
         <TableCell align="right">{j.availableUnassigned}</TableCell>
@@ -234,10 +220,7 @@ function RawMaterialJobRow(props: RawMaterialJobRowProps) {
           </Tooltip>
         </TableCell>
       </JobTableRow>
-      <JobTableRow
-        $highlightedRow={highlRow}
-        $noncompletedRow={j.plannedQty - j.startedQty - j.assignedRaw > 0}
-      >
+      <JobTableRow $highlightedRow={highlRow} $noncompletedRow={j.remainingToStart - j.assignedRaw > 0}>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={10}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <JobDetails job={j.job} checkAnalysisMonth={false} />
@@ -270,7 +253,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
           <TableCell>Material</TableCell>
           <TableCell>Note</TableCell>
           <TableCell align="right">Planned Quantity</TableCell>
-          <TableCell align="right">Started Quantity</TableCell>
+          <TableCell align="right">Remaining To Start</TableCell>
           <TableCell align="right">Assigned Raw Material</TableCell>
           <TableCell align="right">Required</TableCell>
           <TableCell align="right">Available Unassigned</TableCell>
@@ -384,7 +367,6 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
         }),
         body: JSON.stringify({
           Unique: props.job.job.unique,
-          Proc1Path: props.job.proc1Path,
           Quantity: newQty,
         }),
       });
@@ -411,20 +393,27 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
           </DialogTitle>
           <DialogContent>
             <p>
-              {props.job.plannedQty} currently planned, {props.job.startedQty} started
+              {props.job.job.cycles} currently planned, {props.job.remainingToStart} remaining to start
             </p>
             <TextField
               variant="outlined"
               fullWidth
               autoFocus
-              inputProps={{ style: { textAlign: "right" }, min: props.job.startedQty }}
+              inputProps={{
+                style: { textAlign: "right" },
+                min: (props.job.job.cycles ?? 0) - props.job.remainingToStart,
+              }}
               type="number"
               value={newQty === null ? "" : newQty}
               onChange={(e) => setNewQty(parseInt(e.target.value))}
             />
           </DialogContent>
           <DialogActions>
-            <Button color="primary" disabled={running || newQty === null || isNaN(newQty)} onClick={setQty}>
+            <Button
+              color="primary"
+              disabled={running || newQty === null || isNaN(newQty)}
+              onClick={() => void setQty()}
+            >
               {running ? <CircularProgress size={10} /> : undefined}
               Set Quantity
             </Button>

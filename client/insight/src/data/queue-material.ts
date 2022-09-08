@@ -124,37 +124,33 @@ export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
 
 export interface JobRawMaterialData {
   readonly job: Readonly<api.IActiveJob>;
-  readonly proc1Path: number;
-  readonly path: Readonly<api.IProcPathInfo>;
-  readonly pathDetails: null | string;
+  readonly startingTime: Date | undefined;
   readonly rawMatName: string;
-  readonly plannedQty: number;
-  readonly startedQty: number;
+  readonly remainingToStart: number;
   readonly assignedRaw: number;
   readonly availableUnassigned: number;
 }
 
-function isMatDuringProc1(unique: string, proc1path: number, m: Readonly<api.IInProcessMaterial>): boolean {
-  if (m.jobUnique !== unique) return false;
-
-  if (m.location.type === api.LocType.OnPallet) {
-    return m.process === 1 && m.path === proc1path;
-  } else {
-    return (
-      m.action.type === api.ActionType.Loading &&
-      m.action.processAfterLoad === 1 &&
-      m.action.pathAfterLoad === proc1path
-    );
-  }
-}
-
-function isMatAssigned(unique: string, proc1path: number, m: Readonly<api.IInProcessMaterial>): boolean {
+function isMatAssignedRaw(unique: string, m: Readonly<api.IInProcessMaterial>): boolean {
   return (
     m.jobUnique === unique &&
     m.location.type === api.LocType.InQueue &&
     m.action.type !== api.ActionType.Loading &&
+    m.process === 0
+  );
+}
+
+function isMatAvailUnassigned(
+  queue: string,
+  rawMatName: string,
+  m: Readonly<api.IInProcessMaterial>
+): boolean {
+  return (
+    m.location.type === api.LocType.InQueue &&
+    m.location.currentQueue === queue &&
+    (!m.jobUnique || m.jobUnique === "") &&
     m.process === 0 &&
-    m.path === proc1path
+    m.partName === rawMatName
   );
 }
 
@@ -167,46 +163,33 @@ export function extractJobRawMaterial(
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
     .filter(
-      ([, j]) => LazySeq.of(j.completed?.[j.procsAndPaths.length - 1] ?? []).sumBy((x) => x) < (j.cycles ?? 0)
+      ([, j]) =>
+        (j.remainingToStart === undefined || j.remainingToStart > 0) &&
+        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? []).anyMatch((p) => p.inputQueue === queue)
     )
-    .flatMap(([, j]) =>
-      j.procsAndPaths[0].paths
-        .map((path, idx) => ({ path, pathNum: idx + 1 }))
-        .filter((p) => p.path.inputQueue == queue)
-        .map(({ path, pathNum }) => {
-          const rawMatName = path.casting && path.casting !== "" ? path.casting : j.partName;
-          return {
-            job: j,
-            // Eventually, once everyone has updated to a version which removes path groups and all existing jobs
-            // no longer use path groups, change this to merge quantites from all paths so each job is just one row
-            proc1Path: pathNum,
-            path: path,
-            rawMatName: rawMatName,
-            pathDetails: j.procsAndPaths[0].paths.length === 1 ? null : describePath(path),
-            plannedQty: j.cycles ?? 0,
-            startedQty:
-              (j.completed?.[0]?.[pathNum - 1] || 0) +
-              LazySeq.of(mats)
-                .filter((m) => isMatDuringProc1(j.unique, pathNum, m))
-                .length(),
-            assignedRaw: LazySeq.of(mats)
-              .filter((m) => isMatAssigned(j.unique, pathNum, m))
-              .length(),
-            availableUnassigned: LazySeq.of(mats)
-              .filter(
-                (m) =>
-                  m.location.type === api.LocType.InQueue &&
-                  m.location.currentQueue === queue &&
-                  (!m.jobUnique || m.jobUnique === "") &&
-                  m.process === 0 &&
-                  m.partName === rawMatName
-              )
-              .length(),
-          };
-        })
-    )
+    .map(([, j]) => {
+      const rawMatName: string =
+        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? [])
+          .collect((path) => (path.casting && path.casting !== "" ? path.casting : undefined))
+          .head() ?? j.partName;
+      return {
+        job: j,
+        startingTime: LazySeq.of(j.procsAndPaths?.[0]?.paths ?? [])
+          .map((p) => p.simulatedStartingUTC)
+          .minBy((d) => d),
+        rawMatName: rawMatName,
+        remainingToStart: j.remainingToStart ?? 0,
+        assignedRaw: LazySeq.of(mats)
+          .filter((m) => isMatAssignedRaw(j.unique, m))
+          .length(),
+        availableUnassigned: LazySeq.of(mats)
+          .filter((m) => isMatAvailUnassigned(queue, rawMatName, m))
+          .length(),
+      };
+      // })
+    })
     .toSortedArray((x) => {
-      const prec = x.job.precedence?.[0]?.[x.proc1Path - 1];
+      const prec = LazySeq.of(x.job.precedence?.[0] ?? []).minBy((p) => p);
       if (!prec || prec < 0) return Number.MAX_SAFE_INTEGER;
       return prec;
     });

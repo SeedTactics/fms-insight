@@ -3051,6 +3051,11 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "RemainingToStart": {
+                "type": "integer",
+                "format": "int64",
+                "nullable": true
               }
             }
           }

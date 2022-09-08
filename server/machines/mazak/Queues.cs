@@ -458,6 +458,7 @@ namespace MazakMachineInterface
 
     private static int CountCompletedOrMachiningStarted(ScheduleWithQueues sch)
     {
+      // the logic here should match the calculation of RemainingToRun when creating the CurrentStatus ActiveJobs
       var cnt = sch.SchRow.CompleteQuantity;
       foreach (var schProcRow in sch.Procs.Values)
       {

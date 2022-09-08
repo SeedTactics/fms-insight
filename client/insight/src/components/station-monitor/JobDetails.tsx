@@ -75,6 +75,12 @@ function JobDisplay(props: JobDisplayProps) {
         <dd>
           {displayDate(props.job.routeStartUTC)} to {displayDate(props.job.routeEndUTC)}
         </dd>
+        {props.job.cycles ? (
+          <>
+            <dt>Quantity</dt>
+            <dd>{props.job.cycles}</dd>
+          </>
+        ) : undefined}
         {props.job.comment !== undefined && props.job.comment !== "" ? (
           <>
             <dt>Comment</dt>

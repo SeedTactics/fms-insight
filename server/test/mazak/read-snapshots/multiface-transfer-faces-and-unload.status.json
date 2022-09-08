@@ -16,6 +16,7 @@
       "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
       "Cycles": 40,
+      "RemainingToStart": 40,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -410,6 +411,7 @@
       "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
       "Cycles": 30,
+      "RemainingToStart": 21,
       "ProcsAndPaths": [
         {
           "paths": [
@@ -724,6 +726,7 @@
       "Bookings": ["book1", "book2"],
       "ManuallyCreated": false,
       "Cycles": 22,
+      "RemainingToStart": 22,
       "ProcsAndPaths": [
         {
           "paths": [
