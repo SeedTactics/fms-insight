@@ -44,6 +44,8 @@ import {
   DataTableBody,
   DataTableActionZoom,
   DataTableActionZoomType,
+  useColSort,
+  TableZoom,
 } from "./DataTable.js";
 import { InspectionLogEntry } from "../../cell-status/inspections.js";
 import { Typography } from "@mui/material";
@@ -51,7 +53,7 @@ import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/res
 import { addDays, addHours } from "date-fns";
 import { useSetRecoilState } from "recoil";
 import { materialToShowInDialog } from "../../cell-status/material-details.js";
-import { LazySeq, HashMap, ToComparable } from "@seedtactics/immutable-collections";
+import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
 
 enum ColumnId {
   Date,
@@ -95,48 +97,15 @@ const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
   },
 ];
 
-export interface InspectionDataTableProps {
-  readonly points: Iterable<InspectionLogEntry>;
-  readonly default_date_range: Date[];
-  readonly zoomType?: DataTableActionZoomType;
-  readonly extendDateRange?: (numDays: number) => void;
-  readonly hideOpenDetailColumn?: boolean;
-}
-
-export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
-  const setMatToShow = useSetRecoilState(materialToShowInDialog);
-  const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [curPath, setCurPathOpen] = React.useState<string | undefined>(undefined);
+function useZoom(
+  zoomType: DataTableActionZoomType | undefined,
+  extendDateRange: ((numDays: number) => void) | undefined,
+  default_date_range: Date[]
+): TableZoom {
   const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
 
-  function handleRequestSort(property: ColumnId) {
-    if (orderBy === property) {
-      setOrder(order === "asc" ? "desc" : "asc");
-    } else {
-      setOrderBy(property);
-      setOrder("asc");
-    }
-  }
-
-  let sortOn: ToComparable<TriggeredInspectionEntry> = {
-    asc: columns[0].getForSort ?? columns[0].getDisplay,
-  };
-  for (const col of columns) {
-    if (col.id === orderBy && order === "asc") {
-      sortOn = { asc: col.getForSort ?? col.getDisplay };
-    } else if (col.id === orderBy) {
-      sortOn = { desc: col.getForSort ?? col.getDisplay };
-    }
-  }
-
-  const groups = groupInspectionsByPath(props.points, curZoom, sortOn);
-  const paths = LazySeq.of(groups).toSortedArray(([x]) => x);
-
   let zoom: DataTableActionZoom | undefined;
-  if (props.zoomType && props.zoomType === DataTableActionZoomType.Last30Days) {
+  if (zoomType && zoomType === DataTableActionZoomType.Last30Days) {
     zoom = {
       type: DataTableActionZoomType.Last30Days,
       set_days_back: (numDaysBack) => {
@@ -148,25 +117,43 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
         }
       },
     };
-  } else if (props.zoomType && props.zoomType === DataTableActionZoomType.ZoomIntoRange) {
+  } else if (zoomType && zoomType === DataTableActionZoomType.ZoomIntoRange) {
     zoom = {
       type: DataTableActionZoomType.ZoomIntoRange,
-      default_date_range: props.default_date_range,
+      default_date_range,
       current_date_zoom: curZoom,
       set_date_zoom_range: setCurZoom,
     };
-  } else if (
-    props.zoomType &&
-    props.extendDateRange &&
-    props.zoomType === DataTableActionZoomType.ExtendDays
-  ) {
+  } else if (zoomType && extendDateRange && zoomType === DataTableActionZoomType.ExtendDays) {
     zoom = {
       type: DataTableActionZoomType.ExtendDays,
-      curStart: props.default_date_range[0],
-      curEnd: props.default_date_range[1],
-      extend: props.extendDateRange,
+      curStart: default_date_range[0],
+      curEnd: default_date_range[1],
+      extend: extendDateRange,
     };
   }
+
+  return { zoom, zoomRange: curZoom };
+}
+
+export interface InspectionDataTableProps {
+  readonly points: Iterable<InspectionLogEntry>;
+  readonly default_date_range: Date[];
+  readonly zoomType?: DataTableActionZoomType;
+  readonly extendDateRange?: (numDays: number) => void;
+  readonly hideOpenDetailColumn?: boolean;
+}
+
+export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
+  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+  const sort = useColSort(ColumnId.Date, columns);
+  const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [curPath, setCurPathOpen] = React.useState<string | undefined>(undefined);
+  const tzoom = useZoom(props.zoomType, props.extendDateRange, props.default_date_range);
+
+  const groups = groupInspectionsByPath(props.points, tzoom.zoomRange, sort.sortOn);
+  const paths = LazySeq.of(groups).toSortedArray(([x]) => x);
 
   return (
     <div style={{ width: "100%" }}>
@@ -189,13 +176,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
             <AccordionDetails>
               <div style={{ width: "100%" }}>
                 <Table>
-                  <DataTableHead
-                    columns={columns}
-                    onRequestSort={handleRequestSort}
-                    orderBy={orderBy}
-                    order={order}
-                    showDetailsCol
-                  />
+                  <DataTableHead columns={columns} sort={sort} showDetailsCol />
                   <DataTableBody
                     columns={columns}
                     pageData={LazySeq.of(points.material)
@@ -221,12 +202,9 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                   />
                 </Table>
                 <DataTableActions
-                  page={page}
+                  tpage={{ page, rowsPerPage, setPage: (p) => setPages(pages.set(path, p)), setRowsPerPage }}
                   count={points.material.length}
-                  rowsPerPage={rowsPerPage}
-                  setPage={(p) => setPages(pages.set(path, p))}
-                  setRowsPerPage={setRowsPerPage}
-                  zoom={zoom}
+                  zoom={tzoom.zoom}
                 />
               </div>
             </AccordionDetails>

@@ -46,13 +46,15 @@ import {
 import {
   Column,
   DataTableActions,
-  DataTableActionZoom,
-  DataTableActionZoomType,
   DataTableBody,
   DataTableHead,
+  TablePage,
+  TableZoom,
+  useColSort,
+  useTablePage,
+  useTableZoomForPeriod,
 } from "./DataTable.js";
 import { LazySeq, OrderedMap, ToComparable } from "@seedtactics/immutable-collections";
-import { addDays, addHours, addMonths } from "date-fns";
 
 type ReplacementTableProps = {
   readonly station: StationGroupAndNum | null;
@@ -98,95 +100,22 @@ const summaryColumns: ReadonlyArray<Column<SummaryColumnId, ToolReplacementSumma
   // TODO: show graph of all replacements
 ];
 
-type ZoomAndPage = {
-  readonly page: number;
-  readonly setPage: (p: React.SetStateAction<number>) => void;
-  readonly rowsPerPage: number;
-  readonly setRowsPerPage: (r: React.SetStateAction<number>) => void;
-  readonly zoomRange: { readonly start: Date; readonly end: Date } | undefined;
-  readonly zoom: DataTableActionZoom;
-  readonly period: SelectedAnalysisPeriod;
-};
-
-function useZoomAndPage(): ZoomAndPage {
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
-
-  let zoom: DataTableActionZoom;
-  if (period.type === "Last30") {
-    zoom = {
-      type: DataTableActionZoomType.Last30Days,
-      set_days_back: (numDaysBack) => {
-        if (numDaysBack) {
-          const now = new Date();
-          setCurZoom({ start: addDays(now, -numDaysBack), end: addHours(now, 1) });
-        } else {
-          setCurZoom(undefined);
-        }
-      },
-    };
-  } else {
-    zoom = {
-      type: DataTableActionZoomType.ZoomIntoRange,
-      default_date_range: [period.month, addMonths(period.month, 1)],
-      current_date_zoom: curZoom,
-      set_date_zoom_range: setCurZoom,
-    };
-  }
-
-  return { page, setPage, rowsPerPage, setRowsPerPage, zoom, period, zoomRange: curZoom };
-}
-
-type ColSort<E, C> = {
-  readonly orderBy: E;
-  readonly order: "asc" | "desc";
-  readonly sortOn: ToComparable<C>;
-  readonly handleRequestSort: (property: E) => void;
-};
-
-function useColSort<E, C>(defSortCol: E, cols: ReadonlyArray<Column<E, C>>): ColSort<E, C> {
-  const [orderBy, setOrderBy] = React.useState(defSortCol);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-
-  function handleRequestSort(property: E) {
-    if (orderBy === property) {
-      setOrder(order === "asc" ? "desc" : "asc");
-    } else {
-      setOrderBy(property);
-      setOrder("asc");
-    }
-  }
-
-  let sortOn: ToComparable<C> = {
-    asc: cols[0].getForSort ?? cols[0].getDisplay,
-  };
-  for (const col of cols) {
-    if (col.id === orderBy && order === "asc") {
-      sortOn = { asc: col.getForSort ?? col.getDisplay };
-    } else if (col.id === orderBy) {
-      sortOn = { desc: col.getForSort ?? col.getDisplay };
-    }
-  }
-
-  return { orderBy, order, sortOn, handleRequestSort };
-}
-
 type SummaryPageData = {
   readonly pageData: ReadonlyArray<ToolReplacementSummary>;
   readonly totalDataLength: number;
 };
 
 function useSummaryData(
-  zp: ZoomAndPage,
+  tpage: TablePage,
+  zoom: TableZoom,
+  period: SelectedAnalysisPeriod,
   station: StationGroupAndNum | null | undefined,
   sortOn: ToComparable<ToolReplacementSummary>
 ): SummaryPageData {
   const allReplacements = useRecoilValue(
-    zp.period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
   );
-  const zoomRange = zp.zoomRange;
+  const zoomRange = zoom.zoomRange;
   let allData: LazySeq<ToolReplacements>;
   if (station) {
     const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
@@ -215,35 +144,24 @@ function useSummaryData(
     )
     .map(([, summary]) => summary)
     .toSortedArray(sortOn);
-  const pageData = allSorted.slice(zp.page * zp.rowsPerPage, (zp.page + 1) * zp.rowsPerPage);
+  const pageData = allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage);
   return { pageData, totalDataLength: allSorted.length };
 }
 
 const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
-  const zp = useZoomAndPage();
-  const { order, orderBy, handleRequestSort, sortOn } = useColSort(SummaryColumnId.Tool, summaryColumns);
-  const { pageData, totalDataLength } = useSummaryData(zp, props.station, sortOn);
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const tpage = useTablePage();
+  const zoom = useTableZoomForPeriod(period);
+  const sort = useColSort(SummaryColumnId.Tool, summaryColumns);
+  const { pageData, totalDataLength } = useSummaryData(tpage, zoom, period, props.station, sort.sortOn);
 
   return (
     <div>
       <Table>
-        <DataTableHead
-          columns={summaryColumns}
-          onRequestSort={handleRequestSort}
-          orderBy={orderBy}
-          order={order}
-          showDetailsCol={false}
-        />
+        <DataTableHead columns={summaryColumns} sort={sort} showDetailsCol={false} />
         <DataTableBody columns={summaryColumns} pageData={pageData} />
       </Table>
-      <DataTableActions
-        page={zp.page}
-        count={totalDataLength}
-        rowsPerPage={zp.rowsPerPage}
-        setPage={zp.setPage}
-        setRowsPerPage={zp.setRowsPerPage}
-        zoom={zp.zoom}
-      />
+      <DataTableActions tpage={tpage} zoom={zoom.zoom} count={totalDataLength} />
     </div>
   );
 });
@@ -324,14 +242,16 @@ type AllPageData = {
 };
 
 function useAllData(
-  zp: ZoomAndPage,
+  tpage: TablePage,
+  zoom: TableZoom,
+  period: SelectedAnalysisPeriod,
   station: StationGroupAndNum | null | undefined,
   sortOn: ToComparable<ToolReplacementAndStationDate>
 ): AllPageData {
   const allReplacements = useRecoilValue(
-    zp.period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
   );
-  const zoomRange = zp.zoomRange;
+  const zoomRange = zoom.zoomRange;
   let allData: LazySeq<ToolReplacementAndStationDate>;
   if (station) {
     const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
@@ -352,39 +272,25 @@ function useAllData(
     );
   }
   const allSorted = allData.toSortedArray(sortOn);
-  const pageData = allSorted.slice(zp.page * zp.rowsPerPage, (zp.page + 1) * zp.rowsPerPage);
+  const pageData = allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage);
   return { pageData, totalDataLength: allSorted.length };
 }
 
 const AllReplacementTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
-  const zp = useZoomAndPage();
-  const { order, orderBy, handleRequestSort, sortOn } = useColSort(
-    AllReplacementColumnId.Date,
-    allReplacementsColumns
-  );
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const tpage = useTablePage();
+  const zoom = useTableZoomForPeriod(period);
+  const sort = useColSort(AllReplacementColumnId.Date, allReplacementsColumns);
 
-  const { pageData, totalDataLength } = useAllData(zp, props.station, sortOn);
+  const { pageData, totalDataLength } = useAllData(tpage, zoom, period, props.station, sort.sortOn);
 
   return (
     <div>
       <Table>
-        <DataTableHead
-          columns={allReplacementsColumns}
-          onRequestSort={handleRequestSort}
-          orderBy={orderBy}
-          order={order}
-          showDetailsCol={false}
-        />
+        <DataTableHead columns={allReplacementsColumns} sort={sort} showDetailsCol={false} />
         <DataTableBody columns={allReplacementsColumns} pageData={pageData} />
       </Table>
-      <DataTableActions
-        page={zp.page}
-        count={totalDataLength}
-        rowsPerPage={zp.rowsPerPage}
-        setPage={zp.setPage}
-        setRowsPerPage={zp.setRowsPerPage}
-        zoom={zp.zoom}
-      />
+      <DataTableActions tpage={tpage} zoom={zoom.zoom} count={totalDataLength} />
     </div>
   );
 });

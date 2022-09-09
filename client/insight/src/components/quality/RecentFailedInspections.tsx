@@ -43,9 +43,16 @@ import {
   FailedInspectionEntry,
   copyFailedInspectionsToClipboard,
 } from "../../data/results.inspection.js";
-import { LazySeq, ToComparable } from "@seedtactics/immutable-collections";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { addDays, startOfToday } from "date-fns";
-import { DataTableHead, DataTableBody, DataTableActions, Column } from "../analysis/DataTable.js";
+import {
+  DataTableHead,
+  DataTableBody,
+  DataTableActions,
+  Column,
+  useColSort,
+  useTablePage,
+} from "../analysis/DataTable.js";
 import { materialToShowInDialog } from "../../cell-status/material-details.js";
 import { RouteLocation, useCurrentRoute, useIsDemo } from "../routes.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
@@ -99,47 +106,21 @@ const columns: ReadonlyArray<Column<ColumnId, FailedInspectionEntry>> = [
 
 function RecentFailedTable(props: RecentFailedInspectionsProps) {
   const demo = useIsDemo();
-  const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
-  const [order, setOrder] = React.useState<"asc" | "desc">("desc");
-  const [origCurPage, setPage] = React.useState<number>(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(50);
+  const sort = useColSort(ColumnId.Date, columns);
+  const tpage = useTablePage();
   const [, setRoute] = useCurrentRoute();
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
-  function handleRequestSort(property: ColumnId) {
-    if (orderBy === property) {
-      setOrder(order === "asc" ? "desc" : "asc");
-    } else {
-      setOrderBy(property);
-      setOrder("asc");
-    }
-  }
-
-  let sortOn: ToComparable<FailedInspectionEntry> = { asc: columns[0].getForSort ?? columns[0].getDisplay };
-  for (const col of columns) {
-    if (col.id === orderBy && order === "asc") {
-      sortOn = { asc: col.getForSort || col.getDisplay };
-    } else if (col.id === orderBy) {
-      sortOn = { desc: col.getForSort || col.getDisplay };
-    }
-  }
-
-  const curPage = Math.min(origCurPage, Math.ceil(props.failed.length / rowsPerPage));
-  const points = LazySeq.of(props.failed).sortBy(sortOn);
+  const curPage = Math.min(tpage.page, Math.ceil(props.failed.length / tpage.rowsPerPage));
+  const points = LazySeq.of(props.failed).sortBy(sort.sortOn);
 
   return (
     <>
       <Table>
-        <DataTableHead
-          columns={columns}
-          onRequestSort={handleRequestSort}
-          orderBy={orderBy}
-          order={order}
-          showDetailsCol={!demo}
-        />
+        <DataTableHead columns={columns} sort={sort} showDetailsCol={!demo} />
         <DataTableBody
           columns={columns}
-          pageData={points.drop(curPage * rowsPerPage).take(rowsPerPage)}
+          pageData={points.drop(curPage * tpage.rowsPerPage).take(tpage.rowsPerPage)}
           onClickDetails={
             demo
               ? undefined
@@ -161,13 +142,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
           }
         />
       </Table>
-      <DataTableActions
-        page={curPage}
-        count={props.failed.length}
-        rowsPerPage={rowsPerPage}
-        setPage={setPage}
-        setRowsPerPage={setRowsPerPage}
-      />
+      <DataTableActions tpage={{ ...tpage, page: curPage }} count={props.failed.length} />
     </>
   );
 }

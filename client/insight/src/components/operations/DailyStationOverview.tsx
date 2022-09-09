@@ -84,7 +84,7 @@ interface OutlierCycleProps {
 
 const OutlierCycles = React.memo(function OutlierCycles(props: OutlierCycleProps) {
   const matSummary = useRecoilValue(last30MaterialSummary);
-  const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
+  const today = startOfToday();
   const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
   const allCycles = useRecoilValue(last30StationCycles);
   const points = React.useMemo(() => {
@@ -134,10 +134,9 @@ const OutlierCycles = React.memo(function OutlierCycles(props: OutlierCycleProps
         <StationDataTable
           points={points.data}
           matsById={matSummary.matsById}
-          default_date_range={default_date_range}
-          current_date_zoom={{ start: default_date_range[0], end: default_date_range[1] }}
+          current_date_zoom={{ start: addDays(today, -4), end: addDays(today, 1) }}
           set_date_zoom_range={undefined}
-          last30_days={true}
+          period={{ type: "Last30" }}
           showWorkorderAndInspect={false}
           defaultSortDesc
         />
@@ -421,10 +420,9 @@ const PartStationCycleCart = React.memo(function PartStationCycleChart(props: Pa
           <StationDataTable
             points={points.data}
             matsById={matSummary.matsById}
-            default_date_range={default_date_range}
+            period={{ type: "Last30" }}
             current_date_zoom={undefined}
             set_date_zoom_range={undefined}
-            last30_days={true}
             showWorkorderAndInspect={true}
             hideMedian={props.showLabor}
           />
