@@ -69,6 +69,8 @@ export interface Column<Id, Row> {
   readonly getDisplay: (c: Row) => string;
   readonly getForSort?: ToComparableBase<Row>;
   readonly getForExport?: (c: Row) => string;
+  readonly ExpandedCell?: React.ComponentType<{ readonly row: Row }>;
+  readonly ignoreDuringExport?: boolean;
 }
 
 export type ColSort<Id, Row> = {
@@ -116,6 +118,14 @@ export type TableZoom = {
   readonly zoom: DataTableActionZoom | undefined;
 };
 
+const DataCell = styled(TableCell, { shouldForwardProp: (p) => p !== "expand" && p !== "nowrap" })<{
+  expand?: boolean;
+  nowrap?: boolean;
+}>(({ expand, nowrap }) => ({
+  whitespace: expand || !nowrap ? undefined : "nowrap",
+  width: expand ? "100%" : undefined,
+}));
+
 export interface DataTableHeadProps<Id, Row> {
   readonly sort: ColSort<Id, Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
@@ -125,13 +135,16 @@ export interface DataTableHeadProps<Id, Row> {
 export function DataTableHead<Id extends string | number, Row>(
   props: DataTableHeadProps<Id, Row>
 ): JSX.Element {
+  const nowrap = LazySeq.of(props.columns).anyMatch((c) => !c.ExpandedCell);
   return (
     <TableHead>
       <TableRow>
         {props.columns.map((col) => (
-          <TableCell
+          <DataCell
             key={col.id}
             align={col.numeric ? "right" : "left"}
+            nowrap={nowrap}
+            expand={col.ExpandedCell !== undefined}
             sortDirection={props.sort.orderBy === col.id ? props.sort.order : false}
           >
             <Tooltip title="Sort" placement={col.numeric ? "bottom-end" : "bottom-start"} enterDelay={300}>
@@ -143,9 +156,9 @@ export function DataTableHead<Id extends string | number, Row>(
                 {col.label}
               </TableSortLabel>
             </Tooltip>
-          </TableCell>
+          </DataCell>
         ))}
-        {props.showDetailsCol ? <TableCell padding="checkbox" /> : undefined}
+        {props.showDetailsCol ? <DataCell padding="checkbox" nowrap={nowrap} /> : undefined}
       </TableRow>
     </TableHead>
   );
@@ -422,21 +435,27 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
 > {
   override render(): JSX.Element {
     const onClickDetails = this.props.onClickDetails;
+    const nowrap = LazySeq.of(this.props.columns).anyMatch((c) => !c.ExpandedCell);
     return (
       <TableBody>
         {LazySeq.of(this.props.pageData).map((row, idx) => (
           <TableRow key={idx}>
             {this.props.columns.map((col) => (
-              <TableCell key={col.id} align={col.numeric ? "right" : "left"}>
-                {col.getDisplay(row)}
-              </TableCell>
+              <DataCell
+                key={col.id}
+                align={col.numeric ? "right" : "left"}
+                nowrap={nowrap}
+                expand={col.ExpandedCell !== undefined}
+              >
+                {col.ExpandedCell ? <col.ExpandedCell row={row} /> : col.getDisplay(row)}
+              </DataCell>
             ))}
             {onClickDetails ? (
-              <TableCell padding="checkbox">
+              <DataCell padding="checkbox" nowrap={nowrap}>
                 <IconButton onClick={(e) => onClickDetails(e, row)} size="large">
                   <MoreHoriz />
                 </IconButton>
-              </TableCell>
+              </DataCell>
             ) : undefined}
           </TableRow>
         ))}
@@ -448,29 +467,31 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
 export function useTableZoomForPeriod(period: SelectedAnalysisPeriod): TableZoom {
   const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
 
-  let zoom: DataTableActionZoom;
-  if (period.type === "Last30") {
-    zoom = {
-      type: DataTableActionZoomType.Last30Days,
-      set_days_back: (numDaysBack) => {
-        if (numDaysBack) {
-          const now = new Date();
-          setCurZoom({ start: addDays(now, -numDaysBack), end: addHours(now, 1) });
-        } else {
-          setCurZoom(undefined);
-        }
-      },
-    };
-  } else {
-    zoom = {
-      type: DataTableActionZoomType.ZoomIntoRange,
-      default_date_range: [period.month, addMonths(period.month, 1)],
-      current_date_zoom: curZoom,
-      set_date_zoom_range: setCurZoom,
-    };
-  }
+  return React.useMemo(() => {
+    let zoom: DataTableActionZoom;
+    if (period.type === "Last30") {
+      zoom = {
+        type: DataTableActionZoomType.Last30Days,
+        set_days_back: (numDaysBack) => {
+          if (numDaysBack) {
+            const now = new Date();
+            setCurZoom({ start: addDays(now, -numDaysBack), end: addHours(now, 1) });
+          } else {
+            setCurZoom(undefined);
+          }
+        },
+      };
+    } else {
+      zoom = {
+        type: DataTableActionZoomType.ZoomIntoRange,
+        default_date_range: [period.month, addMonths(period.month, 1)],
+        current_date_zoom: curZoom,
+        set_date_zoom_range: setCurZoom,
+      };
+    }
 
-  return { zoom, zoomRange: curZoom };
+    return { zoom, zoomRange: curZoom };
+  }, [curZoom, setCurZoom]);
 }
 
 export function useTablePage(): TablePage {
@@ -518,15 +539,19 @@ export function buildClipboardTableAsString<Id, Row>(
 ) {
   let table = "<table>\n<thead><tr>";
   for (const col of columns) {
-    table += "<th>" + col.label + "</th>";
+    if (!col.ignoreDuringExport) {
+      table += "<th>" + col.label + "</th>";
+    }
   }
   table += "</tr></thead>\n<tbody>\n";
 
   for (const row of rows) {
     table += "<tr>";
     for (const col of columns) {
-      const val = col.getForExport ? col.getForExport(row) : col.getDisplay(row);
-      table += "<td>" + val + "</td>";
+      if (!col.ignoreDuringExport) {
+        const val = col.getForExport ? col.getForExport(row) : col.getDisplay(row);
+        table += "<td>" + val + "</td>";
+      }
     }
     table += "</tr>\n";
   }
