@@ -68,6 +68,7 @@ export interface Column<Id, Row> {
   readonly label: string;
   readonly getDisplay: (c: Row) => string;
   readonly getForSort?: ToComparableBase<Row>;
+  readonly getForExport?: (c: Row) => string;
 }
 
 export type ColSort<Id, Row> = {
@@ -524,9 +525,10 @@ export function buildClipboardTableAsString<Id, Row>(
   for (const row of rows) {
     table += "<tr>";
     for (const col of columns) {
-      table += "<td>" + col.getDisplay(row) + "</td>";
+      const val = col.getForExport ? col.getForExport(row) : col.getDisplay(row);
+      table += "<td>" + val + "</td>";
     }
-    table += "</tr>";
+    table += "</tr>\n";
   }
 
   table += "</tbody>\n</table>";
@@ -534,6 +536,9 @@ export function buildClipboardTableAsString<Id, Row>(
   return table;
 }
 
-export function copyToClipboard<Id, Row>(columns: ReadonlyArray<Column<Id, Row>>, rows: Iterable<Row>): void {
+export function copyTableToClipboard<Id, Row>(
+  columns: ReadonlyArray<Column<Id, Row>>,
+  rows: Iterable<Row>
+): void {
   copy(buildClipboardTableAsString(columns, rows));
 }

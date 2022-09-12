@@ -34,17 +34,18 @@ import { Card, CardContent, CardHeader, IconButton, MenuItem, Select, Table, Too
 import { ImportExport, Dns as ToolIcon } from "@mui/icons-material";
 import * as React from "react";
 import { useRecoilValue } from "recoil";
-import { SelectedAnalysisPeriod, selectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import {
-  copyToolReplacementsToClipboard,
   last30ToolReplacements,
   specificMonthToolReplacements,
   StationGroupAndNum,
   ToolReplacement,
   ToolReplacements,
+  ToolReplacementsByStation,
 } from "../../cell-status/tool-replacements.js";
 import {
   Column,
+  copyTableToClipboard,
   DataTableActions,
   DataTableBody,
   DataTableHead,
@@ -105,17 +106,14 @@ type SummaryPageData = {
   readonly totalDataLength: number;
 };
 
-function useSummaryData(
-  tpage: TablePage,
-  zoom: TableZoom,
-  period: SelectedAnalysisPeriod,
+function create_summary_data(
+  tpage: TablePage | undefined,
+  zoom: TableZoom | undefined,
+  allReplacements: ToolReplacementsByStation,
   station: StationGroupAndNum | null | undefined,
   sortOn: ToComparable<ToolReplacementSummary>
 ): SummaryPageData {
-  const allReplacements = useRecoilValue(
-    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
-  );
-  const zoomRange = zoom.zoomRange;
+  const zoomRange = zoom?.zoomRange;
   let allData: LazySeq<ToolReplacements>;
   if (station) {
     const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
@@ -144,7 +142,9 @@ function useSummaryData(
     )
     .map(([, summary]) => summary)
     .toSortedArray(sortOn);
-  const pageData = allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage);
+  const pageData = tpage
+    ? allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage)
+    : allSorted;
   return { pageData, totalDataLength: allSorted.length };
 }
 
@@ -153,7 +153,17 @@ const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTabl
   const tpage = useTablePage();
   const zoom = useTableZoomForPeriod(period);
   const sort = useColSort(SummaryColumnId.Tool, summaryColumns);
-  const { pageData, totalDataLength } = useSummaryData(tpage, zoom, period, props.station, sort.sortOn);
+
+  const allReplacements = useRecoilValue(
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+  );
+  const { pageData, totalDataLength } = create_summary_data(
+    tpage,
+    zoom,
+    allReplacements,
+    props.station,
+    sort.sortOn
+  );
 
   return (
     <div>
@@ -188,6 +198,7 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
     label: "Date",
     getDisplay: (c) => c.time.toLocaleString(),
     getForSort: (c) => c.time.getTime(),
+    getForExport: (c) => c.time.toISOString(),
   },
   {
     id: AllReplacementColumnId.Station,
@@ -241,17 +252,14 @@ type AllPageData = {
   readonly totalDataLength: number;
 };
 
-function useAllData(
-  tpage: TablePage,
-  zoom: TableZoom,
-  period: SelectedAnalysisPeriod,
+function calculate_all_data(
+  tpage: TablePage | undefined,
+  zoom: TableZoom | undefined,
+  allReplacements: ToolReplacementsByStation,
   station: StationGroupAndNum | null | undefined,
   sortOn: ToComparable<ToolReplacementAndStationDate>
 ): AllPageData {
-  const allReplacements = useRecoilValue(
-    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
-  );
-  const zoomRange = zoom.zoomRange;
+  const zoomRange = zoom?.zoomRange;
   let allData: LazySeq<ToolReplacementAndStationDate>;
   if (station) {
     const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
@@ -272,7 +280,9 @@ function useAllData(
     );
   }
   const allSorted = allData.toSortedArray(sortOn);
-  const pageData = allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage);
+  const pageData = tpage
+    ? allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage)
+    : allSorted;
   return { pageData, totalDataLength: allSorted.length };
 }
 
@@ -282,7 +292,16 @@ const AllReplacementTable = React.memo(function ReplacementTable(props: Replacem
   const zoom = useTableZoomForPeriod(period);
   const sort = useColSort(AllReplacementColumnId.Date, allReplacementsColumns);
 
-  const { pageData, totalDataLength } = useAllData(tpage, zoom, period, props.station, sort.sortOn);
+  const allReplacements = useRecoilValue(
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+  );
+  const { pageData, totalDataLength } = calculate_all_data(
+    tpage,
+    zoom,
+    allReplacements,
+    props.station,
+    sort.sortOn
+  );
 
   return (
     <div>
@@ -294,6 +313,18 @@ const AllReplacementTable = React.memo(function ReplacementTable(props: Replacem
     </div>
   );
 });
+
+function copyToClipboard(replacements: ToolReplacementsByStation, displayType: "summary" | "details"): void {
+  if (displayType === "summary") {
+    const { pageData } = create_summary_data(undefined, undefined, replacements, undefined, (r) => r.tool);
+
+    copyTableToClipboard(summaryColumns, pageData);
+  } else {
+    const { pageData } = calculate_all_data(undefined, undefined, replacements, undefined, (r) => r.tool);
+
+    copyTableToClipboard(allReplacementsColumns, pageData);
+  }
+}
 
 const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
   readonly station: StationGroupAndNum | null;
@@ -310,7 +341,7 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
     <>
       <Tooltip title="Copy to Clipboard">
         <IconButton
-          onClick={() => copyToolReplacementsToClipboard(replacements, props.displayType)}
+          onClick={() => copyToClipboard(replacements, props.displayType)}
           style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
           size="large"
         >
