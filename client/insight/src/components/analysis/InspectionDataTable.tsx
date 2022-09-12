@@ -182,6 +182,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                     pageData={LazySeq.of(points.material)
                       .drop(page * rowsPerPage)
                       .take(rowsPerPage)}
+                    rowsPerPage={rowsPerPage}
                     onClickDetails={
                       props.hideOpenDetailColumn
                         ? undefined

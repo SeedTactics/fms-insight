@@ -121,6 +121,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
         <DataTableBody
           columns={columns}
           pageData={points.drop(curPage * tpage.rowsPerPage).take(tpage.rowsPerPage)}
+          rowsPerPage={tpage.rowsPerPage}
           onClickDetails={
             demo
               ? undefined

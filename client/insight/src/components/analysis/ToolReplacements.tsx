@@ -292,7 +292,7 @@ const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTabl
       <CurZoomContext.Provider value={zoomRange}>
         <Table>
           <DataTableHead columns={summaryColumns} sort={sort} showDetailsCol={false} />
-          <DataTableBody columns={summaryColumns} pageData={pageData} />
+          <DataTableBody columns={summaryColumns} pageData={pageData} rowsPerPage={tpage.rowsPerPage} />
         </Table>
         <DataTableActions tpage={tpage} zoom={zoom.zoom} count={allSorted.length} />
       </CurZoomContext.Provider>

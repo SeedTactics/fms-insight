@@ -279,6 +279,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
         <DataTableBody
           columns={filteredColumns}
           pageData={pageData}
+          rowsPerPage={tpage.rowsPerPage}
           onClickDetails={(e, row) => {
             if (row.material.length === 0) return;
             if (row.material.length === 1) {

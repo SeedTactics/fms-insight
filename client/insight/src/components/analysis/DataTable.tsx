@@ -428,6 +428,7 @@ export interface DataTableBodyProps<Id, Row> {
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
   readonly onClickDetails?: (event: React.MouseEvent, r: Row) => void;
+  readonly rowsPerPage?: number;
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<
@@ -436,9 +437,12 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
   override render(): JSX.Element {
     const onClickDetails = this.props.onClickDetails;
     const nowrap = LazySeq.of(this.props.columns).anyMatch((c) => !c.ExpandedCell);
+    const rows = [...this.props.pageData];
+    const emptyRows =
+      this.props.rowsPerPage !== undefined ? Math.max(0, this.props.rowsPerPage - rows.length) : 0;
     return (
       <TableBody>
-        {LazySeq.of(this.props.pageData).map((row, idx) => (
+        {rows.map((row, idx) => (
           <TableRow key={idx}>
             {this.props.columns.map((col) => (
               <DataCell
@@ -459,6 +463,11 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
             ) : undefined}
           </TableRow>
         ))}
+        {emptyRows > 0 ? (
+          <TableRow style={{ height: 53 * emptyRows }}>
+            <TableCell colSpan={this.props.columns.length + (this.props.onClickDetails ? 1 : 0)} />
+          </TableRow>
+        ) : undefined}
       </TableBody>
     );
   }
