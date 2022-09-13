@@ -41,8 +41,11 @@ import {
   DataTableBody,
   DataTableActionZoom,
   DataTableActionZoomType,
+  useColSort,
+  useTablePage,
+  TableZoom,
 } from "./DataTable.js";
-import { addDays, addHours } from "date-fns";
+import { addDays, addHours, addMonths } from "date-fns";
 import * as api from "../../network/api.js";
 import { Menu } from "@mui/material";
 import { MenuItem } from "@mui/material";
@@ -56,6 +59,7 @@ import {
   mkCompareByProperties,
   ToComparableBase,
 } from "@seedtactics/immutable-collections";
+import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
 
 enum ColumnId {
   Date,
@@ -164,10 +168,9 @@ function buildColumns(
 interface StationDataTableProps {
   readonly points: ReadonlyMap<string, ReadonlyArray<PartCycleData>>;
   readonly matsById: HashMap<number, MaterialSummaryAndCompletedData>;
-  readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
-  readonly last30_days: boolean;
+  readonly period: SelectedAnalysisPeriod;
   readonly showWorkorderAndInspect: boolean;
   readonly hideMedian?: boolean;
   readonly defaultSortDesc?: boolean;
@@ -203,55 +206,57 @@ function extractData(
   );
 }
 
+function useZoom(props: StationDataTableProps): TableZoom {
+  let zoom: DataTableActionZoom | undefined;
+  const setZoomRange = props.set_date_zoom_range;
+  if (setZoomRange) {
+    if (props.period.type === "Last30") {
+      zoom = {
+        type: DataTableActionZoomType.Last30Days,
+        set_days_back: (numDaysBack) => {
+          if (numDaysBack) {
+            const now = new Date();
+            setZoomRange({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
+          } else {
+            setZoomRange({ zoom: undefined });
+          }
+        },
+      };
+    } else {
+      zoom = {
+        type: DataTableActionZoomType.ZoomIntoRange,
+        default_date_range: [props.period.month, addMonths(props.period.month, 1)],
+        current_date_zoom: props.current_date_zoom,
+        set_date_zoom_range: (z) => setZoomRange({ zoom: z }),
+      };
+    }
+  }
+
+  return {
+    zoom,
+    zoomRange: props.current_date_zoom,
+  };
+}
+
 interface DetailMenuData {
   readonly anchorEl: Element;
   readonly material: ReadonlyArray<Readonly<api.ILogMaterial>>;
 }
 
 export default React.memo(function StationDataTable(props: StationDataTableProps) {
-  const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
-  const [order, setOrder] = React.useState<"asc" | "desc">(props.defaultSortDesc ? "desc" : "asc");
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const columns = buildColumns(props.matsById);
+  const sort = useColSort(ColumnId.Date, columns);
+  const tpage = useTablePage();
+  const zoom = useZoom(props);
   const [detailMenu, setDetailMenu] = React.useState<DetailMenuData | null>(null);
   const setMatToShow = useSetRecoilState(materialToShowInDialog);
 
-  function handleRequestSort(property: ColumnId) {
-    if (orderBy === property) {
-      setOrder(order === "asc" ? "desc" : "asc");
-    } else {
-      setOrderBy(property);
-      setOrder("asc");
-    }
-  }
-
-  let zoom: DataTableActionZoom | undefined;
-  const setZoomRange = props.set_date_zoom_range;
-  if (setZoomRange && props.last30_days) {
-    zoom = {
-      type: DataTableActionZoomType.Last30Days,
-      set_days_back: (numDaysBack) => {
-        if (numDaysBack) {
-          const now = new Date();
-          setZoomRange({ zoom: { start: addDays(now, -numDaysBack), end: addHours(now, 1) } });
-        } else {
-          setZoomRange({ zoom: undefined });
-        }
-      },
-    };
-  } else if (setZoomRange) {
-    zoom = {
-      type: DataTableActionZoomType.ZoomIntoRange,
-      default_date_range: props.default_date_range,
-      current_date_zoom: props.current_date_zoom,
-      set_date_zoom_range: (z) => setZoomRange({ zoom: z }),
-    };
-  }
-
-  const columns = buildColumns(props.matsById);
-  const allData = extractData(props.points, columns, props.current_date_zoom, orderBy, order);
+  const allData = extractData(props.points, columns, props.current_date_zoom, sort.orderBy, sort.order);
   const totalDataLength = allData.length;
-  const pageData: ReadonlyArray<PartCycleData> = allData.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const pageData: ReadonlyArray<PartCycleData> = allData.slice(
+    tpage.page * tpage.rowsPerPage,
+    (tpage.page + 1) * tpage.rowsPerPage
+  );
   const filteredColumns = columns.filter((c) => {
     if (!props.showWorkorderAndInspect && c.id === ColumnId.Workorder) {
       return false;
@@ -270,16 +275,11 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   return (
     <div>
       <Table>
-        <DataTableHead
-          columns={filteredColumns}
-          onRequestSort={handleRequestSort}
-          orderBy={orderBy}
-          order={order}
-          showDetailsCol
-        />
+        <DataTableHead columns={filteredColumns} sort={sort} showDetailsCol />
         <DataTableBody
           columns={filteredColumns}
           pageData={pageData}
+          rowsPerPage={tpage.rowsPerPage}
           onClickDetails={(e, row) => {
             if (row.material.length === 0) return;
             if (row.material.length === 1) {
@@ -290,14 +290,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
           }}
         />
       </Table>
-      <DataTableActions
-        page={page}
-        count={totalDataLength}
-        rowsPerPage={rowsPerPage}
-        setPage={setPage}
-        setRowsPerPage={setRowsPerPage}
-        zoom={zoom}
-      />
+      <DataTableActions zoom={zoom.zoom} tpage={tpage} count={totalDataLength} />
       <Menu
         anchorEl={detailMenu?.anchorEl}
         keepMounted

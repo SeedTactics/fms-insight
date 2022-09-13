@@ -34,8 +34,8 @@ import * as React from "react";
 import { Box, Grid } from "@mui/material";
 import { Table } from "@mui/material";
 
-import { Column, DataTableHead, DataTableBody } from "../analysis/DataTable.js";
-import { LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
+import { Column, DataTableHead, DataTableBody, useColSort } from "../analysis/DataTable.js";
+import { LazySeq, ToComparable } from "@seedtactics/immutable-collections";
 import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee.js";
 import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
 import { seriesColor, chartTheme } from "../../util/chart-colors.js";
@@ -166,46 +166,19 @@ const columns: ReadonlyArray<Column<ColumnId, OEEBarPoint>> = [
 
 function dataForTable(
   series: ReadonlyArray<OEEBarSeries>,
-  orderBy: ColumnId,
-  order: "asc" | "desc"
+  sortOn: ToComparable<OEEBarPoint>
 ): ReadonlyArray<OEEBarPoint> {
-  let getData: ToComparableBase<OEEBarPoint> | undefined;
-  for (const col of columns) {
-    if (col.id === orderBy) {
-      getData = col.getForSort || col.getDisplay;
-    }
-  }
-  if (getData === undefined) {
-    getData = columns[0].getForSort || columns[0].getDisplay;
-  }
-
-  const arr = LazySeq.of(series)
+  return LazySeq.of(series)
     .flatMap((e) => e.points)
-    .toMutableArray();
-  return arr.sort(mkCompareByProperties(order === "desc" ? { desc: getData } : { asc: getData }));
+    .toSortedArray(sortOn);
 }
 
 export const OEETable = React.memo(function OEETableF(p: OEEProps) {
-  const [orderBy, setOrderBy] = React.useState(ColumnId.Date);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  function handleRequestSort(property: ColumnId) {
-    if (orderBy === property) {
-      setOrder(order === "asc" ? "desc" : "asc");
-    } else {
-      setOrderBy(property);
-      setOrder("asc");
-    }
-  }
+  const sort = useColSort(ColumnId.Date, columns);
   return (
     <Table>
-      <DataTableHead
-        columns={columns}
-        onRequestSort={handleRequestSort}
-        orderBy={orderBy}
-        order={order}
-        showDetailsCol={false}
-      />
-      <DataTableBody columns={columns} pageData={dataForTable(p.points, orderBy, order)} />
+      <DataTableHead columns={columns} sort={sort} showDetailsCol={false} />
+      <DataTableBody columns={columns} pageData={dataForTable(p.points, sort.sortOn)} />
     </Table>
   );
 });

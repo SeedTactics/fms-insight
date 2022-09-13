@@ -30,48 +30,207 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { Card, CardContent, CardHeader, IconButton, MenuItem, Select, Table, Tooltip } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  IconButton,
+  MenuItem,
+  Select,
+  Stack,
+  Table,
+  Tooltip,
+} from "@mui/material";
 import { ImportExport, Dns as ToolIcon } from "@mui/icons-material";
 import * as React from "react";
 import { useRecoilValue } from "recoil";
-import { SelectedAnalysisPeriod, selectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import {
-  copyToolReplacementsToClipboard,
   last30ToolReplacements,
   specificMonthToolReplacements,
   StationGroupAndNum,
   ToolReplacement,
-  ToolReplacements,
+  ToolReplacementsByStation,
 } from "../../cell-status/tool-replacements.js";
 import {
   Column,
+  copyTableToClipboard,
   DataTableActions,
-  DataTableActionZoom,
-  DataTableActionZoomType,
   DataTableBody,
   DataTableHead,
+  TableZoom,
+  useColSort,
+  useTablePage,
+  useTableZoomForPeriod,
 } from "./DataTable.js";
 import { LazySeq, OrderedMap, ToComparable } from "@seedtactics/immutable-collections";
-import { addDays, addHours, addMonths } from "date-fns";
+import { scaleLinear, scaleTime } from "@visx/scale";
+import { Circle } from "@visx/shape";
+import { addDays, addMonths, startOfToday } from "date-fns";
+import { ChartTooltip } from "../ChartTooltip.js";
+import { localPoint } from "@visx/event";
 
 type ReplacementTableProps = {
   readonly station: StationGroupAndNum | null;
+};
+
+type ToolReplacementAndStationDate = ToolReplacement & {
+  readonly time: Date;
+  readonly station: StationGroupAndNum;
 };
 
 type ToolReplacementSummary = {
   readonly tool: string;
   readonly numReplacements: number;
   readonly totalUseOfAllReplacements: number;
+  readonly maxUseOfAnyReplacement: number;
+  readonly replacements: ReadonlyArray<ToolReplacementAndStationDate>;
 };
+
+function tool_replacements_with_station_and_date(
+  zoom: TableZoom | undefined,
+  allReplacements: ToolReplacementsByStation,
+  station: StationGroupAndNum | null | undefined
+): LazySeq<ToolReplacementAndStationDate> {
+  const zoomRange = zoom?.zoomRange;
+  if (station) {
+    const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
+    return rsForStat
+      .valuesToAscLazySeq()
+      .transform((x) =>
+        zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x
+      )
+      .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time })));
+  } else {
+    return allReplacements.toAscLazySeq().flatMap(([station, rsByStat]) =>
+      rsByStat
+        .valuesToAscLazySeq()
+        .transform((x) =>
+          zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x
+        )
+        .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time })))
+    );
+  }
+}
+
+function tool_summary(
+  zoom: TableZoom | undefined,
+  allReplacements: ToolReplacementsByStation,
+  station: StationGroupAndNum | null | undefined,
+  sortOn: ToComparable<ToolReplacementSummary>
+): ReadonlyArray<ToolReplacementSummary> {
+  return tool_replacements_with_station_and_date(zoom, allReplacements, station)
+    .groupBy((r) => r.tool)
+    .map(([tool, replacements]) => {
+      let totalUse = 0;
+      let maxUse = null;
+      for (const r of replacements) {
+        const u = r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle;
+        if (maxUse === null || u > maxUse) {
+          maxUse = u;
+        }
+        totalUse += u;
+      }
+      return {
+        tool,
+        numReplacements: replacements.length,
+        totalUseOfAllReplacements: totalUse,
+        maxUseOfAnyReplacement: maxUse ?? 0,
+        replacements,
+      };
+    })
+    .toSortedArray(sortOn);
+}
 
 enum SummaryColumnId {
   Tool,
   NumReplacements,
   AvgUseAtReplacement,
+  Graph,
 }
 
 const decimalFormat = Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
+});
+
+const CurZoomContext = React.createContext<{ readonly start: Date; readonly end: Date }>({
+  start: new Date(),
+  end: new Date(),
+});
+
+const ReplacementGraph = React.memo(function ReplacementGraph({
+  row,
+}: {
+  readonly row: ToolReplacementSummary;
+}) {
+  const zoom = React.useContext(CurZoomContext);
+  const [tooltip, setTooltip] = React.useState<{
+    readonly left: number;
+    readonly r: ToolReplacementAndStationDate;
+  } | null>(null);
+
+  const timeScale = scaleTime({
+    domain: [zoom.start, zoom.end],
+    range: [0, 1000],
+  });
+
+  const yScale = scaleLinear({
+    domain: [0, row.maxUseOfAnyReplacement],
+    range: [33, 3],
+  });
+
+  const avgUse =
+    row.numReplacements === 0 ? null : yScale(row.totalUseOfAllReplacements / row.numReplacements);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <svg
+        height="35"
+        width="100%"
+        viewBox="0 0 1000 35"
+        preserveAspectRatio="none"
+        onMouseLeave={() => setTooltip(null)}
+      >
+        {avgUse !== null ? (
+          <line x1="0" y1={avgUse} x2="1000" y2={avgUse} stroke="red" strokeWidth={0.5} />
+        ) : undefined}
+        {row.replacements.map((r, i) => (
+          <Circle
+            key={i}
+            cx={timeScale(r.time)}
+            cy={yScale(
+              r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle
+            )}
+            r={r === tooltip?.r ? 3 : 1}
+            onMouseEnter={(e) => setTooltip({ left: localPoint(e)?.x ?? 0, r })}
+            fill="black"
+          />
+        ))}
+      </svg>
+      {tooltip !== null ? (
+        <ChartTooltip style={{ left: tooltip.left, top: 0 }}>
+          <Stack spacing={0.5}>
+            <div>Tool: {tooltip.r.tool}</div>
+            <div>Pocket: {tooltip.r.pocket}</div>
+            <div>Time: {tooltip.r.time.toLocaleString()}</div>
+            <div>
+              Station: {tooltip.r.station.group} #{tooltip.r.station.num}
+            </div>
+            {tooltip.r.type === "ReplaceBeforeCycleStart" ? (
+              <div>Mins at replacement: {decimalFormat.format(tooltip.r.useAtReplacement)}</div>
+            ) : (
+              <>
+                <div>
+                  Mins at beginning of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
+                </div>
+                <div>Mins at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}</div>
+              </>
+            )}
+          </Stack>
+        </ChartTooltip>
+      ) : undefined}
+    </div>
+  );
 });
 
 const summaryColumns: ReadonlyArray<Column<SummaryColumnId, ToolReplacementSummary>> = [
@@ -95,155 +254,48 @@ const summaryColumns: ReadonlyArray<Column<SummaryColumnId, ToolReplacementSumma
     getDisplay: (c) => decimalFormat.format(c.totalUseOfAllReplacements / c.numReplacements),
     getForSort: (c) => c.totalUseOfAllReplacements / c.numReplacements,
   },
-  // TODO: show graph of all replacements
+  {
+    id: SummaryColumnId.Graph,
+    numeric: false,
+    ignoreDuringExport: true,
+    label: "All Replacements",
+    getDisplay: () => "",
+    ExpandedCell: ReplacementGraph,
+  },
 ];
 
-type ZoomAndPage = {
-  readonly page: number;
-  readonly setPage: (p: React.SetStateAction<number>) => void;
-  readonly rowsPerPage: number;
-  readonly setRowsPerPage: (r: React.SetStateAction<number>) => void;
-  readonly zoomRange: { readonly start: Date; readonly end: Date } | undefined;
-  readonly zoom: DataTableActionZoom;
-  readonly period: SelectedAnalysisPeriod;
-};
-
-function useZoomAndPage(): ZoomAndPage {
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
-
-  let zoom: DataTableActionZoom;
-  if (period.type === "Last30") {
-    zoom = {
-      type: DataTableActionZoomType.Last30Days,
-      set_days_back: (numDaysBack) => {
-        if (numDaysBack) {
-          const now = new Date();
-          setCurZoom({ start: addDays(now, -numDaysBack), end: addHours(now, 1) });
-        } else {
-          setCurZoom(undefined);
-        }
-      },
-    };
-  } else {
-    zoom = {
-      type: DataTableActionZoomType.ZoomIntoRange,
-      default_date_range: [period.month, addMonths(period.month, 1)],
-      current_date_zoom: curZoom,
-      set_date_zoom_range: setCurZoom,
-    };
-  }
-
-  return { page, setPage, rowsPerPage, setRowsPerPage, zoom, period, zoomRange: curZoom };
-}
-
-type ColSort<E, C> = {
-  readonly orderBy: E;
-  readonly order: "asc" | "desc";
-  readonly sortOn: ToComparable<C>;
-  readonly handleRequestSort: (property: E) => void;
-};
-
-function useColSort<E, C>(defSortCol: E, cols: ReadonlyArray<Column<E, C>>): ColSort<E, C> {
-  const [orderBy, setOrderBy] = React.useState(defSortCol);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-
-  function handleRequestSort(property: E) {
-    if (orderBy === property) {
-      setOrder(order === "asc" ? "desc" : "asc");
-    } else {
-      setOrderBy(property);
-      setOrder("asc");
-    }
-  }
-
-  let sortOn: ToComparable<C> = {
-    asc: cols[0].getForSort ?? cols[0].getDisplay,
-  };
-  for (const col of cols) {
-    if (col.id === orderBy && order === "asc") {
-      sortOn = { asc: col.getForSort ?? col.getDisplay };
-    } else if (col.id === orderBy) {
-      sortOn = { desc: col.getForSort ?? col.getDisplay };
-    }
-  }
-
-  return { orderBy, order, sortOn, handleRequestSort };
-}
-
-type SummaryPageData = {
-  readonly pageData: ReadonlyArray<ToolReplacementSummary>;
-  readonly totalDataLength: number;
-};
-
-function useSummaryData(
-  zp: ZoomAndPage,
-  station: StationGroupAndNum | null | undefined,
-  sortOn: ToComparable<ToolReplacementSummary>
-): SummaryPageData {
-  const allReplacements = useRecoilValue(
-    zp.period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
-  );
-  const zoomRange = zp.zoomRange;
-  let allData: LazySeq<ToolReplacements>;
-  if (station) {
-    const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
-    allData = rsForStat.valuesToAscLazySeq();
-  } else {
-    allData = allReplacements.valuesToAscLazySeq().flatMap((rsByStat) => rsByStat.valuesToAscLazySeq());
-  }
-  const allSorted = allData
-    .transform((x) =>
-      zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x
-    )
-    .flatMap((rs) => rs.replacements)
-    .aggregate<string, ToolReplacementSummary>(
-      (r) => r.tool,
-      (r) => ({
-        tool: r.tool,
-        numReplacements: 1,
-        totalUseOfAllReplacements:
-          r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle,
-      }),
-      (a, b) => ({
-        tool: a.tool,
-        numReplacements: a.numReplacements + b.numReplacements,
-        totalUseOfAllReplacements: a.totalUseOfAllReplacements + b.totalUseOfAllReplacements,
-      })
-    )
-    .map(([, summary]) => summary)
-    .toSortedArray(sortOn);
-  const pageData = allSorted.slice(zp.page * zp.rowsPerPage, (zp.page + 1) * zp.rowsPerPage);
-  return { pageData, totalDataLength: allSorted.length };
-}
-
 const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
-  const zp = useZoomAndPage();
-  const { order, orderBy, handleRequestSort, sortOn } = useColSort(SummaryColumnId.Tool, summaryColumns);
-  const { pageData, totalDataLength } = useSummaryData(zp, props.station, sortOn);
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const tpage = useTablePage();
+  const zoom = useTableZoomForPeriod(period);
+  const sort = useColSort(SummaryColumnId.Tool, summaryColumns);
+
+  const allReplacements = useRecoilValue(
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+  );
+  const allSorted = React.useMemo(
+    () => tool_summary(zoom, allReplacements, props.station, sort.sortOn),
+    [zoom, allReplacements, props.station, sort]
+  );
+  const pageData = tpage
+    ? allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage)
+    : allSorted;
+
+  const zoomRange =
+    zoom?.zoomRange ??
+    (period.type === "Last30"
+      ? { start: addDays(startOfToday(), -29), end: addDays(startOfToday(), 1) }
+      : { start: period.month, end: addMonths(period.month, 1) });
 
   return (
     <div>
-      <Table>
-        <DataTableHead
-          columns={summaryColumns}
-          onRequestSort={handleRequestSort}
-          orderBy={orderBy}
-          order={order}
-          showDetailsCol={false}
-        />
-        <DataTableBody columns={summaryColumns} pageData={pageData} />
-      </Table>
-      <DataTableActions
-        page={zp.page}
-        count={totalDataLength}
-        rowsPerPage={zp.rowsPerPage}
-        setPage={zp.setPage}
-        setRowsPerPage={zp.setRowsPerPage}
-        zoom={zp.zoom}
-      />
+      <CurZoomContext.Provider value={zoomRange}>
+        <Table>
+          <DataTableHead columns={summaryColumns} sort={sort} showDetailsCol={false} />
+          <DataTableBody columns={summaryColumns} pageData={pageData} rowsPerPage={tpage.rowsPerPage} />
+        </Table>
+        <DataTableActions tpage={tpage} zoom={zoom.zoom} count={allSorted.length} />
+      </CurZoomContext.Provider>
     </div>
   );
 });
@@ -258,11 +310,6 @@ enum AllReplacementColumnId {
   UseAtEndOfCycle,
 }
 
-type ToolReplacementAndStationDate = ToolReplacement & {
-  readonly time: Date;
-  readonly station: StationGroupAndNum;
-};
-
 const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolReplacementAndStationDate>> = [
   {
     id: AllReplacementColumnId.Date,
@@ -270,6 +317,7 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
     label: "Date",
     getDisplay: (c) => c.time.toLocaleString(),
     getForSort: (c) => c.time.getTime(),
+    getForExport: (c) => c.time.toISOString(),
   },
   {
     id: AllReplacementColumnId.Station,
@@ -318,76 +366,49 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
   },
 ];
 
-type AllPageData = {
-  readonly pageData: ReadonlyArray<ToolReplacementAndStationDate>;
-  readonly totalDataLength: number;
-};
-
-function useAllData(
-  zp: ZoomAndPage,
-  station: StationGroupAndNum | null | undefined,
-  sortOn: ToComparable<ToolReplacementAndStationDate>
-): AllPageData {
-  const allReplacements = useRecoilValue(
-    zp.period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
-  );
-  const zoomRange = zp.zoomRange;
-  let allData: LazySeq<ToolReplacementAndStationDate>;
-  if (station) {
-    const rsForStat = allReplacements.get(station) ?? OrderedMap.empty();
-    allData = rsForStat
-      .valuesToAscLazySeq()
-      .transform((x) =>
-        zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x
-      )
-      .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time })));
-  } else {
-    allData = allReplacements.toAscLazySeq().flatMap(([station, rsByStat]) =>
-      rsByStat
-        .valuesToAscLazySeq()
-        .transform((x) =>
-          zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x
-        )
-        .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time })))
-    );
-  }
-  const allSorted = allData.toSortedArray(sortOn);
-  const pageData = allSorted.slice(zp.page * zp.rowsPerPage, (zp.page + 1) * zp.rowsPerPage);
-  return { pageData, totalDataLength: allSorted.length };
-}
-
 const AllReplacementTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
-  const zp = useZoomAndPage();
-  const { order, orderBy, handleRequestSort, sortOn } = useColSort(
-    AllReplacementColumnId.Date,
-    allReplacementsColumns
-  );
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const tpage = useTablePage();
+  const zoom = useTableZoomForPeriod(period);
+  const sort = useColSort(AllReplacementColumnId.Date, allReplacementsColumns);
 
-  const { pageData, totalDataLength } = useAllData(zp, props.station, sortOn);
+  const allReplacements = useRecoilValue(
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+  );
+  const allSorted = React.useMemo(
+    () =>
+      tool_replacements_with_station_and_date(zoom, allReplacements, props.station).toSortedArray(
+        sort.sortOn
+      ),
+    [sort, zoom, allReplacements, props.station]
+  );
+  const pageData = tpage
+    ? allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage)
+    : allSorted;
 
   return (
     <div>
       <Table>
-        <DataTableHead
-          columns={allReplacementsColumns}
-          onRequestSort={handleRequestSort}
-          orderBy={orderBy}
-          order={order}
-          showDetailsCol={false}
-        />
+        <DataTableHead columns={allReplacementsColumns} sort={sort} showDetailsCol={false} />
         <DataTableBody columns={allReplacementsColumns} pageData={pageData} />
       </Table>
-      <DataTableActions
-        page={zp.page}
-        count={totalDataLength}
-        rowsPerPage={zp.rowsPerPage}
-        setPage={zp.setPage}
-        setRowsPerPage={zp.setRowsPerPage}
-        zoom={zp.zoom}
-      />
+      <DataTableActions tpage={tpage} zoom={zoom.zoom} count={allSorted.length} />
     </div>
   );
 });
+
+function copyToClipboard(replacements: ToolReplacementsByStation, displayType: "summary" | "details"): void {
+  if (displayType === "summary") {
+    const r = tool_summary(undefined, replacements, undefined, (r) => r.tool);
+    copyTableToClipboard(summaryColumns, r);
+  } else {
+    const r = tool_replacements_with_station_and_date(undefined, replacements, undefined).toSortedArray(
+      (r) => r.tool,
+      (r) => r.time
+    );
+    copyTableToClipboard(allReplacementsColumns, r);
+  }
+}
 
 const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
   readonly station: StationGroupAndNum | null;
@@ -404,7 +425,7 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
     <>
       <Tooltip title="Copy to Clipboard">
         <IconButton
-          onClick={() => copyToolReplacementsToClipboard(replacements, props.displayType)}
+          onClick={() => copyToClipboard(replacements, props.displayType)}
           style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
           size="large"
         >

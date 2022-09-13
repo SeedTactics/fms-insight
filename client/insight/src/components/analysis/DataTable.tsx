@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -56,9 +56,11 @@ import {
   SkipPrevious as SkipPrevIcon,
   SkipNext as SkipNextIcon,
 } from "@mui/icons-material";
+import copy from "copy-to-clipboard";
 
-import { addDays } from "date-fns";
-import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
+import { addDays, addHours, addMonths } from "date-fns";
+import { LazySeq, ToComparable, ToComparableBase } from "@seedtactics/immutable-collections";
+import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
 
 export interface Column<Id, Row> {
   readonly id: Id;
@@ -66,44 +68,24 @@ export interface Column<Id, Row> {
   readonly label: string;
   readonly getDisplay: (c: Row) => string;
   readonly getForSort?: ToComparableBase<Row>;
+  readonly getForExport?: (c: Row) => string;
+  readonly ExpandedCell?: React.ComponentType<{ readonly row: Row }>;
+  readonly ignoreDuringExport?: boolean;
 }
 
-export interface DataTableHeadProps<Id, Row> {
+export type ColSort<Id, Row> = {
   readonly orderBy: Id;
   readonly order: "asc" | "desc";
-  readonly columns: ReadonlyArray<Column<Id, Row>>;
-  readonly onRequestSort: (id: Id) => void;
-  readonly showDetailsCol: boolean;
-}
+  readonly sortOn: ToComparable<Row>;
+  readonly handleRequestSort: (property: Id) => void;
+};
 
-export function DataTableHead<Id extends string | number, Row>(
-  props: DataTableHeadProps<Id, Row>
-): JSX.Element {
-  return (
-    <TableHead>
-      <TableRow>
-        {props.columns.map((col) => (
-          <TableCell
-            key={col.id}
-            align={col.numeric ? "right" : "left"}
-            sortDirection={props.orderBy === col.id ? props.order : false}
-          >
-            <Tooltip title="Sort" placement={col.numeric ? "bottom-end" : "bottom-start"} enterDelay={300}>
-              <TableSortLabel
-                active={props.orderBy === col.id}
-                direction={props.order}
-                onClick={() => props.onRequestSort(col.id)}
-              >
-                {col.label}
-              </TableSortLabel>
-            </Tooltip>
-          </TableCell>
-        ))}
-        {props.showDetailsCol ? <TableCell padding="checkbox" /> : undefined}
-      </TableRow>
-    </TableHead>
-  );
-}
+export type TablePage = {
+  readonly page: number;
+  readonly rowsPerPage: number;
+  readonly setPage: (p: number) => void;
+  readonly setRowsPerPage: (r: React.SetStateAction<number>) => void;
+};
 
 export enum DataTableActionZoomType {
   Last30Days = "Last30",
@@ -111,7 +93,7 @@ export enum DataTableActionZoomType {
   ExtendDays = "Extend",
 }
 
-interface DataTableActionZoomIntoRange {
+export interface DataTableActionZoomIntoRange {
   readonly type: DataTableActionZoomType.ZoomIntoRange;
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
@@ -131,8 +113,55 @@ export type DataTableActionZoom =
       readonly extend: (numDays: number) => void;
     };
 
-interface SelectDateRangeProps {
-  readonly zoom: DataTableActionZoomIntoRange;
+export type TableZoom = {
+  readonly zoomRange: { readonly start: Date; readonly end: Date } | undefined;
+  readonly zoom: DataTableActionZoom | undefined;
+};
+
+const DataCell = styled(TableCell, { shouldForwardProp: (p) => p !== "expand" && p !== "nowrap" })<{
+  expand?: boolean;
+  nowrap?: boolean;
+}>(({ expand, nowrap }) => ({
+  whitespace: expand || !nowrap ? undefined : "nowrap",
+  width: expand ? "100%" : undefined,
+}));
+
+export interface DataTableHeadProps<Id, Row> {
+  readonly sort: ColSort<Id, Row>;
+  readonly columns: ReadonlyArray<Column<Id, Row>>;
+  readonly showDetailsCol: boolean;
+}
+
+export function DataTableHead<Id extends string | number, Row>(
+  props: DataTableHeadProps<Id, Row>
+): JSX.Element {
+  const nowrap = LazySeq.of(props.columns).anyMatch((c) => !c.ExpandedCell);
+  return (
+    <TableHead>
+      <TableRow>
+        {props.columns.map((col) => (
+          <DataCell
+            key={col.id}
+            align={col.numeric ? "right" : "left"}
+            nowrap={nowrap}
+            expand={col.ExpandedCell !== undefined}
+            sortDirection={props.sort.orderBy === col.id ? props.sort.order : false}
+          >
+            <Tooltip title="Sort" placement={col.numeric ? "bottom-end" : "bottom-start"} enterDelay={300}>
+              <TableSortLabel
+                active={props.sort.orderBy === col.id}
+                direction={props.sort.order}
+                onClick={() => props.sort.handleRequestSort(col.id)}
+              >
+                {col.label}
+              </TableSortLabel>
+            </Tooltip>
+          </DataCell>
+        ))}
+        {props.showDetailsCol ? <DataCell padding="checkbox" nowrap={nowrap} /> : undefined}
+      </TableRow>
+    </TableHead>
+  );
 }
 
 const dateFormat = new Intl.DateTimeFormat([], { year: "numeric", month: "short", day: "numeric" });
@@ -168,6 +197,10 @@ const StyledCalendar = styled(Calendar)(({ theme }) => ({
     backgroundColor: "rgb(230, 230, 230)",
   },
 }));
+
+interface SelectDateRangeProps {
+  readonly zoom: DataTableActionZoomIntoRange;
+}
 
 function SelectDateRange(props: SelectDateRangeProps) {
   const [open, setOpen] = React.useState(false);
@@ -230,17 +263,16 @@ function SelectDateRange(props: SelectDateRangeProps) {
 }
 
 export interface DataTableActionsProps {
-  readonly page: number;
+  readonly tpage: TablePage;
   readonly count: number;
-  readonly rowsPerPage: number;
-  readonly setPage: (page: number) => void;
-  readonly setRowsPerPage: (rpp: number) => void;
   readonly zoom?: DataTableActionZoom;
 }
 
-export function DataTableActions(props: DataTableActionsProps): JSX.Element {
-  const zoom = props.zoom;
-
+export const DataTableActions = React.memo(function DataTableActions({
+  zoom,
+  tpage,
+  count,
+}: DataTableActionsProps): JSX.Element {
   let zoomCtrl;
   if (zoom && zoom.type === DataTableActionZoomType.Last30Days) {
     zoomCtrl = (
@@ -326,15 +358,15 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
       </Typography>
       <Select
         style={{ marginLeft: 8, marginRight: "1em" }}
-        value={props.rowsPerPage}
+        value={tpage.rowsPerPage}
         SelectDisplayProps={{ style: { color: "rgba(0, 0, 0, 0.54)" } }}
         input={<InputBase />}
         onChange={(evt) => {
           const rpp = parseInt(evt.target.value as string, 10);
-          props.setRowsPerPage(rpp);
-          const maxPage = Math.ceil(props.count / rpp) - 1;
-          if (props.page > maxPage) {
-            props.setPage(maxPage);
+          tpage.setRowsPerPage(rpp);
+          const maxPage = Math.ceil(count / rpp) - 1;
+          if (tpage.page > maxPage) {
+            tpage.setPage(maxPage);
           }
         }}
       >
@@ -345,38 +377,38 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
         ))}
       </Select>
       <Typography color="textSecondary" variant="caption">
-        {`${props.count === 0 ? 0 : props.page * props.rowsPerPage + 1}-${Math.min(
-          props.count,
-          (props.page + 1) * props.rowsPerPage
-        )} of ${props.count}`}
+        {`${count === 0 ? 0 : tpage.page * tpage.rowsPerPage + 1}-${Math.min(
+          count,
+          (tpage.page + 1) * tpage.rowsPerPage
+        )} of ${count}`}
       </Typography>
       <IconButton
-        onClick={() => props.setPage(0)}
-        disabled={props.page === 0}
+        onClick={() => tpage.setPage(0)}
+        disabled={tpage.page === 0}
         aria-label="First Page"
         size="large"
       >
         <FirstPageIcon />
       </IconButton>
       <IconButton
-        onClick={() => props.setPage(props.page - 1)}
-        disabled={props.page === 0}
+        onClick={() => tpage.setPage(tpage.page - 1)}
+        disabled={tpage.page === 0}
         aria-label="Previous Page"
         size="large"
       >
         <KeyboardArrowLeft />
       </IconButton>
       <IconButton
-        onClick={() => props.setPage(props.page + 1)}
-        disabled={props.page >= Math.ceil(props.count / props.rowsPerPage) - 1}
+        onClick={() => tpage.setPage(tpage.page + 1)}
+        disabled={tpage.page >= Math.ceil(count / tpage.rowsPerPage) - 1}
         aria-label="Next Page"
         size="large"
       >
         <KeyboardArrowRight />
       </IconButton>
       <IconButton
-        onClick={() => props.setPage(Math.max(0, Math.ceil(props.count / props.rowsPerPage) - 1))}
-        disabled={props.page >= Math.ceil(props.count / props.rowsPerPage) - 1}
+        onClick={() => tpage.setPage(Math.max(0, Math.ceil(count / tpage.rowsPerPage) - 1))}
+        disabled={tpage.page >= Math.ceil(count / tpage.rowsPerPage) - 1}
         aria-label="Last Page"
         size="large"
       >
@@ -390,12 +422,13 @@ export function DataTableActions(props: DataTableActionsProps): JSX.Element {
       ) : undefined}
     </Toolbar>
   );
-}
+});
 
 export interface DataTableBodyProps<Id, Row> {
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
   readonly onClickDetails?: (event: React.MouseEvent, r: Row) => void;
+  readonly rowsPerPage?: number;
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<
@@ -403,25 +436,143 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
 > {
   override render(): JSX.Element {
     const onClickDetails = this.props.onClickDetails;
+    const nowrap = LazySeq.of(this.props.columns).anyMatch((c) => !c.ExpandedCell);
+    const rows = [...this.props.pageData];
+    const emptyRows =
+      this.props.rowsPerPage !== undefined ? Math.max(0, this.props.rowsPerPage - rows.length) : 0;
     return (
       <TableBody>
-        {LazySeq.of(this.props.pageData).map((row, idx) => (
+        {rows.map((row, idx) => (
           <TableRow key={idx}>
             {this.props.columns.map((col) => (
-              <TableCell key={col.id} align={col.numeric ? "right" : "left"}>
-                {col.getDisplay(row)}
-              </TableCell>
+              <DataCell
+                key={col.id}
+                align={col.numeric ? "right" : "left"}
+                nowrap={nowrap}
+                expand={col.ExpandedCell !== undefined}
+              >
+                {col.ExpandedCell ? <col.ExpandedCell row={row} /> : col.getDisplay(row)}
+              </DataCell>
             ))}
             {onClickDetails ? (
-              <TableCell padding="checkbox">
+              <DataCell padding="checkbox" nowrap={nowrap}>
                 <IconButton onClick={(e) => onClickDetails(e, row)} size="large">
                   <MoreHoriz />
                 </IconButton>
-              </TableCell>
+              </DataCell>
             ) : undefined}
           </TableRow>
         ))}
+        {emptyRows > 0 ? (
+          <TableRow style={{ height: 53 * emptyRows }}>
+            <TableCell colSpan={this.props.columns.length + (this.props.onClickDetails ? 1 : 0)} />
+          </TableRow>
+        ) : undefined}
       </TableBody>
     );
   }
+}
+
+export function useTableZoomForPeriod(period: SelectedAnalysisPeriod): TableZoom {
+  const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
+
+  return React.useMemo(() => {
+    let zoom: DataTableActionZoom;
+    if (period.type === "Last30") {
+      zoom = {
+        type: DataTableActionZoomType.Last30Days,
+        set_days_back: (numDaysBack) => {
+          if (numDaysBack) {
+            const now = new Date();
+            setCurZoom({ start: addDays(now, -numDaysBack), end: addHours(now, 1) });
+          } else {
+            setCurZoom(undefined);
+          }
+        },
+      };
+    } else {
+      zoom = {
+        type: DataTableActionZoomType.ZoomIntoRange,
+        default_date_range: [period.month, addMonths(period.month, 1)],
+        current_date_zoom: curZoom,
+        set_date_zoom_range: setCurZoom,
+      };
+    }
+
+    return { zoom, zoomRange: curZoom };
+  }, [curZoom, setCurZoom]);
+}
+
+export function useTablePage(): TablePage {
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+
+  return React.useMemo(
+    () => ({ page, setPage, rowsPerPage, setRowsPerPage }),
+    [page, setPage, rowsPerPage, setRowsPerPage]
+  );
+}
+
+export function useColSort<Id, Row>(defSortCol: Id, cols: ReadonlyArray<Column<Id, Row>>): ColSort<Id, Row> {
+  const [orderBy, setOrderBy] = React.useState(defSortCol);
+  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
+
+  return React.useMemo(() => {
+    function handleRequestSort(property: Id) {
+      if (orderBy === property) {
+        setOrder(order === "asc" ? "desc" : "asc");
+      } else {
+        setOrderBy(property);
+        setOrder("asc");
+      }
+    }
+
+    let sortOn: ToComparable<Row> = {
+      asc: cols[0].getForSort ?? cols[0].getDisplay,
+    };
+    for (const col of cols) {
+      if (col.id === orderBy && order === "asc") {
+        sortOn = { asc: col.getForSort ?? col.getDisplay };
+      } else if (col.id === orderBy) {
+        sortOn = { desc: col.getForSort ?? col.getDisplay };
+      }
+    }
+
+    return { orderBy, order, sortOn, handleRequestSort };
+  }, [orderBy, setOrderBy, order, setOrder]);
+}
+
+export function buildClipboardTableAsString<Id, Row>(
+  columns: ReadonlyArray<Column<Id, Row>>,
+  rows: Iterable<Row>
+) {
+  let table = "<table>\n<thead><tr>";
+  for (const col of columns) {
+    if (!col.ignoreDuringExport) {
+      table += "<th>" + col.label + "</th>";
+    }
+  }
+  table += "</tr></thead>\n<tbody>\n";
+
+  for (const row of rows) {
+    table += "<tr>";
+    for (const col of columns) {
+      if (!col.ignoreDuringExport) {
+        const val = col.getForExport ? col.getForExport(row) : col.getDisplay(row);
+        table += "<td>" + val + "</td>";
+      }
+    }
+    table += "</tr>\n";
+  }
+
+  table += "</tbody>\n</table>";
+
+  return table;
+}
+
+export function copyTableToClipboard<Id, Row>(
+  columns: ReadonlyArray<Column<Id, Row>>,
+  rows: Iterable<Row>
+): void {
+  copy(buildClipboardTableAsString(columns, rows));
 }

@@ -308,10 +308,9 @@ export function PartMachineCycleChart() {
           <StationDataTable
             points={points.data}
             matsById={matSummary.matsById}
-            default_date_range={defaultDateRange}
+            period={period}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            last30_days={period.type === "Last30"}
             showWorkorderAndInspect={true}
           />
         )}
@@ -558,10 +557,9 @@ export function PartLoadStationCycleChart() {
           <StationDataTable
             points={points.data}
             matsById={matSummary.matsById}
-            default_date_range={defaultDateRange}
+            period={period}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
-            last30_days={period.type === "Last30"}
             showWorkorderAndInspect={true}
             hideMedian={selectedOperation === "LULOccupancy"}
           />
