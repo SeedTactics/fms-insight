@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* eslint-disable react/prop-types */
+/* eslint-disable react/display-name */
 import * as React from "react";
 import * as jdenticon from "jdenticon";
 import { Typography } from "@mui/material";
@@ -46,10 +48,8 @@ import { Dialog } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
-import { SortableElement, SortableContainer } from "react-sortable-hoc";
-import { DraggableProvided } from "react-beautiful-dnd";
-
 import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
+import { useSortable } from "@dnd-kit/sortable";
 
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
@@ -125,161 +125,211 @@ function materialAction(
   return undefined;
 }
 
+export interface MaterialDragProps {
+  readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
+  readonly dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  readonly setDragHandleRef?: React.RefCallback<HTMLDivElement>;
+  readonly isDragOverlay?: boolean;
+  readonly isActiveDrag?: boolean;
+}
+
 export interface MaterialSummaryProps {
-  readonly mat: Readonly<MaterialSummaryAndCompletedData>; // TODO: deep readonly
+  readonly mat: Readonly<MaterialSummaryAndCompletedData>;
   readonly action?: string;
   readonly focusInspectionType?: string | null;
   readonly hideInspectionIcon?: boolean;
   readonly displayJob?: boolean;
-  readonly draggableProvided?: DraggableProvided;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
-  readonly isDragging?: boolean;
 }
 
-export const MatSummary = React.memo(function MatSummary(props: MaterialSummaryProps) {
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+export const MatSummary = React.memo(
+  React.forwardRef(function MatSummary(
+    props: MaterialSummaryProps & MaterialDragProps,
+    ref: React.ForwardedRef<HTMLDivElement>
+  ) {
+    const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
 
-  const inspections = props.mat.signaledInspections.join(", ");
-  const completed = props.mat.completedInspections || {};
+    const inspections = props.mat.signaledInspections.join(", ");
+    const completed = props.mat.completedInspections || {};
 
-  let completedMsg: JSX.Element | undefined;
-  if (props.focusInspectionType && completed[props.focusInspectionType]) {
-    completedMsg = (
-      <small>
-        <span>Inspection completed </span>
-        <TimeAgo date={completed[props.focusInspectionType].time} />
-      </small>
-    );
-  } else if (props.focusInspectionType && props.mat.last_unload_time) {
-    completedMsg = (
-      <small>
-        <span>Unloaded </span>
-        <TimeAgo date={props.mat.last_unload_time} />
-      </small>
-    );
-  } else if (props.mat.wash_completed) {
-    completedMsg = (
-      <small>
-        <span>Wash completed </span>
-        <TimeAgo date={props.mat.wash_completed} />
-      </small>
-    );
-  }
+    let completedMsg: JSX.Element | undefined;
+    if (props.focusInspectionType && completed[props.focusInspectionType]) {
+      completedMsg = (
+        <small>
+          <span>Inspection completed </span>
+          <TimeAgo date={completed[props.focusInspectionType].time} />
+        </small>
+      );
+    } else if (props.focusInspectionType && props.mat.last_unload_time) {
+      completedMsg = (
+        <small>
+          <span>Unloaded </span>
+          <TimeAgo date={props.mat.last_unload_time} />
+        </small>
+      );
+    } else if (props.mat.wash_completed) {
+      completedMsg = (
+        <small>
+          <span>Wash completed </span>
+          <TimeAgo date={props.mat.wash_completed} />
+        </small>
+      );
+    }
 
-  const dragHandleProps = props.draggableProvided?.dragHandleProps;
-
-  return (
-    <Paper
-      ref={props.draggableProvided?.innerRef}
-      elevation={4}
-      {...props.draggableProvided?.draggableProps}
-      style={{
-        display: "flex",
-        minWidth: "10em",
-        padding: "8px",
-        margin: "8px",
-        ...props.draggableProvided?.draggableProps.style,
-      }}
-    >
-      {dragHandleProps ? (
-        <div
-          style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}
-          {...dragHandleProps}
-        >
-          <DragIndicator fontSize="large" color={props.isDragging ? "primary" : "action"} />
-        </div>
-      ) : undefined}
-      <ButtonBase focusRipple onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}>
-        <div style={{ display: "flex", textAlign: "left" }}>
-          <PartIdenticon part={props.mat.partName} />
-          <div style={{ marginLeft: "8px", flexGrow: 1 }}>
-            <Typography variant="h6">{props.mat.partName}</Typography>
-            {props.displayJob ? (
-              <div>
-                <small>
-                  {props.mat.jobUnique && props.mat.jobUnique !== ""
-                    ? "Assigned to " + props.mat.jobUnique
-                    : "Unassigned material"}
-                </small>
-              </div>
-            ) : undefined}
-            {!props.hideEmptySerial || props.mat.serial ? (
-              <div>
-                <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
-              </div>
-            ) : undefined}
-            {props.mat.workorderId === undefined ||
-            props.mat.workorderId === "" ||
-            props.mat.workorderId === props.mat.serial ? undefined : (
-              <div>
-                <small>Workorder: {props.mat.workorderId}</small>
-              </div>
-            )}
-            {props.action === undefined ? undefined : (
-              <div>
-                <small>{props.action}</small>
-              </div>
-            )}
-            {completedMsg}
-          </div>
+    return (
+      <Paper
+        ref={ref}
+        elevation={4}
+        sx={{
+          display: "flex",
+          minWidth: "10em",
+          padding: "8px",
+          margin: "8px",
+          opacity: props.isActiveDrag ? 0.2 : 1,
+        }}
+        {...props.dragRootProps}
+      >
+        {props.dragHandleProps ? (
           <div
+            ref={props.setDragHandleRef}
             style={{
-              marginLeft: "4px",
               display: "flex",
               flexDirection: "column",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
+              justifyContent: "center",
+              touchAction: "none",
             }}
+            {...props.dragHandleProps}
           >
-            {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
-              <div>
-                <Avatar style={{ width: "30px", height: "30px" }}>
-                  {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
-                </Avatar>
-              </div>
-            ) : undefined}
-            {props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? undefined : (
-              <div>
-                <Tooltip title={inspections}>
-                  <WarningIcon />
-                </Tooltip>
-              </div>
-            )}
+            <DragIndicator fontSize="large" color={props.isDragOverlay ? "primary" : "action"} />
           </div>
-        </div>
-      </ButtonBase>
-    </Paper>
-  );
-});
+        ) : undefined}
+        <ButtonBase focusRipple onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}>
+          <div style={{ display: "flex", textAlign: "left" }}>
+            <PartIdenticon part={props.mat.partName} />
+            <div style={{ marginLeft: "8px", flexGrow: 1 }}>
+              <Typography variant="h6">{props.mat.partName}</Typography>
+              {props.displayJob ? (
+                <div>
+                  <small>
+                    {props.mat.jobUnique && props.mat.jobUnique !== ""
+                      ? "Assigned to " + props.mat.jobUnique
+                      : "Unassigned material"}
+                  </small>
+                </div>
+              ) : undefined}
+              {!props.hideEmptySerial || props.mat.serial ? (
+                <div>
+                  <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
+                </div>
+              ) : undefined}
+              {props.mat.workorderId === undefined ||
+              props.mat.workorderId === "" ||
+              props.mat.workorderId === props.mat.serial ? undefined : (
+                <div>
+                  <small>Workorder: {props.mat.workorderId}</small>
+                </div>
+              )}
+              {props.action === undefined ? undefined : (
+                <div>
+                  <small>{props.action}</small>
+                </div>
+              )}
+              {completedMsg}
+            </div>
+            <div
+              style={{
+                marginLeft: "4px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+              }}
+            >
+              {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
+                <div>
+                  <Avatar style={{ width: "30px", height: "30px" }}>
+                    {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
+                  </Avatar>
+                </div>
+              ) : undefined}
+              {props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? undefined : (
+                <div>
+                  <Tooltip title={inspections}>
+                    <WarningIcon />
+                  </Tooltip>
+                </div>
+              )}
+            </div>
+          </div>
+        </ButtonBase>
+      </Paper>
+    );
+  })
+);
 
 export interface InProcMaterialProps {
-  readonly mat: Readonly<api.IInProcessMaterial>; // TODO: deep readonly
+  readonly mat: Readonly<api.IInProcessMaterial>;
   readonly displaySinglePallet?: string;
   readonly displayJob?: boolean;
-  readonly draggableProvided?: DraggableProvided;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
-  readonly isDragging?: boolean;
 }
 
-export class InProcMaterial extends React.PureComponent<InProcMaterialProps> {
-  override render() {
+export const InProcMaterial = React.memo(
+  React.forwardRef(function InProcMaterial(
+    props: InProcMaterialProps & MaterialDragProps,
+    ref: React.ForwardedRef<HTMLDivElement>
+  ) {
     return (
       <MatSummary
-        mat={inproc_mat_to_summary(this.props.mat)}
-        action={materialAction(this.props.mat, this.props.displaySinglePallet)}
-        draggableProvided={this.props.draggableProvided}
-        hideAvatar={this.props.hideAvatar}
-        displayJob={this.props.displayJob}
-        isDragging={this.props.isDragging}
-        hideEmptySerial={this.props.hideEmptySerial}
+        ref={ref}
+        mat={inproc_mat_to_summary(props.mat)}
+        action={materialAction(props.mat, props.displaySinglePallet)}
+        dragRootProps={props.dragRootProps}
+        dragHandleProps={props.dragHandleProps}
+        hideAvatar={props.hideAvatar}
+        displayJob={props.displayJob}
+        isDragOverlay={props.isDragOverlay}
+        isActiveDrag={props.isActiveDrag}
+        hideEmptySerial={props.hideEmptySerial}
       />
     );
-  }
-}
+  })
+);
 
-export const SortableInProcMaterial = SortableElement(InProcMaterial);
+export type SortableMatData = {
+  mat: Readonly<api.IInProcessMaterial>;
+};
+
+export function SortableInProcMaterial(props: InProcMaterialProps) {
+  const d: SortableMatData = { mat: props.mat };
+  const { active, isDragging, attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: props.mat.materialID,
+    data: d,
+  });
+
+  const rootProps = React.useMemo(() => {
+    const rprops: { [key: string]: unknown } = {
+      style: {
+        transform: transform
+          ? `translate3d(${Math.round(transform.x)}px, ${Math.round(transform.y)}px, 0)`
+          : undefined,
+        transition: active !== null ? transition : undefined,
+      },
+      ...listeners,
+    };
+    for (const [a, v] of Object.entries(attributes)) {
+      if (a.startsWith("aria")) {
+        rprops[a] = v;
+      }
+    }
+    return rprops;
+  }, [active, transform, transition, attributes, listeners]);
+
+  // If changing to drag handle, set dragHandleRef to setActivatorNodeRef return from useSortable
+  return <InProcMaterial ref={setNodeRef} dragRootProps={rootProps} isActiveDrag={isDragging} {...props} />;
+}
 
 export interface MultiMaterialProps {
   readonly partOrCasting: string;
@@ -558,52 +608,3 @@ export const BasicMaterialDialog = React.memo(function BasicMaterialDialog() {
   const close = React.useCallback(() => setMatToShow(null), []);
   return <MaterialDialog display_material={mat} onClose={close} />;
 });
-
-export interface WhiteboardRegionProps {
-  readonly children?: React.ReactNode;
-  readonly label: string;
-  readonly spaceAround?: boolean;
-  readonly flexStart?: boolean;
-  readonly borderLeft?: boolean;
-  readonly borderBottom?: boolean;
-  readonly borderRight?: boolean;
-  readonly addMaterialButton?: JSX.Element;
-}
-
-export const WhiteboardRegion = React.memo(function WhiteboardRegion(props: WhiteboardRegionProps) {
-  let justifyContent = "space-between";
-  if (props.spaceAround) {
-    justifyContent = "space-around";
-  } else if (props.flexStart) {
-    justifyContent = "flex-start";
-  }
-  return (
-    <div
-      style={{
-        width: "100%",
-        minHeight: "70px",
-        borderLeft: props.borderLeft ? "1px solid rgba(0,0,0,0.12)" : undefined,
-        borderBottom: props.borderBottom ? "1px solid rgba(0,0,0,0.12)" : undefined,
-        borderRight: props.borderRight ? "1px solid rgba(0,0,0,0.12)" : undefined,
-      }}
-    >
-      {props.label !== "" || props.addMaterialButton ? (
-        <div style={{ display: "flex" }}>
-          <span
-            style={{
-              color: "rgba(0,0,0,0.5)",
-              fontSize: "small",
-              flexGrow: 1,
-            }}
-          >
-            {props.label}
-          </span>
-          {props.addMaterialButton}
-        </div>
-      ) : undefined}
-      <div style={{ justifyContent, width: "100%", display: "flex", flexWrap: "wrap" }}>{props.children}</div>
-    </div>
-  );
-});
-
-export const SortableWhiteboardRegion = SortableContainer(WhiteboardRegion);

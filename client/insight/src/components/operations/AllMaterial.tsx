@@ -113,10 +113,12 @@ const QuarantineQueue = React.memo(function QuarantineQueue(props: QuarantineQue
                   <Draggable key={mat.materialID} draggableId={mat.materialID.toString()} index={idx}>
                     {(provided, snapshot) => (
                       <InProcMaterial
+                        ref={provided.innerRef}
                         mat={mat}
-                        draggableProvided={provided}
+                        dragRootProps={{ style: provided.draggableProps.style, ...provided.draggableProps }}
+                        dragHandleProps={provided.dragHandleProps}
                         hideAvatar
-                        isDragging={snapshot.isDragging}
+                        isDragOverlay={snapshot.isDragging}
                       />
                     )}
                   </Draggable>

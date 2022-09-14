@@ -38,7 +38,8 @@ import { Button } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { DialogActions } from "@mui/material";
 
-import { MaterialDialog, MatSummary, WhiteboardRegion, InstructionButton } from "./Material.js";
+import { MaterialDialog, MatSummary, InstructionButton } from "./Material.js";
+import { WhiteboardRegion } from "./Whiteboard.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";

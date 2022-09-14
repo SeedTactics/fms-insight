@@ -36,7 +36,8 @@ import { addHours } from "date-fns";
 import { Grid } from "@mui/material";
 import { Button } from "@mui/material";
 
-import { MaterialDialog, WhiteboardRegion, MatSummary, InstructionButton } from "./Material.js";
+import { MaterialDialog, MatSummary, InstructionButton } from "./Material.js";
+import { WhiteboardRegion } from "./Whiteboard.js";
 import { SelectWorkorderDialog } from "./SelectWorkorder.js";
 import { Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
