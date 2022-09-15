@@ -47,7 +47,13 @@ import {
   selectLoadStationAndQueueProps,
   PalletData,
 } from "../../data/load-station.js";
-import { MaterialDialog, InProcMaterial, SortableInProcMaterial, InstructionButton } from "./Material.js";
+import {
+  MaterialDialog,
+  InProcMaterial,
+  SortableInProcMaterial,
+  InstructionButton,
+  DragOverlayInProcMaterial,
+} from "./Material.js";
 import { WhiteboardRegion, SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
@@ -581,9 +587,8 @@ export function LoadStation(props: LoadStationDisplayProps) {
                   direction="vertical"
                   queueName={mat.label}
                   renderDragOverlay={(mat) => (
-                    <InProcMaterial
+                    <DragOverlayInProcMaterial
                       mat={mat}
-                      isDragOverlay
                       displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
                     />
                   )}
@@ -632,9 +637,8 @@ export function LoadStation(props: LoadStationDisplayProps) {
                   direction="vertical"
                   queueName={mat.label}
                   renderDragOverlay={(mat) => (
-                    <InProcMaterial
+                    <DragOverlayInProcMaterial
                       mat={mat}
-                      isDragOverlay
                       displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
                     />
                   )}

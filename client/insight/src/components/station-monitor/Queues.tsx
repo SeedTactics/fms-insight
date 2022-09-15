@@ -63,6 +63,7 @@ import {
   PartIdenticon,
   MultiMaterial,
   InProcMaterial,
+  DragOverlayInProcMaterial,
   MaterialDetailTitle,
 } from "./Material.js";
 import * as api from "../../network/api.js";
@@ -692,7 +693,7 @@ export const Queues = (props: QueueProps) => {
             direction="rect"
             queueName={region.label}
             renderDragOverlay={(mat) => (
-              <InProcMaterial mat={mat} hideEmptySerial isDragOverlay displayJob={region.rawMaterialQueue} />
+              <DragOverlayInProcMaterial mat={mat} hideEmptySerial displayJob={region.rawMaterialQueue} />
             )}
           >
             <WhiteboardRegion
