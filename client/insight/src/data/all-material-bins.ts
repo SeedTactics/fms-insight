@@ -282,7 +282,7 @@ export function findMaterialInQuarantineQueues(
   return null;
 }
 
-export function findQueueuInQuarantineQueues(
+export function findQueueInQuarantineQueues(
   queue: string,
   bins: ReadonlyArray<MaterialBin>
 ): QuarantineBinAndIndex | null {

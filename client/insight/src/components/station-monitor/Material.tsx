@@ -185,7 +185,7 @@ const MatCard = React.forwardRef(function MatCard(
         display: "flex",
         minWidth: "10em",
         padding: "8px",
-        margin: "8px",
+        margin: props.isDragOverlay ? undefined : "8px",
         opacity: props.isActiveDrag ? 0.2 : 1,
       }}
       {...props.dragRootProps}
@@ -280,13 +280,16 @@ export interface InProcMaterialProps {
   readonly hideEmptySerial?: boolean;
 }
 
-export const InProcMaterial = React.memo(function InProcMaterial(props: InProcMaterialProps) {
+export const InProcMaterial = React.memo(function InProcMaterial(
+  props: InProcMaterialProps & { readonly showHandle?: boolean }
+) {
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
       action={materialAction(props.mat, props.displaySinglePallet)}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
+      showDragHandle={props.showHandle}
       hideEmptySerial={props.hideEmptySerial}
     />
   );

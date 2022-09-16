@@ -41,7 +41,7 @@ import {
   moveMaterialInBin,
   MaterialBinId,
   findMaterialInQuarantineQueues,
-  findQueueuInQuarantineQueues,
+  findQueueInQuarantineQueues,
 } from "../../data/all-material-bins.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import * as currentSt from "../../cell-status/current-status.js";
@@ -81,7 +81,6 @@ import {
   MeasuringStrategy,
   pointerWithin,
   rectIntersection,
-  UniqueIdentifier,
 } from "@dnd-kit/core";
 import { useRecoilConduit } from "../../util/recoil-util.js";
 
@@ -105,7 +104,7 @@ const ColumnWithTitle = React.forwardRef(function MaterialBin(
 ) {
   return (
     <Paper
-      sx={{ margin: "0.75em", opacity: props.isActiveDrag ? 0.2 : 1 }}
+      sx={{ margin: props.isDragOverlay ? undefined : "0.75em", opacity: props.isActiveDrag ? 0.2 : 1 }}
       ref={ref}
       {...props.dragRootProps}
     >
@@ -193,7 +192,7 @@ const QuarantineQueue = React.memo(function QuarantineQueue(props: QuarantineQue
     return (
       <ColumnWithTitle binId={props.binId} label={props.queue} isDragOverlay>
         {props.material.map((mat) => (
-          <InProcMaterial key={mat.materialID} mat={mat} hideAvatar />
+          <InProcMaterial key={mat.materialID} mat={mat} hideAvatar showHandle />
         ))}
       </ColumnWithTitle>
     );
@@ -403,11 +402,8 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
-function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>) {
-  const lastOverId = React.useRef<UniqueIdentifier | null>(null);
-  const recentlyMovedToNewContainer = React.useRef(false);
-
-  const collisionDetectionStrategy: CollisionDetection = React.useCallback(
+function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDetection {
+  return React.useCallback(
     (args) => {
       if (typeof args.active.id === "string") {
         // columns only collide with other columns
@@ -426,9 +422,9 @@ function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>) {
 
       if (overId != null) {
         if (typeof overId === "string") {
-          // If the over is a column, find the closest material inside that column
-          const bin = findQueueuInQuarantineQueues(overId, allBins);
-          if (bin) {
+          // If the over is a non-empty column, find the closest material inside that column
+          const bin = findQueueInQuarantineQueues(overId, allBins);
+          if (bin && bin.bin.material.length > 0) {
             overId = closestCenter({
               ...args,
               droppableContainers: args.droppableContainers.filter(
@@ -440,37 +436,12 @@ function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>) {
           }
         }
 
-        lastOverId.current = overId;
-
         return [{ id: overId }];
       }
-
-      // When a draggable item moves to a new container, the layout may shift
-      // and the `overId` may become `null`. We manually set the cached `lastOverId`
-      // to the id of the draggable item that was moved to the new container, otherwise
-      // the previous `overId` will be returned which can cause items to incorrectly shift positions
-      if (recentlyMovedToNewContainer.current) {
-        lastOverId.current = args.active.id;
-      }
-
-      // If no droppable is matched, return the last match
-      return lastOverId.current ? [{ id: lastOverId.current }] : [];
+      return [];
     },
     [allBins]
   );
-
-  React.useEffect(() => {
-    requestAnimationFrame(() => {
-      recentlyMovedToNewContainer.current = false;
-    });
-  }, [allBins]);
-
-  return {
-    collisionDetectionStrategy,
-    onRecentMove: () => {
-      recentlyMovedToNewContainer.current = true;
-    },
-  };
 }
 
 interface AllMaterialProps {
@@ -510,7 +481,7 @@ export function AllMaterial(props: AllMaterialProps) {
     ? allBins
     : allBins.filter((bin) => bin.type === MaterialBinType.QuarantineQueues);
 
-  const { collisionDetectionStrategy, onRecentMove } = useCollisionDetection(allBins);
+  const collisionDetectionStrategy = useCollisionDetection(allBins);
 
   const curDisplayQuarantine =
     displayMaterial !== null &&
@@ -543,12 +514,11 @@ export function AllMaterial(props: AllMaterialProps) {
         if (activeDrag === null || activeDrag.type === "column") return;
         const overCol =
           typeof over.id === "string"
-            ? findQueueuInQuarantineQueues(over.id, allBins)
+            ? findQueueInQuarantineQueues(over.id, allBins)
             : findMaterialInQuarantineQueues(over.id, allBins);
         if (!overCol) return;
 
         if (overCol.bin.binId !== activeDrag.curOverBinId) {
-          onRecentMove();
           setActiveDrag({
             ...activeDrag,
             curOverBinId: overCol.bin.binId,
@@ -577,7 +547,7 @@ export function AllMaterial(props: AllMaterialProps) {
         } else {
           const overCol =
             typeof over.id === "string"
-              ? findQueueuInQuarantineQueues(over.id, allBins)
+              ? findQueueInQuarantineQueues(over.id, allBins)
               : findMaterialInQuarantineQueues(over.id, allBins);
           if (overCol) {
             addExistingMatToQueue({
