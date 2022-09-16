@@ -204,7 +204,7 @@ const QuarantineQueue = React.memo(function QuarantineQueue(props: QuarantineQue
           strategy={verticalListSortingStrategy}
         >
           {props.material.map((mat) => (
-            <SortableInProcMaterial key={mat.materialID} mat={mat} hideAvatar useHandle />
+            <SortableInProcMaterial key={mat.materialID} mat={mat} hideAvatar />
           ))}
         </SortableContext>
       </SortableColumnWithTitle>
@@ -577,7 +577,7 @@ export function AllMaterial(props: AllMaterialProps) {
       </SortableContext>
       <DragOverlay>
         {activeDrag?.type === "material" ? (
-          <DragOverlayInProcMaterial mat={activeDrag.mat} hideAvatar showHandle />
+          <DragOverlayInProcMaterial mat={activeDrag.mat} hideAvatar />
         ) : activeDrag?.type === "column" ? (
           <MaterialBinColumn matBin={activeDrag.bin} isDragOverlay />
         ) : undefined}

@@ -299,9 +299,7 @@ export type SortableMatData = {
   readonly mat: Readonly<api.IInProcessMaterial>;
 };
 
-export const SortableInProcMaterial = React.memo(function SortableInProcMaterial(
-  props: InProcMaterialProps & { readonly useHandle?: boolean }
-) {
+export const SortableInProcMaterial = React.memo(function SortableInProcMaterial(props: InProcMaterialProps) {
   const d: SortableMatData = { mat: props.mat };
   const {
     active,
@@ -335,10 +333,10 @@ export const SortableInProcMaterial = React.memo(function SortableInProcMaterial
   return (
     <MatCard
       ref={setNodeRef}
-      dragRootProps={props.useHandle ? { style } : { style, ...handleProps }}
-      showDragHandle={props.useHandle}
-      dragHandleProps={props.useHandle ? handleProps : undefined}
-      setDragHandleRef={props.useHandle ? setActivatorNodeRef : undefined}
+      dragRootProps={{ style }}
+      showDragHandle={true}
+      dragHandleProps={handleProps}
+      setDragHandleRef={setActivatorNodeRef}
       isActiveDrag={isDragging}
       mat={inproc_mat_to_summary(props.mat)}
       action={materialAction(props.mat, props.displaySinglePallet)}
@@ -349,12 +347,12 @@ export const SortableInProcMaterial = React.memo(function SortableInProcMaterial
   );
 });
 
-export function DragOverlayInProcMaterial(props: InProcMaterialProps & { showHandle?: boolean }) {
+export function DragOverlayInProcMaterial(props: InProcMaterialProps) {
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
       action={materialAction(props.mat, props.displaySinglePallet)}
-      showDragHandle={props.showHandle}
+      showDragHandle={true}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
       hideEmptySerial={props.hideEmptySerial}
