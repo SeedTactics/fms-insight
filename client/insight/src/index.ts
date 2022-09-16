@@ -42,7 +42,8 @@ if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
   registerNetworkBackend();
 }
 
-render(null, document.getElementById("root"));
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+render(null, document.getElementById("root")!);
 
 if ("serviceWorker" in navigator) {
   void navigator.serviceWorker.getRegistrations().then((registrations) => {
