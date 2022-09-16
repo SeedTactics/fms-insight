@@ -51,17 +51,16 @@ import {
   MaterialDialog,
   InProcMaterial,
   SortableInProcMaterial,
-  WhiteboardRegion,
-  SortableWhiteboardRegion,
   InstructionButton,
+  DragOverlayInProcMaterial,
 } from "./Material.js";
+import { WhiteboardRegion, SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { SelectWorkorderDialog } from "./SelectWorkorder.js";
 import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType.js";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
-import { SortEnd } from "react-sortable-hoc";
 import { currentOperator } from "../../data/operators.js";
 import { PrintedLabel } from "./PrintedLabel.js";
 import { default as ReactToPrint } from "react-to-print";
@@ -70,9 +69,8 @@ import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
-import { currentStatus, reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
+import { currentStatus } from "../../cell-status/current-status.js";
 import { useIsDemo } from "../routes.js";
-import { useRecoilConduit } from "../../util/recoil-util.js";
 
 function stationPalMaterialStatus(
   mat: Readonly<api.IInProcessMaterial>,
@@ -493,12 +491,10 @@ interface LoadStationDisplayProps extends LoadStationProps {
 export function LoadStation(props: LoadStationDisplayProps) {
   const operator = useRecoilValue(currentOperator);
   const currentSt = useRecoilValue(currentStatus);
-  const reorderQueuedMat = useRecoilConduit(reorderQueuedMatInCurrentStatus);
   const data = React.useMemo(
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, props.showFree, currentSt),
     [currentSt, props.loadNum, props.showFree, props.queues]
   );
-  const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
   const isDemo = useIsDemo();
 
   const queues = LazySeq.of(data.queues)
@@ -586,39 +582,32 @@ export function LoadStation(props: LoadStationDisplayProps) {
                       queue: mat.label,
                     })}
               >
-                <SortableWhiteboardRegion
-                  label={mat.label}
-                  axis="y"
-                  distance={5}
-                  shouldCancelStart={() => false}
-                  onSortEnd={(se: SortEnd) => {
-                    addExistingMatToQueue({
-                      materialId: mat.material[se.oldIndex].materialID,
-                      queue: mat.label,
-                      queuePosition: se.newIndex,
-                      operator: operator,
-                    });
-                    reorderQueuedMat({
-                      queue: mat.label,
-                      matId: mat.material[se.oldIndex].materialID,
-                      newIdx: se.newIndex,
-                    });
-                  }}
+                <SortableRegion
+                  matIds={mat.material.map((m) => m.materialID)}
+                  direction="vertical"
+                  queueName={mat.label}
+                  renderDragOverlay={(mat) => (
+                    <DragOverlayInProcMaterial
+                      mat={mat}
+                      displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+                    />
+                  )}
                 >
-                  {mat.material.map((m, matIdx) => (
-                    <MoveMaterialArrowNode
-                      key={matIdx}
-                      type={MoveMaterialNodeKindType.Material}
-                      material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
-                    >
-                      <SortableInProcMaterial
-                        index={matIdx}
-                        mat={m}
-                        displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
-                      />
-                    </MoveMaterialArrowNode>
-                  ))}
-                </SortableWhiteboardRegion>
+                  <WhiteboardRegion label={mat.label}>
+                    {mat.material.map((m, matIdx) => (
+                      <MoveMaterialArrowNode
+                        key={matIdx}
+                        type={MoveMaterialNodeKindType.Material}
+                        material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
+                      >
+                        <SortableInProcMaterial
+                          mat={m}
+                          displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+                        />
+                      </MoveMaterialArrowNode>
+                    ))}
+                  </WhiteboardRegion>
+                </SortableRegion>
               </MoveMaterialArrowNode>
             ))}
           </Box>
@@ -643,39 +632,32 @@ export function LoadStation(props: LoadStationDisplayProps) {
                       queue: mat.label,
                     })}
               >
-                <SortableWhiteboardRegion
-                  label={mat.label}
-                  axis="y"
-                  distance={5}
-                  shouldCancelStart={() => false}
-                  onSortEnd={(se: SortEnd) => {
-                    addExistingMatToQueue({
-                      materialId: mat.material[se.oldIndex].materialID,
-                      queue: mat.label,
-                      queuePosition: se.newIndex,
-                      operator: operator,
-                    });
-                    reorderQueuedMat({
-                      queue: mat.label,
-                      matId: mat.material[se.oldIndex].materialID,
-                      newIdx: se.newIndex,
-                    });
-                  }}
+                <SortableRegion
+                  matIds={mat.material.map((m) => m.materialID)}
+                  direction="vertical"
+                  queueName={mat.label}
+                  renderDragOverlay={(mat) => (
+                    <DragOverlayInProcMaterial
+                      mat={mat}
+                      displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+                    />
+                  )}
                 >
-                  {mat.material.map((m, matIdx) => (
-                    <MoveMaterialArrowNode
-                      key={matIdx}
-                      type={MoveMaterialNodeKindType.Material}
-                      material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
-                    >
-                      <SortableInProcMaterial
-                        index={matIdx}
-                        mat={m}
-                        displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
-                      />
-                    </MoveMaterialArrowNode>
-                  ))}
-                </SortableWhiteboardRegion>
+                  <WhiteboardRegion label={mat.label}>
+                    {mat.material.map((m, matIdx) => (
+                      <MoveMaterialArrowNode
+                        key={matIdx}
+                        type={MoveMaterialNodeKindType.Material}
+                        material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
+                      >
+                        <SortableInProcMaterial
+                          mat={m}
+                          displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+                        />
+                      </MoveMaterialArrowNode>
+                    ))}
+                  </WhiteboardRegion>
+                </SortableRegion>
               </MoveMaterialArrowNode>
             ))}
           </Box>

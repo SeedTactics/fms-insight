@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import { SortEnd } from "react-sortable-hoc";
 import { Table, Box, styled } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
@@ -61,10 +60,10 @@ import {
 
 import {
   SortableInProcMaterial,
-  SortableWhiteboardRegion,
   PartIdenticon,
   MultiMaterial,
   InProcMaterial,
+  DragOverlayInProcMaterial,
   MaterialDetailTitle,
 } from "./Material.js";
 import * as api from "../../network/api.js";
@@ -92,15 +91,11 @@ import { PrintedLabel } from "./PrintedLabel.js";
 import { JobDetails } from "./JobDetails.js";
 import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
-import {
-  currentStatus,
-  currentStatusJobComment,
-  reorderQueuedMatInCurrentStatus,
-} from "../../cell-status/current-status.js";
-import { useAddExistingMaterialToQueue, usePrintLabel } from "../../cell-status/material-details.js";
+import { currentStatus, currentStatusJobComment } from "../../cell-status/current-status.js";
+import { usePrintLabel } from "../../cell-status/material-details.js";
 import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
-import { useRecoilConduit } from "../../util/recoil-util.js";
+import { SortableRegion, WhiteboardRegion } from "./Whiteboard.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -666,7 +661,6 @@ interface QueueProps {
 export const Queues = (props: QueueProps) => {
   const operator = useRecoilValue(currentOperator);
   const currentSt = useRecoilValue(currentStatus);
-  const reorderQueuedMat = useRecoilConduit(reorderQueuedMatInCurrentStatus);
   const rawMatQueues = useRecoilValue(rawMaterialQueues);
   const data = React.useMemo(
     () => selectQueueData(props.showFree, props.queues, currentSt, rawMatQueues),
@@ -681,7 +675,6 @@ export const Queues = (props: QueueProps) => {
     Readonly<api.IInProcessMaterial>
   > | null>(null);
   const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
-  const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
 
   return (
     <Box
@@ -695,70 +688,62 @@ export const Queues = (props: QueueProps) => {
           style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined}
           key={idx}
         >
-          <SortableWhiteboardRegion
-            axis="xy"
-            label={region.label}
-            flexStart
-            addMaterialButton={
-              region.free ? undefined : (
-                <AddMaterialButtons label={region.label} rawMatQueue={region.rawMaterialQueue} />
-              )
-            }
-            distance={5}
-            shouldCancelStart={() => false}
-            onSortEnd={(se: SortEnd) => {
-              addExistingMatToQueue({
-                materialId: region.material[se.oldIndex].materialID,
-                queue: region.label,
-                queuePosition: se.newIndex,
-                operator: operator,
-              });
-              reorderQueuedMat({
-                queue: region.label,
-                matId: region.material[se.oldIndex].materialID,
-                newIdx: se.newIndex,
-              });
-            }}
+          <SortableRegion
+            matIds={region.material.map((m) => m.materialID)}
+            direction="rect"
+            queueName={region.label}
+            renderDragOverlay={(mat) => (
+              <DragOverlayInProcMaterial mat={mat} hideEmptySerial displayJob={region.rawMaterialQueue} />
+            )}
           >
-            {region.material.map((m, matIdx) => (
-              <SortableInProcMaterial
-                key={matIdx}
-                index={matIdx}
-                mat={m}
-                hideEmptySerial
-                displayJob={region.rawMaterialQueue}
-              />
-            ))}
-            {region.groupedRawMat && region.groupedRawMat.length > 0
-              ? region.groupedRawMat.map((matGroup, idx) =>
-                  matGroup.material.length === 1 ? (
-                    <InProcMaterial
-                      key={idx}
-                      mat={matGroup.material[0]}
-                      hideEmptySerial
-                      displayJob={region.rawMaterialQueue}
-                    />
-                  ) : (
-                    <MultiMaterial
-                      key={idx}
-                      partOrCasting={matGroup.partOrCasting}
-                      assignedJobUnique={matGroup.assignedJobUnique}
-                      material={matGroup.material}
-                      onOpen={() => setMultiMaterialDialog(matGroup.material)}
-                    />
-                  )
+            <WhiteboardRegion
+              label={region.label}
+              flexStart
+              addMaterialButton={
+                region.free ? undefined : (
+                  <AddMaterialButtons label={region.label} rawMatQueue={region.rawMaterialQueue} />
                 )
-              : undefined}
-            {region.rawMaterialQueue ? (
-              <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
-                <RawMaterialJobTable
-                  queue={region.label}
-                  editNote={setChangeNoteForJob}
-                  editQty={setEditQtyForJob}
+              }
+            >
+              {region.material.map((m, matIdx) => (
+                <SortableInProcMaterial
+                  key={matIdx}
+                  mat={m}
+                  hideEmptySerial
+                  displayJob={region.rawMaterialQueue}
                 />
-              </div>
-            ) : undefined}
-          </SortableWhiteboardRegion>
+              ))}
+              {region.groupedRawMat && region.groupedRawMat.length > 0
+                ? region.groupedRawMat.map((matGroup, idx) =>
+                    matGroup.material.length === 1 ? (
+                      <InProcMaterial
+                        key={idx}
+                        mat={matGroup.material[0]}
+                        hideEmptySerial
+                        displayJob={region.rawMaterialQueue}
+                      />
+                    ) : (
+                      <MultiMaterial
+                        key={idx}
+                        partOrCasting={matGroup.partOrCasting}
+                        assignedJobUnique={matGroup.assignedJobUnique}
+                        material={matGroup.material}
+                        onOpen={() => setMultiMaterialDialog(matGroup.material)}
+                      />
+                    )
+                  )
+                : undefined}
+              {region.rawMaterialQueue ? (
+                <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
+                  <RawMaterialJobTable
+                    queue={region.label}
+                    editNote={setChangeNoteForJob}
+                    editQty={setEditQtyForJob}
+                  />
+                </div>
+              ) : undefined}
+            </WhiteboardRegion>
+          </SortableRegion>
         </div>
       ))}
       <QueueMaterialDialog queueNames={props.queues} />

@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -32,23 +32,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import {
   selectAllMaterialIntoBins,
   MaterialBinType,
+  MaterialBin,
   moveMaterialBin,
   currentMaterialBinOrder,
-  MaterialBin,
   moveMaterialInBin,
+  MaterialBinId,
+  findMaterialInQuarantineQueues,
+  findQueueInQuarantineQueues,
 } from "../../data/all-material-bins.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import * as currentSt from "../../cell-status/current-status.js";
-import { Paper } from "@mui/material";
+import { Box, Paper } from "@mui/material";
 import { Typography } from "@mui/material";
 import { Button } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { InProcMaterial, MaterialDialog } from "../station-monitor/Material.js";
-import { IInProcessMaterial, LocType, QueuePosition } from "../../network/api.js";
+import {
+  DragOverlayInProcMaterial,
+  InProcMaterial,
+  MaterialDialog,
+  SortableInProcMaterial,
+  SortableMatData,
+} from "../station-monitor/Material.js";
+import { IInProcessMaterial, LocType } from "../../network/api.js";
 import {
   InvalidateCycleDialogButtons,
   InvalidateCycleDialogContent,
@@ -58,84 +66,158 @@ import {
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle.js";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { JobsBackend } from "../../network/backend.js";
+import {
+  horizontalListSortingStrategy,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  closestCenter,
+  CollisionDetection,
+  DndContext,
+  DragOverlay,
+  getFirstCollision,
+  MeasuringStrategy,
+  pointerWithin,
+  rectIntersection,
+} from "@dnd-kit/core";
+import { useRecoilConduit } from "../../util/recoil-util.js";
 
-enum DragType {
-  Material = "DRAG_MATERIAL",
-  Queue = "DRAG_QUEUE",
-}
+type ColWithTitleProps = {
+  readonly label: string;
+  readonly binId: MaterialBinId;
+  readonly children?: React.ReactNode;
+};
 
-function getQueueStyle(
-  isDraggingOver: boolean,
-  draggingFromThisWith: string | undefined
-): React.CSSProperties {
-  return {
-    display: "flex",
-    flexDirection: "column",
-    flexWrap: "nowrap",
-    width: "18em",
-    minHeight: "20em",
-    backgroundColor: isDraggingOver ? "#BDBDBD" : draggingFromThisWith ? "#EEEEEE" : undefined,
+type ColWithTitleSortableProps = {
+  readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
+  readonly dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  readonly setDragHandleRef?: React.RefCallback<HTMLDivElement>;
+  readonly isDragOverlay?: boolean;
+  readonly isActiveDrag?: boolean;
+};
+
+const ColumnWithTitle = React.forwardRef(function MaterialBin(
+  props: ColWithTitleProps & ColWithTitleSortableProps,
+  ref: React.ForwardedRef<HTMLDivElement>
+) {
+  return (
+    <Paper
+      sx={{ margin: props.isDragOverlay ? undefined : "0.75em", opacity: props.isActiveDrag ? 0.2 : 1 }}
+      ref={ref}
+      {...props.dragRootProps}
+    >
+      <Box
+        role="button"
+        tabIndex={0}
+        sx={{ cursor: props.isDragOverlay ? "grabbing" : "grab" }}
+        {...props.dragHandleProps}
+      >
+        <Typography variant="h4">{props.label}</Typography>
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          flexWrap: "nowrap",
+          width: "18em",
+          minHeight: "20em",
+        }}
+      >
+        {props.children}
+      </Box>
+    </Paper>
+  );
+});
+
+type SortableColumnData = {
+  readonly type: "container";
+  readonly bin: MaterialBin;
+};
+
+function SortableColumnWithTitle(props: ColWithTitleProps & { readonly bin: MaterialBin }) {
+  const data: SortableColumnData = { type: "container", bin: props.bin };
+  const {
+    active,
+    isDragging,
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+  } = useSortable({
+    id: props.binId,
+    data,
+  });
+
+  const handleProps: { [key: string]: unknown } = {
+    ...listeners,
   };
+  for (const [a, v] of Object.entries(attributes)) {
+    if (a.startsWith("aria")) {
+      handleProps[a] = v;
+    }
+  }
+  const style = {
+    transform: transform
+      ? `translate3d(${Math.round(transform.x)}px, ${Math.round(transform.y)}px, 0)`
+      : undefined,
+    transition: active !== null ? transition : undefined,
+  };
+
+  return (
+    <ColumnWithTitle
+      ref={setNodeRef}
+      dragRootProps={{ style }}
+      dragHandleProps={handleProps}
+      setDragHandleRef={setActivatorNodeRef}
+      isActiveDrag={isDragging}
+      {...props}
+    />
+  );
 }
 
 interface QuarantineQueueProps {
+  readonly binId: MaterialBinId;
   readonly queue: string;
-  readonly idx: number;
   readonly material: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  readonly bin: MaterialBin;
+  readonly isDragOverlay?: boolean;
 }
 
 const QuarantineQueue = React.memo(function QuarantineQueue(props: QuarantineQueueProps) {
-  return (
-    <Draggable draggableId={props.queue} index={props.idx}>
-      {(provided, snapshot) => (
-        <Paper
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          style={{ ...provided.draggableProps.style, margin: "0.75em" }}
+  if (props.isDragOverlay) {
+    return (
+      <ColumnWithTitle binId={props.binId} label={props.queue} isDragOverlay>
+        {props.material.map((mat) => (
+          <InProcMaterial key={mat.materialID} mat={mat} hideAvatar showHandle />
+        ))}
+      </ColumnWithTitle>
+    );
+  } else {
+    return (
+      <SortableColumnWithTitle binId={props.binId} label={props.queue} bin={props.bin}>
+        <SortableContext
+          items={props.material.map((m) => m.materialID)}
+          strategy={verticalListSortingStrategy}
         >
-          <div {...provided.dragHandleProps}>
-            <Typography
-              variant="h4"
-              {...provided.dragHandleProps}
-              color={snapshot.isDragging ? "primary" : "textPrimary"}
-            >
-              {props.queue}
-            </Typography>
-          </div>
-          <Droppable droppableId={props.queue} type={DragType.Material}>
-            {(provided, snapshot) => (
-              <div
-                ref={provided.innerRef}
-                style={getQueueStyle(snapshot.isDraggingOver, snapshot.draggingFromThisWith)}
-              >
-                {props.material.map((mat, idx) => (
-                  <Draggable key={mat.materialID} draggableId={mat.materialID.toString()} index={idx}>
-                    {(provided, snapshot) => (
-                      <InProcMaterial
-                        mat={mat}
-                        draggableProvided={provided}
-                        hideAvatar
-                        isDragging={snapshot.isDragging}
-                      />
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </Paper>
-      )}
-    </Draggable>
-  );
+          {props.material.map((mat) => (
+            <SortableInProcMaterial key={mat.materialID} mat={mat} hideAvatar />
+          ))}
+        </SortableContext>
+      </SortableColumnWithTitle>
+    );
+  }
 });
 
 interface SystemMaterialProps<T> {
   readonly name: string;
-  readonly draggableId: string;
-  readonly idx: number;
+  readonly binId: string;
   readonly material: ReadonlyMap<T, ReadonlyArray<Readonly<IInProcessMaterial>>>;
+  readonly bin: MaterialBin;
+  readonly isDragOverlay?: boolean;
   readonly renderLabel: (label: T) => string;
   readonly compareLabel: (l1: T, l2: T) => number;
 }
@@ -172,39 +254,83 @@ function compareQueue(q1: string, q2: string) {
 
 class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
   override render() {
+    const Col = this.props.isDragOverlay ? ColumnWithTitle : SortableColumnWithTitle;
     return (
-      <Draggable draggableId={this.props.draggableId} index={this.props.idx}>
-        {(provided, snapshot) => (
-          <Paper
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            style={{ ...provided.draggableProps.style, margin: "0.75em" }}
-          >
-            <div {...provided.dragHandleProps}>
-              <Typography
-                variant="h4"
-                {...provided.dragHandleProps}
-                color={snapshot.isDragging ? "primary" : "textPrimary"}
-              >
-                {this.props.name}
-              </Typography>
+      <Col
+        label={this.props.name}
+        binId={this.props.binId}
+        bin={this.props.bin}
+        isDragOverlay={this.props.isDragOverlay}
+      >
+        {LazySeq.of(this.props.material)
+          .sortWith(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
+          .map(([label, material], idx) => (
+            <div key={idx}>
+              <Typography variant="caption">{this.props.renderLabel(label)}</Typography>
+              {material.map((mat, idx) => (
+                <InProcMaterial key={idx} mat={mat} hideAvatar />
+              ))}
             </div>
-            <div style={getQueueStyle(false, undefined)}>
-              {LazySeq.of(this.props.material)
-                .sortWith(([l1, _m1], [l2, _m2]) => this.props.compareLabel(l1, l2))
-                .map(([label, material], idx) => (
-                  <div key={idx}>
-                    <Typography variant="caption">{this.props.renderLabel(label)}</Typography>
-                    {material.map((mat, idx) => (
-                      <InProcMaterial key={idx} mat={mat} hideAvatar />
-                    ))}
-                  </div>
-                ))}
-            </div>
-          </Paper>
-        )}
-      </Draggable>
+          ))}
+      </Col>
     );
+  }
+}
+
+function MaterialBinColumn({
+  matBin,
+  isDragOverlay,
+}: {
+  readonly matBin: MaterialBin;
+  readonly isDragOverlay?: boolean;
+}) {
+  switch (matBin.type) {
+    case MaterialBinType.LoadStations:
+      return (
+        <SystemMaterial
+          name="Load Stations"
+          binId={matBin.binId}
+          renderLabel={renderLul}
+          compareLabel={compareLul}
+          material={matBin.byLul}
+          bin={matBin}
+          isDragOverlay={isDragOverlay}
+        />
+      );
+    case MaterialBinType.Pallets:
+      return (
+        <SystemMaterial
+          name="Pallets"
+          binId={matBin.binId}
+          renderLabel={renderPal}
+          compareLabel={comparePal}
+          material={matBin.byPallet}
+          bin={matBin}
+          isDragOverlay={isDragOverlay}
+        />
+      );
+    case MaterialBinType.ActiveQueues:
+      return (
+        <SystemMaterial
+          name="Queues"
+          binId={matBin.binId}
+          renderLabel={renderQueue}
+          compareLabel={compareQueue}
+          material={matBin.byQueue}
+          bin={matBin}
+          isDragOverlay={isDragOverlay}
+        />
+      );
+    case MaterialBinType.QuarantineQueues:
+      return (
+        <QuarantineQueue
+          binId={matBin.binId}
+          queue={matBin.queueName}
+          material={matBin.material}
+          bin={matBin}
+          isDragOverlay={isDragOverlay}
+        />
+      );
   }
 }
 
@@ -276,9 +402,60 @@ function AllMatDialog(props: AllMatDialogProps) {
   );
 }
 
+function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDetection {
+  return React.useCallback(
+    (args) => {
+      if (typeof args.active.id === "string") {
+        // columns only collide with other columns
+        return closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter(
+            (container) => typeof container.id === "string"
+          ),
+        });
+      }
+
+      // Intersect the material with any droppable (either another material or a column)
+      const pointerIntersections = pointerWithin(args);
+      const intersections = pointerIntersections.length > 0 ? pointerIntersections : rectIntersection(args);
+      let overId = getFirstCollision(intersections, "id");
+
+      if (overId != null) {
+        if (typeof overId === "string") {
+          // If the over is a non-empty column, find the closest material inside that column
+          const bin = findQueueInQuarantineQueues(overId, allBins);
+          if (bin && bin.bin.material.length > 0) {
+            overId = closestCenter({
+              ...args,
+              droppableContainers: args.droppableContainers.filter(
+                (container) =>
+                  container.id !== overId &&
+                  bin.bin.material.findIndex((m) => m.materialID === container.id) >= 0
+              ),
+            })[0]?.id;
+          }
+        }
+
+        return [{ id: overId }];
+      }
+      return [];
+    },
+    [allBins]
+  );
+}
+
 interface AllMaterialProps {
   readonly displaySystemBins: boolean;
 }
+
+type CurActiveDrag =
+  | {
+      readonly type: "material";
+      readonly mat: Readonly<IInProcessMaterial>;
+      readonly curOverBinId: MaterialBinId | null;
+      readonly initialIdx: number;
+    }
+  | { readonly type: "column"; readonly bin: MaterialBin };
 
 export function AllMaterial(props: AllMaterialProps) {
   React.useEffect(() => {
@@ -287,49 +464,24 @@ export function AllMaterial(props: AllMaterialProps) {
   const st = useRecoilValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
   const displayMaterial = useRecoilValue(matDetails.materialDetail);
+  const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
+  const reorderQueuedMat = useRecoilConduit(currentSt.reorderQueuedMatInCurrentStatus);
+  const [activeDrag, setActiveDrag] = React.useState<CurActiveDrag | null>(null);
 
-  const binsFromSt = React.useMemo(() => selectAllMaterialIntoBins(st, matBinOrder), [st, matBinOrder]);
-  const [tempBinsDuringUpdate, setTempBinsDuringUpdate] = React.useState<ReadonlyArray<MaterialBin> | null>(
-    null
-  );
-  React.useEffect(() => {
-    setTempBinsDuringUpdate(null);
-  }, [st]);
-  const allBins = tempBinsDuringUpdate ?? binsFromSt;
+  const allBins = React.useMemo(() => {
+    const allBins = selectAllMaterialIntoBins(st, matBinOrder);
+    if (activeDrag && activeDrag.type === "material" && activeDrag.curOverBinId !== null) {
+      return moveMaterialInBin(allBins, activeDrag.mat, activeDrag.curOverBinId, activeDrag.initialIdx);
+    } else {
+      return allBins;
+    }
+  }, [st, matBinOrder, activeDrag]);
 
   const curBins = props.displaySystemBins
     ? allBins
     : allBins.filter((bin) => bin.type === MaterialBinType.QuarantineQueues);
 
-  const onDragEnd = (result: DropResult): void => {
-    if (!result.destination) return;
-    if (result.reason === "CANCEL") return;
-
-    if (result.type === DragType.Material) {
-      const queue = result.destination.droppableId;
-      const materialId = parseInt(result.draggableId);
-      const queuePosition = result.destination.index;
-      const mat = st.material.find((m) => m.materialID === materialId);
-      if (mat) {
-        setTempBinsDuringUpdate(moveMaterialInBin(allBins, mat, queue, queuePosition));
-        JobsBackend.setMaterialInQueue(
-          materialId,
-          null,
-          new QueuePosition({ queue, position: queuePosition })
-        ).catch(() => {
-          setTempBinsDuringUpdate(null);
-        });
-      }
-    } else if (result.type === DragType.Queue) {
-      setMatBinOrder(
-        moveMaterialBin(
-          curBins.map((b) => b.binId),
-          result.source.index,
-          result.destination.index
-        )
-      );
-    }
-  };
+  const collisionDetectionStrategy = useCollisionDetection(allBins);
 
   const curDisplayQuarantine =
     displayMaterial !== null &&
@@ -340,64 +492,97 @@ export function AllMaterial(props: AllMaterialProps) {
     ) >= 0;
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="Board" type={DragType.Queue} direction="horizontal">
-        {(provided) => (
-          <div ref={provided.innerRef} style={{ display: "flex", flexWrap: "nowrap" }}>
-            {curBins.map((matBin, idx) => {
-              switch (matBin.type) {
-                case MaterialBinType.LoadStations:
-                  return (
-                    <SystemMaterial
-                      name="Load Stations"
-                      draggableId={matBin.binId}
-                      key={matBin.binId}
-                      idx={idx}
-                      renderLabel={renderLul}
-                      compareLabel={compareLul}
-                      material={matBin.byLul}
-                    />
-                  );
-                case MaterialBinType.Pallets:
-                  return (
-                    <SystemMaterial
-                      name="Pallets"
-                      draggableId={matBin.binId}
-                      key={matBin.binId}
-                      idx={idx}
-                      renderLabel={renderPal}
-                      compareLabel={comparePal}
-                      material={matBin.byPallet}
-                    />
-                  );
-                case MaterialBinType.ActiveQueues:
-                  return (
-                    <SystemMaterial
-                      name="Queues"
-                      draggableId={matBin.binId}
-                      key={matBin.binId}
-                      idx={idx}
-                      renderLabel={renderQueue}
-                      compareLabel={compareQueue}
-                      material={matBin.byQueue}
-                    />
-                  );
-                case MaterialBinType.QuarantineQueues:
-                  return (
-                    <QuarantineQueue
-                      key={matBin.binId}
-                      idx={idx}
-                      queue={matBin.queueName}
-                      material={matBin.material}
-                    />
-                  );
-              }
-            })}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+    <DndContext
+      collisionDetection={collisionDetectionStrategy}
+      measuring={{
+        droppable: { strategy: MeasuringStrategy.Always },
+      }}
+      onDragStart={({ active }) => {
+        if (typeof active.id === "string") {
+          setActiveDrag({ type: "column", bin: (active.data.current as SortableColumnData).bin });
+        } else {
+          setActiveDrag({
+            type: "material",
+            mat: (active.data.current as SortableMatData).mat,
+            curOverBinId: null,
+            initialIdx: 0,
+          });
+        }
+      }}
+      onDragOver={({ over }) => {
+        if (!over) return;
+        if (activeDrag === null || activeDrag.type === "column") return;
+        const overCol =
+          typeof over.id === "string"
+            ? findQueueInQuarantineQueues(over.id, allBins)
+            : findMaterialInQuarantineQueues(over.id, allBins);
+        if (!overCol) return;
+
+        if (overCol.bin.binId !== activeDrag.curOverBinId) {
+          setActiveDrag({
+            ...activeDrag,
+            curOverBinId: overCol.bin.binId,
+            initialIdx: overCol.idx,
+          });
+        }
+      }}
+      onDragEnd={({ over }) => {
+        if (activeDrag === null) return;
+        if (!over) {
+          setActiveDrag(null);
+          return;
+        }
+        if (activeDrag.type === "column") {
+          if (typeof over.id === "number") {
+            console.log("Invalid, collision should never allow a column drag to be over a material");
+          } else {
+            setMatBinOrder(
+              moveMaterialBin(
+                curBins.map((b) => b.binId),
+                curBins.findIndex((b) => b.binId === activeDrag.bin.binId),
+                curBins.findIndex((b) => b.binId === over.id)
+              )
+            );
+          }
+        } else {
+          const overCol =
+            typeof over.id === "string"
+              ? findQueueInQuarantineQueues(over.id, allBins)
+              : findMaterialInQuarantineQueues(over.id, allBins);
+          if (overCol) {
+            addExistingMatToQueue({
+              materialId: activeDrag.mat.materialID,
+              queue: overCol.bin.queueName,
+              queuePosition: overCol.idx,
+              operator: null,
+            });
+            reorderQueuedMat({
+              queue: overCol.bin.queueName,
+              matId: activeDrag.mat.materialID,
+              newIdx: overCol.idx,
+            });
+          }
+        }
+
+        setActiveDrag(null);
+      }}
+      onDragCancel={() => setActiveDrag(null)}
+    >
+      <SortableContext items={curBins.map((b) => b.binId)} strategy={horizontalListSortingStrategy}>
+        <div style={{ display: "flex", flexWrap: "nowrap" }}>
+          {curBins.map((matBin) => (
+            <MaterialBinColumn key={matBin.binId} matBin={matBin} />
+          ))}
+        </div>
+      </SortableContext>
+      <DragOverlay>
+        {activeDrag?.type === "material" ? (
+          <DragOverlayInProcMaterial mat={activeDrag.mat} hideAvatar />
+        ) : activeDrag?.type === "column" ? (
+          <MaterialBinColumn matBin={activeDrag.bin} isDragOverlay />
+        ) : undefined}
+      </DragOverlay>
       <AllMatDialog quarantineQueue={curDisplayQuarantine} />
-    </DragDropContext>
+    </DndContext>
   );
 }

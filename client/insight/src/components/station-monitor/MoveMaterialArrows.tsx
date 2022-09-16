@@ -72,7 +72,8 @@ class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Eleme
 
   override render() {
     const data: MoveMaterialArrowData<MoveArrowElemRect> = {
-      container: this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
+      container:
+        this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
       nodes: this.props.nodes.mapValues(MoveMaterialArrows.elementToRect),
       node_type: this.props.node_type,
     };
@@ -146,6 +147,7 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
         <svg
           style={{
             position: "absolute",
+            pointerEvents: "none",
             width: "100%",
             height: "100%",
             top: 0,
@@ -168,7 +170,9 @@ export class MoveMaterialArrowContainer extends React.PureComponent<
           <MoveMaterialArrows {...this.state} />
         </svg>
         <div ref={(r) => this.setState({ container: r })}>
-          <MoveMaterialArrowCtx.Provider value={this.ctx}>{this.props.children}</MoveMaterialArrowCtx.Provider>
+          <MoveMaterialArrowCtx.Provider value={this.ctx}>
+            {this.props.children}
+          </MoveMaterialArrowCtx.Provider>
         </div>
       </div>
     );
@@ -201,7 +205,9 @@ class MoveMaterialArrowNodeHelper extends React.PureComponent<
   }
 }
 
-export class MoveMaterialArrowNode extends React.PureComponent<MoveMaterialNodeKind & { children?: JSX.Element }> {
+export class MoveMaterialArrowNode extends React.PureComponent<
+  MoveMaterialNodeKind & { children?: JSX.Element }
+> {
   override render(): JSX.Element {
     const { children, ...kind } = this.props;
     return (

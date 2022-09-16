@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import * as ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 
 import { CssBaseline } from "@mui/material";
 import "highlight.js/styles/default.css";
@@ -48,7 +48,7 @@ enableMapSet();
 
 import App, { AppProps } from "./components/App.js";
 
-export function render(appProps: AppProps | null, elem: HTMLElement | null): void {
+export function render(appProps: AppProps | null, elem: HTMLElement): void {
   const theme = createTheme({
     palette: {
       primary: green,
@@ -56,15 +56,15 @@ export function render(appProps: AppProps | null, elem: HTMLElement | null): voi
     },
   });
 
-  ReactDOM.render(
+  const root = createRoot(elem);
+  root.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <RecoilRoot>
-        {/* <React.StrictMode> */}
-        <App {...appProps} />
-        {/* </React.StrictMode> */}
+        <React.StrictMode>
+          <App {...appProps} />
+        </React.StrictMode>
       </RecoilRoot>
-    </ThemeProvider>,
-    elem
+    </ThemeProvider>
   );
 }

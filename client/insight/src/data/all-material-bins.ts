@@ -256,3 +256,40 @@ export function moveMaterialInBin(
     }
   });
 }
+
+export interface QuarantineBinAndIndex {
+  readonly bin: Extract<MaterialBin, { type: MaterialBinType.QuarantineQueues }>;
+  readonly idx: number;
+}
+
+export function findMaterialInQuarantineQueues(
+  matId: number,
+  bins: ReadonlyArray<MaterialBin>
+): QuarantineBinAndIndex | null {
+  for (const bin of bins) {
+    switch (bin.type) {
+      case MaterialBinType.QuarantineQueues:
+        for (let i = 0; i < bin.material.length; i++) {
+          if (bin.material[i].materialID === matId) {
+            return { bin, idx: i };
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  return null;
+}
+
+export function findQueueInQuarantineQueues(
+  queue: string,
+  bins: ReadonlyArray<MaterialBin>
+): QuarantineBinAndIndex | null {
+  for (const bin of bins) {
+    if (bin.type === MaterialBinType.QuarantineQueues && bin.queueName === queue) {
+      return { bin, idx: 0 };
+    }
+  }
+  return null;
+}
