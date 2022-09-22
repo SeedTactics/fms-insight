@@ -249,13 +249,15 @@ function PalletColumn(props: PalletColumnProps) {
   if (props.data.face.size === 1 && firstMats) {
     palDetails = (
       <Box sx={{ ml: "4em", mr: "4em" }}>
-        <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={maxFace}>
+        <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: maxFace }}>
           <WhiteboardRegion label={""} spaceAround>
             {firstMats.map((m, idx) => (
               <MoveMaterialArrowNode
                 key={idx}
-                type={MoveMaterialNodeKindType.Material}
-                material={showArrow(m) ? m : null}
+                kind={{
+                  type: MoveMaterialNodeKindType.Material,
+                  material: showArrow(m) ? m : null,
+                }}
               >
                 <InProcMaterial mat={m} />
               </MoveMaterialArrowNode>
@@ -271,13 +273,12 @@ function PalletColumn(props: PalletColumnProps) {
           .sortBy(([face, _]) => face)
           .map(([face, data]) => (
             <div key={face}>
-              <MoveMaterialArrowNode type={MoveMaterialNodeKindType.PalletFaceZone} face={face}>
+              <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: face }}>
                 <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
                   {data.map((m, idx) => (
                     <MoveMaterialArrowNode
                       key={idx}
-                      type={MoveMaterialNodeKindType.Material}
-                      material={showArrow(m) ? m : null}
+                      kind={{ type: MoveMaterialNodeKindType.Material, material: showArrow(m) ? m : null }}
                     >
                       <InProcMaterial mat={m} />
                     </MoveMaterialArrowNode>
@@ -297,7 +298,10 @@ function PalletColumn(props: PalletColumnProps) {
         <>
           <WhiteboardRegion label="Raw Material" spaceAround>
             {props.data.freeLoadingMaterial.map((m, idx) => (
-              <MoveMaterialArrowNode key={idx} type={MoveMaterialNodeKindType.Material} material={m}>
+              <MoveMaterialArrowNode
+                key={idx}
+                kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
+              >
                 <InProcMaterial mat={m} />
               </MoveMaterialArrowNode>
             ))}
@@ -349,7 +353,7 @@ function PalletColumn(props: PalletColumnProps) {
         </Box>
       )}
       <Divider />
-      <MoveMaterialArrowNode type={MoveMaterialNodeKindType.CompletedMaterialZone}>
+      <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.CompletedMaterialZone }}>
         <WhiteboardRegion label="Completed Material" />
       </MoveMaterialArrowNode>
     </>
@@ -575,12 +579,14 @@ export function LoadStation(props: LoadStationDisplayProps) {
             {col1.map((mat, idx) => (
               <MoveMaterialArrowNode
                 key={idx}
-                {...(mat.isFree
-                  ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
-                  : {
-                      type: MoveMaterialNodeKindType.QueueZone,
-                      queue: mat.label,
-                    })}
+                kind={
+                  mat.isFree
+                    ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+                    : {
+                        type: MoveMaterialNodeKindType.QueueZone,
+                        queue: mat.label,
+                      }
+                }
               >
                 <SortableRegion
                   matIds={mat.material.map((m) => m.materialID)}
@@ -597,8 +603,10 @@ export function LoadStation(props: LoadStationDisplayProps) {
                     {mat.material.map((m, matIdx) => (
                       <MoveMaterialArrowNode
                         key={matIdx}
-                        type={MoveMaterialNodeKindType.Material}
-                        material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
+                        kind={{
+                          type: MoveMaterialNodeKindType.Material,
+                          material: data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null,
+                        }}
                       >
                         <SortableInProcMaterial
                           mat={m}
@@ -625,12 +633,14 @@ export function LoadStation(props: LoadStationDisplayProps) {
             {col2.map((mat, idx) => (
               <MoveMaterialArrowNode
                 key={idx}
-                {...(mat.isFree
-                  ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
-                  : {
-                      type: MoveMaterialNodeKindType.QueueZone,
-                      queue: mat.label,
-                    })}
+                kind={
+                  mat.isFree
+                    ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+                    : {
+                        type: MoveMaterialNodeKindType.QueueZone,
+                        queue: mat.label,
+                      }
+                }
               >
                 <SortableRegion
                   matIds={mat.material.map((m) => m.materialID)}
@@ -647,8 +657,10 @@ export function LoadStation(props: LoadStationDisplayProps) {
                     {mat.material.map((m, matIdx) => (
                       <MoveMaterialArrowNode
                         key={matIdx}
-                        type={MoveMaterialNodeKindType.Material}
-                        material={data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null}
+                        kind={{
+                          type: MoveMaterialNodeKindType.Material,
+                          material: data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null,
+                        }}
                       >
                         <SortableInProcMaterial
                           mat={m}

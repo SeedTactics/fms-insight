@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -34,27 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "../network/api.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
-export class MoveMaterialIdentifier {
-  public static allocateNodeId: () => MoveMaterialIdentifier = (function () {
-    let cntr = 0;
-    return function () {
-      cntr += 1;
-      return new MoveMaterialIdentifier(cntr);
-    };
-  })();
-
-  compare(other: MoveMaterialIdentifier): number {
-    return this.cntr - other.cntr;
-  }
-  hash(): number {
-    return this.cntr;
-  }
-  toString(): string {
-    return "MoveMaterialId-" + this.cntr.toString();
-  }
-  private constructor(private readonly cntr: number) {}
-}
-
 export enum MoveMaterialNodeKindType {
   Material,
   FreeMaterialZone,
@@ -79,11 +58,42 @@ export type MoveMaterialNodeKind =
       readonly queue: string;
     };
 
-export interface MoveMaterialArrowData<T> {
-  readonly container: T | null;
-  readonly nodes: HashMap<MoveMaterialIdentifier, T>;
-  readonly node_type: HashMap<MoveMaterialIdentifier, MoveMaterialNodeKind>;
+export type MoveMaterialIdentifier = string;
+
+export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIdentifier {
+  switch (kind.type) {
+    case MoveMaterialNodeKindType.Material:
+      return "Material-" + (kind.material?.materialID ?? -1).toString();
+    case MoveMaterialNodeKindType.FreeMaterialZone:
+      return "FreeMaterialZone";
+    case MoveMaterialNodeKindType.CompletedMaterialZone:
+      return "CompletedMaterialZone";
+    case MoveMaterialNodeKindType.PalletFaceZone:
+      return "PalletFaceZone-" + kind.face.toString();
+    case MoveMaterialNodeKindType.QueueZone:
+      return "QueueZone-" + kind.queue;
+  }
 }
+
+export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<unknown> {
+  switch (kind.type) {
+    case MoveMaterialNodeKindType.Material:
+      return [kind.type, kind.material];
+    case MoveMaterialNodeKindType.FreeMaterialZone:
+      return [kind.type];
+    case MoveMaterialNodeKindType.CompletedMaterialZone:
+      return [kind.type];
+    case MoveMaterialNodeKindType.PalletFaceZone:
+      return [kind.type, kind.face];
+    case MoveMaterialNodeKindType.QueueZone:
+      return [kind.type, kind.queue];
+  }
+}
+
+export type AllMoveMaterialArrows<T> = HashMap<
+  MoveMaterialIdentifier,
+  MoveMaterialNodeKind & { readonly elem: T }
+>;
 
 export interface MoveMaterialArrow {
   readonly fromX: number;
@@ -111,34 +121,30 @@ interface MoveMaterialByKind {
   readonly material: ReadonlyArray<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>;
 }
 
-function buildMatByKind(data: MoveMaterialArrowData<MoveArrowElemRect>): MoveMaterialByKind {
+function buildMatByKind(allArrows: AllMoveMaterialArrows<MoveArrowElemRect>): MoveMaterialByKind {
   let freeMaterial: MoveArrowElemRect | undefined;
   let completedMaterial: MoveArrowElemRect | undefined;
   const faces = new Map<number, MoveArrowElemRect>();
   const queues = new Map<string, MoveArrowElemRect>();
   const material = new Array<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>();
 
-  for (const [key, kind] of data.node_type) {
-    const node = data.nodes.get(key);
-    if (node === undefined) {
-      continue;
-    }
-    switch (kind.type) {
+  for (const node of allArrows.values()) {
+    switch (node.type) {
       case MoveMaterialNodeKindType.FreeMaterialZone:
-        freeMaterial = node;
+        freeMaterial = node.elem;
         break;
       case MoveMaterialNodeKindType.CompletedMaterialZone:
-        completedMaterial = node;
+        completedMaterial = node.elem;
         break;
       case MoveMaterialNodeKindType.PalletFaceZone:
-        faces.set(kind.face, node);
+        faces.set(node.face, node.elem);
         break;
       case MoveMaterialNodeKindType.QueueZone:
-        queues.set(kind.queue, node);
+        queues.set(node.queue, node.elem);
         break;
       case MoveMaterialNodeKindType.Material:
-        if (kind.material) {
-          material.push([node, kind.material]);
+        if (node.material) {
+          material.push([node.elem, node.material]);
         }
         break;
     }
@@ -148,13 +154,13 @@ function buildMatByKind(data: MoveMaterialArrowData<MoveArrowElemRect>): MoveMat
 }
 
 export function computeArrows(
-  data: MoveMaterialArrowData<MoveArrowElemRect>
+  container: MoveArrowElemRect | null | undefined,
+  allArrows: AllMoveMaterialArrows<MoveArrowElemRect>
 ): ReadonlyArray<MoveMaterialArrow> {
-  const container = data.container;
   if (!container) {
     return [];
   }
-  const byKind = buildMatByKind(data);
+  const byKind = buildMatByKind(allArrows);
   if (!byKind.completedMaterial) {
     return [];
   }

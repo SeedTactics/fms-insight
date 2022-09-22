@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -34,192 +34,163 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import {
   MoveMaterialArrow,
-  MoveMaterialArrowData,
   computeArrows,
   MoveMaterialIdentifier,
   MoveMaterialNodeKind,
   MoveArrowElemRect,
+  AllMoveMaterialArrows,
+  uniqueIdForNodeKind,
+  memoPropsForNodeKind,
 } from "../../data/move-arrows.js";
 import { HashMap } from "@seedtactics/immutable-collections";
 
-class MoveMaterialArrows extends React.PureComponent<MoveMaterialArrowData<Element>> {
-  static elementToRect(e: Element): MoveArrowElemRect {
-    const r = e.getBoundingClientRect();
-    return {
-      left: r.left + window.scrollX,
-      top: r.top + window.scrollY,
-      width: r.width,
-      height: r.height,
-      bottom: r.bottom + window.scrollY,
-      right: r.right + window.scrollX,
-    };
-  }
-
-  static arrowToPath(arr: MoveMaterialArrow): string {
-    // mid point of line
-    const mpx = (arr.fromX + arr.toX) / 2;
-    const mpy = (arr.fromY + arr.toY) / 2;
-
-    // angle of perpendicular to line
-    const theta = Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) + (Math.PI * arr.curveDirection) / 2;
-
-    // control points
-    const cx = mpx + 50 * Math.cos(theta);
-    const cy = mpy + 50 * Math.sin(theta);
-
-    return `M${arr.fromX},${arr.fromY} Q ${cx} ${cy} ${arr.toX} ${arr.toY}`;
-  }
-
-  override render() {
-    const data: MoveMaterialArrowData<MoveArrowElemRect> = {
-      container:
-        this.props.container !== null ? MoveMaterialArrows.elementToRect(this.props.container) : null,
-      nodes: this.props.nodes.mapValues(MoveMaterialArrows.elementToRect),
-      node_type: this.props.node_type,
-    };
-    const arrows = computeArrows(data);
-
-    return (
-      <g>
-        {arrows.map((arr, idx) => (
-          <path
-            key={idx}
-            style={{ fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 2 }}
-            d={MoveMaterialArrows.arrowToPath(arr)}
-            markerEnd={`url(#arrow)`}
-          />
-        ))}
-      </g>
-    );
-  }
+function elementToRect(e: Element): MoveArrowElemRect {
+  const r = e.getBoundingClientRect();
+  return {
+    left: r.left + window.scrollX,
+    top: r.top + window.scrollY,
+    width: r.width,
+    height: r.height,
+    bottom: r.bottom + window.scrollY,
+    right: r.right + window.scrollX,
+  };
 }
 
+function arrowToPath(arr: MoveMaterialArrow): string {
+  // mid point of line
+  const mpx = (arr.fromX + arr.toX) / 2;
+  const mpy = (arr.fromY + arr.toY) / 2;
+
+  // angle of perpendicular to line
+  const theta = Math.atan2(arr.toY - arr.fromY, arr.toX - arr.fromX) + (Math.PI * arr.curveDirection) / 2;
+
+  // control points
+  const cx = mpx + 50 * Math.cos(theta);
+  const cy = mpy + 50 * Math.sin(theta);
+
+  return `M${arr.fromX},${arr.fromY} Q ${cx} ${cy} ${arr.toX} ${arr.toY}`;
+}
+
+const MoveMaterialArrows = React.memo(function MoveMaterialArrows({
+  container,
+  arrowsWithRefs,
+}: {
+  container: React.RefObject<HTMLElement>;
+  arrowsWithRefs: AllMoveMaterialArrows<React.RefObject<HTMLDivElement>>;
+}) {
+  const arrows = computeArrows(
+    container.current ? elementToRect(container.current) : null,
+    arrowsWithRefs.collectValues((r) =>
+      r.elem.current ? { ...r, elem: elementToRect(r.elem.current) } : null
+    )
+  );
+
+  return (
+    <g>
+      {arrows.map((arr, idx) => (
+        <path
+          key={idx}
+          style={{ fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 2 }}
+          d={arrowToPath(arr)}
+          markerEnd={`url(#arrow)`}
+        />
+      ))}
+    </g>
+  );
+});
+
 interface MoveMaterialArrowContext {
-  readonly registerNode: (id: MoveMaterialIdentifier) => (ref: Element | null) => void;
-  readonly registerNodeKind: (id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null) => void;
+  readonly registerNode: (
+    id: MoveMaterialIdentifier,
+    kind: MoveMaterialNodeKind | null,
+    ref: React.RefObject<HTMLDivElement> | null
+  ) => void;
 }
 const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | undefined>(undefined);
 
-export class MoveMaterialArrowContainer extends React.PureComponent<
-  { readonly children: JSX.Element },
-  MoveMaterialArrowData<Element>
-> {
-  override state = {
-    container: null,
-    nodes: HashMap.empty<MoveMaterialIdentifier, Element>(),
-    node_type: HashMap.empty<MoveMaterialIdentifier, MoveMaterialNodeKind>(),
-  } as MoveMaterialArrowData<Element>;
+export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowContainer({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
+  const container = React.useRef<HTMLDivElement>(null);
+  const [nodes, setNodes] = React.useState<AllMoveMaterialArrows<React.RefObject<HTMLDivElement>>>(
+    HashMap.empty()
+  );
 
-  readonly ctx: MoveMaterialArrowContext | undefined = undefined;
-
-  constructor(props: { readonly children: JSX.Element }) {
-    super(props);
-    this.ctx = {
-      registerNode: this.registerNode.bind(this),
-      registerNodeKind: this.registerNodeKind.bind(this),
-    };
-  }
-
-  registerNode(id: MoveMaterialIdentifier) {
-    return (ref: Element | null): void => {
-      if (ref) {
-        this.setState((s) => ({ nodes: s.nodes.set(id, ref) }));
-      } else {
-        this.setState((s) => ({
-          nodes: s.nodes.delete(id),
-          node_type: s.node_type.delete(id),
-        }));
-      }
-    };
-  }
-
-  registerNodeKind(id: MoveMaterialIdentifier, kind: MoveMaterialNodeKind | null): void {
-    if (kind) {
-      this.setState((s) => ({ node_type: s.node_type.set(id, kind) }));
-    } else {
-      this.setState((s) => ({ node_type: s.node_type.delete(id) }));
-    }
-  }
-
-  override render(): JSX.Element {
-    return (
-      <div style={{ position: "relative" }}>
-        <svg
-          style={{
-            position: "absolute",
-            pointerEvents: "none",
-            width: "100%",
-            height: "100%",
-            top: 0,
-            right: 0,
-          }}
-        >
-          <defs>
-            <marker
-              id="arrow"
-              markerWidth={6}
-              markerHeight={10}
-              refX="0"
-              refY="3"
-              orient="auto"
-              markerUnits="strokeWidth"
-            >
-              <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.5)" />
-            </marker>
-          </defs>
-          <MoveMaterialArrows {...this.state} />
-        </svg>
-        <div ref={(r) => this.setState({ container: r })}>
-          <MoveMaterialArrowCtx.Provider value={this.ctx}>
-            {this.props.children}
-          </MoveMaterialArrowCtx.Provider>
-        </div>
-      </div>
-    );
-  }
-}
-
-interface MoveMaterialArrowNodeHelperProps {
-  readonly kind: MoveMaterialNodeKind;
-  readonly ctx: MoveMaterialArrowContext;
-}
-
-class MoveMaterialArrowNodeHelper extends React.PureComponent<
-  MoveMaterialArrowNodeHelperProps & { children?: JSX.Element }
-> {
-  readonly ident = MoveMaterialIdentifier.allocateNodeId();
-
-  constructor(props: MoveMaterialArrowNodeHelperProps) {
-    super(props);
-    props.ctx.registerNodeKind(this.ident, props.kind);
-  }
-
-  override componentDidUpdate(oldProps: MoveMaterialArrowNodeHelperProps) {
-    if (oldProps.kind !== this.props.kind) {
-      this.props.ctx.registerNodeKind(this.ident, this.props.kind);
-    }
-  }
-
-  override render() {
-    return <div ref={this.props.ctx.registerNode(this.ident)}>{this.props.children}</div>;
-  }
-}
-
-export class MoveMaterialArrowNode extends React.PureComponent<
-  MoveMaterialNodeKind & { children?: JSX.Element }
-> {
-  override render(): JSX.Element {
-    const { children, ...kind } = this.props;
-    return (
-      <MoveMaterialArrowCtx.Consumer>
-        {(ctx) =>
-          ctx === undefined ? undefined : (
-            <MoveMaterialArrowNodeHelper ctx={ctx} kind={kind}>
-              {children}
-            </MoveMaterialArrowNodeHelper>
-          )
+  const ctx: MoveMaterialArrowContext = React.useMemo(() => {
+    return {
+      registerNode(
+        id: MoveMaterialIdentifier,
+        kind: MoveMaterialNodeKind | null,
+        ref: React.RefObject<HTMLDivElement> | null
+      ) {
+        if (kind && ref) {
+          setNodes((ns) => ns.set(id, { ...kind, elem: ref }));
+        } else {
+          setNodes((nodes) => nodes.delete(id));
         }
-      </MoveMaterialArrowCtx.Consumer>
-    );
+      },
+    };
+  }, [setNodes]);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <svg
+        style={{
+          position: "absolute",
+          pointerEvents: "none",
+          width: "100%",
+          height: "100%",
+          top: 0,
+          right: 0,
+        }}
+      >
+        <defs>
+          <marker
+            id="arrow"
+            markerWidth={6}
+            markerHeight={10}
+            refX="0"
+            refY="3"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.5)" />
+          </marker>
+        </defs>
+        <MoveMaterialArrows container={container} arrowsWithRefs={nodes} />
+      </svg>
+      <div ref={container}>
+        <MoveMaterialArrowCtx.Provider value={ctx}>{children}</MoveMaterialArrowCtx.Provider>
+      </div>
+    </div>
+  );
+});
+
+export function useMoveMaterialArrowRef(kind: MoveMaterialNodeKind): React.RefObject<HTMLDivElement> {
+  const ctx = React.useContext(MoveMaterialArrowCtx);
+  if (!ctx) {
+    throw new Error("useMoveMaterialArrowRef must be used within a MoveMaterialArrowContainer");
   }
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const id = uniqueIdForNodeKind(kind);
+    ctx.registerNode(id, kind, ref);
+    return () => {
+      ctx.registerNode(id, null, null);
+    };
+  }, [ctx, ...memoPropsForNodeKind(kind)]);
+  return ref;
+}
+
+export function MoveMaterialArrowNode({
+  kind,
+  children,
+}: {
+  kind: MoveMaterialNodeKind;
+  children?: JSX.Element;
+}) {
+  const ref = useMoveMaterialArrowRef(kind);
+  return <div ref={ref}>{children}</div>;
 }
