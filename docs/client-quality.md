@@ -63,6 +63,23 @@ days is available as part of the [monthly review](improve-fms) on the
 
 ![Screenshot of path sankey](screenshots/insight-quality-recent-sankey.png)
 
+The chart shows a Sankey diagram of the material paths and
+inspection results. First, select an inspection type and then select a part
+in the top right. FMS Insight then loads all cycles for this part for the
+entire month and groups them according to their path (A path consists of a
+pallet and machine for each process or sequence, plus the final inspection
+result.) The counts of the various paths are then charted using a Sankey
+diagram, where the widths of the bars are drawn scaled based on the quantity
+of parts which took that path, with parts "flowing" from left to right.
+Any link can be moused over to obtain additional information in a tooltip.
+
+For example, in the above screenshot, one path is to use pallet 1 and machine
+2 (P1,M2) for the first sequence and then pallet 1 and machine 1 for the
+second sequence (P1,M1). This corresponds to the large top link between `raw`
+and `P1,M2` and then the downward-curved link between `P1,M2` on the left and
+`P1,M1` on the right. The path is then further split with uninspected parts
+and successfully inspected parts.
+
 ## Quarantine Material
 
 If [quarantined material](material-quarantine) is enabled, this page displays all the quarantined material queues.
