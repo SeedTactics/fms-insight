@@ -62,7 +62,7 @@ import { SerialScannerButton } from "./QRScan.js";
 import { ManualScanButton } from "./ManualScan.js";
 import { OperatorSelect } from "./ChooseOperator.js";
 import { BasicMaterialDialog } from "./station-monitor/Material.js";
-import { CompletedParts } from "./operations/CompletedParts.js";
+import { RecentSchedulesTable } from "./operations/RecentSchedules.js";
 import { AllMaterial } from "./operations/AllMaterial.js";
 import { FailedPartLookup } from "./quality/FailedPartLookup.js";
 import { QualityPaths } from "./quality/QualityPaths.js";
@@ -108,7 +108,7 @@ function OperationsTabs(p: HeaderNavProps) {
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
-      <Tab label="Schedules" value={routes.RouteLocation.Operations_CompletedParts} />
+      <Tab label="Schedules" value={routes.RouteLocation.Operations_RecentSchedules} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
       <Tab label="Tools" value={routes.RouteLocation.Operations_Tools} />
       <Tab label="Programs" value={routes.RouteLocation.Operations_Programs} />
@@ -200,7 +200,7 @@ function helpUrl(r: routes.RouteState): string {
     case routes.RouteLocation.Operations_LoadStation:
     case routes.RouteLocation.Operations_Machines:
     case routes.RouteLocation.Operations_AllMaterial:
-    case routes.RouteLocation.Operations_CompletedParts:
+    case routes.RouteLocation.Operations_RecentSchedules:
       return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
     case routes.RouteLocation.Operations_Tools:
@@ -465,8 +465,8 @@ const App = React.memo(function App(props: AppProps) {
         navigation = OperationsTabs;
         addBasicMaterialDialog = false;
         break;
-      case routes.RouteLocation.Operations_CompletedParts:
-        page = <CompletedParts />;
+      case routes.RouteLocation.Operations_RecentSchedules:
+        page = <RecentSchedulesTable />;
         navigation = OperationsTabs;
         break;
       case routes.RouteLocation.Operations_Tools:

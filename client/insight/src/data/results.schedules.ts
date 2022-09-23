@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -37,7 +37,10 @@ import copy from "copy-to-clipboard";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 
 export interface ScheduledJobDisplay {
-  readonly historicJob: Readonly<IHistoricJob>;
+  readonly partName: string;
+  readonly comment: string | null | undefined;
+  readonly routeStartTime: Date;
+  readonly historicJob: Readonly<IHistoricJob> | null;
   readonly inProcJob: Readonly<IActiveJob> | null;
   readonly casting: string;
   readonly scheduledQty: number;
@@ -74,24 +77,51 @@ export function buildScheduledJobs(
 
   const result = new Map<string, WritableScheduledJob>();
 
-  for (const [uniq, job] of schJobs) {
-    if (job.routeStartUTC >= start && job.routeStartUTC <= end) {
-      const casting = LazySeq.of(job.procsAndPaths[0]?.paths ?? [])
-        .collect((p) => (p.casting === "" ? null : p.casting))
-        .head();
+  for (const [uniq, curJob] of LazySeq.ofObject(currentSt.jobs)) {
+    const casting = LazySeq.of(curJob.procsAndPaths[0]?.paths ?? [])
+      .collect((p) => (p.casting === "" ? null : p.casting))
+      .head();
+    result.set(uniq, {
+      partName: curJob.partName,
+      comment: curJob.comment,
+      routeStartTime: curJob.routeStartUTC,
+      historicJob: null,
+      inProcJob: curJob,
+      casting: casting ?? "",
+      scheduledQty: curJob.cycles ?? 0,
+      decrementedQty: LazySeq.of(curJob.decrements || []).sumBy((d) => d.quantity),
+      completedQty: LazySeq.of(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c),
+      inProcessQty: 0,
+      remainingQty: curJob.remainingToStart ?? 0,
+      darkRow: false,
+    });
+  }
 
-      result.set(uniq, {
-        ...job,
-        historicJob: job,
-        inProcJob: null,
-        casting: casting ?? "",
-        scheduledQty: job.cycles ?? 0,
-        decrementedQty: LazySeq.of(job.decrements || []).sumBy((d) => d.quantity),
-        completedQty: completedMats.get(uniq)?.get(job.procsAndPaths.length) ?? 0,
-        inProcessQty: 0,
-        darkRow: false,
-        remainingQty: 0,
-      });
+  for (const [uniq, schJob] of schJobs) {
+    const displayJob = result.get(uniq);
+    if (displayJob) {
+      displayJob.historicJob = schJob;
+    } else {
+      if (schJob.routeStartUTC >= start && schJob.routeStartUTC <= end) {
+        const casting = LazySeq.of(schJob.procsAndPaths[0]?.paths ?? [])
+          .collect((p) => (p.casting === "" ? null : p.casting))
+          .head();
+
+        result.set(uniq, {
+          partName: schJob.partName,
+          comment: schJob.comment,
+          routeStartTime: schJob.routeStartUTC,
+          historicJob: schJob,
+          inProcJob: null,
+          casting: casting ?? "",
+          scheduledQty: schJob.cycles ?? 0,
+          decrementedQty: LazySeq.of(schJob.decrements || []).sumBy((d) => d.quantity),
+          completedQty: completedMats.get(uniq)?.get(schJob.procsAndPaths.length) ?? 0,
+          inProcessQty: 0,
+          darkRow: false,
+          remainingQty: 0,
+        });
+      }
     }
   }
 
@@ -104,24 +134,11 @@ export function buildScheduledJobs(
     }
   }
 
-  for (const [uniq, curJob] of LazySeq.ofObject(currentSt.jobs)) {
-    const job = result.get(uniq);
-    if (job) {
-      const plannedQty = curJob.cycles ?? 0;
-      const completedQty = LazySeq.of(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c);
-      job.remainingQty = plannedQty - job.inProcessQty - completedQty;
-      job.inProcJob = curJob;
-      if (plannedQty < job.scheduledQty) {
-        job.decrementedQty = job.scheduledQty - plannedQty;
-      }
-    }
-  }
-
   const sorted = Array.from(result.values()).sort((j1, j2) => {
     // sort starting time high to low, then by part
-    const timeDiff = j2.historicJob.routeStartUTC.getTime() - j1.historicJob.routeStartUTC.getTime();
+    const timeDiff = j2.routeStartTime.getTime() - j1.routeStartTime.getTime();
     if (timeDiff == 0) {
-      return j1.historicJob.partName.localeCompare(j2.historicJob.partName);
+      return j1.partName.localeCompare(j2.partName);
     } else {
       return timeDiff;
     }
@@ -130,9 +147,9 @@ export function buildScheduledJobs(
   let lastSchId: string | null = null;
   let curDark = true;
   for (const job of sorted) {
-    if (lastSchId != (job.historicJob.scheduleId ?? null)) {
+    if (lastSchId != (job.historicJob?.scheduleId ?? job.inProcJob?.scheduleId ?? null)) {
       curDark = !curDark;
-      lastSchId = job.historicJob.scheduleId ?? null;
+      lastSchId = job.historicJob?.scheduleId ?? job.inProcJob?.scheduleId ?? null;
     }
     job.darkRow = curDark;
   }
@@ -162,12 +179,12 @@ export function buildScheduledJobsTable(
   table += "</tr></thead>\n<tbody>\n";
 
   for (const s of jobs) {
-    table += "<tr><td>" + s.historicJob.routeStartUTC.toString() + "</td>";
-    table += "<td>" + s.historicJob.partName + "</td>";
+    table += "<tr><td>" + s.routeStartTime.toString() + "</td>";
+    table += "<td>" + s.partName + "</td>";
     if (showMaterial) {
-      table += "<td>" + (s.casting ?? s.historicJob.partName) + "</td>";
+      table += "<td>" + (s.casting ?? s.partName) + "</td>";
     }
-    table += "<td>" + (s.historicJob.comment ?? "") + "</td>";
+    table += "<td>" + (s.comment ?? "") + "</td>";
     table += "<td>" + s.scheduledQty.toFixed(0) + "</td>";
     table += "<td>" + s.decrementedQty.toFixed(0) + "</td>";
     table += "<td>" + s.completedQty.toFixed(0) + "</td>";

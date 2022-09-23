@@ -71,6 +71,8 @@ function JobDisplay(props: JobDisplayProps) {
   return (
     <div>
       <dl>
+        <dt>Job ID</dt>
+        <dd>{props.job.unique}</dd>
         <dt>Time</dt>
         <dd>
           {displayDate(props.job.routeStartUTC)} to {displayDate(props.job.routeEndUTC)}

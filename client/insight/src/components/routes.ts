@@ -49,7 +49,7 @@ export enum RouteLocation {
   Operations_LoadStation = "/operations/loadunload",
   Operations_Machines = "/operations/machines",
   Operations_AllMaterial = "/operations/material",
-  Operations_CompletedParts = "/operations/completed",
+  Operations_RecentSchedules = "/operations/recent-schedules",
   Operations_Tools = "/operations/tools",
   Operations_Programs = "/operations/programs",
 
@@ -80,6 +80,11 @@ export enum RouteLocation {
 
 const patterns = LazySeq.ofObject(RouteLocation)
   .map(([, loc]) => [loc, new URLPattern(loc, location.origin)] as const)
+  // redirects from old URLs
+  .append([
+    RouteLocation.Operations_RecentSchedules,
+    new URLPattern("/operations/completed", location.origin),
+  ])
   .toRArray();
 
 export type RouteState =
@@ -98,7 +103,7 @@ export type RouteState =
   | { route: RouteLocation.Operations_LoadStation }
   | { route: RouteLocation.Operations_Machines }
   | { route: RouteLocation.Operations_AllMaterial }
-  | { route: RouteLocation.Operations_CompletedParts }
+  | { route: RouteLocation.Operations_RecentSchedules }
   | { route: RouteLocation.Operations_Tools }
   | { route: RouteLocation.Operations_Programs }
   | { route: RouteLocation.Engineering }

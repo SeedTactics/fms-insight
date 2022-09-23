@@ -539,7 +539,7 @@ export function useColSort<Id, Row>(defSortCol: Id, cols: ReadonlyArray<Column<I
     }
 
     return { orderBy, order, sortOn, handleRequestSort };
-  }, [orderBy, setOrderBy, order, setOrder]);
+  }, [orderBy, setOrderBy, order, setOrder, cols]);
 }
 
 export function buildClipboardTableAsString<Id, Row>(
