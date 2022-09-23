@@ -54,11 +54,10 @@ export interface ScheduledJobDisplay {
 type WritableScheduledJob = { -readonly [K in keyof ScheduledJobDisplay]: ScheduledJobDisplay[K] };
 
 export function buildScheduledJobs(
-  start: Date,
-  end: Date,
+  zoom: { readonly start: Date; readonly end: Date } | undefined,
   matIds: HashMap<number, MaterialSummaryAndCompletedData>,
   schJobs: HashMap<string, Readonly<IHistoricJob>>,
-  currentSt: Readonly<ICurrentStatus>
+  currentSt: Readonly<ICurrentStatus> | null
 ): ReadonlyArray<ScheduledJobDisplay> {
   const completedMats = LazySeq.of(matIds)
     .flatMap(([matId, summary]) =>
@@ -77,24 +76,26 @@ export function buildScheduledJobs(
 
   const result = new Map<string, WritableScheduledJob>();
 
-  for (const [uniq, curJob] of LazySeq.ofObject(currentSt.jobs)) {
-    const casting = LazySeq.of(curJob.procsAndPaths[0]?.paths ?? [])
-      .collect((p) => (p.casting === "" ? null : p.casting))
-      .head();
-    result.set(uniq, {
-      partName: curJob.partName,
-      comment: curJob.comment,
-      routeStartTime: curJob.routeStartUTC,
-      historicJob: null,
-      inProcJob: curJob,
-      casting: casting ?? "",
-      scheduledQty: curJob.cycles ?? 0,
-      decrementedQty: LazySeq.of(curJob.decrements || []).sumBy((d) => d.quantity),
-      completedQty: LazySeq.of(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c),
-      inProcessQty: 0,
-      remainingQty: curJob.remainingToStart ?? 0,
-      darkRow: false,
-    });
+  if (currentSt) {
+    for (const [uniq, curJob] of LazySeq.ofObject(currentSt.jobs)) {
+      const casting = LazySeq.of(curJob.procsAndPaths[0]?.paths ?? [])
+        .collect((p) => (p.casting === "" ? null : p.casting))
+        .head();
+      result.set(uniq, {
+        partName: curJob.partName,
+        comment: curJob.comment,
+        routeStartTime: curJob.routeStartUTC,
+        historicJob: null,
+        inProcJob: curJob,
+        casting: casting ?? "",
+        scheduledQty: curJob.cycles ?? 0,
+        decrementedQty: LazySeq.of(curJob.decrements || []).sumBy((d) => d.quantity),
+        completedQty: LazySeq.of(curJob.completed?.[curJob.completed?.length - 1] ?? []).sumBy((c) => c),
+        inProcessQty: 0,
+        remainingQty: curJob.remainingToStart ?? 0,
+        darkRow: false,
+      });
+    }
   }
 
   for (const [uniq, schJob] of schJobs) {
@@ -102,7 +103,7 @@ export function buildScheduledJobs(
     if (displayJob) {
       displayJob.historicJob = schJob;
     } else {
-      if (schJob.routeStartUTC >= start && schJob.routeStartUTC <= end) {
+      if (!zoom || (schJob.routeStartUTC >= zoom.start && schJob.routeStartUTC <= zoom.end)) {
         const casting = LazySeq.of(schJob.procsAndPaths[0]?.paths ?? [])
           .collect((p) => (p.casting === "" ? null : p.casting))
           .head();
@@ -125,11 +126,13 @@ export function buildScheduledJobs(
     }
   }
 
-  for (const mat of currentSt.material) {
-    if (mat.jobUnique) {
-      const job = result.get(mat.jobUnique);
-      if (job) {
-        job.inProcessQty += 1;
+  if (currentSt) {
+    for (const mat of currentSt.material) {
+      if (mat.jobUnique) {
+        const job = result.get(mat.jobUnique);
+        if (job) {
+          job.inProcessQty += 1;
+        }
       }
     }
   }

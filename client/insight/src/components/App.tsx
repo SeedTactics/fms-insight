@@ -62,7 +62,7 @@ import { SerialScannerButton } from "./QRScan.js";
 import { ManualScanButton } from "./ManualScan.js";
 import { OperatorSelect } from "./ChooseOperator.js";
 import { BasicMaterialDialog } from "./station-monitor/Material.js";
-import { RecentSchedulesTable } from "./operations/RecentSchedules.js";
+import { RecentSchedulesPage } from "./operations/RecentSchedules.js";
 import { AllMaterial } from "./operations/AllMaterial.js";
 import { FailedPartLookup } from "./quality/FailedPartLookup.js";
 import { QualityPaths } from "./quality/QualityPaths.js";
@@ -466,7 +466,7 @@ const App = React.memo(function App(props: AppProps) {
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Operations_RecentSchedules:
-        page = <RecentSchedulesTable />;
+        page = <RecentSchedulesPage />;
         navigation = OperationsTabs;
         break;
       case routes.RouteLocation.Operations_Tools:

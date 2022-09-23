@@ -55,6 +55,7 @@ import {
   ZoomIn as ZoomInIcon,
   SkipPrevious as SkipPrevIcon,
   SkipNext as SkipNextIcon,
+  ImportExport,
 } from "@mui/icons-material";
 import copy from "copy-to-clipboard";
 
@@ -130,12 +131,14 @@ export interface DataTableHeadProps<Id, Row> {
   readonly sort: ColSort<Id, Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
   readonly showDetailsCol: boolean;
+  readonly copyToClipboardRows?: Iterable<Row>;
 }
 
 export function DataTableHead<Id extends string | number, Row>(
   props: DataTableHeadProps<Id, Row>
 ): JSX.Element {
   const nowrap = LazySeq.of(props.columns).anyMatch((c) => !c.ExpandedCell);
+  const clipboardRows = props.copyToClipboardRows;
   return (
     <TableHead>
       <TableRow>
@@ -158,7 +161,21 @@ export function DataTableHead<Id extends string | number, Row>(
             </Tooltip>
           </DataCell>
         ))}
-        {props.showDetailsCol ? <DataCell padding="checkbox" nowrap={nowrap} /> : undefined}
+        {props.showDetailsCol ? (
+          <DataCell padding="checkbox" nowrap={nowrap}>
+            {clipboardRows ? (
+              <Tooltip title="Copy to Clipboard">
+                <IconButton
+                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+                  onClick={() => copyTableToClipboard(props.columns, clipboardRows)}
+                  size="large"
+                >
+                  <ImportExport />
+                </IconButton>
+              </Tooltip>
+            ) : undefined}
+          </DataCell>
+        ) : undefined}
       </TableRow>
     </TableHead>
   );
@@ -500,7 +517,7 @@ export function useTableZoomForPeriod(period: SelectedAnalysisPeriod): TableZoom
     }
 
     return { zoom, zoomRange: curZoom };
-  }, [curZoom, setCurZoom]);
+  }, [period, curZoom, setCurZoom]);
 }
 
 export function useTablePage(): TablePage {

@@ -31,9 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Box, Card, styled, TableSortLabel } from "@mui/material";
-import { CardHeader } from "@mui/material";
-import { CardContent } from "@mui/material";
+import { Box, styled, TableSortLabel } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { Typography } from "@mui/material";
@@ -48,14 +46,12 @@ import {
   buildScheduledJobs,
   copyScheduledJobsToClipboard,
 } from "../../data/results.schedules.js";
-import { IHistoricJob } from "../../network/api.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { EditNoteDialog } from "../station-monitor/Queues.js";
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon,
   Edit as EditIcon,
-  Extension as ExtensionIcon,
   ImportExport,
 } from "@mui/icons-material";
 import { JobDetails } from "../station-monitor/JobDetails.js";
@@ -63,21 +59,10 @@ import { Collapse } from "@mui/material";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
-import {
-  last30MaterialSummary,
-  MaterialSummaryAndCompletedData,
-} from "../../cell-status/material-summary.js";
-import { HashMap, LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
+import { last30MaterialSummary } from "../../cell-status/material-summary.js";
+import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 
-export interface JobsTableProps {
-  readonly schJobs: HashMap<string, Readonly<IHistoricJob>>;
-  readonly matIds: HashMap<number, MaterialSummaryAndCompletedData>;
-  readonly showInProcCnt: boolean;
-  readonly start: Date;
-  readonly end: Date;
-}
-
-const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
+export const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
   (props: { $darkRow?: boolean }) => ({
     "& > *": {
       borderBottom: "unset",
@@ -86,7 +71,7 @@ const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStrin
   })
 );
 
-const JobDetailRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
+export const JobDetailRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
   (props: { $darkRow?: boolean }) => ({
     ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
   })
@@ -96,16 +81,14 @@ interface JobsRowProps {
   readonly job: ScheduledJobDisplay;
   readonly showDarkRow: boolean;
   readonly showMaterial: boolean;
-  readonly showInProcCnt: boolean;
   readonly setCurEditNoteJob: (j: ScheduledJobDisplay) => void;
 }
 
 function JobsRow(props: JobsRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
 
-  let colCnt = 6;
+  let colCnt = 10;
   if (props.showMaterial) colCnt += 1;
-  if (props.showInProcCnt) colCnt += 3;
 
   const job = props.job;
   return (
@@ -148,29 +131,23 @@ function JobsRow(props: JobsRowProps) {
             ) : undefined}
           </TableCell>
         ) : undefined}
-        {props.showInProcCnt ? (
-          <TableCell>
-            {job.comment}
+        <TableCell>
+          {job.comment}
 
-            <Tooltip title="Edit">
-              <IconButton size="small" onClick={() => props.setCurEditNoteJob(job)}>
-                <EditIcon />
-              </IconButton>
-            </Tooltip>
-          </TableCell>
-        ) : undefined}
+          <Tooltip title="Edit">
+            <IconButton size="small" onClick={() => props.setCurEditNoteJob(job)}>
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+        </TableCell>
         <TableCell>{job.inProcJob === null ? "Archived" : "Active"}</TableCell>
         <TableCell align="right">{job.scheduledQty}</TableCell>
         <TableCell align="right" sx={{ backgroundColor: job.decrementedQty > 0 ? "#FF8A65" : undefined }}>
           {job.decrementedQty}
         </TableCell>
         <TableCell align="right">{job.completedQty}</TableCell>
-        {props.showInProcCnt ? (
-          <>
-            <TableCell align="right">{job.inProcessQty}</TableCell>
-            <TableCell align="right">{job.remainingQty}</TableCell>
-          </>
-        ) : undefined}
+        <TableCell align="right">{job.inProcessQty}</TableCell>
+        <TableCell align="right">{job.remainingQty}</TableCell>
         <TableCell>
           <Tooltip title="Show Details">
             <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -182,10 +159,7 @@ function JobsRow(props: JobsRowProps) {
       <JobDetailRow $darkRow={props.showDarkRow && job.darkRow}>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={colCnt}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <JobDetails
-              job={job.inProcJob ? job.inProcJob : job.historicJob}
-              checkAnalysisMonth={!props.showInProcCnt}
-            />
+            <JobDetails job={job.inProcJob ? job.inProcJob : job.historicJob} checkAnalysisMonth={false} />
           </Collapse>
         </TableCell>
       </JobDetailRow>
@@ -279,8 +253,8 @@ function SortColHeader(props: {
 }
 
 const JobsHeader = React.memo(function JobsHeader(props: {
+  readonly jobs: ReadonlyArray<ScheduledJobDisplay>;
   readonly showMaterial: boolean;
-  readonly showInProcCnt: boolean;
   readonly order: "asc" | "desc";
   readonly setOrder: (o: "asc" | "desc") => void;
   readonly sortBy: SortColumn;
@@ -306,11 +280,9 @@ const JobsHeader = React.memo(function JobsHeader(props: {
             Material
           </SortColHeader>
         ) : undefined}
-        {props.showInProcCnt ? (
-          <SortColHeader align="left" col={SortColumn.Note} {...sort}>
-            Note
-          </SortColHeader>
-        ) : undefined}
+        <SortColHeader align="left" col={SortColumn.Note} {...sort}>
+          Note
+        </SortColHeader>
         <SortColHeader align="left" col={SortColumn.Active} {...sort}>
           Active
         </SortColHeader>
@@ -323,30 +295,39 @@ const JobsHeader = React.memo(function JobsHeader(props: {
         <SortColHeader align="right" col={SortColumn.Completed} {...sort}>
           Completed
         </SortColHeader>
-        {props.showInProcCnt ? (
-          <>
-            <SortColHeader align="right" col={SortColumn.InProc} {...sort}>
-              In Process
-            </SortColHeader>
-            <SortColHeader align="right" col={SortColumn.RemainingToRun} {...sort}>
-              Remaining To Run
-            </SortColHeader>
-          </>
-        ) : undefined}
-        <TableCell />
+        <SortColHeader align="right" col={SortColumn.InProc} {...sort}>
+          In Process
+        </SortColHeader>
+        <SortColHeader align="right" col={SortColumn.RemainingToRun} {...sort}>
+          Remaining To Run
+        </SortColHeader>
+        <TableCell>
+          <Tooltip title="Copy to Clipboard">
+            <IconButton
+              style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              onClick={() => copyScheduledJobsToClipboard(props.jobs, props.showMaterial)}
+              size="large"
+            >
+              <ImportExport />
+            </IconButton>
+          </Tooltip>
+        </TableCell>
       </TableRow>
     </TableHead>
   );
 });
 
-export function JobsTable(props: JobsTableProps): JSX.Element {
+export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.Element {
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
-  const currentSt = useRecoilValue(currentStatus);
   const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
 
+  const matIds = useRecoilValue(last30MaterialSummary);
+  const schJobs = useRecoilValue(last30Jobs);
+  const currentSt = useRecoilValue(currentStatus);
+
   const showMaterial = React.useMemo(() => {
-    for (const [, newJob] of props.schJobs) {
+    for (const [, newJob] of schJobs) {
       for (const p of newJob.procsAndPaths[0]?.paths ?? []) {
         if (p.casting !== null && p.casting !== undefined && p.casting !== "") {
           return true;
@@ -354,94 +335,54 @@ export function JobsTable(props: JobsTableProps): JSX.Element {
       }
     }
     return false;
-  }, [props.schJobs]);
+  }, [schJobs]);
 
   const jobs = React.useMemo(() => {
-    return buildScheduledJobs(props.start, props.end, props.matIds, props.schJobs, currentSt);
-  }, [props.matIds, props.schJobs, currentSt, props.start, props.end]);
+    return buildScheduledJobs(
+      { start: addDays(startOfToday(), -6), end: addDays(startOfToday(), 1) },
+      matIds.matsById,
+      schJobs,
+      currentSt
+    );
+  }, [matIds.matsById, schJobs, currentSt]);
 
   const sorted = React.useMemo(() => sortJobs(jobs, sortBy, order), [jobs, sortBy, order]);
 
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <ExtensionIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Scheduled Parts</div>
-            <div style={{ flexGrow: 1 }} />
-            <Tooltip title="Copy to Clipboard">
-              <IconButton
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyScheduledJobsToClipboard(jobs, showMaterial)}
-                size="large"
-              >
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-          </div>
-        }
-      />
-      <CardContent>
-        <Table>
-          <JobsHeader
-            showMaterial={showMaterial}
-            showInProcCnt={props.showInProcCnt}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            order={order}
-            setOrder={setOrder}
-          />
-          <TableBody>
-            {sorted.map((job, jobIdx) => (
-              <JobsRow
-                key={job.inProcJob?.unique ?? job.historicJob?.unique ?? jobIdx}
-                job={job}
-                showDarkRow={sortBy === SortColumn.Date}
-                showMaterial={showMaterial}
-                setCurEditNoteJob={setCurEditNoteJob}
-                showInProcCnt={props.showInProcCnt}
-              />
-            ))}
-          </TableBody>
-        </Table>
-        <EditNoteDialog
-          job={curEditNoteJob?.historicJob ?? null}
-          closeDialog={() => setCurEditNoteJob(null)}
+    <>
+      <Table>
+        <JobsHeader
+          jobs={jobs}
+          showMaterial={showMaterial}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          order={order}
+          setOrder={setOrder}
         />
-      </CardContent>
-    </Card>
-  );
-}
-
-export const RecentSchedules = React.memo(function RecentSchedules({
-  showInProcCnt,
-}: {
-  readonly showInProcCnt: boolean;
-}) {
-  const matIds = useRecoilValue(last30MaterialSummary);
-  const schJobs = useRecoilValue(last30Jobs);
-  const start = addDays(startOfToday(), -6);
-  const end = addDays(startOfToday(), 1);
-
-  return (
-    <JobsTable
-      matIds={matIds.matsById}
-      schJobs={schJobs}
-      start={start}
-      end={end}
-      showInProcCnt={showInProcCnt}
-    />
+        <TableBody>
+          {sorted.map((job, jobIdx) => (
+            <JobsRow
+              key={job.inProcJob?.unique ?? job.historicJob?.unique ?? jobIdx}
+              job={job}
+              showDarkRow={sortBy === SortColumn.Date}
+              showMaterial={showMaterial}
+              setCurEditNoteJob={setCurEditNoteJob}
+            />
+          ))}
+        </TableBody>
+      </Table>
+      <EditNoteDialog job={curEditNoteJob?.historicJob ?? null} closeDialog={() => setCurEditNoteJob(null)} />
+    </>
   );
 });
 
-export function RecentSchedulesTable(): JSX.Element {
+export function RecentSchedulesPage(): JSX.Element {
   React.useEffect(() => {
     document.title = "Scheduled Jobs - FMS Insight";
   }, []);
   return (
     <main style={{ padding: "24px" }}>
-      <RecentSchedules showInProcCnt={true} />
+      <RecentSchedulesCard />
     </main>
   );
 }
