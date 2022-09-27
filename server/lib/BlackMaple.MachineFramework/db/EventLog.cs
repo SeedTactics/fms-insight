@@ -43,7 +43,7 @@ namespace BlackMaple.MachineFramework
   internal partial class Repository
   {
     #region Loading
-    private List<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
+    private IEnumerable<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
     {
       using (var matCmd = _connection.CreateCommand())
       using (var detailCmd = _connection.CreateCommand())
@@ -67,8 +67,6 @@ namespace BlackMaple.MachineFramework
 
         toolCmd.CommandText = "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tool_use WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
-
-        var lst = new List<LogEntry>();
 
         while (reader.Read())
         {
@@ -204,7 +202,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          lst.Add(new LogEntry()
+          yield return new LogEntry()
           {
             Counter = ctr,
             Material = matLst.ToImmutable(),
@@ -221,15 +219,13 @@ namespace BlackMaple.MachineFramework
             ActiveOperationTime = active,
             ProgramDetails = progDetails.ToImmutable(),
             Tools = tools.ToImmutable()
-          });
+          };
         }
-
-        return lst;
 
       } // close usings
     }
 
-    public List<LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
+    public IEnumerable<LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
     {
       lock (_cfg)
       {
@@ -243,13 +239,16 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            foreach (var l in LoadLog(reader))
+            {
+              yield return l;
+            }
           }
         }
       }
     }
 
-    public List<LogEntry> GetLog(long counter)
+    public IEnumerable<LogEntry> GetRecentLog(long counter)
     {
       lock (_cfg)
       {
@@ -261,7 +260,10 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            foreach (var l in LoadLog(reader))
+            {
+              yield return l;
+            }
           }
         }
       }
@@ -279,7 +281,7 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            return LoadLog(reader).ToList();
           }
         }
       }
@@ -327,7 +329,7 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            return LoadLog(reader).ToList();
           }
         }
       }
@@ -360,7 +362,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<LogEntry> GetLogForSerial(string serial)
+    public IEnumerable<LogEntry> GetLogForSerial(string serial)
     {
       lock (_cfg)
       {
@@ -372,13 +374,16 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            foreach (var l in LoadLog(reader))
+            {
+              yield return l;
+            }
           }
         }
       }
     }
 
-    public List<LogEntry> GetLogForJobUnique(string jobUnique)
+    public IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique)
     {
       lock (_cfg)
       {
@@ -390,13 +395,16 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            foreach (var l in LoadLog(reader))
+            {
+              yield return l;
+            }
           }
         }
       }
     }
 
-    public List<LogEntry> GetLogForWorkorder(string workorder)
+    public IEnumerable<LogEntry> GetLogForWorkorder(string workorder)
     {
       lock (_cfg)
       {
@@ -412,13 +420,16 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            foreach (var l in LoadLog(reader))
+            {
+              yield return l;
+            }
           }
         }
       }
     }
 
-    public List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
+    public IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
     {
       var searchCompleted = @"
                 SELECT Counter FROM stations_mat
@@ -455,7 +466,10 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            foreach (var l in LoadLog(reader))
+            {
+              yield return l;
+            }
           }
         }
       }
@@ -520,7 +534,7 @@ namespace BlackMaple.MachineFramework
               " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            return LoadLog(reader).ToList();
           }
 
         }
@@ -535,7 +549,7 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader, trans);
+            return LoadLog(reader, trans).ToList();
           }
         }
       }

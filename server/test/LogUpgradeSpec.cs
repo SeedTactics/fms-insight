@@ -80,7 +80,7 @@ namespace MachineWatchTest
       var mat2_2 = new LogMaterial(2, "uuu1", 1, "part1", 2, "serial2", "", face: "D");
       var mat3 = new LogMaterial(3, "uuu2", 1, "part2", 1, "", "work3", face: "E");
 
-      _log.GetLogEntries(now, now.AddDays(1)).Should().BeEquivalentTo(new[] {
+      _log.GetLogEntries(now, now.AddDays(1)).ToList().Should().BeEquivalentTo(new[] {
   new LogEntry(
     cntr: -1,
     mat: new [] {mat1_1, mat2_1},

@@ -76,11 +76,14 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/all")]
-    public List<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    public IEnumerable<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
       using (var db = _backend.OpenRepository())
       {
-        return db.GetLogEntries(startUTC, endUTC);
+        foreach (var l in db.GetLogEntries(startUTC, endUTC))
+        {
+          yield return l;
+        }
       }
     }
 
@@ -115,20 +118,26 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/all-completed-parts")]
-    public List<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    public IEnumerable<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
       using (var db = _backend.OpenRepository())
       {
-        return db.GetCompletedPartLogs(startUTC, endUTC);
+        foreach (var l in db.GetCompletedPartLogs(startUTC, endUTC))
+        {
+          yield return l;
+        }
       }
     }
 
     [HttpGet("events/recent")]
-    public List<LogEntry> Recent([FromQuery] long lastSeenCounter)
+    public IEnumerable<LogEntry> Recent([FromQuery] long lastSeenCounter)
     {
       using (var db = _backend.OpenRepository())
       {
-        return db.GetLog(lastSeenCounter);
+        foreach (var l in db.GetRecentLog(lastSeenCounter))
+        {
+          yield return l;
+        }
       }
     }
 
@@ -152,20 +161,26 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/for-serial/{serial}")]
-    public List<LogEntry> LogForSerial(string serial)
+    public IEnumerable<LogEntry> LogForSerial(string serial)
     {
       using (var db = _backend.OpenRepository())
       {
-        return db.GetLogForSerial(serial);
+        foreach (var l in db.GetLogForSerial(serial))
+        {
+          yield return l;
+        }
       }
     }
 
     [HttpGet("events/for-workorder/{workorder}")]
-    public List<LogEntry> LogForWorkorder(string workorder)
+    public IEnumerable<LogEntry> LogForWorkorder(string workorder)
     {
       using (var db = _backend.OpenRepository())
       {
-        return db.GetLogForWorkorder(workorder);
+        foreach (var l in db.GetLogForWorkorder(workorder))
+        {
+          yield return l;
+        }
       }
     }
 

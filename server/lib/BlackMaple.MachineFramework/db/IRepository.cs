@@ -44,14 +44,14 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------
-    List<LogEntry> GetLog(long counter);
-    List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
-    List<LogEntry> GetLogForJobUnique(string jobUnique);
+    IEnumerable<LogEntry> GetRecentLog(long lastSeenCounter);
+    IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
+    IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
+    IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
     List<LogEntry> GetLogForMaterial(long materialID);
     List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs);
-    List<LogEntry> GetLogForSerial(string serial);
-    List<LogEntry> GetLogForWorkorder(string workorder);
-    List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
+    IEnumerable<LogEntry> GetLogForSerial(string serial);
+    IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> StationLogByForeignID(string foreignID);
     List<LogEntry> CurrentPalletLog(string pallet);
     string OriginalMessageByForeignID(string foreignID);
