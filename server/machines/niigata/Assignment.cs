@@ -74,12 +74,18 @@ namespace BlackMaple.FMSInsight.Niigata
       MachineFramework.ProcPathInfo pathInfo
     );
 
-    private readonly ExtraPartFilterDelegate _extraPathFilter;
+    public delegate int PathToPriorityDelegate(
+      IReadOnlyList<(MachineFramework.HistoricJob job, int process, int path)> newPaths
+    );
 
-    public AssignNewRoutesOnPallets(NiigataStationNames n, ExtraPartFilterDelegate extraPathFilter = null)
+    private readonly ExtraPartFilterDelegate _extraPathFilter;
+    private readonly PathToPriorityDelegate _pathToPriority;
+
+    public AssignNewRoutesOnPallets(NiigataStationNames n, ExtraPartFilterDelegate extraPathFilter = null, PathToPriorityDelegate pathToPriority = null)
     {
       _statNames = n;
       _extraPathFilter = extraPathFilter;
+      _pathToPriority = pathToPriority ?? PathsToPriority;
     }
 
     public NiigataAction NewPalletChange(CellState cellSt)
@@ -437,11 +443,11 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
-    private static int PathsToPriority(IReadOnlyList<JobPath> newPaths)
+    public static int PathsToPriority(IReadOnlyList<(MachineFramework.HistoricJob job, int process, int path)> newPaths)
     {
       if (newPaths.Count == 0) return 7;
-      var proc = newPaths.Select(p => p.Process).Max();
-      var numProc = newPaths.Select(p => p.Job.Processes.Count).Max();
+      var proc = newPaths.Select(p => p.process).Max();
+      var numProc = newPaths.Select(p => p.job.Processes.Count).Max();
       return Math.Max(1, Math.Min(9, numProc - proc + 1));
     }
 
@@ -468,7 +474,7 @@ namespace BlackMaple.FMSInsight.Niigata
         newAction = new UpdatePalletQuantities()
         {
           Pallet = oldPallet.Status.Master.PalletNum,
-          Priority = PathsToPriority(newPaths),
+          Priority = _pathToPriority(newPaths.Select(j => (j.Job, j.Process, j.Path)).ToList()),
           Cycles = remaining,
           NoWork = false,
           Skip = false,
@@ -663,7 +669,7 @@ namespace BlackMaple.FMSInsight.Niigata
         PalletNum = pallet,
         Comment = "",
         RemainingPalletCycles = 1,
-        Priority = PathsToPriority(newPaths),
+        Priority = _pathToPriority(newPaths.Select(j => (j.Job, j.Process, j.Path)).ToList()),
         NoWork = false,
         Skip = false,
         ForLongToolMaintenance = false,
