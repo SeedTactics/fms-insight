@@ -2089,7 +2089,8 @@ namespace MachineWatchTest
                   Casting = rawMatName
                 })
               })
-            })
+            }),
+            ScheduleId = "anotherSchId"
           }, null, true);
         }
         newMatId = _jobLog.AllocateMaterialIDForCasting(rawMatName ?? "part1");
@@ -2338,7 +2339,8 @@ namespace MachineWatchTest
               Casting = "thecasting"
             })
           })
-        })
+        }),
+        ScheduleId = "aschId"
       }, null, true);
 
       var firstMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);

@@ -66,6 +66,15 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
+    [HttpPost("history")]
+    public HistoricData FilteredHistory([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC, [FromBody] List<string> skipSchIds)
+    {
+      using (var db = _backend.OpenRepository())
+      {
+        return db.LoadJobHistory(startUTC, endUTC, new HashSet<string>(skipSchIds ?? new List<string>()));
+      }
+    }
+
     [HttpGet("recent")]
     public HistoricData Recent([FromQuery] string afterScheduleId)
     {

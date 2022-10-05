@@ -281,6 +281,61 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "operationId": "jobs_FilteredHistory",
+        "parameters": [
+          {
+            "name": "startUTC",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "endUTC",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "skipSchIds",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricData"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/jobs/recent": {

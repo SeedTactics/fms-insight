@@ -335,7 +335,7 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
         Cycles = 15,
       };
-      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob) }, null, addAsCopiedToSystem: true);
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(completedJob, inProcJob), ScheduleId = "thebasicSchId" }, null, addAsCopiedToSystem: true);
 
       _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(
         new[] { "uniq1", "uniq2" }

@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 27;
+    private const int Version = 28;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, FMSSettings settings)
@@ -209,9 +209,6 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, UtilizationTime INTEGER, PlanDownTime INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX sim_station_time_idx ON sim_station_use(EndUTC, StartUTC)";
-        cmd.ExecuteNonQuery();
-
         cmd.CommandText = "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
         cmd.ExecuteNonQuery();
 
@@ -366,6 +363,7 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 27) Ver26ToVer27(trans);
 
+          if (curVersion < 28) Ver27ToVer28(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -867,6 +865,19 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
       }
     }
+
+    private static void Ver27ToVer28(IDbTransaction transaction, bool updateJobTables)
+    {
+
+      if (!updateJobTables) return;
+      using (IDbCommand cmd = transaction.Connection.CreateCommand())
+      {
+        cmd.Transaction = transaction;
+        cmd.CommandText = "DROP INDEX sim_station_time_idx";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
 
     #endregion
   }

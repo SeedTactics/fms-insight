@@ -605,8 +605,24 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<SimulatedStationUtilization> LoadSimulatedStationUse(
-        IDbCommand cmd, IDbCommand partCmd, IDbTransaction trans)
+    private void CheckScheduleIdDoesNotExist(IDbTransaction trans, string schID)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText = "SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1";
+        cmd.Parameters.Add("sid", SqliteType.Text).Value = schID;
+
+        object val = cmd.ExecuteScalar();
+        if (val != null)
+        {
+          throw new BadRequestException($"Schedule ID {schID} already exists!");
+        }
+      }
+    }
+
+    private ImmutableList<SimulatedStationUtilization> LoadSimulatedStationUse(IDbCommand cmd, IDbCommand partCmd)
     {
       var rows = new SortedDictionary<SimStatUseKey, SimStatUseRow>();
 
@@ -668,36 +684,63 @@ namespace BlackMaple.MachineFramework
       }).ToImmutableList();
     }
 
-    private HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd, IDbCommand simPartCmd)
+    private HistoricData LoadHistory(SqliteCommand createTempCmd, IEnumerable<string> skipSchIds = null)
     {
       lock (_cfg)
       {
-        var jobs = ImmutableDictionary<string, HistoricJob>.Empty;
-        var statUse = ImmutableList<SimulatedStationUtilization>.Empty;
 
-        var trans = _connection.BeginTransaction();
-        try
+        using (var trans = _connection.BeginTransaction())
         {
+          createTempCmd.Transaction = trans;
+          createTempCmd.ExecuteNonQuery();
+
+          using (var createIdxCmd = _connection.CreateCommand())
+          {
+            createIdxCmd.Transaction = trans;
+            createIdxCmd.CommandText = "CREATE INDEX temp_sch_ids_idx ON temp_sch_ids(ScheduleId)";
+            createIdxCmd.ExecuteNonQuery();
+          }
+
+          if (skipSchIds != null)
+          {
+            using (var delSchIds = _connection.CreateCommand())
+            {
+              delSchIds.Transaction = trans;
+              delSchIds.CommandText = "DELETE FROM temp_sch_ids WHERE ScheduleId = $schId";
+              delSchIds.Parameters.Add("schId", SqliteType.Text);
+              foreach (var schId in skipSchIds)
+              {
+                delSchIds.Parameters["schId"].Value = schId;
+                delSchIds.ExecuteNonQuery();
+              }
+            }
+          }
+
+          using var jobCmd = _connection.CreateCommand();
           jobCmd.Transaction = trans;
+          jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
+              " FROM jobs WHERE ScheduleId IN temp_sch_ids";
+
+          using var simCmd = _connection.CreateCommand();
           simCmd.Transaction = trans;
+          simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime " +
+            " FROM sim_station_use WHERE SimId IN temp_sch_ids";
+
+          using var simPartCmd = _connection.CreateCommand();
           simPartCmd.Transaction = trans;
+          simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path " +
+            " FROM sim_station_use_parts WHERE SimId IN temp_sch_ids";
 
-          jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr);
-          statUse = LoadSimulatedStationUse(simCmd, simPartCmd, trans);
+          var history = new HistoricData()
+          {
+            Jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr),
+            StationUse = LoadSimulatedStationUse(simCmd, simPartCmd)
+          };
 
-          trans.Commit();
-        }
-        catch
-        {
           trans.Rollback();
-          throw;
-        }
 
-        return new HistoricData()
-        {
-          Jobs = jobs,
-          StationUse = statUse
-        };
+          return history;
+        }
       }
     }
 
@@ -739,50 +782,24 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
+    public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> skipSchIds = null)
     {
-      using (var jobCmd = _connection.CreateCommand())
-      using (var simCmd = _connection.CreateCommand())
-      using (var simPartCmd = _connection.CreateCommand())
+      using (var createTempCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
-            " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
-        jobCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-        jobCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-        simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
-            " WHERE EndUTC >= $start AND StartUTC <= $end";
-        simCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-        simCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-        simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path FROM sim_station_use_parts " +
-            " WHERE EndUTC >= $start AND StartUTC <= $end";
-        simPartCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-        simPartCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-        return LoadHistory(jobCmd, simCmd, simPartCmd);
+        createTempCmd.CommandText = "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND ScheduleId IS NOT NULL";
+        createTempCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+        createTempCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
+        return LoadHistory(createTempCmd, skipSchIds);
       }
     }
 
     public HistoricData LoadJobsAfterScheduleId(string schId)
     {
-      using (var jobCmd = _connection.CreateCommand())
-      using (var simCmd = _connection.CreateCommand())
-      using (var simPartCmd = _connection.CreateCommand())
+      using (var createTempCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
-            " FROM jobs WHERE ScheduleId > $sid";
-        jobCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-
-        simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
-            " WHERE SimId > $sid";
-        simCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-
-        simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path FROM sim_station_use_parts " +
-            " WHERE SimId > $sid";
-        simPartCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-
-        return LoadHistory(jobCmd, simCmd, simPartCmd);
+        createTempCmd.CommandText = "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE ScheduleId > $sid AND ScheduleId IS NOT NULL";
+        createTempCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+        return LoadHistory(createTempCmd);
       }
     }
 
@@ -1014,6 +1031,11 @@ namespace BlackMaple.MachineFramework
 
     public void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem)
     {
+      if (string.IsNullOrEmpty(newJobs.ScheduleId))
+      {
+        throw new BadRequestException("NewJobs must specify a ScheduleId");
+      }
+
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
@@ -1027,6 +1049,8 @@ namespace BlackMaple.MachineFramework
               throw new BadRequestException(string.Format("Mismatch in previous schedule: expected '{0}' but got '{1}'", expectedPreviousScheduleId, last));
             }
           }
+
+          CheckScheduleIdDoesNotExist(trans, newJobs.ScheduleId);
 
           // add programs first so that the lookup of latest program revision will use newest programs
           var startingUtc = DateTime.UtcNow;
@@ -1044,17 +1068,17 @@ namespace BlackMaple.MachineFramework
 
           AddSimulatedStations(trans, newJobs.StationUse);
 
-          if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.ExtraParts != null)
+          if (newJobs.ExtraParts != null)
           {
             AddExtraParts(trans, newJobs.ScheduleId, newJobs.ExtraParts);
           }
 
-          if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.CurrentUnfilledWorkorders != null)
+          if (newJobs.CurrentUnfilledWorkorders != null)
           {
             AddUnfilledWorkorders(trans, newJobs.ScheduleId, newJobs.CurrentUnfilledWorkorders, negRevisionMap);
           }
 
-          if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.DebugMessage != null)
+          if (newJobs.DebugMessage != null)
           {
             using (var cmd = _connection.CreateCommand())
             {

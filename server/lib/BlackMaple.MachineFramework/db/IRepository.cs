@@ -166,7 +166,7 @@ namespace BlackMaple.MachineFramework
     bool DoesJobExist(string unique);
     IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
     IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
-    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
+    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> skipSchIds = null);
     HistoricData LoadJobsAfterScheduleId(string schId);
     PlannedSchedule LoadMostRecentSchedule();
     IReadOnlyList<Workorder> MostRecentWorkorders();
