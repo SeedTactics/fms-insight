@@ -622,6 +622,27 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    private void EnsureScheduleIdsExist(IDbTransaction trans, IEnumerable<string> schIDs)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText = "SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1";
+
+        foreach (var schId in schIDs)
+        {
+          cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+
+          object val = cmd.ExecuteScalar();
+          if (val == null)
+          {
+            throw new ConflictRequestException($"Schedule ID {schId} does not exist");
+          }
+        }
+      }
+    }
+
     private ImmutableList<SimulatedStationUtilization> LoadSimulatedStationUse(IDbCommand cmd, IDbCommand partCmd)
     {
       var rows = new SortedDictionary<SimStatUseKey, SimStatUseRow>();
@@ -684,13 +705,18 @@ namespace BlackMaple.MachineFramework
       }).ToImmutableList();
     }
 
-    private HistoricData LoadHistory(SqliteCommand createTempCmd, IEnumerable<string> skipSchIds = null)
+    private HistoricData LoadHistory(SqliteCommand createTempCmd, IEnumerable<string> alreadyKnownSchIds = null)
     {
       lock (_cfg)
       {
 
         using (var trans = _connection.BeginTransaction())
         {
+          if (alreadyKnownSchIds != null)
+          {
+            EnsureScheduleIdsExist(trans, alreadyKnownSchIds);
+          }
+
           createTempCmd.Transaction = trans;
           createTempCmd.ExecuteNonQuery();
 
@@ -701,14 +727,14 @@ namespace BlackMaple.MachineFramework
             createIdxCmd.ExecuteNonQuery();
           }
 
-          if (skipSchIds != null)
+          if (alreadyKnownSchIds != null)
           {
             using (var delSchIds = _connection.CreateCommand())
             {
               delSchIds.Transaction = trans;
               delSchIds.CommandText = "DELETE FROM temp_sch_ids WHERE ScheduleId = $schId";
               delSchIds.Parameters.Add("schId", SqliteType.Text);
-              foreach (var schId in skipSchIds)
+              foreach (var schId in alreadyKnownSchIds)
               {
                 delSchIds.Parameters["schId"].Value = schId;
                 delSchIds.ExecuteNonQuery();
@@ -782,14 +808,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> skipSchIds = null)
+    public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> alreadyKnownSchIds = null)
     {
       using (var createTempCmd = _connection.CreateCommand())
       {
         createTempCmd.CommandText = "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND ScheduleId IS NOT NULL";
         createTempCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         createTempCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-        return LoadHistory(createTempCmd, skipSchIds);
+        return LoadHistory(createTempCmd, alreadyKnownSchIds);
       }
     }
 
@@ -799,7 +825,7 @@ namespace BlackMaple.MachineFramework
       {
         createTempCmd.CommandText = "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE ScheduleId > $sid AND ScheduleId IS NOT NULL";
         createTempCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-        return LoadHistory(createTempCmd);
+        return LoadHistory(createTempCmd, new[] { schId });
       }
     }
 

@@ -67,11 +67,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("history")]
-    public HistoricData FilteredHistory([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC, [FromBody] List<string> skipSchIds)
+    public HistoricData FilteredHistory([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC, [FromBody] List<string> alreadyKnownSchIds)
     {
       using (var db = _backend.OpenRepository())
       {
-        return db.LoadJobHistory(startUTC, endUTC, new HashSet<string>(skipSchIds ?? new List<string>()));
+        return db.LoadJobHistory(startUTC, endUTC, new HashSet<string>(alreadyKnownSchIds ?? new List<string>()));
       }
     }
 

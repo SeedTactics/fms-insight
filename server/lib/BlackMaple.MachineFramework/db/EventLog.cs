@@ -248,23 +248,42 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IEnumerable<LogEntry> GetRecentLog(long counter)
+    public IEnumerable<LogEntry> GetRecentLog(long counter, DateTime? expectedEndUTCofLastSeen)
     {
       lock (_cfg)
       {
-        using (var cmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
         {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-               " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
-          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
-
-          using (var reader = cmd.ExecuteReader())
+          if (expectedEndUTCofLastSeen.HasValue)
           {
-            foreach (var l in LoadLog(reader))
+            using (var cmd = _connection.CreateCommand())
             {
-              yield return l;
+              cmd.Transaction = trans;
+              cmd.CommandText = "SELECT TimeUTC FROM stations WHERE Counter = $cntr";
+              cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+              var val = cmd.ExecuteScalar();
+              if (val == null) throw new ConflictRequestException("Counter " + counter.ToString() + " not found");
+              if (expectedEndUTCofLastSeen.Value.Ticks != (long)val) throw new ConflictRequestException("Counter " + counter.ToString() + " has different end time");
             }
           }
+
+          using (var cmd = _connection.CreateCommand())
+          {
+            cmd.Transaction = trans;
+            cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+                 " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
+            cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+
+            using (var reader = cmd.ExecuteReader())
+            {
+              foreach (var l in LoadLog(reader))
+              {
+                yield return l;
+              }
+            }
+          }
+
+          trans.Rollback();
         }
       }
     }

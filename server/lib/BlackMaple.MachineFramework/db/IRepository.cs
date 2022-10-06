@@ -44,7 +44,7 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------
-    IEnumerable<LogEntry> GetRecentLog(long lastSeenCounter);
+    IEnumerable<LogEntry> GetRecentLog(long lastSeenCounter, DateTime? expectedEndUTCofLastSeen = null);
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
@@ -166,7 +166,7 @@ namespace BlackMaple.MachineFramework
     bool DoesJobExist(string unique);
     IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
     IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
-    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> skipSchIds = null);
+    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> alreadyKnownSchIds = null);
     HistoricData LoadJobsAfterScheduleId(string schId);
     PlannedSchedule LoadMostRecentSchedule();
     IReadOnlyList<Workorder> MostRecentWorkorders();

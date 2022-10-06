@@ -490,8 +490,11 @@ namespace MachineWatchTest
       otherLogs = _jobLog.GetRecentLog(loadEndActualCycle.First().Counter).ToList();
       CheckLog(logs, otherLogs, start.AddHours(4));
 
-      otherLogs = _jobLog.GetRecentLog(unloadStartActualCycle.Counter).ToList();
+      otherLogs = _jobLog.GetRecentLog(unloadStartActualCycle.Counter, unloadStartActualCycle.EndTimeUTC).ToList();
       CheckLog(logs, otherLogs, start.AddHours(6.5));
+
+      _jobLog.Invoking(j => j.GetRecentLog(unloadStartActualCycle.Counter, new DateTime(2000, 2, 3, 4, 5, 6)).ToList())
+        .Should().Throw<ConflictRequestException>("Counter " + unloadStartActualCycle.Counter.ToString() + " has different end time");
 
       otherLogs = _jobLog.GetRecentLog(unloadEndActualCycle.First().Counter).ToList();
       Assert.Equal(0, otherLogs.Count);

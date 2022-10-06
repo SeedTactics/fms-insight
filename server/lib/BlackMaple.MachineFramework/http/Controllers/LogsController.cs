@@ -130,11 +130,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/recent")]
-    public IEnumerable<LogEntry> Recent([FromQuery] long lastSeenCounter)
+    public IEnumerable<LogEntry> Recent([FromQuery] long lastSeenCounter, [FromQuery] DateTime? expectedEndUTCofLastSeen = null)
     {
       using (var db = _backend.OpenRepository())
       {
-        foreach (var l in db.GetRecentLog(lastSeenCounter))
+        foreach (var l in db.GetRecentLog(lastSeenCounter, expectedEndUTCofLastSeen))
         {
           yield return l;
         }

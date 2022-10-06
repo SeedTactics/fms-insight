@@ -310,7 +310,7 @@
           }
         ],
         "requestBody": {
-          "x-name": "skipSchIds",
+          "x-name": "alreadyKnownSchIds",
           "content": {
             "application/json": {
               "schema": {
@@ -1282,6 +1282,16 @@
               "format": "int64"
             },
             "x-position": 1
+          },
+          {
+            "name": "expectedEndUTCofLastSeen",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
