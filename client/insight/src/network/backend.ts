@@ -92,7 +92,10 @@ export interface FmsAPI {
 
 export interface LogAPI {
   get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  recent(
+    lastSeenCounter: number,
+    expectedEndUTCofLastSeen: Date | null | undefined
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
