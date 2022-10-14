@@ -870,13 +870,15 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver27ToVer28(IDbTransaction transaction, bool updateJobTables)
     {
-
-      if (!updateJobTables) return;
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
-        cmd.CommandText = "DROP INDEX sim_station_time_idx";
-        cmd.ExecuteNonQuery();
+
+        if (updateJobTables)
+        {
+          cmd.CommandText = "DROP INDEX sim_station_time_idx";
+          cmd.ExecuteNonQuery();
+        }
 
         cmd.CommandText = "PRAGMA journal_mode=WAL";
         cmd.ExecuteNonQuery();

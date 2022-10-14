@@ -66,6 +66,7 @@ export function filterExistingJobs(
   schIds: HashSet<string>,
   history: Readonly<IHistoricData>
 ): Readonly<IHistoricData> {
+  if (schIds.size === 0) return history;
   const newHistory = {
     jobs: { ...history.jobs },
     stationUse: history.stationUse.filter((s) => !schIds.has(s.scheduleId)),
