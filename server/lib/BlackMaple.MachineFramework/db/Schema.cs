@@ -55,6 +55,8 @@ namespace BlackMaple.MachineFramework
           cmd.ExecuteNonQuery();
           cmd.CommandText = "INSERT INTO version VALUES(" + Version.ToString() + ")";
           cmd.ExecuteNonQuery();
+          cmd.CommandText = "PRAGMA journal_mode=WAL";
+          cmd.ExecuteNonQuery();
         }
 
         CreateLogTables(connection, trans, settings);
@@ -874,6 +876,9 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = transaction;
         cmd.CommandText = "DROP INDEX sim_station_time_idx";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "PRAGMA journal_mode=WAL";
         cmd.ExecuteNonQuery();
       }
     }
