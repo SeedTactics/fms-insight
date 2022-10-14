@@ -86,10 +86,11 @@ export const onServerEvent = conduit<ServerEventAndTime>(
 
 export const onLoadLast30Jobs = conduit<Readonly<IHistoricData>>(
   (t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>) => {
-    simUse.setLast30SimStatUse.transform(t, historicData);
-    simProd.setLast30JobProduction.transform(t, historicData);
-    schJobs.setLast30Jobs.transform(t, historicData);
-    names.setNamesFromLast30Jobs.transform(t, historicData);
+    const filtered = schJobs.filterExistingJobs(t.get(schJobs.last30SchIds), historicData);
+    simUse.setLast30SimStatUse.transform(t, filtered);
+    simProd.setLast30JobProduction.transform(t, filtered);
+    schJobs.setLast30Jobs.transform(t, filtered);
+    names.setNamesFromLast30Jobs.transform(t, filtered);
   }
 );
 

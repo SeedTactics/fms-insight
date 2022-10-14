@@ -36,6 +36,11 @@ import { User } from "oidc-client-ts";
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
+  filteredHistory(
+    startUTC: Date,
+    endUTC: Date,
+    alreadyKnownSchIds: string[]
+  ): Promise<Readonly<api.IHistoricData>>;
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
   mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IWorkorder>>>;
   setJobComment(unique: string, comment: string): Promise<void>;

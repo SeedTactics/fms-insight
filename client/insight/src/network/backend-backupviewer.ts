@@ -115,7 +115,10 @@ export const loadingBackupViewer: RecoilValueReadOnly<boolean> = loadingBackupVi
 const errorLoadingBackupViewerRW = atom<string | null>({ key: "error-backup-viewer-data", default: null });
 export const errorLoadingBackupViewer: RecoilValueReadOnly<string | null> = errorLoadingBackupViewerRW;
 
-function loadLast30(set: <T>(s: RecoilState<T>, t: T) => void, push: <T>(c: RecoilConduit<T>) => (t: T) => void): void {
+function loadLast30(
+  set: <T>(s: RecoilState<T>, t: T) => void,
+  push: <T>(c: RecoilConduit<T>) => (t: T) => void
+): void {
   set(loadingBackupViewerRW, true);
   set(errorLoadingBackupViewerRW, null);
 
@@ -126,7 +129,9 @@ function loadLast30(set: <T>(s: RecoilState<T>, t: T) => void, push: <T>(c: Reco
   const logProm = LogBackend.get(thirtyDaysAgo, now).then(push(onLoadLast30Log));
 
   Promise.all([jobsProm, logProm])
-    .catch((e: Record<string, string | undefined>) => set(errorLoadingBackupViewerRW, e.message ?? e.toString()))
+    .catch((e: Record<string, string | undefined>) =>
+      set(errorLoadingBackupViewerRW, e.message ?? e.toString())
+    )
     .finally(() => set(loadingBackupViewerRW, false));
 }
 
@@ -186,6 +191,13 @@ const JobsBackend = {
       jobs,
       stationUse: ret.stationUse.map(api.SimulatedStationUtilization.fromJS),
     };
+  },
+  filteredHistory(
+    startUTC: Date,
+    endUTC: Date,
+    _alreadyKnownSchIds: string[]
+  ): Promise<Readonly<api.IHistoricData>> {
+    return this.history(startUTC, endUTC);
   },
   currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
     return Promise.resolve({
