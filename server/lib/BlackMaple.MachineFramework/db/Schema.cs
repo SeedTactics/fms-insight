@@ -46,6 +46,12 @@ namespace BlackMaple.MachineFramework
     #region Create
     public static void CreateTables(SqliteConnection connection, FMSSettings settings)
     {
+      using (var cmd = connection.CreateCommand())
+      {
+        cmd.CommandText = "PRAGMA journal_mode=WAL";
+        cmd.ExecuteNonQuery();
+      }
+
       using (var trans = connection.BeginTransaction())
       {
         using (var cmd = connection.CreateCommand())
@@ -54,8 +60,6 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
           cmd.ExecuteNonQuery();
           cmd.CommandText = "INSERT INTO version VALUES(" + Version.ToString() + ")";
-          cmd.ExecuteNonQuery();
-          cmd.CommandText = "PRAGMA journal_mode=WAL";
           cmd.ExecuteNonQuery();
         }
 
@@ -302,6 +306,9 @@ namespace BlackMaple.MachineFramework
           }
           return;
         }
+
+        cmd.CommandText = "PRAGMA journal_mode=WAL";
+        cmd.ExecuteNonQuery();
 
         bool detachInsp = false;
         bool detachOldJob = false;
@@ -870,17 +877,12 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver27ToVer28(IDbTransaction transaction, bool updateJobTables)
     {
+      if (!updateJobTables) return;
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
 
-        if (updateJobTables)
-        {
-          cmd.CommandText = "DROP INDEX sim_station_time_idx";
-          cmd.ExecuteNonQuery();
-        }
-
-        cmd.CommandText = "PRAGMA journal_mode=WAL";
+        cmd.CommandText = "DROP INDEX sim_station_time_idx";
         cmd.ExecuteNonQuery();
       }
     }
