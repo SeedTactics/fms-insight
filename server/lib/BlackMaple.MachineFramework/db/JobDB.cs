@@ -718,13 +718,6 @@ namespace BlackMaple.MachineFramework
         createTempCmd.Transaction = trans;
         createTempCmd.ExecuteNonQuery();
 
-        using (var createIdxCmd = _connection.CreateCommand())
-        {
-          createIdxCmd.Transaction = trans;
-          createIdxCmd.CommandText = "CREATE INDEX temp_sch_ids_idx ON temp_sch_ids(ScheduleId)";
-          createIdxCmd.ExecuteNonQuery();
-        }
-
         if (alreadyKnownSchIds != null)
         {
           using (var delSchIds = _connection.CreateCommand())
