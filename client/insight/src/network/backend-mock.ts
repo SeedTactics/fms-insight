@@ -185,6 +185,13 @@ export function registerMockBackend(
     history(_startUTC: Date, _endUTC: Date): Promise<Readonly<api.IHistoricData>> {
       return data.then((d) => d.jobs);
     },
+    filteredHistory(
+      _startUTC: Date,
+      _endUTC: Date,
+      _alreadyKnownSchIds: string[]
+    ): Promise<Readonly<api.IHistoricData>> {
+      return data.then((d) => d.jobs);
+    },
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
       return data.then((d) => d.curSt);
     },

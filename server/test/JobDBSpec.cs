@@ -97,6 +97,17 @@ namespace MachineWatchTest
         }
       );
 
+      _jobDB.LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10), new HashSet<string>(new[] { schId })).Should().BeEquivalentTo(
+        new HistoricData()
+        {
+          Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
+          StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+        }
+      );
+
+      _jobDB.Invoking(j => j.LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10), new HashSet<string>(new[] { "asdfouh" })))
+        .Should().Throw<ConflictRequestException>("Schedule ID asdfouh does not exist");
+
       _jobDB.LoadJobHistory(job1.RouteStartUTC.AddHours(-20), job1.RouteStartUTC.AddHours(-10)).Should().BeEquivalentTo(
         new HistoricData()
         {
@@ -170,6 +181,15 @@ namespace MachineWatchTest
           StationUse = job1StatUse.AddRange(job2SimUse)
         }
       );
+
+      _jobDB.LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10), new HashSet<string>(new[] { schId })).Should().BeEquivalentTo(
+        new HistoricData()
+        {
+          Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
+          StationUse = job2SimUse
+        }
+      );
+
       _jobDB.LoadJobHistory(job1.RouteStartUTC.AddHours(3), job1.RouteStartUTC.AddHours(10)).Should().BeEquivalentTo(
         new HistoricData()
         {
@@ -395,14 +415,16 @@ namespace MachineWatchTest
       var job1 = RandJob(now);
       var job2 = RandJob(now);
 
-      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create<Job>(job1, job2) }, null, addAsCopiedToSystem: false);
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create<Job>(job1, job2), ScheduleId = "schId" }, null, addAsCopiedToSystem: false);
       _jobDB.MarkJobCopiedToSystem(job2.UniqueStr);
 
       _jobDB.LoadJobsNotCopiedToSystem(now, now).Should().BeEquivalentTo(
-        new[] { job1.CloneToDerived<HistoricJob, Job>() with {
-    CopiedToSystem = false,
-  Decrements = ImmutableList<DecrementQuantity>.Empty
-  }}
+        new[] {
+          job1.CloneToDerived<HistoricJob, Job>() with {
+            CopiedToSystem = false,
+            ScheduleId = "schId",
+            Decrements = ImmutableList<DecrementQuantity>.Empty
+          }}
       );
 
       var time1 = now.AddHours(-2);
@@ -458,6 +480,7 @@ namespace MachineWatchTest
       _jobDB.LoadJobsNotCopiedToSystem(now, now, includeDecremented: true).Should().BeEquivalentTo(
         new[] { job1.CloneToDerived<HistoricJob, Job>() with {
           CopiedToSystem = false,
+          ScheduleId = "schId",
           Decrements = expected1Job1
         }}
       );
@@ -467,12 +490,14 @@ namespace MachineWatchTest
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1.CloneToDerived<HistoricJob, Job>() with
       {
         CopiedToSystem = false,
+        ScheduleId = "schId",
         Decrements = expected1Job1
       });
 
       _jobDB.LoadJob(job2.UniqueStr).Should().BeEquivalentTo(job2.CloneToDerived<HistoricJob, Job>() with
       {
         CopiedToSystem = true,
+        ScheduleId = "schId",
         Decrements = expected1Job2
       });
 
@@ -484,6 +509,7 @@ namespace MachineWatchTest
             job1.CloneToDerived<HistoricJob, Job>() with
             {
               CopiedToSystem = false,
+              ScheduleId = "schId",
               Decrements = expected1Job1
             }
           )
@@ -492,6 +518,7 @@ namespace MachineWatchTest
             job2.CloneToDerived<HistoricJob, Job>() with
             {
               CopiedToSystem = true,
+              ScheduleId = "schId",
               Decrements = expected1Job2
             }
           ),
@@ -575,11 +602,12 @@ namespace MachineWatchTest
     {
       var job = RandJob() with { Archived = false };
 
-      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job) }, null, true);
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "theschId" }, null, true);
 
       _jobDB.LoadJob(job.UniqueStr).Should().BeEquivalentTo(job.CloneToDerived<HistoricJob, Job>() with
       {
         CopiedToSystem = true,
+        ScheduleId = "theschId",
         Decrements = ImmutableList<DecrementQuantity>.Empty
       });
 
@@ -601,6 +629,7 @@ namespace MachineWatchTest
       {
         Archived = true,
         CopiedToSystem = true,
+        ScheduleId = "theschId",
         Decrements = ImmutableList.Create(
           new DecrementQuantity()
           {
@@ -783,6 +812,7 @@ namespace MachineWatchTest
       _jobDB.Invoking(j => j.AddJobs(new NewJobs
       {
         Jobs = ImmutableList<Job>.Empty,
+        ScheduleId = "unusedSchId",
         Programs = ImmutableList.Create(
         new NewProgramContent()
         {
@@ -1130,6 +1160,7 @@ namespace MachineWatchTest
       _jobDB.AddJobs(new NewJobs
       {
         Jobs = ImmutableList<Job>.Empty,
+        ScheduleId = "negprogschId",
         Programs = ImmutableList.Create(
             new NewProgramContent()
             {
@@ -1408,6 +1439,26 @@ namespace MachineWatchTest
       });
       _jobDB.LoadProgramContent("ccc", 5).Should().Be("ccc program content 5");
       _jobDB.LoadMostRecentProgram("ccc").Revision.Should().Be(5);
+    }
+
+    [Fact]
+    public void ErrorOnDuplicateSchId()
+    {
+      var job1 = RandJob();
+      var job2 = RandJob();
+
+      _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job1), ScheduleId = "sch1" }, null, true);
+
+      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1.CloneToDerived<HistoricJob, Job>() with
+      {
+        ScheduleId = "sch1",
+        CopiedToSystem = true,
+        Decrements = ImmutableList<DecrementQuantity>.Empty
+      });
+
+      _jobDB.Invoking(j =>
+        j.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job2), ScheduleId = "sch1" }, null, true)
+      ).Should().Throw<BadRequestException>().WithMessage("Schedule ID sch1 already exists!");
     }
 
     private static ImmutableList<SimulatedStationUtilization> RandSimStationUse(string schId, DateTime start)

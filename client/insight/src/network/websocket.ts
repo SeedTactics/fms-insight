@@ -46,6 +46,8 @@ import {
 } from "../cell-status/loading.js";
 import { addDays } from "date-fns";
 import { RecoilConduit } from "../util/recoil-util.js";
+import { last30SchIds } from "../cell-status/scheduled-jobs.js";
+import { HashSet } from "@seedtactics/immutable-collections";
 
 const websocketReconnectingAtom = atom<boolean>({
   key: "websocket-reconnecting",
@@ -74,13 +76,18 @@ function loadInitial(
 
 function loadMissed(
   lastCntr: number,
+  schIds: HashSet<string> | undefined,
   set: <T>(s: RecoilState<T>, t: T) => void,
   push: <T>(c: RecoilConduit<T>) => (t: T) => void
 ): void {
+  const now = new Date();
   const curStProm = JobsBackend.currentStatus().then(push(onLoadCurrentSt));
-  const logProm = LogBackend.recent(lastCntr).then(push(onLoadLast30Log));
+  const jobsProm = JobsBackend.filteredHistory(now, addDays(now, -30), schIds ? Array.from(schIds) : []).then(
+    push(onLoadLast30Jobs)
+  );
+  const logProm = LogBackend.recent(lastCntr, undefined).then(push(onLoadLast30Log));
 
-  Promise.all([curStProm, logProm])
+  Promise.all([curStProm, jobsProm, logProm])
     .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? e.toString()))
     .finally(() => set(websocketReconnectingAtom, false));
 }
@@ -93,10 +100,11 @@ export function WebsocketConnection(): null {
           return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
         }
         const lastSeenCntr = snapshot.getLoadable(lastEventCounter).valueMaybe();
+        const schIds = snapshot.getLoadable(last30SchIds).valueMaybe();
         set(websocketReconnectingAtom, true);
         set(errorLoadingLast30RW, null);
         if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
-          loadMissed(lastSeenCntr, set, push);
+          loadMissed(lastSeenCntr, schIds, set, push);
         } else {
           loadInitial(set, push);
         }
@@ -114,8 +122,7 @@ export function WebsocketConnection(): null {
 
   const onMessage = useRecoilCallback(
     ({ transact_UNSTABLE }) =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (evt: MessageEvent<any>) => {
+      (evt: MessageEvent<string>) => {
         const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
         transact_UNSTABLE((trans) =>
           onServerEvent.transform(trans, { evt: serverEvt, now: new Date(), expire: true })

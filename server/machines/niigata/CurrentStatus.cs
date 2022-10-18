@@ -65,8 +65,7 @@ namespace BlackMaple.FMSInsight.Niigata
           j.Processes.Select(
             proc => new int[proc.Paths.Count] // defaults to fill with zeros
           ).ToArray();
-        var evts = jobDB.GetLogForJobUnique(j.UniqueStr);
-        foreach (var e in evts)
+        foreach (var e in jobDB.GetLogForJobUnique(j.UniqueStr))
         {
           if (e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
           {

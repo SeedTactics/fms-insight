@@ -43,7 +43,7 @@ namespace BlackMaple.MachineFramework
   internal partial class Repository
   {
     #region Loading
-    private List<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
+    private IEnumerable<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
     {
       using (var matCmd = _connection.CreateCommand())
       using (var detailCmd = _connection.CreateCommand())
@@ -67,8 +67,6 @@ namespace BlackMaple.MachineFramework
 
         toolCmd.CommandText = "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tool_use WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
-
-        var lst = new List<LogEntry>();
 
         while (reader.Read())
         {
@@ -204,7 +202,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          lst.Add(new LogEntry()
+          yield return new LogEntry()
           {
             Counter = ctr,
             Material = matLst.ToImmutable(),
@@ -221,92 +219,103 @@ namespace BlackMaple.MachineFramework
             ActiveOperationTime = active,
             ProgramDetails = progDetails.ToImmutable(),
             Tools = tools.ToImmutable()
-          });
+          };
         }
-
-        return lst;
 
       } // close usings
     }
 
-    public List<LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
+    public IEnumerable<LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+             " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
+
+        cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+        cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
+
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-               " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
-
-          cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-          cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-          using (var reader = cmd.ExecuteReader())
+          foreach (var l in LoadLog(reader))
           {
-            return LoadLog(reader);
+            yield return l;
           }
         }
       }
     }
 
-    public List<LogEntry> GetLog(long counter)
+    public IEnumerable<LogEntry> GetRecentLog(long counter, DateTime? expectedEndUTCofLastSeen)
     {
-      lock (_cfg)
+      using (var trans = _connection.BeginTransaction())
       {
+        if (expectedEndUTCofLastSeen.HasValue)
+        {
+          using (var cmd = _connection.CreateCommand())
+          {
+            cmd.Transaction = trans;
+            cmd.CommandText = "SELECT TimeUTC FROM stations WHERE Counter = $cntr";
+            cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+            var val = cmd.ExecuteScalar();
+            if (val == null) throw new ConflictRequestException("Counter " + counter.ToString() + " not found");
+            if (expectedEndUTCofLastSeen.Value.Ticks != (long)val) throw new ConflictRequestException("Counter " + counter.ToString() + " has different end time");
+          }
+        }
+
         using (var cmd = _connection.CreateCommand())
         {
+          cmd.Transaction = trans;
           cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
                " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            foreach (var l in LoadLog(reader))
+            {
+              yield return l;
+            }
           }
         }
+
+        trans.Rollback();
       }
     }
 
     public List<LogEntry> StationLogByForeignID(string foreignID)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-               " FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
-          cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+             " FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
+        cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
-          using (var reader = cmd.ExecuteReader())
-          {
-            return LoadLog(reader);
-          }
+        using (var reader = cmd.ExecuteReader())
+        {
+          return LoadLog(reader).ToList();
         }
       }
     }
 
     public string OriginalMessageByForeignID(string foreignID)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT OriginalMessage " +
-               " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
-          cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+        cmd.CommandText = "SELECT OriginalMessage " +
+             " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
+        cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
-          using (var reader = cmd.ExecuteReader())
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
           {
-            while (reader.Read())
+            if (reader.IsDBNull(0))
             {
-              if (reader.IsDBNull(0))
-              {
-                return "";
-              }
-              else
-              {
-                return reader.GetString(0);
-              }
+              return "";
+            }
+            else
+            {
+              return reader.GetString(0);
             }
           }
         }
@@ -317,108 +326,102 @@ namespace BlackMaple.MachineFramework
     public List<LogEntry> GetLogForMaterial(long materialID)
     {
       if (materialID < 0) return new List<LogEntry>();
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-               " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
-          cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+             " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
+        cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
 
-          using (var reader = cmd.ExecuteReader())
-          {
-            return LoadLog(reader);
-          }
+        using (var reader = cmd.ExecuteReader())
+        {
+          return LoadLog(reader).ToList();
         }
       }
     }
 
     public List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs)
     {
-      lock (_cfg)
+      var ret = new List<LogEntry>();
+      using (var cmd = _connection.CreateCommand())
+      using (var trans = _connection.BeginTransaction())
       {
-        var ret = new List<LogEntry>();
-        using (var cmd = _connection.CreateCommand())
-        using (var trans = _connection.BeginTransaction())
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+             " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
+        var param = cmd.Parameters.Add("mat", SqliteType.Integer);
+
+        foreach (var matId in materialIDs)
         {
-          cmd.Transaction = trans;
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-               " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
-          var param = cmd.Parameters.Add("mat", SqliteType.Integer);
-
-          foreach (var matId in materialIDs)
-          {
-            param.Value = matId;
-            using (var reader = cmd.ExecuteReader())
-            {
-              ret.AddRange(LoadLog(reader));
-            }
-          }
-          trans.Commit();
-        }
-        return ret;
-      }
-    }
-
-    public List<LogEntry> GetLogForSerial(string serial)
-    {
-      lock (_cfg)
-      {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
-          cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
-
+          param.Value = matId;
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            ret.AddRange(LoadLog(reader));
           }
         }
+        trans.Commit();
       }
+      return ret;
     }
 
-    public List<LogEntry> GetLogForJobUnique(string jobUnique)
+    public IEnumerable<LogEntry> GetLogForSerial(string serial)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
-          cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+            " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
+        cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
-          using (var reader = cmd.ExecuteReader())
+        using (var reader = cmd.ExecuteReader())
+        {
+          foreach (var l in LoadLog(reader))
           {
-            return LoadLog(reader);
+            yield return l;
           }
         }
       }
     }
 
-    public List<LogEntry> GetLogForWorkorder(string workorder)
+    public IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations " +
-              " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) " +
-              "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) " +
-              " ORDER BY Counter ASC";
-          cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
-          cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+            " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
-          using (var reader = cmd.ExecuteReader())
+        using (var reader = cmd.ExecuteReader())
+        {
+          foreach (var l in LoadLog(reader))
           {
-            return LoadLog(reader);
+            yield return l;
           }
         }
       }
     }
 
-    public List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
+    public IEnumerable<LogEntry> GetLogForWorkorder(string workorder)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+            " FROM stations " +
+            " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) " +
+            "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) " +
+            " ORDER BY Counter ASC";
+        cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+        cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
+
+        using (var reader = cmd.ExecuteReader())
+        {
+          foreach (var l in LoadLog(reader))
+          {
+            yield return l;
+          }
+        }
+      }
+    }
+
+    public IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
     {
       var searchCompleted = @"
                 SELECT Counter FROM stations_mat
@@ -442,20 +445,20 @@ namespace BlackMaple.MachineFramework
                                 stations_mat.Process = matdetails.NumProcesses
                         )";
 
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations WHERE Counter IN (" + searchCompleted + ") ORDER BY Counter ASC";
-          cmd.Parameters.Add("loadty", SqliteType.Integer)
-              .Value = (int)LogType.LoadUnloadCycle;
-          cmd.Parameters.Add("endUTC", SqliteType.Integer).Value = endUTC.Ticks;
-          cmd.Parameters.Add("startUTC", SqliteType.Integer).Value = startUTC.Ticks;
+        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
+            " FROM stations WHERE Counter IN (" + searchCompleted + ") ORDER BY Counter ASC";
+        cmd.Parameters.Add("loadty", SqliteType.Integer)
+            .Value = (int)LogType.LoadUnloadCycle;
+        cmd.Parameters.Add("endUTC", SqliteType.Integer).Value = endUTC.Ticks;
+        cmd.Parameters.Add("startUTC", SqliteType.Integer).Value = startUTC.Ticks;
 
-          using (var reader = cmd.ExecuteReader())
+        using (var reader = cmd.ExecuteReader())
+        {
+          foreach (var l in LoadLog(reader))
           {
-            return LoadLog(reader);
+            yield return l;
           }
         }
       }
@@ -463,34 +466,28 @@ namespace BlackMaple.MachineFramework
 
     public DateTime LastPalletCycleTime(string pallet)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
-                               "ORDER BY Counter DESC LIMIT 1";
-          cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
+        cmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
+                             "ORDER BY Counter DESC LIMIT 1";
+        cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
 
-          var date = cmd.ExecuteScalar();
-          if (date == null || date == DBNull.Value)
-            return DateTime.MinValue;
-          else
-            return new DateTime((long)date, DateTimeKind.Utc);
-        }
+        var date = cmd.ExecuteScalar();
+        if (date == null || date == DBNull.Value)
+          return DateTime.MinValue;
+        else
+          return new DateTime((long)date, DateTimeKind.Utc);
       }
     }
 
     //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
     public List<LogEntry> CurrentPalletLog(string pallet)
     {
-      lock (_cfg)
+      using (var trans = _connection.BeginTransaction())
       {
-        using (var trans = _connection.BeginTransaction())
-        {
-          var ret = CurrentPalletLog(pallet, trans);
-          trans.Commit();
-          return ret;
-        }
+        var ret = CurrentPalletLog(pallet, trans);
+        trans.Commit();
+        return ret;
       }
     }
 
@@ -520,7 +517,7 @@ namespace BlackMaple.MachineFramework
               " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader);
+            return LoadLog(reader).ToList();
           }
 
         }
@@ -535,7 +532,7 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader, trans);
+            return LoadLog(reader, trans).ToList();
           }
         }
       }
@@ -544,27 +541,22 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<ToolPocketSnapshot> ToolPocketSnapshotForCycle(long counter)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT PocketNumber, Tool, CurrentUse, ToolLife FROM tool_snapshots WHERE Counter = $cntr";
-          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+        cmd.CommandText = "SELECT PocketNumber, Tool, CurrentUse, ToolLife FROM tool_snapshots WHERE Counter = $cntr";
+        cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
-          using (var reader = cmd.ExecuteReader())
+        using (var reader = cmd.ExecuteReader())
+        {
+          while (reader.Read())
           {
-            var ret = new List<ToolPocketSnapshot>();
-            while (reader.Read())
+            yield return new ToolPocketSnapshot()
             {
-              ret.Add(new ToolPocketSnapshot()
-              {
-                PocketNumber = reader.GetInt32(0),
-                Tool = reader.GetString(1),
-                CurrentUse = TimeSpan.FromTicks(reader.GetInt64(2)),
-                ToolLife = TimeSpan.FromTicks(reader.GetInt64(3))
-              });
-            }
-            return ret;
+              PocketNumber = reader.GetInt32(0),
+              Tool = reader.GetString(1),
+              CurrentUse = TimeSpan.FromTicks(reader.GetInt64(2)),
+              ToolLife = TimeSpan.FromTicks(reader.GetInt64(3))
+            };
           }
         }
       }
@@ -572,101 +564,89 @@ namespace BlackMaple.MachineFramework
 
     public System.DateTime MaxLogDate()
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
+        cmd.CommandText = "SELECT MAX(TimeUTC) FROM stations";
+
+        System.DateTime ret = DateTime.MinValue;
+
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.CommandText = "SELECT MAX(TimeUTC) FROM stations";
-
-          System.DateTime ret = DateTime.MinValue;
-
-          using (var reader = cmd.ExecuteReader())
+          if (reader.Read())
           {
-            if (reader.Read())
+            if (!reader.IsDBNull(0))
             {
-              if (!reader.IsDBNull(0))
-              {
-                ret = new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
-              }
+              ret = new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
             }
           }
-
-          return ret;
         }
+
+        return ret;
       }
     }
 
     public string MaxForeignID()
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
+
+        cmd.CommandText = "SELECT MAX(ForeignID) FROM stations";
+        var maxStat = cmd.ExecuteScalar();
+
+        cmd.CommandText = "SELECT MAX(ForeignID) FROM pendingloads";
+        var maxLoad = cmd.ExecuteScalar();
+
+        if (maxStat == DBNull.Value && maxLoad == DBNull.Value)
+          return "";
+        else if (maxStat != DBNull.Value && maxLoad == DBNull.Value)
+          return (string)maxStat;
+        else if (maxStat == DBNull.Value && maxLoad != DBNull.Value)
+          return (string)maxLoad;
+        else
         {
-
-          cmd.CommandText = "SELECT MAX(ForeignID) FROM stations";
-          var maxStat = cmd.ExecuteScalar();
-
-          cmd.CommandText = "SELECT MAX(ForeignID) FROM pendingloads";
-          var maxLoad = cmd.ExecuteScalar();
-
-          if (maxStat == DBNull.Value && maxLoad == DBNull.Value)
-            return "";
-          else if (maxStat != DBNull.Value && maxLoad == DBNull.Value)
-            return (string)maxStat;
-          else if (maxStat == DBNull.Value && maxLoad != DBNull.Value)
-            return (string)maxLoad;
+          var s = (string)maxStat;
+          var l = (string)maxLoad;
+          if (s.CompareTo(l) > 0)
+            return s;
           else
-          {
-            var s = (string)maxStat;
-            var l = (string)maxLoad;
-            if (s.CompareTo(l) > 0)
-              return s;
-            else
-              return l;
-          }
+            return l;
         }
       }
     }
 
     public string ForeignIDForCounter(long counter)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT ForeignID FROM stations WHERE Counter = $cntr";
-          cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
-          var ret = cmd.ExecuteScalar();
-          if (ret == DBNull.Value)
-            return "";
-          else if (ret == null)
-            return "";
-          else
-            return (string)ret;
-        }
+        cmd.CommandText = "SELECT ForeignID FROM stations WHERE Counter = $cntr";
+        cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+        var ret = cmd.ExecuteScalar();
+        if (ret == DBNull.Value)
+          return "";
+        else if (ret == null)
+          return "";
+        else
+          return (string)ret;
       }
     }
 
     public bool CycleExists(DateTime endUTC, string pal, LogType logTy, string locName, int locNum)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT COUNT(*) FROM stations WHERE " +
-              "TimeUTC = $time AND Pallet = $pal AND StationLoc = $loc AND StationNum = $locnum AND StationName = $locname";
-          cmd.Parameters.Add("time", SqliteType.Integer).Value = endUTC.Ticks;
-          cmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
-          cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)logTy;
-          cmd.Parameters.Add("locnum", SqliteType.Integer).Value = locNum;
-          cmd.Parameters.Add("locname", SqliteType.Text).Value = locName;
+        cmd.CommandText = "SELECT COUNT(*) FROM stations WHERE " +
+            "TimeUTC = $time AND Pallet = $pal AND StationLoc = $loc AND StationNum = $locnum AND StationName = $locname";
+        cmd.Parameters.Add("time", SqliteType.Integer).Value = endUTC.Ticks;
+        cmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+        cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)logTy;
+        cmd.Parameters.Add("locnum", SqliteType.Integer).Value = locNum;
+        cmd.Parameters.Add("locname", SqliteType.Text).Value = locName;
 
-          var ret = cmd.ExecuteScalar();
-          if (ret == null || Convert.ToInt32(ret) <= 0)
-            return false;
-          else
-            return true;
-        }
+        var ret = cmd.ExecuteScalar();
+        if (ret == null || Convert.ToInt32(ret) <= 0)
+          return false;
+        else
+          return true;
       }
     }
 
@@ -826,27 +806,24 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<string> GetWorkordersForUnique(string jobUnique)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
+      using (var trans = _connection.BeginTransaction())
       {
-        using (var cmd = _connection.CreateCommand())
-        using (var trans = _connection.BeginTransaction())
+        cmd.CommandText = "SELECT DISTINCT Workorder FROM matdetails WHERE UniqueStr = $uniq AND Workorder IS NOT NULL ORDER BY Workorder ASC";
+        cmd.Transaction = trans;
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
+
+        var ret = ImmutableList.CreateBuilder<string>();
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.CommandText = "SELECT DISTINCT Workorder FROM matdetails WHERE UniqueStr = $uniq AND Workorder IS NOT NULL ORDER BY Workorder ASC";
-          cmd.Transaction = trans;
-          cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
-
-          var ret = ImmutableList.CreateBuilder<string>();
-          using (var reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
-            {
-              ret.Add(reader.GetString(0));
-            }
+            ret.Add(reader.GetString(0));
           }
-
-          trans.Commit();
-          return ret.ToImmutable();
         }
+
+        trans.Commit();
+        return ret.ToImmutable();
       }
     }
 
@@ -2315,20 +2292,17 @@ namespace BlackMaple.MachineFramework
 
     public MaterialDetails GetMaterialDetails(long matID)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          var ret = GetMaterialDetails(matID, trans);
-          trans.Commit();
-          return ret;
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        var ret = GetMaterialDetails(matID, trans);
+        trans.Commit();
+        return ret;
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
@@ -2382,65 +2356,62 @@ namespace BlackMaple.MachineFramework
 
     public IReadOnlyList<MaterialDetails> GetMaterialDetailsForSerial(string serial)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
+        using (var cmd = _connection.CreateCommand())
+        using (var cmd2 = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
-          using (var cmd2 = _connection.CreateCommand())
+          ((IDbCommand)cmd).Transaction = trans;
+          ((IDbCommand)cmd2).Transaction = trans;
+          cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Workorder FROM matdetails WHERE Serial = $ser";
+          cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
+
+          cmd2.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
+          cmd2.Parameters.Add("mat", SqliteType.Integer);
+
+          var ret = new List<MaterialDetails>();
+          using (var reader = cmd.ExecuteReader())
           {
-            ((IDbCommand)cmd).Transaction = trans;
-            ((IDbCommand)cmd2).Transaction = trans;
-            cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Workorder FROM matdetails WHERE Serial = $ser";
-            cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
-
-            cmd2.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
-            cmd2.Parameters.Add("mat", SqliteType.Integer);
-
-            var ret = new List<MaterialDetails>();
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              var mat = new MaterialDetails()
               {
-                var mat = new MaterialDetails()
-                {
-                  MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
-                  JobUnique = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
-                  PartName = (!reader.IsDBNull(2)) ? reader.GetString(2) : null,
-                  NumProcesses = (!reader.IsDBNull(3)) ? reader.GetInt32(3) : 0,
-                  Workorder = (!reader.IsDBNull(4)) ? reader.GetString(4) : null,
-                  Serial = serial,
-                };
+                MaterialID = (!reader.IsDBNull(0)) ? reader.GetInt64(0) : 0,
+                JobUnique = (!reader.IsDBNull(1)) ? reader.GetString(1) : null,
+                PartName = (!reader.IsDBNull(2)) ? reader.GetString(2) : null,
+                NumProcesses = (!reader.IsDBNull(3)) ? reader.GetInt32(3) : 0,
+                Workorder = (!reader.IsDBNull(4)) ? reader.GetString(4) : null,
+                Serial = serial,
+              };
 
-                cmd2.Parameters[0].Value = mat.MaterialID;
-                var paths = ImmutableDictionary<int, int>.Empty.ToBuilder();
-                using (var reader2 = cmd2.ExecuteReader())
+              cmd2.Parameters[0].Value = mat.MaterialID;
+              var paths = ImmutableDictionary<int, int>.Empty.ToBuilder();
+              using (var reader2 = cmd2.ExecuteReader())
+              {
+                while (reader2.Read())
                 {
-                  while (reader2.Read())
-                  {
-                    var proc = reader2.GetInt32(0);
-                    var path = reader2.GetInt32(1);
-                    paths[proc] = path;
-                  }
+                  var proc = reader2.GetInt32(0);
+                  var path = reader2.GetInt32(1);
+                  paths[proc] = path;
                 }
-                if (paths.Count > 0)
-                {
-                  mat = mat with { Paths = paths.ToImmutable() };
-                }
-                ret.Add(mat);
               }
+              if (paths.Count > 0)
+              {
+                mat = mat with { Paths = paths.ToImmutable() };
+              }
+              ret.Add(mat);
             }
-
-            trans.Commit();
-            return ret;
           }
+
+          trans.Commit();
+          return ret;
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
@@ -2955,15 +2926,12 @@ namespace BlackMaple.MachineFramework
 
     public bool IsMaterialInQueue(long matId)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT COUNT(*) FROM queues WHERE MaterialID = $matid";
-          cmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
-          var ret = cmd.ExecuteScalar();
-          return (ret != null && ret != DBNull.Value && (long)ret > 0);
-        }
+        cmd.CommandText = "SELECT COUNT(*) FROM queues WHERE MaterialID = $matid";
+        cmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+        var ret = cmd.ExecuteScalar();
+        return (ret != null && ret != DBNull.Value && (long)ret > 0);
       }
     }
 
@@ -3012,178 +2980,166 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<QueuedMaterial> GetMaterialInQueueByUnique(string queue, string unique)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      var ret = new List<QueuedMaterial>();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        var ret = new List<QueuedMaterial>();
-        try
+        using (var cmd = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+
+          cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
+            " FROM queues q " +
+            " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
+            " WHERE q.Queue = $q AND m.UniqueStr = $uniq " +
+            " ORDER BY q.Position";
+          cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-
-            cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
-              " FROM queues q " +
-              " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
-              " WHERE q.Queue = $q AND m.UniqueStr = $uniq " +
-              " ORDER BY q.Position";
-            cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              ret.Add(new QueuedMaterial()
               {
-                ret.Add(new QueuedMaterial()
-                {
-                  MaterialID = reader.GetInt64(0),
-                  Queue = queue,
-                  Position = reader.GetInt32(1),
-                  Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                  PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                  NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
-                  Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
-                  Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
-                  AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
+                MaterialID = reader.GetInt64(0),
+                Queue = queue,
+                Position = reader.GetInt32(1),
+                Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
+                Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
+                AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
 
-                  // these are filled in by AddAdditionalDataToQueuedMaterial
-                  Paths = ImmutableDictionary<int, int>.Empty,
-                });
-              }
+                // these are filled in by AddAdditionalDataToQueuedMaterial
+                Paths = ImmutableDictionary<int, int>.Empty,
+              });
+            }
+          }
+        }
+
+        AddAdditionalDataToQueuedMaterial(trans, ret);
+
+        trans.Commit();
+        return ret;
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
+      }
+    }
+
+    public IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(string queue, string partNameOrCasting)
+    {
+      var trans = _connection.BeginTransaction();
+      var ret = new List<QueuedMaterial>();
+      try
+      {
+        using (var cmd = _connection.CreateCommand())
+        using (var pathCmd = _connection.CreateCommand())
+        {
+          cmd.Transaction = trans;
+          pathCmd.Transaction = trans;
+
+          cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
+            " FROM queues q " +
+            " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
+            " WHERE q.Queue = $q AND m.UniqueStr IS NULL AND m.PartName = $part " +
+            " ORDER BY q.Position";
+          cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
+          cmd.Parameters.Add("part", SqliteType.Text).Value = partNameOrCasting;
+
+          pathCmd.CommandText = "SELECT Path FROM mat_path_details WHERE MaterialID = $mid";
+
+          using (var reader = cmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              ret.Add(new QueuedMaterial()
+              {
+                MaterialID = reader.GetInt64(0),
+                Queue = queue,
+                Position = reader.GetInt32(1),
+                Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
+                Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
+                AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
+
+                // these are filled in by AddAdditionalDataToQueuedMaterial
+                Paths = ImmutableDictionary<int, int>.Empty,
+              });
             }
           }
 
           AddAdditionalDataToQueuedMaterial(trans, ret);
 
           trans.Commit();
-          return ret;
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        return ret;
       }
-    }
-
-    public IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(string queue, string partNameOrCasting)
-    {
-      lock (_cfg)
+      catch
       {
-        var trans = _connection.BeginTransaction();
-        var ret = new List<QueuedMaterial>();
-        try
-        {
-          using (var cmd = _connection.CreateCommand())
-          using (var pathCmd = _connection.CreateCommand())
-          {
-            cmd.Transaction = trans;
-            pathCmd.Transaction = trans;
-
-            cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
-              " FROM queues q " +
-              " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
-              " WHERE q.Queue = $q AND m.UniqueStr IS NULL AND m.PartName = $part " +
-              " ORDER BY q.Position";
-            cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
-            cmd.Parameters.Add("part", SqliteType.Text).Value = partNameOrCasting;
-
-            pathCmd.CommandText = "SELECT Path FROM mat_path_details WHERE MaterialID = $mid";
-
-            using (var reader = cmd.ExecuteReader())
-            {
-              while (reader.Read())
-              {
-                ret.Add(new QueuedMaterial()
-                {
-                  MaterialID = reader.GetInt64(0),
-                  Queue = queue,
-                  Position = reader.GetInt32(1),
-                  Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                  PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                  NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
-                  Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
-                  Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
-                  AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
-
-                  // these are filled in by AddAdditionalDataToQueuedMaterial
-                  Paths = ImmutableDictionary<int, int>.Empty,
-                });
-              }
-            }
-
-            AddAdditionalDataToQueuedMaterial(trans, ret);
-
-            trans.Commit();
-          }
-          return ret;
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        trans.Rollback();
+        throw;
       }
     }
 
     public IEnumerable<QueuedMaterial> GetMaterialInAllQueues()
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      var ret = new List<QueuedMaterial>();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        var ret = new List<QueuedMaterial>();
-        try
+        using (var cmd = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT q.MaterialID, q.Queue, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
+            " FROM queues q " +
+            " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
+            " ORDER BY q.Queue, q.Position";
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-            cmd.CommandText = "SELECT q.MaterialID, q.Queue, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
-              " FROM queues q " +
-              " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
-              " ORDER BY q.Queue, q.Position";
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              ret.Add(new QueuedMaterial()
               {
-                ret.Add(new QueuedMaterial()
-                {
-                  MaterialID = reader.GetInt64(0),
-                  Queue = reader.GetString(1),
-                  Position = reader.GetInt32(2),
-                  Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                  PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
-                  NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
-                  Serial = reader.IsDBNull(6) ? null : reader.GetString(6),
-                  Workorder = reader.IsDBNull(7) ? null : reader.GetString(7),
-                  AddTimeUTC = reader.IsDBNull(8) ? null : ((DateTime?)(new DateTime(reader.GetInt64(8), DateTimeKind.Utc))),
+                MaterialID = reader.GetInt64(0),
+                Queue = reader.GetString(1),
+                Position = reader.GetInt32(2),
+                Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
+                Serial = reader.IsDBNull(6) ? null : reader.GetString(6),
+                Workorder = reader.IsDBNull(7) ? null : reader.GetString(7),
+                AddTimeUTC = reader.IsDBNull(8) ? null : ((DateTime?)(new DateTime(reader.GetInt64(8), DateTimeKind.Utc))),
 
-                  // these are filled in by AddAdditionalDataToQueuedMaterial
-                  Paths = ImmutableDictionary<int, int>.Empty,
-                });
-              }
+                // these are filled in by AddAdditionalDataToQueuedMaterial
+                Paths = ImmutableDictionary<int, int>.Empty,
+              });
             }
-
-            AddAdditionalDataToQueuedMaterial(trans, ret);
-            trans.Commit();
-            return ret;
           }
+
+          AddAdditionalDataToQueuedMaterial(trans, ret);
+          trans.Commit();
+          return ret;
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
     public int? NextProcessForQueuedMaterial(long matId)
     {
-      lock (_cfg)
+      using (var trans = _connection.BeginTransaction())
       {
-        using (var trans = _connection.BeginTransaction())
-        {
-          return NextProcessForQueuedMaterial(trans, matId);
-        }
+        return NextProcessForQueuedMaterial(trans, matId);
       }
     }
 
@@ -3199,23 +3155,20 @@ namespace BlackMaple.MachineFramework
 
     private int? NextProcessForQueuedMaterial(IDbTransaction trans, long matId)
     {
-      lock (_cfg)
+      using (var loadCmd = _connection.CreateCommand())
       {
-        using (var loadCmd = _connection.CreateCommand())
-        {
-          ((IDbCommand)loadCmd).Transaction = trans;
-          loadCmd.CommandText = _nextProcessForQueuedMaterialSql;
-          loadCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+        ((IDbCommand)loadCmd).Transaction = trans;
+        loadCmd.CommandText = _nextProcessForQueuedMaterialSql;
+        loadCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
 
-          var val = loadCmd.ExecuteScalar();
-          if (val != null && val != DBNull.Value)
-          {
-            return Convert.ToInt32(val) + 1;
-          }
-          else
-          {
-            return null;
-          }
+        var val = loadCmd.ExecuteScalar();
+        if (val != null && val != DBNull.Value)
+        {
+          return Convert.ToInt32(val) + 1;
+        }
+        else
+        {
+          return null;
         }
       }
     }
@@ -3263,93 +3216,87 @@ namespace BlackMaple.MachineFramework
 
     public List<PendingLoad> PendingLoads(string pallet)
     {
-      lock (_cfg)
+      var ret = new List<PendingLoad>();
+
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var ret = new List<PendingLoad>();
-
-        var trans = _connection.BeginTransaction();
-        try
+        using (var cmd = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+
+          cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
+          cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
+
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-
-            cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
-            cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
-
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              var p = new PendingLoad()
               {
-                var p = new PendingLoad()
-                {
-                  Pallet = pallet,
-                  Key = reader.GetString(0),
-                  LoadStation = reader.GetInt32(1),
-                  Elapsed = new TimeSpan(reader.GetInt64(2)),
-                  ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
-                  ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
-                };
-                ret.Add(p);
-              }
+                Pallet = pallet,
+                Key = reader.GetString(0),
+                LoadStation = reader.GetInt32(1),
+                Elapsed = new TimeSpan(reader.GetInt64(2)),
+                ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
+                ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
+              };
+              ret.Add(p);
             }
-
-            trans.Commit();
           }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
 
-        return ret;
+          trans.Commit();
+        }
       }
+      catch
+      {
+        trans.Rollback();
+        throw;
+      }
+
+      return ret;
     }
 
     public List<PendingLoad> AllPendingLoads()
     {
-      lock (_cfg)
+      var ret = new List<PendingLoad>();
+
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var ret = new List<PendingLoad>();
-
-        var trans = _connection.BeginTransaction();
-        try
+        using (var cmd = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+
+          cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID, Pallet FROM pendingloads";
+
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-
-            cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID, Pallet FROM pendingloads";
-
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              var p = new PendingLoad()
               {
-                var p = new PendingLoad()
-                {
-                  Key = reader.GetString(0),
-                  LoadStation = reader.GetInt32(1),
-                  Elapsed = new TimeSpan(reader.GetInt64(2)),
-                  ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
-                  ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
-                  Pallet = reader.GetString(5),
-                };
-                ret.Add(p);
-              }
+                Key = reader.GetString(0),
+                LoadStation = reader.GetInt32(1),
+                Elapsed = new TimeSpan(reader.GetInt64(2)),
+                ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
+                ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
+                Pallet = reader.GetString(5),
+              };
+              ret.Add(p);
             }
-
-            trans.Commit();
           }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
 
-        return ret;
+          trans.Commit();
+        }
       }
+      catch
+      {
+        trans.Rollback();
+        throw;
+      }
+
+      return ret;
     }
 
     public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID)
@@ -3798,39 +3745,33 @@ namespace BlackMaple.MachineFramework
 
     public IReadOnlyList<Decision> LookupInspectionDecisions(long matID)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          var ret = LookupInspectionDecisions(trans, new[] { matID });
-          trans.Commit();
-          return ret.GetValueOrDefault(matID, new Decision[] { });
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        var ret = LookupInspectionDecisions(trans, new[] { matID });
+        trans.Commit();
+        return ret.GetValueOrDefault(matID, new Decision[] { });
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
     public ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(IEnumerable<long> matIDs)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          var ret = LookupInspectionDecisions(trans, matIDs);
-          trans.Commit();
-          return ret.ToImmutable();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        var ret = LookupInspectionDecisions(trans, matIDs);
+        trans.Commit();
+        return ret.ToImmutable();
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 

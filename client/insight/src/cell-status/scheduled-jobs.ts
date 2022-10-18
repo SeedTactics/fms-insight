@@ -41,13 +41,19 @@ import { addDays } from "date-fns";
 import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { IHistoricData, IHistoricJob } from "../network/api.js";
-import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { HashMap, HashSet, LazySeq } from "@seedtactics/immutable-collections";
 
 const last30JobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "last30Jobs",
   default: HashMap.empty(),
 });
 export const last30Jobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
+
+const last30SchIdsRW = atom<HashSet<string>>({
+  key: "last30SchIds",
+  default: HashSet.empty(),
+});
+export const last30SchIds: RecoilValueReadOnly<HashSet<string>> = last30SchIdsRW;
 
 const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
   key: "specificMonthJobs",
@@ -56,13 +62,38 @@ const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
 export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> =
   specificMonthJobsRW;
 
+export function filterExistingJobs(
+  schIds: HashSet<string>,
+  history: Readonly<IHistoricData>
+): Readonly<IHistoricData> {
+  if (schIds.size === 0) return history;
+  const newHistory = {
+    jobs: { ...history.jobs },
+    stationUse: history.stationUse.filter((s) => !schIds.has(s.scheduleId)),
+  };
+  for (const [u, j] of Object.entries(history.jobs)) {
+    if (j.scheduleId && schIds.has(j.scheduleId)) {
+      delete newHistory.jobs[u];
+    }
+  }
+  return newHistory;
+}
+
 export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
   t.set(last30JobsRW, (oldJobs) => oldJobs.union(LazySeq.ofObject(history.jobs).toHashMap((x) => x)));
+  t.set(last30SchIdsRW, (oldIds) =>
+    oldIds.union(
+      LazySeq.ofObject(history.jobs)
+        .collect(([, x]) => x.scheduleId)
+        .toHashSet((s) => s)
+    )
+  );
 });
 
 export const updateLast30Jobs = conduit<ServerEventAndTime>(
   (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
     if (evt.newJobs) {
+      const schId = evt.newJobs.scheduleId;
       const newJobs = LazySeq.of(evt.newJobs.jobs);
       t.set(last30JobsRW, (oldJobs) => {
         if (expire) {
@@ -72,6 +103,9 @@ export const updateLast30Jobs = conduit<ServerEventAndTime>(
 
         return oldJobs.union(newJobs.toHashMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
       });
+      if (schId) {
+        t.set(last30SchIdsRW, (oldIds) => oldIds.add(schId));
+      }
     }
   }
 );

@@ -117,7 +117,8 @@ namespace MachineWatchTest
       };
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create(j),
+        ScheduleId = "sch222"
       }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow;
@@ -183,7 +184,8 @@ namespace MachineWatchTest
       };
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create(j),
+        ScheduleId = "anschedule"
       }, null, addAsCopiedToSystem: true);
 
       _decr.Decrement(_jobDB);
@@ -228,7 +230,8 @@ namespace MachineWatchTest
       };
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create(j),
+        ScheduleId = "sch56666"
       }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow.AddHours(-1);
@@ -315,7 +318,8 @@ namespace MachineWatchTest
       };
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create(j),
+        ScheduleId = "sch3333",
       }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow;
@@ -370,7 +374,8 @@ namespace MachineWatchTest
       };
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create(j),
+        ScheduleId = "aschId",
       }, null, addAsCopiedToSystem: true);
 
       var now = DateTime.UtcNow;
@@ -437,7 +442,8 @@ namespace MachineWatchTest
       };
       _jobDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create(uuuu, vvvv)
+        Jobs = ImmutableList.Create(uuuu, vvvv),
+        ScheduleId = "sch44444",
       }, null, addAsCopiedToSystem: false);
       _jobDB.MarkJobCopiedToSystem("uuuu");
 

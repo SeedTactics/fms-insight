@@ -1134,7 +1134,7 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
         Cycles = 0,
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "singlematSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1176,7 +1176,7 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
         Cycles = 0,
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "multipleSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1235,7 +1235,7 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }, new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
         Cycles = 0,
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "multipleprocSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1366,7 +1366,8 @@ namespace MachineWatchTest
       };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1, j2)
+        Jobs = ImmutableList.Create<Job>(j1, j2),
+        ScheduleId = "activeTimeSch"
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1423,7 +1424,7 @@ namespace MachineWatchTest
         PartName = "pppp",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }, new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "largeFixedSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
@@ -1478,7 +1479,7 @@ namespace MachineWatchTest
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "skipMachSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1530,7 +1531,7 @@ namespace MachineWatchTest
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "remachSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1606,7 +1607,8 @@ namespace MachineWatchTest
       };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create(j),
+        ScheduleId = "schinspections"
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1712,7 +1714,7 @@ namespace MachineWatchTest
           )
         }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j1, j2) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j1, j2), ScheduleId = "progsSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1754,7 +1756,7 @@ namespace MachineWatchTest
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) }
         ),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "translatesProgsSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -1795,7 +1797,8 @@ namespace MachineWatchTest
       };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create(j)
+        Jobs = ImmutableList.Create(j),
+        ScheduleId = "queueSch"
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -1868,7 +1871,8 @@ namespace MachineWatchTest
       };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1, j2)
+        Jobs = ImmutableList.Create<Job>(j1, j2),
+        ScheduleId = "queueSch"
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -2036,7 +2040,8 @@ namespace MachineWatchTest
       };
       var newJobs = new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "swapSch"
       };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
@@ -2104,7 +2109,7 @@ namespace MachineWatchTest
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "toolsSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow;
 
@@ -2167,7 +2172,7 @@ namespace MachineWatchTest
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "stockerSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -2217,7 +2222,7 @@ namespace MachineWatchTest
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "rotarySch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 
@@ -2253,7 +2258,7 @@ namespace MachineWatchTest
         PartName = "part1",
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }, new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j) }, null, addAsCopiedToSystem: true);
+      jobLog.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "quarantineSch" }, null, addAsCopiedToSystem: true);
 
       var t = DateTime.UtcNow.AddHours(-5);
 

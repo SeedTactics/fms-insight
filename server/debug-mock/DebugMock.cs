@@ -121,7 +121,7 @@ namespace DebugMachineWatchApiServer
 
   public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IDisposable
   {
-    public IRepository LogDB { get; private set; }
+    public RepositoryConfig Repo { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
@@ -155,12 +155,12 @@ namespace DebugMachineWatchApiServer
 
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
-        LogDB = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), DebugMockProgram.InsightBackupDbFile).OpenConnection();
+        Repo = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), DebugMockProgram.InsightBackupDbFile);
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
       }
       else
       {
-        LogDB = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings()).OpenConnection();
+        Repo = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
 
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -181,12 +181,12 @@ namespace DebugMachineWatchApiServer
 
     public void Dispose()
     {
-      LogDB.Dispose();
+      Repo.CloseMemoryConnection();
     }
 
     public IRepository OpenRepository()
     {
-      return LogDB;
+      return Repo.OpenConnection();
     }
 
     public IJobControl JobControl { get => this; }
@@ -225,12 +225,14 @@ namespace DebugMachineWatchApiServer
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell)
     {
+      using var LogDB = Repo.OpenConnection();
       LogDB.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       OnNewJobs?.Invoke(jobs);
     }
 
     public void SetJobComment(string jobUnique, string comment)
     {
+      using var LogDB = Repo.OpenConnection();
       Serilog.Log.Information("Setting comment for {job} to {comment}", jobUnique, comment);
       LogDB.SetJobComment(jobUnique, comment);
       CurrentStatus = CurrentStatus.Produce(draft =>
@@ -356,12 +358,15 @@ namespace DebugMachineWatchApiServer
           }).ToImmutableList()
       };
 
-      LogDB.RecordAddMaterialToQueue(
-        mat: new EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
-        queue: queue,
-        position: position,
-        operatorName: operatorName,
-        reason: "SetByOperator");
+      using (var LogDB = Repo.OpenConnection())
+      {
+        LogDB.RecordAddMaterialToQueue(
+          mat: new EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
+          queue: queue,
+          position: position,
+          operatorName: operatorName,
+          reason: "SetByOperator");
+      }
 
       OnNewStatus(CurrentStatus);
     }
@@ -374,9 +379,12 @@ namespace DebugMachineWatchApiServer
 
       if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
-        LogDB.SignalMaterialForQuarantine(
-          new EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
-        );
+        using (var LogDB = Repo.OpenConnection())
+        {
+          LogDB.SignalMaterialForQuarantine(
+            new EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
+          );
+        }
       }
       else if (mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
       {
@@ -500,6 +508,7 @@ namespace DebugMachineWatchApiServer
       var tools = JsonConvert.DeserializeObject<Dictionary<long, List<ToolUse>>>(
         System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tool-use.json")), _jsonSettings);
 
+      using var LogDB = Repo.OpenConnection();
       foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
       {
         foreach (var m in e.Material)
@@ -557,6 +566,7 @@ namespace DebugMachineWatchApiServer
         _jsonSettings
       );
 
+      using var LogDB = Repo.OpenConnection();
       foreach (var newJobs in allNewJobs)
       {
         var newJobsOffset = newJobs.Produce(newJobsDraft =>
@@ -673,14 +683,23 @@ namespace DebugMachineWatchApiServer
         }
       }
 
-      Programs = Newtonsoft.Json.Linq.JObject.Parse(lastAddSch)
-        ["mazakData"]["MainPrograms"].Select(prog => new MockProgram()
-        {
-          ProgramName = (string)prog["MainProgram"],
-          CellControllerProgramName = (string)prog["MainProgram"],
-          Comment = (string)prog["Comment"]
-        })
-        .ToList();
+      if (lastAddSch != null)
+      {
+
+        Programs = Newtonsoft.Json.Linq.JObject.Parse(lastAddSch)
+          ["mazakData"]["MainPrograms"].Select(prog => new MockProgram()
+          {
+            ProgramName = (string)prog["MainProgram"],
+            CellControllerProgramName = (string)prog["MainProgram"],
+            Comment = (string)prog["Comment"]
+          })
+          .ToList();
+
+      }
+      else
+      {
+        Programs = new List<MockProgram>();
+      }
 
       Tools = new List<ToolInMachine>();
 
@@ -692,6 +711,7 @@ namespace DebugMachineWatchApiServer
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
+      using var LogDB = Repo.OpenConnection();
       Serilog.Log.Information("Swapping {oldMatId} to {newMatId} on pallet {pallet}", oldMatId, newMatId, pallet);
       var o = LogDB.SwapMaterialInCurrentPalletCycle(
         pallet: pallet,
@@ -709,6 +729,7 @@ namespace DebugMachineWatchApiServer
 
     public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
     {
+      using var LogDB = Repo.OpenConnection();
       Serilog.Log.Information("Invalidating {matId} process {process}", matId, process);
       var o = LogDB.InvalidatePalletCycle(
         matId: matId,
@@ -720,6 +741,7 @@ namespace DebugMachineWatchApiServer
 
     public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
     {
+      using var LogDB = Repo.OpenConnection();
       LogDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
     }
   }

@@ -324,7 +324,7 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): Estim
 
 export const setLast30EstimatedCycleTimes = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
   (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30EstimatedTimesRW, estimateCycleTimesOfParts(log));
+    t.set(last30EstimatedTimesRW, (old) => (old.size === 0 ? estimateCycleTimesOfParts(log) : old));
   }
 );
 

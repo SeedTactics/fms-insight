@@ -280,6 +280,52 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
+    filteredHistory(startUTC: Date, endUTC: Date, alreadyKnownSchIds: string[]): Promise<HistoricData> {
+        let url_ = this.baseUrl + "/api/v1/jobs/history?";
+        if (startUTC === undefined || startUTC === null)
+            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+        else
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
+        if (endUTC === undefined || endUTC === null)
+            throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+        else
+            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(alreadyKnownSchIds);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processFilteredHistory(_response);
+        });
+    }
+
+    protected processFilteredHistory(response: Response): Promise<HistoricData> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = HistoricData.fromJS(resultData200);
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<HistoricData>(null as any);
+    }
+
     recent(afterScheduleId: string | null): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/recent?";
         if (afterScheduleId === undefined)
@@ -1166,12 +1212,14 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    recent(lastSeenCounter: number): Promise<LogEntry[]> {
+    recent(lastSeenCounter: number, expectedEndUTCofLastSeen: Date | null | undefined): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/recent?";
         if (lastSeenCounter === undefined || lastSeenCounter === null)
             throw new Error("The parameter 'lastSeenCounter' must be defined and cannot be null.");
         else
             url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&";
+        if (expectedEndUTCofLastSeen !== undefined && expectedEndUTCofLastSeen !== null)
+            url_ += "expectedEndUTCofLastSeen=" + encodeURIComponent(expectedEndUTCofLastSeen ? "" + expectedEndUTCofLastSeen.toISOString() : "") + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {

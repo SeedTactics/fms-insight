@@ -217,6 +217,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       AddJobs(new NewJobs()
       {
         Jobs = jobs,
+        ScheduleId = "theschId",
         Programs =
             progs.Select(p =>
             new MachineFramework.NewProgramContent()

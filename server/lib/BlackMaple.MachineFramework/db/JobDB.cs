@@ -605,8 +605,45 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<SimulatedStationUtilization> LoadSimulatedStationUse(
-        IDbCommand cmd, IDbCommand partCmd, IDbTransaction trans)
+    private void CheckScheduleIdDoesNotExist(IDbTransaction trans, string schID)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText = "SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1";
+        cmd.Parameters.Add("sid", SqliteType.Text).Value = schID;
+
+        object val = cmd.ExecuteScalar();
+        if (val != null)
+        {
+          throw new BadRequestException($"Schedule ID {schID} already exists!");
+        }
+      }
+    }
+
+    private void EnsureScheduleIdsExist(IDbTransaction trans, IEnumerable<string> schIDs)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText = "SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1";
+
+        foreach (var schId in schIDs)
+        {
+          cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+
+          object val = cmd.ExecuteScalar();
+          if (val == null)
+          {
+            throw new ConflictRequestException($"Schedule ID {schId} does not exist");
+          }
+        }
+      }
+    }
+
+    private ImmutableList<SimulatedStationUtilization> LoadSimulatedStationUse(IDbCommand cmd, IDbCommand partCmd)
     {
       var rows = new SortedDictionary<SimStatUseKey, SimStatUseRow>();
 
@@ -668,36 +705,58 @@ namespace BlackMaple.MachineFramework
       }).ToImmutableList();
     }
 
-    private HistoricData LoadHistory(IDbCommand jobCmd, IDbCommand simCmd, IDbCommand simPartCmd)
+    private HistoricData LoadHistory(SqliteCommand createTempCmd, IEnumerable<string> alreadyKnownSchIds = null)
     {
-      lock (_cfg)
+
+      using (var trans = _connection.BeginTransaction())
       {
-        var jobs = ImmutableDictionary<string, HistoricJob>.Empty;
-        var statUse = ImmutableList<SimulatedStationUtilization>.Empty;
-
-        var trans = _connection.BeginTransaction();
-        try
+        if (alreadyKnownSchIds != null)
         {
-          jobCmd.Transaction = trans;
-          simCmd.Transaction = trans;
-          simPartCmd.Transaction = trans;
-
-          jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr);
-          statUse = LoadSimulatedStationUse(simCmd, simPartCmd, trans);
-
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
+          EnsureScheduleIdsExist(trans, alreadyKnownSchIds);
         }
 
-        return new HistoricData()
+        createTempCmd.Transaction = trans;
+        createTempCmd.ExecuteNonQuery();
+
+        if (alreadyKnownSchIds != null)
         {
-          Jobs = jobs,
-          StationUse = statUse
+          using (var delSchIds = _connection.CreateCommand())
+          {
+            delSchIds.Transaction = trans;
+            delSchIds.CommandText = "DELETE FROM temp_sch_ids WHERE ScheduleId = $schId";
+            delSchIds.Parameters.Add("schId", SqliteType.Text);
+            foreach (var schId in alreadyKnownSchIds)
+            {
+              delSchIds.Parameters["schId"].Value = schId;
+              delSchIds.ExecuteNonQuery();
+            }
+          }
+        }
+
+        using var jobCmd = _connection.CreateCommand();
+        jobCmd.Transaction = trans;
+        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
+            " FROM jobs WHERE ScheduleId IN temp_sch_ids";
+
+        using var simCmd = _connection.CreateCommand();
+        simCmd.Transaction = trans;
+        simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime " +
+          " FROM sim_station_use WHERE SimId IN temp_sch_ids";
+
+        using var simPartCmd = _connection.CreateCommand();
+        simPartCmd.Transaction = trans;
+        simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path " +
+          " FROM sim_station_use_parts WHERE SimId IN temp_sch_ids";
+
+        var history = new HistoricData()
+        {
+          Jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr),
+          StationUse = LoadSimulatedStationUse(simCmd, simPartCmd)
         };
+
+        trans.Rollback();
+
+        return history;
       }
     }
 
@@ -739,170 +798,135 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC)
+    public HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> alreadyKnownSchIds = null)
     {
-      using (var jobCmd = _connection.CreateCommand())
-      using (var simCmd = _connection.CreateCommand())
-      using (var simPartCmd = _connection.CreateCommand())
+      using (var createTempCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
-            " FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start";
-        jobCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-        jobCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-        simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
-            " WHERE EndUTC >= $start AND StartUTC <= $end";
-        simCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-        simCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-        simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path FROM sim_station_use_parts " +
-            " WHERE EndUTC >= $start AND StartUTC <= $end";
-        simPartCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
-        simPartCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-
-        return LoadHistory(jobCmd, simCmd, simPartCmd);
+        createTempCmd.CommandText = "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND ScheduleId IS NOT NULL";
+        createTempCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+        createTempCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
+        return LoadHistory(createTempCmd, alreadyKnownSchIds);
       }
     }
 
     public HistoricData LoadJobsAfterScheduleId(string schId)
     {
-      using (var jobCmd = _connection.CreateCommand())
-      using (var simCmd = _connection.CreateCommand())
-      using (var simPartCmd = _connection.CreateCommand())
+      using (var createTempCmd = _connection.CreateCommand())
       {
-        jobCmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
-            " FROM jobs WHERE ScheduleId > $sid";
-        jobCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-
-        simCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
-            " WHERE SimId > $sid";
-        simCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-
-        simPartCmd.CommandText = "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path FROM sim_station_use_parts " +
-            " WHERE SimId > $sid";
-        simPartCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-
-        return LoadHistory(jobCmd, simCmd, simPartCmd);
+        createTempCmd.CommandText = "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE ScheduleId > $sid AND ScheduleId IS NOT NULL";
+        createTempCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+        return LoadHistory(createTempCmd, new[] { schId });
       }
     }
 
     public IReadOnlyList<Workorder> MostRecentWorkorders()
     {
-      lock (_cfg)
+      using (var trans = _connection.BeginTransaction())
       {
-        using (var trans = _connection.BeginTransaction())
-        {
-          var sid = LatestScheduleId(trans);
-          return LoadUnfilledWorkorders(trans, sid);
-        }
+        var sid = LatestScheduleId(trans);
+        return LoadUnfilledWorkorders(trans, sid);
       }
     }
 
     public List<Workorder> MostRecentUnfilledWorkordersForPart(string part)
     {
-      lock (_cfg)
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var trans = _connection.BeginTransaction())
-        using (var cmd = _connection.CreateCommand())
+        cmd.Transaction = trans;
+
+        var sid = LatestScheduleId(trans);
+
+        var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
+        cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
+          " FROM unfilled_workorders w " +
+          " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
+          " WHERE w.ScheduleId = $sid AND w.Part = $part AND (Archived IS NULL OR Archived != 1)";
+        cmd.Parameters.Add("sid", SqliteType.Text).Value = sid;
+        cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+
+        using (IDataReader reader = cmd.ExecuteReader())
         {
-          cmd.Transaction = trans;
-
-          var sid = LatestScheduleId(trans);
-
-          var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
-          cmd.CommandText = "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
-            " FROM unfilled_workorders w " +
-            " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
-            " WHERE w.ScheduleId = $sid AND w.Part = $part AND (Archived IS NULL OR Archived != 1)";
-          cmd.Parameters.Add("sid", SqliteType.Text).Value = sid;
-          cmd.Parameters.Add("part", SqliteType.Text).Value = part;
-
-          using (IDataReader reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
+            var workId = reader.GetString(0);
+            if (!ret.ContainsKey(workId))
             {
-              var workId = reader.GetString(0);
-              if (!ret.ContainsKey(workId))
+              var workorder = new Workorder()
               {
-                var workorder = new Workorder()
-                {
-                  WorkorderId = workId,
-                  Part = part,
-                  Quantity = reader.GetInt32(1),
-                  DueDate = new DateTime(reader.GetInt64(2)),
-                  Priority = reader.GetInt32(3)
-                };
-                ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
-              }
-
-              if (reader.IsDBNull(4)) continue;
-
-              // add the program
-              ret[workId].progs.Add(new ProgramForJobStep()
-              {
-                ProcessNumber = reader.GetInt32(4),
-                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-              });
+                WorkorderId = workId,
+                Part = part,
+                Quantity = reader.GetInt32(1),
+                DueDate = new DateTime(reader.GetInt64(2)),
+                Priority = reader.GetInt32(3)
+              };
+              ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
             }
-          }
 
-          trans.Commit();
-          return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
+            if (reader.IsDBNull(4)) continue;
+
+            // add the program
+            ret[workId].progs.Add(new ProgramForJobStep()
+            {
+              ProcessNumber = reader.GetInt32(4),
+              StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+              ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+              Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+            });
+          }
         }
+
+        trans.Commit();
+        return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
       }
     }
 
     public List<Workorder> WorkordersById(string workorderId)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
+        var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
+        cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
+          " FROM unfilled_workorders w " +
+          " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
+          " WHERE " +
+          "    w.ScheduleId = (SELECT MAX(v.ScheduleId) FROM unfilled_workorders v WHERE v.Workorder = $work)" +
+          "    AND w.Workorder = $work";
+        cmd.Parameters.Add("work", SqliteType.Text).Value = workorderId;
+
+        using (IDataReader reader = cmd.ExecuteReader())
         {
-          var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
-          cmd.CommandText = "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision" +
-            " FROM unfilled_workorders w " +
-            " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part " +
-            " WHERE " +
-            "    w.ScheduleId = (SELECT MAX(v.ScheduleId) FROM unfilled_workorders v WHERE v.Workorder = $work)" +
-            "    AND w.Workorder = $work";
-          cmd.Parameters.Add("work", SqliteType.Text).Value = workorderId;
-
-          using (IDataReader reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
+            var part = reader.GetString(0);
+
+            if (!ret.ContainsKey(part))
             {
-              var part = reader.GetString(0);
-
-              if (!ret.ContainsKey(part))
+              var workorder = new Workorder()
               {
-                var workorder = new Workorder()
-                {
-                  WorkorderId = workorderId,
-                  Part = part,
-                  Quantity = reader.GetInt32(1),
-                  DueDate = new DateTime(reader.GetInt64(2)),
-                  Priority = reader.GetInt32(3)
-                };
-                ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
-              }
-
-              if (reader.IsDBNull(4)) continue;
-
-              // add the program
-              ret[part].progs.Add(new ProgramForJobStep()
-              {
-                ProcessNumber = reader.GetInt32(4),
-                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-              });
+                WorkorderId = workorderId,
+                Part = part,
+                Quantity = reader.GetInt32(1),
+                DueDate = new DateTime(reader.GetInt64(2)),
+                Priority = reader.GetInt32(3)
+              };
+              ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
             }
-          }
 
-          return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
+            if (reader.IsDBNull(4)) continue;
+
+            // add the program
+            ret[part].progs.Add(new ProgramForJobStep()
+            {
+              ProcessNumber = reader.GetInt32(4),
+              StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+              ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+              Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+            });
+          }
         }
+
+        return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
       }
     }
 
@@ -913,98 +937,89 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg" +
                   " FROM jobs WHERE ScheduleId = $sid";
 
-        lock (_cfg)
+        using (var trans = _connection.BeginTransaction())
         {
-          using (var trans = _connection.BeginTransaction())
+          var latestSchId = LatestScheduleId(trans);
+          cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
+          cmd.Transaction = trans;
+          return new PlannedSchedule()
           {
-            var latestSchId = LatestScheduleId(trans);
-            cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
-            cmd.Transaction = trans;
-            return new PlannedSchedule()
-            {
-              LatestScheduleId = latestSchId,
-              Jobs = LoadJobsHelper(cmd, trans),
-              ExtraParts = LoadExtraParts(trans, latestSchId),
-              CurrentUnfilledWorkorders = LoadUnfilledWorkorders(trans, latestSchId),
-            };
-          }
+            LatestScheduleId = latestSchId,
+            Jobs = LoadJobsHelper(cmd, trans),
+            ExtraParts = LoadExtraParts(trans, latestSchId),
+            CurrentUnfilledWorkorders = LoadUnfilledWorkorders(trans, latestSchId),
+          };
         }
       }
     }
 
     public HistoricJob LoadJob(string UniqueStr)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
+
+        HistoricJob job = null;
+
+        cmd.CommandText = "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg FROM jobs WHERE UniqueStr = $uniq";
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
+
+        var trans = _connection.BeginTransaction();
+        try
         {
+          cmd.Transaction = trans;
 
-          HistoricJob job = null;
-
-          cmd.CommandText = "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg FROM jobs WHERE UniqueStr = $uniq";
-          cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
-
-          var trans = _connection.BeginTransaction();
-          try
+          using (IDataReader reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-
-            using (IDataReader reader = cmd.ExecuteReader())
+            if (reader.Read())
             {
-              if (reader.Read())
+
+              var details = LoadJobData(UniqueStr, trans);
+
+              job = new HistoricJob()
               {
-
-                var details = LoadJobData(UniqueStr, trans);
-
-                job = new HistoricJob()
-                {
-                  UniqueStr = UniqueStr,
-                  PartName = reader.GetString(0),
-                  Comment = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                  RouteStartUTC = reader.IsDBNull(3) ? DateTime.MinValue : new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
-                  RouteEndUTC = reader.IsDBNull(4) ? DateTime.MaxValue : new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
-                  Archived = reader.GetBoolean(5),
-                  CopiedToSystem = reader.IsDBNull(6) ? false : reader.GetBoolean(6),
-                  ScheduleId = reader.IsDBNull(7) ? null : reader.GetString(7),
-                  ManuallyCreated = !reader.IsDBNull(8) && reader.GetBoolean(8),
-                  AllocationAlgorithm = reader.IsDBNull(9) ? null : reader.GetString(9),
-                  Cycles = details.CyclesOnFirstProc.Sum(),
-                  Processes = details.Procs,
-                  BookingIds = details.Bookings,
-                  HoldJob = details.Hold?.ToHoldPattern(),
-                  Decrements = LoadDecrementsForJob(trans, UniqueStr)
-                };
-              }
+                UniqueStr = UniqueStr,
+                PartName = reader.GetString(0),
+                Comment = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                RouteStartUTC = reader.IsDBNull(3) ? DateTime.MinValue : new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+                RouteEndUTC = reader.IsDBNull(4) ? DateTime.MaxValue : new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+                Archived = reader.GetBoolean(5),
+                CopiedToSystem = reader.IsDBNull(6) ? false : reader.GetBoolean(6),
+                ScheduleId = reader.IsDBNull(7) ? null : reader.GetString(7),
+                ManuallyCreated = !reader.IsDBNull(8) && reader.GetBoolean(8),
+                AllocationAlgorithm = reader.IsDBNull(9) ? null : reader.GetString(9),
+                Cycles = details.CyclesOnFirstProc.Sum(),
+                Processes = details.Procs,
+                BookingIds = details.Bookings,
+                HoldJob = details.Hold?.ToHoldPattern(),
+                Decrements = LoadDecrementsForJob(trans, UniqueStr)
+              };
             }
-
-            trans.Commit();
-          }
-          catch
-          {
-            trans.Rollback();
-            throw;
           }
 
-          return job;
+          trans.Commit();
         }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+
+        return job;
       }
     }
 
     public bool DoesJobExist(string unique)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT COUNT(*) FROM jobs WHERE UniqueStr = $uniq";
-          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+        cmd.CommandText = "SELECT COUNT(*) FROM jobs WHERE UniqueStr = $uniq";
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
 
-          object cnt = cmd.ExecuteScalar();
-          if (cnt != null & Convert.ToInt32(cnt) > 0)
-            return true;
-          else
-            return false;
-        }
+        object cnt = cmd.ExecuteScalar();
+        if (cnt != null & Convert.ToInt32(cnt) > 0)
+          return true;
+        else
+          return false;
       }
     }
 
@@ -1014,6 +1029,11 @@ namespace BlackMaple.MachineFramework
 
     public void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem)
     {
+      if (string.IsNullOrEmpty(newJobs.ScheduleId))
+      {
+        throw new BadRequestException("NewJobs must specify a ScheduleId");
+      }
+
       lock (_cfg)
       {
         var trans = _connection.BeginTransaction();
@@ -1027,6 +1047,8 @@ namespace BlackMaple.MachineFramework
               throw new BadRequestException(string.Format("Mismatch in previous schedule: expected '{0}' but got '{1}'", expectedPreviousScheduleId, last));
             }
           }
+
+          CheckScheduleIdDoesNotExist(trans, newJobs.ScheduleId);
 
           // add programs first so that the lookup of latest program revision will use newest programs
           var startingUtc = DateTime.UtcNow;
@@ -1044,17 +1066,17 @@ namespace BlackMaple.MachineFramework
 
           AddSimulatedStations(trans, newJobs.StationUse);
 
-          if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.ExtraParts != null)
+          if (newJobs.ExtraParts != null)
           {
             AddExtraParts(trans, newJobs.ScheduleId, newJobs.ExtraParts);
           }
 
-          if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.CurrentUnfilledWorkorders != null)
+          if (newJobs.CurrentUnfilledWorkorders != null)
           {
             AddUnfilledWorkorders(trans, newJobs.ScheduleId, newJobs.CurrentUnfilledWorkorders, negRevisionMap);
           }
 
-          if (!string.IsNullOrEmpty(newJobs.ScheduleId) && newJobs.DebugMessage != null)
+          if (newJobs.DebugMessage != null)
           {
             using (var cmd = _connection.CreateCommand())
             {
@@ -1986,10 +2008,7 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<DecrementQuantity> LoadDecrementsForJob(string unique)
     {
-      lock (_cfg)
-      {
-        return LoadDecrementsForJob(trans: null, unique: unique);
-      }
+      return LoadDecrementsForJob(trans: null, unique: unique);
     }
 
     private ImmutableList<DecrementQuantity> LoadDecrementsForJob(IDbTransaction trans, string unique)
@@ -2019,27 +2038,21 @@ namespace BlackMaple.MachineFramework
 
     public List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM job_decrements WHERE DecrementId > $after";
-          cmd.Parameters.Add("after", SqliteType.Integer).Value = afterId;
-          return LoadDecrementQuantitiesHelper(cmd);
-        }
+        cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM job_decrements WHERE DecrementId > $after";
+        cmd.Parameters.Add("after", SqliteType.Integer).Value = afterId;
+        return LoadDecrementQuantitiesHelper(cmd);
       }
     }
 
     public List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC)
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
       {
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM job_decrements WHERE TimeUTC > $after";
-          cmd.Parameters.Add("after", SqliteType.Integer).Value = afterUTC.Ticks;
-          return LoadDecrementQuantitiesHelper(cmd);
-        }
+        cmd.CommandText = "SELECT DecrementId,JobUnique,TimeUTC,Part,Quantity FROM job_decrements WHERE TimeUTC > $after";
+        cmd.Parameters.Add("after", SqliteType.Integer).Value = afterUTC.Ticks;
+        return LoadDecrementQuantitiesHelper(cmd);
       }
     }
 
@@ -2202,233 +2215,215 @@ namespace BlackMaple.MachineFramework
 
     public ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
+        ProgramRevision prog = null;
+        using (var cmd = _connection.CreateCommand())
         {
-          ProgramRevision prog = null;
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
+          cmd.Parameters.Add("prog", SqliteType.Text).Value = cellCtProgName;
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-            cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
-            cmd.Parameters.Add("prog", SqliteType.Text).Value = cellCtProgName;
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              prog = new ProgramRevision
               {
-                prog = new ProgramRevision
-                {
-                  ProgramName = reader.GetString(0),
-                  Revision = reader.GetInt64(1),
-                  Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
-                  CellControllerProgramName = cellCtProgName
-                };
-                break;
-              }
+                ProgramName = reader.GetString(0),
+                Revision = reader.GetInt64(1),
+                Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
+                CellControllerProgramName = cellCtProgName
+              };
+              break;
             }
           }
-          trans.Commit();
-          return prog;
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        trans.Commit();
+        return prog;
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
     public ProgramRevision LoadProgram(string program, long revision)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
+        ProgramRevision prog = null;
+        using (var cmd = _connection.CreateCommand())
         {
-          ProgramRevision prog = null;
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+          cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-            cmd.CommandText = "SELECT RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
-            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-            cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              prog = new ProgramRevision
               {
-                prog = new ProgramRevision
-                {
-                  ProgramName = program,
-                  Revision = revision,
-                  Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
-                  CellControllerProgramName = reader.IsDBNull(1) ? null : reader.GetString(1)
-                };
-                break;
-              }
+                ProgramName = program,
+                Revision = revision,
+                Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
+                CellControllerProgramName = reader.IsDBNull(1) ? null : reader.GetString(1)
+              };
+              break;
             }
           }
-          trans.Commit();
-          return prog;
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        trans.Commit();
+        return prog;
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
     public List<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(string program, int count, long? startRevision)
     {
       count = Math.Min(count, 100);
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
+      using (var trans = _connection.BeginTransaction())
       {
-        using (var cmd = _connection.CreateCommand())
-        using (var trans = _connection.BeginTransaction())
+        cmd.Transaction = trans;
+        if (startRevision.HasValue)
         {
-          cmd.Transaction = trans;
-          if (startRevision.HasValue)
-          {
-            cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
-                                " WHERE ProgramName = $prog AND ProgramRevision <= $rev " +
-                                " ORDER BY ProgramRevision DESC " +
-                                " LIMIT $cnt";
-            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-            cmd.Parameters.Add("rev", SqliteType.Integer).Value = startRevision.Value;
-            cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
-          }
-          else
-          {
-            cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
-                                " WHERE ProgramName = $prog " +
-                                " ORDER BY ProgramRevision DESC " +
-                                " LIMIT $cnt";
-            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-            cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
-          }
+          cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
+                              " WHERE ProgramName = $prog AND ProgramRevision <= $rev " +
+                              " ORDER BY ProgramRevision DESC " +
+                              " LIMIT $cnt";
+          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+          cmd.Parameters.Add("rev", SqliteType.Integer).Value = startRevision.Value;
+          cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
+        }
+        else
+        {
+          cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
+                              " WHERE ProgramName = $prog " +
+                              " ORDER BY ProgramRevision DESC " +
+                              " LIMIT $cnt";
+          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+          cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
+        }
 
-          using (var reader = cmd.ExecuteReader())
+        using (var reader = cmd.ExecuteReader())
+        {
+          var ret = new List<ProgramRevision>();
+          while (reader.Read())
           {
-            var ret = new List<ProgramRevision>();
-            while (reader.Read())
+            ret.Add(new ProgramRevision
             {
-              ret.Add(new ProgramRevision
-              {
-                ProgramName = program,
-                Revision = reader.GetInt64(0),
-                Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
-                CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
-              });
-            }
-            return ret;
+              ProgramName = program,
+              Revision = reader.GetInt64(0),
+              Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
+              CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+            });
           }
+          return ret;
         }
       }
     }
 
     public ProgramRevision LoadMostRecentProgram(string program)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
+        ProgramRevision prog = null;
+        using (var cmd = _connection.CreateCommand())
         {
-          ProgramRevision prog = null;
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-            cmd.CommandText = "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
-            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              prog = new ProgramRevision
               {
-                prog = new ProgramRevision
-                {
-                  ProgramName = program,
-                  Revision = reader.GetInt64(0),
-                  Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
-                  CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
-                };
-                break;
-              }
+                ProgramName = program,
+                Revision = reader.GetInt64(0),
+                Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
+                CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+              };
+              break;
             }
           }
-          trans.Commit();
-          return prog;
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        trans.Commit();
+        return prog;
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
     public string LoadProgramContent(string program, long revision)
     {
-      lock (_cfg)
+      var trans = _connection.BeginTransaction();
+      try
       {
-        var trans = _connection.BeginTransaction();
-        try
+        string content = null;
+        using (var cmd = _connection.CreateCommand())
         {
-          string content = null;
-          using (var cmd = _connection.CreateCommand())
+          cmd.Transaction = trans;
+          cmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+          cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
+          using (var reader = cmd.ExecuteReader())
           {
-            cmd.Transaction = trans;
-            cmd.CommandText = "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
-            cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-            cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
-            using (var reader = cmd.ExecuteReader())
+            while (reader.Read())
             {
-              while (reader.Read())
+              if (!reader.IsDBNull(0))
               {
-                if (!reader.IsDBNull(0))
-                {
-                  content = reader.GetString(0);
-                }
-                break;
+                content = reader.GetString(0);
               }
+              break;
             }
           }
-          trans.Commit();
-          return content;
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        trans.Commit();
+        return content;
+      }
+      catch
+      {
+        trans.Rollback();
+        throw;
       }
     }
 
     public List<ProgramRevision> LoadProgramsInCellController()
     {
-      lock (_cfg)
+      using (var cmd = _connection.CreateCommand())
+      using (var trans = _connection.BeginTransaction())
       {
-        using (var cmd = _connection.CreateCommand())
-        using (var trans = _connection.BeginTransaction())
-        {
-          cmd.Transaction = trans;
-          cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
-                            " WHERE CellControllerProgramName IS NOT NULL";
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT ProgramName, ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions " +
+                          " WHERE CellControllerProgramName IS NOT NULL";
 
-          using (var reader = cmd.ExecuteReader())
+        using (var reader = cmd.ExecuteReader())
+        {
+          var ret = new List<ProgramRevision>();
+          while (reader.Read())
           {
-            var ret = new List<ProgramRevision>();
-            while (reader.Read())
+            ret.Add(new ProgramRevision
             {
-              ret.Add(new ProgramRevision
-              {
-                ProgramName = reader.GetString(0),
-                Revision = reader.GetInt64(1),
-                Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
-                CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3)
-              });
-            }
-            return ret;
+              ProgramName = reader.GetString(0),
+              Revision = reader.GetInt64(1),
+              Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
+              CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3)
+            });
           }
+          return ret;
         }
       }
     }

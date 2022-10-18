@@ -481,19 +481,22 @@ namespace MachineWatchTest
 
       IList<LogEntry> otherLogs = null;
 
-      otherLogs = _jobLog.GetLogEntries(start, DateTime.UtcNow);
+      otherLogs = _jobLog.GetLogEntries(start, DateTime.UtcNow).ToList();
       CheckLog(logs, otherLogs, start);
 
-      otherLogs = _jobLog.GetLogEntries(start.AddHours(5), DateTime.UtcNow);
+      otherLogs = _jobLog.GetLogEntries(start.AddHours(5), DateTime.UtcNow).ToList();
       CheckLog(logs, otherLogs, start.AddHours(5));
 
-      otherLogs = _jobLog.GetLog(loadEndActualCycle.First().Counter);
+      otherLogs = _jobLog.GetRecentLog(loadEndActualCycle.First().Counter).ToList();
       CheckLog(logs, otherLogs, start.AddHours(4));
 
-      otherLogs = _jobLog.GetLog(unloadStartActualCycle.Counter);
+      otherLogs = _jobLog.GetRecentLog(unloadStartActualCycle.Counter, unloadStartActualCycle.EndTimeUTC).ToList();
       CheckLog(logs, otherLogs, start.AddHours(6.5));
 
-      otherLogs = _jobLog.GetLog(unloadEndActualCycle.First().Counter);
+      _jobLog.Invoking(j => j.GetRecentLog(unloadStartActualCycle.Counter, new DateTime(2000, 2, 3, 4, 5, 6)).ToList())
+        .Should().Throw<ConflictRequestException>("Counter " + unloadStartActualCycle.Counter.ToString() + " has different end time");
+
+      otherLogs = _jobLog.GetRecentLog(unloadEndActualCycle.First().Counter).ToList();
       Assert.Equal(0, otherLogs.Count);
 
       foreach (var c in logs)
@@ -513,7 +516,7 @@ namespace MachineWatchTest
       logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetSerialInMat("ser1"))).ToList();
       logs = logs.Select(TransformLog(mat1.MaterialID, SetSerialInMat("ser1"))).ToList();
       mat1 = SetSerialInMat("ser1")(mat1);
-      CheckLog(logsForMat1, _jobLog.GetLogForSerial("ser1"), start);
+      CheckLog(logsForMat1, _jobLog.GetLogForSerial("ser1").ToList(), start);
       _jobLog.GetLogForSerial("ser2").Should().BeEmpty();
 
       var orderLog = _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat1), "work1");
@@ -524,10 +527,10 @@ namespace MachineWatchTest
       logs = logs.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       mat1 = SetWorkorderInMat("work1")(mat1);
       var finalize = _jobLog.RecordFinalizedWorkorder("work1");
-      CheckLog(logsForMat1.Append(finalize).ToList(), _jobLog.GetLogForWorkorder("work1"), start);
+      CheckLog(logsForMat1.Append(finalize).ToList(), _jobLog.GetLogForWorkorder("work1").ToList(), start);
       _jobLog.GetLogForWorkorder("work2").Should().BeEmpty();
 
-      CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);
+      CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr).ToList(), start);
       _jobLog.GetLogForJobUnique("sofusadouf").Should().BeEmpty();
 
       //inspection, wash, and general
@@ -570,7 +573,7 @@ namespace MachineWatchTest
       };
       logsForMat1.Add(expectedNotesLog);
 
-      CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr), start);
+      CheckLog(logsForMat1, _jobLog.GetLogForJobUnique(mat1.JobUniqueStr).ToList(), start);
     }
 
     [Fact]
@@ -635,7 +638,7 @@ namespace MachineWatchTest
           "", false, pal1InitialTime.AddMinutes(25), "PalletCycle", false, TimeSpan.Zero, TimeSpan.Zero));
 
       Assert.Equal(pal1InitialTime.AddMinutes(25), _jobLog.LastPalletCycleTime("pal1"));
-      CheckLog(pal1Initial, _jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow), DateTime.UtcNow.AddHours(-50));
+      CheckLog(pal1Initial, _jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow).ToList(), DateTime.UtcNow.AddHours(-50));
       _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
       _jobLog.CurrentPalletLog("pal2").Should().BeEmpty();
 
@@ -755,7 +758,7 @@ namespace MachineWatchTest
 
       // add invalidated and swap when loading all entries
       CheckLog(pal1Cycle.Append(invalidated).Append(swap).ToList(),
-         _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow),
+         _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow).ToList(),
          DateTime.UtcNow.AddHours(-50));
 
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog("pal2"), DateTime.UtcNow.AddHours(-10));
@@ -1080,7 +1083,7 @@ namespace MachineWatchTest
       CheckLog(
         new[] {mat1_proc1old, mat1_proc1complete, mat1_proc2old, mat1_proc2complete,
           mat4recent, mat4complete},
-       _jobLog.GetCompletedPartLogs(recent.AddHours(-4), recent.AddHours(4)),
+       _jobLog.GetCompletedPartLogs(recent.AddHours(-4), recent.AddHours(4)).ToList(),
         DateTime.MinValue);
     }
 
@@ -1642,7 +1645,7 @@ namespace MachineWatchTest
 
       matRet.Logs.Should().BeEquivalentTo(expectedLogs, options => options.Excluding(o => o.Counter).ComparingByMembers<LogEntry>());
 
-      _jobLog.GetLog(-1).Should().BeEquivalentTo(
+      _jobLog.GetRecentLog(-1).Should().BeEquivalentTo(
         expectedLogs
         .Concat(existingMats ?
           new[] {
@@ -2089,7 +2092,8 @@ namespace MachineWatchTest
                   Casting = rawMatName
                 })
               })
-            })
+            }),
+            ScheduleId = "anotherSchId"
           }, null, true);
         }
         newMatId = _jobLog.AllocateMaterialIDForCasting(rawMatName ?? "part1");
@@ -2338,7 +2342,8 @@ namespace MachineWatchTest
               Casting = "thecasting"
             })
           })
-        })
+        }),
+        ScheduleId = "aschId"
       }, null, true);
 
       var firstMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
@@ -2905,7 +2910,7 @@ namespace MachineWatchTest
       _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, generateSerials: true);
 
       JobLogTest.CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3 },
-         _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
+         _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)).ToList(), t.AddMinutes(-10));
 
       JobLogTest.CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
       JobLogTest.CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);
@@ -3004,7 +3009,7 @@ namespace MachineWatchTest
       _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, generateSerials: true);
 
       JobLogTest.CheckLog(new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, nLoad3, ser1, ser3 },
-         _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)), t.AddMinutes(-10));
+         _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)).ToList(), t.AddMinutes(-10));
 
       JobLogTest.CheckEqual(nLoad1, _jobLog.StationLogByForeignID("for1")[0]);
       JobLogTest.CheckEqual(nLoad2, _jobLog.StationLogByForeignID("for2")[0]);

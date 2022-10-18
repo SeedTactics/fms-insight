@@ -36,6 +36,11 @@ import { User } from "oidc-client-ts";
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
+  filteredHistory(
+    startUTC: Date,
+    endUTC: Date,
+    alreadyKnownSchIds: string[]
+  ): Promise<Readonly<api.IHistoricData>>;
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
   mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IWorkorder>>>;
   setJobComment(unique: string, comment: string): Promise<void>;
@@ -92,7 +97,10 @@ export interface FmsAPI {
 
 export interface LogAPI {
   get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  recent(lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  recent(
+    lastSeenCounter: number,
+    expectedEndUTCofLastSeen: Date | null | undefined
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;

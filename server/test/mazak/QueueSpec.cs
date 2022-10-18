@@ -163,7 +163,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch11",
       }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -218,7 +219,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch22",
       }, null, addAsCopiedToSystem: true);
 
       // add the material which matches the schedule
@@ -278,7 +280,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch33"
       }, null, addAsCopiedToSystem: true);
 
       // add the material which matches the schedule
@@ -339,7 +342,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch44"
       }, null, addAsCopiedToSystem: true);
 
       // put 2 allocated casting in queue
@@ -397,7 +401,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch55",
       }, null, addAsCopiedToSystem: true);
 
       // put 2 allocated casting in queue
@@ -537,7 +542,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch66"
       }, null, addAsCopiedToSystem: true);
 
       // put a different casting
@@ -626,7 +632,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch77"
       }, null, addAsCopiedToSystem: true);
 
 
@@ -713,7 +720,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch88"
       }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -804,7 +812,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch99"
       }, null, addAsCopiedToSystem: true);
 
       // put 3 unassigned castings in queue
@@ -871,7 +880,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch011"
       }, null, addAsCopiedToSystem: true);
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -913,7 +923,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch012",
       }, null, addAsCopiedToSystem: true);
 
       // put 2 assigned castings in queue
@@ -1015,7 +1026,8 @@ namespace MachineWatchTest
 
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1, j2)
+        Jobs = ImmutableList.Create<Job>(j1, j2),
+        ScheduleId = "sch013"
       }, null, addAsCopiedToSystem: true);
     }
 
@@ -1562,7 +1574,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch014"
       }, null, addAsCopiedToSystem: true);
 
       // put 1 castings in queue
@@ -1630,7 +1643,8 @@ namespace MachineWatchTest
       };
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j)
+        Jobs = ImmutableList.Create<Job>(j),
+        ScheduleId = "sch015"
       }, null, addAsCopiedToSystem: true);
 
       // put 1 castings in queue
@@ -1720,7 +1734,8 @@ namespace MachineWatchTest
       }
       _logDB.AddJobs(new NewJobs()
       {
-        Jobs = ImmutableList.Create<Job>(j1, j2)
+        Jobs = ImmutableList.Create<Job>(j1, j2),
+        ScheduleId = "sch016"
       }, null, addAsCopiedToSystem: true);
 
 

@@ -80,7 +80,7 @@ namespace MachineWatchTest
       var mat2_2 = new LogMaterial(2, "uuu1", 1, "part1", 2, "serial2", "", face: "D");
       var mat3 = new LogMaterial(3, "uuu2", 1, "part2", 1, "", "work3", face: "E");
 
-      _log.GetLogEntries(now, now.AddDays(1)).Should().BeEquivalentTo(new[] {
+      _log.GetLogEntries(now, now.AddDays(1)).ToList().Should().BeEquivalentTo(new[] {
   new LogEntry(
     cntr: -1,
     mat: new [] {mat1_1, mat2_1},
@@ -259,29 +259,29 @@ namespace MachineWatchTest
 
       _log.AddJobs(new NewJobs()
       {
-        ScheduleId = newJob.ScheduleId,
+        ScheduleId = newJob.ScheduleId + "newSch",
         Jobs = ImmutableList.Create<Job>(newJob)
       }, null, addAsCopiedToSystem: true);
 
       var actual = _log.LoadJob("mynewunique");
 
-      actual.Should().BeEquivalentTo(newJob);
+      actual.Should().BeEquivalentTo(newJob with { ScheduleId = newJob.ScheduleId + "newSch" });
 
       var now = DateTime.UtcNow;
       _log.AddNewDecrement(new[] {
-  new NewDecrementQuantity() {
-    JobUnique = "mynewunique",
-    Part = "thepart",
-    Quantity = 88
-  }
+        new NewDecrementQuantity() {
+          JobUnique = "mynewunique",
+          Part = "thepart",
+          Quantity = 88
+        }
       }, now);
 
       _log.LoadDecrementsForJob("mynewunique").Should().BeEquivalentTo(new[] {
-  new DecrementQuantity() {
-    DecrementId = 13, // existing old job had decrement id 12
+        new DecrementQuantity() {
+          DecrementId = 13, // existing old job had decrement id 12
           TimeUTC = now,
-    Quantity = 88
-  }
+          Quantity = 88
+        }
       });
     }
 

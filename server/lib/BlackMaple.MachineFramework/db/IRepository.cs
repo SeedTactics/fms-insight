@@ -44,14 +44,14 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------
-    List<LogEntry> GetLog(long counter);
-    List<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
-    List<LogEntry> GetLogForJobUnique(string jobUnique);
+    IEnumerable<LogEntry> GetRecentLog(long lastSeenCounter, DateTime? expectedEndUTCofLastSeen = null);
+    IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
+    IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
+    IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
     List<LogEntry> GetLogForMaterial(long materialID);
     List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs);
-    List<LogEntry> GetLogForSerial(string serial);
-    List<LogEntry> GetLogForWorkorder(string workorder);
-    List<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
+    IEnumerable<LogEntry> GetLogForSerial(string serial);
+    IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> StationLogByForeignID(string foreignID);
     List<LogEntry> CurrentPalletLog(string pallet);
     string OriginalMessageByForeignID(string foreignID);
@@ -166,7 +166,7 @@ namespace BlackMaple.MachineFramework
     bool DoesJobExist(string unique);
     IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
     IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
-    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC);
+    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> alreadyKnownSchIds = null);
     HistoricData LoadJobsAfterScheduleId(string schId);
     PlannedSchedule LoadMostRecentSchedule();
     IReadOnlyList<Workorder> MostRecentWorkorders();
