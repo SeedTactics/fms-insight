@@ -119,7 +119,7 @@ namespace DebugMachineWatchApiServer
     }
   }
 
-  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IDisposable
+  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IQueueControl, IDisposable
   {
     public RepositoryConfig RepoConfig { get; private set; }
 
@@ -189,6 +189,7 @@ namespace DebugMachineWatchApiServer
     }
 
     public IJobControl JobControl { get => this; }
+    public IQueueControl QueueControl => this;
 
     public IMachineControl MachineControl => this;
 

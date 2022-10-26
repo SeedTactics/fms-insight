@@ -144,7 +144,7 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Part name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      return _backend.JobControl.AddUnallocatedPartToQueue(partName, queue, serial, operName);
+      return _backend.QueueControl.AddUnallocatedPartToQueue(partName, queue, serial, operName);
     }
 
     [HttpPost("casting/{castingName}")]
@@ -154,7 +154,7 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Casting name must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      return _backend.JobControl.AddUnallocatedCastingToQueue(castingName, qty, queue, serials, operName);
+      return _backend.QueueControl.AddUnallocatedCastingToQueue(castingName, qty, queue, serials, operName);
     }
 
     [HttpGet("job/{jobUnique}/plan")]
@@ -174,7 +174,7 @@ namespace BlackMaple.MachineFramework.Controllers
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
       if (lastCompletedProcess < 0) lastCompletedProcess = 0;
-      return _backend.JobControl.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial, operName);
+      return _backend.QueueControl.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial, operName);
     }
 
     [HttpPut("job/{jobUnique}/comment")]
@@ -190,28 +190,28 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(queue.Queue))
         throw new BadRequestException("Queue name must be non-empty");
-      _backend.JobControl.SetMaterialInQueue(materialId, queue.Queue, queue.Position, operName);
+      _backend.QueueControl.SetMaterialInQueue(materialId, queue.Queue, queue.Position, operName);
     }
 
     [HttpDelete("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
     public void RemoveMaterialFromAllQueues(long materialId, [FromQuery] string operName = null)
     {
-      _backend.JobControl.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
+      _backend.QueueControl.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
     }
 
     [HttpPut("material/{materialId}/quarantine")]
     [ProducesResponseType(typeof(void), 200)]
     public void SignalMaterialForQuarantine(long materialId, [FromBody] string queue, [FromQuery] string operName = null)
     {
-      _backend.JobControl.SignalMaterialForQuarantine(materialId, queue, operName);
+      _backend.QueueControl.SignalMaterialForQuarantine(materialId, queue, operName);
     }
 
     [HttpPut("material/{materialId}/invalidate-process")]
     [ProducesResponseType(typeof(void), 200)]
     public void InvalidatePalletCycle(long materialId, [FromBody] int process, [FromQuery] string putMatInQueue = null, [FromQuery] string operName = null)
     {
-      _backend.JobControl.InvalidatePalletCycle(matId: materialId, process: process, oldMatPutInQueue: putMatInQueue, operatorName: operName);
+      _backend.QueueControl.InvalidatePalletCycle(matId: materialId, process: process, oldMatPutInQueue: putMatInQueue, operatorName: operName);
     }
 
     [DataContract]
@@ -225,7 +225,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(typeof(void), 200)]
     public void SwapMaterialOnPallet(long materialId, [FromBody] MatToPutOnPallet mat, [FromQuery] string operName = null)
     {
-      _backend.JobControl.SwapMaterialOnPallet(
+      _backend.QueueControl.SwapMaterialOnPallet(
         oldMatId: materialId,
         newMatId: mat.MaterialIDToSetOnPallet,
         pallet: mat.Pallet,
@@ -238,7 +238,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public void BulkRemoveMaterialFromQueues([FromBody] List<long> id, [FromQuery] string operName = null)
     {
       if (id == null || id.Count == 0) return;
-      _backend.JobControl.RemoveMaterialFromAllQueues(id, operName);
+      _backend.QueueControl.RemoveMaterialFromAllQueues(id, operName);
     }
 
     [HttpDelete("planned-cycles")]

@@ -265,6 +265,7 @@ namespace MazakMachineInterface
     }
 
     public IJobControl JobControl { get => routing; }
+    public IQueueControl QueueControl => routing;
 
     public IMachineControl MachineControl => MazakMachineControl;
 

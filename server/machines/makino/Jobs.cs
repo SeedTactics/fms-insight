@@ -39,7 +39,7 @@ using Germinate;
 
 namespace Makino
 {
-  public class Jobs : IJobControl
+  public class Jobs : IJobControl, IQueueControl
   {
     private MakinoDB _db;
     private Func<IRepository> _openJobDB;

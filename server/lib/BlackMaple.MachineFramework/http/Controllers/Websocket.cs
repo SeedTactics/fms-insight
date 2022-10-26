@@ -130,7 +130,7 @@ namespace BlackMaple.MachineFramework.Controllers
           Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
         backend.OnNewCurrentStatus += (status) =>
           Send(new ServerEvent() { NewCurrentStatus = status });
-        backend.JobControl.OnEditMaterialInLog += (o) =>
+        backend.QueueControl.OnEditMaterialInLog += (o) =>
           Send(new ServerEvent() { EditMaterialInLog = o });
       }
     }

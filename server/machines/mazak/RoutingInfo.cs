@@ -37,7 +37,7 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl
+  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl, BlackMaple.MachineFramework.IQueueControl
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
 
@@ -329,7 +329,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IQueueControl.AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName)
     {
       string casting = partName;
 
@@ -353,11 +353,11 @@ namespace MazakMachineInterface
         }
       }
 
-      var mats = ((BlackMaple.MachineFramework.IJobControl)this).AddUnallocatedCastingToQueue(casting, 1, queue, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
+      var mats = ((BlackMaple.MachineFramework.IQueueControl)this).AddUnallocatedCastingToQueue(casting, 1, queue, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
       return mats.FirstOrDefault();
     }
 
-    List<InProcessMaterial> BlackMaple.MachineFramework.IJobControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName)
+    List<InProcessMaterial> BlackMaple.MachineFramework.IQueueControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -380,7 +380,7 @@ namespace MazakMachineInterface
       return newSt.Material.Where(m => matIds.Contains(m.MaterialID)).ToList();
     }
 
-    InProcessMaterial BlackMaple.MachineFramework.IJobControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IQueueControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -432,7 +432,7 @@ namespace MazakMachineInterface
       return st.Material.FirstOrDefault(m => m.MaterialID == matId);
     }
 
-    void BlackMaple.MachineFramework.IJobControl.SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
+    void BlackMaple.MachineFramework.IQueueControl.SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -462,7 +462,7 @@ namespace MazakMachineInterface
       _onCurStatusChange(status);
     }
 
-    void BlackMaple.MachineFramework.IJobControl.RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
+    void BlackMaple.MachineFramework.IQueueControl.RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
 
@@ -477,7 +477,7 @@ namespace MazakMachineInterface
       _onCurStatusChange(status);
     }
 
-    void BlackMaple.MachineFramework.IJobControl.SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
+    void BlackMaple.MachineFramework.IQueueControl.SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
       if (!fmsSettings.Queues.ContainsKey(queue))
@@ -500,7 +500,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          ((BlackMaple.MachineFramework.IJobControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
+          ((BlackMaple.MachineFramework.IQueueControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
         }
       }
     }

@@ -44,10 +44,12 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NiigataBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
+    public IJobControl JobControl { get; private set; }
+    public IQueueControl QueueControl { get; private set; }
+    public IMachineControl MachineControl { get; private set; }
+
     private NiigataICC _icc;
-    private NiigataJobs _jobControl;
     private SyncPallets _sync;
-    private NiigataMachineControl _machControl;
 
     public RepositoryConfig RepoConfig { get; private set; }
     public ISyncPallets SyncPallets => _sync;
@@ -121,7 +123,7 @@ namespace BlackMaple.FMSInsight.Niigata
         _icc = new NiigataICC(programDir, connStr, StationNames);
         var createLog = new CreateCellState(cfg, StationNames, MachineConnection);
 
-        _machControl = new NiigataMachineControl(RepoConfig, _icc, MachineConnection, StationNames);
+        MachineControl = new NiigataMachineControl(RepoConfig, _icc, MachineConnection, StationNames);
 
         IAssignPallets assign;
         if (customAssignment != null)
@@ -139,12 +141,15 @@ namespace BlackMaple.FMSInsight.Niigata
         decrementJobs = decrementJobs ?? new DecrementNotYetStartedJobs();
 
         _sync = new SyncPallets(RepoConfig, _icc, assign, createLog, decrementJobs, cfg, s => OnNewCurrentStatus?.Invoke(s));
-        _jobControl = new NiigataJobs(j: RepoConfig,
+        JobControl = new NiigataJobs(j: RepoConfig,
                                       st: cfg,
                                       sy: _sync,
                                       statNames: StationNames,
                                       requireProgsInJobs: config.GetValue<bool>("Require Programs In Jobs", true),
                                       additionalJobChecks: additionalJobChecks);
+
+        QueueControl = new NiigataQueues(RepoConfig, cfg, _sync);
+
         if (startSyncThread)
         {
           StartSyncThread();
@@ -163,12 +168,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void Dispose()
     {
-      _jobControl = null;
       if (SyncPallets != null) _sync.Dispose();
       _sync = null;
     }
 
-    public IJobControl JobControl { get => _jobControl; }
-    public IMachineControl MachineControl => _machControl;
   }
 }

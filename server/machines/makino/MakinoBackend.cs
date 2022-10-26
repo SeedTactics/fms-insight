@@ -136,6 +136,7 @@ namespace Makino
     }
 
     public IJobControl JobControl { get => _jobs; }
+    public IQueueControl QueueControl => _jobs;
 
     public IMachineControl MachineControl => null;
 

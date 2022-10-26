@@ -67,9 +67,10 @@ namespace BlackMaple.MachineFramework
     //Thus this function can be called multiple times to receive the same data.
     List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId);
     List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC);
+  }
 
-    //In-process queues
-
+  public interface IQueueControl
+  {
     /// Add new raw material for part.  The part material has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
@@ -133,6 +134,7 @@ namespace BlackMaple.MachineFramework
   public interface IFMSBackend : IDisposable
   {
     IJobControl JobControl { get; }
+    IQueueControl QueueControl { get; }
     IMachineControl MachineControl { get; }
     RepositoryConfig RepoConfig { get; }
 
