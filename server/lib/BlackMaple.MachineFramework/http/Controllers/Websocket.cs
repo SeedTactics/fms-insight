@@ -124,13 +124,13 @@ namespace BlackMaple.MachineFramework.Controllers
 
       if (backend != null)
       {
-        backend.NewLogEntry += (e, foreignId) =>
+        backend.RepoConfig.NewLogEntry += (e, foreignId, db) =>
           Send(new ServerEvent() { LogEntry = e });
-        backend.OnNewJobs += (jobs) =>
+        backend.JobControl.OnNewJobs += (jobs) =>
           Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
         backend.OnNewCurrentStatus += (status) =>
           Send(new ServerEvent() { NewCurrentStatus = status });
-        backend.OnEditMaterialInLog += (o) =>
+        backend.JobControl.OnEditMaterialInLog += (o) =>
           Send(new ServerEvent() { EditMaterialInLog = o });
       }
     }

@@ -86,7 +86,6 @@ namespace Makino
             System.IO.Path.Combine(_dataDirectory, "inspections.db"),
             System.IO.Path.Combine(_dataDirectory, "jobs.db")
         );
-        RepoConfig.NewLogEntry += OnLogEntry;
 
         _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
 
@@ -98,7 +97,7 @@ namespace Makino
 
         _logTimer = new LogTimer(RepoConfig, _makinoDB, _status, st);
 
-        _jobs = new Jobs(_makinoDB, RepoConfig.OpenConnection, adePath, downloadOnlyOrders, onNewJob: j => OnNewJobs?.Invoke(j), onJobCommentChange: OnLogsProcessed);
+        _jobs = new Jobs(_makinoDB, RepoConfig.OpenConnection, adePath, downloadOnlyOrders, onJobCommentChange: OnLogsProcessed);
 
         _logTimer.LogsProcessed += OnLogsProcessed;
 
@@ -117,18 +116,9 @@ namespace Makino
       _logTimer.LogsProcessed -= OnLogsProcessed;
       if (_logTimer != null) _logTimer.Halt();
       if (_makinoDB != null) _makinoDB.Close();
-      RepoConfig.NewLogEntry -= OnLogEntry;
     }
-
-    public event NewLogEntryDelegate NewLogEntry;
-    private void OnLogEntry(LogEntry entry, string foreignId, IRepository db)
-    {
-      NewLogEntry?.Invoke(entry, foreignId);
-    }
-    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public event NewCurrentStatus OnNewCurrentStatus;
-    public event NewJobsDelegate OnNewJobs;
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
     private void OnLogsProcessed()
     {
@@ -143,11 +133,6 @@ namespace Makino
       b.InitialCatalog = "Makino";
       b.DataSource = "(local)";
       return b.ConnectionString;
-    }
-
-    public IRepository OpenRepository()
-    {
-      return RepoConfig.OpenConnection();
     }
 
     public IJobControl JobControl { get => _jobs; }

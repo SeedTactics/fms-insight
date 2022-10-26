@@ -41,6 +41,9 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
 
+    public event NewJobsDelegate OnNewJobs;
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
+
     private IWriteData writeDb;
     private IReadDataAccess readDatabase;
     private IMazakLogReader logReader;
@@ -52,9 +55,7 @@ namespace MazakMachineInterface
     private readonly MazakConfig _mazakCfg;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
-    private readonly Action<NewJobs> _onNewJobs;
     private readonly Action<CurrentStatus> _onCurStatusChange;
-    private readonly Action<EditMaterialInLogEvents> _onEditMatInLog;
     public readonly bool _useStartingOffsetForDueDate;
 
     public RoutingInfo(
@@ -68,9 +69,7 @@ namespace MazakMachineInterface
       IDecrementPlanQty decrement,
       bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings settings,
-      Action<NewJobs> onNewJobs,
       Action<CurrentStatus> onStatusChange,
-      Action<EditMaterialInLogEvents> onEditMatInLog,
       MazakConfig mazakCfg
     )
     {
@@ -85,9 +84,7 @@ namespace MazakMachineInterface
       _machineGroupName = machineGroupName;
       queueFault = queueSyncFault;
       _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
-      _onNewJobs = onNewJobs;
       _onCurStatusChange = onStatusChange;
-      _onEditMatInLog = onEditMatInLog;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
       _copySchedulesTimer.Elapsed += (sender, args) => RecopyJobsToSystem();
@@ -228,7 +225,7 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      _onNewJobs(newJ);
+      OnNewJobs?.Invoke(newJ);
       _onCurStatusChange(curSt);
     }
 
@@ -521,7 +518,7 @@ namespace MazakMachineInterface
           operatorName: operatorName
         );
 
-        _onEditMatInLog(new EditMaterialInLogEvents()
+        OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
         {
           OldMaterialID = oldMatId,
           NewMaterialID = newMatId,

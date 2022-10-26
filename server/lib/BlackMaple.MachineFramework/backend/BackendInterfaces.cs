@@ -36,6 +36,9 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineFramework
 {
+  public delegate void NewJobsDelegate(NewJobs j);
+  public delegate void EditMaterialInLogDelegate(EditMaterialInLogEvents o);
+
   public interface IJobControl
   {
     ///loads info
@@ -50,6 +53,7 @@ namespace BlackMaple.MachineFramework
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell);
     void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs);
+    event NewJobsDelegate OnNewJobs;
 
     void SetJobComment(string jobUnique, string comment);
 
@@ -106,6 +110,7 @@ namespace BlackMaple.MachineFramework
         long newMatId,
         string operatorName = null
     );
+    event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     void InvalidatePalletCycle(
       long matId,
@@ -123,22 +128,15 @@ namespace BlackMaple.MachineFramework
     string GetProgramContent(string programName, long? revision);
   }
 
-  public delegate void NewLogEntryDelegate(LogEntry e, string foreignId);
   public delegate void NewCurrentStatus(CurrentStatus status);
-  public delegate void NewJobsDelegate(NewJobs j);
-  public delegate void EditMaterialInLogDelegate(EditMaterialInLogEvents o);
 
   public interface IFMSBackend : IDisposable
   {
     IJobControl JobControl { get; }
     IMachineControl MachineControl { get; }
+    RepositoryConfig RepoConfig { get; }
 
-    IRepository OpenRepository();
-
-    event NewLogEntryDelegate NewLogEntry;
     event NewCurrentStatus OnNewCurrentStatus;
-    event NewJobsDelegate OnNewJobs;
-    event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     bool SupportsQuarantineAtLoadStation { get; }
   }

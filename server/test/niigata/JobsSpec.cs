@@ -40,7 +40,6 @@ using BlackMaple.MachineFramework;
 using NSubstitute;
 using System.Collections.Immutable;
 using Germinate;
-using MachineWatchTest;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -50,8 +49,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private IRepository _logDB;
     private NiigataJobs _jobs;
     private ISyncPallets _syncMock;
-    private Action<NewJobs> _onNewJobs;
-    private Action<EditMaterialInLogEvents> _onEditMatInLog;
 
     public NiigataJobSpec()
     {
@@ -64,9 +61,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       settings.Queues.Add("q1", new QueueSize());
       settings.Queues.Add("q2", new QueueSize());
 
-      _onNewJobs = Substitute.For<Action<NewJobs>>();
-      _onEditMatInLog = Substitute.For<Action<EditMaterialInLogEvents>>();
-      _jobs = new NiigataJobs(_repoCfg, settings, _syncMock, null, true, _onNewJobs, _onEditMatInLog, null);
+      _jobs = new NiigataJobs(_repoCfg, settings, _syncMock, null, true, null);
     }
 
     void IDisposable.Dispose()

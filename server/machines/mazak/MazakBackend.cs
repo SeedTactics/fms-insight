@@ -61,18 +61,12 @@ namespace MazakMachineInterface
     public IWriteData WriteDB => _writeDB;
     public IReadDataAccess ReadDB => _readDB;
 
-    public RepositoryConfig EventLogDBConfig => logDbConfig;
+    public RepositoryConfig RepoConfig => logDbConfig;
     public IMazakLogReader LogTranslation => logDataLoader;
     public RoutingInfo RoutingInfo => routing;
     public MazakMachineControl MazakMachineControl { get; }
 
-    public event NewJobsDelegate OnNewJobs;
-    public event NewLogEntryDelegate NewLogEntry;
     public event NewCurrentStatus OnNewCurrentStatus;
-    private void RaiseNewLogEntry(BlackMaple.MachineFramework.LogEntry e, string foreignId, IRepository db) =>
-      NewLogEntry?.Invoke(e, foreignId);
-
-    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.IRepository jobDb)
     {
@@ -195,7 +189,6 @@ namespace MazakMachineInterface
         System.IO.Path.Combine(st.DataDirectory, "insp.db"),
         oldJobDbName
       );
-      logDbConfig.NewLogEntry += RaiseNewLogEntry;
 
       _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
 
@@ -254,9 +247,7 @@ namespace MazakMachineInterface
         decrement: decr,
         useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
         settings: st,
-        onNewJobs: j => OnNewJobs?.Invoke(j),
         onStatusChange: s => OnNewCurrentStatus?.Invoke(s),
-        onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o),
         mazakCfg: mazakCfg
       );
 
@@ -268,7 +259,6 @@ namespace MazakMachineInterface
     {
       if (_disposed) return;
       _disposed = true;
-      logDbConfig.NewLogEntry -= RaiseNewLogEntry;
       routing.Halt();
       logDataLoader.Halt();
       if (loadOper != null) loadOper.Dispose();
@@ -277,11 +267,6 @@ namespace MazakMachineInterface
     public IJobControl JobControl { get => routing; }
 
     public IMachineControl MachineControl => MazakMachineControl;
-
-    public IRepository OpenRepository()
-    {
-      return logDbConfig.OpenConnection();
-    }
 
     private MazakDbType DetectMazakType(IConfigurationSection cfg, string localDbPath)
     {

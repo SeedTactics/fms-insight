@@ -121,7 +121,7 @@ namespace DebugMachineWatchApiServer
 
   public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IDisposable
   {
-    public RepositoryConfig Repo { get; private set; }
+    public RepositoryConfig RepoConfig { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
@@ -139,7 +139,6 @@ namespace DebugMachineWatchApiServer
 
     public event NewCurrentStatus OnNewCurrentStatus;
     public event NewJobsDelegate OnNewJobs;
-    public event NewLogEntryDelegate NewLogEntry { add { } remove { } }
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public bool SupportsQuarantineAtLoadStation { get; } = true;
@@ -155,12 +154,12 @@ namespace DebugMachineWatchApiServer
 
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
-        Repo = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), DebugMockProgram.InsightBackupDbFile);
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), DebugMockProgram.InsightBackupDbFile);
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
       }
       else
       {
-        Repo = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+        RepoConfig = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
 
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -181,12 +180,12 @@ namespace DebugMachineWatchApiServer
 
     public void Dispose()
     {
-      Repo.CloseMemoryConnection();
+      RepoConfig.CloseMemoryConnection();
     }
 
     public IRepository OpenRepository()
     {
-      return Repo.OpenConnection();
+      return RepoConfig.OpenConnection();
     }
 
     public IJobControl JobControl { get => this; }
@@ -225,14 +224,14 @@ namespace DebugMachineWatchApiServer
 
     public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell)
     {
-      using var LogDB = Repo.OpenConnection();
+      using var LogDB = RepoConfig.OpenConnection();
       LogDB.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       OnNewJobs?.Invoke(jobs);
     }
 
     public void SetJobComment(string jobUnique, string comment)
     {
-      using var LogDB = Repo.OpenConnection();
+      using var LogDB = RepoConfig.OpenConnection();
       Serilog.Log.Information("Setting comment for {job} to {comment}", jobUnique, comment);
       LogDB.SetJobComment(jobUnique, comment);
       CurrentStatus = CurrentStatus.Produce(draft =>
@@ -358,7 +357,7 @@ namespace DebugMachineWatchApiServer
           }).ToImmutableList()
       };
 
-      using (var LogDB = Repo.OpenConnection())
+      using (var LogDB = RepoConfig.OpenConnection())
       {
         LogDB.RecordAddMaterialToQueue(
           mat: new EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
@@ -379,7 +378,7 @@ namespace DebugMachineWatchApiServer
 
       if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
-        using (var LogDB = Repo.OpenConnection())
+        using (var LogDB = RepoConfig.OpenConnection())
         {
           LogDB.SignalMaterialForQuarantine(
             new EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
@@ -508,7 +507,7 @@ namespace DebugMachineWatchApiServer
       var tools = JsonConvert.DeserializeObject<Dictionary<long, List<ToolUse>>>(
         System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tool-use.json")), _jsonSettings);
 
-      using var LogDB = Repo.OpenConnection();
+      using var LogDB = RepoConfig.OpenConnection();
       foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
       {
         foreach (var m in e.Material)
@@ -566,7 +565,7 @@ namespace DebugMachineWatchApiServer
         _jsonSettings
       );
 
-      using var LogDB = Repo.OpenConnection();
+      using var LogDB = RepoConfig.OpenConnection();
       foreach (var newJobs in allNewJobs)
       {
         var newJobsOffset = newJobs.Produce(newJobsDraft =>
@@ -711,7 +710,7 @@ namespace DebugMachineWatchApiServer
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
-      using var LogDB = Repo.OpenConnection();
+      using var LogDB = RepoConfig.OpenConnection();
       Serilog.Log.Information("Swapping {oldMatId} to {newMatId} on pallet {pallet}", oldMatId, newMatId, pallet);
       var o = LogDB.SwapMaterialInCurrentPalletCycle(
         pallet: pallet,
@@ -729,7 +728,7 @@ namespace DebugMachineWatchApiServer
 
     public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
     {
-      using var LogDB = Repo.OpenConnection();
+      using var LogDB = RepoConfig.OpenConnection();
       Serilog.Log.Information("Invalidating {matId} process {process}", matId, process);
       var o = LogDB.InvalidatePalletCycle(
         matId: matId,
@@ -741,7 +740,7 @@ namespace DebugMachineWatchApiServer
 
     public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
     {
-      using var LogDB = Repo.OpenConnection();
+      using var LogDB = RepoConfig.OpenConnection();
       LogDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
     }
   }

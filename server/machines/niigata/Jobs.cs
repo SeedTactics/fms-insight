@@ -41,28 +41,27 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NiigataJobs : IJobControl
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataJobs>();
+
+    public event NewJobsDelegate OnNewJobs;
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
+
     private RepositoryConfig _jobDbCfg;
     private FMSSettings _settings;
     private ISyncPallets _sync;
     private readonly NiigataStationNames _statNames;
-    private Action<NewJobs> _onNewJobs;
-    private Action<EditMaterialInLogEvents> _onEditMatInLog;
     private bool _requireProgramsInJobs;
     private Func<NewJobs, CellState, IRepository, IEnumerable<string>> _additionalJobChecks;
 
     public NiigataJobs(RepositoryConfig j, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
-                       bool requireProgsInJobs, Action<NewJobs> onNewJobs, Action<EditMaterialInLogEvents> onEditMatInLog,
-                       Func<NewJobs, CellState, IRepository, IEnumerable<string>> additionalJobChecks
+                       bool requireProgsInJobs, Func<NewJobs, CellState, IRepository, IEnumerable<string>> additionalJobChecks
                        )
     {
-      _onNewJobs = onNewJobs;
       _jobDbCfg = j;
       _sync = sy;
       _settings = st;
       _statNames = statNames;
       _additionalJobChecks = additionalJobChecks;
       _requireProgramsInJobs = requireProgsInJobs;
-      _onEditMatInLog = onEditMatInLog;
     }
 
     CurrentStatus IJobControl.GetCurrentStatus()
@@ -241,7 +240,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       Log.Debug("Sending new jobs on websocket");
 
-      _onNewJobs(jobs);
+      OnNewJobs?.Invoke(jobs);
 
       Log.Debug("Signaling new jobs available for routes");
 
@@ -585,7 +584,7 @@ namespace BlackMaple.FMSInsight.Niigata
           operatorName: operatorName
         );
 
-        _onEditMatInLog(new EditMaterialInLogEvents()
+        OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
         {
           OldMaterialID = oldMatId,
           NewMaterialID = newMatId,

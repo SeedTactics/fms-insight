@@ -43,18 +43,18 @@ namespace Makino
   {
     private MakinoDB _db;
     private Func<IRepository> _openJobDB;
-    private Action<NewJobs> _onNewJobs;
     private Action _onJobCommentChange;
     private string _xmlPath;
     private bool _onlyOrders;
+    public event NewJobsDelegate OnNewJobs;
+    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
-    public Jobs(MakinoDB db, Func<IRepository> jdb, string xmlPath, bool onlyOrders, Action<NewJobs> onNewJob, Action onJobCommentChange)
+    public Jobs(MakinoDB db, Func<IRepository> jdb, string xmlPath, bool onlyOrders, Action onJobCommentChange)
     {
       _db = db;
       _openJobDB = jdb;
       _xmlPath = xmlPath;
       _onlyOrders = onlyOrders;
-      _onNewJobs = onNewJob;
       _onJobCommentChange = onJobCommentChange;
     }
 
@@ -91,7 +91,7 @@ namespace Makino
         jdb.AddJobs(newJ, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       }
       OrderXML.WriteOrderXML(System.IO.Path.Combine(_xmlPath, "sail.xml"), newJobs, _onlyOrders);
-      _onNewJobs(newJ);
+      OnNewJobs?.Invoke(newJ);
     }
 
     void IJobControl.SetJobComment(string jobUnique, string comment)

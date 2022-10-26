@@ -49,18 +49,13 @@ namespace BlackMaple.FMSInsight.Niigata
     private SyncPallets _sync;
     private NiigataMachineControl _machControl;
 
-    public RepositoryConfig LogDBConfig { get; private set; }
+    public RepositoryConfig RepoConfig { get; private set; }
     public ISyncPallets SyncPallets => _sync;
     public NiigataStationNames StationNames { get; }
     public ICncMachineConnection MachineConnection { get; }
     public bool SupportsQuarantineAtLoadStation { get; } = true;
 
-    public event NewJobsDelegate OnNewJobs;
-    public event NewLogEntryDelegate NewLogEntry;
     public event NewCurrentStatus OnNewCurrentStatus;
-    private void RaiseNewLogEntry(BlackMaple.MachineFramework.LogEntry e, string foreignId, IRepository db) =>
-      NewLogEntry?.Invoke(e, foreignId);
-    public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public NiigataBackend(
       IConfigurationSection config,
@@ -74,12 +69,11 @@ namespace BlackMaple.FMSInsight.Niigata
       try
       {
         Log.Information("Starting niigata backend");
-        LogDBConfig = RepositoryConfig.InitializeEventDatabase(
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(
             cfg,
             System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
             oldJobDbFile: System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
         );
-        LogDBConfig.NewLogEntry += RaiseNewLogEntry;
 
         var programDir = config.GetValue<string>("Program Directory");
         if (!System.IO.Directory.Exists(programDir))
@@ -127,7 +121,7 @@ namespace BlackMaple.FMSInsight.Niigata
         _icc = new NiigataICC(programDir, connStr, StationNames);
         var createLog = new CreateCellState(cfg, StationNames, MachineConnection);
 
-        _machControl = new NiigataMachineControl(LogDBConfig, _icc, MachineConnection, StationNames);
+        _machControl = new NiigataMachineControl(RepoConfig, _icc, MachineConnection, StationNames);
 
         IAssignPallets assign;
         if (customAssignment != null)
@@ -144,14 +138,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
         decrementJobs = decrementJobs ?? new DecrementNotYetStartedJobs();
 
-        _sync = new SyncPallets(LogDBConfig, _icc, assign, createLog, decrementJobs, cfg, s => OnNewCurrentStatus?.Invoke(s));
-        _jobControl = new NiigataJobs(j: LogDBConfig,
+        _sync = new SyncPallets(RepoConfig, _icc, assign, createLog, decrementJobs, cfg, s => OnNewCurrentStatus?.Invoke(s));
+        _jobControl = new NiigataJobs(j: RepoConfig,
                                       st: cfg,
                                       sy: _sync,
                                       statNames: StationNames,
                                       requireProgsInJobs: config.GetValue<bool>("Require Programs In Jobs", true),
-                                      onNewJobs: j => OnNewJobs?.Invoke(j),
-                                      onEditMatInLog: o => OnEditMaterialInLog?.Invoke(o),
                                       additionalJobChecks: additionalJobChecks);
         if (startSyncThread)
         {
@@ -171,7 +163,6 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void Dispose()
     {
-      LogDBConfig.NewLogEntry -= RaiseNewLogEntry;
       _jobControl = null;
       if (SyncPallets != null) _sync.Dispose();
       _sync = null;
@@ -179,10 +170,5 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IJobControl JobControl { get => _jobControl; }
     public IMachineControl MachineControl => _machControl;
-
-    public IRepository OpenRepository()
-    {
-      return LogDBConfig.OpenConnection();
-    }
   }
 }
