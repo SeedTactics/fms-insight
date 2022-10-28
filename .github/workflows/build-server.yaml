@@ -40,7 +40,7 @@ jobs:
         shell: pwsh
         run: |
           $path = pnpm store path | Out-String
-          Write-Host "::set-output name=cachedir::$path"
+          echo "cachedir=$path" >> $ENV:GITHUB_OUTPUT
 
       - uses: actions/cache@v3
         with:
