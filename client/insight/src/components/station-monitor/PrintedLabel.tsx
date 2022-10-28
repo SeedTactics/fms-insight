@@ -124,12 +124,12 @@ function SinglePage(props: SinglePageProps) {
         )}
       </div>
       {props.note ? (
-        <div style={{ marginTop: "2em" }}>
-          <p style={{ fontSize: "x-large", textAlign: "center" }}>{props.note}</p>
+        <div style={{ marginTop: "5em" }}>
+          <p style={{ fontSize: "xx-large", textAlign: "center" }}>{props.note}</p>
         </div>
       ) : undefined}
       <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
-        {props.operator ? <p style={{ fontSize: "x-large" }}>{props.operator}</p> : undefined}
+        {props.operator ? <p style={{ fontSize: "xx-large" }}>{props.operator}</p> : undefined}
       </div>
     </div>
   );
@@ -284,16 +284,16 @@ function CombinedToOnePage(props: PrintedLabelProps) {
         )}
       </div>
       {notes.length > 0 ? (
-        <div style={{ marginTop: "2em" }}>
+        <div style={{ marginTop: "5em" }}>
           {notes.map((n, idx) => (
-            <p key={idx} style={{ fontSize: "x-large", textAlign: "center" }}>
+            <p key={idx} style={{ fontSize: "xx-large", textAlign: "center" }}>
               {n}
             </p>
           ))}
         </div>
       ) : undefined}
       <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
-        {props.operator ? <p style={{ fontSize: "x-large" }}>{props.operator}</p> : undefined}
+        {props.operator ? <p style={{ fontSize: "xx-large" }}>{props.operator}</p> : undefined}
       </div>
     </div>
   );
