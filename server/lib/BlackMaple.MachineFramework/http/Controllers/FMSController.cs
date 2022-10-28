@@ -46,32 +46,35 @@ namespace BlackMaple.MachineFramework.Controllers
   {
     [DataMember] public string Name { get; init; }
     [DataMember] public string Version { get; init; }
-    [DataMember] public bool RequireScanAtWash { get; init; }
-    [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public DateTime? LicenseExpires { get; init; }
+
     [DataMember] public IReadOnlyList<string> AdditionalLogServers { get; init; }
+
     [DataMember] public string OpenIDConnectAuthority { get; init; }
     [DataMember] public string LocalhostOpenIDConnectAuthority { get; init; }
     [DataMember] public string OpenIDConnectClientId { get; init; }
+
     [DataMember] public bool UsingLabelPrinterForSerials { get; init; }
     [DataMember] public bool? UseClientPrinterForLabels { get; init; }
+
     [DataMember] public string QuarantineQueue { get; init; }
 
+    // Load Station Page Options
+    [DataMember] public bool? AllowQuarantineAtLoadStation { get; init; }
+    [DataMember] public bool? AllowChangeWorkorderAtLoadStation { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string CustomStationMonitorDialogUrl { get; init; }
+
+
+    // Wash Page Options
+    [DataMember] public bool RequireScanAtWash { get; init; }
+    [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
+
+    // Queues Page Options
     [DataMember] public bool? RequireExistingMaterialWhenAddingToQueue { get; init; }
     [DataMember] public bool? RequireSerialWhenAddingMaterialToQueue { get; init; }
     [DataMember] public bool? AddRawMaterialAsUnassigned { get; init; }
     [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
-
-    [DataMember] public bool? AllowQuarantineAtLoadStation { get; init; }
-    [DataMember] public bool? AllowChangeWorkorderAtLoadStation { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public DateTime? LicenseExpires { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string CustomStationMonitorDialogUrl { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
   }
 
   [ApiController]

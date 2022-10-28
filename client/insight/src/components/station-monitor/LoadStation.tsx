@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -51,13 +51,12 @@ import {
   MaterialDialog,
   InProcMaterial,
   SortableInProcMaterial,
-  InstructionButton,
   DragOverlayInProcMaterial,
 } from "./Material.js";
 import { WhiteboardRegion, SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { SelectWorkorderDialog } from "./SelectWorkorder.js";
+import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
 import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType.js";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
@@ -69,7 +68,7 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useIsDemo } from "../routes.js";
-import { PrintOnClientButton } from "./QueuesAddMaterial.js";
+import { PrintOnClientButton } from "./QueuesMatDialog.js";
 
 function stationPalMaterialStatus(
   mat: Readonly<api.IInProcessMaterial>,
@@ -364,102 +363,102 @@ interface LoadMatDialogProps {
   readonly pallet: string | null;
 }
 
-function instructionType(mat: matDetails.MaterialDetail): string {
-  let ty: "load" | "unload" = "load";
-  for (const evt of mat.events) {
-    if (evt.type === api.LogType.LoadUnloadCycle && evt.result === "UNLOAD") {
-      if (evt.startofcycle) {
-        ty = "unload";
-      } else {
-        ty = "load";
-      }
-    }
+function InstructionButton({ pallet }: { pallet: string | null }) {
+  const material = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const operator = useRecoilValue(currentOperator);
+
+  if (material === null) return null;
+
+  const type = material.action.type === api.ActionType.Loading ? "load" : "unload";
+
+  const url = instructionUrl(
+    material.partName,
+    type,
+    material.materialID,
+    pallet,
+    material.process,
+    operator
+  );
+  return (
+    <Button href={url} target="bms-instructions" color="primary">
+      Instructions
+    </Button>
+  );
+}
+
+function PrintSerialButton({ loadNum }: { loadNum: number }) {
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const [printLabel, printingLabel] = matDetails.usePrintLabel();
+
+  if (curMat === null || !fmsInfo.usingLabelPrinterForSerials) return null;
+
+  if (fmsInfo.useClientPrinterForLabels) {
+    return <PrintOnClientButton mat={curMat} />;
+  } else {
+    return (
+      <Button
+        color="primary"
+        disabled={printingLabel}
+        onClick={() =>
+          printLabel({
+            materialId: curMat.materialID,
+            proc: curMat.process,
+            loadStation: loadNum,
+            queue: null,
+          })
+        }
+      >
+        Print Label
+      </Button>
+    );
   }
-  return ty;
+}
+
+function QuarantineButton() {
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const [signalQuarantine, signalingQuarantine] = matDetails.useSignalForQuarantine();
+  const curMat = useRecoilValue(matDetails.materialInDialogInfo);
+  const operator = useRecoilValue(currentOperator);
+  const closeMatDialog = matDetails.useCloseMaterialDialog();
+
+  const quarantineQueue = fmsInfo.allowQuarantineAtLoadStation ? fmsInfo.quarantineQueue ?? null : null;
+
+  if (!curMat || !quarantineQueue || quarantineQueue === "") return null;
+
+  return (
+    <Button
+      color="primary"
+      disabled={signalingQuarantine}
+      onClick={() => {
+        signalQuarantine(curMat.materialID, quarantineQueue, operator);
+        closeMatDialog();
+      }}
+    >
+      Quarantine
+    </Button>
+  );
 }
 
 const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
-  const quarantineQueue = fmsInfo.allowQuarantineAtLoadStation ? fmsInfo.quarantineQueue ?? null : null;
-  const operator = useRecoilValue(currentOperator);
-  const displayMat = useRecoilValue(matDetails.materialDetail);
-  const setWorkorderDialogOpen = useSetRecoilState(matDetails.loadWorkordersForMaterialInDialog);
-  const setMatToDisplay = useSetRecoilState(matDetails.materialToShowInDialog);
-  const [printLabel, printingLabel] = matDetails.usePrintLabel();
-  const [signalQuarantine, signalingQuarantine] = matDetails.useSignalForQuarantine();
+  const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
   const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
-
-  function openAssignWorkorder() {
-    if (displayMat) {
-      return;
-    }
-    setWorkorderDialogOpen(true);
-  }
 
   return (
     <MaterialDialog
-      display_material={displayMat}
-      onClose={() => setMatToDisplay(null)}
       allowNote
       buttons={
         <>
-          {displayMat && displayMat.partName !== "" ? (
-            <InstructionButton
-              material={displayMat}
-              type={instructionType(displayMat)}
-              operator={operator}
-              pallet={props.pallet}
-            />
-          ) : undefined}
-          {displayMat && fmsInfo.usingLabelPrinterForSerials ? (
-            fmsInfo.useClientPrinterForLabels ? (
-              <PrintOnClientButton mat={displayMat} />
-            ) : (
-              <Button
-                color="primary"
-                disabled={printingLabel}
-                onClick={() =>
-                  printLabel({
-                    materialId: displayMat.materialID,
-                    proc:
-                      LazySeq.of(displayMat.events)
-                        .filter(
-                          (e) =>
-                            e.details?.["PalletCycleInvalidated"] !== "1" &&
-                            (e.type === api.LogType.LoadUnloadCycle ||
-                              e.type === api.LogType.MachineCycle ||
-                              e.type === api.LogType.AddToQueue)
-                        )
-                        .flatMap((e) => e.material)
-                        .filter((e) => e.id === displayMat.materialID)
-                        .maxBy((e) => e.proc)?.proc ?? 1,
-                    loadStation: props.loadNum,
-                    queue: null,
-                  })
-                }
-              >
-                Print Label
-              </Button>
-            )
-          ) : undefined}
-          {displayMat && quarantineQueue ? (
-            <Button
-              color="primary"
-              disabled={signalingQuarantine}
-              onClick={() => {
-                signalQuarantine(displayMat.materialID, quarantineQueue, operator);
-                setMatToDisplay(null);
-              }}
-            >
-              Quarantine
-            </Button>
-          ) : undefined}
+          <InstructionButton pallet={props.pallet} />
+          <PrintSerialButton loadNum={props.loadNum} />
+          <QuarantineButton />
           <Button color="primary" onClick={() => setForceInspOpen(true)}>
             Signal Inspection
           </Button>
           {fmsInfo.allowChangeWorkorderAtLoadStation ? (
-            <Button color="primary" onClick={openAssignWorkorder}>
-              {displayMat && displayMat.workorderId ? "Change Workorder" : "Assign Workorder"}
+            <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
+              Assign Workorder
             </Button>
           ) : undefined}
         </>

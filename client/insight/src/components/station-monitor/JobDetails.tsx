@@ -40,10 +40,10 @@ import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
 import { format } from "date-fns";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue } from "recoil";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
-import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
@@ -174,7 +174,7 @@ interface JobMaterialProps {
 
 function JobMaterial(props: JobMaterialProps) {
   const currentMaterial = useRecoilValue(currentStatus).material;
-  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+  const setMatToShow = useSetMaterialToShowInDialog();
 
   const mats = LazySeq.of(props.matIdsForJob.get(props.unique) ?? HashSet.empty<number>())
     .collect((matId) => props.matsFromEvents.get(matId))

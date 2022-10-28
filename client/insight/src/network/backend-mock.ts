@@ -237,7 +237,11 @@ export function registerMockBackend(
     events.then((evts) =>
       LazySeq.of(evts)
         .filter((e) => e.type === api.LogType.PartMark)
-        .flatMap((e) => e.material.map((m) => [e.result, m.id] as [string, number]))
+        .flatMap((e) =>
+          e.material.map(
+            (m) => [e.result, { matId: m.id, part: m.part, uniq: m.uniq, numProc: m.numproc }] as const
+          )
+        )
         .toRMap(
           (x) => x,
           (id1, id2) => id2
@@ -270,7 +274,7 @@ export function registerMockBackend(
       return serialsToMatId.then((s) => {
         const mId = s.get(serial);
         if (mId !== undefined) {
-          return this.logForMaterial(mId);
+          return this.logForMaterial(mId.matId);
         } else {
           return Promise.resolve([]);
         }
@@ -279,6 +283,22 @@ export function registerMockBackend(
     getWorkorders(_ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
       // no workorder summaries
       return Promise.resolve([]);
+    },
+    async materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
+      if (!serial || serial === "") return [];
+      const mat = await serialsToMatId.then((s) => s.get(serial));
+      if (mat === undefined) return [];
+      return [
+        {
+          materialID: mat.matId,
+          jobUnique: mat.uniq,
+          partName: mat.part,
+          numProcesses: mat.numProc,
+          workorder: undefined,
+          serial: serial,
+          paths: undefined,
+        },
+      ];
     },
 
     setInspectionDecision(

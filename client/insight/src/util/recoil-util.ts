@@ -71,7 +71,7 @@ export interface RecoilConduit<T> {
 }
 
 export function useRecoilConduit<T>({ transform }: RecoilConduit<T>): (val: T) => void {
-  return useRecoilTransaction_UNSTABLE((trans) => (val: T) => transform(trans, val));
+  return useRecoilTransaction_UNSTABLE((trans) => (val: T) => transform(trans, val), []);
 }
 
 export function conduit<T>(

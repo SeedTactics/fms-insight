@@ -282,6 +282,12 @@ const LogBackend = {
     });
     return entries.map(api.LogEntry.fromJS);
   },
+  async materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
+    const entries: ReadonlyArray<object> = await sendIpc("material-for-serial", {
+      serial,
+    });
+    return entries.map(api.MaterialDetails.fromJS);
+  },
   getWorkorders(): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
     return Promise.resolve([]);
   },

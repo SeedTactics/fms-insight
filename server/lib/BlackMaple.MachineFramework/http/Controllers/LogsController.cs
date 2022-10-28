@@ -202,6 +202,15 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
+    [HttpGet("material-for-serial/{serial}")]
+    public IEnumerable<MaterialDetails> MaterialForSerial(string serial)
+    {
+      using (var db = _backend.RepoConfig.OpenConnection())
+      {
+        return db.GetMaterialDetailsForSerial(serial);
+      }
+    }
+
     [HttpGet("workorders")]
     public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
     {

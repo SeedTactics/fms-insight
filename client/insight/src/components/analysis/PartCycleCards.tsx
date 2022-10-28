@@ -59,7 +59,7 @@ import {
 import { PartIdenticon } from "../station-monitor/Material.js";
 import StationDataTable from "./StationDataTable.js";
 import { useIsDemo } from "../routes.js";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import {
   last30EstimatedCycleTimes,
@@ -78,7 +78,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 // --------------------------------------------------------------------------------
 
 export function PartMachineCycleChart() {
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as PartCycleData;
@@ -326,7 +326,7 @@ export function PartMachineCycleChart() {
 type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
 export function PartLoadStationCycleChart() {
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraLoadCycleTooltip = React.useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -39,27 +39,24 @@ import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { Search as SearchIcon } from "@mui/icons-material";
 import { TextField } from "@mui/material";
-import { materialToShowInDialog } from "../cell-status/material-details.js";
-import { useSetRecoilState } from "recoil";
+import { useSetMaterialToShowInDialog } from "../cell-status/material-details.js";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 
 export const ManualScanButton = React.memo(function ManualScan() {
   const [serial, setSerial] = React.useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
-  const setMatToShowDialog = useSetRecoilState(materialToShowInDialog);
-
-  function open() {
-    if (serial && serial !== "") {
-      setMatToShowDialog({ type: "Serial", serial });
-      setDialogOpen(false);
-      setSerial(null);
-    }
-  }
+  const setMatToShowDialog = useSetMaterialToShowInDialog();
 
   function close() {
     setDialogOpen(false);
     setSerial(null);
+  }
+
+  function open() {
+    if (serial && serial !== "") {
+      setMatToShowDialog({ type: "ManuallyEnteredSerial", serial });
+    }
   }
 
   return (

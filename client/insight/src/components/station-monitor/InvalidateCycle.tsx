@@ -35,9 +35,12 @@ import { Button } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
 import * as React from "react";
-import { ICurrentStatus, IActiveJob, IInProcessMaterial, ILogEntry, LocType } from "../../network/api.js";
+import { IActiveJob, IInProcessMaterial, LocType } from "../../network/api.js";
 import { JobsBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { inProcessMaterialInDialog, useCloseMaterialDialog } from "../../cell-status/material-details.js";
+import { useRecoilValue } from "recoil";
 
 interface InvalidateCycle {
   readonly process: number | null;
@@ -46,19 +49,15 @@ interface InvalidateCycle {
 
 export type InvalidateCycleState = InvalidateCycle | null;
 
-export interface InvalidateDialogContentProps {
-  readonly events: Iterable<Readonly<ILogEntry>>;
+export interface InvalidateCycleProps {
   readonly st: InvalidateCycleState;
   readonly setState: (s: InvalidateCycleState) => void;
 }
 
-export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps) {
-  if (props.st === null) return <div />;
+export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
+  const curMat = useRecoilValue(inProcessMaterialInDialog);
 
-  const maxProc =
-    LazySeq.of(props.events)
-      .flatMap((e) => e.material)
-      .maxBy((m) => m.proc)?.proc ?? 1;
+  if (curMat === null || curMat.location.type !== LocType.InQueue) return <div />;
 
   return (
     <div style={{ margin: "2em" }}>
@@ -80,7 +79,7 @@ export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps
         variant="outlined"
         label="Select process to invalidate"
       >
-        {LazySeq.ofRange(1, maxProc + 1).map((p) => (
+        {LazySeq.ofRange(1, curMat.process + 1).map((p) => (
           <MenuItem key={p} value={p}>
             {p}
           </MenuItem>
@@ -90,35 +89,29 @@ export function InvalidateCycleDialogContent(props: InvalidateDialogContentProps
   );
 }
 
-export interface InvalidateCycleDialogButtonsProps {
-  readonly curMat: Readonly<IInProcessMaterial> | null;
-  readonly st: InvalidateCycleState;
-  readonly operator: string | null;
-  readonly setState: (s: InvalidateCycleState) => void;
-  readonly close: () => void;
-}
+export function InvalidateCycleDialogButtons(props: InvalidateCycleProps) {
+  const curMat = useRecoilValue(inProcessMaterialInDialog);
+  const closeMatDialog = useCloseMaterialDialog();
 
-export function InvalidateCycleDialogButtons(props: InvalidateCycleDialogButtonsProps) {
+  if (curMat === null || curMat.location.type !== LocType.InQueue) return null;
+
   function invalidateCycle() {
-    if (props.curMat && props.st && props.st.process) {
+    if (curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(
-        props.curMat.materialID,
-        null,
-        props.operator,
-        props.st.process
-      ).finally(() => props.close());
+      JobsBackend.invalidatePalletCycle(curMat.materialID, null, null, props.st.process).finally(() =>
+        closeMatDialog()
+      );
     }
   }
 
   return (
     <>
-      {props.curMat && props.st === null ? (
+      {curMat && props.st === null ? (
         <Button color="primary" onClick={() => props.setState({ process: null, updating: false })}>
           Invalidate Cycle
         </Button>
       ) : undefined}
-      {props.curMat && props.st !== null ? (
+      {curMat && props.st !== null ? (
         <Button
           color="primary"
           onClick={invalidateCycle}
@@ -143,13 +136,6 @@ interface SwapMaterial {
 }
 
 export type SwapMaterialState = SwapMaterial | null;
-
-export interface SwapMaterialDialogContentProps {
-  readonly curMat: Readonly<IInProcessMaterial> | null;
-  readonly status: Readonly<ICurrentStatus>;
-  readonly st: SwapMaterialState;
-  readonly setState: (s: SwapMaterialState) => void;
-}
 
 function isNullOrEmpty(s: string | null | undefined): boolean {
   return s === undefined || s === null || s == "";
@@ -185,12 +171,19 @@ function matCanSwap(
   };
 }
 
-export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps): JSX.Element {
-  const curMat = props.curMat;
-  if (curMat === null || props.st === null) return <div />;
-  const curMatJob = props.status.jobs[curMat.jobUnique];
+export interface SwapMaterialProps {
+  readonly st: SwapMaterialState;
+  readonly setState: (s: SwapMaterialState) => void;
+}
 
-  const availMats = props.status.material.filter(matCanSwap(curMat, curMatJob));
+export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element {
+  const status = useRecoilValue(currentStatus);
+  const curMat = useRecoilValue(inProcessMaterialInDialog);
+
+  if (curMat === null || props.st === null) return <div />;
+  const curMatJob = status.jobs[curMat.jobUnique];
+
+  const availMats = status.material.filter(matCanSwap(curMat, curMatJob));
   if (availMats.length === 0) {
     return (
       <p style={{ margin: "2em" }}>
@@ -233,38 +226,28 @@ export function SwapMaterialDialogContent(props: SwapMaterialDialogContentProps)
   }
 }
 
-export interface SwapMaterialButtonsProps {
-  readonly curMat: Readonly<IInProcessMaterial> | null;
-  readonly st: SwapMaterialState;
-  readonly operator: string | null;
-  readonly setState: (s: SwapMaterialState) => void;
-  readonly close: () => void;
-}
+export function SwapMaterialButtons(props: SwapMaterialProps) {
+  const curMat = useRecoilValue(inProcessMaterialInDialog);
+  const closeMatDialog = useCloseMaterialDialog();
 
-export function SwapMaterialButtons(props: SwapMaterialButtonsProps) {
   function swapMats() {
-    if (
-      props.curMat &&
-      props.st &&
-      props.st.selectedMatToSwap &&
-      props.curMat.location.type === LocType.OnPallet
-    ) {
+    if (curMat && props.st && props.st.selectedMatToSwap && curMat.location.type === LocType.OnPallet) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
-      JobsBackend.swapMaterialOnPallet(props.curMat.materialID, props.operator, {
-        pallet: props.curMat.location.pallet ?? "",
+      JobsBackend.swapMaterialOnPallet(curMat.materialID, null, {
+        pallet: curMat.location.pallet ?? "",
         materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
-      }).finally(() => props.close());
+      }).finally(() => closeMatDialog());
     }
   }
 
   return (
     <>
-      {props.curMat && props.st === null && props.curMat.location.type === LocType.OnPallet ? (
+      {curMat && props.st === null && curMat.location.type === LocType.OnPallet ? (
         <Button color="primary" onClick={() => props.setState({ selectedMatToSwap: null, updating: false })}>
           Swap Serial
         </Button>
       ) : undefined}
-      {props.curMat && props.st !== null && props.curMat.location.type === LocType.OnPallet ? (
+      {curMat && props.st !== null && curMat.location.type === LocType.OnPallet ? (
         <Button
           color="primary"
           onClick={swapMats}

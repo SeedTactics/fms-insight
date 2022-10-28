@@ -53,9 +53,9 @@ import {
   useColSort,
   useTablePage,
 } from "../analysis/DataTable.js";
-import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { RouteLocation, useCurrentRoute, useIsDemo } from "../routes.js";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections.js";
 
 interface RecentFailedInspectionsProps {
@@ -109,7 +109,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   const sort = useColSort(ColumnId.Date, columns);
   const tpage = useTablePage();
   const [, setRoute] = useCurrentRoute();
-  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+  const setMatToShow = useSetMaterialToShowInDialog();
 
   const curPage = Math.min(tpage.page, Math.ceil(props.failed.length / tpage.rowsPerPage));
   const points = LazySeq.of(props.failed).sortBy(sort.sortOn);

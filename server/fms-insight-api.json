@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v13.16.1.0 (NJsonSchema v10.7.2.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v13.17.0.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -1498,6 +1498,41 @@
         "parameters": [
           {
             "name": "jobUnique",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MaterialDetails"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/log/material-for-serial/{serial}": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_MaterialForSerial",
+        "parameters": [
+          {
+            "name": "serial",
             "in": "path",
             "required": true,
             "schema": {

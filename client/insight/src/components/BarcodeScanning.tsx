@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -39,29 +39,84 @@ import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { CameraAlt } from "@mui/icons-material";
-import { materialToShowInDialog } from "../cell-status/material-details.js";
-import { useSetRecoilState } from "recoil";
+import { useSetMaterialToShowInDialog } from "../cell-status/material-details.js";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 
+export const BarcodeListener = React.memo(function BarcodeListener(): null {
+  const setBarcode = useSetMaterialToShowInDialog();
+  React.useEffect(() => {
+    let timeout: number | undefined;
+    let scanActive = false;
+    let scannedTxt = "";
+    let lastBangTime: number | null = null;
+
+    function cancelDetection() {
+      scannedTxt = "";
+      scanActive = false;
+    }
+
+    function startDetection() {
+      scannedTxt = "";
+      scanActive = true;
+      timeout = window.setTimeout(cancelDetection, 3 * 1000);
+    }
+
+    function success() {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = undefined;
+      }
+      scanActive = false;
+
+      setBarcode({ type: "Barcode", barcode: scannedTxt });
+    }
+
+    function onKeyDown(k: KeyboardEvent) {
+      if (k.key === "!") {
+        lastBangTime = Date.now();
+      } else if (k.code === "F1" && !scanActive) {
+        startDetection();
+        k.stopPropagation();
+        k.preventDefault();
+      } else if (k.key === "*" && !scanActive && lastBangTime !== null && Date.now() - lastBangTime < 1000) {
+        startDetection();
+        k.stopPropagation();
+        k.preventDefault();
+      } else if (scanActive && k.code === "Enter") {
+        success();
+        k.stopPropagation();
+        k.preventDefault();
+      } else if (scanActive && k.key && k.key.length === 1) {
+        if (/[a-zA-Z0-9-_,;]/.test(k.key)) {
+          scannedTxt += k.key;
+          k.stopPropagation();
+          k.preventDefault();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [setBarcode]);
+
+  return null;
+});
+
 export const SerialScannerButton = React.memo(function SerialScanner() {
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
-  const setMatToShowDialog = useSetRecoilState(materialToShowInDialog);
+  const setBarcode = useSetMaterialToShowInDialog();
 
   const onScan: OnResultFunction = (result) => {
     if (result === undefined || result == null) {
       return;
     }
-    let serial = result.getText();
-    const commaIdx = serial.indexOf(",");
-    if (commaIdx >= 0) {
-      serial = serial.substring(0, commaIdx);
-    }
-    serial = serial.replace(/[^0-9a-zA-Z-_]/g, "");
-    if (serial === "") {
+    const barcode = result.getText();
+    if (barcode === "") {
       return;
     }
-    setMatToShowDialog({ type: "Serial", serial });
+    setBarcode({ type: "Barcode", barcode: barcode });
     setDialogOpen(false);
   };
   return (

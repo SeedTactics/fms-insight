@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -38,68 +38,89 @@ import { Button } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { DialogActions } from "@mui/material";
 
-import { MaterialDialog, MatSummary, InstructionButton } from "./Material.js";
+import { MaterialDialog, MatSummary } from "./Material.js";
 import { WhiteboardRegion } from "./Whiteboard.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { instructionUrl } from "../../network/backend.js";
+import { LogType } from "../../network/api.js";
 
 interface InspButtonsProps {
-  readonly display_material: matDetails.MaterialDetail;
   readonly inspection_type: string;
 }
 
 function InspButtons(props: InspButtonsProps) {
   const operator = useRecoilValue(currentOperator);
   const quarantineQueue = useRecoilValue(fmsInformation).quarantineQueue ?? null;
+  const material = useRecoilValue(matDetails.materialInDialogInfo);
+  const matEvents = useRecoilValue(matDetails.materialInDialogEvents);
   const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
   const [addExistingToQueue, addExistingToQueueUpdating] = matDetails.useAddExistingMaterialToQueue();
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const closeMatDialog = matDetails.useCloseMaterialDialog();
+
+  if (material === null) return null;
 
   function markInspComplete(success: boolean) {
-    if (!props.display_material) {
+    if (!material) {
       return;
     }
 
     completeInsp({
-      mat: props.display_material,
+      mat: material,
       inspType: props.inspection_type,
       success,
       operator: operator,
     });
 
-    setMatToShow(null);
+    closeMatDialog();
   }
+
+  const maxProc =
+    LazySeq.of(matEvents)
+      .filter(
+        (e) =>
+          e.details?.["PalletCycleInvalidated"] !== "1" &&
+          (e.type === LogType.LoadUnloadCycle ||
+            e.type === LogType.MachineCycle ||
+            e.type === LogType.AddToQueue)
+      )
+      .flatMap((e) => e.material)
+      .filter((e) => e.id === material.materialID)
+      .maxBy((e) => e.proc)?.proc ?? null;
+  const url = instructionUrl(
+    material.partName,
+    props.inspection_type,
+    material.materialID,
+    null,
+    maxProc,
+    operator
+  );
 
   return (
     <>
-      {props.display_material && props.display_material.partName !== "" ? (
-        <InstructionButton
-          material={props.display_material}
-          type={props.inspection_type}
-          operator={operator}
-          pallet={null}
-        />
+      {material.partName !== "" ? (
+        <Button href={url} target="bms-instructions" color="primary">
+          Instructions
+        </Button>
       ) : undefined}
-      {props.display_material && quarantineQueue !== null ? (
+      {quarantineQueue !== null ? (
         <Tooltip title={"Move to " + quarantineQueue}>
           <Button
             color="primary"
             disabled={addExistingToQueueUpdating}
             onClick={() => {
-              if (props.display_material && quarantineQueue) {
-                addExistingToQueue({
-                  materialId: props.display_material.materialID,
-                  queue: quarantineQueue,
-                  queuePosition: 0,
-                  operator: operator || null,
-                });
-              }
-              setMatToShow(null);
+              addExistingToQueue({
+                materialId: material.materialID,
+                queue: quarantineQueue,
+                queuePosition: 0,
+                operator: operator || null,
+              });
+              closeMatDialog();
             }}
           >
             Quarantine Material
@@ -120,45 +141,44 @@ interface InspDialogProps {
   readonly focusInspectionType: string | null;
 }
 
-function InspDialog(props: InspDialogProps) {
-  const displayMat = useRecoilValue(matDetails.materialDetail);
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+function DialogBodyInspButtons({ focusInspectionType }: InspDialogProps) {
+  const material = useRecoilValue(matDetails.materialInDialogInspections);
+  if (material === null || focusInspectionType || material.signaledInspections.length === 1) return null;
 
-  let singleInspectionType: string | undefined;
-  let multipleInspTypes: ReadonlyArray<string> | undefined;
-  if (props.focusInspectionType) {
-    singleInspectionType = props.focusInspectionType;
-  } else if (displayMat) {
-    if (displayMat.signaledInspections.length === 1) {
-      singleInspectionType = displayMat.signaledInspections[0];
-    } else if (displayMat.signaledInspections.length > 1) {
-      multipleInspTypes = displayMat.signaledInspections;
-    }
-  }
   return (
-    <MaterialDialog
-      display_material={displayMat}
-      allowNote
-      onClose={() => setMatToShow(null)}
-      extraDialogElements={
-        !displayMat || !multipleInspTypes ? undefined : (
-          <>
-            {multipleInspTypes.map((i) => (
-              <DialogActions key={i}>
-                <InspButtons display_material={displayMat} inspection_type={i} />
-              </DialogActions>
-            ))}
-          </>
-        )
-      }
-      buttons={
-        !singleInspectionType || !displayMat ? undefined : (
-          <InspButtons display_material={displayMat} inspection_type={singleInspectionType} />
-        )
-      }
-    />
+    <>
+      {material.signaledInspections.map((i) => (
+        <DialogActions key={i}>
+          <InspButtons inspection_type={i} />
+        </DialogActions>
+      ))}
+    </>
   );
 }
+
+function DialogActionInspButtons({ focusInspectionType }: InspDialogProps) {
+  const material = useRecoilValue(matDetails.materialInDialogInspections);
+  let singleInspectionType: string;
+  if (focusInspectionType) {
+    singleInspectionType = focusInspectionType;
+  } else if (material && material.signaledInspections.length === 1) {
+    singleInspectionType = material.signaledInspections[0];
+  } else {
+    return null;
+  }
+
+  return <InspButtons inspection_type={singleInspectionType} />;
+}
+
+const InspMaterialDialog = React.memo(function InspMaterialDialog(props: InspDialogProps) {
+  return (
+    <MaterialDialog
+      allowNote
+      extraDialogElements={<DialogBodyInspButtons focusInspectionType={props.focusInspectionType} />}
+      buttons={<DialogActionInspButtons focusInspectionType={props.focusInspectionType} />}
+    />
+  );
+});
 
 interface PartsForInspection {
   readonly waiting_to_inspect: ReadonlyArray<MaterialSummary>;
@@ -204,7 +224,7 @@ export function Inspection(props: InspectionProps): JSX.Element {
           </WhiteboardRegion>
         </Grid>
       </Grid>
-      <InspDialog focusInspectionType={props.focusInspectionType} />
+      <InspMaterialDialog focusInspectionType={props.focusInspectionType} />
     </div>
   );
 }

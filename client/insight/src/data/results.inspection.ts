@@ -34,7 +34,6 @@ import * as api from "../network/api.js";
 import { InspectionLogEntry, InspectionLogResultType } from "../cell-status/inspections.js";
 import { LazySeq, mkCompareByProperties, ToComparable } from "@seedtactics/immutable-collections";
 import { format } from "date-fns";
-import { MaterialDetail } from "../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 
 export interface TriggeredInspectionEntry {
@@ -152,8 +151,10 @@ export function extractFailedInspections(
 // Failed Lookup
 // --------------------------------------------------------------------------------
 
-export function extractPath(mat: MaterialDetail): ReadonlyArray<Readonly<api.IMaterialProcessActualPath>> {
-  for (const e of mat.events) {
+export function extractPath(
+  evts: ReadonlyArray<Readonly<api.ILogEntry>>
+): ReadonlyArray<Readonly<api.IMaterialProcessActualPath>> {
+  for (const e of evts) {
     if (e.type === api.LogType.Inspection) {
       const pathsJson: ReadonlyArray<object> = JSON.parse(
         (e.details || {}).ActualPath || "[]"

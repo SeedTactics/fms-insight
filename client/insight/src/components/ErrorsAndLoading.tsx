@@ -46,7 +46,7 @@ export function Loading() {
   );
 }
 
-function DisplayError({ error }: { readonly error?: Error }) {
+export function DisplayError({ error }: { readonly error?: Error }) {
   if (error === undefined) return <></>;
   return (
     <Card>
@@ -55,10 +55,10 @@ function DisplayError({ error }: { readonly error?: Error }) {
   );
 }
 
-export function DisplayLoadingAndErrorCard(props: React.PropsWithChildren<{}>) {
+export function DisplayLoadingAndError(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
   return (
     <ErrorBoundary FallbackComponent={DisplayError}>
-      <React.Suspense fallback={<Loading />}>{props.children}</React.Suspense>
+      <React.Suspense fallback={props.fallback ?? <Loading />}>{props.children}</React.Suspense>
     </ErrorBoundary>
   );
 }

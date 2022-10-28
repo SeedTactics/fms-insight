@@ -65,7 +65,7 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle.js";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { selector, useRecoilState, useRecoilValue } from "recoil";
 import {
   horizontalListSortingStrategy,
   SortableContext,
@@ -334,73 +334,60 @@ function MaterialBinColumn({
   }
 }
 
-interface AllMatDialogProps {
-  readonly quarantineQueue: boolean;
+function RemoveFromSystemButton() {
+  const [removeFromQueue] = matDetails.useRemoveFromQueue();
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  if (mat === null) return null;
+
+  return (
+    <Button color="primary" onClick={() => removeFromQueue(mat.materialID, null)}>
+      Remove From System
+    </Button>
+  );
 }
 
-function AllMatDialog(props: AllMatDialogProps) {
+const curMatInQueue = selector<boolean>({
+  key: "mat-in-dialog-currently-in-queue",
+  get: ({ get }) => {
+    const mat = get(matDetails.inProcessMaterialInDialog);
+    if (mat === null) return false;
+    return mat.location.type === LocType.InQueue;
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
+
+const AllMatDialog = React.memo(function AllMatDialog() {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState>(null);
-  const status = useRecoilValue(currentSt.currentStatus);
 
-  const displayMat = useRecoilValue(matDetails.materialDetail);
-  const setMatToDisplay = useSetRecoilState(matDetails.materialToShowInDialog);
-  const [removeFromQueue] = matDetails.useRemoveFromQueue();
-  const curMat =
-    displayMat !== null ? status.material.find((m) => m.materialID === displayMat.materialID) ?? null : null;
+  const inQueue = useRecoilValue(curMatInQueue);
 
-  function close() {
-    setMatToDisplay(null);
+  function onClose() {
     setSwapSt(null);
     setInvalidateSt(null);
   }
 
   return (
     <MaterialDialog
-      display_material={displayMat}
-      onClose={close}
-      allowNote={props.quarantineQueue}
+      onClose={onClose}
+      allowNote={inQueue}
       highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
-          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} curMat={curMat} status={status} />
-          {displayMat && curMat && curMat.location.type === LocType.InQueue ? (
-            <InvalidateCycleDialogContent
-              st={invalidateSt}
-              setState={setInvalidateSt}
-              events={displayMat.events}
-            />
-          ) : undefined}
+          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
+          <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
         </>
       }
       buttons={
         <>
-          {displayMat && props.quarantineQueue ? (
-            <Button color="primary" onClick={() => removeFromQueue(displayMat.materialID, null)}>
-              Remove From System
-            </Button>
-          ) : undefined}
-          <SwapMaterialButtons
-            st={swapSt}
-            setState={setSwapSt}
-            curMat={curMat}
-            close={close}
-            operator={null}
-          />
-          {curMat && curMat.location.type === LocType.InQueue ? (
-            <InvalidateCycleDialogButtons
-              st={invalidateSt}
-              setState={setInvalidateSt}
-              curMat={curMat}
-              operator={null}
-              close={close}
-            />
-          ) : undefined}
+          {inQueue ? <RemoveFromSystemButton /> : null}
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} />
+          <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} />
         </>
       }
     />
   );
-}
+});
 
 function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDetection {
   return React.useCallback(
@@ -463,7 +450,6 @@ export function AllMaterial(props: AllMaterialProps) {
   }, []);
   const st = useRecoilValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
-  const displayMaterial = useRecoilValue(matDetails.materialDetail);
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
   const reorderQueuedMat = useRecoilConduit(currentSt.reorderQueuedMatInCurrentStatus);
   const [activeDrag, setActiveDrag] = React.useState<CurActiveDrag | null>(null);
@@ -482,14 +468,6 @@ export function AllMaterial(props: AllMaterialProps) {
     : allBins.filter((bin) => bin.type === MaterialBinType.QuarantineQueues);
 
   const collisionDetectionStrategy = useCollisionDetection(allBins);
-
-  const curDisplayQuarantine =
-    displayMaterial !== null &&
-    curBins.findIndex(
-      (bin) =>
-        bin.type === MaterialBinType.QuarantineQueues &&
-        bin.material.findIndex((mat) => mat.materialID === displayMaterial?.materialID) >= 0
-    ) >= 0;
 
   return (
     <DndContext
@@ -582,7 +560,7 @@ export function AllMaterial(props: AllMaterialProps) {
           <MaterialBinColumn matBin={activeDrag.bin} isDragOverlay />
         ) : undefined}
       </DragOverlay>
-      <AllMatDialog quarantineQueue={curDisplayQuarantine} />
+      <AllMatDialog />
     </DndContext>
   );
 }

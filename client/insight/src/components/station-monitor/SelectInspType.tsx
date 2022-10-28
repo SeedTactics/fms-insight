@@ -56,7 +56,7 @@ interface ManualInpTypeEntryProps {
 
 function ManualInspTypeEntry(props: ManualInpTypeEntryProps) {
   const [inspType, setInspType] = React.useState<string | null>(null);
-  const mat = useRecoilValue(matDetails.materialDetail);
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
   const [forceInsp] = matDetails.useForceInspection();
   return (
     <TextField
@@ -85,7 +85,7 @@ export const selectInspTypeDialogOpen = atom<boolean>({
 });
 
 export const SelectInspTypeDialog = React.memo(function SelectInspTypeDialog() {
-  const mat = useRecoilValue(matDetails.materialDetail);
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
   const [forceInsp] = matDetails.useForceInspection();
   const [dialogOpen, setDialogOpen] = useRecoilState(selectInspTypeDialogOpen);
   const inspTypes = useRecoilValue(last30InspectionTypes);
