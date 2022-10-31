@@ -43,7 +43,7 @@ namespace BlackMaple.MachineFramework
   internal partial class Repository
   {
     #region Loading
-    private IEnumerable<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans = null)
+    private IEnumerable<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans)
     {
       using (var matCmd = _connection.CreateCommand())
       using (var detailCmd = _connection.CreateCommand())
@@ -227,8 +227,10 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
     {
+      using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
+        cmd.Transaction = trans;
         cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
              " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
 
@@ -237,7 +239,7 @@ namespace BlackMaple.MachineFramework
 
         using (var reader = cmd.ExecuteReader())
         {
-          foreach (var l in LoadLog(reader))
+          foreach (var l in LoadLog(reader, trans))
           {
             yield return l;
           }
@@ -271,7 +273,7 @@ namespace BlackMaple.MachineFramework
 
           using (var reader = cmd.ExecuteReader())
           {
-            foreach (var l in LoadLog(reader))
+            foreach (var l in LoadLog(reader, trans))
             {
               yield return l;
             }
@@ -284,15 +286,17 @@ namespace BlackMaple.MachineFramework
 
     public List<LogEntry> StationLogByForeignID(string foreignID)
     {
+      using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
+        cmd.Transaction = trans;
         cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
              " FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
         using (var reader = cmd.ExecuteReader())
         {
-          return LoadLog(reader).ToList();
+          return LoadLog(reader, trans).ToList();
         }
       }
     }
@@ -326,15 +330,17 @@ namespace BlackMaple.MachineFramework
     public List<LogEntry> GetLogForMaterial(long materialID)
     {
       if (materialID < 0) return new List<LogEntry>();
+      using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
+        cmd.Transaction = trans;
         cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
              " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
 
         using (var reader = cmd.ExecuteReader())
         {
-          return LoadLog(reader).ToList();
+          return LoadLog(reader, trans).ToList();
         }
       }
     }
@@ -355,7 +361,7 @@ namespace BlackMaple.MachineFramework
           param.Value = matId;
           using (var reader = cmd.ExecuteReader())
           {
-            ret.AddRange(LoadLog(reader));
+            ret.AddRange(LoadLog(reader, trans));
           }
         }
         trans.Commit();
@@ -365,15 +371,17 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> GetLogForSerial(string serial)
     {
+      using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
+        cmd.Transaction = trans;
         cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
             " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
         cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
         using (var reader = cmd.ExecuteReader())
         {
-          foreach (var l in LoadLog(reader))
+          foreach (var l in LoadLog(reader, trans))
           {
             yield return l;
           }
@@ -383,15 +391,17 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique)
     {
+      using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
+        cmd.Transaction = trans;
         cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
             " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
         using (var reader = cmd.ExecuteReader())
         {
-          foreach (var l in LoadLog(reader))
+          foreach (var l in LoadLog(reader, trans))
           {
             yield return l;
           }
@@ -401,8 +411,10 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> GetLogForWorkorder(string workorder)
     {
+      using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
+        cmd.Transaction = trans;
         cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
             " FROM stations " +
             " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) " +
@@ -413,7 +425,7 @@ namespace BlackMaple.MachineFramework
 
         using (var reader = cmd.ExecuteReader())
         {
-          foreach (var l in LoadLog(reader))
+          foreach (var l in LoadLog(reader, trans))
           {
             yield return l;
           }
@@ -445,8 +457,10 @@ namespace BlackMaple.MachineFramework
                                 stations_mat.Process = matdetails.NumProcesses
                         )";
 
+      using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
+        cmd.Transaction = trans;
         cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
             " FROM stations WHERE Counter IN (" + searchCompleted + ") ORDER BY Counter ASC";
         cmd.Parameters.Add("loadty", SqliteType.Integer)
@@ -456,7 +470,7 @@ namespace BlackMaple.MachineFramework
 
         using (var reader = cmd.ExecuteReader())
         {
-          foreach (var l in LoadLog(reader))
+          foreach (var l in LoadLog(reader, trans))
           {
             yield return l;
           }
@@ -517,7 +531,7 @@ namespace BlackMaple.MachineFramework
               " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
           {
-            return LoadLog(reader).ToList();
+            return LoadLog(reader, trans).ToList();
           }
 
         }

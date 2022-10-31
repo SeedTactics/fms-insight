@@ -78,7 +78,7 @@ namespace DebugMachineWatchApiServer
       var serverSettings = ServerSettings.Load(cfg);
 
       var fmsSettings = new FMSSettings(cfg);
-      fmsSettings.RequireSerialWhenAddingMaterialToQueue = true;
+      fmsSettings.RequireSerialWhenAddingMaterialToQueue = false;
       fmsSettings.AddRawMaterialAsUnassigned = true;
       fmsSettings.RequireExistingMaterialWhenAddingToQueue = false;
       fmsSettings.InstructionFilePath = System.IO.Path.Combine(
@@ -126,6 +126,7 @@ namespace DebugMachineWatchApiServer
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
     private List<ToolInMachine> Tools { get; set; }
+    private string _tempDbFile;
     private class MockProgram
     {
       public string ProgramName { get; set; }
@@ -159,7 +160,9 @@ namespace DebugMachineWatchApiServer
       }
       else
       {
-        RepoConfig = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+        _tempDbFile = System.IO.Path.GetTempFileName();
+        System.IO.File.Delete(_tempDbFile);
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), _tempDbFile);
 
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -180,13 +183,13 @@ namespace DebugMachineWatchApiServer
 
     public void Dispose()
     {
-      RepoConfig.CloseMemoryConnection();
+      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+      if (_tempDbFile != null)
+      {
+        System.IO.File.Delete(_tempDbFile);
+      }
     }
 
-    public IRepository OpenRepository()
-    {
-      return RepoConfig.OpenConnection();
-    }
 
     public IJobControl JobControl { get => this; }
     public IQueueControl QueueControl => this;
