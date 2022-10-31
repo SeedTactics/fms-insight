@@ -75,6 +75,7 @@ import {
   addMaterialBySerial,
   bulkAddCastingToQueue,
   addMaterialWithoutSerial,
+  PrintOnClientButton,
 } from "./QueuesAddMaterial.js";
 import {
   selectQueueData,
@@ -86,8 +87,6 @@ import { LogEntries } from "../LogEntry.js";
 import { JobsBackend, BackendUrl } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
-import { default as ReactToPrint } from "react-to-print";
-import { PrintedLabel } from "./PrintedLabel.js";
 import { JobDetails } from "./JobDetails.js";
 import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -438,7 +437,6 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
   const [showRemove, setShowRemove] = React.useState(false);
   const [removeCnt, setRemoveCnt] = React.useState<number>(NaN);
   const [lastOperator, setLastOperator] = React.useState<string | undefined>(undefined);
-  const printRef = React.useRef(null);
 
   React.useEffect(() => {
     if (props.material === null) return;
@@ -532,23 +530,11 @@ const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: Multi
       <DialogActions>
         {props.material && props.material.length > 0 && fmsInfo.usingLabelPrinterForSerials ? (
           fmsInfo.useClientPrinterForLabels ? (
-            <>
-              <ReactToPrint
-                content={() => printRef.current}
-                trigger={() => <Button color="primary">Print Label</Button>}
-                copyStyles={false}
-              />
-              <div style={{ display: "none" }}>
-                <div ref={printRef}>
-                  <PrintedLabel
-                    materialName={rawMatName}
-                    material={props.material || []}
-                    operator={lastOperator}
-                    oneJobPerPage={false}
-                  />
-                </div>
-              </div>
-            </>
+            <PrintOnClientButton
+              mat={props.material || []}
+              materialName={rawMatName}
+              operator={lastOperator}
+            />
           ) : (
             <Button
               color="primary"

@@ -50,7 +50,7 @@ import { CircularProgress } from "@mui/material";
 import { TextField } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
-import { default as ReactToPrint } from "react-to-print";
+import { useReactToPrint } from "react-to-print";
 
 import { MaterialDetailTitle, MaterialDetailContent, PartIdenticon } from "./Material.js";
 import * as api from "../../network/api.js";
@@ -58,7 +58,7 @@ import * as matDetails from "../../cell-status/material-details.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material.js";
 import { currentOperator } from "../../data/operators.js";
-import { PrintedLabel } from "./PrintedLabel.js";
+import { PrintedLabel, PrintMaterial } from "./PrintedLabel.js";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -70,8 +70,41 @@ interface ExistingMatInQueueDialogBodyProps {
   readonly in_proc_material: Readonly<api.IInProcessMaterial>;
 }
 
-function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
+export function PrintOnClientButton({
+  mat,
+  materialName,
+  operator,
+}: {
+  mat: PrintMaterial | ReadonlyArray<PrintMaterial>;
+  materialName?: string | null;
+  operator?: string | null;
+}) {
   const printRef = React.useRef(null);
+  const print = useReactToPrint({
+    content: () => printRef.current,
+    copyStyles: false,
+  });
+
+  return (
+    <>
+      <Button color="primary" onClick={print}>
+        Print Label
+      </Button>
+      <div style={{ display: "none" }}>
+        <div ref={printRef}>
+          <PrintedLabel
+            materialName={materialName}
+            material={Array.isArray(mat) ? mat : [mat]}
+            oneJobPerPage={false}
+            operator={operator}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) {
   const operator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
 
@@ -133,18 +166,7 @@ function ExistingMatInQueueDialogBody(props: ExistingMatInQueueDialogBodyProps) 
       <DialogActions>
         {fmsInfo.usingLabelPrinterForSerials ? (
           fmsInfo.useClientPrinterForLabels ? (
-            <>
-              <ReactToPrint
-                content={() => printRef.current}
-                copyStyles={false}
-                trigger={() => <Button color="primary">Print Label</Button>}
-              />
-              <div style={{ display: "none" }}>
-                <div ref={printRef}>
-                  <PrintedLabel material={[props.display_material]} oneJobPerPage={false} />
-                </div>
-              </div>
-            </>
+            <PrintOnClientButton mat={props.display_material} />
           ) : (
             <Button
               color="primary"
@@ -675,6 +697,74 @@ export const bulkAddCastingToQueue = atom<string | null>({
   default: null,
 });
 
+function AddAndPrintOnClientButton({
+  operator,
+  selectedCasting,
+  queue,
+  close,
+  qty,
+  disabled,
+}: {
+  operator: string | null;
+  selectedCasting: string | null;
+  queue: string | null;
+  close: () => void;
+  qty: number | null;
+  disabled: boolean;
+}) {
+  const printRef = React.useRef(null);
+  const [adding, setAdding] = React.useState<boolean>(false);
+  const print = useReactToPrint({
+    content: () => printRef.current,
+    onAfterPrint: close,
+    copyStyles: false,
+  });
+  const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<api.IInProcessMaterial>>([]);
+  const [addNewCasting] = useAddNewCastingToQueue();
+
+  React.useEffect(() => {
+    if (materialToPrint.length === 0) return;
+    print();
+  }, [materialToPrint]);
+
+  function addAndPrint() {
+    if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
+      setAdding(true);
+      addNewCasting({
+        casting: selectedCasting,
+        quantity: qty,
+        queue: queue,
+        operator: operator,
+        onNewMaterial: (mats) => {
+          setMaterialToPrint(mats);
+        },
+        onError: () => {
+          close();
+        },
+      });
+    }
+  }
+
+  return (
+    <>
+      <Button color="primary" disabled={disabled || adding} onClick={addAndPrint}>
+        {adding ? <CircularProgress size={10} /> : undefined}
+        Add to {queue}
+      </Button>
+      <div style={{ display: "none" }}>
+        <div ref={printRef}>
+          <PrintedLabel
+            materialName={selectedCasting}
+            material={materialToPrint}
+            operator={operator}
+            oneJobPerPage={true}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
 export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
   const [queue, setQueue] = useRecoilState(bulkAddCastingToQueue);
 
@@ -687,10 +777,6 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
   const [qty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<
-    Readonly<api.IInProcessMaterial>
-  > | null>(null);
-  const printRef = React.useRef(null);
   const [adding, setAdding] = React.useState<boolean>(false);
   const castNames = useRecoilValue(castingNames);
   const castings: LazySeq<readonly [string, number]> = React.useMemo(
@@ -712,7 +798,6 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
     setQueue(null);
     setSelectedCasting(null);
     setEnteredOperator(null);
-    setMaterialToPrint(null);
     setAdding(false);
     setQty(null);
   }
@@ -729,33 +814,9 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
     close();
   }
 
-  function addAndPrint(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
-        setAdding(true);
-        addNewCasting({
-          casting: selectedCasting,
-          quantity: qty,
-          queue: queue,
-          operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
-          onNewMaterial: (mats) => {
-            setMaterialToPrint(mats);
-            resolve();
-          },
-          onError: (reason) => {
-            close();
-            reject(reason);
-          },
-        });
-      } else {
-        close();
-      }
-    });
-  }
-
   return (
     <>
-      <Dialog open={queue !== null} onClose={() => (adding && printOnAdd ? undefined : close())}>
+      <Dialog open={queue !== null} onClose={() => close()}>
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
           <FormControl>
@@ -817,27 +878,19 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
         </DialogContent>
         <DialogActions>
           {printOnAdd ? (
-            <ReactToPrint
-              onBeforeGetContent={addAndPrint}
-              onAfterPrint={close}
-              copyStyles={false}
-              content={() => printRef.current}
-              trigger={() => (
-                <Button
-                  color="primary"
-                  disabled={
-                    selectedCasting === null ||
-                    adding ||
-                    qty === null ||
-                    isNaN(qty) ||
-                    (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-                      (enteredOperator === null || enteredOperator === ""))
-                  }
-                >
-                  {adding ? <CircularProgress size={10} /> : undefined}
-                  Add to {queue}
-                </Button>
-              )}
+            <AddAndPrintOnClientButton
+              queue={queue}
+              selectedCasting={selectedCasting}
+              operator={fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator}
+              qty={qty}
+              close={close}
+              disabled={
+                selectedCasting === null ||
+                qty === null ||
+                isNaN(qty) ||
+                (!!fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+                  (enteredOperator === null || enteredOperator === ""))
+              }
             />
           ) : (
             <Button
@@ -859,16 +912,6 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
           </Button>
         </DialogActions>
       </Dialog>
-      <div style={{ display: "none" }}>
-        <div ref={printRef}>
-          <PrintedLabel
-            materialName={selectedCasting}
-            material={materialToPrint}
-            operator={enteredOperator}
-            oneJobPerPage={true}
-          />
-        </div>
-      </div>
     </>
   );
 });

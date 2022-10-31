@@ -62,8 +62,6 @@ import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
 import { currentOperator } from "../../data/operators.js";
-import { PrintedLabel } from "./PrintedLabel.js";
-import { default as ReactToPrint } from "react-to-print";
 import { instructionUrl } from "../../network/backend.js";
 import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
@@ -71,6 +69,7 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useIsDemo } from "../routes.js";
+import { PrintOnClientButton } from "./QueuesAddMaterial.js";
 
 function stationPalMaterialStatus(
   mat: Readonly<api.IInProcessMaterial>,
@@ -390,8 +389,6 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
   const [signalQuarantine, signalingQuarantine] = matDetails.useSignalForQuarantine();
   const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
 
-  const printRef = React.useRef(null);
-
   function openAssignWorkorder() {
     if (displayMat) {
       return;
@@ -416,18 +413,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
           ) : undefined}
           {displayMat && fmsInfo.usingLabelPrinterForSerials ? (
             fmsInfo.useClientPrinterForLabels ? (
-              <>
-                <ReactToPrint
-                  content={() => printRef.current}
-                  copyStyles={false}
-                  trigger={() => <Button color="primary">Print Label</Button>}
-                />
-                <div style={{ display: "none" }}>
-                  <div ref={printRef}>
-                    <PrintedLabel material={displayMat ? [displayMat] : []} oneJobPerPage={false} />
-                  </div>
-                </div>
-              </>
+              <PrintOnClientButton mat={displayMat} />
             ) : (
               <Button
                 color="primary"

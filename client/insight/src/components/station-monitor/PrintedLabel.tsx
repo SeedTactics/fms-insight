@@ -110,7 +110,7 @@ function SinglePage(props: SinglePageProps) {
           {props.serial2 && props.serial2 !== "" ? <Barcode text={props.serial2 || ""} /> : undefined}
         </div>
       ) : undefined}
-      <div style={{ marginTop: "2em", marginLeft: "4em", marginRight: "4em" }}>
+      <div style={{ marginTop: "2em", marginLeft: "4em", marginRight: "4em", marginBottom: "7em" }}>
         {props.uniq === null || props.uniq === "" ? (
           <p style={{ fontSize: "x-large" }}>Not currently assigned to any jobs</p>
         ) : (
@@ -124,12 +124,12 @@ function SinglePage(props: SinglePageProps) {
         )}
       </div>
       {props.note ? (
-        <div style={{ marginTop: "5em" }}>
+        <div style={{ marginBottom: "2em" }}>
           <p style={{ fontSize: "xx-large", textAlign: "center" }}>{props.note}</p>
         </div>
       ) : undefined}
-      <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
-        {props.operator ? <p style={{ fontSize: "xx-large" }}>{props.operator}</p> : undefined}
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        {props.operator ? <p style={{ fontSize: "xxx-large" }}>{props.operator}</p> : undefined}
       </div>
     </div>
   );
@@ -245,7 +245,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
           ) : undefined}
         </div>
       ) : undefined}
-      <div style={{ marginTop: "2em", marginLeft: "4em", marginRight: "4em" }}>
+      <div style={{ marginTop: "2em", marginLeft: "4em", marginRight: "4em", marginBottom: "7em" }}>
         {assignments.length === 0 ? (
           <p style={{ fontSize: "x-large" }}>Not currently assigned to any jobs</p>
         ) : props.materialName ? (
@@ -284,7 +284,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
         )}
       </div>
       {notes.length > 0 ? (
-        <div style={{ marginTop: "5em" }}>
+        <div style={{ marginBottom: "2em" }}>
           {notes.map((n, idx) => (
             <p key={idx} style={{ fontSize: "xx-large", textAlign: "center" }}>
               {n}
@@ -292,8 +292,8 @@ function CombinedToOnePage(props: PrintedLabelProps) {
           ))}
         </div>
       ) : undefined}
-      <div style={{ marginTop: "4em", display: "flex", justifyContent: "center" }}>
-        {props.operator ? <p style={{ fontSize: "xx-large" }}>{props.operator}</p> : undefined}
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        {props.operator ? <p style={{ fontSize: "xxx-large" }}>{props.operator}</p> : undefined}
       </div>
     </div>
   );
