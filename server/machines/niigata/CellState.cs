@@ -1567,18 +1567,6 @@ namespace BlackMaple.FMSInsight.Niigata
             .Where(m => m.JobUniqueStr == job.UniqueStr)
             .Select(m => m.MaterialID)
             .Distinct()
-            .Select(m =>
-            {
-              var details = logDB.GetMaterialDetails(m);
-              if (details != null && details.Paths != null && details.Paths.TryGetValue(1, out var path))
-              {
-                return new { MatId = m, Path = path };
-              }
-              else
-              {
-                return new { MatId = m, Path = 1 };
-              }
-            })
             .Count();
 
         var loadingCnt =

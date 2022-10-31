@@ -65,18 +65,19 @@ namespace BlackMaple.FMSInsight.Niigata
           j.Processes.Select(
             proc => new int[proc.Paths.Count] // defaults to fill with zeros
           ).ToArray();
-        foreach (var e in jobDB.GetLogForJobUnique(j.UniqueStr))
+        var unloads =
+          jobDB.GetLogForJobUnique(j.UniqueStr)
+          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+          .ToList();
+        foreach (var e in unloads)
         {
-          if (e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+          foreach (var mat in e.Material)
           {
-            foreach (var mat in e.Material)
+            if (mat.JobUniqueStr == j.UniqueStr)
             {
-              if (mat.JobUniqueStr == j.UniqueStr)
-              {
-                var details = jobDB.GetMaterialDetails(mat.MaterialID);
-                int matPath = details?.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
-                completed[mat.Process - 1][matPath - 1] += 1;
-              }
+              var details = jobDB.GetMaterialDetails(mat.MaterialID);
+              int matPath = details?.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
+              completed[mat.Process - 1][matPath - 1] += 1;
             }
           }
         }
