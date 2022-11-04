@@ -45,7 +45,7 @@ import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
-  barcodeToShow,
+  materialDialogOpen,
   materialInDialogEvents,
   materialInDialogInfo,
   useAddExistingMaterialToQueue,
@@ -62,7 +62,7 @@ function CompleteWashButton() {
   const [completeWash, completingWash] = useCompleteWash();
   const operator = useRecoilValue(currentOperator);
   const closeMatDialog = useCloseMaterialDialog();
-  const curBarcode = useRecoilValue(barcodeToShow);
+  const toShow = useRecoilValue(materialDialogOpen);
 
   if (mat === null) return null;
 
@@ -70,8 +70,12 @@ function CompleteWashButton() {
   const requireWork = fmsInfo.requireWorkorderBeforeAllowWashComplete;
   let disallowCompleteReason: string | undefined;
 
-  if (requireScan && (curBarcode === null || curBarcode === "")) {
-    disallowCompleteReason = "Scan required at wash";
+  if (requireScan) {
+    const usedScan =
+      toShow !== null && (toShow.type === "Barcode" || toShow.type === "ManuallyEnteredSerial");
+    if (!usedScan) {
+      disallowCompleteReason = "Scan required at wash";
+    }
   } else if (requireWork) {
     if (mat.workorderId === undefined || mat.workorderId === "") {
       disallowCompleteReason = "No workorder assigned";
