@@ -413,14 +413,14 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
   notes,
 }: {
   partName: string;
-  serial?: string;
+  serial?: string | null;
   subtitle?: string;
   notes?: boolean;
 }) {
   let title;
   if (partName === "") {
     title = serial ?? "Material";
-  } else if (serial === undefined || serial === "") {
+  } else if (serial === undefined || serial === null || serial === "") {
     if (notes) {
       title = "Add note for " + partName;
     } else {
@@ -447,7 +447,8 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
 
 function MaterialDialogTitle({ notes }: { notes?: boolean }) {
   const mat = useRecoilValueLoadable(matDetails.materialInDialogInfo).valueMaybe();
-  return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial} />;
+  const serial = useRecoilValueLoadable(matDetails.serialInMaterialDialog).valueMaybe();
+  return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial ?? serial} />;
 }
 
 function MaterialInspections() {

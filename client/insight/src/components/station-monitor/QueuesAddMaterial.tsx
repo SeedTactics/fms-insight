@@ -267,7 +267,7 @@ export function AddToQueueButton({
   const operator = useRecoilValue(currentOperator);
   const closeMatDialog = matDetails.useCloseMaterialDialog();
 
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const newSerial = useRecoilValue(matDetails.serialInMaterialDialog);
   const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
   const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
   const evts = useRecoilValueLoadable(matDetails.materialInDialogEvents);
@@ -299,13 +299,6 @@ export function AddToQueueButton({
   }
 
   const curQueue = inProcMat?.location.currentQueue ?? null;
-  // TODO: Add barcode serial
-  const newSerial =
-    toShow && toShow.type === "ManuallyEnteredSerial"
-      ? toShow.serial
-      : toShow && toShow.type === "AddMatWithEnteredSerial"
-      ? toShow.serial
-      : null;
 
   return (
     <Button

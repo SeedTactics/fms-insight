@@ -149,6 +149,29 @@ export const inProcessMaterialInDialog = selector<IInProcessMaterial | null>({
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
+export const serialInMaterialDialog = selector<string | null>({
+  key: "serial-in-material-dialog",
+  get: ({ get }) => {
+    const toShow = get(matToShow);
+    if (toShow === null) return null;
+    switch (toShow.type) {
+      case "MatSummary":
+        return toShow.summary.serial ?? null;
+      case "MatDetails":
+        return toShow.details.serial ?? null;
+      case "LogMat":
+        return toShow.logMat.serial ?? null;
+      case "Barcode":
+        throw Error("Not implemented");
+      case "ManuallyEnteredSerial":
+      case "AddMatWithEnteredSerial":
+        return toShow.serial;
+      case "AddMatWithoutSerial":
+        return null;
+    }
+  },
+});
+
 //--------------------------------------------------------------------------------
 // Events
 //--------------------------------------------------------------------------------
@@ -178,19 +201,13 @@ const localMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
 const otherMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
   key: "mat-to-show-other-evts",
   get: async ({ get }) => {
-    const mat = get(materialInDialogInfo);
-    if (mat === null) return [];
+    const serial = get(serialInMaterialDialog);
+    if (serial === null || serial === "") return [];
 
     const evts: Array<Readonly<ILogEntry>> = [];
 
-    if (mat.materialID >= 0) {
-      for (const b of OtherLogBackends) {
-        evts.push.apply(await b.logForMaterial(mat.materialID));
-      }
-    } else if (mat.serial && mat.serial !== "") {
-      for (const b of OtherLogBackends) {
-        evts.push.apply(await b.logForSerial(mat.serial));
-      }
+    for (const b of OtherLogBackends) {
+      evts.push.apply(await b.logForSerial(serial));
     }
 
     return evts;
