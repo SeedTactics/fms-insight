@@ -643,7 +643,9 @@ export const MaterialDialog = React.memo(function MaterialDialog(props: Material
               Add Note
             </Button>
           ) : undefined}
-          {dialogOpen ? props.buttons : null}
+          {dialogOpen && props.buttons ? (
+            <DisplayLoadingAndError fallback={<CircularProgress />}>{props.buttons}</DisplayLoadingAndError>
+          ) : null}
           <Button onClick={close} color="secondary">
             Close
           </Button>

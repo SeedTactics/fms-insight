@@ -103,7 +103,8 @@ function ManualWorkorderEntry() {
   );
 }
 
-function WorkorderList({ mat }: { mat: matDetails.MaterialToShowInfo }) {
+function WorkorderList() {
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
   const workorders = useRecoilValue(matDetails.possibleWorkordersForMaterialInDialog);
   const setWorkDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
   const [assignWorkorder] = matDetails.useAssignWorkorder();
@@ -132,19 +133,18 @@ function WorkorderList({ mat }: { mat: matDetails.MaterialToShowInfo }) {
 
 export const SelectWorkorderDialog = React.memo(function SelectWorkorderDialog() {
   const [workDialogOpen, setWorkDialogOpen] = useRecoilState(selectWorkorderDialogOpen);
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  let body: JSX.Element | undefined;
 
-  if (workDialogOpen === false || mat === null) {
+  let body: JSX.Element | undefined;
+  if (workDialogOpen === false) {
     body = <p>None</p>;
   } else {
     body = (
       <>
         <DialogTitle>Select Workorder</DialogTitle>
         <DialogContent>
-          <ManualWorkorderEntry />
           <DisplayLoadingAndError>
-            <WorkorderList mat={mat} />
+            <ManualWorkorderEntry />
+            <WorkorderList />
           </DisplayLoadingAndError>
         </DialogContent>
         <DialogActions>
