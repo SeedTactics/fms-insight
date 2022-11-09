@@ -254,5 +254,35 @@ namespace BlackMaple.MachineFramework.Controllers
         return BadRequest("FMS configuration does not support printing labels");
       }
     }
+
+    [HttpPost("parse-barcode")]
+    public MaterialDetails ParseBarcode([FromQuery] string barcode, [FromQuery] string type = "")
+    {
+      if (_impl != null && _impl.ParseBarcode != null)
+      {
+        return _impl.ParseBarcode(barcode, type);
+      }
+      else
+      {
+        var idxComma = barcode.IndexOf(",");
+        var serial = idxComma > 0 ? barcode.Substring(0, idxComma) : barcode;
+        using (var conn = _impl.Backend.RepoConfig.OpenConnection())
+        {
+          var mats = conn.GetMaterialDetailsForSerial(serial);
+          if (mats.Count > 0)
+          {
+            return mats[mats.Count - 1];
+          }
+          else
+          {
+            return new MaterialDetails()
+            {
+              MaterialID = -1,
+              Serial = serial
+            };
+          }
+        }
+      }
+    }
   }
 }

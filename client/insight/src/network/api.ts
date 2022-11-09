@@ -226,6 +226,46 @@ export class FmsClient {
         }
         return Promise.resolve<void>(null as any);
     }
+
+    parseBarcode(barcode: string | null, type: string | null | undefined): Promise<MaterialDetails> {
+        let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
+        if (barcode === undefined)
+            throw new Error("The parameter 'barcode' must be defined.");
+        else if(barcode !== null)
+            url_ += "barcode=" + encodeURIComponent("" + barcode) + "&";
+        if (type !== undefined && type !== null)
+            url_ += "type=" + encodeURIComponent("" + type) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processParseBarcode(_response);
+        });
+    }
+
+    protected processParseBarcode(response: Response): Promise<MaterialDetails> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = MaterialDetails.fromJS(resultData200);
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<MaterialDetails>(null as any);
+    }
 }
 
 export class JobsClient {
@@ -2166,8 +2206,7 @@ export class MachinesClient {
 export class FMSInfo implements IFMSInfo {
     name?: string | undefined;
     version?: string | undefined;
-    requireScanAtWash?: boolean;
-    requireWorkorderBeforeAllowWashComplete?: boolean;
+    licenseExpires?: Date | undefined;
     additionalLogServers?: string[] | undefined;
     openIDConnectAuthority?: string | undefined;
     localhostOpenIDConnectAuthority?: string | undefined;
@@ -2175,15 +2214,16 @@ export class FMSInfo implements IFMSInfo {
     usingLabelPrinterForSerials?: boolean;
     useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
+    allowQuarantineAtLoadStation?: boolean | undefined;
+    allowChangeWorkorderAtLoadStation?: boolean | undefined;
+    customStationMonitorDialogUrl?: string | undefined;
+    requireScanAtWash?: boolean;
+    requireWorkorderBeforeAllowWashComplete?: boolean;
     requireExistingMaterialWhenAddingToQueue?: boolean | undefined;
     requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
     addRawMaterialAsUnassigned?: boolean | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
-    allowQuarantineAtLoadStation?: boolean | undefined;
-    allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
-    licenseExpires?: Date | undefined;
-    customStationMonitorDialogUrl?: string | undefined;
 
     constructor(data?: IFMSInfo) {
         if (data) {
@@ -2198,8 +2238,7 @@ export class FMSInfo implements IFMSInfo {
         if (_data) {
             this.name = _data["Name"];
             this.version = _data["Version"];
-            this.requireScanAtWash = _data["RequireScanAtWash"];
-            this.requireWorkorderBeforeAllowWashComplete = _data["RequireWorkorderBeforeAllowWashComplete"];
+            this.licenseExpires = _data["LicenseExpires"] ? new Date(_data["LicenseExpires"].toString()) : <any>undefined;
             if (Array.isArray(_data["AdditionalLogServers"])) {
                 this.additionalLogServers = [] as any;
                 for (let item of _data["AdditionalLogServers"])
@@ -2211,15 +2250,16 @@ export class FMSInfo implements IFMSInfo {
             this.usingLabelPrinterForSerials = _data["UsingLabelPrinterForSerials"];
             this.useClientPrinterForLabels = _data["UseClientPrinterForLabels"];
             this.quarantineQueue = _data["QuarantineQueue"];
+            this.allowQuarantineAtLoadStation = _data["AllowQuarantineAtLoadStation"];
+            this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
+            this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
+            this.requireScanAtWash = _data["RequireScanAtWash"];
+            this.requireWorkorderBeforeAllowWashComplete = _data["RequireWorkorderBeforeAllowWashComplete"];
             this.requireExistingMaterialWhenAddingToQueue = _data["RequireExistingMaterialWhenAddingToQueue"];
             this.requireSerialWhenAddingMaterialToQueue = _data["RequireSerialWhenAddingMaterialToQueue"];
             this.addRawMaterialAsUnassigned = _data["AddRawMaterialAsUnassigned"];
             this.requireOperatorNamePromptWhenAddingMaterial = _data["RequireOperatorNamePromptWhenAddingMaterial"];
-            this.allowQuarantineAtLoadStation = _data["AllowQuarantineAtLoadStation"];
-            this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.allowEditJobPlanQuantityFromQueuesPage = _data["AllowEditJobPlanQuantityFromQueuesPage"];
-            this.licenseExpires = _data["LicenseExpires"] ? new Date(_data["LicenseExpires"].toString()) : <any>undefined;
-            this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
         }
     }
 
@@ -2234,8 +2274,7 @@ export class FMSInfo implements IFMSInfo {
         data = typeof data === 'object' ? data : {};
         data["Name"] = this.name;
         data["Version"] = this.version;
-        data["RequireScanAtWash"] = this.requireScanAtWash;
-        data["RequireWorkorderBeforeAllowWashComplete"] = this.requireWorkorderBeforeAllowWashComplete;
+        data["LicenseExpires"] = this.licenseExpires ? this.licenseExpires.toISOString() : <any>undefined;
         if (Array.isArray(this.additionalLogServers)) {
             data["AdditionalLogServers"] = [];
             for (let item of this.additionalLogServers)
@@ -2247,15 +2286,16 @@ export class FMSInfo implements IFMSInfo {
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
         data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
         data["QuarantineQueue"] = this.quarantineQueue;
+        data["AllowQuarantineAtLoadStation"] = this.allowQuarantineAtLoadStation;
+        data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
+        data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
+        data["RequireScanAtWash"] = this.requireScanAtWash;
+        data["RequireWorkorderBeforeAllowWashComplete"] = this.requireWorkorderBeforeAllowWashComplete;
         data["RequireExistingMaterialWhenAddingToQueue"] = this.requireExistingMaterialWhenAddingToQueue;
         data["RequireSerialWhenAddingMaterialToQueue"] = this.requireSerialWhenAddingMaterialToQueue;
         data["AddRawMaterialAsUnassigned"] = this.addRawMaterialAsUnassigned;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
-        data["AllowQuarantineAtLoadStation"] = this.allowQuarantineAtLoadStation;
-        data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
-        data["LicenseExpires"] = this.licenseExpires ? this.licenseExpires.toISOString() : <any>undefined;
-        data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
         return data;
     }
 }
@@ -2263,8 +2303,7 @@ export class FMSInfo implements IFMSInfo {
 export interface IFMSInfo {
     name?: string | undefined;
     version?: string | undefined;
-    requireScanAtWash?: boolean;
-    requireWorkorderBeforeAllowWashComplete?: boolean;
+    licenseExpires?: Date | undefined;
     additionalLogServers?: string[] | undefined;
     openIDConnectAuthority?: string | undefined;
     localhostOpenIDConnectAuthority?: string | undefined;
@@ -2272,15 +2311,16 @@ export interface IFMSInfo {
     usingLabelPrinterForSerials?: boolean;
     useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
+    allowQuarantineAtLoadStation?: boolean | undefined;
+    allowChangeWorkorderAtLoadStation?: boolean | undefined;
+    customStationMonitorDialogUrl?: string | undefined;
+    requireScanAtWash?: boolean;
+    requireWorkorderBeforeAllowWashComplete?: boolean;
     requireExistingMaterialWhenAddingToQueue?: boolean | undefined;
     requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
     addRawMaterialAsUnassigned?: boolean | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
-    allowQuarantineAtLoadStation?: boolean | undefined;
-    allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
-    licenseExpires?: Date | undefined;
-    customStationMonitorDialogUrl?: string | undefined;
 }
 
 export class ServerEvent implements IServerEvent {
@@ -4405,6 +4445,78 @@ export interface IProblemDetails {
     extensions?: { [key: string]: any; };
 }
 
+export class MaterialDetails implements IMaterialDetails {
+    materialID!: number;
+    jobUnique?: string | undefined;
+    partName!: string;
+    numProcesses?: number;
+    workorder?: string | undefined;
+    serial?: string | undefined;
+    paths?: { [key: string]: number; } | undefined;
+
+    constructor(data?: IMaterialDetails) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.materialID = _data["MaterialID"];
+            this.jobUnique = _data["JobUnique"];
+            this.partName = _data["PartName"];
+            this.numProcesses = _data["NumProcesses"];
+            this.workorder = _data["Workorder"];
+            this.serial = _data["Serial"];
+            if (_data["Paths"]) {
+                this.paths = {} as any;
+                for (let key in _data["Paths"]) {
+                    if (_data["Paths"].hasOwnProperty(key))
+                        (<any>this.paths)![key] = _data["Paths"][key];
+                }
+            }
+        }
+    }
+
+    static fromJS(data: any): MaterialDetails {
+        data = typeof data === 'object' ? data : {};
+        let result = new MaterialDetails();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["MaterialID"] = this.materialID;
+        data["JobUnique"] = this.jobUnique;
+        data["PartName"] = this.partName;
+        data["NumProcesses"] = this.numProcesses;
+        data["Workorder"] = this.workorder;
+        data["Serial"] = this.serial;
+        if (this.paths) {
+            data["Paths"] = {};
+            for (let key in this.paths) {
+                if (this.paths.hasOwnProperty(key))
+                    (<any>data["Paths"])[key] = (<any>this.paths)[key];
+            }
+        }
+        return data;
+    }
+}
+
+export interface IMaterialDetails {
+    materialID: number;
+    jobUnique?: string | undefined;
+    partName: string;
+    numProcesses?: number;
+    workorder?: string | undefined;
+    serial?: string | undefined;
+    paths?: { [key: string]: number; } | undefined;
+}
+
 export class HistoricData implements IHistoricData {
     jobs!: { [key: string]: HistoricJob; };
     stationUse!: SimulatedStationUtilization[];
@@ -4735,78 +4847,6 @@ export interface IJobAndDecrementQuantity {
     timeUTC: Date;
     part: string;
     quantity: number;
-}
-
-export class MaterialDetails implements IMaterialDetails {
-    materialID!: number;
-    jobUnique?: string | undefined;
-    partName!: string;
-    numProcesses?: number;
-    workorder?: string | undefined;
-    serial?: string | undefined;
-    paths?: { [key: string]: number; } | undefined;
-
-    constructor(data?: IMaterialDetails) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.materialID = _data["MaterialID"];
-            this.jobUnique = _data["JobUnique"];
-            this.partName = _data["PartName"];
-            this.numProcesses = _data["NumProcesses"];
-            this.workorder = _data["Workorder"];
-            this.serial = _data["Serial"];
-            if (_data["Paths"]) {
-                this.paths = {} as any;
-                for (let key in _data["Paths"]) {
-                    if (_data["Paths"].hasOwnProperty(key))
-                        (<any>this.paths)![key] = _data["Paths"][key];
-                }
-            }
-        }
-    }
-
-    static fromJS(data: any): MaterialDetails {
-        data = typeof data === 'object' ? data : {};
-        let result = new MaterialDetails();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaterialID"] = this.materialID;
-        data["JobUnique"] = this.jobUnique;
-        data["PartName"] = this.partName;
-        data["NumProcesses"] = this.numProcesses;
-        data["Workorder"] = this.workorder;
-        data["Serial"] = this.serial;
-        if (this.paths) {
-            data["Paths"] = {};
-            for (let key in this.paths) {
-                if (this.paths.hasOwnProperty(key))
-                    (<any>data["Paths"])[key] = (<any>this.paths)[key];
-            }
-        }
-        return data;
-    }
-}
-
-export interface IMaterialDetails {
-    materialID: number;
-    jobUnique?: string | undefined;
-    partName: string;
-    numProcesses?: number;
-    workorder?: string | undefined;
-    serial?: string | undefined;
-    paths?: { [key: string]: number; } | undefined;
 }
 
 export class WorkorderSummary implements IWorkorderSummary {

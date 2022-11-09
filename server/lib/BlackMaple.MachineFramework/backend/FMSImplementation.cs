@@ -40,6 +40,7 @@ namespace BlackMaple.MachineFramework
 
   public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
   public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
+  public delegate MaterialDetails ParseBarcode(string barcode, string type);
 
   public class FMSImplementation
   {
@@ -55,6 +56,7 @@ namespace BlackMaple.MachineFramework
 
     public bool UsingLabelPrinterForSerials { get; set; } = false;
     public PrintLabelForMaterial PrintLabel { get; set; } = null;
+    public ParseBarcode ParseBarcode { get; set; } = null;
 
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
     public string CustomStationMonitorDialogUrl { get; set; } = null;
