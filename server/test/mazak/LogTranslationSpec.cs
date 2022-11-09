@@ -296,7 +296,7 @@ namespace MachineWatchTest
             {
               throw new Exception("Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString());
             }
-            expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, FMSSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
+            expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, SerialSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
             break;
           }
         case AllocateTy.Casting:
@@ -306,7 +306,7 @@ namespace MachineWatchTest
             {
               throw new Exception("Allocating matId " + material.MaterialID.ToString() + " returned id " + matId.ToString());
             }
-            expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, FMSSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
+            expected.Add(jobLog.RecordSerialForMaterialID(matId, proc, SerialSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')));
             break;
           }
       }
@@ -364,7 +364,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -418,7 +418,7 @@ namespace MachineWatchTest
           part: mat.JobPartName,
           numProc: mat.NumProcess,
           face: mat.Face,
-          serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
           workorder: ""
         )),
         pal: mats.First().Pallet.ToString(),
@@ -455,7 +455,7 @@ namespace MachineWatchTest
           part: mat.JobPartName,
           numProc: mat.NumProcess,
           face: "",
-          serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
           workorder: ""
         )},
         pal: "",
@@ -557,7 +557,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -585,7 +585,7 @@ namespace MachineWatchTest
               part: mat.JobPartName,
               numProc: mat.NumProcess,
               face: mat.Face,
-              serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
               workorder: ""
             )},
             pal: "",
@@ -595,7 +595,7 @@ namespace MachineWatchTest
             prog: "MARK",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
-            result: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             endOfRoute: false
         ));
       }
@@ -634,7 +634,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -684,7 +684,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -767,7 +767,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -809,7 +809,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -853,7 +853,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -894,7 +894,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -937,7 +937,7 @@ namespace MachineWatchTest
             part: mat.JobPartName,
             numProc: mat.NumProcess,
             face: mat.Face,
-            serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
             workorder: ""
           )),
           pal: mats.First().Pallet.ToString(),
@@ -992,7 +992,7 @@ namespace MachineWatchTest
               part: mat.JobPartName,
               numProc: mat.NumProcess,
               face: reason == null ? mat.Face : "",
-              serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
               workorder: ""
             )},
             pal: "",
@@ -1025,7 +1025,7 @@ namespace MachineWatchTest
               part: mat.JobPartName,
               numProc: mat.NumProcess,
               face: "",
-              serial: FMSSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+              serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
               workorder: ""
             )},
             pal: "",
@@ -1061,7 +1061,7 @@ namespace MachineWatchTest
         {
           expected[i] = JobLogTest.TransformLog(matOnPal.MaterialID, logMat =>
             new LogMaterial(matID: matToAdd.MaterialID, uniq: logMat.JobUniqueStr, proc: logMat.Process, part: logMat.PartName, numProc: logMat.NumProcesses,
-              serial: FMSSettings.ConvertToBase62(matToAdd.MaterialID).PadLeft(10, '0'),
+              serial: SerialSettings.ConvertToBase62(matToAdd.MaterialID).PadLeft(10, '0'),
               workorder: logMat.Workorder,
               face: logMat.Face
             )
@@ -1116,7 +1116,7 @@ namespace MachineWatchTest
           Position = idx,
           Unique = m.Unique,
           NextProcess = 1,
-          Serial = FMSSettings.ConvertToBase62(m.MaterialID).PadLeft(10, '0'),
+          Serial = SerialSettings.ConvertToBase62(m.MaterialID).PadLeft(10, '0'),
           Paths = ImmutableDictionary<int, int>.Empty,
           PartNameOrCasting = m.JobPartName,
           NumProcesses = m.NumProcess,
@@ -1164,7 +1164,7 @@ namespace MachineWatchTest
         JobUnique = "unique",
         PartName = "part1",
         NumProcesses = 1,
-        Serial = FMSSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
+        Serial = SerialSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
         Workorder = null,
         Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
       }, options => options.ComparingByMembers<MaterialDetails>());
@@ -1927,7 +1927,7 @@ namespace MachineWatchTest
             PartNameOrCasting = "pppp",
             NumProcesses = 2,
             NextProcess = 2,
-            Serial = FMSSettings.ConvertToBase62(i).PadLeft(10, '0'),
+            Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
             Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             AddTimeUTC = t.AddMinutes(i <= 3 ? 15 : i <= 6 ? 27 : 33)
           }
@@ -1952,7 +1952,7 @@ namespace MachineWatchTest
               PartNameOrCasting = "pppp",
               NumProcesses = 2,
               NextProcess = 2,
-              Serial = FMSSettings.ConvertToBase62(i).PadLeft(10, '0'),
+              Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
               Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
               AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33)
             }
@@ -1982,7 +1982,7 @@ namespace MachineWatchTest
               PartNameOrCasting = "pppp",
               NumProcesses = 2,
               NextProcess = 2,
-              Serial = FMSSettings.ConvertToBase62(i).PadLeft(10, '0'),
+              Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
               Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
               AddTimeUTC = t.AddMinutes(27)
             }
@@ -2096,7 +2096,7 @@ namespace MachineWatchTest
         PartName = mat3.JobPartName,
         NumProcesses = mat3.NumProcess,
         Workorder = null,
-        Serial = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0'),
+        Serial = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0'),
       });
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -2210,7 +2210,7 @@ namespace MachineWatchTest
         JobUnique = "unique",
         PartName = "part1",
         NumProcesses = 1,
-        Serial = FMSSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
+        Serial = SerialSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
         Workorder = null,
         Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
       }, options => options.ComparingByMembers<MaterialDetails>());
@@ -2327,7 +2327,7 @@ namespace MachineWatchTest
           PartNameOrCasting = "part1",
           NumProcesses = 2,
           NextProcess = 2,
-          Serial = FMSSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
+          Serial = SerialSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
           Paths = ImmutableDictionary<int, int>.Empty,
           AddTimeUTC = t.AddMinutes(10)
         }

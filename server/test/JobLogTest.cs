@@ -2858,9 +2858,9 @@ namespace MachineWatchTest
       var mat4 = new LogMaterial(
           _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
 
-      var serial1 = FMSSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
-      var serial2 = FMSSettings.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
-      var serial3 = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+      var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+      var serial2 = SerialSettings.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
+      var serial3 = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
       var t = DateTime.UtcNow.AddHours(-1);
 
@@ -2992,8 +2992,8 @@ namespace MachineWatchTest
       var mat4 = new LogMaterial(
           _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
 
-      var serial1 = FMSSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
-      var serial3 = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+      var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+      var serial3 = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
       var t = DateTime.UtcNow.AddHours(-1);
 

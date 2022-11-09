@@ -265,42 +265,5 @@ namespace BlackMaple.MachineFramework
 
       return dataDir;
     }
-    private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    public static string ConvertToBase62(long num)
-    {
-      string res = "";
-      long cur = num;
-
-      while (cur > 0)
-      {
-        long quotient = cur / 62;
-        int remainder = (int)(cur % 62);
-
-        res = Base62Chars[remainder] + res;
-        cur = quotient;
-      }
-
-      return res;
-    }
-
-    public static long ConvertFromBase62(string msg)
-    {
-      long res = 0;
-      int len = msg.Length;
-      long multiplier = 1;
-
-      for (int i = 0; i < len; i++)
-      {
-        char c = msg[len - i - 1];
-        int idx = Base62Chars.IndexOf(c);
-        if (idx < 0)
-          throw new Exception("Serial " + msg + " has an invalid character " + c);
-        res += idx * multiplier;
-        multiplier *= 62;
-      }
-      return res;
-
-    }
   }
 }
