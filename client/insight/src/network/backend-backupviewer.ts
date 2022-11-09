@@ -172,6 +172,18 @@ const ServerBackend = {
   printLabel(): Promise<void> {
     return Promise.resolve();
   },
+  parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>> {
+    barcode ??= "";
+    const commaIdx = barcode.indexOf(",");
+    if (commaIdx >= 0) {
+      barcode = barcode.substring(0, commaIdx);
+    }
+    return Promise.resolve({
+      materialID: -1,
+      partName: "",
+      serial: barcode.replace(/[^0-9a-zA-Z-_]/g, ""),
+    });
+  },
 };
 
 const JobsBackend = {

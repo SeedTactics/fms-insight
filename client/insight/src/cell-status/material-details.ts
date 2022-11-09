@@ -94,6 +94,19 @@ export function useCloseMaterialDialog(): () => void {
 // Material Details
 //--------------------------------------------------------------------------------
 
+const barcodeMaterialDetail = selector<Readonly<IMaterialDetails> | null>({
+  key: "barcode-material-detail",
+  get: async ({ get }) => {
+    const toShow = get(matToShow);
+    if (toShow && toShow.type === "Barcode") {
+      return await FmsServerBackend.parseBarcode(toShow.barcode, null);
+    } else {
+      return null;
+    }
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
+
 export interface MaterialToShowInfo {
   readonly materialID: number;
   readonly jobUnique: string;
@@ -123,8 +136,14 @@ export const materialInDialogInfo = selector<MaterialToShowInfo | null>({
           serial: curMat.logMat.serial,
           workorderId: curMat.logMat.workorder,
         };
-      case "Barcode":
-        throw Error("Not implemented");
+      case "Barcode": {
+        const mat = get(barcodeMaterialDetail);
+        if (mat && mat.materialID >= 0) {
+          return { ...mat, jobUnique: mat.jobUnique ?? "" };
+        } else {
+          return null;
+        }
+      }
       case "ManuallyEnteredSerial":
       case "AddMatWithEnteredSerial": {
         const mat = (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
@@ -162,7 +181,7 @@ export const serialInMaterialDialog = selector<string | null>({
       case "LogMat":
         return toShow.logMat.serial ?? null;
       case "Barcode":
-        throw Error("Not implemented");
+        return get(barcodeMaterialDetail)?.serial ?? null;
       case "ManuallyEnteredSerial":
       case "AddMatWithEnteredSerial":
         return toShow.serial;
