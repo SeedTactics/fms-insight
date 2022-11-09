@@ -96,6 +96,58 @@ namespace BlackMaple.MachineFramework
     AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
   }
 
+  public record SerialSettings
+  {
+    public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
+    public long StartingMaterialID { get; init; } = 0; // if the current material id in the database is below this value, it will be set to this value
+    public Func<long, string> ConvertMaterialIDToSerial { get; init; }
+
+    private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    public static string ConvertToBase62(long num, int? len = null)
+    {
+      string res = "";
+      long cur = num;
+
+      while (cur > 0)
+      {
+        long quotient = cur / 62;
+        int remainder = (int)(cur % 62);
+
+        res = Base62Chars[remainder] + res;
+        cur = quotient;
+      }
+
+      if (len.HasValue)
+      {
+        res = res.PadLeft(len.Value, '0');
+      }
+
+      return res;
+    }
+
+    public static long ConvertFromBase62(string msg)
+    {
+      long res = 0;
+      int len = msg.Length;
+      long multiplier = 1;
+
+      for (int i = 0; i < len; i++)
+      {
+        char c = msg[len - i - 1];
+        int idx = Base62Chars.IndexOf(c);
+        if (idx < 0)
+          throw new Exception("Serial " + msg + " has an invalid character " + c);
+        res += idx * multiplier;
+        multiplier *= 62;
+      }
+      return res;
+
+    }
+
+  }
+
+
   public class FMSSettings
   {
     public string DataDirectory { get; set; } = null;
