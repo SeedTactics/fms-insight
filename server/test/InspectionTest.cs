@@ -49,7 +49,7 @@ namespace MachineWatchTest
 
     public InspectionTest()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
       _insp = _repoCfg.OpenConnection();
     }
 

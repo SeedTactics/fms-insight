@@ -54,7 +54,7 @@ namespace Makino
 #pragma warning restore 649
     private string _dataDirectory;
 
-    public MakinoBackend(IConfiguration config, FMSSettings st)
+    public MakinoBackend(IConfiguration config, FMSSettings st, SerialSettings serialSt)
     {
       try
       {
@@ -81,7 +81,7 @@ namespace Makino
         _dataDirectory = st.DataDirectory;
 
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
-            st,
+            serialSt,
             System.IO.Path.Combine(_dataDirectory, "log.db"),
             System.IO.Path.Combine(_dataDirectory, "inspections.db"),
             System.IO.Path.Combine(_dataDirectory, "jobs.db")
@@ -95,7 +95,7 @@ namespace Makino
         _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status);
 #endif
 
-        _logTimer = new LogTimer(RepoConfig, _makinoDB, _status, st);
+        _logTimer = new LogTimer(RepoConfig, _makinoDB, _status);
 
         _jobs = new Jobs(_makinoDB, RepoConfig.OpenConnection, adePath, downloadOnlyOrders, onJobCommentChange: OnLogsProcessed);
 

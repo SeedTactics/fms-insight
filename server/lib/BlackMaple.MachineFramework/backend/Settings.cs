@@ -99,20 +99,17 @@ namespace BlackMaple.MachineFramework
   public class FMSSettings
   {
     public string DataDirectory { get; set; } = null;
-    public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
+    public string InstructionFilePath { get; set; }
+
     public int SerialLength { get; set; } = 9;
     public string StartingSerial { get; set; } = null;
-    public Func<string, long> ConvertSerialToMaterialID { get; set; } = ConvertFromBase62;
-    public Func<long, string> ConvertMaterialIDToSerial { get; set; } = ConvertToBase62;
-    public string InstructionFilePath { get; set; }
+
     public bool RequireScanAtWash { get; set; }
     public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
-    public string QuarantineQueue { get; set; }
-    public bool RequireExistingMaterialWhenAddingToQueue { get; set; }
-    public bool RequireSerialWhenAddingMaterialToQueue { get; set; }
-    public bool AddRawMaterialAsUnassigned { get; set; }
     public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     public bool AllowChangeWorkorderAtLoadStation { get; set; }
+
+    public string QuarantineQueue { get; set; }
 
     public Dictionary<string, QueueSize> Queues { get; }
       = new Dictionary<string, QueueSize>();
@@ -133,43 +130,17 @@ namespace BlackMaple.MachineFramework
       {
         DataDirectory = DefaultDataDirectory();
       }
+      InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
 
-      if (fmsSection.GetValue<bool>("AutomaticSerials", false))
-      {
-        SerialType = SerialType.AssignOneSerialPerMaterial;
-      }
       SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
       StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
+
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
       RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
       RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
-
-      RequireSerialWhenAddingMaterialToQueue = fmsSection.GetValue<bool>("RequireSerialWhenAddingMaterialToQueue", false);
-      RequireExistingMaterialWhenAddingToQueue = fmsSection.GetValue<bool>("RequireExistingMaterialWhenAddingToQueue", false);
-      if (RequireExistingMaterialWhenAddingToQueue)
-      {
-        RequireSerialWhenAddingMaterialToQueue = true;
-      }
-
-      AddRawMaterialAsUnassigned = fmsSection.GetValue<bool>("AddRawMaterialAsUnassigned", true);
       AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>("AllowChangeWorkorderAtLoadStation", false);
-      QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
-      AdditionalLogServers =
-        fmsSection.GetValue<string>("AdditionalServersForLogs", "")
-        .Split(',')
-        .Where(x => !string.IsNullOrWhiteSpace(x))
-        .Select(x =>
-        {
-          var uri = new UriBuilder(x);
-          if (uri.Scheme == "") uri.Scheme = "http";
-          if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
-          var uriS = uri.Uri.ToString();
-          // remove trailing slash
-          return uriS.Substring(0, uriS.Length - 1);
-        })
-        .ToList();
 
-      InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
+      QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
 
       foreach (var q in config.GetSection("QUEUE").AsEnumerable())
       {
@@ -191,6 +162,21 @@ namespace BlackMaple.MachineFramework
           ExternalQueues[key] = q.Value;
         }
       }
+
+      AdditionalLogServers =
+        fmsSection.GetValue<string>("AdditionalServersForLogs", "")
+        .Split(',')
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Select(x =>
+        {
+          var uri = new UriBuilder(x);
+          if (uri.Scheme == "") uri.Scheme = "http";
+          if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
+          var uriS = uri.Uri.ToString();
+          // remove trailing slash
+          return uriS.Substring(0, uriS.Length - 1);
+        })
+        .ToList();
 
       if (!string.IsNullOrEmpty(QuarantineQueue) && !Queues.ContainsKey(QuarantineQueue) && !ExternalQueues.ContainsKey(QuarantineQueue))
       {

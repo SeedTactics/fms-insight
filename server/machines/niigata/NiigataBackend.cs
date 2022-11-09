@@ -62,6 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataBackend(
       IConfigurationSection config,
       FMSSettings cfg,
+      SerialSettings serialSt,
       bool startSyncThread,
       Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
       IDecrementJobs decrementJobs = null,
@@ -72,7 +73,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         Log.Information("Starting niigata backend");
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
-            cfg,
+            serialSt,
             System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
             oldJobDbFile: System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
         );
@@ -81,6 +82,11 @@ namespace BlackMaple.FMSInsight.Niigata
         if (!System.IO.Directory.Exists(programDir))
         {
           Log.Error("Program directory {dir} does not exist", programDir);
+        }
+
+        if (serialSt.SerialType == SerialType.AssignOneSerialPerCycle)
+        {
+          Log.Error("Niigata backend does not support serials assigned per cycle");
         }
 
         var reclampNames = config.GetValue<string>("Reclamp Group Names");

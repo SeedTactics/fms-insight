@@ -56,7 +56,7 @@ namespace MachineWatchTest
 
     public BuildCurrentStatusSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
       _memoryLog = _repoCfg.OpenConnection();
 
       _settings = new FMSSettings();
@@ -149,7 +149,7 @@ namespace MachineWatchTest
       if (File.Exists(existingLogPath))
       {
         System.IO.File.Copy(existingLogPath, _tempLogFile, overwrite: true);
-        repository = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), _tempLogFile).OpenConnection();
+        repository = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), _tempLogFile).OpenConnection();
         close = true;
       }
       else

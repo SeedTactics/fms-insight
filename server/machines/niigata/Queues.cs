@@ -298,7 +298,8 @@ namespace BlackMaple.FMSInsight.Niigata
           pallet: pallet,
           oldMatId: oldMatId,
           newMatId: newMatId,
-          operatorName: operatorName
+          operatorName: operatorName,
+          quarantineQueue: _settings.QuarantineQueue
         );
 
         OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()

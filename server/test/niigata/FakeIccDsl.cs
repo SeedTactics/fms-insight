@@ -49,6 +49,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private CreateCellState _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
+    private SerialSettings _serialSt;
     private NiigataStationNames _statNames;
     public NiigataStationNames StatNames => _statNames;
 
@@ -60,18 +61,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl(int numPals, int numMachines)
     {
+      _serialSt = new SerialSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10) };
       _settings = new FMSSettings()
       {
-        SerialType = SerialType.AssignOneSerialPerMaterial,
-        ConvertMaterialIDToSerial = FMSSettings.ConvertToBase62,
-        ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62,
         QuarantineQueue = "Quarantine"
       };
       _settings.Queues.Add("thequeue", new MachineFramework.QueueSize());
       _settings.Queues.Add("qqq", new MachineFramework.QueueSize());
       _settings.Queues.Add("Quarantine", new MachineFramework.QueueSize());
 
-      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_settings);
+      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_serialSt);
       _logDB = _logDBCfg.OpenConnection();
 
       _statNames = new NiigataStationNames()
@@ -436,11 +435,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public FakeIccDsl AddUnallocatedCasting(string queue, string rawMatName, out LogMaterial mat, string workorder = null, int numProc = 1)
     {
       var matId = _logDB.AllocateMaterialIDForCasting(rawMatName);
-      if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+      if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
           new EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
-          _settings.ConvertMaterialIDToSerial(matId),
+          _serialSt.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
       }
@@ -472,7 +471,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         PartName = rawMatName,
         Process = 0,
         Path = 1,
-        Serial = _settings.ConvertMaterialIDToSerial(matId),
+        Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         WorkorderId = workorder,
         Action = new InProcessMaterialAction()
         {
@@ -491,7 +490,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         proc: 0,
         part: rawMatName,
         numProc: numProc,
-        serial: _settings.ConvertMaterialIDToSerial(matId),
+        serial: _serialSt.ConvertMaterialIDToSerial(matId),
         workorder: workorder ?? "",
         face: ""
       );
@@ -501,11 +500,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public FakeIccDsl AddAllocatedMaterial(string queue, string uniq, string part, int proc, int path, int numProc, out LogMaterial mat, string workorder = null)
     {
       var matId = _logDB.AllocateMaterialID(unique: uniq, part: part, numProc: numProc);
-      if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+      if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
           new EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
-          _settings.ConvertMaterialIDToSerial(matId),
+          _serialSt.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
       }
@@ -537,7 +536,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         PartName = part,
         Process = proc,
         Path = path,
-        Serial = _settings.ConvertMaterialIDToSerial(matId),
+        Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         WorkorderId = workorder,
         Action = new InProcessMaterialAction()
         {
@@ -556,7 +555,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         proc: proc,
         part: part,
         numProc: numProc,
-        serial: _settings.ConvertMaterialIDToSerial(matId),
+        serial: _serialSt.ConvertMaterialIDToSerial(matId),
         workorder: workorder ?? "",
         face: ""
       );
@@ -734,6 +733,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         oldMatId: matOnPalId,
         newMatId: matToAddId,
         operatorName: null,
+        quarantineQueue: _settings.QuarantineQueue,
         timeUTC: _status.TimeOfStatusUTC
       );
 
@@ -1932,7 +1932,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
               load.OutMaterial.AddRange(evt.Material.Select(origMat => new LogMaterial(
                 matID: origMat.MaterialID, uniq: load.Unique, proc: 1, part: origMat.PartName, numProc: origMat.NumProcesses,
-                serial: _settings.ConvertMaterialIDToSerial(origMat.MaterialID), workorder: "", face: load.Face.ToString())
+                serial: _serialSt.ConvertMaterialIDToSerial(origMat.MaterialID), workorder: "", face: load.Face.ToString())
               ));
 
               // now the expected events
@@ -1962,7 +1962,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 prog: "MARK",
                 start: false,
                 endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                result: _settings.ConvertMaterialIDToSerial(m.MaterialID),
+                result: _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
                 endOfRoute: false
               )));
 
@@ -1976,7 +1976,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Process = 1,
                   Path = load.Path,
                   PartName = m.PartName,
-                  Serial = _settings.ConvertMaterialIDToSerial(m.MaterialID),
+                  Serial = _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
                   Location = new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,

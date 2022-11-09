@@ -41,18 +41,76 @@ namespace BlackMaple.MachineFramework
   public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
   public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
 
+  public record SerialSettings
+  {
+    public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
+    public long StartingMaterialID { get; init; } = 0; // if the current material id in the database is below this value, it will be set to this value
+    public Func<long, string> ConvertMaterialIDToSerial { get; init; }
+
+    private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    public static string ConvertToBase62(long num, int? len = null)
+    {
+      string res = "";
+      long cur = num;
+
+      while (cur > 0)
+      {
+        long quotient = cur / 62;
+        int remainder = (int)(cur % 62);
+
+        res = Base62Chars[remainder] + res;
+        cur = quotient;
+      }
+
+      if (len.HasValue)
+      {
+        res = res.PadLeft(len.Value, '0');
+      }
+
+      return res;
+    }
+
+    public static long ConvertFromBase62(string msg)
+    {
+      long res = 0;
+      int len = msg.Length;
+      long multiplier = 1;
+
+      for (int i = 0; i < len; i++)
+      {
+        char c = msg[len - i - 1];
+        int idx = Base62Chars.IndexOf(c);
+        if (idx < 0)
+          throw new Exception("Serial " + msg + " has an invalid character " + c);
+        res += idx * multiplier;
+        multiplier *= 62;
+      }
+      return res;
+
+    }
+
+  }
+
   public class FMSImplementation
   {
     public string Name { get; set; }
     public string Version { get; set; }
     public Func<DateTime> LicenseExpires { get; set; } = null;
+
     public IFMSBackend Backend { get; set; }
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
+    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
+
     public CustomizeInstructionPath InstructionPath { get; set; } = null;
+
     public bool UsingLabelPrinterForSerials { get; set; } = false;
     public PrintLabelForMaterial PrintLabel { get; set; } = null;
-    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
+
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
     public string CustomStationMonitorDialogUrl { get; set; } = null;
+    public bool RequireExistingMaterialWhenAddingToQueue { get; set; } = false;
+    public bool RequireSerialWhenAddingMaterialToQueue { get; set; } = false;
+    public bool AddRawMaterialAsUnassigned { get; set; } = true;
   }
 }

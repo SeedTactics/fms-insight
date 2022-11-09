@@ -55,7 +55,7 @@ namespace MachineWatchTest
       System.IO.File.Copy("log.v17.db", _tempLogFile, overwrite: true);
       _tempJobFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("job.v16.db", _tempJobFile, overwrite: true);
-      _log = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), _tempLogFile, null, _tempJobFile).OpenConnection();
+      _log = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), _tempLogFile, null, _tempJobFile).OpenConnection();
     }
 
     public void Dispose()

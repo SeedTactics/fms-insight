@@ -102,7 +102,7 @@ namespace BlackMaple.MachineFramework
     LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName);
     LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName, DateTime? timeUtc);
     LogEntry SignalMaterialForQuarantine(EventLogMaterial mat, string pallet, string queue, DateTime? timeUTC = null, string operatorName = null, string foreignId = null, string originalMessage = null);
-    SwapMaterialResult SwapMaterialInCurrentPalletCycle(string pallet, long oldMatId, long newMatId, string operatorName, DateTime? timeUTC = null);
+    SwapMaterialResult SwapMaterialInCurrentPalletCycle(string pallet, long oldMatId, long newMatId, string operatorName, string quarantineQueue, DateTime? timeUTC = null);
     IEnumerable<LogEntry> InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue, string operatorName, DateTime? timeUTC = null);
 
 
@@ -110,6 +110,7 @@ namespace BlackMaple.MachineFramework
     // Material IDs
     // --------------------------------------------------------------------------------
     long AllocateMaterialID(string unique, string part, int numProc);
+    long AllocateMaterialIDAndGenerateSerial(string unique, string part, int proc, int numProc, DateTime timeUTC, out LogEntry serialLogEntry);
     long AllocateMaterialIDForCasting(string casting);
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
     void RecordPathForProcess(long matID, int process, int path);

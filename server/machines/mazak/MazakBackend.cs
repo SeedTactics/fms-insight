@@ -81,7 +81,7 @@ namespace MazakMachineInterface
       OnNewCurrentStatus?.Invoke(((IJobControl)routing).GetCurrentStatus());
     }
 
-    public MazakBackend(IConfiguration configuration, FMSSettings st, MazakConfig mazakCfg = null)
+    public MazakBackend(IConfiguration configuration, FMSSettings st, SerialSettings serialSt, MazakConfig mazakCfg = null)
     {
       var cfg = configuration.GetSection("Mazak");
       string localDbPath = cfg.GetValue<string>("Database Path");
@@ -168,7 +168,7 @@ namespace MazakMachineInterface
         if (bool.TryParse(serialPerMaterial, out result))
         {
           if (!result)
-            st.SerialType = SerialType.AssignOneSerialPerCycle;
+            serialSt.SerialType = SerialType.AssignOneSerialPerCycle;
         }
       }
 
@@ -184,7 +184,7 @@ namespace MazakMachineInterface
         oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db");
 
       logDbConfig = RepositoryConfig.InitializeEventDatabase(
-        st,
+        serialSt,
         System.IO.Path.Combine(st.DataDirectory, "log.db"),
         System.IO.Path.Combine(st.DataDirectory, "insp.db"),
         oldJobDbName

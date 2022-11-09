@@ -1534,7 +1534,7 @@ namespace BlackMaple.MachineFramework
       return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
     }
 
-    public LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial, DateTime endTimeUTC)
+    private LogEntry RecordSerialForMaterialID(IDbTransaction trans, EventLogMaterial mat, string serial, DateTime endTimeUTC)
     {
       var log = new NewEventLogEntry()
       {
@@ -1549,10 +1549,15 @@ namespace BlackMaple.MachineFramework
         Result = serial,
         EndOfRoute = false
       };
+      RecordSerialForMaterialID(trans, mat.MaterialID, serial);
+      return AddLogEntry(trans, log, null, null);
+    }
+
+    public LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial, DateTime endTimeUTC)
+    {
       return AddEntryInTransaction(trans =>
       {
-        RecordSerialForMaterialID(trans, mat.MaterialID, serial);
-        return AddLogEntry(trans, log, null, null);
+        return RecordSerialForMaterialID(trans, mat, serial, endTimeUTC);
       });
     }
 
@@ -1854,6 +1859,7 @@ namespace BlackMaple.MachineFramework
       long oldMatId,
       long newMatId,
       string operatorName,
+      string quarantineQueue, // put the old material in this queue if it's not already in a queue
       DateTime? timeUTC = null
     )
     {
@@ -2004,7 +2010,7 @@ namespace BlackMaple.MachineFramework
             .Where(e => e.LogType == LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
             .Select(e => e.LocationName)
             .FirstOrDefault()
-            ?? _cfg.Settings.QuarantineQueue;
+            ?? quarantineQueue;
 
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
@@ -2199,34 +2205,52 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Material IDs
+    private long AllocateMaterialID(IDbTransaction trans, string unique, string part, int numProc)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+        cmd.CommandText = "INSERT INTO matdetails(UniqueStr, PartName, NumProcesses) VALUES ($uniq,$part,$numproc)";
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+        cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+        cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "SELECT last_insert_rowid()";
+        cmd.Parameters.Clear();
+        return (long)cmd.ExecuteScalar();
+      }
+    }
+
+
     public long AllocateMaterialID(string unique, string part, int numProc)
     {
       lock (_cfg)
       {
-        using (var cmd = _connection.CreateCommand())
+        using (var trans = _connection.BeginTransaction())
         {
-          var trans = _connection.BeginTransaction();
-          cmd.Transaction = trans;
-          try
-          {
-            cmd.CommandText = "INSERT INTO matdetails(UniqueStr, PartName, NumProcesses) VALUES ($uniq,$part,$numproc)";
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-            cmd.Parameters.Add("part", SqliteType.Text).Value = part;
-            cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
-            cmd.ExecuteNonQuery();
-            cmd.CommandText = "SELECT last_insert_rowid()";
-            cmd.Parameters.Clear();
-            var matID = (long)cmd.ExecuteScalar();
-            trans.Commit();
-            return matID;
-          }
-          catch
-          {
-            trans.Rollback();
-            throw;
-          }
+          var matId = AllocateMaterialID(trans, unique, part, numProc);
+          trans.Commit();
+          return matId;
         }
       }
+    }
+
+    public long AllocateMaterialIDAndGenerateSerial(string unique, string part, int proc, int numProc, DateTime timeUTC, out LogEntry serialLogEntry)
+    {
+      if (_cfg.Settings.SerialType != SerialType.AssignOneSerialPerMaterial)
+      {
+        serialLogEntry = null;
+        return AllocateMaterialID(unique, part, numProc);
+      }
+      long matId = -1;
+      serialLogEntry = AddEntryInTransaction(trans =>
+      {
+        matId = AllocateMaterialID(trans, unique, part, numProc);
+        var serial = _cfg.Settings.ConvertMaterialIDToSerial(matId);
+        return RecordSerialForMaterialID(trans, new EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" }, serial, timeUTC);
+      });
+      return matId;
     }
 
     public long AllocateMaterialIDForCasting(string casting)
@@ -3416,8 +3440,6 @@ namespace BlackMaple.MachineFramework
                       if (matID >= 0)
                       {
                         var serial = _cfg.Settings.ConvertMaterialIDToSerial(matID);
-                        serial = serial.Substring(0, Math.Min(_cfg.Settings.SerialLength, serial.Length));
-                        serial = serial.PadLeft(_cfg.Settings.SerialLength, '0');
                         // add the serial
                         foreach (var m in mat[key])
                         {
@@ -3461,8 +3483,6 @@ namespace BlackMaple.MachineFramework
                           }
 
                           var serial = _cfg.Settings.ConvertMaterialIDToSerial(m.MaterialID);
-                          serial = serial.Substring(0, Math.Min(_cfg.Settings.SerialLength, serial.Length));
-                          serial = serial.PadLeft(_cfg.Settings.SerialLength, '0');
                           if (m.MaterialID < 0) continue;
                           RecordSerialForMaterialID(trans, m.MaterialID, serial);
                           newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()

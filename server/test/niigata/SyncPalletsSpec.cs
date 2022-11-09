@@ -45,7 +45,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 {
   public class SyncPalletsSpec : IDisposable
   {
-    private FMSSettings _settings;
+    private SerialSettings _serialSt;
+    private FMSSettings _fmsSt;
     private RepositoryConfig _logDBCfg;
     private IRepository _logDB;
     private IccSimulator _sim;
@@ -58,16 +59,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
     {
       _output = o;
-      _settings = new FMSSettings()
-      {
-        SerialType = SerialType.AssignOneSerialPerMaterial,
-        ConvertMaterialIDToSerial = FMSSettings.ConvertToBase62,
-        ConvertSerialToMaterialID = FMSSettings.ConvertFromBase62,
-      };
-      _settings.Queues.Add("Transfer", new QueueSize() { MaxSizeBeforeStopUnloading = -1 });
-      _settings.Queues.Add("sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1 });
 
-      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _serialSt = new SerialSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10) };
+      _fmsSt = new FMSSettings();
+      _fmsSt.Queues.Add("Transfer", new QueueSize() { MaxSizeBeforeStopUnloading = -1 });
+      _fmsSt.Queues.Add("sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1 });
+
+      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_serialSt);
       _logDB = _logDBCfg.OpenConnection();
 
       jsonSettings = new Newtonsoft.Json.JsonSerializerSettings();
@@ -84,15 +82,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var assign = new MultiPalletAssign(new IAssignPallets[] {
         new AssignNewRoutesOnPallets(statNames),
-        new SizedQueues(_settings.Queues)
+        new SizedQueues(_fmsSt.Queues)
       });
-      var createLog = new CreateCellState(_settings, statNames, machConn);
+      var createLog = new CreateCellState(_fmsSt, statNames, machConn);
 
       _sim = new IccSimulator(numPals: numPals, numMachines: numMachines, numLoads: numLoads, statNames: statNames);
       var decr = new DecrementNotYetStartedJobs();
 
       _onCurrentStatus = Substitute.For<Action<CurrentStatus>>();
-      _sync = new SyncPallets(_logDBCfg, _sim, assign, createLog, decr, _settings, onNewCurrentStatus: _onCurrentStatus);
+      _sync = new SyncPallets(_logDBCfg, _sim, assign, createLog, decr, _fmsSt, onNewCurrentStatus: _onCurrentStatus);
 
       _sim.OnNewProgram += (newprog) =>
         _logDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
@@ -287,7 +285,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               mark.LogType.Should().Be(LogType.PartMark);
               mark.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-              mark.Result.Should().Be(_settings.ConvertMaterialIDToSerial(matId));
+              mark.Result.Should().Be(_serialSt.ConvertMaterialIDToSerial(matId));
             });
           }
         }

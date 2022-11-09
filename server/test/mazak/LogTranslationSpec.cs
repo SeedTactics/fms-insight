@@ -63,16 +63,19 @@ namespace MachineWatchTest
 
     protected LogTestBase()
     {
-      settings = new FMSSettings()
+      var serialSt = new SerialSettings()
       {
         SerialType = SerialType.AssignOneSerialPerMaterial,
-        SerialLength = 10,
+        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
+      };
+      settings = new FMSSettings()
+      {
         QuarantineQueue = "quarantineQ"
       };
       settings.Queues["thequeue"] = new QueueSize() { MaxSizeBeforeStopUnloading = -1 };
       settings.ExternalQueues["externalq"] = "testserver";
 
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(serialSt);
       jobLog = _repoCfg.OpenConnection();
 
       _schedules = new List<MazakScheduleRow>();
@@ -1047,6 +1050,7 @@ namespace MachineWatchTest
         oldMatId: matOnPal.MaterialID,
         newMatId: matToAdd.MaterialID,
         operatorName: null,
+        quarantineQueue: settings.QuarantineQueue,
         timeUTC: time
       );
 
