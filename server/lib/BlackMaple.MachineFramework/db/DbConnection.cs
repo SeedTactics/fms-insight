@@ -44,6 +44,7 @@ namespace BlackMaple.MachineFramework
     private SqliteConnection _connection;
     private bool _closeConnectionOnDispose;
     private RepositoryConfig _cfg;
+    public RepositoryConfig RepoConfig => _cfg;
 
     internal Repository(RepositoryConfig cfg, SqliteConnection c, bool closeOnDispose)
     {

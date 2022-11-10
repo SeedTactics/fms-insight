@@ -41,6 +41,8 @@ namespace BlackMaple.MachineFramework
 {
   public interface IRepository : IDisposable
   {
+    RepositoryConfig RepoConfig { get; }
+
     // --------------------------------------------------------------------------------
     // Loading Events
     // --------------------------------------------------------------------------------
