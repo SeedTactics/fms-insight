@@ -127,7 +127,7 @@ function PrintLabelButton() {
   }
 }
 
-function RemoveFromSystemButton() {
+function RemoveFromSystemButton({ onClose }: { onClose: () => void }) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
   const [removeFromQueue, removingFromQueue] = matDetails.useRemoveFromQueue();
@@ -159,6 +159,7 @@ function RemoveFromSystemButton() {
       onClick={() => {
         removeFromQueue(curMat.materialID, operator);
         closeMatDialog();
+        onClose();
       }}
     >
       Remove From System
@@ -166,7 +167,7 @@ function RemoveFromSystemButton() {
   );
 }
 
-function QuarantineMaterialButton() {
+function QuarantineMaterialButton({ onClose }: { onClose: () => void }) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
   const [addMat, addingMat] = matDetails.useAddExistingMaterialToQueue();
@@ -205,6 +206,7 @@ function QuarantineMaterialButton() {
             operator: operator,
           });
           closeMatDialog();
+          onClose();
         }}
       >
         Quarantine Material
@@ -218,11 +220,13 @@ function QueueButtons({
   enteredOperator,
   selectedJob,
   queueNames,
+  onClose,
 }: {
   toQueue: string | null;
   enteredOperator: string | null;
   selectedJob: AddNewJobProcessState | null;
   queueNames: ReadonlyArray<string>;
+  onClose: () => void;
 }) {
   const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
   const curInQueueOnScreen =
@@ -235,14 +239,21 @@ function QueueButtons({
     return (
       <>
         <PrintLabelButton />
-        <QuarantineMaterialButton />
-        <RemoveFromSystemButton />
+        <QuarantineMaterialButton onClose={onClose} />
+        <RemoveFromSystemButton onClose={onClose} />
       </>
     );
   } else if (inProcMat && inProcMat.location.type === api.LocType.OnPallet) {
     return null;
   } else {
-    return <AddToQueueButton selectedJob={selectedJob} toQueue={toQueue} enteredOperator={enteredOperator} />;
+    return (
+      <AddToQueueButton
+        selectedJob={selectedJob}
+        toQueue={toQueue}
+        enteredOperator={enteredOperator}
+        onClose={onClose}
+      />
+    );
   }
 }
 
@@ -269,14 +280,16 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
     toQueue = selectedQueue;
   }
 
+  const onClose = React.useCallback(() => {
+    setSelectedQueue(null);
+    setEnteredOperator(null);
+    setSelectedJob(null);
+  }, [setSelectedQueue, setEnteredOperator, setSelectedJob]);
+
   return (
     <MaterialDialog
       allowNote
-      onClose={() => {
-        setSelectedQueue(null);
-        setEnteredOperator(null);
-        setSelectedJob(null);
-      }}
+      onClose={onClose}
       extraDialogElements={
         <>
           {requireSelectQueue ? (
@@ -300,6 +313,7 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
           toQueue={toQueue}
           enteredOperator={enteredOperator}
           queueNames={queueNames}
+          onClose={onClose}
         />
       }
     />

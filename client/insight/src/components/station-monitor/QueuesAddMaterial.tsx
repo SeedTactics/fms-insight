@@ -256,10 +256,12 @@ export function AddToQueueButton({
   enteredOperator,
   selectedJob,
   toQueue,
+  onClose,
 }: {
   enteredOperator: string | null;
   selectedJob: AddNewJobProcessState | null;
   toQueue: string | null;
+  onClose: () => void;
 }) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const operator = useRecoilValue(currentOperator);
@@ -312,8 +314,9 @@ export function AddToQueueButton({
         addingExistingMat === true ||
         addingNewMat === true ||
         (existingMat === null && selectedJob === null) ||
-        (fmsInfo.requireSerialWhenAddingMaterialToQueue && newSerial === null) ||
-        (fmsInfo.requireOperatorNamePromptWhenAddingMaterial && enteredOperator === null)
+        (fmsInfo.requireSerialWhenAddingMaterialToQueue && (newSerial === null || newSerial === "")) ||
+        (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+          (enteredOperator === null || enteredOperator === ""))
       }
       onClick={() => {
         if (existingMat) {
@@ -334,6 +337,7 @@ export function AddToQueueButton({
           });
         }
         closeMatDialog();
+        onClose();
       }}
     >
       {toQueue === null ? (
