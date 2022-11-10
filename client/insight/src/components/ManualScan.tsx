@@ -56,6 +56,7 @@ export const ManualScanButton = React.memo(function ManualScan() {
   function open() {
     if (serial && serial !== "") {
       setMatToShowDialog({ type: "ManuallyEnteredSerial", serial });
+      close();
     }
   }
 
@@ -74,6 +75,7 @@ export const ManualScanButton = React.memo(function ManualScan() {
               sx={{ mt: "5px" }}
               label={serial === null || serial === "" ? "Serial" : "Serial (press enter)"}
               value={serial ?? ""}
+              autoFocus
               onChange={(e) => setSerial(e.target.value)}
               onKeyPress={(e) => {
                 if (e.key === "Enter" && serial && serial !== "") {

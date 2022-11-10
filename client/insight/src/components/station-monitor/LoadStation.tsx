@@ -440,10 +440,20 @@ function QuarantineButton() {
   );
 }
 
+function SignalInspectionButton() {
+  const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
+  const curMat = useRecoilValue(matDetails.materialInDialogInfo);
+  if (curMat === null) return null;
+  return (
+    <Button color="primary" onClick={() => setForceInspOpen(true)}>
+      Signal Inspection
+    </Button>
+  );
+}
+
 const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
-  const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
 
   return (
     <MaterialDialog
@@ -453,9 +463,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
           <InstructionButton pallet={props.pallet} />
           <PrintSerialButton loadNum={props.loadNum} />
           <QuarantineButton />
-          <Button color="primary" onClick={() => setForceInspOpen(true)}>
-            Signal Inspection
-          </Button>
+          <SignalInspectionButton />
           {fmsInfo.allowChangeWorkorderAtLoadStation ? (
             <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
               Assign Workorder

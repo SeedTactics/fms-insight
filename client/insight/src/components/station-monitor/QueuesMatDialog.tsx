@@ -257,6 +257,7 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
   const [selectedJob, setSelectedJob] = React.useState<AddNewJobProcessState | null>(null);
 
   let toQueue: string | null = null;
+  let requireSelectQueue = false;
   if (toShow && toShow.type === "AddMatWithoutSerial") {
     toQueue = toShow.toQueue;
   } else if (toShow && toShow.type === "AddMatWithEnteredSerial") {
@@ -264,6 +265,7 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
   } else if (queueNames.length === 1) {
     toQueue = queueNames[0];
   } else {
+    requireSelectQueue = true;
     toQueue = selectedQueue;
   }
 
@@ -277,12 +279,14 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
       }}
       extraDialogElements={
         <>
+          {requireSelectQueue ? (
+            <PromptForQueue
+              selectedQueue={selectedQueue}
+              setSelectedQueue={setSelectedQueue}
+              queueNames={queueNames}
+            />
+          ) : undefined}
           <PromptForJob selectedJob={selectedJob} setSelectedJob={setSelectedJob} toQueue={toQueue} />
-          <PromptForQueue
-            selectedQueue={selectedQueue}
-            setSelectedQueue={setSelectedQueue}
-            queueNames={queueNames}
-          />
           <PromptForOperator
             enteredOperator={enteredOperator}
             setEnteredOperator={setEnteredOperator}

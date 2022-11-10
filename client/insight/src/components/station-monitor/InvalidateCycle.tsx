@@ -89,7 +89,7 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   );
 }
 
-export function InvalidateCycleDialogButtons(props: InvalidateCycleProps) {
+export function InvalidateCycleDialogButtons(props: InvalidateCycleProps & { readonly onClose: () => void }) {
   const curMat = useRecoilValue(inProcessMaterialInDialog);
   const closeMatDialog = useCloseMaterialDialog();
 
@@ -98,9 +98,10 @@ export function InvalidateCycleDialogButtons(props: InvalidateCycleProps) {
   function invalidateCycle() {
     if (curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(curMat.materialID, null, null, props.st.process).finally(() =>
-        closeMatDialog()
-      );
+      JobsBackend.invalidatePalletCycle(curMat.materialID, null, null, props.st.process).finally(() => {
+        closeMatDialog();
+        props.onClose();
+      });
     }
   }
 
@@ -226,7 +227,7 @@ export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element
   }
 }
 
-export function SwapMaterialButtons(props: SwapMaterialProps) {
+export function SwapMaterialButtons(props: SwapMaterialProps & { readonly onClose: () => void }) {
   const curMat = useRecoilValue(inProcessMaterialInDialog);
   const closeMatDialog = useCloseMaterialDialog();
 
@@ -236,7 +237,10 @@ export function SwapMaterialButtons(props: SwapMaterialProps) {
       JobsBackend.swapMaterialOnPallet(curMat.materialID, null, {
         pallet: curMat.location.pallet ?? "",
         materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
-      }).finally(() => closeMatDialog());
+      }).finally(() => {
+        closeMatDialog();
+        props.onClose();
+      });
     }
   }
 

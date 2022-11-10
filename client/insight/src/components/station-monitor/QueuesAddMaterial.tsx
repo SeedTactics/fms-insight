@@ -37,9 +37,6 @@ import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
 import { ListItemIcon } from "@mui/material";
-import { FormControl } from "@mui/material";
-import { InputLabel } from "@mui/material";
-import { Select } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { Dialog } from "@mui/material";
 import { DialogActions } from "@mui/material";
@@ -189,8 +186,9 @@ export function PromptForJob({
 
   switch (toShow.type) {
     case "Barcode":
-    case "AddMatWithEnteredSerial":
     case "ManuallyEnteredSerial":
+    case "AddMatWithEnteredSerial":
+    case "AddMatWithoutSerial":
       return <SelectJob queue={toQueue} selectedJob={selectedJob} onSelectJob={setSelectedJob} />;
     default:
       return null;
@@ -298,6 +296,11 @@ export function AddToQueueButton({
     }
   }
 
+  let withSerialMsg = "";
+  if (!existingMat && newSerial && newSerial !== "") {
+    withSerialMsg = " With Serial " + newSerial;
+  }
+
   const curQueue = inProcMat?.location.currentQueue ?? null;
 
   return (
@@ -338,6 +341,7 @@ export function AddToQueueButton({
       ) : (
         <span>
           {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
+          {withSerialMsg}
           {addProcMsg}
         </span>
       )}
@@ -372,6 +376,8 @@ export const AddBySerialDialog = React.memo(function AddBySerialDialog() {
       <DialogContent>
         <TextField
           label="Serial"
+          style={{ marginTop: "0.5em" }}
+          autoFocus
           value={serial || ""}
           onChange={(e) => setSerial(e.target.value)}
           onKeyPress={(e) => {
@@ -521,14 +527,14 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
       <Dialog open={queue !== null} onClose={() => close()}>
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
-          <FormControl>
-            <InputLabel id="select-casting-label">Raw Material</InputLabel>
-            <Select
-              style={{ minWidth: "15em" }}
-              labelId="select-casting-label"
-              value={selectedCasting || ""}
-              onChange={(e) => setSelectedCasting(e.target.value)}
-              renderValue={
+          <TextField
+            style={{ minWidth: "15em", marginTop: "0.5em" }}
+            value={selectedCasting || ""}
+            onChange={(e) => setSelectedCasting(e.target.value)}
+            select
+            label="Raw Material"
+            SelectProps={{
+              renderValue:
                 selectedCasting === null
                   ? undefined
                   : () => (
@@ -538,24 +544,21 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
                         </div>
                         <div>{selectedCasting}</div>
                       </div>
-                    )
-              }
-            >
-              {castings.map(([casting, jobCnt], idx) => (
-                <MenuItem key={idx} value={casting}>
-                  <ListItemIcon>
-                    <PartIdenticon part={casting} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={casting}
-                    secondary={
-                      jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`
-                    }
-                  />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                    ),
+            }}
+          >
+            {castings.map(([casting, jobCnt], idx) => (
+              <MenuItem key={idx} value={casting}>
+                <ListItemIcon>
+                  <PartIdenticon part={casting} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={casting}
+                  secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
+                />
+              </MenuItem>
+            ))}
+          </TextField>
           <div style={{ marginTop: "3em", marginBottom: "2em" }}>
             <TextField
               fullWidth

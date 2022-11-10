@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* eslint-disable react/display-name */
 import * as React from "react";
 import * as jdenticon from "jdenticon";
-import { Stack, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import { ButtonBase } from "@mui/material";
 import { Button } from "@mui/material";
 import { Tooltip } from "@mui/material";
@@ -411,15 +411,17 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
   serial,
   subtitle,
   notes,
+  fallbackTitle,
 }: {
   partName: string;
   serial?: string | null;
   subtitle?: string;
   notes?: boolean;
+  fallbackTitle?: string;
 }) {
   let title;
   if (partName === "") {
-    title = serial ?? "Material";
+    title = serial ?? fallbackTitle ?? "Material";
   } else if (serial === undefined || serial === null || serial === "") {
     if (notes) {
       title = "Add note for " + partName;
@@ -448,7 +450,16 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
 function MaterialDialogTitle({ notes }: { notes?: boolean }) {
   const mat = useRecoilValueLoadable(matDetails.materialInDialogInfo).valueMaybe();
   const serial = useRecoilValueLoadable(matDetails.serialInMaterialDialog).valueMaybe();
-  return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial ?? serial} />;
+  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const fallback = toShow && toShow.type === "AddMatWithoutSerial" ? "Add New Material" : undefined;
+  return (
+    <MaterialDetailTitle
+      notes={notes}
+      partName={mat?.partName ?? ""}
+      serial={mat?.serial ?? serial}
+      fallbackTitle={fallback}
+    />
+  );
 }
 
 function MaterialInspections() {
@@ -461,21 +472,18 @@ function MaterialInspections() {
     }
   }
   if (insps.signaledInspections.length === 0) {
-    return (
-      <p>
-        <small>none</small>
-      </p>
-    );
+    return <small>Inspections: none</small>;
   } else {
     return (
-      <p>
+      <small>
+        Inspections:{" "}
         {insps.signaledInspections.map((type, i) => (
           <span key={i}>
-            <small>{i === 0 ? "" : ", "}</small>
-            <small style={{ color: colorForInspType(type) }}>{type}</small>
+            {i === 0 ? "" : ", "}
+            <span style={{ color: colorForInspType(type) }}>{type}</span>
           </span>
         ))}
-      </p>
+      </small>
     );
   }
 }
@@ -496,10 +504,12 @@ export const MaterialDetailContent = React.memo(function MaterialDetailContent({
   if (toShow === null) return null;
 
   if (mat === null) {
-    if (toShow && (toShow.type === "AddMatWithEnteredSerial" || toShow.type === "ManuallyEnteredSerial")) {
+    if (toShow.type === "AddMatWithEnteredSerial" || toShow.type === "ManuallyEnteredSerial") {
       return <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>;
-    } else if (toShow && toShow.type === "Barcode") {
+    } else if (toShow.type === "Barcode") {
       return <div style={{ marginLeft: "1em" }}>Material with barcode {toShow.barcode} not found.</div>;
+    } else if (toShow.type === "AddMatWithoutSerial") {
+      return null;
     } else {
       return <div style={{ marginLeft: "1em" }}>Material not found.</div>;
     }
@@ -512,12 +522,15 @@ export const MaterialDetailContent = React.memo(function MaterialDetailContent({
           <small>Workorder: {mat?.workorderId ?? "none"}</small>
         </div>
         <div>
-          <Stack direction="row" spacing={1}>
-            <small>Inspections: </small>
-            <DisplayLoadingAndError fallback={<CircularProgress />}>
-              <MaterialInspections />
-            </DisplayLoadingAndError>
-          </Stack>
+          <DisplayLoadingAndError
+            fallback={
+              <small>
+                Inspections: <CircularProgress size="10" />
+              </small>
+            }
+          >
+            <MaterialInspections />
+          </DisplayLoadingAndError>
         </div>
       </div>
       <DisplayLoadingAndError fallback={<CircularProgress />}>
@@ -603,6 +616,17 @@ function MaterialLoading() {
   );
 }
 
+function AddNoteButton({ setNotesOpen }: { setNotesOpen: (o: boolean) => void }) {
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  if (mat === null) return null;
+
+  return (
+    <Button onClick={() => setNotesOpen(true)} color="primary">
+      Add Note
+    </Button>
+  );
+}
+
 export interface MaterialDialogProps {
   buttons?: JSX.Element;
   onClose?: () => void;
@@ -638,13 +662,11 @@ export const MaterialDialog = React.memo(function MaterialDialog(props: Material
           </DisplayLoadingAndError>
         </DialogContent>
         <DialogActions>
-          {dialogOpen && props.allowNote ? (
-            <Button onClick={() => setNotesOpen(true)} color="primary">
-              Add Note
-            </Button>
-          ) : undefined}
-          {dialogOpen && props.buttons ? (
-            <DisplayLoadingAndError fallback={<CircularProgress />}>{props.buttons}</DisplayLoadingAndError>
+          {dialogOpen && (props.buttons || props.allowNote) ? (
+            <DisplayLoadingAndError fallback={<CircularProgress />}>
+              {dialogOpen && props.allowNote ? <AddNoteButton setNotesOpen={setNotesOpen} /> : undefined}
+              {props.buttons}
+            </DisplayLoadingAndError>
           ) : null}
           <Button onClick={close} color="secondary">
             Close

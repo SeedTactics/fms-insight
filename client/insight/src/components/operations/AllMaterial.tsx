@@ -65,7 +65,7 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle.js";
-import { selector, useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import {
   horizontalListSortingStrategy,
   SortableContext,
@@ -334,33 +334,43 @@ function MaterialBinColumn({
   }
 }
 
-function RemoveFromSystemButton() {
+function RemoveFromSystemButton({
+  onClose,
+  allBins,
+}: {
+  onClose: () => void;
+  allBins: ReadonlyArray<MaterialBin>;
+}) {
   const [removeFromQueue] = matDetails.useRemoveFromQueue();
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  if (mat === null) return null;
+  const mat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const close = matDetails.useCloseMaterialDialog();
+  if (mat === null || mat.location.type !== LocType.InQueue) return null;
+
+  const inQuarantineQueue =
+    allBins.findIndex(
+      (bin) =>
+        bin.type === MaterialBinType.QuarantineQueues &&
+        bin.material.findIndex((m) => m.materialID === mat.materialID) >= 0
+    ) >= 0;
+  if (!inQuarantineQueue) return null;
 
   return (
-    <Button color="primary" onClick={() => removeFromQueue(mat.materialID, null)}>
+    <Button
+      color="primary"
+      onClick={() => {
+        removeFromQueue(mat.materialID, null);
+        close();
+        onClose();
+      }}
+    >
       Remove From System
     </Button>
   );
 }
 
-const curMatInQueue = selector<boolean>({
-  key: "mat-in-dialog-currently-in-queue",
-  get: ({ get }) => {
-    const mat = get(matDetails.inProcessMaterialInDialog);
-    if (mat === null) return false;
-    return mat.location.type === LocType.InQueue;
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-const AllMatDialog = React.memo(function AllMatDialog() {
+const AllMatDialog = React.memo(function AllMatDialog({ allBins }: { allBins: ReadonlyArray<MaterialBin> }) {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
-  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState>(null);
-
-  const inQueue = useRecoilValue(curMatInQueue);
+  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
 
   function onClose() {
     setSwapSt(null);
@@ -370,19 +380,21 @@ const AllMatDialog = React.memo(function AllMatDialog() {
   return (
     <MaterialDialog
       onClose={onClose}
-      allowNote={inQueue}
+      allowNote
       highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
           <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
-          <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
+          {invalidateSt !== null ? (
+            <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
+          ) : null}
         </>
       }
       buttons={
         <>
-          {inQueue ? <RemoveFromSystemButton /> : null}
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} />
-          <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} />
+          <RemoveFromSystemButton onClose={onClose} allBins={allBins} />
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
+          <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
         </>
       }
     />
@@ -560,7 +572,7 @@ export function AllMaterial(props: AllMaterialProps) {
           <MaterialBinColumn matBin={activeDrag.bin} isDragOverlay />
         ) : undefined}
       </DragOverlay>
-      <AllMatDialog />
+      <AllMatDialog allBins={allBins} />
     </DndContext>
   );
 }

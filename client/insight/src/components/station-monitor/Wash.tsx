@@ -169,9 +169,19 @@ function InstrButton() {
   );
 }
 
-const WashMaterialDialog = React.memo(function WashDialog() {
+function AssignWorkorderButton() {
   const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const mat = useRecoilValue(materialInDialogInfo);
+  if (mat === null) return null;
 
+  return (
+    <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
+      Assign Workorder
+    </Button>
+  );
+}
+
+const WashMaterialDialog = React.memo(function WashDialog() {
   return (
     <MaterialDialog
       allowNote
@@ -180,9 +190,7 @@ const WashMaterialDialog = React.memo(function WashDialog() {
           <InstrButton />
           <QuarantineMatButton />
           <CompleteWashButton />
-          <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
-            Assign Workorder
-          </Button>
+          <AssignWorkorderButton />
         </>
       }
     />

@@ -386,7 +386,6 @@ export interface CompleteInspectionData {
 
 export function useCompleteInspection(): [(data: CompleteInspectionData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
   const callback = useCallback((data: CompleteInspectionData) => {
     setUpdating(true);
     LogBackend.recordInspectionCompleted(
@@ -402,9 +401,7 @@ export function useCompleteInspection(): [(data: CompleteInspectionData) => void
       }),
       data.mat.jobUnique,
       data.mat.partName
-    )
-      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
-      .finally(() => setUpdating(false));
+    ).finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -417,7 +414,6 @@ export interface CompleteWashData {
 
 export function useCompleteWash(): [(d: CompleteWashData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
   const callback = useCallback((d: CompleteWashData) => {
     setUpdating(true);
     LogBackend.recordWashCompleted(
@@ -431,9 +427,7 @@ export function useCompleteWash(): [(d: CompleteWashData) => void, boolean] {
       }),
       d.mat.jobUnique,
       d.mat.partName
-    )
-      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
-      .finally(() => setUpdating(false));
+    ).finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
