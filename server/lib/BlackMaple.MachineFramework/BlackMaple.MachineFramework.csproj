@@ -59,7 +59,7 @@
     <PackageReference Include="Serilog.AspNetCore" Version="5.0.0"/>
 
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.*" />
-    <PackageReference Include="CsvHelper" Version="27.2.1"/>
+    <PackageReference Include="CsvHelper" Version="30.0.0"/>
     <PackageReference Include="System.Collections.Immutable" Version="6.0.*" />
 
     <PackageReference Include="Germinate" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

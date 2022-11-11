@@ -40,7 +40,7 @@ import {
   useRecoilTransaction_UNSTABLE,
   useSetRecoilState,
 } from "recoil";
-import { default as produce, Draft } from "immer";
+import { produce, Draft } from "immer";
 
 export function useRecoilStateDraft<T>(recoilState: RecoilState<T>): [T, (f: (d: Draft<T>) => void) => void] {
   const [st, setState] = useRecoilState(recoilState);

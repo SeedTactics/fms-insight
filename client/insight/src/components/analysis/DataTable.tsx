@@ -44,7 +44,7 @@ import { Select } from "@mui/material";
 import { InputBase } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { Button } from "@mui/material";
-import { default as Calendar } from "react-calendar";
+import { Calendar } from "react-calendar";
 import {
   MoreHoriz,
   FirstPage as FirstPageIcon,

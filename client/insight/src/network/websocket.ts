@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { default as ReconnectingWebSocket } from "reconnecting-websocket";
+import ReconnectingWebSocket from "reconnecting-websocket";
 import { ServerEvent } from "./api.js";
 import { BackendHost, JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
@@ -132,7 +132,7 @@ export function WebsocketConnection(): null {
   );
 
   const fmsInfoLoadable = useRecoilValueLoadable(fmsInformation);
-  const websocketRef = useRef<ReconnectingWebSocket | null>(null);
+  const websocketRef = useRef<ReconnectingWebSocket.default | null>(null);
 
   useEffect(() => {
     if (fmsInfoLoadable.state !== "hasValue") return;
@@ -156,7 +156,7 @@ export function WebsocketConnection(): null {
       uri += "?token=" + encodeURIComponent(user.access_token);
     }
 
-    const websocket = new ReconnectingWebSocket(uri);
+    const websocket = new ReconnectingWebSocket.default(uri);
     websocket.onopen = onOpen;
     websocket.onclose = onClose;
     websocket.onmessage = onMessage;
