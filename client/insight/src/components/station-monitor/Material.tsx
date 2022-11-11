@@ -590,7 +590,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
   );
 }
 
-function MaterialLoading() {
+export function MaterialLoading() {
   const toShow = useRecoilValue(matDetails.materialDialogOpen);
   if (toShow === null) return null;
 

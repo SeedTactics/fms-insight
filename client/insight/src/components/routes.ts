@@ -35,6 +35,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { useCallback, useEffect } from "react";
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import "urlpattern-polyfill";
+import { useCloseMaterialDialog } from "../cell-status/material-details.js";
 
 export enum RouteLocation {
   ChooseMode = "/",
@@ -253,9 +254,11 @@ export function useSetCurrentRoute(): (r: RouteState) => void {
 export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
   const isDemo = useRecoilValue(isDemoAtom);
   const [curRoute, setCurRoute] = useRecoilState(currentRouteLocation);
+  const closeMatDialog = useCloseMaterialDialog();
 
   const setRouteAndUpdateHistory = useCallback((to: RouteState) => {
     setCurRoute(to);
+    closeMatDialog();
     history.pushState(null, "", routeToUrl(to));
   }, []);
 

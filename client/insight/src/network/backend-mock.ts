@@ -179,17 +179,29 @@ export function registerMockBackend(
     printLabel() {
       return Promise.resolve();
     },
-    parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>> {
+    async parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>> {
       barcode ??= "";
       const commaIdx = barcode.indexOf(",");
       if (commaIdx >= 0) {
         barcode = barcode.substring(0, commaIdx);
       }
-      return Promise.resolve({
-        materialID: -1,
-        partName: "",
-        serial: barcode.replace(/[^0-9a-zA-Z-_]/g, ""),
-      });
+      barcode = barcode.replace(/[^0-9a-zA-Z-_]/g, "");
+      const mat = await serialsToMatId.then((s) => s.get(barcode ?? ""));
+      if (mat) {
+        return {
+          materialID: mat.matId,
+          partName: mat.part,
+          jobUnique: mat.uniq,
+          numProcesses: mat.numProc,
+          serial: barcode,
+        };
+      } else {
+        return {
+          materialID: -1,
+          partName: "",
+          serial: barcode,
+        };
+      }
     },
   };
 

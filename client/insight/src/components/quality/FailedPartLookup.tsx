@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -31,33 +31,32 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { CircularProgress, Stack, TextField } from "@mui/material";
-import { Button } from "@mui/material";
-import { Stepper } from "@mui/material";
-import { Step } from "@mui/material";
-import { StepLabel } from "@mui/material";
-import { StepContent } from "@mui/material";
-import { ErrorBoundary } from "react-error-boundary";
+import {
+  CircularProgress,
+  Stack,
+  TextField,
+  Button,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+} from "@mui/material";
 
 import * as matDetails from "../../cell-status/material-details.js";
-import { MaterialDetailTitle, MaterialDetailContent } from "../station-monitor/Material.js";
+import { MaterialDetailTitle, MaterialDetailContent, MaterialLoading } from "../station-monitor/Material.js";
 import { buildPathString, extractPath } from "../../data/results.inspection.js";
 import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
-import { ILogEntry, LogType } from "../../network/api.js";
+import { ApiException, ILogEntry, LogType } from "../../network/api.js";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { DataTableActionZoomType } from "../analysis/DataTable.js";
 import { useIsDemo } from "../routes.js";
 import { useRecoilState, useRecoilValue, useRecoilValueLoadable, useSetRecoilState } from "recoil";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
-import { DisplayError, DisplayLoadingAndError } from "../ErrorsAndLoading.js";
+import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { LogBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
-interface SerialLookupProps {
-  readonly onSelect: () => void;
-}
-
-function SerialLookup(props: SerialLookupProps) {
+function SerialLookup() {
   const demo = useIsDemo();
   const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const [serial, setSerial] = React.useState(demo ? "00000000i9" : "");
@@ -75,12 +74,19 @@ function SerialLookup(props: SerialLookupProps) {
             setMatToShow({ type: "MatDetails", details: mat });
             setSerial("");
             setError(null);
-            props.onSelect();
           } else {
             setError("No material found with serial " + serial);
           }
         })
-        .catch((e: Error | string) => setError(e instanceof Error ? e.message : e.toString()))
+        .catch((e: Error | string) => {
+          if (ApiException.isApiException(e)) {
+            setError(e.response);
+          } else if (e instanceof Error) {
+            setError(e.message);
+          } else {
+            setError(e.toString());
+          }
+        })
         .finally(() => setLoading(false));
     }
   }
@@ -102,15 +108,17 @@ function SerialLookup(props: SerialLookupProps) {
           />
         </div>
         {error && error !== "" ? <div>{error}</div> : undefined}
-        <Button variant="contained" color="secondary" disabled={serial === "" || loading} onClick={lookup}>
-          {loading ? (
-            <Stack direction="row" spacing={2}>
-              <CircularProgress /> Searching
-            </Stack>
-          ) : (
-            <>Lookup</>
-          )}
-        </Button>
+        <div>
+          <Button variant="contained" color="secondary" disabled={serial === "" || loading} onClick={lookup}>
+            {loading ? (
+              <Stack direction="row" spacing={2}>
+                <CircularProgress /> Searching
+              </Stack>
+            ) : (
+              <>Lookup</>
+            )}
+          </Button>
+        </div>
       </Stack>
     </div>
   );
@@ -130,79 +138,68 @@ function lastMachineTime(evts: ReadonlyArray<Readonly<ILogEntry>>): Date {
   return lastEnd;
 }
 
-function LoadingDetailsStep() {
-  return (
-    <>
-      <StepLabel>Serial Details</StepLabel>
-      <StepContent>
-        <Stack direction="row" spacing={2}>
-          <CircularProgress /> <div>Loading...</div>
-        </Stack>
-      </StepContent>
-    </>
-  );
+function DetailsStepTitle() {
+  const matL = useRecoilValueLoadable(matDetails.materialInDialogInfo);
+  const matEvents = useRecoilValueLoadable(matDetails.materialInDialogEvents);
+  const mat = matL.valueMaybe();
+  if (mat) {
+    return (
+      <MaterialDetailTitle
+        partName={mat.partName}
+        serial={mat.serial}
+        subtitle={
+          matEvents.state === "hasValue"
+            ? "Path " +
+              buildPathString(extractPath(matEvents.getValue())) +
+              " at " +
+              lastMachineTime(matEvents.getValue()).toLocaleString()
+            : undefined
+        }
+      />
+    );
+  } else {
+    return <div>Serial Details</div>;
+  }
 }
 
-function DetailsStep({ setStep }: { setStep: (step: number) => void }) {
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  const matEvents = useRecoilValue(matDetails.materialInDialogEvents);
+function DetailsStepButtons({ setStep }: { setStep: (step: number) => void }) {
+  const mat = useRecoilValueLoadable(matDetails.materialInDialogInfo).valueMaybe();
+  const matEvents = useRecoilValueLoadable(matDetails.materialInDialogEvents);
   const setSearchRange = useSetRecoilState(pathLookupRange);
   const closeMatDialog = matDetails.useCloseMaterialDialog();
 
   return (
-    <>
-      <StepLabel>
-        {mat ? (
-          <MaterialDetailTitle
-            partName={mat.partName}
-            serial={mat.serial}
-            subtitle={
-              "Path " +
-              buildPathString(extractPath(matEvents)) +
-              " at " +
-              lastMachineTime(matEvents).toLocaleString()
-            }
-          />
-        ) : (
-          "Serial Details"
-        )}
-      </StepLabel>
-      <StepContent>
-        {mat ? (
-          <div>
-            <MaterialDetailContent />
-            <div style={{ marginTop: "2em" }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={() => {
-                  const d = lastMachineTime(matEvents);
-                  setSearchRange({
-                    part: mat.partName,
-                    curStart: startOfDay(addDays(d, -5)),
-                    curEnd: endOfDay(addDays(d, 5)),
-                  });
-                  setStep(2);
-                }}
-              >
-                Lookup Similar Paths
-              </Button>
-              <Button
-                variant="contained"
-                style={{ marginLeft: "2em" }}
-                onClick={() => {
-                  closeMatDialog();
-                  setSearchRange(null);
-                  setStep(0);
-                }}
-              >
-                Reset
-              </Button>
-            </div>
-          </div>
-        ) : undefined}
-      </StepContent>
-    </>
+    <Stack direction="row" spacing={2} mt="2em">
+      {mat ? (
+        <Button
+          variant="contained"
+          color="secondary"
+          disabled={matEvents.state !== "hasValue"}
+          onClick={() => {
+            const d = lastMachineTime(matEvents.getValue());
+            setSearchRange({
+              part: mat?.partName ?? "",
+              curStart: startOfDay(addDays(d, -5)),
+              curEnd: endOfDay(addDays(d, 5)),
+            });
+            setStep(2);
+          }}
+        >
+          Lookup Similar Paths
+        </Button>
+      ) : undefined}
+      <Button
+        variant="contained"
+        style={{ marginLeft: "2em" }}
+        onClick={() => {
+          closeMatDialog();
+          setSearchRange(null);
+          setStep(0);
+        }}
+      >
+        Reset
+      </Button>
+    </Stack>
   );
 }
 
@@ -212,7 +209,7 @@ interface PathLookupProps {
 
 function PathLookupStep(props: PathLookupProps) {
   const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  const matEvents = useRecoilValue(matDetails.materialInDialogEvents);
+  const matEvents = useRecoilValueLoadable(matDetails.materialInDialogEvents);
   const [searchRange, setSearchRange] = useRecoilState(pathLookupRange);
   const logs = useRecoilValue(inspectionLogEntries);
   const closeMatDialog = matDetails.useCloseMaterialDialog();
@@ -228,7 +225,14 @@ function PathLookupStep(props: PathLookupProps) {
       <InspectionSankey
         inspectionlogs={logs}
         restrictToPart={mat.partName}
-        subtitle={"Paths for " + mat.partName + " around " + lastMachineTime(matEvents).toLocaleString()}
+        subtitle={
+          matEvents.state === "hasValue"
+            ? "Paths for " +
+              mat.partName +
+              " around " +
+              lastMachineTime(matEvents.getValue()).toLocaleString()
+            : undefined
+        }
         default_date_range={searchRange ? [searchRange.curStart, searchRange.curEnd] : []}
         zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
         extendDateRange={extendDateRange}
@@ -252,10 +256,10 @@ function PathLookupStep(props: PathLookupProps) {
 
 export function PartLookupStepper() {
   const [origStep, setStep] = React.useState(0);
-  const matLoadable = useRecoilValueLoadable(matDetails.materialInDialogInfo);
+  const matToShow = useRecoilValue(matDetails.materialDialogOpen);
 
   let step = origStep;
-  if (step === 0 && matLoadable.valueMaybe()) {
+  if (step === 0 && matToShow) {
     step = 1;
   }
   return (
@@ -263,26 +267,19 @@ export function PartLookupStepper() {
       <Step>
         <StepLabel>Enter or scan a serial</StepLabel>
         <StepContent>
-          {matLoadable.state === "loading" ? (
-            <Stack direction="row" spacing={2}>
-              <CircularProgress />
-              <div>Loading barcode...</div>
-            </Stack>
-          ) : (
-            <SerialLookup
-              onSelect={() => {
-                setStep(1);
-              }}
-            />
-          )}
+          <SerialLookup />
         </StepContent>
       </Step>
       <Step>
-        <ErrorBoundary FallbackComponent={DisplayError}>
-          <React.Suspense fallback={<LoadingDetailsStep />}>
-            <DetailsStep setStep={setStep} />
-          </React.Suspense>
-        </ErrorBoundary>
+        <StepLabel>
+          <DetailsStepTitle />
+        </StepLabel>
+        <StepContent>
+          <DisplayLoadingAndError fallback={<MaterialLoading />}>
+            <MaterialDetailContent />
+          </DisplayLoadingAndError>
+          <DetailsStepButtons setStep={setStep} />
+        </StepContent>
       </Step>
       <Step>
         <StepLabel>Lookup similar paths</StepLabel>
@@ -302,9 +299,7 @@ export function FailedPartLookup() {
   }, []);
   return (
     <main style={{ padding: "24px" }}>
-      <div data-testid="failed-parts">
-        <PartLookupStepper />
-      </div>
+      <PartLookupStepper />
     </main>
   );
 }
