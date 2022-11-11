@@ -42,6 +42,13 @@ namespace BlackMaple.MachineFramework
   public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
   public delegate MaterialDetails ParseBarcode(string barcode, string type);
 
+  public enum AddToQueueType
+  {
+    RequireSerialAndExistingMaterial,
+    AllowNewMaterialBySpecifyingJobAndSerial,
+    AllowNewMaterialBySpecifyingJobWithoutSerial,
+  }
+
   public class FMSImplementation
   {
     public string Name { get; set; }
@@ -60,8 +67,7 @@ namespace BlackMaple.MachineFramework
 
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
     public string CustomStationMonitorDialogUrl { get; set; } = null;
-    public bool RequireExistingMaterialWhenAddingToQueue { get; set; } = false;
-    public bool RequireSerialWhenAddingMaterialToQueue { get; set; } = false;
     public bool AddRawMaterialAsUnassigned { get; set; } = true;
+    public AddToQueueType AddToQueueType { get; set; } = AddToQueueType.RequireSerialAndExistingMaterial;
   }
 }

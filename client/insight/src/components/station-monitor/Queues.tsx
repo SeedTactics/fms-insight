@@ -438,10 +438,12 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
           onClick={() => {
             if (fmsInfo.addRawMaterialAsUnassigned) {
               setBulkAddCastings(props.label);
-            } else if (fmsInfo.requireSerialWhenAddingMaterialToQueue) {
-              setAddBySerial(props.label);
-            } else {
+            } else if (
+              fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobWithoutSerial
+            ) {
               setMatToShow({ type: "AddMatWithoutSerial", toQueue: props.label });
+            } else {
+              setAddBySerial(props.label);
             }
           }}
           size="large"
@@ -457,10 +459,10 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
         <Fab
           color="secondary"
           onClick={() => {
-            if (fmsInfo.requireSerialWhenAddingMaterialToQueue) {
-              setAddBySerial(props.label);
-            } else {
+            if (fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobWithoutSerial) {
               setMatToShow({ type: "AddMatWithoutSerial", toQueue: props.label });
+            } else {
+              setAddBySerial(props.label);
             }
           }}
           size="medium"

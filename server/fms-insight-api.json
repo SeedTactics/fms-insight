@@ -2253,13 +2253,8 @@
           "RequireWorkorderBeforeAllowWashComplete": {
             "type": "boolean"
           },
-          "RequireExistingMaterialWhenAddingToQueue": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "RequireSerialWhenAddingMaterialToQueue": {
-            "type": "boolean",
-            "nullable": true
+          "AddToQueueType": {
+            "$ref": "#/components/schemas/AddToQueueType"
           },
           "AddRawMaterialAsUnassigned": {
             "type": "boolean",
@@ -2274,6 +2269,20 @@
             "nullable": true
           }
         }
+      },
+      "AddToQueueType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "RequireSerialAndExistingMaterial",
+          "AllowNewMaterialBySpecifyingJobAndSerial",
+          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+        ],
+        "enum": [
+          "RequireSerialAndExistingMaterial",
+          "AllowNewMaterialBySpecifyingJobAndSerial",
+          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+        ]
       },
       "ServerEvent": {
         "type": "object",

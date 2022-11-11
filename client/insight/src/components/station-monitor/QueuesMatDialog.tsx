@@ -243,13 +243,12 @@ function QueueButtons({
         <RemoveFromSystemButton onClose={onClose} />
       </>
     );
-  } else if (inProcMat && inProcMat.location.type === api.LocType.OnPallet) {
-    return null;
   } else {
     return (
       <AddToQueueButton
         selectedJob={selectedJob}
         toQueue={toQueue}
+        queueNames={queueNames}
         enteredOperator={enteredOperator}
         onClose={onClose}
       />
@@ -299,7 +298,12 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
               queueNames={queueNames}
             />
           ) : undefined}
-          <PromptForJob selectedJob={selectedJob} setSelectedJob={setSelectedJob} toQueue={toQueue} />
+          <PromptForJob
+            selectedJob={selectedJob}
+            setSelectedJob={setSelectedJob}
+            toQueue={toQueue}
+            queueNames={queueNames}
+          />
           <PromptForOperator
             enteredOperator={enteredOperator}
             setEnteredOperator={setEnteredOperator}

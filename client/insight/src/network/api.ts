@@ -2219,8 +2219,7 @@ export class FMSInfo implements IFMSInfo {
     customStationMonitorDialogUrl?: string | undefined;
     requireScanAtWash?: boolean;
     requireWorkorderBeforeAllowWashComplete?: boolean;
-    requireExistingMaterialWhenAddingToQueue?: boolean | undefined;
-    requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
+    addToQueueType?: AddToQueueType;
     addRawMaterialAsUnassigned?: boolean | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
@@ -2255,8 +2254,7 @@ export class FMSInfo implements IFMSInfo {
             this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
             this.requireScanAtWash = _data["RequireScanAtWash"];
             this.requireWorkorderBeforeAllowWashComplete = _data["RequireWorkorderBeforeAllowWashComplete"];
-            this.requireExistingMaterialWhenAddingToQueue = _data["RequireExistingMaterialWhenAddingToQueue"];
-            this.requireSerialWhenAddingMaterialToQueue = _data["RequireSerialWhenAddingMaterialToQueue"];
+            this.addToQueueType = _data["AddToQueueType"];
             this.addRawMaterialAsUnassigned = _data["AddRawMaterialAsUnassigned"];
             this.requireOperatorNamePromptWhenAddingMaterial = _data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowEditJobPlanQuantityFromQueuesPage = _data["AllowEditJobPlanQuantityFromQueuesPage"];
@@ -2291,8 +2289,7 @@ export class FMSInfo implements IFMSInfo {
         data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
         data["RequireScanAtWash"] = this.requireScanAtWash;
         data["RequireWorkorderBeforeAllowWashComplete"] = this.requireWorkorderBeforeAllowWashComplete;
-        data["RequireExistingMaterialWhenAddingToQueue"] = this.requireExistingMaterialWhenAddingToQueue;
-        data["RequireSerialWhenAddingMaterialToQueue"] = this.requireSerialWhenAddingMaterialToQueue;
+        data["AddToQueueType"] = this.addToQueueType;
         data["AddRawMaterialAsUnassigned"] = this.addRawMaterialAsUnassigned;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
@@ -2316,11 +2313,16 @@ export interface IFMSInfo {
     customStationMonitorDialogUrl?: string | undefined;
     requireScanAtWash?: boolean;
     requireWorkorderBeforeAllowWashComplete?: boolean;
-    requireExistingMaterialWhenAddingToQueue?: boolean | undefined;
-    requireSerialWhenAddingMaterialToQueue?: boolean | undefined;
+    addToQueueType?: AddToQueueType;
     addRawMaterialAsUnassigned?: boolean | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
+}
+
+export enum AddToQueueType {
+    RequireSerialAndExistingMaterial = "RequireSerialAndExistingMaterial",
+    AllowNewMaterialBySpecifyingJobAndSerial = "AllowNewMaterialBySpecifyingJobAndSerial",
+    AllowNewMaterialBySpecifyingJobWithoutSerial = "AllowNewMaterialBySpecifyingJobWithoutSerial",
 }
 
 export class ServerEvent implements IServerEvent {

@@ -62,13 +62,14 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { castingNames } from "../../cell-status/names.js";
 
-function showAddMaterial(
-  inProc: Readonly<api.IInProcessMaterial> | null,
-  queueNames: ReadonlyArray<string>
-): boolean {
-  if (inProc === null) return true;
+function useShowAddMaterial(queueNames: ReadonlyArray<string>): boolean {
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
+  const inProc = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const newSerial = useRecoilValue(matDetails.serialInMaterialDialog);
 
   if (
+    inProc &&
     inProc.location.type === api.LocType.InQueue &&
     inProc.location.currentQueue &&
     queueNames.includes(inProc.location.currentQueue)
@@ -76,7 +77,19 @@ function showAddMaterial(
     return false;
   }
 
-  if (inProc.location.type === api.LocType.OnPallet) {
+  if (inProc && inProc.location.type === api.LocType.OnPallet) {
+    return false;
+  }
+
+  if (fmsInfo.addToQueueType === api.AddToQueueType.RequireSerialAndExistingMaterial && !existingMat) {
+    return false;
+  }
+
+  if (
+    !existingMat &&
+    fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobAndSerial &&
+    (newSerial === null || newSerial === "")
+  ) {
     return false;
   }
 
@@ -174,13 +187,18 @@ export function PromptForJob({
   selectedJob,
   setSelectedJob,
   toQueue,
+  queueNames,
 }: {
   selectedJob: AddNewJobProcessState | null;
   setSelectedJob: (j: AddNewJobProcessState | null) => void;
   toQueue: string | null;
+  queueNames: ReadonlyArray<string>;
 }) {
   const toShow = useRecoilValue(matDetails.materialDialogOpen);
   const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
+  const showAdd = useShowAddMaterial(queueNames);
+
+  if (!showAdd) return null;
   if (toShow === null) return null;
   if (existingMat) return null;
 
@@ -204,8 +222,9 @@ export function PromptForQueue({
   setSelectedQueue: (queue: string) => void;
   queueNames: ReadonlyArray<string>;
 }) {
-  const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  if (!showAddMaterial(inProcMat, queueNames)) return null;
+  const showAdd = useShowAddMaterial(queueNames);
+
+  if (!showAdd) return null;
 
   if (queueNames.length <= 1) {
     return null;
@@ -235,9 +254,10 @@ export function PromptForOperator({
   queueNames: ReadonlyArray<string>;
 }) {
   const fmsInfo = useRecoilValue(fmsInformation);
-  const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  if (!showAddMaterial(inProcMat, queueNames)) return null;
+  const showAdd = useShowAddMaterial(queueNames);
+
   if (!fmsInfo.requireOperatorNamePromptWhenAddingMaterial) return null;
+  if (!showAdd) return null;
 
   return (
     <div style={{ marginLeft: "1em" }}>
@@ -257,10 +277,12 @@ export function AddToQueueButton({
   selectedJob,
   toQueue,
   onClose,
+  queueNames,
 }: {
   enteredOperator: string | null;
   selectedJob: AddNewJobProcessState | null;
   toQueue: string | null;
+  queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
   const fmsInfo = useRecoilValue(fmsInformation);
@@ -274,6 +296,9 @@ export function AddToQueueButton({
 
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
+  const showAdd = useShowAddMaterial(queueNames);
+
+  if (!showAdd) return null;
 
   let addProcMsg = "";
   if (existingMat !== null) {
@@ -314,7 +339,6 @@ export function AddToQueueButton({
         addingExistingMat === true ||
         addingNewMat === true ||
         (existingMat === null && selectedJob === null) ||
-        (fmsInfo.requireSerialWhenAddingMaterialToQueue && (newSerial === null || newSerial === "")) ||
         (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
           (enteredOperator === null || enteredOperator === ""))
       }
