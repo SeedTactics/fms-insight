@@ -33,8 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import type { Database } from "better-sqlite3";
 
+export interface FmsInsightDatabase extends Database {
+  bmsFmsInsightDatabaseVersion?: number;
+}
+
 export const handlers: {
-  [key: string]: (db: Database, x: any) => any;
+  [key: string]: (db: FmsInsightDatabase, x: any) => any;
 } = {};
 
 // 10000 ticks in a millisecond
@@ -97,7 +101,7 @@ function convertLogType(t: number): string {
 }
 
 function convertRowsToLog(
-  db: Database,
+  db: FmsInsightDatabase,
   rows: ReadonlyArray<any>
 ): ReadonlyArray<any> {
   const statCmd = db.prepare(
@@ -112,25 +116,37 @@ function convertRowsToLog(
     "SELECT Key, Value FROM program_details WHERE Counter = $cntr"
   );
 
-  const toolCmd = db.prepare(
-    "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tools WHERE Counter = $cntr"
-  );
+  let toolCmd;
+  if (
+    db.bmsFmsInsightDatabaseVersion &&
+    db.bmsFmsInsightDatabaseVersion >= 27
+  ) {
+    toolCmd = db.prepare(
+      "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tool_use WHERE Counter = $cntr"
+    );
+  } else {
+    toolCmd = db.prepare(
+      "SELECT Tool, UseInCycle, UseAtEndOfCycle, ToolLife FROM station_tools WHERE Counter = $cntr"
+    );
+  }
 
   const statRows = [];
 
   for (const statRow of rows) {
     const matRows = statCmd.all({ cntr: statRow.Counter });
     const details: { [key: string]: string } = {};
-    const tools: { [key: string]: Readonly<any> } = {};
+    const tools = [];
     for (const detail of detailCmd.iterate({ cntr: statRow.Counter })) {
       details[detail.Key] = detail.Value;
     }
     for (const tool of toolCmd.iterate({ cntr: statRow.Counter })) {
-      tools[tool.Tool] = {
+      tools.push({
+        Tool: tool.Tool,
+        Pocket: tool.Pocket ? parseInt(tool.Pocket) : -1,
         ToolUseDuringCycle: parseTimespan(tool.UseInCycle),
         TotalToolUseAtEndOfCycle: parseTimespan(tool.UseAtEndOfCycle),
         ConfiguredToolLife: parseTimespan(tool.ToolLife),
-      };
+      });
     }
 
     statRows.push({
@@ -510,22 +526,20 @@ handlers["job-history"] = (
       end: dateToTicks(new Date(a.endUTC)),
     });
 
+  const stationUse = db.prepare(
+    "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
+      " WHERE SimId = $simid"
+  );
+
   const jobs: { [uniq: string]: any } = {};
+  const statUse = [];
   for (let i = 0; i < jobRows.length; i++) {
     const row = jobRows[i];
     jobs[row.UniqueStr] = loadJob(db, row);
+    statUse.push(
+      ...stationUse.all({ simid: row.ScheduleId }).map(convertSimStatUse)
+    );
   }
 
-  const stationUse = db
-    .prepare(
-      "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, UtilizationTime, PlanDownTime FROM sim_station_use " +
-        " WHERE EndUTC >= $start AND StartUTC <= $end"
-    )
-    .all({
-      start: dateToTicks(new Date(a.startUTC)),
-      end: dateToTicks(new Date(a.endUTC)),
-    })
-    .map(convertSimStatUse);
-
-  return { jobs, stationUse };
+  return { jobs, stationUse: statUse };
 };

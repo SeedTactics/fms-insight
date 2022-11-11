@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import Database from "better-sqlite3";
 import { ipcRenderer } from "electron";
-import { handlers } from "./handlers";
+import { FmsInsightDatabase, handlers } from "./handlers";
 
 type Request = {
   name: string;
@@ -47,7 +47,7 @@ type Response = {
   error?: string;
 };
 
-let db: Database.Database | undefined = undefined;
+let db: FmsInsightDatabase | undefined = undefined;
 let error: string | undefined = undefined;
 let port: MessagePort | undefined = undefined;
 
@@ -75,6 +75,7 @@ async function openFile(): Promise<boolean> {
         "The FMS Insight database is from a newer version of FMS Insight.  Please update to the latest version.";
       throw error;
     }
+    db.bmsFmsInsightDatabaseVersion = verRow.ver;
     try {
       db.prepare("SELECT Counter from stations").get();
     } catch (e) {

@@ -33,12 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Button, CircularProgress, Stack } from "@mui/material";
 
-import { useRequestOpenBackupFile } from "../network/backend-backupviewer.js";
+import { errorLoadingBackupViewer, useRequestOpenBackupFile } from "../network/backend-backupviewer.js";
+import { useRecoilValue } from "recoil";
+import { errorLoadingLast30 } from "../network/websocket.js";
+import { errorLoadingSpecificMonthData } from "../network/load-specific-month.js";
 
 export function BackupViewer(): JSX.Element {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const requestOpenBackupFile = useRequestOpenBackupFile();
+  const last30Error = useRecoilValue(errorLoadingLast30);
+  const backupViewerError = useRecoilValue(errorLoadingBackupViewer);
+  const specificMonthError = useRecoilValue(errorLoadingSpecificMonthData);
 
   function open() {
     setLoading(true);
@@ -57,6 +63,9 @@ export function BackupViewer(): JSX.Element {
         be opened directly by this program to view the data.
       </p>
       {error ? <p>{error}</p> : undefined}
+      {last30Error !== null ? <p>{last30Error}</p> : undefined}
+      {backupViewerError !== null ? <p>{backupViewerError}</p> : undefined}
+      {specificMonthError !== null ? <p>{specificMonthError}</p> : undefined}
       <Button disabled={loading} style={{ marginTop: "2em" }} variant="contained" color="primary" onClick={open}>
         <Stack direction="row" alignItems="center" spacing={2}>
           {loading ? <CircularProgress size={24} /> : undefined}
