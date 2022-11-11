@@ -128,6 +128,7 @@ namespace BlackMaple.MachineFramework
 
     public static long ConvertFromBase62(string msg)
     {
+      if (string.IsNullOrEmpty(msg)) return -1;
       long res = 0;
       int len = msg.Length;
       long multiplier = 1;
